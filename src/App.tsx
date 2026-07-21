@@ -165,7 +165,7 @@ function AppContent() {
           } 
         />
         
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin" element={<SessionGuard><AdminPage /></SessionGuard>} />
         <Route path="*" element={<LoginPage />} />
       </Routes>
       </main>
