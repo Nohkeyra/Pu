@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/widget_card_background"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/item_time_pax"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/widget_primary_text"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.02" />
+
+    <TextView
+        android:id="@+id/item_meal_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/widget_secondary_text"
+        android:textSize="11.5sp"
+        android:textStyle="normal"
+        android:paddingTop="4dp"
+        android:letterSpacing="0.01" />
+
+    <TextView
+        android:id="@+id/item_menu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/widget_tertiary_text"
+        android:textSize="11sp"
+        android:paddingTop="3dp"
+        android:letterSpacing="0.01" />
+
+</LinearLayout>

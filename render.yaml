@@ -1,0 +1,84 @@
+services:
+  - type: web
+    name: restoran-wawasan-bio
+    runtime: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      # Node and Environment Configuration
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NODE_VERSION
+        value: "20"
+
+      # SMTP Configuration for sending emails via Brevo SMTP relay (port 2525)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+      - key: ENABLE_ORDER_STATUS_NOTIFICATIONS
+        value: "true"
+
+      # Firebase Configuration (Production project: restoran-wawasan)
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: FIREBASE_APP_ID
+        sync: false
+      - key: FIREBASE_MEASUREMENT_ID
+        sync: false
+
+      # Google Workspace / Calendar Integration (Service Account Setup)
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_CALENDAR_ID
+        sync: false
+
+      # Backend safety switches (recommended defaults for Render)
+      - key: STRICT_FIREBASE_ADMIN
+        value: "true"
+      - key: ENABLE_LOCAL_FALLBACK
+        value: "false"
+      - key: ENABLE_DEBUG_ENDPOINTS
+        value: "false"
+
+      # External API Base URL (Required for native mobile builds / APKs to connect to this server)
+      - key: VITE_API_URL
+        value: https://restoran-wawasan-bio.onrender.com
+      - key: VITE_API_URL_ANDROID
+        value: https://restoran-wawasan-bio.onrender.com
+
+      # Admin Configuration
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+
+      # Google OAuth2 Form-to-Calendar Sync
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: REDIRECT_URI
+        value: https://restoran-wawasan-bio.onrender.com/api/auth/google/callback

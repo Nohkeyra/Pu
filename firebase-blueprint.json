@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Catering booking orders from customers",
+      "type": "object",
+      "properties": {
+        "to": { "type": "string", "description": "The target company or customer organization" },
+        "attn": { "type": "string", "description": "Department or contact attention details" },
+        "name": { "type": "string", "description": "Contact person name" },
+        "contact": { "type": "string", "description": "Contact telephone number" },
+        "email": { "type": "string", "description": "Contact email address" },
+        "date": { "type": "string", "description": "Event date (YYYY-MM-DD)" },
+        "time": { "type": "string", "description": "Event time (HH:MM)" },
+        "location": { "type": "string", "description": "Event location full address" },
+        "quantity": { "type": "integer", "description": "Number of pax requested" },
+        "meals": { "type": "array", "description": "Selected meal types" },
+        "menu": { "type": "string", "description": "Selected menu items" },
+        "notes": { "type": "string", "description": "Special instructions or notes" },
+        "dateTime": { "type": "string", "description": "Event date time string ISO format" },
+        "lang": { "type": "string", "description": "Preferred language 'en' or 'bm'" },
+        "status": { "type": "string", "description": "Order status", "enum": ["pending", "confirmed", "approved", "cancelled", "billed"] },
+        "createdAt": { "type": "object", "description": "Firestore server timestamp" },
+        "prices": { "type": "object", "description": "Object mapping meal key to price value" },
+        "totalAmount": { "type": "number", "description": "Grand total amount for the order" },
+        "invoiceNo": { "type": "string", "description": "Official generated invoice number" },
+        "approvedAt": { "type": "string", "description": "Timestamp of order approval" },
+        "billedAt": { "type": "string", "description": "Timestamp when billing/invoice email was sent" }
+      },
+      "required": ["name", "email", "contact", "location", "quantity", "meals", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered customer profiles containing saved corporate and contact details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Contact person name" },
+        "email": { "type": "string", "description": "Contact email address" },
+        "contact": { "type": "string", "description": "Contact telephone number" },
+        "to": { "type": "string", "description": "Saved organization or company name" },
+        "attn": { "type": "string", "description": "Saved departmental attention details" },
+        "updatedAt": { "type": "string", "description": "Profile modification date" },
+        "notificationSettings": {
+          "type": "object",
+          "properties": {
+            "orderStatus": { "type": "boolean", "description": "Subscribe to order status updates" },
+            "billedUpdates": { "type": "boolean", "description": "Subscribe to billed/invoice updates" },
+            "cancelApproval": { "type": "boolean", "description": "Subscribe to cancellation approval updates" }
+          },
+          "description": "User push notification subscription preferences"
+        },
+        "savedLocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "label": { "type": "string" },
+              "address": { "type": "string" }
+            },
+            "required": ["id", "label", "address"]
+          },
+          "description": "User saved physical delivery locations / event venues"
+        }
+      },
+      "required": ["name", "email", "contact"]
+    }
+  },
+  "firestore": {
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection storing catering booking orders"
+    },
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection storing customer profiles"
+    }
+  }
+}

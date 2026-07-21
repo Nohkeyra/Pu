@@ -1,0 +1,15 @@
+export const SAVED_COMPANIES = [
+  'Putrajaya Holdings Sdn Bhd, Block A, Suasana PjH, Lot 2C5, Jalan Tun Abdul Razak, Presint 2, 62100 Putrajaya',
+  'Putrajaya Holdings Sdn Bhd, Menara PjH, Precint 2, No. 2, Jalan Tun Abdul Razak, 62100 Putrajaya',
+  'Putrajaya Management Sdn. Bhd (PMSB)',
+  'Putrajaya Homes Sdn Bhd',
+  'Gas District Cooling (Putrajaya) Sdn Bhd',
+  'KLCC (Holdings) Sdn Bhd',
+  'KLCC (Holdings) Sdn Bhd, Group Procurement, Level 34, Menara Dayabumi, Jalan Sultan Hishamuddin, Kuala Lumpur',
+  'KLCC (Holdings) Sdn Bhd, Group Financial Services (GFS), Level 9, Menara Permata Sapura, Kuala Lumpur City Centre',
+  'KLCC Property Holdings Sdn Bhd, Level 33 & 34, Menara Dayabumi, Jalan Sultan Hishamuddin, Kuala Lumpur',
+  'KLCC Projects Services Sdn Bhd',
+  'KLCC Projects Services Sdn Bhd, Level 32, Kompleks Dayabumi, Jalan Sultan Hishamuddin, Kuala Lumpur',
+  'KLCC Projeks Sdn Bhd, Level 4, Menara PjH, No 2 Jalan Tun Razak, Presint 2, 62100 Putrajaya',
+  'Majlis Sukan Wilayah Persekutuan',
+];

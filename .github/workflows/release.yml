@@ -1,0 +1,106 @@
+name: Build & Sign Release APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for release (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build release APK (unsigned)
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Sign release APK
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "⚠️  Signing secrets not configured. Skipping signing."
+            exit 0
+          fi
+          
+          echo $RELEASE_KEYSTORE_BASE64 | base64 -d > release.keystore
+          
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore release.keystore \
+            -storepass $RELEASE_KEYSTORE_PASSWORD \
+            -keypass $RELEASE_KEY_PASSWORD \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            $RELEASE_KEY_ALIAS
+          
+          mv android/app/build/outputs/apk/release/app-release-unsigned.apk \
+             android/app/build/outputs/apk/release/app-release-signed.apk
+          
+          rm release.keystore
+
+      - name: Build Release Bundle (AAB)
+        working-directory: ./android
+        run: ./gradlew bundleRelease
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            android/app/build/outputs/apk/release/app-release-signed.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload signed APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-signed
+          path: android/app/build/outputs/apk/release/app-release-signed.apk
+          retention-days: 90
+
+      - name: Upload Bundle as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-bundle
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90

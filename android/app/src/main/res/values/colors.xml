@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- These three are required by AppTheme in styles.xml (parent
+         Theme.AppCompat.Light.DarkActionBar tints default system chrome —
+         e.g. task-switcher header, default status/nav bar color — with
+         them). They previously had no definitions anywhere in this project,
+         which fails the AAPT resource-linking step at build time, the same
+         way the AppTheme.Transparent parent style did.
+
+         Values taken from DESIGN_SYSTEM.md's documented brand palette
+         (Section 1: Colour palette) so the native chrome matches the
+         in-app dark charcoal / warm-gold identity rather than an arbitrary
+         placeholder color. -->
+    <color name="colorPrimary">#1A1816</color>       <!-- color-charcoal -->
+    <color name="colorPrimaryDark">#2D2520</color>   <!-- color-deep-brown -->
+    <color name="colorAccent">#D4A853</color>        <!-- color-warm-gold -->
+</resources>

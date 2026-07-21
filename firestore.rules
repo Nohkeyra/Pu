@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /orders/{orderId} {
+      allow read: if true;
+      
+      allow create: if 
+        // ID bounds to prevent traversal/poisoning
+        orderId.size() >= 5 && orderId.size() <= 50 &&
+
+        // Status on creation. In this business flow the customer is vetted over
+        // WhatsApp BEFORE submitting, so a new order is created as 'approved'.
+        // 'pending' remains valid but means "awaiting the admin's billed invoice
+        // total" on the customer side — NOT awaiting approval.
+        request.resource.data.status in ['approved', 'pending'] &&
+
+        // At creation the admin has not entered the billed total yet, so
+        // totalAmount must still be 0 (unbilled).
+        request.resource.data.totalAmount == 0 &&
+
+        // Timestamp must be exactly server request time
+        request.resource.data.createdAt == request.time &&
+        
+        // Quantity must be positive and reasonable
+        request.resource.data.quantity is int &&
+        request.resource.data.quantity > 0 &&
+        request.resource.data.quantity <= 10000 &&
+        
+        // Meals must be a list with bounded size (1-10)
+        request.resource.data.meals is list &&
+        request.resource.data.meals.size() > 0 &&
+        request.resource.data.meals.size() <= 10 &&
+        
+        // Verify meal elements are valid strings
+        request.resource.data.meals.toSet().difference(['breakfast', 'lunch', 'dinner', 'tea_break', 'hi_tea'].toSet()).size() == 0 &&
+        
+        // String limits to prevent resource exhaustion / Denial of Wallet
+        request.resource.data.name is string && request.resource.data.name.size() <= 150 &&
+        request.resource.data.email is string && request.resource.data.email.size() <= 150 &&
+        request.resource.data.contact is string && request.resource.data.contact.size() <= 50 &&
+        request.resource.data.to is string && request.resource.data.to.size() <= 150 &&
+        (!('attn' in request.resource.data) || (request.resource.data.attn is string && request.resource.data.attn.size() <= 150)) &&
+        request.resource.data.location is string && request.resource.data.location.size() <= 300 &&
+        request.resource.data.menu is string && request.resource.data.menu.size() <= 200 &&
+        (!('notes' in request.resource.data) || (request.resource.data.notes is string && request.resource.data.notes.size() <= 2000));
+
+      allow update: if 
+        // Only authenticated admin/server can update
+        request.auth != null && (request.auth.token.email == "wawasan.orders@gmail.com" || request.auth.token.email == "madnor.noisy@gmail.com") &&
+        
+        // ID bounds
+        orderId.size() >= 5 && orderId.size() <= 50 &&
+        
+        // Core customer details are immutable
+        request.resource.data.name == resource.data.name &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.contact == resource.data.contact &&
+        request.resource.data.location == resource.data.location &&
+        request.resource.data.quantity == resource.data.quantity &&
+        request.resource.data.meals == resource.data.meals &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        
+        // Status must belong to allowed states
+        request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected'] &&
+        
+        // Status state transitions machine
+        (
+          (resource.data.status == 'pending' && request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected']) ||
+          (resource.data.status == 'approved' && request.resource.data.status in ['approved', 'billed', 'cancelled', 'rejected']) ||
+          (resource.data.status == 'billed' && request.resource.data.status == 'billed') ||
+          (resource.data.status == 'cancelled' && request.resource.data.status == 'cancelled') ||
+          (resource.data.status == 'rejected' && request.resource.data.status == 'rejected')
+        ) &&
+        
+        // Prices Map validation: if approved or billed, prices must not be empty and must equal meals list size
+        (
+          !(request.resource.data.status in ['approved', 'billed']) ||
+          (
+            request.resource.data.prices is map && 
+            request.resource.data.prices.keys().size() == request.resource.data.meals.size()
+          )
+        ) &&
+        
+        // Bounded size for update string fields
+        (!('invoiceNo' in request.resource.data) || (request.resource.data.invoiceNo is string && request.resource.data.invoiceNo.size() <= 100));
+
+      // No one can delete orders
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.token.email == "wawasan.orders@gmail.com" || request.auth.token.email == "madnor.noisy@gmail.com");
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1019707766959",
+    "project_id": "restoran-wawasan",
+    "storage_bucket": "restoran-wawasan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019707766959:android:0b317ff627b6f1049ffc5a",
+        "android_client_info": {
+          "package_name": "com.wawasanpakusop.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1019707766959-mro95mhus7e514m8nnhg6h1va612jqmg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm_E6F0mifmbObxAkyygv4O22oIuS6_YQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1019707766959-mro95mhus7e514m8nnhg6h1va612jqmg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

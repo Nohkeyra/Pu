@@ -1,0 +1,381 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+    --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+
+    /* Day Mode (Warm & Professional) */
+    --color-deep-forest: #023341;       /* Deep Navy Text */
+    --color-forest: #0B4A5C;            /* Darker Navy for surfaces */
+    --color-light-forest: #1A6075;      /* Lighter Navy for accents */
+
+    --color-sunshine: #FD5E02;          /* Wawasan Orange (Primary Action) */
+    --color-honey: #FFA033;             /* Lighter Orange */
+    --color-crisp-carrot: #E04D00;      /* Deep Wawasan Orange */
+    --color-tomato-burst: #B33D00;      /* Darkest Orange */
+    --color-kiwi: #39FF14;              /* Neon Lime Accent */
+
+    --color-cream: #FCF5E3;             /* Warm Cream Bg */
+    --color-cream-dark: #F5E8D0;        /* Slightly Darker Cream */
+    --color-charcoal: #023341;          /* Re-mapped to Deep Navy for legacy classes */
+    --color-stone: #6B7280;             /* Muted Grey Text */
+
+    /* ============================================================
+       NEW DIRECTION — playful/energetic dark palette (2026)
+       Dark charcoal base, orange primary CTA, lime/mint secondary
+       accents. Bold/saturated, WCAG-checked. Added additively —
+       does NOT replace the tokens above yet. Migrate screen-by-
+       screen (customer-facing only; admin panel stays as-is).
+
+       --on-* variables give the correct-contrast text color for
+       that background — always use them together, e.g.:
+         background: var(--color-orange);
+         color: var(--on-orange);
+       This avoids ever hardcoding white/dark text on a color that
+       doesn't support it.
+       ============================================================ */
+    --color-charcoal-bg:   #151714;     /* Page background (dark base) */
+    --color-charcoal-surf: #1F2320;     /* Card / elevated surface */
+    --color-orange-new:    #FF6A1A;     /* Primary CTA */
+    --color-orange-hover:  #FF8A45;     /* Primary CTA hover */
+    --color-lime-new:      #B4FF39;     /* Secondary accent */
+    --color-mint-new:      #2EE6A6;     /* Secondary accent (alt) */
+    --color-text-new:      #F4F5F0;     /* Primary text on dark bg */
+    --color-text-muted-new:#A8ADA4;     /* Secondary text on dark bg */
+
+    /* Auto-contrast pairs — verified via WCAG 2.1 contrast ratio */
+    --on-charcoal-bg:   var(--color-text-new);      /* 16.46:1 AAA */
+    --on-charcoal-surf: var(--color-text-new);      /* 14.52:1 AAA */
+    --on-orange-new:    var(--color-charcoal-bg);   /*  6.29:1 AA  */
+    --on-orange-hover:  var(--color-charcoal-bg);   /*  7.71:1 AAA */
+    --on-lime-new:      var(--color-charcoal-bg);   /* 14.86:1 AAA */
+    --on-mint-new:      var(--color-charcoal-bg);   /* 11.15:1 AAA */
+
+    /* Shadcn tokens */
+    --background: 42 66% 94%;           /* Matches #FCF5E3 */
+    --foreground: 193 94% 13%;          /* Matches #023341 */
+    --card: 0 0% 100%;                  /* White Cards */
+    --card-foreground: 193 94% 13%;
+    --popover: 42 66% 94%;
+    --popover-foreground: 193 94% 13%;
+    --primary: 22 99% 50%;              /* Matches #FD5E02 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 60% 89%;            /* Matches #F5E8D0 */
+    --secondary-foreground: 193 94% 13%;
+    --muted: 42 30% 85%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 111 100% 54%;             /* Matches #39FF14 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 14 82% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 42 30% 85%;
+    --input: 42 30% 85%;
+    --ring: 22 99% 50%;
+    --radius: 1.5rem;                   /* Large rounded corners */
+
+    --color-selection-bg: rgba(253, 94, 2, 0.3);
+    --color-selection-text: #023341;
+    --color-scrollbar-track: #FCF5E3;
+    --color-scrollbar-thumb: #D1D5DB;
+    --color-scrollbar-hover: #FD5E02;
+
+    --color-input-bg: #FFFFFF;
+    --color-input-text: #023341;
+    --color-input-border: rgba(0, 0, 0, 0.1);
+    --color-input-focus-shadow: rgba(253, 94, 2, 0.2);
+
+    --color-header-bg: rgba(252, 245, 227, 0.95);
+    --color-header-border: rgba(0, 0, 0, 0.05);
+
+    --color-card-bg: #FFFFFF;
+    --color-card-border: rgba(0, 0, 0, 0.05);
+  }
+
+  .dark {
+    /* Dark Mode (Midnight Heritage) */
+    --color-deep-forest: #F5F5F5;       /* Soft Ivory Text */
+    --color-forest: #1A2C3E;            /* Dark Navy for surfaces */
+    --color-light-forest: #374151;      /* Mid Grey */
+
+    --color-sunshine: #FF8C42;          /* Vibrant Amber (Primary Action) */
+    --color-honey: #FFAA73;             /* Light Amber */
+    --color-crisp-carrot: #E67228;      /* Deep Amber */
+    --color-tomato-burst: #CC5500;      /* Dark Amber */
+    --color-kiwi: #CCFF00;              /* Electric Lime Accent */
+
+    --color-cream: #0B1A2A;             /* Deep Midnight Navy Bg */
+    --color-cream-dark: #07121F;        /* Darker Navy */
+    --color-charcoal: #0B1A2A;          /* Maps to background for legacy classes */
+    --color-stone: #9CA3AF;             /* Muted Grey Text */
+
+    /* Shadcn tokens */
+    --background: 211 58% 10%;          /* Matches #0B1A2A */
+    --foreground: 0 0% 96%;             /* Matches #F5F5F5 */
+    --card: 210 41% 17%;                /* Matches #1A2C3E (Dark Slate Blue Cards) */
+    --card-foreground: 0 0% 96%;
+    --popover: 211 58% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 23 100% 63%;             /* Matches #FF8C42 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 41% 17%;           /* Matches #1A2C3E */
+    --secondary-foreground: 0 0% 96%;
+    --muted: 215 25% 27%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 75 100% 50%;              /* Matches #CCFF00 */
+    --accent-foreground: 211 58% 10%;
+    --destructive: 14 82% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    --ring: 23 100% 63%;
+
+    --color-selection-bg: rgba(255, 140, 66, 0.3);
+    --color-selection-text: #F5F5F5;
+    --color-scrollbar-track: #0B1A2A;
+    --color-scrollbar-thumb: #374151;
+    --color-scrollbar-hover: #FF8C42;
+
+    --color-input-bg: #1A2C3E;
+    --color-input-text: #F5F5F5;
+    --color-input-border: rgba(255, 255, 255, 0.1);
+    --color-input-focus-shadow: rgba(255, 140, 66, 0.2);
+
+    --color-header-bg: rgba(11, 26, 42, 0.95);
+    --color-header-border: rgba(255, 255, 255, 0.05);
+
+    --color-card-bg: #1A2C3E;
+    --color-card-border: rgba(255, 255, 255, 0.05);
+  }
+
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-cream text-deep-forest antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  #root {
+    padding-top: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  ::selection {
+    background-color: var(--color-selection-bg);
+    color: var(--color-selection-text);
+  }
+  
+  /* Scrollbar custom style */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-hover);
+  }
+
+  /* Global input overlays to ensure beautiful inputs throughout order sheets, etc. */
+  input, textarea, select, [role="combobox"] {
+    background-color: var(--color-input-bg) !important;
+    color: var(--color-input-text) !important;
+    border-color: var(--color-input-border) !important;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--color-sunshine) !important;
+    box-shadow: 0 0 10px var(--color-input-focus-shadow) !important;
+  }
+}
+
+@layer components {
+  /* Layout helpers - Updated for premium theme */
+  .section-padding    { @apply py-20 md:py-[120px]; }
+  .content-container  { @apply max-w-[1200px] mx-auto px-6 md:px-12; }
+  
+  /* Brand surfaces - Now with variables */
+  .nature-card {
+    background-color: var(--color-card-bg);
+    border: 1px solid var(--color-card-border);
+    @apply backdrop-blur-md rounded-3xl shadow-xl overflow-hidden;
+  }
+  
+  /* Brand gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-deep-forest via-crisp-carrot to-sunshine bg-clip-text text-transparent;
+  }
+  .gradient-text-warm {
+    @apply bg-gradient-to-r from-crisp-carrot via-sunshine to-tomato-burst bg-clip-text text-transparent;
+  }
+  
+  /* Accents */
+  .kiwi-accent {
+    @apply text-kiwi drop-shadow-[0_0_8px_rgba(56,142,60,0.3)];
+  }
+  .carrot-accent {
+    @apply text-crisp-carrot font-bold;
+  }
+  .sunshine-accent {
+    @apply text-sunshine drop-shadow-[0_0_8px_rgba(232,122,0,0.4)];
+  }
+
+  /* Premium Shadows */
+  .shadow-sunshine-glow {
+    box-shadow: 0 10px 30px -5px rgba(253, 94, 2, 0.3), 0 0 15px -3px rgba(253, 94, 2, 0.1);
+  }
+  .shadow-premium {
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 0 20px -5px rgba(0, 0, 0, 0.03);
+  }
+  .shadow-inner-soft {
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+  }
+  
+  /* Glassmorphism for headers */
+  .glass-header {
+    background-color: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-header-border);
+    @apply backdrop-blur-xl shadow-sm;
+  }
+  
+  /* Batik Pattern for overlays */
+  .pattern-batik {
+    background-image: url("/assets/batik_pattern.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-blend-mode: overlay;
+  }
+  
+  /* Geometric Star Pattern (Islamic Geometry) for headers */
+  .pattern-dots {
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l2.5 12.5L35 15l-10 7.5L28 35 20 25l-8 10 3-12.5-10-7.5 12.5-2.5L20 0z' fill='%23E87A00' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-size: 40px 40px;
+  }
+  
+  /* Touch targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Utility for hiding scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.kp-skip { position: absolute; top: -100px; left: 0; background: var(--color-sunshine); color: #fff; padding: 8px 16px; z-index: 9999; transition: top 0.2s; font-weight: bold; } .kp-skip:focus { top: 0; }
+
+/* Keyboard focus ring (migrated from enhancements.css, rewritten to use brand variables) */
+:where(a, button, [role="button"], input, select, textarea,
+       [tabindex], summary):focus-visible {
+  outline: 3px solid var(--color-sunshine);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:where(a, button, input, select, textarea):focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Respect user motion preferences (migrated from enhancements.css) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print / PDF receipt utilities (migrated from enhancements.css) */
+@media print {
+  .kp-no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .kp-print-area { padding: 0 !important; }
+}
+
+/* Elegant Custom Glitch Animations & Classes */
+@keyframes glitch-anim-1 {
+  0% {
+    clip-path: inset(40% 0 61% 0);
+    transform: skew(0.3deg);
+  }
+  20% {
+    clip-path: inset(92% 0 1% 0);
+    transform: skew(-0.5deg) translate(-2px, 1px);
+  }
+  40% {
+    clip-path: inset(15% 0 80% 0);
+    transform: skew(0.8deg) translate(2px, -1px);
+  }
+  60% {
+    clip-path: inset(80% 0 5% 0);
+    transform: skew(-0.3deg) translate(-1px, -2px);
+  }
+  80% {
+    clip-path: inset(3% 0 92% 0);
+    transform: skew(0.5deg) translate(1px, 2px);
+  }
+  100% {
+    clip-path: inset(40% 0 61% 0);
+    transform: skew(0deg);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip-path: inset(25% 0 58% 0);
+    transform: skew(-0.3deg);
+  }
+  20% {
+    clip-path: inset(70% 0 15% 0);
+    transform: skew(0.5deg) translate(2px, -1px);
+  }
+  40% {
+    clip-path: inset(5% 0 85% 0);
+    transform: skew(-0.8deg) translate(-2px, 1px);
+  }
+  60% {
+    clip-path: inset(85% 0 2% 0);
+    transform: skew(0.3deg) translate(1px, 2px);
+  }
+  80% {
+    clip-path: inset(12% 0 78% 0);
+    transform: skew(-0.5deg) translate(-1px, -2px);
+  }
+  100% {
+    clip-path: inset(25% 0 58% 0);
+    transform: skew(0deg);
+  }
+}
+
+.animate-glitch-cyan {
+  animation: glitch-anim-1 0.75s infinite linear alternate-reverse;
+}
+
+.animate-glitch-magenta {
+  animation: glitch-anim-2 0.75s infinite linear alternate-reverse;
+}
+

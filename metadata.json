@@ -1,0 +1,6 @@
+{
+  "name": "Wawasan Pak Usop",
+  "description": "A professional web application for Restoran Wawasan Pak Usop, featuring online ordering, dynamic PDF invoice generation, and an administrative dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
