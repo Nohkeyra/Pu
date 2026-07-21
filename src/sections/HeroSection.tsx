@@ -32,18 +32,18 @@ export default function HeroSection() {
           alt="Elegant Batik Pattern Background"
           style={{ y, scale: 1.05 }}
           fetchPriority="high"
-          className="w-full h-full object-cover object-center filter opacity-50 dark:opacity-40 transition-all duration-700 ease-in-out [mask-image:linear-gradient(to_bottom,black_40%,transparent_95%)]"
+          className="w-full h-full object-cover object-center filter opacity-45 dark:opacity-35 transition-all duration-700 ease-in-out [mask-image:linear-gradient(to_bottom,black_20%,black_60%,transparent_100%)]"
           referrerPolicy="no-referrer"
         />
-        {/* Warm Overlay & Contrast Protection - Seamless fade to section bottom */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-cream dark:to-cream z-0" />
+        {/* Warm Overlay & Contrast Protection - Deep dark charcoal backdrop that stays crisp */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-charcoal/95 z-0" />
         {/* Geometric Star Pattern Overlay with smooth bottom mask */}
-        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_90%)]" />
+        <div className="absolute inset-0 pattern-dots opacity-10 pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_90%)]" />
       </div>
 
       {/* Decorative ambient radial glows */}
-      <div className="absolute top-[20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-sunshine/30 blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-crisp-carrot/20 blur-[130px] pointer-events-none" />
+      <div className="absolute top-[15%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-sunshine/20 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[10%] w-[30vw] h-[30vw] rounded-full bg-crisp-carrot/15 blur-[120px] pointer-events-none" />
 
       <motion.div 
         variants={containerVariants}

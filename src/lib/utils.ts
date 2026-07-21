@@ -5,9 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Cache-busting helper for assets in the public folder (simplified to pass-through to avoid asset sync query string issues)
+// Helper for assets in the public folder (normalizes leading slashes for relative WebView/Capacitor compatibility)
 export function getAssetUrl(path: string): string {
-  return path;
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+  // Standardize relative path so Capacitor Android WebView (file:// or https://localhost) resolves correctly
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `./${cleanPath}`;
 }
 
 // Additional utility for consistent spacing

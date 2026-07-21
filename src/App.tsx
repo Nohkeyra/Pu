@@ -282,9 +282,9 @@ function App() {
                 <NativeBackButtonHandler />
                 <NativeAppListeners />
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.8 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0 }}
                   className="flex-grow flex flex-col w-full h-full"
                 >
                   <AppContent />
