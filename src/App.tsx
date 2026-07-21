@@ -186,9 +186,6 @@ function App() {
     }
 
     // Force route back to the startup screen /#/ on load or refresh
-    if (window.location.hash && window.location.hash !== '#/') {
-      window.location.hash = '#/';
-    }
 
     // Sync Capacitor Preferences to localStorage for synchronous access fallback
     syncPreferencesToLocalStorage();
