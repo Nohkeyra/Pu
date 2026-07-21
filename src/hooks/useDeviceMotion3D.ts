@@ -19,7 +19,7 @@ export function useDeviceMotion3D(maxRotation = 20) {
     const requestPermsAndSetup = async () => {
       try {
         if (!Capacitor.isNativePlatform()) {
-          if (typeof (window as unknown as { DeviceMotionEvent: unknown }).DeviceMotionEvent !== 'undefined' && typeof (window as unknown as { DeviceMotionEvent: unknown }).DeviceMotionEvent.requestPermission === 'function') {
+          if (typeof (window as { DeviceMotionEvent?: { requestPermission?: () => void } }).DeviceMotionEvent !== 'undefined' && typeof (window as { DeviceMotionEvent?: { requestPermission?: () => void } }).DeviceMotionEvent?.requestPermission === 'function') {
             try {
               const perm = await (DeviceMotionEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission();
               if (perm !== 'granted') {
@@ -75,7 +75,7 @@ export function useDeviceMotion3D(maxRotation = 20) {
         if (typeof listenerHandle.remove === 'function') {
           listenerHandle.remove();
         } else if (typeof (listenerHandle as { removeListener?: () => void }).removeListener === 'function') {
-           (listenerHandle as { removeListener?: () => void }).removeListener();
+           (listenerHandle as { removeListener?: () => void }).removeListener!();
         }
       }
     };

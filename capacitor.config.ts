@@ -4,10 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.wawasanpakusop.app',
   appName: 'Wawasan Pak Usop',
   webDir: 'dist',
-  exclude: [
-    'server.cjs',
-    'server.cjs.map', 'server.cjs'
-  ],
+  exclude: ['server.cjs', 'server.cjs.map'],
   plugins: {
     StatusBar: {
       overlaysWebView: true,

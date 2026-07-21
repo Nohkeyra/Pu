@@ -23,8 +23,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-popover', 'lucide-react', 'motion/react'],
+          framework: ['react', 'react-dom', 'react-router-dom', '@radix-ui/react-dialog', '@radix-ui/react-popover', 'lucide-react', 'motion/react'],
           firebase: ['firebase/app', 'firebase/firestore', 'firebase/auth'],
           pdf: ['jspdf', 'jspdf-autotable']
         }

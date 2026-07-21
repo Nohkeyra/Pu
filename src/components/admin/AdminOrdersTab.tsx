@@ -3,6 +3,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -76,7 +77,7 @@ export function AdminOrdersTab({
   authHeaders: () => HeadersInit;
   getApiUrl: (path: string) => string;
   fetchOrders: () => void;
-  toast: (opts: { title: string; description?: string; variant?: string }) => void;
+  toast: (opts: { title: string; description?: string; variant?: ToastVariant }) => void;
   setIsApproving: (v: boolean) => void;
 }) {
   return (
