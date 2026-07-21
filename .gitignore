@@ -33,3 +33,9 @@ android/app/src/main/assets/capacitor.plugins.json
 .env
 .env.local
 .env.*.local
+
+.env
+node_modules/
+*.session
+*.txt
+*_chunk.js
