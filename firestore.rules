@@ -61,15 +61,17 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt &&
         
         // Status must belong to allowed states
-        request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected'] &&
+        request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected', 'cancel_requested', 'completed'] &&
         
         // Status state transitions machine
         (
-          (resource.data.status == 'pending' && request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected']) ||
-          (resource.data.status == 'approved' && request.resource.data.status in ['approved', 'billed', 'cancelled', 'rejected']) ||
-          (resource.data.status == 'billed' && request.resource.data.status == 'billed') ||
+          (resource.data.status == 'pending' && request.resource.data.status in ['pending', 'approved', 'billed', 'cancelled', 'rejected', 'cancel_requested']) ||
+          (resource.data.status == 'approved' && request.resource.data.status in ['approved', 'billed', 'cancelled', 'rejected', 'cancel_requested']) ||
+          (resource.data.status == 'billed' && request.resource.data.status in ['billed', 'completed', 'cancel_requested']) ||
+          (resource.data.status == 'cancel_requested' && request.resource.data.status in ['cancel_requested', 'cancelled', 'approved', 'pending']) ||
           (resource.data.status == 'cancelled' && request.resource.data.status == 'cancelled') ||
-          (resource.data.status == 'rejected' && request.resource.data.status == 'rejected')
+          (resource.data.status == 'rejected' && request.resource.data.status == 'rejected') ||
+          (resource.data.status == 'completed' && request.resource.data.status == 'completed')
         ) &&
         
         // Prices Map validation: if approved or billed, prices must not be empty and must equal meals list size

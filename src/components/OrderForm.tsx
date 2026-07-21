@@ -40,7 +40,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
-import { triggerNotification, NotificationType } from '@/lib/haptics';
+import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
 import type { SavedLocation } from '@/types';
 
 // TYPES
@@ -309,7 +309,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   // HANDLERS FOR FIELD UPDATES
-  const handleToggleDish = (dish: typeof LAUK_UTAMA[number]) => {
+  const handleToggleDish = async (dish: typeof LAUK_UTAMA[number]) => {
+    await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.dishes.some(d => d.id === dish.id);
       if (exists) {
@@ -320,7 +321,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
-  const handleToggleVeggie = (veg: typeof SAYURAN[number]) => {
+  const handleToggleVeggie = async (veg: typeof SAYURAN[number]) => {
+    await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.veggies.some(v => v.id === veg.id);
       if (exists) {
@@ -331,7 +333,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
-  const adjustGuests = (delta: number) => {
+  const adjustGuests = async (delta: number) => {
+    await triggerLightImpact();
     setOrderState(prev => {
       let g = prev.guests + delta;
       if (g < 1) g = 1; // Min 1 pax as requested
@@ -340,7 +343,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
-  const handleToggleMeal = (id: 'sarapan' | 'tengahari' | 'hitea') => {
+  const handleToggleMeal = async (id: 'sarapan' | 'tengahari' | 'hitea') => {
+    await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.mealTypes.includes(id);
       if (exists) {
@@ -351,7 +355,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
-  const handleStepNext = (step: number) => {
+  const handleStepNext = async (step: number) => {
+    await triggerLightImpact();
     const triggerWarning = () => triggerNotification(NotificationType.Warning);
 
     if (step === 1) {
@@ -1114,7 +1119,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* Buttons Navigation */}
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => setCurrentStep(1)}
+                    onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
                     variant="outline"
                     className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
                   >
@@ -1375,7 +1380,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* Buttons Navigation */}
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => setCurrentStep(2)}
+                    onClick={async () => { await triggerLightImpact(); setCurrentStep(2); }}
                     variant="outline"
                     className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
                   >
@@ -1550,7 +1555,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* Submitting Actions */}
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => setCurrentStep(3)}
+                    onClick={async () => { await triggerLightImpact(); setCurrentStep(3); }}
                     disabled={isSubmitting}
                     variant="outline"
                     className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
@@ -1706,7 +1711,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           <div className="bg-card border-t border-stone/10 p-3 pb-6 flex justify-around items-center select-none">
             <button
               type="button"
-              onClick={() => setCurrentStep(1)}
+              onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
               className={cn(
                 "flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold px-4 py-1.5 rounded-xl transition-all",
                 currentStep < 5 ? "text-crisp-carrot bg-crisp-carrot/15" : "text-stone"

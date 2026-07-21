@@ -13,6 +13,7 @@ import AuthModal from '@/components/AuthModal';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { motion } from 'motion/react';
+import { triggerLightImpact } from '@/lib/haptics';
 
 function BrandMark() {
   return (
@@ -72,7 +73,7 @@ export default function OrderPage() {
 
         <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border shadow-sm pt-[var(--sat)]">
           <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
-            <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer">
+            <div onClick={async () => { await triggerLightImpact(); navigate('/home', { replace: true }); }} className="flex items-center gap-3 group cursor-pointer">
               <BrandMark />
               <div>
                 <span className="font-display font-semibold text-xl text-deep-forest leading-none tracking-tight">
@@ -86,7 +87,7 @@ export default function OrderPage() {
             
             <div className="flex items-center gap-2">
               <button 
-                onClick={toggleTheme} 
+                onClick={async () => { await triggerLightImpact(); toggleTheme(); }} 
                 className="p-2 md:p-3 rounded-full hover:bg-black/5 transition-colors"
                 aria-label="Toggle theme"
               >
@@ -98,7 +99,8 @@ export default function OrderPage() {
               </button>
 
               <button
-                onClick={() => {
+                onClick={async () => {
+                  await triggerLightImpact();
                   if (currentUser) {
                     setProfileDashboardOpen(true);
                   } else {
@@ -111,7 +113,7 @@ export default function OrderPage() {
                 <UserIcon className="w-5 h-5" />
               </button>
 
-              <Button variant="ghost" onClick={() => navigate('/home', { replace: true })} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
+              <Button variant="ghost" onClick={async () => { await triggerLightImpact(); navigate('/home', { replace: true }); }} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('back')}
               </Button>

@@ -32,15 +32,13 @@ export default function HeroSection() {
           alt="Elegant Batik Pattern Background"
           style={{ y, scale: 1.05 }}
           fetchPriority="high"
-          className="w-full h-full object-cover object-center filter opacity-45 dark:opacity-35 transition-all duration-700 ease-in-out"
+          className="w-full h-full object-cover object-center filter opacity-50 dark:opacity-40 transition-all duration-700 ease-in-out [mask-image:linear-gradient(to_bottom,black_40%,transparent_95%)]"
           referrerPolicy="no-referrer"
         />
-        {/* Warm Overlay & Contrast Protection */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-black/60 z-0" />
-        {/* Deep, seamless bottom fade-out to page background */}
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-cream to-transparent z-10 pointer-events-none" />
-        {/* Geometric Star Pattern Overlay */}
-        <div className="absolute inset-0 pattern-dots opacity-25" />
+        {/* Warm Overlay & Contrast Protection - Seamless fade to section bottom */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-cream dark:to-cream z-0" />
+        {/* Geometric Star Pattern Overlay with smooth bottom mask */}
+        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_90%)]" />
       </div>
 
       {/* Decorative ambient radial glows */}

@@ -23,6 +23,7 @@
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/motion": "^8.0.1",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.1",
@@ -119,8 +120,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4"
   },
-  "description": "A highly interactive and professional web and mobile application designed for **Restoran Wawasan Pak Usop**. It is built using **React, TypeScript, Vite, Tailwind CSS, and Capacitor** to deliver a premium responsive experience that can be built directly into an Android APK, backed by a robust and resilient Express backend.",
-  "main": "eslint.config.js",
+  "description": "A highly interactive and professional web and mobile application designed for Restoran Wawasan Pak Usop. It is built using React, TypeScript, Vite, Tailwind CSS, and Capacitor to deliver a premium responsive experience that can be built directly into an Android APK, backed by a robust and resilient Express backend.",
   "keywords": [],
   "author": "",
   "license": "ISC"

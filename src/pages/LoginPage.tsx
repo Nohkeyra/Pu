@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '@/firebaseConfig';
 import AuthModal from '@/components/AuthModal';
+import CinematicLogo from '@/components/CinematicLogo';
 import { getAssetUrl } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -78,32 +79,7 @@ export default function LoginPage() {
             transition={{ duration: 0.5, ease: 'easeInOut' }}
             className="relative z-10 flex flex-col items-center justify-center px-6 text-center"
           >
-            {/* Pulsing glow ring behind the logo */}
-            <div className="relative flex items-center justify-center">
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: [1, 1.25, 1], opacity: [0.12, 0.25, 0.12] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                className="absolute w-64 h-64 bg-sunshine/10 rounded-full blur-xl"
-              />
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0, rotate: -15 }}
-                animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                transition={{ 
-                  type: 'spring',
-                  stiffness: 110,
-                  damping: 14,
-                  delay: 0.15
-                }}
-                className="w-56 h-56 flex items-center justify-center z-10"
-              >
-                <img 
-                  src={getAssetUrl('/assets/wawasan_logo.jpg')} 
-                  alt="Logo" 
-                  className="w-full h-full object-contain mix-blend-multiply"
-                />
-              </motion.div>
-            </div>
+            <CinematicLogo sizeClassName="w-56 h-56" />
 
             <motion.h1 
               initial={{ opacity: 0, y: 10 }}
@@ -133,18 +109,7 @@ export default function LoginPage() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="relative z-10 w-full max-w-md px-6 flex flex-col items-center"
           >
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 14 }}
-              className="w-56 h-56 mb-4 flex items-center justify-center"
-            >
-              <img 
-                src={getAssetUrl('/assets/wawasan_logo.jpg')} 
-                alt="Logo" 
-                className="w-full h-full object-contain mix-blend-multiply"
-              />
-            </motion.div>
+            <CinematicLogo sizeClassName="w-56 h-56 mb-4" />
             
             <motion.h1 
               initial={{ opacity: 0, y: 10 }}

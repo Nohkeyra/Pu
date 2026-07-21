@@ -7,9 +7,6 @@ export default defineConfig({
   base: '/',
   plugins: [react()],
   publicDir: 'public',
-  define: {
-    __BUILD_TIMESTAMP__: JSON.stringify(Date.now().toString()),
-  },
   server: {
     port: 3000,
   },

@@ -5,8 +5,7 @@ import fs from "fs";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import cors from "cors";
-import * as admin from "firebase-admin"; // Changed to namespace import for better compatibility
-import { cert, App } from "firebase-admin/app";
+import { cert, App, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore as getFirestoreModular, Timestamp, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAuth } from "firebase-admin/auth";
@@ -52,7 +51,7 @@ const STRICT_FIREBASE_ADMIN = process.env.STRICT_FIREBASE_ADMIN !== "false";
 let adminApp: App | null = null;
 function getAdminApp() {
   if (!adminApp) {
-    const apps = admin.apps || [];
+    const apps = getApps();
     if (apps.length === 0) {
       const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
@@ -63,7 +62,7 @@ function getAdminApp() {
         // Render has no Application Default Credentials (that's a GCP-only
         // mechanism), so Firebase Admin must be given an explicit service
         // account credential or every Firestore call silently fails auth.
-        adminApp = admin.initializeApp({
+        adminApp = initializeApp({
           credential: cert({
             projectId: firebaseConfig.projectId,
             clientEmail: email,
@@ -79,7 +78,7 @@ function getAdminApp() {
           throw new Error(msg);
         }
         console.warn(msg + " Continuing with Application Default Credentials (not recommended on Render).");
-        adminApp = admin.initializeApp({ projectId: firebaseConfig.projectId });
+        adminApp = initializeApp({ projectId: firebaseConfig.projectId });
       }
     } else {
       adminApp = apps[0]!;
@@ -730,7 +729,7 @@ async function syncGoogleCalendarEvent(orderId: string, passedOrderData?: OrderD
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Middleware
   app.use(cors());
@@ -1905,7 +1904,7 @@ async function startServer() {
                 ${orderDetails.notes ? `
                   <div class="notes-box">
                     <div class="notes-title">${lang === 'bm' ? 'PERMINTAAN KHAS / NOTA' : 'SPECIAL REQUESTS / NOTES'}</div>
-                    <div class="notes-content">${escapeHtml(orderDetails.notes).replace(/\n/g, '<br>')}</div>
+                    <div class="notes-content">${escapeHtml(orderDetails.notes).replace(/\\n/g, '<br>')}</div>
                   </div>
                 ` : ''}
 

@@ -261,8 +261,9 @@ export default function SettingsPage() {
                 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <a 
-                    href={getAssetUrl('/app-release.apk')} 
-                    download="restoran-wawasan.apk"
+                    href="https://github.com/Nohkeyra/Pu/releases/download/7/restoran-wawasan.apk"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={async () => {
                       await triggerLightImpact();
                     }}

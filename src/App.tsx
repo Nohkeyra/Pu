@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { motion } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -194,8 +195,12 @@ function App() {
     preloadLogoForPDF().catch(err => console.warn('Logo preloading failed:', err));
 
     const hideSplash = async () => {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      await SplashScreen.hide();
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      try {
+        await SplashScreen.hide();
+      } catch {
+        // Not running in a Capacitor container (plain web browser) — silently skip
+      }
       setIsAppLoading(false);
     };
 
@@ -276,7 +281,14 @@ function App() {
                 <PushNotificationHandler />
                 <NativeBackButtonHandler />
                 <NativeAppListeners />
-                <AppContent />
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.8 }}
+                  className="flex-grow flex flex-col w-full h-full"
+                >
+                  <AppContent />
+                </motion.div>
               </Router>
             </ToastProvider>
           </TooltipProvider>
