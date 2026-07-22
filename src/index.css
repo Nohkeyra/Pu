@@ -158,7 +158,11 @@
   
   body {
     @apply bg-cream text-deep-forest antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at top, rgba(253, 94, 2, 0.08), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.28), transparent 18%);
+    background-attachment: fixed;
+    line-height: 1.5;
   }
 
   #root {
@@ -169,6 +173,7 @@
     font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
     font-weight: 600;
     letter-spacing: -0.03em;
+    text-wrap: balance;
   }
   
   html {
@@ -355,6 +360,102 @@
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .topbar-shell {
+    background-color: rgba(252, 245, 227, 0.88);
+    border-bottom: 1px solid rgba(2, 51, 65, 0.08);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 30px rgba(2, 51, 65, 0.06);
+  }
+  .dark .topbar-shell {
+    background-color: rgba(18, 18, 20, 0.88);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .panel-surface {
+    background-color: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(2, 51, 65, 0.08);
+    border-radius: 28px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 18px 40px rgba(2, 51, 65, 0.08);
+  }
+  .dark .panel-surface {
+    background-color: rgba(27, 27, 30, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .subtle-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(253, 94, 2, 0.15);
+    background: rgba(255, 255, 255, 0.7);
+    padding: 0.375rem 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(2, 51, 65, 0.7);
+  }
+  .dark .subtle-chip {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .brand-title {
+    @apply font-display font-semibold tracking-tight text-deep-forest dark:text-white;
+  }
+
+  .brand-subtitle {
+    @apply font-accent text-[10px] font-bold uppercase tracking-[0.18em] text-crisp-carrot;
+  }
+
+  .icon-button-soft {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    border: 1px solid rgba(2, 51, 65, 0.1);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--color-deep-forest);
+    box-shadow: 0 2px 10px rgba(2, 51, 65, 0.06);
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+  .dark .icon-button-soft {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+  .icon-button-soft:hover {
+    transform: translateY(-2px);
+    border-color: rgba(253, 94, 2, 0.35);
+    color: var(--color-sunshine);
+    box-shadow: 0 10px 24px rgba(253, 94, 2, 0.14);
+  }
+  .icon-button-soft:active {
+    transform: scale(0.98);
+  }
+
+  .nav-pill {
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(2, 51, 65, 0.7);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  .dark .nav-pill {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .nav-pill:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--color-deep-forest);
+  }
+  .dark .nav-pill:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
   }
 }
 

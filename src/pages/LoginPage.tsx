@@ -15,55 +15,42 @@ export default function LoginPage() {
   const [showSplash, setShowSplash] = useState(true);
   const { language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  
+
   const tLocal = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
   useEffect(() => {
-    // Keep splash animation visible for 2 seconds for a premium native feel
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000);
+    }, 1800);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center bg-cream overflow-hidden">
-      {/* Top Header Wrapper for Equal Alignment across all pages */}
-      <header className="absolute top-0 left-0 right-0 z-50 bg-transparent pt-[var(--sat)]">
-        <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
-          {/* Top Left Theme Toggle */}
-          <button 
-            onClick={toggleTheme} 
-            className="w-11 h-11 bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center hover:bg-white/60 dark:hover:bg-black/40 transition-all duration-300 text-deep-forest hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cream px-6 py-10 dark:bg-background">
+      <header className="absolute left-0 right-0 top-0 z-50 pt-[var(--sat)]">
+        <div className="content-container flex h-[76px] items-center justify-between">
+          <button
+            onClick={toggleTheme}
+            className="icon-button-soft h-11 w-11"
             aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
           >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5 text-deep-forest animate-float" />
-            ) : (
-              <Sun className="w-5 h-5 text-sunshine animate-pulse" />
-            )}
+            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-sunshine" />}
           </button>
 
-          {/* Top Right Admin Access */}
           <button
             onClick={() => navigate('/admin')}
-            className="w-11 h-11 bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center hover:bg-white/60 dark:hover:bg-black/40 transition-all duration-300 text-deep-forest/20 hover:text-deep-forest hover:scale-105 active:scale-95 cursor-pointer shadow-sm group"
+            className="icon-button-soft h-11 w-11 text-deep-forest/50 hover:text-sunshine"
             aria-label="Admin Access"
             id="admin-secret-trigger"
           >
-            <Shield className="w-5 h-5 transition-colors group-hover:text-sunshine" />
+            <Shield className="h-5 w-5" />
           </button>
         </div>
       </header>
 
-      {/* Background Image with 3D motion effect */}
       <div className="absolute inset-0">
-        <Batik3DMotion
-          mode="img"
-          imgClassName="opacity-30 dark:opacity-20"
-          maxRotation={16}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-cream via-cream/80 to-transparent pointer-events-none" />
+        <Batik3DMotion mode="img" imgClassName="opacity-24 dark:opacity-16" maxRotation={12} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(252,245,227,0.96),rgba(252,245,227,0.72),rgba(252,245,227,0.4))] dark:bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(18,18,20,0.96),rgba(18,18,20,0.76),rgba(18,18,20,0.48))]" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -72,115 +59,114 @@ export default function LoginPage() {
             key="splash"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -25, scale: 0.95 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="relative z-10 flex flex-col items-center justify-center px-6 text-center"
+            exit={{ opacity: 0, y: -18, scale: 0.98 }}
+            transition={{ duration: 0.45, ease: 'easeInOut' }}
+            className="relative z-10 flex flex-col items-center justify-center text-center"
           >
-            <CinematicLogo sizeClassName="w-56 h-56" />
+            <CinematicLogo sizeClassName="h-52 w-52" />
 
-            <motion.h1 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="font-display font-black text-deep-forest mt-6 tracking-tight flex flex-col items-center"
+              transition={{ delay: 0.3, duration: 0.45 }}
+              className="mt-6"
             >
-              <span className="font-graffiti text-2xl text-crisp-carrot leading-none mt-1 rotate-[-1.5deg]">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-deep-forest dark:text-white">
+                Restoran Wawasan
+              </h1>
+              <p className="mt-1 font-accent text-xs font-bold uppercase tracking-[0.28em] text-crisp-carrot">
                 Pak Usop
-              </span>
-            </motion.h1>
+              </p>
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0.35, 0.8, 0.35] }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut", delay: 0.8 }}
-              className="mt-8 text-sunshine font-accent text-xs uppercase tracking-[0.3em] font-semibold"
+              animate={{ opacity: [0.3, 0.82, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut', delay: 0.65 }}
+              className="mt-6 text-xs font-semibold uppercase tracking-[0.26em] text-sunshine"
             >
-              {tLocal('Loading authentic flavors...', 'Memuatkan cita rasa asli...')}
+              {tLocal('Loading authentic flavors', 'Memuatkan cita rasa asli')}
             </motion.div>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="login-content"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.97, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-md px-6 flex flex-col items-center"
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="relative z-10 w-full max-w-md"
           >
-            <CinematicLogo sizeClassName="w-56 h-56 mb-4" />
-            
-            <motion.h1 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="font-display font-black text-deep-forest text-center mb-1 tracking-tight flex flex-col items-center"
-            >
-              <span className="font-graffiti text-2xl sm:text-3xl text-crisp-carrot leading-none mt-1 rotate-[-1.5deg]">
-                Pak Usop
-              </span>
-            </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="text-sunshine font-accent text-xs sm:text-sm uppercase tracking-[0.25em] font-bold mb-8"
-            >
-              Catering Services
-            </motion.p>
+            <div className="panel-surface overflow-hidden px-6 py-8 sm:px-8 sm:py-10">
+              <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
-            <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="w-full space-y-3.5 font-display"
-            >
-              <button 
-                onClick={() => {
-                  if (auth.currentUser) {
-                    sessionStorage.setItem('wawasan_session_started', 'true');
-                    navigate('/home');
-                  } else {
-                    setAuthOpen(true);
-                  }
-                }}
-                className="w-full py-4.5 bg-sunshine text-white rounded-2xl font-black text-lg shadow-sunshine-glow hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer duration-500 hover:scale-[1.02] hover:shadow-xl"
-              >
-                <LogIn className="w-5 h-5" />
-                {tLocal('Sign In / Register', 'Log Masuk / Daftar')}
-              </button>
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <CinematicLogo sizeClassName="mb-3 h-40 w-40 sm:h-44 sm:w-44" />
 
-              <button 
-                onClick={() => {
-                  sessionStorage.setItem('wawasan_session_started', 'true');
-                  sessionStorage.setItem('wawasan_guest_allowed', 'true');
-                  navigate('/order');
-                }}
-                className="w-full py-4.5 bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-sunshine/10 rounded-2xl text-deep-forest font-bold text-lg hover:bg-white dark:hover:bg-white/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer duration-500 hover:scale-[1.02] hover:shadow-premium hover:border-sunshine/30 shadow-sm"
-              >
-                <ShoppingBag className="w-5 h-5 text-sunshine" />
-                {tLocal('Order Now (Guest)', 'Pesan Sekarang (Pelawat)')}
-              </button>
-              
-              <button 
-                onClick={() => {
-                  sessionStorage.setItem('wawasan_session_started', 'true');
-                  sessionStorage.setItem('wawasan_guest_allowed', 'true');
-                  navigate('/home', { replace: true });
-                }}
-                className="w-full py-4 bg-transparent rounded-2xl text-deep-forest/40 font-bold text-base hover:text-deep-forest hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer duration-300"
-              >
-                <Compass className="w-5 h-5 opacity-40 group-hover:opacity-100" />
-                {tLocal('Explore Menu & Story', 'Teroka Menu & Cerita')}
-              </button>
-            </motion.div>
+                <div className="mb-6 space-y-2">
+                  <div className="subtle-chip">Since 1986</div>
+                  <h1 className="font-display text-3xl font-bold tracking-tight text-deep-forest dark:text-white">
+                    Restoran Wawasan
+                  </h1>
+                  <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-crisp-carrot">
+                    Pak Usop
+                  </p>
+                  <p className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/68 dark:text-white/72">
+                    {tLocal(
+                      'Catering, signature dishes, and a smoother ordering flow in one place.',
+                      'Katering, hidangan istimewa, dan aliran tempahan yang lebih kemas dalam satu aplikasi.'
+                    )}
+                  </p>
+                </div>
 
+                <div className="w-full space-y-3">
+                  <button
+                    onClick={() => {
+                      if (auth.currentUser) {
+                        sessionStorage.setItem('wawasan_session_started', 'true');
+                        navigate('/home');
+                      } else {
+                        setAuthOpen(true);
+                      }
+                    }}
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-sunshine px-5 py-4 text-base font-semibold text-white shadow-sunshine-glow transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.99]"
+                  >
+                    <LogIn className="h-5 w-5" />
+                    {tLocal('Sign In / Register', 'Log Masuk / Daftar')}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('wawasan_session_started', 'true');
+                      sessionStorage.setItem('wawasan_guest_allowed', 'true');
+                      navigate('/order');
+                    }}
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl border border-deep-forest/10 bg-white/80 px-5 py-4 text-base font-semibold text-deep-forest shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-sunshine/25 hover:bg-white active:scale-[0.99] dark:border-white/10 dark:bg-white/6 dark:text-white dark:hover:bg-white/10"
+                  >
+                    <ShoppingBag className="h-5 w-5 text-sunshine" />
+                    {tLocal('Order as Guest', 'Pesan Sebagai Tetamu')}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      sessionStorage.setItem('wawasan_session_started', 'true');
+                      sessionStorage.setItem('wawasan_guest_allowed', 'true');
+                      navigate('/home', { replace: true });
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-deep-forest/70 transition-all duration-300 hover:bg-deep-forest/[0.04] hover:text-deep-forest active:scale-[0.99] dark:text-white/70 dark:hover:bg-white/6 dark:hover:text-white"
+                  >
+                    <Compass className="h-4.5 w-4.5 text-sunshine" />
+                    {tLocal('Explore menu & story', 'Teroka menu & cerita')}
+                  </button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <AuthModal 
-        isOpen={authOpen} 
-        onClose={() => setAuthOpen(false)} 
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
         onSuccess={() => {
           sessionStorage.setItem('wawasan_session_started', 'true');
           navigate('/home', { replace: true });

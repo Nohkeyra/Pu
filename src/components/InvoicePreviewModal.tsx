@@ -46,6 +46,9 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   return (
     <AnimatePresence>
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={language === 'bm' ? 'Pratonton Invois' : 'Invoice Preview'}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -68,7 +71,8 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               <TooltipTrigger asChild>
                 <button
                   onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label={language === 'bm' ? 'Tutup pratonton invois' : 'Close invoice preview'}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -164,7 +168,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           <div className="p-4 bg-white border-t border-gray-100 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
             >
               {language === 'bm' ? 'Tutup' : 'Close'}
             </button>
@@ -173,10 +177,10 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 onDownload();
                 onClose();
               }}
-              className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-200 transition-colors"
+              className="flex-[2] flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               {Capacitor.isNativePlatform() ? <Share2 className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-              {language === 'bm' 
+              {language === 'bm'
                 ? (Capacitor.isNativePlatform() ? 'Kongsi PDF' : 'Muat Turun PDF')
                 : (Capacitor.isNativePlatform() ? 'Share PDF' : 'Download PDF')}
             </button>

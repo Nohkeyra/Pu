@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { Shield, ArrowRight, User as UserIcon } from 'lucide-react';
 import type { User } from 'firebase/auth';
+import { getAssetUrl } from '@/lib/utils';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -24,23 +25,24 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
 
   useEffect(() => {
     if (!overlayRef.current || !itemsRef.current) return;
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       gsap.to(overlayRef.current, {
         opacity: 1,
-        duration: 0.3,
+        duration: 0.25,
         ease: 'power2.out',
         pointerEvents: 'auto',
       });
       gsap.fromTo(
         itemsRef.current.children,
-        { x: 40, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: 'power2.out', delay: 0.1 }
+        { x: 28, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.32, stagger: 0.04, ease: 'power2.out', delay: 0.04 }
       );
     } else {
       gsap.to(overlayRef.current, {
         opacity: 0,
-        duration: 0.2,
+        duration: 0.18,
         ease: 'power2.in',
         pointerEvents: 'none',
       });
@@ -56,100 +58,104 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[1100] opacity-0 pointer-events-none md:hidden transition-colors duration-300"
-      style={{ backgroundColor: 'var(--color-cream)' }}
+      className="fixed inset-0 z-[1100] opacity-0 pointer-events-none md:hidden"
+      style={{ background: 'rgba(252,245,227,0.86)' }}
     >
-      <div className="absolute inset-0 backdrop-blur-xl" />
-      
-      <div className="relative h-full flex flex-col p-6 pt-20">
+      <div className="absolute inset-0 backdrop-blur-2xl" />
+
+      <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 w-10 h-10 rounded-full bg-deep-forest/10 flex items-center justify-center text-deep-forest"
+          className="icon-button-soft absolute right-6 top-[calc(1rem+var(--sat))] h-10 w-10"
+          aria-label="Close menu"
         >
           ✕
         </button>
 
-        <nav ref={itemsRef} className="flex-1 flex flex-col gap-1 overflow-y-auto pb-8">
-          <Link
-            to={currentUser ? "/home" : "/"}
-            onClick={onClose}
-            className="flex flex-col justify-center mb-6 cursor-pointer group"
-          >
-            <span className="font-urban text-2xl text-deep-forest group-hover:text-sunshine transition-colors leading-none tracking-wide">
-              Restoran Wawasan
-            </span>
-            <span className="block font-graffiti text-lg text-crisp-carrot leading-none mt-1 ml-0.5">
-              Pak Usop
-            </span>
+        <nav ref={itemsRef} className="flex flex-1 flex-col overflow-y-auto pb-6 pt-12">
+          <Link to={currentUser ? '/home' : '/'} onClick={onClose} className="mb-8 flex items-center gap-3">
+            <img
+              src={getAssetUrl('/assets/wawasan_logo.jpg')}
+              alt="Restoran Wawasan Logo"
+              className="h-12 w-12 rounded-2xl object-contain bg-white/80 p-1 shadow-sm ring-1 ring-black/5"
+              referrerPolicy="no-referrer"
+            />
+            <div>
+              <span className="brand-title block text-xl">Restoran Wawasan</span>
+              <span className="brand-subtitle block mt-0.5">Pak Usop</span>
+            </div>
           </Link>
 
-          {links.map((link) => {
-            if (link.isButton) {
+          <div className="space-y-1">
+            {links.map((link) => {
+              if (link.isButton) {
+                return (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    onClick={onClose}
+                    className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-sunshine px-6 py-3 font-semibold text-white shadow-sunshine-glow transition-all duration-300 hover:brightness-105"
+                  >
+                    {t(link.label as Parameters<typeof t>[0])}
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                );
+              }
+
               return (
-                <Link
+                <a
                   key={link.href}
-                  to={link.href}
+                  href={link.href}
                   onClick={onClose}
-                  className="mt-4 mb-2 w-full min-h-[52px] inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-sunshine to-crisp-carrot text-white font-bold rounded-full hover:shadow-sunshine-glow hover:scale-[1.02] transition-all duration-300 shadow-lg"
+                  className="flex items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-lg font-semibold text-deep-forest transition-all duration-300 hover:border-sunshine/15 hover:bg-white/70 hover:text-crisp-carrot"
                 >
-                  {t(link.label as Parameters<typeof t>[0])}
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
+                  <span>{t(link.label as Parameters<typeof t>[0]) || link.label}</span>
+                  <ArrowRight className="h-4 w-4 text-sunshine/80" />
+                </a>
               );
-            }
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={onClose}
-                className="text-3xl font-display font-bold text-deep-forest py-3 border-b border-deep-forest/10 hover:text-sunshine transition-colors"
-              >
-                {t(link.label as Parameters<typeof t>[0]) || link.label}
-              </a>
-            );
-          })}
+            })}
+          </div>
 
-          {/* User Account Login */}
-          <button
-            onClick={handleAuth}
-            className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 border border-deep-forest/20 text-deep-forest rounded-full hover:bg-deep-forest/5 transition-all text-sm font-medium"
-          >
-            {currentUser ? (
-              <>
-                <div className="w-6 h-6 rounded-full bg-crisp-carrot text-white flex items-center justify-center font-bold text-[10px]">
-                  {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
-                </div>
-                <span>Account / Dashboard</span>
-              </>
-            ) : (
-              <>
-                <UserIcon className="w-4 h-4 text-sunshine" />
-                <span>Member Sign In</span>
-              </>
-            )}
-          </button>
+          <div className="mt-8 space-y-3">
+            <button
+              onClick={handleAuth}
+              className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-deep-forest dark:text-white"
+            >
+              {currentUser ? (
+                <>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-crisp-carrot text-[10px] font-black text-white">
+                    {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
+                  </div>
+                  <span>Account / Dashboard</span>
+                </>
+              ) : (
+                <>
+                  <UserIcon className="h-4 w-4 text-sunshine" />
+                  <span>Member Sign In</span>
+                </>
+              )}
+            </button>
 
-          {/* Language Toggle */}
-          <button
-            onClick={toggleLanguage}
-            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 border border-deep-forest/20 text-deep-forest rounded-full hover:bg-deep-forest/5 transition-all text-sm font-bold bg-black/[0.02]"
-          >
-            <span className="tracking-wider">
-              <span className={language === 'en' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/50'}>EN</span>
-              <span className="text-deep-forest/30 mx-1.5">/</span>
-              <span className={language === 'bm' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/50'}>BM</span>
-            </span>
-          </button>
+            <button
+              onClick={toggleLanguage}
+              className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-deep-forest dark:text-white"
+            >
+              <span className="tracking-wider">
+                <span className={language === 'en' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/45 dark:text-white/45'}>EN</span>
+                <span className="mx-1.5 text-deep-forest/25 dark:text-white/25">/</span>
+                <span className={language === 'bm' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/45 dark:text-white/45'}>BM</span>
+              </span>
+            </button>
 
-          {/* Admin Link */}
-          <Link
-            to="/admin"
-            onClick={onClose}
-            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 border border-deep-forest/10 text-deep-forest/70 rounded-full hover:bg-deep-forest/5 transition-all text-sm"
-          >
-            <Shield className="w-4 h-4 text-sunshine" />
-            <span>{t('admin_login')}</span>
-          </Link>
+            <Link
+              to="/admin"
+              onClick={onClose}
+              className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-deep-forest/75 dark:text-white/75"
+            >
+              <Shield className="h-4 w-4 text-sunshine" />
+              <span>{t('admin_login')}</span>
+            </Link>
+          </div>
         </nav>
       </div>
     </div>

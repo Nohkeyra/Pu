@@ -85,8 +85,8 @@ module.exports = {
         display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'sans-serif'],
         body:    ['Inter', 'system-ui', 'sans-serif'],
         accent:  ['"Space Mono"', '"JetBrains Mono"', 'monospace'],
-        urban:   ['"Permanent Marker"', 'cursive', 'sans-serif'],
-        graffiti: ['"Sedgwick Ave Display"', 'cursive', 'sans-serif'],
+        urban:   ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+        graffiti: ['"Space Mono"', '"Plus Jakarta Sans"', 'sans-serif'],
         celtic:   ['"Uncial Antiqua"', 'cursive', 'serif'],
       },
       borderRadius: {

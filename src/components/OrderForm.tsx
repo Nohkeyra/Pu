@@ -465,7 +465,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
-    setIsSubmitting(false);
     setIsSubmitting(true);
 
     try {
@@ -759,44 +758,51 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
         {/* Progress Bar Indicator */}
         {currentStep <= 4 && (
-          <div className="px-6 pt-5 pb-2">
+          <div className="px-6 pt-5 pb-2" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
             <div className="flex items-center justify-between">
               {[
                 { s: 1, label: tText('Event', 'Jenis') },
                 { s: 2, label: tText('Menu', 'Menu') },
                 { s: 3, label: tText('Billing', 'Butiran') },
                 { s: 4, label: tText('Review', 'Semakan') }
-              ].map((item, idx) => (
-                <div key={item.s} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex flex-col items-center gap-1 relative z-10">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
-                      currentStep === item.s 
-                        ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp" 
-                        : currentStep > item.s 
-                          ? "bg-[#A8E10C] border-[#A8E10C] text-[#161618]" 
-                          : "bg-muted border-stone/20 text-stone"
-                    )}>
-                      {currentStep > item.s ? <Check className="w-4 h-4" /> : item.s}
+              ].map((item, idx) => {
+                const isCurrent = currentStep === item.s;
+                const isDone = currentStep > item.s;
+                return (
+                  <div key={item.s} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex flex-col items-center gap-1 relative z-10">
+                      <div
+                        aria-current={isCurrent ? 'step' : undefined}
+                        className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
+                          isCurrent
+                            ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp"
+                            : isDone
+                              ? "bg-[#A8E10C] border-[#A8E10C] text-[#161618]"
+                              : "bg-muted border-stone/20 text-stone"
+                        )}
+                      >
+                        {isDone ? <Check className="w-4 h-4" /> : item.s}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-semibold transition-colors duration-300",
+                        isCurrent ? "text-crisp-carrot font-bold" : "text-stone"
+                      )}>
+                        {item.label}
+                      </span>
                     </div>
-                    <span className={cn(
-                      "text-[10px] font-semibold transition-colors duration-300",
-                      currentStep === item.s ? "text-crisp-carrot font-bold" : "text-stone"
-                    )}>
-                      {item.label}
-                    </span>
+
+                    {idx < 3 && (
+                      <div className="flex-1 h-[2px] mx-2 bg-stone/10 relative -translate-y-2.5" aria-hidden="true">
+                        <div
+                          className="absolute inset-y-0 left-0 bg-[#A8E10C] transition-all duration-500"
+                          style={{ width: isDone ? '100%' : '0%' }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  
-                  {idx < 3 && (
-                    <div className="flex-1 h-[2px] mx-2 bg-stone/10 relative -translate-y-2.5">
-                      <div 
-                        className="absolute inset-y-0 left-0 bg-[#A8E10C] transition-all duration-500" 
-                        style={{ width: currentStep > item.s ? '100%' : '0%' }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -825,9 +831,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </div>
 
                 {/* Event Type option cards */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')}>
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={orderState.eventType === 'pejabat'}
                     onClick={() => setOrderState(prev => ({ ...prev, eventType: 'pejabat' }))}
                     className={cn(
                       "p-4 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-2 cursor-pointer relative",
@@ -848,6 +856,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={orderState.eventType === 'lain'}
                     onClick={() => setOrderState(prev => ({ ...prev, eventType: 'lain' }))}
                     className={cn(
                       "p-4 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-2 cursor-pointer relative",
@@ -873,7 +883,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     {tText('Meals For / Hidangan Untuk', 'Hidangan Untuk *')}
                   </Label>
                   
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-3" role="group" aria-label={tText('Meal type', 'Hidangan')}>
                     {[
                       { id: 'sarapan', label: () => tText('Breakfast', 'Sarapan'), time: '7AM - 10AM', icon: Coffee },
                       { id: 'tengahari', label: () => tText('Lunch', 'Makan Tengah Hari'), time: '12PM - 3PM', icon: Sun },
@@ -886,6 +896,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                         <button
                           key={m.id}
                           type="button"
+                          aria-pressed={isSelected}
                           onClick={() => handleToggleMeal(mealId)}
                           className={cn(
                             "p-3 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer relative",
@@ -912,26 +923,29 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 <div className="bg-muted border border-stone/10 p-5 rounded-2xl space-y-3">
                   <div className="flex justify-between items-center">
                     <div>
-                      <Label className="text-sm font-bold text-deep-forest">
+                      <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest">
                         {tText('Quantity', 'Kuantiti')}
                       </Label>
                       <span className="text-[10px] text-stone font-light block leading-none mt-1">
                         {tText('Minimum order: 1 pax.', 'Minima tempahan katering: 1 orang.')}
                       </span>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
+
+                    <div className="flex items-center gap-3" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
                       <button
                         type="button"
+                        aria-label={tText('Decrease quantity', 'Kurangkan kuantiti')}
                         onClick={() => adjustGuests(-1)}
                         className="w-10 h-10 rounded-xl bg-card border border-stone/15 flex items-center justify-center font-bold text-lg hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none"
                       >
                         –
                       </button>
                       <input
+                        id="guests-input"
                         type="number"
                         min="1"
                         max="5000"
+                        inputMode="numeric"
                         value={orderState.guests || ''}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10);
@@ -946,10 +960,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             guests: prev.guests < 1 ? 1 : prev.guests
                           }));
                         }}
+                        aria-label={tText('Number of guests', 'Bilangan tetamu')}
                         className="text-xl font-bold text-deep-forest w-20 text-center bg-card border border-stone/15 rounded-xl h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-crisp-carrot"
                       />
                       <button
                         type="button"
+                        aria-label={tText('Increase quantity', 'Tambah kuantiti')}
                         onClick={() => adjustGuests(1)}
                         className="w-10 h-10 rounded-xl bg-card border border-stone/15 flex items-center justify-center font-bold text-lg hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none"
                       >
@@ -1261,8 +1277,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   {/* Date & Time Inputs */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
+                      <Label htmlFor="event-date" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
                       <input
+                        id="event-date"
                         type="date"
                         value={orderState.date}
                         min={format(new Date(), 'yyyy-MM-dd')}
@@ -1271,8 +1288,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
+                      <Label htmlFor="event-time" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
                       <input
+                        id="event-time"
                         type="time"
                         value={orderState.time}
                         onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
@@ -1339,15 +1357,17 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   {/* Delivery vs Pickup Method Cards */}
                   <div className="space-y-2 pt-1">
                     <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Delivery Method', 'Kaedah Penghantaran')}</Label>
-                    
-                    <div className="grid grid-cols-2 gap-3">
+
+                    <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={orderState.delivery === 'delivery'}
                         onClick={() => setOrderState(prev => ({ ...prev, delivery: 'delivery' }))}
                         className={cn(
-                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer",
-                          orderState.delivery === 'delivery' 
-                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm" 
+                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
+                          orderState.delivery === 'delivery'
+                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
                             : "bg-muted border-stone/15 text-stone"
                         )}
                       >
@@ -1358,11 +1378,13 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={orderState.delivery === 'pickup'}
                         onClick={() => setOrderState(prev => ({ ...prev, delivery: 'pickup' }))}
                         className={cn(
-                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer",
-                          orderState.delivery === 'pickup' 
-                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm" 
+                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
+                          orderState.delivery === 'pickup'
+                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
                             : "bg-muted border-stone/15 text-stone"
                         )}
                       >
@@ -1653,11 +1675,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </div>
 
                 {/* Email Delivery relay receipt check */}
-                <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm">
+                <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm" aria-live="polite">
                   <span className="text-[10px] text-stone font-bold uppercase tracking-wider block">
                     {tText('INVOICE / RECEIPT STATUS', 'STATUS PENGHANTARAN INVOIS')}
                   </span>
-                  
+
                   <div className="space-y-1.5 text-xs text-stone">
                     <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
                       <span className="text-[#A8E10C]">✓</span>

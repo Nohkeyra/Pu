@@ -23,9 +23,9 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 function BrandMark() {
   return (
     <img
-      src={getAssetUrl("/assets/wawasan_logo.jpg")}
+      src={getAssetUrl('/assets/wawasan_logo.jpg')}
       alt="Restoran Wawasan Logo"
-      className="w-12 h-12 object-contain shrink-0 mix-blend-multiply"
+      className="h-11 w-11 rounded-2xl object-contain bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10"
       referrerPolicy="no-referrer"
     />
   );
@@ -68,156 +68,108 @@ export default function Header() {
     toggleTheme();
   };
 
+  const headerStateClass = isScrolled
+    ? 'topbar-shell pb-3 pt-[calc(0.7rem+var(--sat))]'
+    : 'bg-transparent pb-5 pt-[calc(1.15rem+var(--sat))]';
+
+  const desktopActionClass = isScrolled
+    ? 'icon-button-soft h-11 px-4'
+    : 'inline-flex h-11 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-4 text-white shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/16 active:scale-[0.98]';
+
+  const mobileActionClass = isScrolled
+    ? 'icon-button-soft h-10 w-10'
+    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-white/16 active:scale-[0.95]';
+
   return (
     <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-500 ${
-          isScrolled 
-            ? 'glass-header pb-3 pt-[calc(0.75rem+var(--sat))]' 
-            : 'bg-transparent pb-6 pt-[calc(1.5rem+var(--sat))]'
-        }`}
-      >
-        <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-4 md:gap-6 lg:gap-8">
-          <Link to={currentUser ? "/home" : "/"} className="flex items-center gap-3 group shrink-0">
+      <header className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
+        <div className="content-container flex items-center justify-between gap-4">
+          <Link to={currentUser ? '/home' : '/'} className="flex min-w-0 items-center gap-3">
             <BrandMark />
-            <div className="shrink-0 flex flex-col justify-center">
-              <span className={`font-urban text-lg md:text-xl leading-none tracking-wide transition-colors duration-300 ${
-                isScrolled ? 'text-deep-forest' : 'text-white'
-              }`}>
+            <div className="min-w-0">
+              <span className={`block truncate text-lg md:text-xl ${isScrolled ? 'brand-title' : 'font-display font-semibold tracking-tight text-white'}`}>
                 Restoran Wawasan
               </span>
-              <span className="block font-graffiti text-sm md:text-base text-crisp-carrot leading-none -mt-1 ml-0.5">
+              <span className={`block text-[10px] font-bold uppercase tracking-[0.18em] ${isScrolled ? 'text-crisp-carrot' : 'text-sunshine/95'}`}>
                 Pak Usop
               </span>
             </div>
           </Link>
- 
-          <nav className="hidden md:flex items-center gap-4 lg:gap-8 shrink-0">
-            {NAV_LINKS.map((link) => {
-              if (link.isButton) {
-                return (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sunshine to-crisp-carrot text-white rounded-full font-bold text-xs hover:shadow-xl transition-all duration-300 hover:shadow-sunshine-glow hover:-translate-y-0.5"
-                  >
-                    {t(link.label as Parameters<typeof t>[0])}
-                  </Link>
-                );
-              }
-              return (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-semibold transition-colors duration-300 ${
-                    isScrolled 
-                      ? 'text-deep-forest/80 hover:text-sunshine' 
-                      : 'text-white/90 hover:text-sunshine'
-                  }`}
-                >
-                  {t(link.label as Parameters<typeof t>[0]) || link.label.charAt(0).toUpperCase() + link.label.slice(1)}
-                </a>
-              );
-            })}
+
+          <nav className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={isScrolled ? 'nav-pill' : 'rounded-full px-4 py-2 text-sm font-semibold text-white/88 transition-all duration-300 hover:bg-white/10 hover:text-white'}
+              >
+                {t(link.label as Parameters<typeof t>[0]) || link.label.charAt(0).toUpperCase() + link.label.slice(1)}
+              </a>
+            ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
-            {/* Theme Toggle */}
+          <div className="hidden items-center gap-2 md:flex">
             <button
               onClick={handleThemeToggle}
-              className={`p-2.5 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
-                isScrolled
-                  ? 'text-deep-forest/70 hover:text-deep-forest bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/5 dark:hover:bg-white/10'
-                  : 'text-white/80 hover:text-white bg-white/[0.08] hover:bg-white/[0.15]'
-              }`}
+              className={desktopActionClass}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
-              {theme === 'light' ? (
-                <Moon className={`w-5 h-5 animate-float transition-colors duration-300 ${isScrolled ? 'text-deep-forest' : 'text-white'}`} />
-              ) : (
-                <Sun className="w-5 h-5 text-sunshine animate-pulse" />
-              )}
+              {theme === 'light' ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5 text-sunshine" />}
             </button>
 
-            {/* Language toggle */}
             <button
               onClick={toggleLanguage}
-              className={`flex items-center px-4 py-2 rounded-xl transition-all duration-300 text-xs font-bold hover:shadow-sm ${
-                isScrolled
-                  ? 'border border-deep-forest/10 hover:border-sunshine/30 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/5 text-deep-forest/80'
-                  : 'border border-white/15 hover:border-white/30 bg-white/[0.05] hover:bg-white/[0.1] text-white'
-              }`}
+              className={`${desktopActionClass} gap-2 text-xs font-bold`}
               aria-label="Toggle Language"
             >
-              <span className="tracking-widest">
-                <span className={language === 'en' ? 'text-sunshine font-extrabold' : (isScrolled ? 'text-deep-forest/50' : 'text-white/50')}>EN</span>
-                <span className={`${isScrolled ? 'text-deep-forest/20' : 'text-white/20'} mx-1`}>|</span>
-                <span className={language === 'bm' ? 'text-sunshine font-extrabold' : (isScrolled ? 'text-deep-forest/50' : 'text-white/50')}>BM</span>
-              </span>
+              <span className={language === 'en' ? 'text-sunshine' : ''}>EN</span>
+              <span className={isScrolled ? 'text-deep-forest/25 dark:text-white/25' : 'text-white/30'}>/</span>
+              <span className={language === 'bm' ? 'text-sunshine' : ''}>BM</span>
             </button>
 
-            {/* Client login / account */}
             <button
               onClick={handleAuthClick}
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl transition-all duration-300 text-xs font-bold hover:shadow-md ${
-                isScrolled
-                  ? 'border border-deep-forest/10 hover:border-sunshine/40 text-deep-forest/80 hover:text-deep-forest hover:bg-white dark:hover:bg-white/5'
-                  : 'border border-white/15 hover:border-white/40 text-white/90 hover:text-white hover:bg-white/[0.1]'
-              }`}
+              className={`${desktopActionClass} gap-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40`}
               aria-label={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
                 <>
-                  <div className="w-6 h-6 rounded-lg bg-sunshine text-white flex items-center justify-center font-black text-[10px] shadow-sm">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-sunshine text-[10px] font-black text-white shadow-sm">
                     {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                   </div>
-                  <span className={`hidden lg:inline font-urban tracking-tight transition-colors duration-300 ${isScrolled ? 'text-deep-forest/80' : 'text-white/90'}`}>
+                  <span className="hidden max-w-[140px] truncate lg:inline">
                     {currentUser.displayName || currentUser.email?.split('@')[0]}
                   </span>
                 </>
               ) : (
                 <>
-                  <UserIcon className="w-4 h-4 text-sunshine" />
-                  <span className={`font-urban uppercase tracking-wider transition-colors duration-300 ${isScrolled ? 'text-deep-forest/80' : 'text-white/90'}`}>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
+                  <UserIcon className="h-4.5 w-4.5 text-sunshine" />
+                  <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
                 </>
               )}
             </button>
           </div>
 
-          <div className="flex md:hidden items-center gap-2">
-            {/* Mobile Theme Toggle */}
+          <div className="flex items-center gap-2 md:hidden">
             <button
               onClick={handleThemeToggle}
-              className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center active:scale-90 ${
-                isScrolled
-                  ? 'bg-black/[0.03] dark:bg-white/[0.05] text-deep-forest'
-                  : 'bg-white/[0.08] text-white hover:bg-white/[0.15]'
-              }`}
+              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40`}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
-              {theme === 'light' ? (
-                <Moon className={`w-5 h-5 transition-colors duration-300 ${isScrolled ? 'text-deep-forest' : 'text-white'}`} />
-              ) : (
-                <Sun className="w-5 h-5 text-sunshine" />
-              )}
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-sunshine" />}
             </button>
 
-            {/* Mobile User Account / Sign In */}
             <button
               onClick={handleAuthClick}
-              className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center active:scale-90 ${
-                isScrolled
-                  ? 'bg-black/[0.03] dark:bg-white/[0.05] text-deep-forest'
-                  : 'bg-white/[0.08] text-white hover:bg-white/[0.15]'
-              }`}
+              className={mobileActionClass}
               aria-label={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
-                <div className="w-6.5 h-6.5 rounded-lg bg-sunshine text-white flex items-center justify-center font-bold text-[10px]">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-sunshine text-[10px] font-black text-white">
                   {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                 </div>
               ) : (
-                <UserIcon className={`w-5 h-5 transition-colors duration-300 ${isScrolled ? 'text-deep-forest/60' : 'text-white/80'}`} />
+                <UserIcon className="h-5 w-5" />
               )}
             </button>
 
@@ -226,13 +178,10 @@ export default function Header() {
                 await triggerLightImpact();
                 setMobileOpen(true);
               }}
-              className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center active:scale-90 ${
-                isScrolled
-                  ? 'bg-black/[0.03] dark:bg-white/[0.05] text-deep-forest'
-                  : 'bg-white/[0.08] text-white hover:bg-white/[0.15]'
-              }`}
+              className={mobileActionClass}
+              aria-label="Open menu"
             >
-              <Menu className={`w-6 h-6 transition-colors duration-300 ${isScrolled ? 'text-deep-forest' : 'text-white'}`} />
+              <Menu className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -241,9 +190,9 @@ export default function Header() {
       <MobileMenu
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        links={NAV_LINKS.map((link) => ({ 
-          ...link, 
-          label: link.label.charAt(0).toUpperCase() + link.label.slice(1) 
+        links={NAV_LINKS.map((link) => ({
+          ...link,
+          label: link.label.charAt(0).toUpperCase() + link.label.slice(1),
         }))}
         currentUser={currentUser}
         onAuthClick={handleAuthClick}

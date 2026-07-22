@@ -37,6 +37,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const savedTheme = await getSecureItem('app_theme');
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setTheme(savedTheme);
+        } else {
+          setTheme('dark');
         }
         const savedAccent = await getSecureItem('app_accent');
         if (savedAccent === 'kiwi' || savedAccent === 'sunshine') {

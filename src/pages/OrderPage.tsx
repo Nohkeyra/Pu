@@ -86,9 +86,9 @@ export default function OrderPage() {
             </div>
             
             <div className="flex items-center gap-2">
-              <button 
-                onClick={async () => { await triggerLightImpact(); toggleTheme(); }} 
-                className="p-2 md:p-3 rounded-full hover:bg-black/5 transition-colors"
+              <button
+                onClick={async () => { await triggerLightImpact(); toggleTheme(); }}
+                className="p-2 md:p-3 rounded-full hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40"
                 aria-label="Toggle theme"
               >
                 {theme === 'light' ? (
@@ -107,7 +107,7 @@ export default function OrderPage() {
                     setAuthModalOpen(true);
                   }
                 }}
-                className="p-2.5 text-deep-forest hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+                className="p-2.5 text-deep-forest hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40"
                 aria-label={currentUser ? 'Account' : 'Sign in'}
               >
                 <UserIcon className="w-5 h-5" />
@@ -130,7 +130,7 @@ export default function OrderPage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-14 pt-10">
               <span className="inline-flex items-center gap-3 mb-5 px-4 py-2 rounded-full bg-sunshine/10 text-sunshine text-sm font-bold border border-sunshine/20">
-                <span className="w-2 h-2 rounded-full bg-crisp-carrot animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-crisp-carrot animate-pulse" aria-hidden="true" />
                 Online Ordering Available
               </span>
               <h1 className="text-4xl md:text-5xl font-display font-bold text-deep-forest mb-4">

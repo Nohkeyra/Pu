@@ -24,23 +24,26 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-cream pt-20 pb-16 h-[65vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] min-h-[500px] flex flex-col justify-center items-center">
+    <section className="relative w-full overflow-hidden bg-cream dark:bg-charcoal pt-20 pb-16 h-[65vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] min-h-[500px] flex flex-col justify-center items-center">
       {/* Food-Centric Backdrop */}
-      <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-charcoal">
+      <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-deep-forest dark:bg-charcoal transition-colors duration-300">
         <motion.div 
           style={{ y }} 
           className="absolute -top-36 -bottom-36 -left-16 -right-16"
         >
           <Batik3DMotion
             maxRotation={16}
-            imgClassName="opacity-45 dark:opacity-35"
-            maskImage="linear-gradient(to bottom, black 20%, black 60%, transparent 100%)"
+            imgClassName="opacity-75 dark:opacity-35 transition-opacity duration-300"
+            maskImage="linear-gradient(to bottom, black 0%, black 35%, rgba(0,0,0,0.5) 70%, transparent 95%)"
           />
         </motion.div>
-        {/* Warm Overlay & Contrast Protection - Deep dark charcoal backdrop that stays crisp */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-charcoal/95 z-0" />
-        {/* Geometric Star Pattern Overlay with smooth bottom mask */}
-        <div className="absolute inset-0 pattern-dots opacity-10 pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_90%)]" />
+        {/* Warm Overlay & Contrast Protection - Lighter in Day Mode, deep dark charcoal in Night Mode */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-deep-forest/80 dark:from-black/80 dark:via-black/50 dark:to-charcoal/95 z-0 transition-all duration-300" />
+        {/* Geometric Star Pattern Overlay with smooth straight bottom mask */}
+        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none [mask-image:linear-gradient(to_bottom,black_30%,transparent_85%)]" />
+
+        {/* Straight horizontal gradient dissolve replacing the wavy curve */}
+        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-48 md:h-60 bg-gradient-to-b from-transparent via-deep-forest/20 to-cream dark:via-charcoal/60 dark:to-charcoal z-10 pointer-events-none transition-colors duration-300" />
       </div>
 
       {/* Decorative ambient radial glows */}
@@ -77,17 +80,6 @@ export default function HeroSection() {
         </motion.div>
 
       </motion.div>
-
-      {/* Curved Bottom Wave/Divider - Seamlessly transitions colors in light & dark modes */}
-      <div className="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-[0] z-20 pointer-events-none">
-        <svg 
-          viewBox="0 0 1200 120" 
-          preserveAspectRatio="none" 
-          className="relative block w-[calc(100%+1.3px)] h-[35px] md:h-[55px] fill-cream transition-colors duration-300"
-        >
-          <path d="M0,0 C150,90 350,120 600,100 C850,80 1050,90 1200,0 L1200,120 L0,120 Z" />
-        </svg>
-      </div>
     </section>
   );
 }

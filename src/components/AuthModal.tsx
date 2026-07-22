@@ -189,6 +189,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={mode === 'signin' ? t('Sign In', 'Log Masuk') : mode === 'signup' ? t('Register Account', 'Daftar Akaun Baru') : t('Reset Password', 'Set Semula Kata Laluan')}
           className="relative w-full max-w-lg bg-[#1C1C1E] border border-[#2E2E32] rounded-3xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden"
         >
           {/* Batik Pattern Overlay */}
@@ -206,7 +209,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-[#8E8E93] hover:text-[#F4F4F6] hover:bg-[#2E2E32] rounded-lg transition-colors duration-200 z-20"
+            aria-label={t('Close dialog', 'Tutup tetingkap')}
+            className="absolute top-4 right-4 p-2 text-[#8E8E93] hover:text-[#F4F4F6] hover:bg-[#2E2E32] rounded-lg transition-colors duration-200 z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
           >
             <X className="w-5 h-5" />
           </button>
