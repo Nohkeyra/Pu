@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
-import { getAssetUrl } from '@/lib/utils';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -192,13 +192,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           className="relative w-full max-w-lg bg-[#1C1C1E] border border-[#2E2E32] rounded-3xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden"
         >
           {/* Batik Pattern Overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none rounded-3xl"
-            style={{
-              backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
+          <Batik3DMotion
+            mode="background"
+            opacity={0.09}
+            mixBlendMode="overlay"
+            className="rounded-3xl"
+            maxRotation={10}
           />
 
           {/* Accent Gold Line */}

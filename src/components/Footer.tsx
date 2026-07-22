@@ -2,6 +2,7 @@ import { Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { getAssetUrl } from '@/lib/utils';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 
 function BrandMark() {
   return (
@@ -28,15 +29,12 @@ export default function Footer() {
 
   return (
     <footer className="bg-charcoal border-t border-white/5 pt-20 pb-8 text-white/90 relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)',
-          maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)'
-        }}
+      <Batik3DMotion
+        mode="background"
+        opacity={0.08}
+        mixBlendMode="overlay"
+        maskImage="radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)"
+        maxRotation={12}
       />
       <div className="content-container relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">

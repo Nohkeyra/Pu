@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '@/firebaseConfig';
 import AuthModal from '@/components/AuthModal';
 import CinematicLogo from '@/components/CinematicLogo';
-import { getAssetUrl } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -56,17 +56,14 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* Background Image with elegant Ken Burns scale animation */}
+      {/* Background Image with 3D motion effect */}
       <div className="absolute inset-0">
-        <motion.img 
-          initial={{ scale: 1.15, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.22 }}
-          transition={{ duration: 2.5, ease: 'easeOut' }}
-          src={getAssetUrl('/assets/batik_pattern.jpg')}
-          alt="Batik Background"
-          className="w-full h-full object-cover opacity-30 dark:opacity-20"
+        <Batik3DMotion
+          mode="img"
+          imgClassName="opacity-30 dark:opacity-20"
+          maxRotation={16}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-cream via-cream/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-cream via-cream/80 to-transparent pointer-events-none" />
       </div>
 
       <AnimatePresence mode="wait">

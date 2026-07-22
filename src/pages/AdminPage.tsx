@@ -113,10 +113,20 @@ export default function AdminPage() {
 
         <main className="flex-1 flex items-center justify-center px-4 pt-[calc(72px+var(--sat)+2rem)]">
           <div className="w-full max-w-md">
-            <div className="bg-white dark:bg-card rounded-3xl shadow-2xl border border-border overflow-hidden">
-              <div className="h-2 bg-gradient-to-r from-sunshine to-crisp-carrot" />
+            <div className="bg-white dark:bg-card rounded-3xl shadow-2xl border border-border overflow-hidden relative">
+              {/* Background Batik Pattern for Admin Login Card */}
+              <div 
+                className="absolute inset-0 opacity-[0.14] dark:opacity-[0.22] pointer-events-none"
+                style={{
+                  backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
               
-              <div className="p-8 md:p-10">
+              <div className="h-2 bg-gradient-to-r from-sunshine to-crisp-carrot relative z-10" />
+              
+              <div className="p-8 md:p-10 relative z-10">
                 <div className="flex justify-center mb-6">
                   <div className="w-16 h-16 rounded-full bg-sunshine/10 flex items-center justify-center border border-sunshine/20">
                     <Lock className="w-8 h-8 text-sunshine" />

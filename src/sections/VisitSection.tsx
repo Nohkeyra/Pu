@@ -2,6 +2,7 @@ import { MapPin, Clock, Phone, ArrowRight, Navigation } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getAssetUrl } from '@/lib/utils';
 import { motion } from 'motion/react';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 
 export default function VisitSection() {
   const { t, language } = useLanguage();
@@ -202,13 +203,11 @@ export default function VisitSection() {
           className="mt-16 relative rounded-[32px] p-8 md:p-12 overflow-hidden group border border-deep-forest/10 shadow-2xl bg-sunshine"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-sunshine via-honey to-sunshine animate-gradient-shift bg-[length:200%_auto]" />
-          <div
-            className="absolute inset-0 opacity-20 mix-blend-overlay"
-            style={{
-              backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+          <Batik3DMotion
+            mode="background"
+            opacity={0.25}
+            mixBlendMode="overlay"
+            maxRotation={18}
           />
           <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 text-white">
             <div className="text-center md:text-left">

@@ -25,7 +25,7 @@ import {
   Sun
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, safeCopyToClipboard } from '@/lib/utils';
+import { cn, safeCopyToClipboard, getAssetUrl } from '@/lib/utils';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { motion, AnimatePresence } from 'motion/react';
 import { getApiUrl } from '@/lib/api';
@@ -715,6 +715,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         
         {/* App Header Bar mirroring Wawasan brand */}
         <div className="bg-charcoal text-white p-5 rounded-b-[24px] shadow-lg border-b border-charcoal/80 relative overflow-hidden">
+          {/* Background Batik Pattern for Header */}
+          <div 
+            className="absolute inset-0 opacity-[0.25] pointer-events-none"
+            style={{
+              backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
           <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
           <div className="flex justify-between items-center relative z-10">
             <div>

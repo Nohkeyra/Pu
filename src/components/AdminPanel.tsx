@@ -1256,23 +1256,33 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             )}
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex border-b border-sunshine/10 mb-8">
+          {/* Tab Navigation Container wrapped with Batik Background */}
+          <div className="relative flex bg-stone/5 dark:bg-card/40 p-1.5 rounded-2xl border border-stone/10 gap-2 mb-8 overflow-hidden">
+            {/* Background Batik Pattern for Tab Navigation Bar */}
+            <div 
+              className="absolute inset-0 opacity-[0.14] dark:opacity-[0.22] pointer-events-none"
+              style={{
+                backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+
             <button
               onClick={() => setActiveTab('orders')}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-all duration-200 ${
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
                 activeTab === 'orders'
-                  ? 'border-sunshine text-sunshine bg-sunshine/5'
-                  : 'border-transparent text-deep-forest/50 hover:text-deep-forest/80 hover:bg-deep-forest/5'
+                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
-              <FileText className="w-4 h-4" />
-              <span>{t('orders') || 'Orders'}</span>
+              <FileText className="w-4 h-4 z-10" />
+              <span className="z-10">{t('orders') || 'Orders'}</span>
               {cancelRequests.length > 0 && (
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="ml-2 flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold"
+                  className="ml-2 flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
                 >
                   <Bell className="w-3 h-3" />
                   <span>{cancelRequests.length}</span>
@@ -1284,25 +1294,25 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 setActiveTab('diagnostics');
                 runAllDiagnostics();
               }}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-all duration-200 ${
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
                 activeTab === 'diagnostics'
-                  ? 'border-sunshine text-sunshine bg-sunshine/5'
-                  : 'border-transparent text-deep-forest/50 hover:text-deep-forest/80 hover:bg-deep-forest/5'
+                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
-              <Activity className="w-4 h-4" />
-              <span>Diagnostics</span>
+              <Activity className="w-4 h-4 z-10" />
+              <span className="z-10">Diagnostics</span>
             </button>
             <button
               onClick={() => setActiveTab('branding')}
-              className={`px-6 py-3 font-medium text-sm flex items-center gap-2 border-b-2 transition-all duration-200 ${
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
                 activeTab === 'branding'
-                  ? 'border-sunshine text-sunshine bg-sunshine/5'
-                  : 'border-transparent text-deep-forest/50 hover:text-deep-forest/80 hover:bg-deep-forest/5'
+                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
-              <Palette className="w-4 h-4" />
-              <span>Branding</span>
+              <Palette className="w-4 h-4 z-10" />
+              <span className="z-10">Branding</span>
             </button>
           </div>
 

@@ -1,8 +1,8 @@
 
 import { motion, useScroll, useTransform } from 'motion/react';
-import { getAssetUrl } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import GlitchText from '@/components/GlitchText';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 
 export default function HeroSection() {
   const { language } = useLanguage();
@@ -27,13 +27,11 @@ export default function HeroSection() {
     <section className="relative w-full overflow-hidden bg-cream pt-20 pb-16 h-[65vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] min-h-[500px] flex flex-col justify-center items-center">
       {/* Food-Centric Backdrop */}
       <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-charcoal">
-        <motion.img
-          src={getAssetUrl("/assets/batik_pattern.jpg")}
-          alt="Elegant Batik Pattern Background"
-          style={{ y, scale: 1.05 }}
-          fetchPriority="high"
-          className="w-full h-full object-cover object-center filter opacity-45 dark:opacity-35 transition-all duration-700 ease-in-out [mask-image:linear-gradient(to_bottom,black_20%,black_60%,transparent_100%)]"
-          referrerPolicy="no-referrer"
+        <Batik3DMotion
+          maxRotation={16}
+          imgClassName="opacity-45 dark:opacity-35"
+          maskImage="linear-gradient(to bottom, black 20%, black 60%, transparent 100%)"
+          style={{ y }}
         />
         {/* Warm Overlay & Contrast Protection - Deep dark charcoal backdrop that stays crisp */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-charcoal/95 z-0" />

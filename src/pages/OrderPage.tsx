@@ -141,19 +141,6 @@ export default function OrderPage() {
               </p>
             </div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto mb-12">
-              {[
-                { label: 'Prep Time', value: '48 Hours' },
-                { label: 'Delivery', value: 'Scheduled' }
-              ].map((stat, idx) => (
-                <div key={idx} className="text-center p-4 rounded-3xl bg-white dark:bg-card border border-border shadow-sm">
-                  <div className="text-lg font-bold text-sunshine">{stat.value}</div>
-                  <div className="text-xs text-stone uppercase tracking-wider font-bold">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-
             <OrderForm initialData={initialData} />
           </div>
         </motion.main>
