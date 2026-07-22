@@ -259,11 +259,14 @@
   /* Batik Pattern for overlays */
   .pattern-batik {
     background-image: url("/assets/batik_pattern.jpg");
-    background-size: 200% 200%;
+    background-size: cover;
+    background-attachment: fixed;
     background-position: center;
     background-repeat: no-repeat;
     background-blend-mode: overlay;
     transform: scale(1.1);
+    mask-image: radial-gradient(circle, black 90%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle, black 90%, transparent 100%);
   }
 
   /* High Opacity Flat Batik Borders for Tabs & Containers */

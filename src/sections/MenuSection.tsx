@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { motion } from 'motion/react';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { getAssetUrl } from '@/lib/utils';
 
 const MENU_ITEMS = [
   {
@@ -222,10 +223,24 @@ export default function MenuSection() {
                   <p className="font-body text-stone dark:text-stone/70 leading-relaxed mb-6 font-light text-sm h-[60px] overflow-hidden line-clamp-3">
                     {isBm ? item.descBm : item.descEn}
                   </p>
-                  <div className="flex items-center gap-4 border-t border-deep-forest/5 dark:border-white/5 pt-5">
-                    <span className="font-sans font-black text-sunshine text-lg">
-                      {isBm ? item.priceBm : item.priceEn}
-                    </span>
+                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-deep-forest dark:bg-card border border-sunshine/30 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/60 transition-all duration-300">
+                    {/* Seamless Blended Batik Background Overlay */}
+                    <div 
+                      className="absolute inset-0 opacity-30 dark:opacity-40 pointer-events-none transition-opacity duration-300 group-hover:opacity-40"
+                      style={{
+                        backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    />
+                    <div className="relative z-10 flex items-center justify-between w-full">
+                      <span className="text-[11px] font-black text-white uppercase tracking-widest drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                        {isBm ? 'Harga Bermula' : 'Price Starts'}
+                      </span>
+                      <span className="font-sans font-black text-white text-base drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] group-hover:scale-105 transition-transform duration-300">
+                        {isBm ? item.priceBm : item.priceEn}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
