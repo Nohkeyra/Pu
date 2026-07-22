@@ -86,7 +86,7 @@ export function AdminDiagnosticsTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Firebase Connectivity */}
-        <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+        <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-yellow-500/10 text-yellow-500 rounded-lg">
@@ -132,7 +132,7 @@ export function AdminDiagnosticsTab({
         </div>
 
         {/* Google Calendar Sync */}
-        <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+        <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-lg">
@@ -178,7 +178,7 @@ export function AdminDiagnosticsTab({
         </div>
 
         {/* PDF Generation Integrity */}
-        <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+        <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-lg">
@@ -224,7 +224,7 @@ export function AdminDiagnosticsTab({
         </div>
 
         {/* Native / APK Integration Info */}
-        <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+        <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-lg">
@@ -312,7 +312,7 @@ export function AdminDiagnosticsTab({
       </div>
 
       {/* Brevo SMTP Diagnostic Mailer */}
-      <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+      <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-purple-500/10 text-purple-500 rounded-lg">
             <Mail className="w-5 h-5" />
@@ -371,7 +371,7 @@ export function AdminDiagnosticsTab({
       </div>
 
       {/* Mobile Developer Toolkit */}
-      <div className="p-5 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+      <div className="p-5 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-lg animate-pulse">

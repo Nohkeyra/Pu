@@ -97,10 +97,10 @@
   }
 
   .dark {
-    /* Dark Mode (Midnight Heritage) */
+    /* Dark Mode (Midnight Heritage - Upgraded to Premium Charcoal) */
     --color-deep-forest: #F5F5F5;       /* Soft Ivory Text */
-    --color-forest: #1A2C3E;            /* Dark Navy for surfaces */
-    --color-light-forest: #374151;      /* Mid Grey */
+    --color-forest: #1b1b1e;            /* Modern Charcoal for surfaces/cards */
+    --color-light-forest: #2b2b30;      /* Slightly lighter Charcoal for mid-ground accents */
 
     --color-sunshine: #FF8C42;          /* Vibrant Amber (Primary Action) */
     --color-honey: #FFAA73;             /* Light Amber */
@@ -108,48 +108,48 @@
     --color-tomato-burst: #CC5500;      /* Dark Amber */
     --color-kiwi: #CCFF00;              /* Electric Lime Accent */
 
-    --color-cream: #0B1A2A;             /* Deep Midnight Navy Bg */
-    --color-cream-dark: #07121F;        /* Darker Navy */
-    --color-charcoal: #0B1A2A;          /* Maps to background for legacy classes */
+    --color-cream: #121214;             /* High-style Charcoal Page Background */
+    --color-cream-dark: #0a0a0c;        /* Deeper charcoal base */
+    --color-charcoal: #121214;          /* Maps to background for legacy classes */
     --color-stone: #9CA3AF;             /* Muted Grey Text */
 
     /* Shadcn tokens */
-    --background: 211 58% 10%;          /* Matches #0B1A2A */
+    --background: 240 8% 7%;            /* Matches #121214 */
     --foreground: 0 0% 96%;             /* Matches #F5F5F5 */
-    --card: 210 41% 17%;                /* Matches #1A2C3E (Dark Slate Blue Cards) */
+    --card: 240 5% 11%;                 /* Matches #1b1b1e */
     --card-foreground: 0 0% 96%;
-    --popover: 211 58% 10%;
+    --popover: 240 8% 7%;
     --popover-foreground: 0 0% 96%;
     --primary: 23 100% 63%;             /* Matches #FF8C42 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 41% 17%;           /* Matches #1A2C3E */
+    --secondary: 240 5% 11%;           /* Matches #1b1b1e */
     --secondary-foreground: 0 0% 96%;
-    --muted: 215 25% 27%;
-    --muted-foreground: 215 16% 65%;
+    --muted: 240 5% 18%;
+    --muted-foreground: 240 4% 65%;
     --accent: 75 100% 50%;              /* Matches #CCFF00 */
-    --accent-foreground: 211 58% 10%;
+    --accent-foreground: 240 8% 7%;
     --destructive: 14 82% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 215 25% 27%;
-    --input: 215 25% 27%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
     --ring: 23 100% 63%;
 
     --color-selection-bg: rgba(255, 140, 66, 0.3);
     --color-selection-text: #F5F5F5;
-    --color-scrollbar-track: #0B1A2A;
-    --color-scrollbar-thumb: #374151;
+    --color-scrollbar-track: #121214;
+    --color-scrollbar-thumb: #2b2b30;
     --color-scrollbar-hover: #FF8C42;
 
-    --color-input-bg: #1A2C3E;
+    --color-input-bg: #1b1b1e;
     --color-input-text: #F5F5F5;
-    --color-input-border: rgba(255, 255, 255, 0.1);
+    --color-input-border: rgba(255, 255, 255, 0.08);
     --color-input-focus-shadow: rgba(255, 140, 66, 0.2);
 
-    --color-header-bg: rgba(11, 26, 42, 0.95);
-    --color-header-border: rgba(255, 255, 255, 0.05);
+    --color-header-bg: rgba(18, 18, 20, 0.95);
+    --color-header-border: rgba(255, 255, 255, 0.04);
 
-    --color-card-bg: #1A2C3E;
-    --color-card-border: rgba(255, 255, 255, 0.05);
+    --color-card-bg: #1b1b1e;
+    --color-card-border: rgba(255, 255, 255, 0.04);
   }
 
   * {
@@ -259,10 +259,11 @@
   /* Batik Pattern for overlays */
   .pattern-batik {
     background-image: url("/assets/batik_pattern.jpg");
-    background-size: cover;
+    background-size: 200% 200%;
     background-position: center;
     background-repeat: no-repeat;
     background-blend-mode: overlay;
+    transform: scale(1.1);
   }
 
   /* High Opacity Flat Batik Borders for Tabs & Containers */

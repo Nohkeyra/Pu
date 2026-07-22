@@ -14,7 +14,8 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, onSnapshot, query, limit } from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
 import { 
   LogOut, 
   FileText, 
@@ -46,6 +47,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Device } from '@capacitor/device';
 import { removeSecureItem } from '@/lib/preferences';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
 import { getDummyCombinedOrders, getDummyConsolidatedOrders } from '@/utils/testData';
@@ -126,6 +128,61 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   }>({ ok: false, loading: true });
 
   const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'branding'>('orders');
+
+  // Real-time synchronization and Firestore WebSocket monitoring status
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
+
+  useEffect(() => {
+    // 1. Listen for background sync messages from the registered Service Worker
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'BACKGROUND_SYNC_IN_PROGRESS') {
+        setSyncStatus('syncing');
+      } else if (event.data?.type === 'BACKGROUND_SYNC_COMPLETE') {
+        if (event.data.status === 'success') {
+          setSyncStatus('connected');
+          toast({
+            title: language === 'en' ? 'Background Sync Succeeded' : 'Penyelarasan Latar Belakang Berjaya',
+            description: language === 'en' ? 'Orders have been synced with the cloud.' : 'Pesanan telah diselaraskan dengan awan.',
+            variant: 'default',
+          });
+        } else {
+          setSyncStatus('offline');
+        }
+      }
+    };
+    
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+
+    // 2. Setup a real-time Firestore WebSocket monitoring listener on the orders collection.
+    // If the snapshot metadata is from cache, the socket is offline/caching.
+    // If metadata.fromCache is false, the real-time WebSocket connection is verified.
+    const q = query(collection(db, 'orders'), limit(1));
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+      const isOnline = !snapshot.metadata.fromCache;
+      setSyncStatus(isOnline ? 'connected' : 'offline');
+    }, (error) => {
+      console.warn('Real-time connection monitoring error (possibly offline):', error);
+      setSyncStatus('offline');
+    });
+
+    // 3. Keep in sync with standard navigator offline status
+    const handleOnline = () => setSyncStatus('connecting');
+    const handleOffline = () => setSyncStatus('offline');
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      unsubscribe();
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [language, toast]);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
@@ -1124,7 +1181,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background">
+    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[280px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content']">
       {/* Pull to Refresh Indicator */}
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
@@ -1141,7 +1198,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </motion.div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-background/80 backdrop-blur-xl border-b border-deep-forest/[0.03] dark:border-white/5 pt-[var(--sat)]">
+      <header className="[grid-area:header] z-50 bg-white dark:bg-background border-b border-deep-forest/[0.03] dark:border-white/5 pt-[var(--sat)]">
         <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
           <div className="flex items-center gap-4">
             <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer transition-all hover:opacity-80">
@@ -1203,23 +1260,216 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             </Button>
           </div>
         </div>
+
+        {/* Subtle Syncing Indicator Bar */}
+        <div className={`w-full h-8 px-6 md:px-12 border-t border-deep-forest/[0.03] dark:border-white/5 flex items-center justify-between text-xs font-semibold transition-all duration-300 ${
+          syncStatus === 'connected' 
+            ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' 
+            : syncStatus === 'syncing'
+            ? 'bg-sky-500/5 text-sky-600 dark:text-sky-400'
+            : syncStatus === 'connecting'
+            ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400'
+            : 'bg-stone-500/5 text-stone-500 dark:text-stone-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              {syncStatus !== 'offline' && (
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  syncStatus === 'connected' 
+                    ? 'bg-emerald-500' 
+                    : syncStatus === 'syncing'
+                    ? 'bg-sky-500'
+                    : 'bg-amber-500'
+                }`}></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                syncStatus === 'connected' 
+                  ? 'bg-emerald-500' 
+                  : syncStatus === 'syncing'
+                  ? 'bg-sky-500'
+                  : syncStatus === 'connecting'
+                  ? 'bg-amber-500'
+                  : 'bg-stone-400'
+              }`}></span>
+            </span>
+            <span>
+              {syncStatus === 'connected' && (language === 'en' ? 'Live connection active — Receiving real-time notifications' : 'Sambungan langsung aktif — Menerima notifikasi masa nyata')}
+              {syncStatus === 'connecting' && (language === 'en' ? 'Connecting to Firestore WebSocket...' : 'Menghubungkan ke WebSocket Firestore...')}
+              {syncStatus === 'syncing' && (language === 'en' ? 'Background syncing database logs...' : 'Penyelarasan latar belakang log pangkalan data...')}
+              {syncStatus === 'offline' && (language === 'en' ? 'Offline — Reconnecting automatically' : 'Luar talian — Menyambung semula secara automatik')}
+            </span>
+          </div>
+          
+          <span className="text-[10px] uppercase tracking-wider opacity-60">
+            {syncStatus === 'connected' && 'Synced'}
+            {syncStatus === 'connecting' && 'Connecting'}
+            {syncStatus === 'syncing' && 'Syncing'}
+            {syncStatus === 'offline' && 'Offline'}
+          </span>
+        </div>
       </header>
+
+      {/* Sidebar Navigation */}
+      <nav className="[grid-area:nav] p-6 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-deep-forest/[0.03] dark:border-white/5 relative overflow-hidden flex flex-col justify-start">
+        {/* Background Batik Pattern for Tab Navigation Bar */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <Batik3DMotion
+            maxRotation={10}
+            imgClassName="opacity-[0.06] dark:opacity-[0.1]"
+            mode="background"
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col h-full">
+          <p className="hidden lg:block text-[11px] font-black text-sunshine uppercase tracking-widest mb-4">
+            {language === 'en' ? 'Administrative' : 'Pentadbiran'}
+          </p>
+          <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-none">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
+                activeTab === 'orders'
+                  ? 'text-sunshine'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
+              }`}
+            >
+              {activeTab === 'orders' && (
+                <motion.div
+                  layoutId="adminActiveTab"
+                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  animate={{
+                    boxShadow: [
+                      '0 0 2px rgba(251, 191, 36, 0.15)',
+                      '0 0 10px rgba(251, 191, 36, 0.55)',
+                      '0 0 2px rgba(251, 191, 36, 0.15)'
+                    ],
+                    borderColor: [
+                      'rgba(251, 191, 36, 0.4)',
+                      'rgba(251, 191, 36, 0.85)',
+                      'rgba(251, 191, 36, 0.4)'
+                    ]
+                  }}
+                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
+                  transition={{
+                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                  }}
+                />
+              )}
+              <FileText className="w-4 h-4 z-10" />
+              <span className="z-10">{t('orders') || 'Orders'}</span>
+              {cancelRequests.length > 0 && (
+                <motion.div
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className="ml-auto flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
+                >
+                  <Bell className="w-3 h-3" />
+                  <span>{cancelRequests.length}</span>
+                </motion.div>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('diagnostics');
+                runAllDiagnostics();
+              }}
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
+                activeTab === 'diagnostics'
+                  ? 'text-sunshine'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
+              }`}
+            >
+              {activeTab === 'diagnostics' && (
+                <motion.div
+                  layoutId="adminActiveTab"
+                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  animate={{
+                    boxShadow: [
+                      '0 0 2px rgba(251, 191, 36, 0.15)',
+                      '0 0 10px rgba(251, 191, 36, 0.55)',
+                      '0 0 2px rgba(251, 191, 36, 0.15)'
+                    ],
+                    borderColor: [
+                      'rgba(251, 191, 36, 0.4)',
+                      'rgba(251, 191, 36, 0.85)',
+                      'rgba(251, 191, 36, 0.4)'
+                    ]
+                  }}
+                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
+                  transition={{
+                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                  }}
+                />
+              )}
+              <Activity className="w-4 h-4 z-10" />
+              <span className="z-10">Diagnostics</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('branding')}
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
+                activeTab === 'branding'
+                  ? 'text-sunshine'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
+              }`}
+            >
+              {activeTab === 'branding' && (
+                <motion.div
+                  layoutId="adminActiveTab"
+                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  animate={{
+                    boxShadow: [
+                      '0 0 2px rgba(251, 191, 36, 0.15)',
+                      '0 0 10px rgba(251, 191, 36, 0.55)',
+                      '0 0 2px rgba(251, 191, 36, 0.15)'
+                    ],
+                    borderColor: [
+                      'rgba(251, 191, 36, 0.4)',
+                      'rgba(251, 191, 36, 0.85)',
+                      'rgba(251, 191, 36, 0.4)'
+                    ]
+                  }}
+                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
+                  transition={{
+                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                  }}
+                />
+              )}
+              <Palette className="w-4 h-4 z-10" />
+              <span className="z-10">Branding</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Main Content */}
       <motion.main 
-        className="pt-[calc(72px+var(--sat)+2rem)]"
+        className="[grid-area:content] p-6 md:p-8 min-w-0"
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
       >
-        <div className="p-6 md:p-8">
+        <div>
           {/* Page Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-display font-bold text-deep-forest mb-2">
-                {t('orders')}
+                {activeTab === 'orders' 
+                  ? t('orders') 
+                  : activeTab === 'diagnostics' 
+                  ? 'Diagnostics' 
+                  : 'Branding'}
               </h1>
-              <p className="text-deep-forest/50">
-                {t('orders_subtitle')}
+              <p className="text-deep-forest/50 text-sm">
+                {activeTab === 'orders' 
+                  ? t('orders_subtitle') 
+                  : activeTab === 'diagnostics' 
+                  ? 'Run system diagnostics, API connection probes, and trace telemetry.' 
+                  : 'Personalize the administrative workspace palette, accent theme, and visual styling.'}
               </p>
             </div>
             
@@ -1254,66 +1504,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 <span className="text-sm font-medium">Calendar Sync Offline</span>
               </div>
             )}
-          </div>
-
-          {/* Tab Navigation Container wrapped with Batik Background */}
-          <div className="relative flex bg-stone/5 dark:bg-card/40 p-1.5 rounded-2xl border border-stone/10 gap-2 mb-8 overflow-hidden">
-            {/* Background Batik Pattern for Tab Navigation Bar */}
-            <div 
-              className="absolute inset-0 opacity-[0.14] dark:opacity-[0.22] pointer-events-none"
-              style={{
-                backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
-
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
-                activeTab === 'orders'
-                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              <FileText className="w-4 h-4 z-10" />
-              <span className="z-10">{t('orders') || 'Orders'}</span>
-              {cancelRequests.length > 0 && (
-                <motion.div
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="ml-2 flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
-                >
-                  <Bell className="w-3 h-3" />
-                  <span>{cancelRequests.length}</span>
-                </motion.div>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('diagnostics');
-                runAllDiagnostics();
-              }}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
-                activeTab === 'diagnostics'
-                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              <Activity className="w-4 h-4 z-10" />
-              <span className="z-10">Diagnostics</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('branding')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-2 rounded-xl transition-all duration-200 relative z-10 ${
-                activeTab === 'branding'
-                  ? 'text-sunshine bg-sunshine/20 dark:bg-sunshine/25 border border-sunshine/40 shadow-sm'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              <Palette className="w-4 h-4 z-10" />
-              <span className="z-10">Branding</span>
-            </button>
           </div>
 
           {activeTab === 'orders' ? (

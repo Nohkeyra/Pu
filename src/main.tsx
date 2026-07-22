@@ -32,3 +32,34 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+// Register Background Sync Service Worker
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('[Service Worker] Registered successfully with scope:', registration.scope);
+        
+        // Request sync permission and register background sync if supported
+        if ('sync' in registration) {
+          // Attempt to register background sync for order tracking
+          registration.sync.register('sync-orders')
+            .then(() => console.log('[Service Worker] Registered sync tag: "sync-orders"'))
+            .catch((err) => console.warn('[Service Worker] Sync registration failed:', err));
+        }
+
+        // Proactively pre-warm critical assets so the service worker caches them instantly
+        const criticalAssets = [
+          '/assets/batik_pattern.jpg',
+          '/assets/wawasan_logo.jpg'
+        ];
+        criticalAssets.forEach(asset => {
+          fetch(asset).catch(() => {});
+        });
+      })
+      .catch((err) => {
+        console.error('[Service Worker] Registration failed:', err);
+      });
+  });
+}
+

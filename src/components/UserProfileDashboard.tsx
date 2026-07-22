@@ -649,8 +649,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const content = (
     <div className={cn(
-      "relative w-full h-full bg-cream dark:bg-background flex flex-col z-10",
-      !isEmbedded && "max-w-xl border-l border-border shadow-2xl"
+      "relative w-full bg-cream dark:bg-background flex flex-col z-10",
+      isEmbedded ? "h-auto" : "h-full max-w-xl border-l border-border shadow-2xl"
     )}>
       {/* Pull to Refresh Indicator */}
       <motion.div 
@@ -718,7 +718,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       {/* Content Scrollable Area */}
       <motion.div 
-        className="flex-1 overflow-y-auto p-6 space-y-8 font-sans pb-24"
+        className={cn(
+          "flex-1 p-6 space-y-8 font-sans",
+          isEmbedded ? "overflow-y-visible" : "overflow-y-auto pb-24"
+        )}
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
       >
@@ -1132,10 +1135,6 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
           <div className="space-y-3.5">
             {[
-              {
-                q: t('What is the minimum order quantity (pax)?', 'Apakah kuantiti tempahan minimum (pax)?'),
-                a: t('The minimum order quantity for catering is usually 50 pax per order.', 'Kuantiti tempahan minimum untuk katering biasanya adalah 50 pax setiap tempahan.')
-              },
               {
                 q: t('How many hours in advance should I order?', 'Berapa jam sebelum saya perlu membuat tempahan?'),
                 a: t('Catering requests must be made at least 24-48 hours in advance for schedule approval.', 'Permintaan katering mesti dibuat sekurang-kurangnya 24-48 jam sebelum acara untuk kelulusan jadual.')

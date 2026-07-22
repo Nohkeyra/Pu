@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
@@ -115,14 +116,13 @@ export default function AdminPage() {
           <div className="w-full max-w-md">
             <div className="bg-white dark:bg-card rounded-3xl shadow-2xl border border-border overflow-hidden relative">
               {/* Background Batik Pattern for Admin Login Card */}
-              <div 
-                className="absolute inset-0 opacity-[0.14] dark:opacity-[0.22] pointer-events-none"
-                style={{
-                  backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              />
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <Batik3DMotion
+                  maxRotation={12}
+                  imgClassName="opacity-[0.14] dark:opacity-[0.22]"
+                  mode="background"
+                />
+              </div>
               
               <div className="h-2 bg-gradient-to-r from-sunshine to-crisp-carrot relative z-10" />
               

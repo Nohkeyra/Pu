@@ -14,7 +14,7 @@ export function AdminBrandingTab({
 }) {
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="p-6 bg-cream-dark/20 dark:bg-black/20 border border-sunshine/10 rounded-xl space-y-4">
+      <div className="p-6 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl space-y-4">
         <div>
           <h3 className="font-display font-bold text-deep-forest text-lg flex items-center gap-2">
             <Palette className="w-5 h-5 text-sunshine" />

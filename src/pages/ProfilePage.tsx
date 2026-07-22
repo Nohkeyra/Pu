@@ -101,7 +101,7 @@ export default function ProfilePage() {
             {/* I will use the UserProfileDashboard as a component here. 
                 I'll modify UserProfileDashboard to NOT be fixed if a certain prop is passed.
             */}
-            <div className="relative h-[80vh] bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg">
+            <div className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg">
                <UserProfileDashboard 
                  isOpen={true} 
                  isEmbedded={true}

@@ -153,11 +153,11 @@ export function AdminOrdersTab({
             placeholder={t('search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-cream-dark/10 border-sunshine/20 text-deep-forest placeholder:text-deep-forest/30 focus:border-sunshine/50"
+            className="pl-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 shadow-sm text-deep-forest placeholder:text-deep-forest/30 focus:border-sunshine/50"
           />
         </div>
         <div className="flex items-center gap-3 justify-between sm:justify-end">
-          <div className="flex items-center gap-2 px-3 py-2 bg-cream-dark/10 border border-sunshine/15 rounded-xl h-10 shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl h-10 shrink-0">
             <Switch
               id="select-mode-toggle"
               checked={isSelectMode}
@@ -184,7 +184,7 @@ export function AdminOrdersTab({
                   setSelectedOrderIds(new Set(filteredOrders.filter(o => o.id).map(o => o.id!)));
                 }
               }}
-              className="border-sunshine/30 text-deep-forest hover:bg-sunshine/10 text-xs font-bold shrink-0 h-10 px-4 rounded-xl flex items-center gap-1.5"
+              className="border-stone/15 dark:border-white/5 bg-white dark:bg-card text-deep-forest hover:bg-sunshine/10 text-xs font-bold shrink-0 h-10 px-4 rounded-xl flex items-center gap-1.5"
             >
               {filteredOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
                 <>
@@ -203,11 +203,11 @@ export function AdminOrdersTab({
       </div>
 
       {/* Orders Table */}
-      <div className="bg-cream-dark/20 dark:bg-black/20 rounded-xl border border-sunshine/10 overflow-hidden">
+      <div className="bg-white dark:bg-card rounded-xl border border-stone/15 dark:border-white/5 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-sunshine/10 hover:bg-transparent">
+              <TableRow className="border-stone/10 dark:border-white/5 hover:bg-transparent">
                 {isSelectMode && (
                   <TableHead className="text-deep-forest/60 w-10">
                     <input
@@ -235,7 +235,7 @@ export function AdminOrdersTab({
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isSelectMode ? 5 : 4} className="text-center text-deep-forest/60 py-20 bg-cream-dark/5 dark:bg-white/5">
+                  <TableCell colSpan={isSelectMode ? 5 : 4} className="text-center text-deep-forest/60 py-20 bg-stone/5 dark:bg-white/5">
                     <div className="flex flex-col items-center gap-2">
                       <p className="text-lg font-display font-bold opacity-80">{t('no_orders')}</p>
                       <p className="text-xs opacity-50">Try adjusting your filters or search term</p>
@@ -244,7 +244,7 @@ export function AdminOrdersTab({
                 </TableRow>
               ) : (
                 filteredOrders.map((order, idx) => (
-                  <TableRow key={order.id || `order-${idx}`} className={`border-sunshine/10 hover:bg-sunshine/5 ${order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''}`}>
+                  <TableRow key={order.id || `order-${idx}`} className={`border-stone/10 dark:border-white/5 hover:bg-sunshine/5 ${order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''}`}>
                     {isSelectMode && (
                       <TableCell>
                         <input

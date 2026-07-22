@@ -27,12 +27,16 @@ export default function HeroSection() {
     <section className="relative w-full overflow-hidden bg-cream pt-20 pb-16 h-[65vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] min-h-[500px] flex flex-col justify-center items-center">
       {/* Food-Centric Backdrop */}
       <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-charcoal">
-        <Batik3DMotion
-          maxRotation={16}
-          imgClassName="opacity-45 dark:opacity-35"
-          maskImage="linear-gradient(to bottom, black 20%, black 60%, transparent 100%)"
-          style={{ y }}
-        />
+        <motion.div 
+          style={{ y }} 
+          className="absolute -top-36 -bottom-36 -left-16 -right-16"
+        >
+          <Batik3DMotion
+            maxRotation={16}
+            imgClassName="opacity-45 dark:opacity-35"
+            maskImage="linear-gradient(to bottom, black 20%, black 60%, transparent 100%)"
+          />
+        </motion.div>
         {/* Warm Overlay & Contrast Protection - Deep dark charcoal backdrop that stays crisp */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-charcoal/95 z-0" />
         {/* Geometric Star Pattern Overlay with smooth bottom mask */}

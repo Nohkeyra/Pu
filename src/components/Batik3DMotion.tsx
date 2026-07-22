@@ -51,12 +51,12 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             rotateY,
             x: moveX,
             y: moveY,
-            scale: 1.12, // Scaled slightly to prevent edge cutoff during 3D tilt
+            scale: 1.45, // Scaled up even more to prevent any edge cutoff
             maskImage,
             WebkitMaskImage: maskImage,
             ...style,
           }}
-          className={`w-full h-full object-cover object-center filter transition-all duration-300 ease-out ${imgClassName}`}
+          className={`absolute -inset-[15%] w-[130%] h-[130%] object-cover object-center filter transition-all duration-300 ease-out ${imgClassName}`}
           referrerPolicy="no-referrer"
         />
       ) : (
@@ -66,7 +66,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             rotateY,
             x: moveX,
             y: moveY,
-            scale: 1.15,
+            scale: 1.45, // Scaled up even more to prevent any edge cutoff
             backgroundImage: `url(${batikUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -76,7 +76,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             opacity,
             ...style,
           }}
-          className={`w-full h-full ${imgClassName}`}
+          className={`absolute -inset-[15%] w-[130%] h-[130%] ${imgClassName}`}
         />
       )}
       {overlayClassName && <div className={overlayClassName} />}

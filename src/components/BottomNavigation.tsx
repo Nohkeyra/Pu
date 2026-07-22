@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Home, Utensils, Settings, Lock, User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { triggerLightImpact } from '@/lib/haptics';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 import AuthModal from './AuthModal';
 
 export default function BottomNavigation() {
@@ -43,15 +44,13 @@ export default function BottomNavigation() {
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 4px)' }}
       >
         {/* Whole Navigation Bar Batik Background Overlay */}
-        <div 
-          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.22] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'repeat',
-          }}
-        />
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <Batik3DMotion
+            maxRotation={8}
+            imgClassName="opacity-[0.15] dark:opacity-[0.22]"
+            mode="background"
+          />
+        </div>
 
         <nav className="relative z-10 max-w-md mx-auto flex items-center justify-around h-20 px-2">
           {tabs.map((tab) => {
@@ -80,8 +79,25 @@ export default function BottomNavigation() {
                   {isActive && (
                     <motion.div
                       layoutId="activeTabPill"
-                      className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-full border border-sunshine/40 shadow-sm"
-                      transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+                      className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-full border border-sunshine/40"
+                      animate={{
+                        boxShadow: [
+                          '0 0 2px rgba(251, 191, 36, 0.15)',
+                          '0 0 10px rgba(251, 191, 36, 0.55)',
+                          '0 0 2px rgba(251, 191, 36, 0.15)'
+                        ],
+                        borderColor: [
+                          'rgba(251, 191, 36, 0.4)',
+                          'rgba(251, 191, 36, 0.85)',
+                          'rgba(251, 191, 36, 0.4)'
+                        ]
+                      }}
+                      // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
+                      transition={{
+                        boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                      }}
                     />
                   )}
                 </div>
