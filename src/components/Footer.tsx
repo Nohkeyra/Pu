@@ -1,8 +1,8 @@
 import { Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/context/LanguageContext';
-import { getAssetUrl } from '@/lib/utils';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { useLanguage } from '../context/LanguageContext';
+import { getAssetUrl } from '../lib/utils';
+import { Batik3DMotion } from './Batik3DMotion';
 
 function BrandMark() {
   return (
@@ -31,7 +31,10 @@ export default function Footer() {
     <footer className="bg-charcoal border-t border-white/5 pt-20 pb-8 text-white/90 relative overflow-hidden">
       <Batik3DMotion
         mode="background"
-        opacity={0.08}
+        src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
+        backgroundSize="cover"
+        backgroundRepeat="no-repeat"
+        opacity={0.12}
         mixBlendMode="overlay"
         maskImage="radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)"
         maxRotation={12}

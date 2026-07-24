@@ -1120,22 +1120,33 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </div>
 
                 {/* REALTIME SELECTION SUMMARY PANEL */}
-                <div className="bg-muted border border-[#A8E10C]/30 p-5 rounded-2xl space-y-2.5 shadow-sm">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('Quantity:', 'Kuantiti:')}</span>
-                    <span className="font-bold text-deep-forest">{orderState.guests} {tText('pax', 'orang')}</span>
+                <div className="bg-charcoal text-white p-5 rounded-2xl shadow-lg border border-charcoal/85 relative overflow-hidden space-y-2.5">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.25] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
+                  
+                  <div className="relative z-10 flex justify-between items-center text-xs">
+                    <span className="text-stone-300 font-medium">{tText('Quantity:', 'Kuantiti:')}</span>
+                    <span className="font-bold text-white">{orderState.guests} {tText('pax', 'orang')}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('Dishes Selected:', 'Hidangan Dipilih')}</span>
-                    <span className="font-bold text-deep-forest">
+                  <div className="relative z-10 flex justify-between items-center text-xs">
+                    <span className="text-stone-300 font-medium">{tText('Dishes Selected:', 'Hidangan Dipilih:')}</span>
+                    <span className="font-bold text-white">
                       {orderState.dishes.length + orderState.veggies.length} {tText('dishes', 'lauk')}
                     </span>
                   </div>
-                  <div className="border-t border-stone/10 pt-2.5 flex justify-between items-center">
-                    <span className="text-sm font-bold text-deep-forest uppercase tracking-wider">
+                  <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
+                    <span className="text-sm font-bold text-sunshine uppercase tracking-wider">
                       {tText('Pricing Status:', 'Status Harga:')}
                     </span>
-                    <span className="text-xs font-bold text-[#A8E10C] bg-[#A8E10C]/10 px-2.5 py-1 rounded-full uppercase tracking-wide">
+                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-sunshine/30">
                       {tText('To Be Quoted by Admin', 'Ditentukan oleh Admin')}
                     </span>
                   </div>
@@ -1512,17 +1523,28 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   </div>
 
                     {/* Selected Menu Dishes Summary */}
-                    <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-                      <span className="text-[10px] font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
+                    <div className="bg-charcoal text-white p-5 rounded-2xl shadow-lg border border-charcoal/85 relative overflow-hidden space-y-3">
+                      {/* Background Batik Pattern */}
+                      <div 
+                        className="absolute inset-0 opacity-[0.25] pointer-events-none"
+                        style={{
+                          backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      />
+                      <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
+
+                      <span className="relative z-10 text-[10px] font-black text-sunshine uppercase tracking-wider block mb-1">
                         {tText('Selected Dishes Menu', 'Senarai Hidangan')}
                       </span>
-                      <div className="text-xs text-deep-forest space-y-1 font-semibold">
+                      <div className="relative z-10 text-xs text-white space-y-1.5 font-semibold">
                         {orderState.dishes.length > 0 && (
                           <>
-                            <p className="text-stone text-[11px] uppercase">{tText('Main Lauk:', 'Lauk Utama:')}</p>
+                            <p className="text-stone-300 text-[11px] uppercase">{tText('Main Lauk:', 'Lauk Utama:')}</p>
                             <div className="pl-2 flex flex-wrap gap-1">
                               {orderState.dishes.map(d => (
-                                <span key={d.id} className="inline-block bg-card border border-stone/10 px-2 py-0.5 rounded text-[10px]">
+                                <span key={d.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded text-[10px] text-white">
                                   {tText(d.nameEn, d.nameBm)}
                                 </span>
                               ))}
@@ -1532,10 +1554,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                         {orderState.veggies.length > 0 && (
                           <>
-                            <p className="text-stone text-[11px] uppercase pt-1">{tText('Vegetables:', 'Sayur-sayuran:')}</p>
+                            <p className="text-stone-300 text-[11px] uppercase pt-1">{tText('Vegetables:', 'Sayur-sayuran:')}</p>
                             <div className="pl-2 flex flex-wrap gap-1">
                               {orderState.veggies.map(v => (
-                                <span key={v.id} className="inline-block bg-card border border-stone/10 px-2 py-0.5 rounded text-[10px]">
+                                <span key={v.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded text-[10px] text-white">
                                   {tText(v.nameEn, v.nameBm)}
                                 </span>
                               ))}
@@ -1545,34 +1567,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                         {orderState.customMenu && (
                           <>
-                            <p className="text-stone text-[11px] uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
-                            <p className="pl-2 text-[11px] font-normal text-deep-forest italic whitespace-pre-wrap bg-card p-2 rounded-lg border border-stone/5 mt-0.5">
+                            <p className="text-stone-300 text-[11px] uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
+                            <p className="pl-2 text-[11px] font-normal text-white italic whitespace-pre-wrap bg-white/10 p-2 rounded-lg border border-white/5 mt-0.5">
                               "{orderState.customMenu}"
                             </p>
                           </>
                         )}
 
                         {orderState.dishes.length === 0 && orderState.veggies.length === 0 && !orderState.customMenu && (
-                          <div className="bg-[#A8E10C]/10 border border-[#A8E10C]/30 p-2.5 rounded-lg text-center mt-2">
-                            <p className="text-xs font-bold text-[#A8E10C]">
+                          <div className="bg-sunshine/15 border border-sunshine/30 p-2.5 rounded-lg text-center mt-2 relative z-10">
+                            <p className="text-xs font-bold text-sunshine">
                               {tText('Set Box Makanan & Minuman (Default)', 'Set Box Makanan & Minuman (Lalai)')}
                             </p>
-                            <p className="text-[10px] text-stone font-light mt-0.5 leading-tight">
+                            <p className="text-[10px] text-stone-300 font-light mt-0.5 leading-tight">
                               {tText('You have skipped individual dish selection. Standard boxed meal set will be served.', 'Anda melangkau pilihan lauk. Set hidangan kotak standard akan disediakan.')}
                             </p>
                           </div>
                         )}
                       </div>
 
-                    <div className="border-t border-stone/10 pt-2.5 mt-2 flex justify-between items-center">
-                      <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
-                        {tText('Catering Price:', 'Harga Katering:')}
-                      </span>
-                      <span className="text-xs font-bold text-[#A8E10C] bg-[#A8E10C]/10 px-2.5 py-1 rounded-full uppercase tracking-wide">
-                        {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                      </span>
+                      <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 flex justify-between items-center">
+                        <span className="text-xs font-bold text-sunshine uppercase tracking-wider">
+                          {tText('Catering Price:', 'Harga Katering:')}
+                        </span>
+                        <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
+                          {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
                   <p className="text-[10px] text-stone leading-tight italic text-center px-4">
                     {tText(

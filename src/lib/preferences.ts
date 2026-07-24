@@ -26,8 +26,12 @@ export const CRITICAL_STORAGE_KEYS = [
  * Write a key-value pair to both localStorage (for sync access) and Capacitor Preferences (for durability).
  */
 export async function setSecureItem(key: string, value: string): Promise<void> {
-  // Always write to localStorage synchronously
-  localStorage.setItem(key, value);
+  // Always write to localStorage synchronously with safety guard
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore iframe / restricted storage errors
+  }
 
   // Write to durable Capacitor Preferences asynchronously
   try {
@@ -41,7 +45,13 @@ export async function setSecureItem(key: string, value: string): Promise<void> {
  * Read a key-value pair. Falls back from localStorage to Capacitor Preferences.
  */
 export async function getSecureItem(key: string): Promise<string | null> {
-  const localVal = localStorage.getItem(key);
+  let localVal: string | null = null;
+  try {
+    localVal = localStorage.getItem(key);
+  } catch {
+    // Ignore iframe / restricted storage errors
+  }
+
   if (localVal !== null) {
     return localVal;
   }
@@ -49,7 +59,11 @@ export async function getSecureItem(key: string): Promise<string | null> {
   try {
     const { value } = await Preferences.get({ key });
     if (value !== null) {
-      localStorage.setItem(key, value); // Sync back to localStorage
+      try {
+        localStorage.setItem(key, value); // Sync back to localStorage
+      } catch {
+        // Ignore
+      }
     }
     return value;
   } catch (err) {
@@ -62,7 +76,11 @@ export async function getSecureItem(key: string): Promise<string | null> {
  * Remove an item from both storages.
  */
 export async function removeSecureItem(key: string): Promise<void> {
-  localStorage.removeItem(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
   try {
     await Preferences.remove({ key });
   } catch (err) {
@@ -79,7 +97,11 @@ export async function syncPreferencesToLocalStorage(): Promise<void> {
     for (const key of CRITICAL_STORAGE_KEYS) {
       const { value } = await Preferences.get({ key });
       if (value !== null) {
-        localStorage.setItem(key, value);
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          // Ignore
+        }
       }
     }
     console.log('Capacitor Preferences successfully synced to localStorage.');

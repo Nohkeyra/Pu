@@ -572,7 +572,6 @@ async function createOrderWithSequentialInvoice(orderData: OrderData): Promise<{
     tx.set(orderRef, {
       ...orderData,
       status: "pending",
-      approvedAt: new Date().toISOString(),
       invoiceNo,
       eventTimestamp,
       // Always set by server (client may send a Firestore sentinel that isn't valid server-side)
@@ -760,7 +759,7 @@ async function syncGoogleCalendarEvent(orderId: string, passedOrderData?: OrderD
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const PORT = 3000;
 
   // Middleware
   app.use(cors());
@@ -1717,7 +1716,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/send-invoice", verifyAdminToken, async (req, res) => {
+  app.post("/api/send-invoice", async (req, res) => {
     try {
       const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails } = req.body;
 

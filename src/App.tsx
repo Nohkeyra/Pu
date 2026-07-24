@@ -2,31 +2,31 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
-import { cn } from '@/lib/utils';
+import { auth } from './firebaseConfig';
+import { cn } from './lib/utils';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
-import { syncPreferencesToLocalStorage } from '@/lib/preferences';
-import { preloadLogoForPDF } from '@/services/pdfService';
-import { LanguageProvider } from '@/context/LanguageContext';
-import { SettingsProvider } from '@/context/SettingsContext';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { ToastProvider } from '@/components/ui/Toast';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import PushNotificationHandler from '@/components/PushNotificationHandler';
-import NativeBackButtonHandler from '@/components/NativeBackButtonHandler';
-import NativeAppListeners from '@/components/NativeAppListeners';
-import ScrollToTopButton from '@/components/ScrollToTopButton';
-import AppSplashScreen from '@/components/AppSplashScreen';
-import { Skeleton } from '@/components/ui/Skeleton';
-import LandingPage from '@/pages/LandingPage';
-import OrderPage from '@/pages/OrderPage';
-import AdminPage from '@/pages/AdminPage';
-import LoginPage from '@/pages/LoginPage';
-import ProfilePage from '@/pages/ProfilePage';
-import SettingsPage from '@/pages/SettingsPage';
-import BottomNavigation from '@/components/BottomNavigation';
+import { syncPreferencesToLocalStorage } from './lib/preferences';
+import { preloadLogoForPDF } from './services/pdfService';
+import { LanguageProvider } from './context/LanguageContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './components/ui/Toast';
+import { TooltipProvider } from './components/ui/tooltip';
+import PushNotificationHandler from './components/PushNotificationHandler';
+import NativeBackButtonHandler from './components/NativeBackButtonHandler';
+import NativeAppListeners from './components/NativeAppListeners';
+import ScrollToTopButton from './components/ScrollToTopButton';
+import AppSplashScreen from './components/AppSplashScreen';
+import { Skeleton } from './components/ui/Skeleton';
+import LandingPage from './pages/LandingPage';
+import OrderPage from './pages/OrderPage';
+import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -72,8 +72,16 @@ function SessionGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const isSessionStarted = sessionStorage.getItem('wawasan_session_started') === 'true';
-      const isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
+      let isSessionStarted = false;
+      let isGuestAllowed = false;
+
+      try {
+        isSessionStarted = sessionStorage.getItem('wawasan_session_started') === 'true';
+        isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
+      } catch (err) {
+        console.warn('sessionStorage unavailable (sandboxed environment):', err);
+        isSessionStarted = true; // allow access in restricted sandboxes
+      }
       
       // They MUST have started the session in this browser tab/window to be allowed.
       if (isSessionStarted && (user || isGuestAllowed)) {
@@ -182,11 +190,13 @@ function App() {
     // Only clear session flags on cold start (no hash route yet), not on every remount
     const isColdStart = !window.location.hash || window.location.hash === '#/';
     if (isColdStart) {
-      sessionStorage.removeItem('wawasan_session_started');
-      sessionStorage.removeItem('wawasan_guest_allowed');
+      try {
+        sessionStorage.removeItem('wawasan_session_started');
+        sessionStorage.removeItem('wawasan_guest_allowed');
+      } catch {
+        // Ignore if sessionStorage is unavailable in restricted iframe/sandbox
+      }
     }
-
-    // Force route back to the startup screen /#/ on load or refresh
 
     // Sync Capacitor Preferences to localStorage for synchronous access fallback
     syncPreferencesToLocalStorage();
@@ -266,7 +276,7 @@ function App() {
     const listenerPromise = setupSafeArea();
 
     return () => {
-      listenerPromise.then(handle => handle?.remove());
+      listenerPromise.then(handle => handle?.remove()).catch(() => {});
     };
   }, []);
 

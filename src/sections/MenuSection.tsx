@@ -212,7 +212,7 @@ export default function MenuSection() {
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-forest/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-sunshine/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
                 <div className="p-7 md:p-8 relative">
                   <div className="flex justify-between items-start mb-4">
@@ -223,21 +223,22 @@ export default function MenuSection() {
                   <p className="font-body text-stone dark:text-stone/70 leading-relaxed mb-6 font-light text-sm h-[60px] overflow-hidden line-clamp-3">
                     {isBm ? item.descBm : item.descEn}
                   </p>
-                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-deep-forest dark:bg-card border border-sunshine/30 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/60 transition-all duration-300">
-                    {/* Seamless Blended Batik Background Overlay */}
+                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-gradient-to-r from-[#023341] via-[#0B4A5C] to-[#023341] dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-sunshine/30 dark:border-sunshine/60 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/80 transition-all duration-300">
+                    {/* Authentic Non-Repeating Malaysian Batik Overlay */}
                     <div 
-                      className="absolute inset-0 opacity-30 dark:opacity-40 pointer-events-none transition-opacity duration-300 group-hover:opacity-40"
+                      className="absolute inset-0 opacity-35 dark:opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-65 mix-blend-overlay dark:mix-blend-soft-light"
                       style={{
-                        backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                        backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
                         backgroundSize: 'cover',
+                        backgroundRepeat: 'no-repeat',
                         backgroundPosition: 'center',
                       }}
                     />
                     <div className="relative z-10 flex items-center justify-between w-full">
-                      <span className="text-[11px] font-black text-white uppercase tracking-widest drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                      <span className="text-[11px] font-black text-sunshine dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
                         {isBm ? 'Harga Bermula' : 'Price Starts'}
                       </span>
-                      <span className="font-sans font-black text-white text-base drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] group-hover:scale-105 transition-transform duration-300">
+                      <span className="font-sans font-black text-white dark:text-amber-50 text-base drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-300">
                         {isBm ? item.priceBm : item.priceEn}
                       </span>
                     </div>

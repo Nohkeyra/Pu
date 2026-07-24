@@ -12,8 +12,11 @@ interface Batik3DMotionProps {
   overlayClassName?: string;
   maskImage?: string;
   mixBlendMode?: string;
+  backgroundSize?: string;
+  backgroundRepeat?: string;
   style?: React.CSSProperties;
   alt?: string;
+  src?: string;
 }
 
 export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
@@ -25,16 +28,19 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
   overlayClassName = '',
   maskImage,
   mixBlendMode,
+  backgroundSize = '240px auto',
+  backgroundRepeat = 'repeat',
   style = {},
   alt = 'Batik Pattern Background',
+  src,
 }) => {
   const { rotateX, rotateY } = useDeviceMotion3D(maxRotation);
   
   // Subtle translation parallax for extra 3D depth
-  const moveX = useTransform(rotateY, (rY) => rY * 0.7);
-  const moveY = useTransform(rotateX, (rX) => -rX * 0.7);
+  const moveX = useTransform(rotateY, (rY) => rY * 0.65);
+  const moveY = useTransform(rotateX, (rX) => -rX * 0.65);
 
-  const batikUrl = getAssetUrl('/assets/batik_pattern.jpg');
+  const batikUrl = src || getAssetUrl('/assets/batik_pattern_hd.jpg');
 
   return (
     <div 
@@ -46,18 +52,29 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
           src={batikUrl}
           alt={alt}
           fetchPriority="high"
+          decoding="async"
           style={{
             rotateX,
             rotateY,
             x: moveX,
             y: moveY,
-            scale: 1.45, // Scaled up even more to prevent any edge cutoff
+            scale: 1.1,
             maskImage,
             WebkitMaskImage: maskImage,
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
             ...style,
           }}
-          className={`absolute -inset-[15%] w-[130%] h-[130%] object-cover object-center filter transition-all duration-300 ease-out ${imgClassName}`}
+          className={`absolute -inset-[6%] h-[112%] w-[112%] transform-gpu object-cover object-center ${imgClassName}`}
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            // Fallback to standard batik_pattern.jpg if HD asset path is unavailable
+            const target = e.currentTarget;
+            if (!target.src.includes('batik_pattern.jpg')) {
+              target.src = getAssetUrl('/assets/batik_pattern.jpg');
+            }
+          }}
         />
       ) : (
         <motion.div
@@ -66,17 +83,21 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             rotateY,
             x: moveX,
             y: moveY,
-            scale: 1.45, // Scaled up even more to prevent any edge cutoff
+            scale: 1.1,
             backgroundImage: `url(${batikUrl})`,
-            backgroundSize: 'cover',
+            backgroundSize,
+            backgroundRepeat,
             backgroundPosition: 'center',
             mixBlendMode: mixBlendMode as React.CSSProperties['mixBlendMode'],
             maskImage,
             WebkitMaskImage: maskImage,
             opacity,
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
             ...style,
           }}
-          className={`absolute -inset-[15%] w-[130%] h-[130%] ${imgClassName}`}
+          className={`absolute -inset-[6%] h-[112%] w-[112%] transform-gpu ${imgClassName}`}
         />
       )}
       {overlayClassName && <div className={overlayClassName} />}

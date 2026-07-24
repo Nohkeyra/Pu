@@ -1,9 +1,10 @@
 
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/context/LanguageContext';
-import GlitchText from '@/components/GlitchText';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { useLanguage } from '../context/LanguageContext';
+import GlitchText from '../components/GlitchText';
+import { Batik3DMotion } from '../components/Batik3DMotion';
+import { getAssetUrl } from '../lib/utils';
 
 export default function HeroSection() {
   const { language } = useLanguage();
@@ -27,24 +28,28 @@ export default function HeroSection() {
   return (
     <section className="relative w-full overflow-hidden bg-cream dark:bg-charcoal pt-20 pb-16 h-[65vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] min-h-[500px] flex flex-col justify-center items-center">
       {/* Food-Centric Backdrop */}
-      <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-deep-forest dark:bg-charcoal transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 w-full h-full z-0 overflow-hidden bg-gradient-to-b from-charcoal via-amber-950/70 to-charcoal dark:bg-charcoal transition-colors duration-300">
         <motion.div 
           style={{ y }} 
           className="absolute -top-36 -bottom-36 -left-16 -right-16"
         >
           <Batik3DMotion
+            mode="background"
+            src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
+            backgroundSize="cover"
+            backgroundRepeat="no-repeat"
             maxRotation={16}
             imgClassName="opacity-75 dark:opacity-35 transition-opacity duration-300"
             maskImage="linear-gradient(to bottom, black 0%, black 35%, rgba(0,0,0,0.5) 70%, transparent 95%)"
           />
         </motion.div>
         {/* Warm Overlay & Contrast Protection - Lighter in Day Mode, deep dark charcoal in Night Mode */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-deep-forest/80 dark:from-black/80 dark:via-black/50 dark:to-charcoal/95 z-0 transition-all duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-sunshine/10 to-charcoal/85 dark:from-black/80 dark:via-black/50 dark:to-charcoal/95 z-0 transition-all duration-300" />
         {/* Geometric Star Pattern Overlay with smooth straight bottom mask */}
         <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none [mask-image:linear-gradient(to_bottom,black_30%,transparent_85%)]" />
 
         {/* Straight horizontal gradient dissolve replacing the wavy curve */}
-        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-48 md:h-60 bg-gradient-to-b from-transparent via-deep-forest/20 to-cream dark:via-charcoal/60 dark:to-charcoal z-10 pointer-events-none transition-colors duration-300" />
+        <div className="absolute inset-x-0 bottom-0 h-32 sm:h-48 md:h-60 bg-gradient-to-b from-transparent via-sunshine/10 to-cream dark:via-charcoal/60 dark:to-charcoal z-10 pointer-events-none transition-colors duration-300" />
       </div>
 
       {/* Decorative ambient radial glows */}

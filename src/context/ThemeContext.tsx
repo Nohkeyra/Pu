@@ -20,13 +20,21 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('app_theme');
-    return stored === 'light' ? 'light' : 'dark';
+    try {
+      const stored = localStorage.getItem('app_theme');
+      return stored === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
   });
 
   const [accent, setAccentState] = useState<AccentColor>(() => {
-    const stored = localStorage.getItem('app_accent');
-    return stored === 'kiwi' ? 'kiwi' : 'sunshine';
+    try {
+      const stored = localStorage.getItem('app_accent');
+      return stored === 'kiwi' ? 'kiwi' : 'sunshine';
+    } catch {
+      return 'sunshine';
+    }
   });
 
   // Load initial theme and accent from Capacitor preferences asynchronously on mount

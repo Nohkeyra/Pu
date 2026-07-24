@@ -12,10 +12,18 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    return localStorage.getItem('notificationsEnabled') !== 'false';
+    try {
+      return localStorage.getItem('notificationsEnabled') !== 'false';
+    } catch {
+      return true;
+    }
   });
   const [developerMode, setDeveloperMode] = useState(() => {
-    return localStorage.getItem('developerMode') === 'true';
+    try {
+      return localStorage.getItem('developerMode') === 'true';
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {

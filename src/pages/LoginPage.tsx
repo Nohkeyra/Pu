@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '@/firebaseConfig';
-import AuthModal from '@/components/AuthModal';
-import CinematicLogo from '@/components/CinematicLogo';
-import { useLanguage } from '@/context/LanguageContext';
-import { useTheme } from '@/context/ThemeContext';
+import { auth } from '../firebaseConfig';
+import AuthModal from '../components/AuthModal';
+import CinematicLogo from '../components/CinematicLogo';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { Batik3DMotion } from '../components/Batik3DMotion';
+import { getAssetUrl } from '../lib/utils';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -49,8 +50,8 @@ export default function LoginPage() {
       </header>
 
       <div className="absolute inset-0">
-        <Batik3DMotion mode="img" imgClassName="opacity-24 dark:opacity-16" maxRotation={12} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(252,245,227,0.96),rgba(252,245,227,0.72),rgba(252,245,227,0.4))] dark:bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(18,18,20,0.96),rgba(18,18,20,0.76),rgba(18,18,20,0.48))]" />
+        <Batik3DMotion mode="background" src={getAssetUrl('/assets/batik_vector_pattern.jpg')} backgroundSize="cover" backgroundRepeat="no-repeat" imgClassName="opacity-30 contrast-[1.08] saturate-[1.12] dark:opacity-22" maxRotation={10} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(252,245,227,0.95),rgba(252,245,227,0.7),rgba(252,245,227,0.35))] dark:bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(18,18,20,0.95),rgba(18,18,20,0.75),rgba(18,18,20,0.45))]" />
       </div>
 
       <AnimatePresence mode="wait">
