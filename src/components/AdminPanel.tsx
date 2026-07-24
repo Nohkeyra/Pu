@@ -1349,7 +1349,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       'rgba(251, 191, 36, 0.4)'
                     ]
                   }}
-                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
                   transition={{
                     boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
                     borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
@@ -1397,7 +1396,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       'rgba(251, 191, 36, 0.4)'
                     ]
                   }}
-                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
                   transition={{
                     boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
                     borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
@@ -1432,7 +1430,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       'rgba(251, 191, 36, 0.4)'
                     ]
                   }}
-                  // @ts-expect-error Framer Motion transitions are not fully typed for custom properties
                   transition={{
                     boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
                     borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },

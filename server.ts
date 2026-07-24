@@ -132,6 +132,31 @@ interface OrderData {
   name?: string;
   email?: string;
   status?: string;
+  date?: string;
+  time?: string;
+  dateTime?: string;
+  quantity?: number;
+  pax?: number;
+  meals?: string | string[];
+  location?: string;
+  menu?: string;
+  notes?: string;
+  userId?: string | null;
+  uid?: string;
+  items?: unknown[];
+  to?: string;
+  attn?: string;
+  contact?: string;
+  calendarEventIds?: Record<string, string>;
+  customerEmail?: string;
+  customerName?: string;
+  lang?: string;
+  approvedAt?: string;
+  billedAt?: string;
+  cancelRequestedAt?: string;
+  totalAmount?: number;
+  eventTimestamp?: Timestamp;
+  createdAt?: Timestamp | { seconds?: number; nanoseconds?: number } | FieldValue;
   [key: string]: unknown;
 }
 
@@ -349,14 +374,17 @@ function buildStatusEmailHtml(copy: StatusCopy, lang: NotifyLang): string {
 async function sendOrderStatusEmail(
   transporter: nodemailer.Transporter,
   order: Partial<OrderData> & { email?: string; name?: string; invoiceNo?: string; lang?: string },
-  newStatus: string
+  newStatus: string,
+  senderEmail: string,
+  smtpUser?: string,
+  smtpPass?: string
 ): Promise<boolean> {
   const to = order.email;
   if (!to) {
     console.warn("[StatusNotify] No customer email on order; skipping status email.");
     return false;
   }
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  if (!smtpUser || !smtpPass) {
     console.warn("[StatusNotify] SMTP not configured (SMTP_USER/SMTP_PASS); skipping status email.");
     return false;
   }
@@ -365,7 +393,7 @@ async function sendOrderStatusEmail(
   const copy = getStatusCopy(newStatus, order.name || "", order.invoiceNo || "", lang);
 
   await transporter.sendMail({
-    from: `"Restoran Wawasan" <${process.env.SENDER_EMAIL || process.env.SMTP_USER || "madnor.noisy@gmail.com"}>`,
+    from: `"Restoran Wawasan" <${senderEmail}>`,
     to,
     subject: copy.subject,
     text: `${copy.heading}\n\n${copy.message}`,
@@ -442,14 +470,17 @@ async function sendOrderStatusPush(
 async function notifyCustomerOfStatusChange(
   transporter: nodemailer.Transporter,
   order: Partial<OrderData> & { id?: string; uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string },
-  newStatus: string
+  newStatus: string,
+  senderEmail: string,
+  smtpUser?: string,
+  smtpPass?: string
 ): Promise<void> {
   if (!ENABLE_ORDER_STATUS_NOTIFICATIONS) {
     console.log("[StatusNotify] Disabled via ENABLE_ORDER_STATUS_NOTIFICATIONS=false; skipping.");
     return;
   }
   await Promise.allSettled([
-    sendOrderStatusEmail(transporter, order, newStatus).catch((err) =>
+    sendOrderStatusEmail(transporter, order, newStatus, senderEmail, smtpUser, smtpPass).catch((err) =>
       console.error("[StatusNotify] Email send failed:", err)
     ),
     sendOrderStatusPush(order, newStatus).catch((err) =>
@@ -735,25 +766,37 @@ async function startServer() {
   app.use(cors());
   app.use(express.json({ limit: '50mb' })); // Allow large payloads for base64 PDF
 
-  // Nodemailer transporter setup
-  // Expects environment variables for SMTP configuration
+  // SMTP configuration — Brevo relay (smtp-relay.brevo.com:2525)
+  const clean = (value?: string) => (value ?? "").trim();
+
+  const smtpHost   = clean(process.env.SMTP_HOST) || "smtp-relay.brevo.com";
+  const smtpPort   = Number(clean(process.env.SMTP_PORT) || "2525");
+  const smtpSecure = clean(process.env.SMTP_SECURE).toLowerCase() === "true";
+  const smtpUser   = clean(process.env.SMTP_USER);   // Brevo SMTP login only
+  const smtpPass   = clean(process.env.SMTP_PASS);
+  const senderEmail = clean(process.env.SENDER_EMAIL) || "wawasan.orders@gmail.com";
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: smtpUser,
+      pass: smtpPass,
     },
-    family: 4, // Force IPv4 — Render's network doesn't reliably route outbound IPv6 to Gmail SMTP
   });
 
-  // Verify SMTP transporter connection
+  console.log("[SMTP] Host:        ", smtpHost);
+  console.log("[SMTP] Port:        ", smtpPort);
+  console.log("[SMTP] Secure:      ", smtpSecure);
+  console.log("[SMTP] User:        ", smtpUser);
+  console.log("[SMTP] Sender email:", senderEmail);
+
   transporter.verify((error) => {
     if (error) {
-      console.error("SMTP Configuration/Connection Error:", error);
+      console.error("[SMTP] Connection error:", error);
     } else {
-      console.log("SMTP connection verified! Server is ready to send emails.");
+      console.log("[SMTP] Connection verified — ready to send emails.");
     }
   });
 
@@ -822,7 +865,7 @@ async function startServer() {
         return res.status(400).json({ error: "Missing testEmail" });
       }
 
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      if (!smtpUser || !smtpPass) {
         return res.status(500).json({ 
           ok: false, 
           error: "SMTP is not fully configured (missing SMTP_USER or SMTP_PASS environment variables)." 
@@ -830,7 +873,7 @@ async function startServer() {
       }
 
       const info = await transporter.sendMail({
-        from: `"Restoran Wawasan (Test)" <${process.env.SMTP_USER}>`,
+        from: `"Restoran Wawasan (Test)" <${senderEmail}>`,
         to: testEmail,
         subject: "Wawasan Pak Usop Catering App - SMTP Test Email",
         text: `Hello,\n\nThis is a diagnostics test email sent from the Restoran Wawasan Pak Usop Admin Panel.\nIf you received this, your SMTP configuration is 100% WORKING!\n\nSent at: ${new Date().toLocaleString()}\n\nBest regards,\nRestoran Wawasan Pak Usop Server`,
@@ -1072,7 +1115,7 @@ async function startServer() {
   // TEMPORARY DEBUG ENDPOINT - lists ALL orders with no date filter, to verify
   // Firestore actually contains test data. Remove this once debugging is done.
   if (process.env.ENABLE_DEBUG_ENDPOINTS === "true") {
-    app.get("/api/widget/debug-all-orders", async (req, res) => {
+    app.get("/api/widget/debug-all-orders", verifyAdminToken, async (req, res) => {
       try {
         const results: Record<string, unknown>[] = [];
         try {
@@ -1232,7 +1275,7 @@ async function startServer() {
         ...updatedFields,
         id: orderId,
       } as unknown as OrderData;
-      notifyCustomerOfStatusChange(transporter, mergedOrder, "cancel_requested").catch(err => {
+      notifyCustomerOfStatusChange(transporter, mergedOrder, "cancel_requested", senderEmail, smtpUser, smtpPass).catch(err => {
         console.error("[StatusNotify] Background cancel requested notification error:", err);
       });
 
@@ -1420,8 +1463,6 @@ async function startServer() {
       }
 
       // 4. Secure Email Delivery - Build styled HTML email
-      const smtpUser = process.env.SMTP_USER;
-      const smtpPass = process.env.SMTP_PASS;
 
       if (!smtpUser || !smtpPass) {
         console.warn("SMTP credentials not configured. Please configure SMTP_USER and SMTP_PASS.");
@@ -1651,7 +1692,7 @@ async function startServer() {
       }
 
       await transporter.sendMail({
-        from: `"Restoran Wawasan" <${process.env.SENDER_EMAIL || 'madnor.noisy@gmail.com'}>`,
+        from: `"Restoran Wawasan" <${senderEmail}>`,
         to: customerEmail,
         subject: emailSubject,
         html: htmlBody,
@@ -1676,7 +1717,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/send-invoice", async (req, res) => {
+  app.post("/api/send-invoice", verifyAdminToken, async (req, res) => {
     try {
       const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails } = req.body;
 
@@ -1685,7 +1726,7 @@ async function startServer() {
       }
 
       // Ensure SMTP is configured
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      if (!smtpUser || !smtpPass) {
         console.warn("SMTP credentials not configured. Please configure SMTP_USER and SMTP_PASS.");
         return res.status(500).json({ error: "Email service not configured." });
       }
@@ -1933,7 +1974,7 @@ async function startServer() {
       const pdfBuffer = Buffer.from(pdfBase64.split(',')[1] || pdfBase64, 'base64');
 
       await transporter.sendMail({
-        from: `"Restoran Wawasan" <${process.env.SENDER_EMAIL || 'madnor.noisy@gmail.com'}>`,
+        from: `"Restoran Wawasan" <${senderEmail}>`,
         to: email,
         subject: emailSubject,
         text: htmlBody ? undefined : emailBody,
@@ -2139,7 +2180,7 @@ async function startServer() {
             id: orderId,
           } as Partial<OrderData> & { id?: string; uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string };
           console.log(`[StatusNotify] Order ${orderId} status changed: "${previousStatus}" -> "${newStatus}". Notifying customer.`);
-          notifyCustomerOfStatusChange(transporter, mergedOrder, newStatus).catch(err => {
+          notifyCustomerOfStatusChange(transporter, mergedOrder, newStatus, senderEmail, smtpUser, smtpPass).catch(err => {
             console.error("[StatusNotify] Background status notification error:", err);
           });
         }
@@ -2192,7 +2233,7 @@ async function startServer() {
             status: 'cancelled'
           };
           console.log(`[StatusNotify] Order ${orderId} cancellation approved by admin. Notifying customer.`);
-          notifyCustomerOfStatusChange(transporter, mergedOrder, "cancelled").catch(err => {
+          notifyCustomerOfStatusChange(transporter, mergedOrder, "cancelled", senderEmail, smtpUser, smtpPass).catch(err => {
             console.error("[StatusNotify] Background cancellation notification error:", err);
           });
         }

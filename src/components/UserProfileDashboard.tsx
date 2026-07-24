@@ -45,6 +45,7 @@ import { generateInvoicePDF, generateCombinedInvoicePDF, preloadLogoForPDF } fro
 import type { Order, CombinedInvoicePayload, UserProfile, SavedLocation } from '@/types';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -85,6 +86,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: 'cancel' | 'delete'; orderId: string } | null>(null);
 
   // Combine Invoice State
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
@@ -422,16 +424,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     setSelectedOrders(next);
   };
 
-  const handleCancelOrder = async (orderId: string) => {
+  const handleCancelOrder = (orderId: string) => {
     if (!currentUser) return;
-    const confirmCancel = window.confirm(
-      t(
-        'Are you sure you want to request cancellation for this order?',
-        'Adakah anda pasti ingin meminta pembatalan untuk tempahan ini?'
-      )
-    );
-    if (!confirmCancel) return;
+    setConfirmDialog({ type: 'cancel', orderId });
+  };
 
+  const executeCancelOrder = async (orderId: string) => {
+    if (!currentUser) return;
+    setConfirmDialog(null);
     setCancellingOrderId(orderId);
     try {
       const idToken = await currentUser.getIdToken();
@@ -473,16 +473,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
+  const handleDeleteOrder = (orderId: string) => {
     if (!currentUser) return;
-    const confirmDelete = window.confirm(
-      t(
-        'Are you sure you want to permanently delete this billed order from your history?',
-        'Adakah anda pasti ingin memadamkan tempahan dibilkan ini secara kekal daripada sejarah anda?'
-      )
-    );
-    if (!confirmDelete) return;
+    setConfirmDialog({ type: 'delete', orderId });
+  };
 
+  const executeDeleteOrder = async (orderId: string) => {
+    if (!currentUser) return;
+    setConfirmDialog(null);
     setDeletingOrderId(orderId);
     try {
       const idToken = await currentUser.getIdToken();
@@ -1462,11 +1460,60 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     </AnimatePresence>
   );
 
+  const confirmModal = (
+    <Dialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>
+            {confirmDialog?.type === 'cancel'
+              ? t('Request Cancellation?', 'Minta Pembatalan?')
+              : t('Delete Order?', 'Padam Tempahan?')}
+          </DialogTitle>
+          <DialogDescription>
+            {confirmDialog?.type === 'cancel'
+              ? t(
+                  'Are you sure you want to request cancellation for this order?',
+                  'Adakah anda pasti ingin meminta pembatalan untuk tempahan ini?'
+                )
+              : t(
+                  'Are you sure you want to permanently delete this billed order from your history?',
+                  'Adakah anda pasti ingin memadamkan tempahan dibilkan ini secara kekal daripada sejarah anda?'
+                )}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setConfirmDialog(null)}
+          >
+            {t('Cancel', 'Batal')}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (!confirmDialog) return;
+              if (confirmDialog.type === 'cancel') {
+                executeCancelOrder(confirmDialog.orderId);
+              } else {
+                executeDeleteOrder(confirmDialog.orderId);
+              }
+            }}
+          >
+            {confirmDialog?.type === 'cancel'
+              ? t('Request Cancellation', 'Minta Pembatalan')
+              : t('Delete', 'Padam')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (isEmbedded) {
     return (
       <div className="w-full h-full relative">
         {content}
         {combineModal}
+        {confirmModal}
         {previewOrder && (
           <InvoicePreviewModal
             isOpen={!!previewOrder}
@@ -1506,6 +1553,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
       )}
       {combineModal}
+      {confirmModal}
       {previewOrder && (
         <InvoicePreviewModal
           isOpen={!!previewOrder}

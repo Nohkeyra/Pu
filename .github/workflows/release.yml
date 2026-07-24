@@ -38,6 +38,8 @@ jobs:
         run: npm ci
 
       - name: Build web assets
+        env:
+          VITE_API_URL_ANDROID: https://restoran-wawasan-bio.onrender.com
         run: npm run build
 
       - name: Sync Capacitor
