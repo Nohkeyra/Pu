@@ -1,4 +1,19 @@
 import "dotenv/config";
+
+// Prevent the Render dyno from crashing silently on unhandled async errors.
+// This does not fix the underlying error — it ensures it is logged before the
+// process exits (uncaughtException) or simply logged without killing the
+// process (unhandledRejection), matching Node's default behavior for the latter
+// but with visibility into what happened.
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err);
+  setTimeout(() => process.exit(1), 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -11,6 +26,9 @@ import { getMessaging } from "firebase-admin/messaging";
 import { getAuth } from "firebase-admin/auth";
 import { google } from "googleapis";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 interface FirebaseConfig {
   apiKey: string;
@@ -763,6 +781,26 @@ async function startServer() {
 
   // Middleware
   app.use(cors());
+  // Helmet adds baseline security headers (X-Content-Type-Options,
+  // X-Frame-Options, etc). contentSecurityPolicy is disabled here because
+  // the frontend loads Google Fonts (fonts.googleapis.com/fonts.gstatic.com)
+  // and connects to Firebase — a default/strict CSP would block those and
+  // this hasn't been tested against a real browser session. Enable and tune
+  // it deliberately later if needed, rather than guessing directives now.
+  app.use(helmet({ contentSecurityPolicy: false }));
+
+  // Rate limit admin login attempts specifically — this is the endpoint most
+  // exposed to brute-force attempts against ADMIN_PASSWORD. General API
+  // routes are left unlimited for now since Render free tier + a small
+  // number of B2B clients makes broad rate limiting unnecessary right now.
+  const adminLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 attempts per IP per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: "Too many login attempts. Please try again later." },
+  });
+
   app.use(express.json({ limit: '50mb' })); // Allow large payloads for base64 PDF
 
   // SMTP configuration — Brevo relay (smtp-relay.brevo.com:2525)
@@ -2031,12 +2069,36 @@ async function startServer() {
     }
   }
 
-  app.post("/api/admin/login", (req, res) => {
+  app.post("/api/admin/login", adminLoginLimiter, async (req, res) => {
     try {
       const { password } = req.body;
       const adminPassword = process.env.ADMIN_PASSWORD;
 
-      if (!password || password !== adminPassword) {
+      if (!password || !adminPassword) {
+        return res.status(401).json({ success: false, error: "Unauthorized: Invalid password" });
+      }
+
+      // ADMIN_PASSWORD in Render is expected to be a bcrypt hash (starts with
+      // $2a$/$2b$/$2y$). While migrating, we still accept a plaintext value
+      // stored in ADMIN_PASSWORD as a fallback, with a loud warning, so login
+      // doesn't break if the env var hasn't been rotated to a hash yet.
+      // TODO: remove the plaintext fallback branch once ADMIN_PASSWORD on
+      // Render is confirmed to be a bcrypt hash.
+      const looksLikeBcryptHash = /^\$2[aby]\$\d{2}\$/.test(adminPassword);
+
+      let passwordMatches = false;
+      if (looksLikeBcryptHash) {
+        passwordMatches = await bcrypt.compare(password, adminPassword);
+      } else {
+        console.warn(
+          "[Admin Auth] ADMIN_PASSWORD does not look like a bcrypt hash — " +
+          "falling back to plaintext comparison. This is insecure. " +
+          "Set ADMIN_PASSWORD in Render to a bcrypt hash to remove this warning."
+        );
+        passwordMatches = password === adminPassword;
+      }
+
+      if (!passwordMatches) {
         return res.status(401).json({ success: false, error: "Unauthorized: Invalid password" });
       }
 

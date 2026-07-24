@@ -29,7 +29,14 @@ if (typeof window !== 'undefined' && erudaEnabledByUser) {
     });
 }
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('Fatal: #root element not found in DOM. Aborting React mount.');
+  document.body.innerHTML = '<div style="padding:20px;text-align:center;">Failed to load application shell.</div>';
+  throw new Error('React root element (#root) not found');
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
@@ -70,14 +77,27 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
               .catch((err) => console.warn('[Service Worker] Sync registration failed:', err));
           }
 
-          // Proactively pre-warm critical assets so the service worker caches them instantly
+          // Proactively pre-warm critical assets once the service worker is actually active
+          // (registering a SW does not mean it is active yet — must check/wait for state).
           const criticalAssets = [
             '/assets/batik_pattern.jpg',
             '/assets/wawasan_logo.jpg'
           ];
-          criticalAssets.forEach(asset => {
-            fetch(asset).catch(() => {});
-          });
+          const prewarmAssets = () => {
+            criticalAssets.forEach(asset => {
+              fetch(asset).catch(() => {});
+            });
+          };
+          const sw = registration.installing || registration.waiting || registration.active;
+          if (sw?.state === 'activated') {
+            prewarmAssets();
+          } else if (sw) {
+            sw.addEventListener('statechange', () => {
+              if (sw.state === 'activated') {
+                prewarmAssets();
+              }
+            });
+          }
         })
         .catch((err) => {
           console.error('[Service Worker] Registration failed:', err);

@@ -20,6 +20,10 @@ export default defineConfig({
     emptyOutDir: true,
     copyPublicDir: true, // CRITICAL: Ensures public/ copies correctly
     chunkSizeWarningLimit: 800,
+    // 'hidden' generates .map files for server-side error tracing (Render logs,
+    // future error-reporting tools) without referencing them in the bundle —
+    // browsers will not auto-fetch or expose the original source to end users.
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         manualChunks: {

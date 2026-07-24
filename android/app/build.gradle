@@ -86,8 +86,9 @@ tasks.register("printFingerprint") {
         }
         
         println "Executing keytool to fetch certificate fingerprints..."
+        def storePass = System.getenv("DEBUG_KEYSTORE_PASS") ?: "android"
         exec {
-            commandLine keyTool.absolutePath, "-list", "-v", "-alias", "androiddebugkey", "-keystore", keystore.absolutePath, "-storepass", "android"
+            commandLine keyTool.absolutePath, "-list", "-v", "-alias", "androiddebugkey", "-keystore", keystore.absolutePath, "-storepass", storePass
         }
     }
 }
