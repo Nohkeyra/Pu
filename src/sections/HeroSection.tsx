@@ -1,5 +1,6 @@
 
 import { motion, useScroll, useTransform } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import GlitchText from '@/components/GlitchText';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
@@ -74,9 +75,9 @@ export default function HeroSection() {
           <a href="#menu" className="px-10 py-4 bg-sunshine text-white rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
             {t('Explore Menu', 'Lihat Menu')}
           </a>
-          <a href="/#/order" className="px-10 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">
+          <Link to="/order" className="px-10 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">
             {t('Order Catering', 'Tempah Katering')}
-          </a>
+          </Link>
         </motion.div>
 
       </motion.div>

@@ -143,7 +143,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           toast({
             title: language === 'en' ? 'Background Sync Succeeded' : 'Penyelarasan Latar Belakang Berjaya',
             description: language === 'en' ? 'Orders have been synced with the cloud.' : 'Pesanan telah diselaraskan dengan awan.',
-            variant: 'default',
+            variant: 'success',
           });
         } else {
           setSyncStatus('offline');
