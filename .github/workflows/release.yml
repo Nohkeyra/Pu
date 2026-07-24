@@ -45,6 +45,23 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Verify google-services.json
+        run: |
+          echo "Checking google-services.json..."
+          if [ -f "android/app/google-services.json" ]; then
+            echo "✅ android/app/google-services.json exists."
+            ls -la android/app/google-services.json
+          elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
+            echo "⚠️ android/app/google-services.json missing from checkout, restoring from secret..."
+            echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
+            ls -la android/app/google-services.json
+          else
+            echo "❌ ERROR: android/app/google-services.json not found after checkout!"
+            echo "Directory listing of android/app:"
+            ls -la android/app
+            exit 1
+          fi
+
       - name: Build release APK (unsigned)
         working-directory: ./android
         run: |
