@@ -1,0 +1,13 @@
+# Treat images as binary - NEVER modify line endings
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+
+# Treat text files normally
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
