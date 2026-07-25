@@ -254,39 +254,43 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               /* High Fidelity Interactive Document View */
               <div className="max-w-xl mx-auto bg-white text-stone-900 rounded-2xl shadow-2xl p-5 sm:p-8 border border-stone-200">
                 {/* Header Logo & Title */}
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-stone-200">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-700 font-bold text-xl shrink-0">
-                      RW
+                <div className="relative overflow-hidden rounded-xl p-4 bg-[#FFFDF8] border border-amber-200/80 mb-6 shadow-xs">
+                  <div 
+                    className="absolute inset-0 opacity-15 bg-cover bg-center pointer-events-none"
+                    style={{ backgroundImage: `url('/assets/batik_vector_pattern.jpg')` }}
+                  />
+                  <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="flex items-start gap-3">
+                      <img src="/assets/wawasan_logo.jpg" alt="Logo" className="w-12 h-12 rounded-full object-cover border border-amber-400/80 shrink-0 shadow-xs" />
+                      <div>
+                        <h3 className="text-lg font-extrabold text-amber-900 uppercase tracking-tight leading-none">
+                          RESTORAN WAWASAN
+                        </h3>
+                        <p className="text-xs text-stone-700 mt-1 font-medium">
+                          Unit 3, Level B3, Menara PjH
+                        </p>
+                        <p className="text-xs text-stone-600">
+                          Jalan P2a, Presint 2, 62100 Putrajaya
+                        </p>
+                        <p className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                          Est. 1986 • Restoran Wawasan Pak Usop
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-extrabold text-amber-800 uppercase tracking-tight leading-none">
-                        RESTORAN WAWASAN
-                      </h3>
-                      <p className="text-xs text-stone-600 mt-1 font-medium">
-                        Unit 3, Level B3, Menara PjH
-                      </p>
-                      <p className="text-xs text-stone-500">
-                        Jalan P2a, Presint 2, 62100 Putrajaya
-                      </p>
-                      <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
-                        Est. 1986 • Restoran Wawasan Pak Usop
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-stone-100 w-full sm:w-auto">
-                    <span className="inline-block px-3 py-1 bg-amber-100 text-amber-900 font-extrabold text-xs rounded-full uppercase tracking-wider mb-1.5">
-                      INVOIS / INVOICE
-                    </span>
-                    <p className="text-xs text-stone-500">
-                      {tText('No. Invois', 'Invoice No.')}:{' '}
-                      <span className="font-bold text-stone-900 font-mono">{invoiceNo}</span>
-                    </p>
-                    <p className="text-xs text-stone-500">
-                      {tText('Tarikh', 'Date')}:{' '}
-                      <span className="font-bold text-stone-800">{formattedDate}</span>
-                    </p>
+                    <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-amber-200/40 w-full sm:w-auto">
+                      <span className="inline-block px-3 py-1 bg-amber-100/90 text-amber-900 font-extrabold text-xs rounded-full uppercase tracking-wider mb-1.5 border border-amber-300/50">
+                        INVOIS / INVOICE
+                      </span>
+                      <p className="text-xs text-stone-600">
+                        {tText('No. Invois', 'Invoice No.')}:{' '}
+                        <span className="font-bold text-stone-900 font-mono">{invoiceNo}</span>
+                      </p>
+                      <p className="text-xs text-stone-600">
+                        {tText('Tarikh', 'Date')}:{' '}
+                        <span className="font-bold text-stone-800">{formattedDate}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 

@@ -3,6 +3,51 @@ import { numberToWords } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload, ConsolidatedInvoicePayload } from '@/types';
 
 let cachedLogoBase64: string | null = null;
+let cachedBatikHeaderBase64: string | null = null;
+
+export const preloadBatikHeaderForPDF = (): Promise<string> => {
+  if (cachedBatikHeaderBase64) return Promise.resolve(cachedBatikHeaderBase64);
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      resolve('');
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Fill crisp base background
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, 1200, 240);
+
+          // Draw batik pattern
+          ctx.drawImage(img, 0, 0, 1200, 240);
+
+          // Soft light-cream overlay mask so text and logo remain 100% visible and sharp
+          ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
+          ctx.fillRect(0, 0, 1200, 240);
+
+          cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
+          resolve(cachedBatikHeaderBase64);
+          return;
+        }
+      } catch (err) {
+        console.error('Error processing batik header for PDF:', err);
+      }
+      resolve('');
+    };
+    img.onerror = () => {
+      console.error('Failed to load batik header image for PDF');
+      resolve('');
+    };
+    img.src = '/assets/batik_vector_pattern.jpg';
+  });
+};
 
 export const preloadLogoForPDF = (): Promise<string> => {
   if (cachedLogoBase64) return Promise.resolve(cachedLogoBase64);
@@ -114,6 +159,25 @@ const drawCreamBox = (
   });
 };
 
+const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 38) => {
+  if (cachedBatikHeaderBase64) {
+    try {
+      doc.addImage(cachedBatikHeaderBase64, 'JPEG', 0, 0, 210, headerHeight);
+      doc.setDrawColor(194, 147, 45);
+      doc.setLineWidth(0.4);
+      doc.line(15, headerHeight, 195, headerHeight);
+    } catch (err) {
+      console.warn('Error rendering batik header in PDF:', err);
+    }
+  } else {
+    doc.setFillColor(252, 249, 242);
+    doc.rect(0, 0, 210, headerHeight, 'F');
+    doc.setDrawColor(194, 147, 45);
+    doc.setLineWidth(0.4);
+    doc.line(15, headerHeight, 195, headerHeight);
+  }
+};
+
 export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 'bm' = 'bm'): jsPDF => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -134,11 +198,13 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   // ==========================================
 
   // --- 1. HEADER SECTION ---
-  // Space left for logo on left, but "Logo" text is removed
-  // (Left blank for a clean corporate appearance)
+  // Draw Batik Header background image
+  drawBatikHeaderBackground(doc, 38);
+
+  // Logo on left
   if (cachedLogoBase64) {
     try {
-      doc.addImage(cachedLogoBase64, 'JPEG', 15, 14, 21, 21);
+      doc.addImage(cachedLogoBase64, 'JPEG', 15, 12, 21, 21);
     } catch (err) {
       console.error('Error adding logo to PDF:', err);
     }
@@ -148,27 +214,27 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text('RESTORAN WAWASAN', 40, 20);
+  doc.text('RESTORAN WAWASAN', 40, 18);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text('Unit 3, Level B3, Menara PjH', 40, 25);
-  doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 29);
-  doc.text('Est. 1986', 40, 33);
+  doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
+  doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
+  doc.text('Est. 1986', 40, 31);
 
   // Invoice Big Heading on right
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(28);
-  doc.text('INVOICE', 195, 24, { align: 'right' });
+  doc.text('INVOICE', 195, 22, { align: 'right' });
 
   // Tarikh / Date
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   const formattedInvoiceDate = formatDateSafe(order.dateTime || new Date().toISOString(), lang);
-  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 33, { align: 'right' });
+  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 31, { align: 'right' });
 
   // --- 2. GRID INFO BOXES ---
   // Row 1: Invoice No & Event Date
@@ -512,35 +578,37 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
   const cGrey = [148, 163, 184];
 
   const drawPageHeader = (pageNumber: number) => {
+    drawBatikHeaderBackground(doc, 38);
+
     if (cachedLogoBase64) {
       try {
-        doc.addImage(cachedLogoBase64, 'JPEG', 15, 14, 21, 21);
+        doc.addImage(cachedLogoBase64, 'JPEG', 15, 12, 21, 21);
       } catch { console.warn('Logo err'); }
     }
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN', 40, 20);
+    doc.text('RESTORAN WAWASAN', 40, 18);
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text('Unit 3, Level B3, Menara PjH', 40, 25);
-    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 29);
-    doc.text('Est. 1986', 40, 33);
+    doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
+    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
+    doc.text('Est. 1986', 40, 31);
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
-    doc.text('COMBINED INVOICE', 195, 24, { align: 'right' });
+    doc.text('COMBINED INVOICE', 195, 22, { align: 'right' });
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 33, { align: 'right' });
+    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 31, { align: 'right' });
     if (pageNumber > 1) {
-      doc.text(`Page ${pageNumber}`, 195, 38, { align: 'right' });
+      doc.text(`Page ${pageNumber}`, 195, 35, { align: 'right' });
     }
   };
 
@@ -902,35 +970,37 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const cGrey = [148, 163, 184];
 
   const drawPageHeader = (pageNumber: number) => {
+    drawBatikHeaderBackground(doc, 38);
+
     if (cachedLogoBase64) {
       try {
-        doc.addImage(cachedLogoBase64, 'JPEG', 15, 14, 21, 21);
+        doc.addImage(cachedLogoBase64, 'JPEG', 15, 12, 21, 21);
       } catch { console.warn('Logo err'); }
     }
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN', 40, 20);
+    doc.text('RESTORAN WAWASAN', 40, 18);
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text('Unit 3, Level B3, Menara PjH', 40, 25);
-    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 29);
-    doc.text('Est. 1986', 40, 33);
+    doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
+    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
+    doc.text('Est. 1986', 40, 31);
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
-    doc.text('CONSOLIDATED INVOICE', 195, 24, { align: 'right' });
+    doc.text('CONSOLIDATED INVOICE', 195, 22, { align: 'right' });
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 33, { align: 'right' });
+    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 31, { align: 'right' });
     if (pageNumber > 1) {
-      doc.text(`Page ${pageNumber}`, 195, 38, { align: 'right' });
+      doc.text(`Page ${pageNumber}`, 195, 35, { align: 'right' });
     }
   };
 
