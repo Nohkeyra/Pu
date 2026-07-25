@@ -69,12 +69,18 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         .then((registration) => {
           console.log('[Service Worker] Registered successfully with scope:', registration.scope);
           
-          // Request sync permission and register background sync if supported
-          if ('sync' in registration) {
+          // Request sync permission and register background sync if supported.
+          // The Background Sync API is not part of the standard TS DOM lib, so we
+          // narrow to a minimal structural type instead of using `any`.
+          type SyncManager = { register: (tag: string) => Promise<void> };
+          const syncCapableRegistration = registration as ServiceWorkerRegistration & {
+            sync?: SyncManager;
+          };
+          if (syncCapableRegistration.sync) {
             // Attempt to register background sync for order tracking
-            registration.sync.register('sync-orders')
+            syncCapableRegistration.sync.register('sync-orders')
               .then(() => console.log('[Service Worker] Registered sync tag: "sync-orders"'))
-              .catch((err) => console.warn('[Service Worker] Sync registration failed:', err));
+              .catch((err: unknown) => console.warn('[Service Worker] Sync registration failed:', err));
           }
 
           // Proactively pre-warm critical assets once the service worker is actually active

@@ -20,7 +20,8 @@ import fs from "fs";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import cors from "cors";
-import { cert, App, getApps, initializeApp } from "firebase-admin/app";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import type { App } from "firebase-admin/app";
 import { getFirestore as getFirestoreModular, Timestamp, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAuth } from "firebase-admin/auth";
@@ -838,14 +839,14 @@ async function startServer() {
   });
 
   // API routes FIRST
-  app.get("/api/health", (req, res) => {
+  app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
 
   // Diagnostics endpoint: verifies Firebase Admin can authenticate and write to Firestore.
   // This creates/updates a harmless doc `meta/diagnostics`.
-  app.get("/api/diagnostics/firebase", async (req, res) => {
+  app.get("/api/diagnostics/firebase", async (_req, res) => {
     try {
       const db = getFirestore();
       const ref = db.collection("meta").doc("diagnostics");
@@ -869,7 +870,7 @@ async function startServer() {
   });
 
   // Diagnostics endpoint: verifies Google Calendar API auth + API enablement.
-  app.get("/api/diagnostics/calendar", async (req, res) => {
+  app.get("/api/diagnostics/calendar", async (_req, res) => {
     try {
       const calendar = getGoogleCalendarClient();
       if (!calendar) {
@@ -1026,7 +1027,7 @@ async function startServer() {
   });
 
   // Specialized KWGT (Kustom Widget) endpoint for upcoming event
-  app.get("/api/widget/kwgt", async (req, res) => {
+  app.get("/api/widget/kwgt", async (_req, res) => {
     res.setHeader("Content-Type", "application/json");
     try {
       const now = new Date();
@@ -1152,7 +1153,7 @@ async function startServer() {
   // TEMPORARY DEBUG ENDPOINT - lists ALL orders with no date filter, to verify
   // Firestore actually contains test data. Remove this once debugging is done.
   if (process.env.ENABLE_DEBUG_ENDPOINTS === "true") {
-    app.get("/api/widget/debug-all-orders", verifyAdminToken, async (req, res) => {
+    app.get("/api/widget/debug-all-orders", verifyAdminToken, async (_req, res) => {
       try {
         const results: Record<string, unknown>[] = [];
         try {
@@ -1485,8 +1486,13 @@ async function startServer() {
         });
       }
 
-      // 3. Extract customer email, name, invoice details
-      const customerEmail = data.customerEmail || data.email;
+      // 3. Extract customer email, name, invoice details.
+      // `data` carries an index signature ([key: string]: unknown), so `data.email`
+      // is `unknown`. Coerce/validate to a real string before use — this both
+      // satisfies nodemailer's typing and guards against non-string values that
+      // could arrive from Firestore documents written by older clients.
+      const rawEmail = data.customerEmail ?? data.email;
+      const customerEmail = typeof rawEmail === "string" ? rawEmail.trim() : "";
       const customerName = data.customerName || data.name || "Valued Customer";
       const invoiceNo = data.invoiceNo || `INV-${submissionId.substring(0, 6).toUpperCase()}`;
       const items = data.items || [];
@@ -2343,7 +2349,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*all', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
