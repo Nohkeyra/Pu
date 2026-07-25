@@ -9,7 +9,7 @@ import {
   inMemoryPersistence,
   type Auth,
 } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 import { Capacitor } from '@capacitor/core';
 import firebaseAppletConfig from "../firebase-applet-config.json";
 
@@ -86,11 +86,17 @@ export const auth = authInstance;
 // Initialize Analytics (Browser only)
 let analyticsInstance: ReturnType<typeof getAnalytics> | null = null;
 if (typeof window !== "undefined") {
-  try {
-    analyticsInstance = getAnalytics(app);
-  } catch {
+  isSupported().then(supported => {
+    if (supported) {
+      try {
+        analyticsInstance = getAnalytics(app);
+      } catch {
+        // Ignore analytics failures
+      }
+    }
+  }).catch(() => {
     // Ignore analytics failures
-  }
+  });
 }
 export const analytics = analyticsInstance;
 
