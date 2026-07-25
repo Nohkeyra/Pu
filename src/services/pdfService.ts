@@ -234,7 +234,7 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
     : { item: 'Jenis Hidangan', price: 'Harga / Pax (RM)', total: 'Jumlah (RM)' };
     
   doc.text(headerLabels.item, 18, tableStartY + 4.8);
-  doc.text(headerLabels.price, 120, tableStartY + 4.8, { align: 'center' });
+  doc.text(headerLabels.price, 137.5, tableStartY + 4.8, { align: 'center' });
   doc.text(headerLabels.total, 192, tableStartY + 4.8, { align: 'right' });
 
   // Render Table Rows

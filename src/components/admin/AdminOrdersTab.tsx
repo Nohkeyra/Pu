@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import {
   AlertTriangle, Search, Check, Eye, FileText, FileDown, Send, Trash2, Loader2,
 } from 'lucide-react';
@@ -361,7 +362,20 @@ export function AdminOrdersTab({
         </div>
       </div>
 
-      {selectedOrderIds.size >= 2 && (
+      {/*
+        NOTE (root-cause fix): the floating "Consolidate Invoice" bar and the
+        modal below are rendered via createPortal(..., document.body) instead
+        of inline. This tab is rendered inside <motion.main animate={{ y: ... }}>
+        in AdminPanel.tsx (used for the pull-to-refresh effect). Framer Motion
+        applies an inline `transform` for that animation even when y is 0, and
+        per the CSS spec any ancestor with a `transform` becomes the containing
+        block for descendant `position: fixed` elements. That silently trapped
+        this bar inside motion.main's box instead of the real viewport, so it
+        never appeared on screen even though selectedOrderIds.size >= 2 was
+        true. Portaling to document.body sidesteps that containing-block issue
+        without touching the pull-to-refresh animation in AdminPanel.tsx.
+      */}
+      {selectedOrderIds.size >= 2 && createPortal(
         <div className="fixed bottom-6 left-6 right-6 md:left-auto md:right-8 md:w-96 bg-sunshine border border-border/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between z-50">
           <div className="text-sm font-bold text-white flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -381,10 +395,11 @@ export function AdminOrdersTab({
             )}
             {t('consolidate_invoice') || 'Consolidate Invoice'}
           </Button>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showConsolidateModal && (
+      {showConsolidateModal && createPortal(
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
           <div
             onClick={() => setShowConsolidateModal(false)}
@@ -416,7 +431,8 @@ export function AdminOrdersTab({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
