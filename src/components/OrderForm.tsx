@@ -22,11 +22,13 @@ import {
   Briefcase,
   Smile,
   Coffee,
-  Sun
+  Sun,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl } from '@/lib/utils';
 import { generateInvoicePDF } from '@/services/pdfService';
+import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { getApiUrl } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -36,12 +38,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from './AuthModal';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
 import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
-import type { SavedLocation } from '@/types';
+import type { SavedLocation, Order } from '@/types';
 
 // TYPES
 interface OrderState {
@@ -93,6 +93,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [submittedOrder, setSubmittedOrder] = useState<Order | null>(null);
+  const [showPdfPreviewModal, setShowPdfPreviewModal] = useState<boolean>(false);
   
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -541,39 +543,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       setReferenceNumber(finalInvoiceNo);
 
-      // Generate Invoice PDF & Auto Mail
+      const createdOrder: Order = {
+        ...(orderData as Order),
+        id: generatedOrderId,
+        invoiceNo: finalInvoiceNo,
+      };
+      setSubmittedOrder(createdOrder);
+
+      // Generate Invoice PDF & Mail to customer
       try {
         setEmailStatus('sending');
-        const pdfData = {
-          ...orderData,
-          id: generatedOrderId,
-          invoiceNo: finalInvoiceNo,
-        };
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pdfDoc = generateInvoicePDF(pdfData as any, false, language);
-        const fileName = `Invois_Wawasan_${finalInvoiceNo}.pdf`;
+        const pdfDoc = generateInvoicePDF(createdOrder, false, language);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pdfBase64 = (pdfDoc as any).output('datauristring').split(',')[1];
-
-        // Trigger native download / Share sheets
-        if (Capacitor.isNativePlatform()) {
-          try {
-            const savedFile = await Filesystem.writeFile({
-              path: fileName,
-              data: pdfBase64,
-              directory: Directory.Cache
-            });
-            await Share.share({
-              title: fileName,
-              url: savedFile.uri,
-            });
-          } catch (shareErr) {
-            console.error('Error sharing PDF:', shareErr);
-          }
-        } else {
-          pdfDoc.save(fileName);
-        }
 
         // Email it using Brevo / Nodemailer on backend
         const emailResponse = await fetch(getApiUrl('/api/send-invoice'), {
@@ -669,6 +651,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       customMenu: ''
     });
     setReferenceNumber('');
+    setSubmittedOrder(null);
+    setShowPdfPreviewModal(false);
     setEmailStatus('idle');
     setCurrentStep(1);
   };
@@ -1736,28 +1720,49 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </p>
 
                 {/* Success Screen Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <div className="flex flex-col gap-3 pt-2">
                   <Button
-                    onClick={handleResetForm}
-                    className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
+                    onClick={() => setShowPdfPreviewModal(true)}
+                    className="w-full bg-[#A8E10C] hover:bg-[#A8E10C]/90 text-stone-950 h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
                   >
-                    {tText('New Order Inquiry', 'Tempahan Baharu')}
+                    <Eye className="w-5 h-5 text-stone-950" />
+                    <span>{tText('Preview & Download PDF Invoice', 'Pratonton & Muat Turun Invois PDF')}</span>
                   </Button>
-                  
-                  <Button
-                    onClick={handleShareReceipt}
-                    variant="outline"
-                    className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-deep-forest cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Share2 className="w-4 h-4 text-crisp-carrot" />
-                    <span>{tText('Share Invoice / Receipt', 'Kongsi Resit')}</span>
-                  </Button>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={handleResetForm}
+                      variant="outline"
+                      className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
+                    >
+                      {tText('New Order Inquiry', 'Tempahan Baharu')}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleShareReceipt}
+                      variant="outline"
+                      className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-deep-forest cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Share2 className="w-4 h-4 text-crisp-carrot" />
+                      <span>{tText('Share Invoice / Receipt', 'Kongsi Resit')}</span>
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}
 
           </AnimatePresence>
         </div>
+
+        {/* PDF Preview Modal for submitted order */}
+        {submittedOrder && (
+          <PDFPreviewModal
+            isOpen={showPdfPreviewModal}
+            onClose={() => setShowPdfPreviewModal(false)}
+            order={submittedOrder}
+            language={language}
+          />
+        )}
 
         {/* Bottom Navigation mimics Kimi bottom bar layout */}
         {currentStep <= 4 && (
