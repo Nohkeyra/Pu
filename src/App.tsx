@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig';
@@ -118,7 +118,8 @@ function SessionGuard({ children }: { children: ReactNode }) {
 }
 
 function AppContent() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const hideNavPaths = ['/', '/login'];
   const showNav = !hideNavPaths.includes(pathname);
 
@@ -128,55 +129,66 @@ function AppContent() {
       <SmoothScrollHandler />
       <ScrollToTopButton />
       <main className={cn("flex-grow", showNav && "pb-20")}>
-        <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* Client Routes protected by SessionGuard */}
-        <Route 
-          path="/home" 
-          element={
-            <SessionGuard>
-              <LandingPage />
-            </SessionGuard>
-          } 
-        />
-        <Route 
-          path="/main" 
-          element={
-            <SessionGuard>
-              <LandingPage />
-            </SessionGuard>
-          } 
-        />
-        <Route 
-          path="/order" 
-          element={
-            <SessionGuard>
-              <OrderPage />
-            </SessionGuard>
-          } 
-        />
-        <Route 
-          path="/profile" 
-          element={
-            <SessionGuard>
-              <ProfilePage />
-            </SessionGuard>
-          } 
-        />
-        <Route 
-          path="/settings" 
-          element={
-            <SessionGuard>
-              <SettingsPage />
-            </SessionGuard>
-          } 
-        />
-        
-        <Route path="/admin" element={<SessionGuard><AdminPage /></SessionGuard>} />
-        <Route path="*" element={<LoginPage />} />
-      </Routes>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1.0] }}
+            className="w-full flex-grow"
+          >
+            <Routes location={location}>
+              <Route path="/" element={<LoginPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Client Routes protected by SessionGuard */}
+              <Route 
+                path="/home" 
+                element={
+                  <SessionGuard>
+                    <LandingPage />
+                  </SessionGuard>
+                } 
+              />
+              <Route 
+                path="/main" 
+                element={
+                  <SessionGuard>
+                    <LandingPage />
+                  </SessionGuard>
+                } 
+              />
+              <Route 
+                path="/order" 
+                element={
+                  <SessionGuard>
+                    <OrderPage />
+                  </SessionGuard>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <SessionGuard>
+                    <ProfilePage />
+                  </SessionGuard>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <SessionGuard>
+                    <SettingsPage />
+                  </SessionGuard>
+                } 
+              />
+              
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="*" element={<LoginPage />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </main>
       {showNav && <BottomNavigation />}
     </div>

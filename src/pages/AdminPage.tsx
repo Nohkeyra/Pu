@@ -99,7 +99,7 @@ export default function AdminPage() {
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col">
         <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border pt-[var(--sat)]">
           <div className="flex items-center justify-between px-6 md:px-12 h-[72px]">
-            <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer">
+            <div onClick={() => navigate('/login')} className="flex items-center gap-3 group cursor-pointer">
               <img
                 src={getAssetUrl("/assets/wawasan_logo.jpg")}
                 alt="Restoran Wawasan Logo"
@@ -128,7 +128,7 @@ export default function AdminPage() {
                   <Sun className="w-5 h-5 text-sunshine" />
                 )}
               </button>
-              <Button variant="ghost" onClick={() => navigate('/home', { replace: true })} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
+              <Button variant="ghost" onClick={() => navigate('/login')} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('back')}
               </Button>
