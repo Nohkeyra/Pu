@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { numberToWords } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload, ConsolidatedInvoicePayload } from '@/types';
+import { getAssetUrl } from '@/lib/utils';
 
 let cachedLogoBase64: string | null = null;
 let cachedBatikHeaderBase64: string | null = null;
@@ -25,10 +26,10 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, 1200, 240);
 
-          // Draw batik pattern
+          // Draw Jawi header pattern
           ctx.drawImage(img, 0, 0, 1200, 240);
 
-          // Soft light-cream overlay mask so text and logo remain 100% visible and sharp
+          // Soft light-cream overlay mask so header text and logo remain 100% visible and sharp
           ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
           ctx.fillRect(0, 0, 1200, 240);
 
@@ -37,15 +38,37 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
           return;
         }
       } catch (err) {
-        console.error('Error processing batik header for PDF:', err);
+        console.error('Error processing Jawi header for PDF:', err);
       }
       resolve('');
     };
     img.onerror = () => {
-      console.error('Failed to load batik header image for PDF');
-      resolve('');
+      console.warn('Failed to load Jawi header image for PDF, attempting fallback');
+      const fallbackImg = new Image();
+      fallbackImg.crossOrigin = 'anonymous';
+      fallbackImg.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1200;
+          canvas.height = 240;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 1200, 240);
+            ctx.drawImage(fallbackImg, 0, 0, 1200, 240);
+            ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
+            ctx.fillRect(0, 0, 1200, 240);
+            cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            resolve(cachedBatikHeaderBase64);
+            return;
+          }
+        } catch { /* ignore */ }
+        resolve('');
+      };
+      fallbackImg.onerror = () => resolve('');
+      fallbackImg.src = getAssetUrl('/assets/batik_vector_pattern.jpg');
     };
-    img.src = '/assets/batik_vector_pattern.jpg';
+    img.src = getAssetUrl('/assets/Jawi.jpg');
   });
 };
 
@@ -70,7 +93,6 @@ export const preloadLogoForPDF = (): Promise<string> => {
           ctx.fillRect(0, 0, 180, 180);
 
           // Draw a clean, crisp, circular mask or just draw the full image neatly inside.
-          // Since the source is circular, let's draw it centered
           ctx.drawImage(img, 0, 0, 180, 180);
           
           cachedLogoBase64 = canvas.toDataURL('image/jpeg', 0.9);
@@ -86,7 +108,7 @@ export const preloadLogoForPDF = (): Promise<string> => {
       console.error('Failed to load logo for PDF preloading');
       resolve('');
     };
-    img.src = '/assets/wawasan_logo.jpg';
+    img.src = getAssetUrl('/assets/wawasan_logo.jpg');
   });
 };
 
@@ -159,7 +181,7 @@ const drawCreamBox = (
   });
 };
 
-const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 38) => {
+const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 36) => {
   if (cachedBatikHeaderBase64) {
     try {
       doc.addImage(cachedBatikHeaderBase64, 'JPEG', 0, 0, 210, headerHeight);
@@ -167,7 +189,7 @@ const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 38) => {
       doc.setLineWidth(0.4);
       doc.line(15, headerHeight, 195, headerHeight);
     } catch (err) {
-      console.warn('Error rendering batik header in PDF:', err);
+      console.warn('Error rendering header in PDF:', err);
     }
   } else {
     doc.setFillColor(252, 249, 242);
@@ -198,13 +220,13 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   // ==========================================
 
   // --- 1. HEADER SECTION ---
-  // Draw Batik Header background image
-  drawBatikHeaderBackground(doc, 38);
+  // Draw Header background image (height: 36mm)
+  drawBatikHeaderBackground(doc, 36);
 
   // Logo on left
   if (cachedLogoBase64) {
     try {
-      doc.addImage(cachedLogoBase64, 'JPEG', 15, 12, 21, 21);
+      doc.addImage(cachedLogoBase64, 'JPEG', 15, 8, 20, 20);
     } catch (err) {
       console.error('Error adding logo to PDF:', err);
     }
@@ -214,27 +236,27 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text('RESTORAN WAWASAN', 40, 18);
+  doc.text('RESTORAN WAWASAN', 39, 16);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
-  doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
-  doc.text('Est. 1986', 40, 31);
+  doc.text('Unit 3, Level B3, Menara PjH', 39, 21);
+  doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 39, 25);
+  doc.text('Est. 1986', 39, 29);
 
   // Invoice Big Heading on right
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(28);
-  doc.text('INVOICE', 195, 22, { align: 'right' });
+  doc.setFontSize(26);
+  doc.text('INVOICE', 195, 20, { align: 'right' });
 
   // Tarikh / Date
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   const formattedInvoiceDate = formatDateSafe(order.dateTime || new Date().toISOString(), lang);
-  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 31, { align: 'right' });
+  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 29, { align: 'right' });
 
   // --- 2. GRID INFO BOXES ---
   // Row 1: Invoice No & Event Date
