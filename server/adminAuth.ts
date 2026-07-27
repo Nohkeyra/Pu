@@ -2,14 +2,17 @@ import type express from "express";
 import jwt from "jsonwebtoken";
 
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
-if (!ADMIN_JWT_SECRET) {
-  console.warn(
-    "[Admin Auth] ADMIN_JWT_SECRET is not set in environment variables. " +
-    "Falling back to a default secret. Set ADMIN_JWT_SECRET in Render's " +
-    "environment to a 64+ byte random value."
+if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.trim() === "") {
+  // Fail closed instead of falling back to a hardcoded, publicly-known secret.
+  // A predictable fallback secret would let anyone who knows the string forge
+  // valid admin tokens whenever the env var is accidentally omitted.
+  throw new Error(
+    "[Admin Auth] ADMIN_JWT_SECRET is not set. Refusing to start with an " +
+    "insecure fallback secret. Set ADMIN_JWT_SECRET in the environment " +
+    "(Render) to a 64+ byte random value."
   );
 }
-export const effectiveJwtSecret: string = ADMIN_JWT_SECRET || "wawasan-admin-jwt-secret-fallback-2026";
+export const effectiveJwtSecret: string = ADMIN_JWT_SECRET;
 
 const revokedJtis: Set<string> = new Set();
 

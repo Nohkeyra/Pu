@@ -35,8 +35,13 @@ export const firebaseConfig: FirebaseConfig = {
 export const STRICT_FIREBASE_ADMIN =
   (process.env.STRICT_FIREBASE_ADMIN || "false").toLowerCase() === "true";
 
+// Default OFF: the local ./orders.json fallback lives on an ephemeral container
+// filesystem (e.g. Render). Any order written there during a Firestore outage is
+// permanently lost on restart/redeploy, giving a false sense of durability.
+// Opt in explicitly with ENABLE_LOCAL_FALLBACK=true only in environments that
+// have durable local storage.
 export const ENABLE_LOCAL_FALLBACK =
-  (process.env.ENABLE_LOCAL_FALLBACK || "true").toLowerCase() === "true";
+  (process.env.ENABLE_LOCAL_FALLBACK || "false").toLowerCase() === "true";
 
 export const ENABLE_DEBUG_ENDPOINTS =
   (process.env.ENABLE_DEBUG_ENDPOINTS || "false").toLowerCase() === "true";
