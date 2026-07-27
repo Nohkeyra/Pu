@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- F-13 / F-17 (audit): exclude Capacitor Preferences (modern
+     prefs location), the WebView's localStorage SQLite directory,
+     AND the widget SharedPreferences file. Admin JWT lives in
+     localStorage + Capacitor Preferences; both must be excluded
+     so a USB backup cannot replay admin sessions. -->
 <full-backup-content>
     <exclude domain="sharedpref" path="CapacitorStorage.xml"/>
-    <exclude domain="database" path="."/>
+    <exclude domain="sharedpref" path="wawasan_widget_prefs.xml"/>
+    <exclude domain="database"  path="."/>
+    <exclude domain="external"  path="app_webview"/>
+    <exclude domain="file"      path="app_webview"/>
 </full-backup-content>

@@ -10,12 +10,22 @@ import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { auth } from '@/firebaseConfig';
 
 // NOTE: the admin password itself is never stored anywhere on the device
 // (not localStorage, not Preferences). It is sent to the server exactly
-// once, at login, in exchange for a short-lived (12h) JWT session token.
-// That token — never the password — is what gets persisted and resent on
-// subsequent admin API calls.
+// once, at login, in exchange for a short-lived (1h — see server.ts
+// /api/admin/login, previously documented here as 12h; that comment was
+// stale) JWT session token. That token — never the password — is what
+// gets persisted and resent on subsequent admin API calls.
+//
+// F-31 (audit, 2026-07-27): login also mints a Firebase Auth custom token
+// (server.ts), which we use to sign in to Firebase Auth below. This does
+// NOT replace the admin JWT above for /api/admin/* routes — it exists only
+// so request.auth is populated for the small number of direct client-SDK
+// Firestore reads the admin panel does (see AdminPanel.tsx's connectivity
+// listener), which firestore.rules' isAdmin() requires.
 const ADMIN_TOKEN_STORAGE_KEY = 'wawasan_admin_token';
 
 export default function AdminPage() {
@@ -57,6 +67,20 @@ export default function AdminPage() {
       if (response.ok && data.success && data.token) {
         setToken(data.token);
         await setSecureItem(ADMIN_TOKEN_STORAGE_KEY, data.token);
+
+        // F-31 (audit): sign into Firebase Auth with the custom token so
+        // request.auth.token.admin is real for firestore.rules' isAdmin().
+        // Best-effort only — if this fails, the admin JWT above still
+        // works for every /api/admin/* route; only the Firestore
+        // connectivity indicator in AdminPanel.tsx degrades.
+        if (data.firebaseCustomToken) {
+          try {
+            await signInWithCustomToken(auth, data.firebaseCustomToken);
+          } catch (fbErr) {
+            console.warn('[Admin Auth] Firebase custom-token sign-in failed (admin session still valid):', fbErr);
+          }
+        }
+
         setIsAuthenticated(true);
       } else {
         setError(t('wrong_password') || 'Invalid password');
@@ -198,6 +222,11 @@ export default function AdminPage() {
       adminToken={token}
       onLogout={() => {
         removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+        // F-31 (audit): also end the Firebase Auth session started at
+        // login, so a stale request.auth doesn't outlive the admin JWT.
+        signOut(auth).catch((err) => {
+          console.warn('[Admin Auth] Firebase sign-out failed (non-fatal):', err);
+        });
         setIsAuthenticated(false);
         setToken('');
       }}

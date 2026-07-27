@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- F-13 / F-17 (audit): keep the legacy CapacitorStorage.xml
+     exclude, ADD excludes for the modern Capacitor preferences
+     file, the widget prefs file, and the WebView localStorage. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="CapacitorStorage.xml"/>
-        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" pattern="CapacitorStorage_prefs.*\\.xml"/>
+        <exclude domain="sharedpref" path="wawasan_widget_prefs.xml"/>
+        <exclude domain="database"  path="."/>
+        <exclude domain="external"  path="app_webview"/>
+        <exclude domain="file"      path="app_webview"/>
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="CapacitorStorage.xml"/>
+        <exclude domain="sharedpref" pattern="CapacitorStorage_prefs.*\\.xml"/>
+        <exclude domain="sharedpref" path="wawasan_widget_prefs.xml"/>
+        <exclude domain="external"  path="app_webview"/>
+        <exclude domain="file"      path="app_webview"/>
     </device-transfer>
 </data-extraction-rules>

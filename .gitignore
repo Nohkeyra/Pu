@@ -48,3 +48,14 @@ dist/
 # Core dumps (e.g. from a crashed/OOM build process)
 core
 core.*
+
+# F-32 (audit): Android signing keystores. These were only ignored in
+# android/.gitignore as commented-out lines (#*.jks / #*.keystore), meaning
+# a keystore dropped anywhere in the repo (e.g. android/app/) would have
+# been committed. release.yml decodes the real signing keystore from a
+# GitHub Secret at build time and deletes it immediately after use, so no
+# keystore should ever legitimately exist in the working tree — this is a
+# safety net, not a workflow change.
+*.jks
+*.keystore
+release.keystore

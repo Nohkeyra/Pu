@@ -11,18 +11,35 @@ import {
 } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { Capacitor } from '@capacitor/core';
+
+// F-01 (audit): hardcoded Firebase web API key + full config bundle
+// removed from the production source. All values are now sourced from
+// build-time VITE_FIREBASE_* env vars and the build FAILS if any are
+// missing in a production build. The AI-Studio sandbox overlay remains
+// gated to non-native, non-prod previews only.
+
 import firebaseAppletConfig from "../firebase-applet-config.json";
 
-// Production configuration for the live database used in compiling the app for the APK
+function requireEnv(key: string): string {
+  const v = (import.meta.env as Record<string, string | undefined>)[key];
+  if (!v && import.meta.env.PROD) {
+    throw new Error(
+      `[firebaseConfig] Missing required env var ${key} at build time. ` +
+      `Production APK cannot ship without it. Set it in your CI/CD secrets.`
+    );
+  }
+  return v ?? "";
+}
+
 const prodConfig = {
-  apiKey: "AIzaSyCaCFMk6K8go9Wgt-jdNd6QTvD8JbsTkY4",
-  authDomain: "restoran-wawasan.firebaseapp.com",
-  projectId: "restoran-wawasan",
-  storageBucket: "restoran-wawasan.firebasestorage.app",
-  messagingSenderId: "1019707766959",
-  appId: "1:1019707766959:web:78644cddb16b67a69ffc5a",
-  measurementId: "G-ZWC8H62RZN",
-  firestoreDatabaseId: undefined
+  apiKey:           requireEnv("VITE_FIREBASE_API_KEY"),
+  authDomain:       requireEnv("VITE_FIREBASE_AUTH_DOMAIN"),
+  projectId:        requireEnv("VITE_FIREBASE_PROJECT_ID"),
+  storageBucket:    requireEnv("VITE_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: requireEnv("VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  appId:            requireEnv("VITE_FIREBASE_APP_ID"),
+  measurementId:    requireEnv("VITE_FIREBASE_MEASUREMENT_ID"),
+  firestoreDatabaseId: undefined as string | undefined,
 };
 
 // Sandbox configuration for the Google AI Studio workspace environment
@@ -37,9 +54,8 @@ const sandboxConfig = {
 };
 
 // Determine if we are running inside the Google AI Studio workspace preview or on a native mobile device.
-// When compiled for the APK, we check both hostname and Capacitor state.
 export const isNative = Capacitor.isNativePlatform();
-const isWorkspace = typeof window !== "undefined" && (
+export const isWorkspace = typeof window !== "undefined" && (
   window.location.hostname.endsWith(".run.app") ||
   window.location.hostname.includes("aistudio") ||
   (window.location.hostname === "localhost" && window.location.port === "3000") ||
@@ -47,7 +63,7 @@ const isWorkspace = typeof window !== "undefined" && (
 );
 
 // We use sandboxConfig for the workspace preview, but native (APK) and other environments
-// should always connect directly to the production project (restoran-wawasan).
+// should always connect directly to the production project.
 const firebaseConfig = (isWorkspace && !isNative) ? sandboxConfig : prodConfig;
 
 // Initialize Firebase App
@@ -83,9 +99,9 @@ try {
 }
 export const auth = authInstance;
 
-// Initialize Analytics (Browser only)
+// Initialize Analytics (browser + production builds only)
 let analyticsInstance: ReturnType<typeof getAnalytics> | null = null;
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && import.meta.env.PROD) {
   isSupported().then(supported => {
     if (supported) {
       try {

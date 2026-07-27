@@ -1,5 +1,9 @@
 ext {
-    minSdkVersion = 23
+    // F-14 (audit): floor bumped from API 23 (Android 6.0, weak TLS stack
+    // and inconsistent WebView cookie semantics) to API 24 (Android 7+).
+    // API 24+ enforces TLS 1.2 network-wide and is required for Capacitor
+    // 8.x cookies-with-SameSite=None behaviour to work correctly.
+    minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.9.2'
