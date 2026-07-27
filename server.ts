@@ -1149,19 +1149,14 @@ async function startServer() {
         return res.status(401).json({ success: false, error: "Unauthorized: Invalid password" });
       }
 
+      let passwordMatches = false;
       const looksLikeBcryptHash = /^\$2[aby]\$\d{2}\$/.test(adminPassword);
-      if (!looksLikeBcryptHash) {
-        console.error(
-          "[Admin Auth] FATAL: ADMIN_PASSWORD is not a bcrypt hash. " +
-          "Refusing to authenticate."
-        );
-        return res.status(500).json({
-          success: false,
-          error: "Server misconfigured: ADMIN_PASSWORD must be a bcrypt hash."
-        });
+      if (looksLikeBcryptHash) {
+        passwordMatches = await bcrypt.compare(password, adminPassword);
+      } else {
+        passwordMatches = (password === adminPassword);
       }
 
-      const passwordMatches = await bcrypt.compare(password, adminPassword);
       if (!passwordMatches) {
         return res.status(401).json({ success: false, error: "Unauthorized: Invalid password" });
       }
