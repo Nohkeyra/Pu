@@ -178,11 +178,9 @@ export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | nul
   }
 }
 
-export async function createOrderWithSequentialInvoice(orderData: OrderData): Promise<{ orderId: string; invoiceNo: string }> {
+export async function generateSequentialInvoiceNo(): Promise<string> {
   const db = getFirestore();
   const counterRef = db.collection("meta").doc("invoiceCounter");
-  const orderRef = db.collection("orders").doc();
-
   return await db.runTransaction(async (tx) => {
     const counterSnap = await tx.get(counterRef);
     let next = 1;
@@ -192,24 +190,29 @@ export async function createOrderWithSequentialInvoice(orderData: OrderData): Pr
         next = data.count + 1;
       }
     }
-
-    const invoiceNo = `RW${String(next).padStart(4, "0")}`;
-    const eventTimestamp = toEventTimestamp(orderData);
-
+    const invoiceNo = `RW-${String(next).padStart(4, "0")}`;
     tx.set(
       counterRef,
       { count: next, updatedAt: FieldValue.serverTimestamp() },
       { merge: true }
     );
-
-    tx.set(orderRef, {
-      ...orderData,
-      status: "pending",
-      invoiceNo,
-      eventTimestamp,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    return { orderId: orderRef.id, invoiceNo };
+    return invoiceNo;
   });
+}
+
+export async function createOrderWithSequentialInvoice(orderData: OrderData): Promise<{ orderId: string; invoiceNo?: string }> {
+  const db = getFirestore();
+  const orderRef = db.collection("orders").doc();
+  const eventTimestamp = toEventTimestamp(orderData);
+
+  const newOrderDoc = {
+    ...orderData,
+    status: orderData.status || "SUBMITTED",
+    eventTimestamp,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+
+  await orderRef.set(newOrderDoc);
+
+  return { orderId: orderRef.id, invoiceNo: orderData.invoiceNo };
 }

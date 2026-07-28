@@ -31,6 +31,13 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
   const invoiceSuffix = invoiceNo ? (lang === "bm" ? ` (No. Invois: ${invoiceNo})` : ` (Invoice No: ${invoiceNo})`) : "";
 
   const en: Record<string, StatusCopy> = {
+    submitted: {
+      subject: `Your order is received and under review`,
+      heading: "Order Received — Pending Price Review",
+      message: `Hi ${who}, we've received your catering order. Restoran Wawasan is reviewing your order details to set the unit price.`,
+      pushTitle: "Order received",
+      pushBody: `Your catering order is being reviewed for unit pricing.`,
+    },
     pending: {
       subject: `Your order is being reviewed${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Order Received — Pending Review",
@@ -38,12 +45,26 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
       pushTitle: "Order pending review",
       pushBody: `Your order${invoiceSuffix} is pending review.`,
     },
+    priced: {
+      subject: `Price set for your catering order`,
+      heading: "Order Priced — Ready for Invoice",
+      message: `Hi ${who}, unit pricing has been set for your catering order. The official invoice will be generated shortly.`,
+      pushTitle: "Order priced",
+      pushBody: `Unit pricing has been updated for your order.`,
+    },
     approved: {
       subject: `Your order is approved${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Order Approved 🎉",
       message: `Great news ${who}! Your catering order${invoiceSuffix} has been approved. We look forward to serving you.`,
       pushTitle: "Order approved 🎉",
       pushBody: `Your order${invoiceSuffix} has been approved.`,
+    },
+    invoiced: {
+      subject: `Your official invoice is ready${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Official Invoice Generated",
+      message: `Hi ${who}, your official PDF invoice${invoiceSuffix} has been generated for your catering order.`,
+      pushTitle: "Invoice ready",
+      pushBody: `Your official invoice${invoiceSuffix} is now ready.`,
     },
     billed: {
       subject: `Your invoice is ready${invoiceNo ? ` — ${invoiceNo}` : ""}`,
@@ -83,6 +104,13 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
   };
 
   const bm: Record<string, StatusCopy> = {
+    submitted: {
+      subject: `Pesanan anda telah diterima dan sedang disemak`,
+      heading: "Pesanan Diterima — Menunggu Penetapan Harga",
+      message: `Salam ${who}, pihak Restoran Wawasan telah menerima tempahan katering anda dan sedang menyemak butiran untuk penetapan harga per unit.`,
+      pushTitle: "Pesanan diterima",
+      pushBody: `Tempahan katering anda sedang disemak untuk penetapan harga.`,
+    },
     pending: {
       subject: `Pesanan anda sedang disemak${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Pesanan Diterima — Menunggu Semakan",
@@ -90,12 +118,26 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
       pushTitle: "Pesanan menunggu semakan",
       pushBody: `Pesanan anda${invoiceSuffix} sedang disemak.`,
     },
+    priced: {
+      subject: `Harga telah ditetapkan untuk tempahan anda`,
+      heading: "Harga Ditetapkan — Sedia Untuk Invois",
+      message: `Salam ${who}, harga per unit telah ditetapkan untuk tempahan katering anda. Invois rasmi akan dijana sebentar lagi.`,
+      pushTitle: "Harga ditetapkan",
+      pushBody: `Harga per unit telah dikemas kini untuk tempahan anda.`,
+    },
     approved: {
       subject: `Pesanan anda telah diluluskan${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Pesanan Diluluskan 🎉",
       message: `Berita baik ${who}! Tempahan katering anda${invoiceSuffix} telah diluluskan. Kami menantikan peluang untuk berkhidmat kepada anda.`,
       pushTitle: "Pesanan diluluskan 🎉",
       pushBody: `Pesanan anda${invoiceSuffix} telah diluluskan.`,
+    },
+    invoiced: {
+      subject: `Invois rasmi anda telah sedia${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Invois Rasmi Dikeluarkan",
+      message: `Salam ${who}, invois rasmi PDF${invoiceSuffix} telah dijana untuk tempahan katering anda.`,
+      pushTitle: "Invois sedia",
+      pushBody: `Invois rasmi anda${invoiceSuffix} kini sedia.`,
     },
     billed: {
       subject: `Invois anda telah sedia${invoiceNo ? ` — ${invoiceNo}` : ""}`,

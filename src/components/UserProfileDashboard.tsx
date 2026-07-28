@@ -35,7 +35,9 @@ import {
   Ban,
   Bell,
   Plus,
-  MapPin
+  MapPin,
+  Mail,
+  CheckCircle2
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -85,6 +87,92 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [pokingOrderId, setPokingOrderId] = useState<string | null>(null);
+
+  const handleRequestInvoiceEmail = async (order: Order) => {
+    if (!order.id) return;
+    setPokingOrderId(order.id);
+    try {
+      let idToken = '';
+      if (currentUser) {
+        try {
+          idToken = await currentUser.getIdToken();
+        } catch (tErr) {
+          console.warn('Could not get idToken:', tErr);
+        }
+      }
+
+      const response = await fetch(getApiUrl('/api/orders/poke'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const result = await response.json().catch(() => ({ success: false }));
+
+      if (!response.ok || !result.success) {
+        // Fallback: update Firestore directly
+        const orderRef = doc(db, 'orders', order.id);
+        await updateDoc(orderRef, {
+          invoiceEmailRequested: true,
+          invoiceEmailRequestedAt: new Date().toISOString(),
+          invoiceEmailHandled: false,
+        });
+      }
+
+      toast({
+        title: t('Invoice Email Requested', 'Permintaan Emel Invois Dihantar'),
+        description: t(
+          'The restaurant has been notified to send your final invoice via email.',
+          'Restoran telah dimaklumkan untuk menghantar invois rasmi anda melalui emel.'
+        ),
+        variant: 'success',
+      });
+
+      setOrders(prev => prev.map(o => o.id === order.id ? {
+        ...o,
+        invoiceEmailRequested: true,
+        invoiceEmailRequestedAt: new Date().toISOString(),
+        invoiceEmailHandled: false,
+      } : o));
+    } catch (err) {
+      console.error('Error requesting invoice email:', err);
+      try {
+        const orderRef = doc(db, 'orders', order.id);
+        await updateDoc(orderRef, {
+          invoiceEmailRequested: true,
+          invoiceEmailRequestedAt: new Date().toISOString(),
+          invoiceEmailHandled: false,
+        });
+        toast({
+          title: t('Invoice Email Requested', 'Permintaan Emel Invois Dihantar'),
+          description: t(
+            'The restaurant has been notified to send your final invoice via email.',
+            'Restoran telah dimaklumkan untuk menghantar invois rasmi anda melalui emel.'
+          ),
+          variant: 'success',
+        });
+        setOrders(prev => prev.map(o => o.id === order.id ? {
+          ...o,
+          invoiceEmailRequested: true,
+          invoiceEmailRequestedAt: new Date().toISOString(),
+          invoiceEmailHandled: false,
+        } : o));
+      } catch (fsErr) {
+        console.error('Firestore fallback error:', fsErr);
+        toast({
+          title: t('Request Failed', 'Permintaan Gagal'),
+          description: t('Could not send request. Please try again.', 'Gagal menghantar permintaan. Sila cuba lagi.'),
+          variant: 'error',
+        });
+      }
+    } finally {
+      setPokingOrderId(null);
+    }
+  };
   const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: 'cancel' | 'delete'; orderId: string } | null>(null);
 
@@ -304,8 +392,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         }
       } else {
         // Add mode
+        const newLocId = `loc-${updatedLocations.length + 1}-${newLocationLabel.trim().toLowerCase().replace(/\s+/g, '-')}`;
         updatedLocations.push({
-          id: `loc-${Date.now()}`,
+          id: newLocId,
           label: newLocationLabel.trim(),
           address: newLocationAddress.trim()
         });
@@ -1306,6 +1395,33 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
                   {/* Actions */}
                   <div className="flex gap-2 border-t border-border pt-4 flex-wrap">
+                    {/* Request Invoice Email ("Poke" Feature) */}
+                    {order.invoiceEmailRequested && !order.invoiceEmailHandled ? (
+                      <span className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5">
+                        <Mail className="w-3.5 h-3.5 animate-pulse text-amber-600" />
+                        {t('Email Requested ⏳', 'Permintaan Emel ⏳')}
+                      </span>
+                    ) : order.invoiceEmailSentAt ? (
+                      <span className="flex-1 min-w-[110px] h-10 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        {t('Invoiced via Email ✓', 'Invois Dihantar ✓')}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleRequestInvoiceEmail(order)}
+                        disabled={pokingOrderId === order.id}
+                        className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5 cursor-pointer"
+                        title={t('Request Invoice Email', 'Pohon Hantar Emel Invois')}
+                      >
+                        {pokingOrderId === order.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Mail className="w-3.5 h-3.5" />
+                        )}
+                        {t('Request Email', 'Pohon Emel')}
+                      </button>
+                    )}
+
                     {/* Download PDF */}
                     <button
                       onClick={() => setPreviewOrder(order)}
