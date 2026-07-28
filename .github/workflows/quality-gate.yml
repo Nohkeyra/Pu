@@ -1,0 +1,42 @@
+# .github/workflows/quality-gate.yml
+name: Professional Quality & Security Gate
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+
+jobs:
+  build-and-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20.x"] # Adjust to your target versions
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Lint with ESLint (Stop on syntax errors)
+      run: npm run lint
+
+    - name: Run Security Check (Audit)
+      # F-36 (audit): the previous `|| echo ...` swallowed npm audit's exit
+      # code, so this step could never actually fail the workflow — it only
+      # ever printed a warning, meaning "Quality & Security Gate" wasn't
+      # gating anything for dependency vulnerabilities. This now fails the
+      # build on high/critical findings, same as the step name always implied.
+      run: npm audit --audit-level=high
+
+    - name: Build and Verify
+      run: npm run build
