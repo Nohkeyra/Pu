@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // F-04 (audit): authorisation no longer relies on a hard-coded
+    // email whitelist. The `admin` custom claim is minted server-side
+    // by /api/admin/login after password verification, then accepted
+    // here as the single, revocable source of administrative authority.
+    // ---------------------------------------------------------------
+
+    // F-31 (audit, RESOLVED 2026-07-27, confirmed by Noh): this was
+    // previously dead code — nothing minted a Firebase Auth custom claim,
+    // so request.auth.token.admin could never be true for the admin JWT
+    // flow. server.ts now mints a Firebase custom token with an
+    // `admin: true` claim in /api/admin/login, and the admin client signs
+    // into Firebase Auth with it via signInWithCustomToken(). This makes
+    // isAdmin() live for the admin panel's direct client-SDK reads (e.g.
+    // the Firestore connectivity indicator in AdminPanel.tsx). It remains
+    // true, as before, that every /api/admin/* write goes through the
+    // Admin SDK in server.ts and bypasses these rules regardless — this
+    // function only matters for the small set of direct client reads.
+    //
+    // email_verified was dropped from this check: the admin custom token
+    // is minted for a fixed synthetic uid ("admin-wawasan"), not a real
+    // email-based Firebase user, so there is no email to verify. Adding it
+    // back would make isAdmin() permanently false again.
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.admin == true;
+    }
+
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /orders/{orderId} {
+
+      // ID bounds (F-04 / C-03): regex-anchored so traversal/
+      // poison IDs are rejected upstream of any business logic.
+      allow read, write: if false;
+
+      // Reads: customer sees only OWN orders; admins see all.
+      allow read: if request.auth != null
+                    && (isAdmin()
+                        || resource.data.uid      == request.auth.uid
+                        || resource.data.userId   == request.auth.uid);
+
+      allow create: if
+        orderId.matches('^[A-Za-z0-9_-]{5,50}$')
+        && request.resource.data.status in ['approved', 'pending']
+        && request.resource.data.totalAmount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.quantity <= 10000
+        && request.resource.data.meals is list
+        && request.resource.data.meals.size() > 0
+        && request.resource.data.meals.size() <= 10
+        && request.resource.data.meals.toSet()
+             .difference(['breakfast','lunch','dinner','tea_break','hi_tea'].toSet())
+             .size() == 0
+        && request.resource.data.name     is string && request.resource.data.name.size()     <= 150
+        && request.resource.data.email    is string && request.resource.data.email.size()    <= 150
+        && request.resource.data.contact  is string && request.resource.data.contact.size()  <= 50
+        && request.resource.data.to       is string && request.resource.data.to.size()       <= 150
+        && (!('attn'    in request.resource.data) || (request.resource.data.attn    is string && request.resource.data.attn.size()    <= 150))
+        && request.resource.data.location is string && request.resource.data.location.size() <= 300
+        && request.resource.data.menu     is string && request.resource.data.menu.size()     <= 200
+        && (!('notes'   in request.resource.data) || (request.resource.data.notes   is string && request.resource.data.notes.size()   <= 2000));
+
+      allow update: if isAdmin()
+        && orderId.matches('^[A-Za-z0-9_-]{5,50}$')
+        && request.resource.data.name     == resource.data.name
+        && request.resource.data.email    == resource.data.email
+        && request.resource.data.contact  == resource.data.contact
+        && request.resource.data.location == resource.data.location
+        && request.resource.data.quantity == resource.data.quantity
+        && request.resource.data.meals    == resource.data.meals
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.status in [
+             'pending','approved','billed','cancelled','rejected','cancel_requested','completed'
+           ]
+        && (
+          (resource.data.status == 'pending'          && request.resource.data.status in ['pending','approved','billed','cancelled','rejected','cancel_requested']) ||
+          (resource.data.status == 'approved'         && request.resource.data.status in ['approved','billed','cancelled','rejected','cancel_requested']) ||
+          (resource.data.status == 'billed'           && request.resource.data.status in ['billed','completed','cancel_requested']) ||
+          (resource.data.status == 'cancel_requested' && request.resource.data.status in ['cancel_requested','cancelled','approved','pending']) ||
+          (resource.data.status == 'cancelled'        && request.resource.data.status == 'cancelled') ||
+          (resource.data.status == 'rejected'         && request.resource.data.status == 'rejected') ||
+          (resource.data.status == 'completed'        && request.resource.data.status == 'completed')
+        )
+        && (
+          !(request.resource.data.status in ['approved','billed']) ||
+          (
+            request.resource.data.prices is map &&
+            request.resource.data.prices.keys().size() == request.resource.data.meals.size()
+          )
+        )
+        && (!('invoiceNo' in request.resource.data)
+            || (request.resource.data.invoiceNo is string && request.resource.data.invoiceNo.size() <= 100));
+
+      // F-07: no client-side delete. Archive only via Admin SDK.
+      allow delete: if false;
+    }
+
+    match /orders_archive/{archiveId} {
+      allow read:  if isAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    match /settings/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    match /meta/{docId} {
+      allow read, write: if false; // Admin SDK only
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
