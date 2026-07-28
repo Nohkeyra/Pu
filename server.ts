@@ -27,6 +27,7 @@ import {
   getLocalOrders,
   saveLocalOrders,
   createOrderWithSequentialInvoice,
+  generateSequentialInvoiceNo,
   type OrderData,
 } from "./server/firebaseAdmin.js";
 
@@ -512,26 +513,27 @@ async function startServer() {
   // Submit Order
   app.post("/api/orders", orderSubmissionLimiter, async (req, res) => {
     try {
-      const orderData = req.body as OrderData;
+      const rawOrderData = req.body as OrderData;
+      const orderData: OrderData = {
+        ...rawOrderData,
+        status: rawOrderData.status || "SUBMITTED",
+        invoiceNo: undefined,
+        unitPrice: rawOrderData.unitPrice ?? null,
+        totalAmount: rawOrderData.totalAmount ?? null,
+      };
 
       let orderId = "";
-      let invoiceNo = "";
       try {
         const created = await runWithRetry(() => createOrderWithSequentialInvoice(orderData));
         orderId = created.orderId;
-        invoiceNo = created.invoiceNo;
       } catch (firestoreErr) {
         if (ENABLE_LOCAL_FALLBACK) {
           console.warn("Firestore order submission failed; ENABLE_LOCAL_FALLBACK=true so saving locally:", firestoreErr);
           orderId = "order_" + Math.random().toString(36).substring(2, 10);
-          invoiceNo = `RW-FALLBACK-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
           const localOrders = getLocalOrders();
           localOrders.push({
             id: orderId,
             ...orderData,
-            status: "pending",
-            approvedAt: new Date().toISOString(),
-            invoiceNo,
             createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
           });
           saveLocalOrders(localOrders);
@@ -540,15 +542,15 @@ async function startServer() {
         }
       }
 
-      syncGoogleCalendarEvent(orderId, { ...orderData, invoiceNo }).catch(err => {
+      syncGoogleCalendarEvent(orderId, orderData).catch(err => {
         console.error("Background Google Calendar event creation error:", err);
       });
 
-      sendNotificationToTopic("new_orders", "New Order Received!", `New order from ${orderData.name || 'Customer'} - ${orderData.quantity || '0'} pax.`).catch(err => {
+      sendNotificationToTopic("new_orders", "New Catering Request!", `New request from ${orderData.name || 'Customer'} - ${orderData.quantity || '0'} pax. Needs Pricing.`).catch(err => {
         console.error("Background push notification error:", err);
       });
 
-      res.json({ success: true, id: orderId, invoiceNo });
+      res.json({ success: true, id: orderId });
     } catch (err) {
       console.error("Order submission endpoint error:", err);
       res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Internal server error" });
@@ -647,6 +649,94 @@ async function startServer() {
       return res.json({ success: true, message: "Cancellation request submitted successfully" });
     } catch (err) {
       console.error("Order cancel endpoint error:", err);
+      res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Poke / Request Invoice Email Endpoint
+  app.post("/api/orders/poke", orderSubmissionLimiter, async (req, res) => {
+    try {
+      const { orderId } = req.body;
+
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: "Missing orderId" });
+      }
+
+      const callerUid = await verifyCustomerIdToken(req);
+      if (!callerUid) {
+        return res.status(401).json({ success: false, error: "Unauthorized: Missing or invalid session token" });
+      }
+
+      let data: OrderData | null = null;
+      let isLocal = false;
+
+      try {
+        const adminDb = getFirestore();
+        const docSnap = await adminDb.collection("orders").doc(orderId).get();
+        if (docSnap.exists) {
+          data = docSnap.data() as OrderData;
+        }
+      } catch (dbErr) {
+        console.warn("Firestore fetch in order poke failed, trying local backup:", dbErr);
+      }
+
+      if (!data) {
+        const localOrders = getLocalOrders();
+        const found = localOrders.find(o => o.id === orderId);
+        if (found) {
+          data = found as OrderData;
+          isLocal = true;
+        }
+      }
+
+      if (!data) {
+        return res.status(404).json({ success: false, error: "Order not found" });
+      }
+
+      const orderUserId = data.userId || data.uid;
+      if (orderUserId && orderUserId !== callerUid) {
+        return res.status(403).json({ success: false, error: "Unauthorized: You do not own this order" });
+      }
+
+      const updatedFields = {
+        invoiceEmailRequested: true,
+        invoiceEmailRequestedAt: new Date().toISOString(),
+        invoiceEmailHandled: false,
+      };
+
+      if (!isLocal) {
+        try {
+          const adminDb = getFirestore();
+          await runWithRetry(() => adminDb.collection("orders").doc(orderId).update(updatedFields));
+        } catch (dbErr) {
+          console.warn("Firestore update in order poke failed, syncing locally:", dbErr);
+          isLocal = true;
+        }
+      }
+
+      if (isLocal) {
+        const localOrders = getLocalOrders();
+        const localIndex = localOrders.findIndex(o => o.id === orderId);
+        if (localIndex !== -1) {
+          localOrders[localIndex] = {
+            ...localOrders[localIndex],
+            ...updatedFields
+          };
+          saveLocalOrders(localOrders);
+        }
+      }
+
+      sendNotificationToTopic(
+        "new_orders",
+        "🔔 Invoice Email Requested",
+        `Customer ${data.name || data.to || 'Customer'} requested invoice email delivery for ${data.invoiceNo || orderId}`
+      ).catch(err => {
+        console.error("Background push notification error for poke request:", err);
+      });
+
+      return res.json({ success: true, message: "Invoice email delivery request sent to restaurant" });
+    } catch (err) {
+      console.error("Order poke endpoint error:", err);
       res.status(500).json({ success: false, error: err instanceof Error ? err.message : "Internal server error" });
     }
   });
@@ -1264,7 +1354,7 @@ async function startServer() {
         return res.json({ success: true, orders });
       }
 
-      if (action === "update") {
+      if (action === "update" || action === "generate_invoice") {
         if (!orderId || !data) {
           return res.status(400).json({ error: "Missing orderId or data for update" });
         }
@@ -1282,6 +1372,17 @@ async function startServer() {
         if (!previousOrder) {
           const localOrdersBefore = getLocalOrders();
           previousOrder = localOrdersBefore.find(o => o.id === orderId);
+        }
+
+        // If transitioning to INVOICED or billed and no invoice number exists yet, generate one
+        const targetStatus = (data.status as string | undefined)?.toLowerCase();
+        if ((targetStatus === "invoiced" || targetStatus === "billed" || action === "generate_invoice") && !previousOrder?.invoiceNo && !data.invoiceNo) {
+          const newInvoiceNo = await generateSequentialInvoiceNo();
+          data.invoiceNo = newInvoiceNo;
+          data.invoicedAt = new Date().toISOString();
+          if (!data.status) {
+            data.status = "INVOICED";
+          }
         }
         const previousStatus = (previousOrder?.status as string | undefined) || "";
 

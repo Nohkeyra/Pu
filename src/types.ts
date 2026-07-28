@@ -51,12 +51,19 @@ export interface Order {
   menu?: string;
   notes?: string;
   prices?: Record<string, number>;
+  unitPrice?: number;
   totalAmount?: number;
   invoiceNo?: string;
+  invoicedAt?: string;
   lang?: 'en' | 'bm';
   status?: string;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
   userId?: string;
+  invoiceEmailRequested?: boolean;
+  invoiceEmailRequestedAt?: string;
+  invoiceEmailHandled?: boolean;
+  invoiceEmailHandledAt?: string;
+  invoiceEmailSentAt?: string;
 }
 
 export interface CombinedInvoicePayload {
