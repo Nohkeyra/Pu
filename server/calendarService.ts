@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { getFirestore, getLocalOrders, saveLocalOrders, type OrderData } from "./firebaseAdmin.js";
+import { getFirestore, type OrderData } from "./firebaseAdmin.js";
 
 export function getGoogleCalendarClient() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -44,10 +44,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
         console.warn(`Firestore sync load failed for order ${orderId}:`, dbErr);
       }
 
-      if (!orderData) {
-        const localOrders = getLocalOrders();
-        orderData = localOrders.find(o => o.id === orderId) as OrderData | undefined;
-      }
+
     }
 
     if (!orderData) {
