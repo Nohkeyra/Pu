@@ -45,38 +45,65 @@ export const getDummyCombinedOrders = (): Order[] => {
 
 export const getDummyConsolidatedOrders = (): Order[] => {
   const now = new Date();
-  
+  const daysAgo = (n: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
+  };
+
+  // Single client, multiple orders across different dates — this is the
+  // real-world shape of a consolidated invoice (e.g. Gas District Cooling
+  // ordering catering for several separate meetings across a month).
   return [
     {
-      id: 'CLIENT-A-1',
-      to: 'PETRONAS HOLDINGS (TEST)',
-      name: 'Client A Test',
+      id: 'CONS-TEST-1',
+      to: 'GAS DISTRICT COOLING (TEST)',
+      attn: 'Test Contact',
+      name: 'Diagnostic Tool',
       contact: '012-0000001',
-      email: 'a@example.com',
-      dateTime: now.toISOString(),
-      location: 'KLCC Tower 1',
-      quantity: 200,
-      meals: ['lunch'],
-      menu: 'Corporate Buffet Set A',
-      prices: { lunch: 35.00 },
-      totalAmount: 7000.00,
-      invoiceNo: 'RW-CONS-01',
+      email: 'test@example.com',
+      dateTime: daysAgo(10),
+      location: 'GDC Plant, Putrajaya',
+      quantity: 15,
+      meals: ['breakfast'],
+      menu: 'Set Box Makanan & Minuman',
+      prices: { breakfast: 8.00 },
+      totalAmount: 120.00,
+      invoiceNo: 'RW-CONS-TEST-1',
       lang: 'en'
     },
     {
-      id: 'CLIENT-B-1',
-      to: 'SHELL MALAYSIA (TEST)',
-      name: 'Client B Test',
-      contact: '012-0000002',
-      email: 'b@example.com',
-      dateTime: now.toISOString(),
-      location: 'Shell House Cyberjaya',
-      quantity: 150,
-      meals: ['lunch'],
-      menu: 'Corporate Buffet Set B',
-      prices: { lunch: 28.00 },
-      totalAmount: 4200.00,
-      invoiceNo: 'RW-CONS-02',
+      id: 'CONS-TEST-2',
+      to: 'GAS DISTRICT COOLING (TEST)',
+      attn: 'Test Contact',
+      name: 'Diagnostic Tool',
+      contact: '012-0000001',
+      email: 'test@example.com',
+      dateTime: daysAgo(7),
+      location: 'GDC Plant, Putrajaya',
+      quantity: 20,
+      meals: ['hi_tea'],
+      menu: 'Set Box Makanan & Minuman',
+      prices: { hi_tea: 8.00 },
+      totalAmount: 160.00,
+      invoiceNo: 'RW-CONS-TEST-2',
+      lang: 'en'
+    },
+    {
+      id: 'CONS-TEST-3',
+      to: 'GAS DISTRICT COOLING (TEST)',
+      attn: 'Test Contact',
+      name: 'Diagnostic Tool',
+      contact: '012-0000001',
+      email: 'test@example.com',
+      dateTime: daysAgo(3),
+      location: 'GDC Plant, Putrajaya',
+      quantity: 25,
+      meals: ['breakfast', 'lunch'],
+      menu: 'Breakfast: oglio; Lunch: nasi arab',
+      prices: { breakfast: 10.00, lunch: 22.00 },
+      totalAmount: 800.00,
+      invoiceNo: 'RW-CONS-TEST-3',
       lang: 'en'
     }
   ];
