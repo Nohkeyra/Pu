@@ -3,12 +3,12 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import GlitchText from '../components/GlitchText';
+
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
 
 export default function HeroSection() {
-  const { language } = useLanguage();
-  const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
+  const { t } = useLanguage();
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 800], [0, 120]);
 
@@ -66,22 +66,22 @@ export default function HeroSection() {
           variants={itemVariants}
           className="font-display font-bold text-4xl md:text-6xl lg:text-7xl text-white mb-4 drop-shadow-lg"
         >
-          <GlitchText text={t('Sincerity . Blessings', 'Keikhlasan . Keberkatan')} />
+          <GlitchText text={t('hero_glitch')} />
         </motion.h1>
         
         <motion.p 
           variants={itemVariants}
           className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-medium mb-8 drop-shadow-md"
         >
-          {t('Experience the true taste of heritage at Restoran Wawasan. Est. 1986.', 'Alami rasa warisan sebenar di Restoran Wawasan. Sejak 1986.')}
+          {t('hero_description')}
         </motion.p>
         
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-6 sm:px-0">
-          <a href="#menu" className="px-10 py-4 bg-sunshine text-white rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
-            {t('Explore Menu', 'Lihat Menu')}
+          <a href="#menu" className="px-10 py-4 bg-sunshine text-deep-forest rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
+            {t('explore_menu_btn')}
           </a>
           <Link to="/order" className="px-10 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">
-            {t('Order Catering', 'Tempah Katering')}
+            {t('order_catering_btn')}
           </Link>
         </motion.div>
 

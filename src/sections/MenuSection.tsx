@@ -85,8 +85,7 @@ export default function MenuSection() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const isBm = language === 'bm';
-  const [isLoading, setIsLoading] = useState(true);
-  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
+  const [menuItems] = useState(MENU_ITEMS);
 
   useEffect(() => {
     // Basic localStorage caching strategy for menu items
@@ -174,32 +173,7 @@ export default function MenuSection() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {isLoading ? (
-            // Render beautiful skeleton cards during loading
-            Array.from({ length: 6 }).map((_, idx) => (
-              <motion.div 
-                key={idx} 
-                variants={cardVariants}
-                className="menu-card relative bg-cream-dark/60 backdrop-blur-md rounded-[2.5rem] overflow-hidden border border-deep-forest/[0.06] dark:border-white/[0.06] p-0 flex flex-col h-full"
-              >
-                <div className="aspect-[4/3] w-full relative overflow-hidden">
-                  <Skeleton className="w-full h-full rounded-t-[2.5rem]" />
-                </div>
-                <div className="p-6 md:p-8 flex flex-col flex-1 bg-transparent">
-                  <Skeleton className="h-7 w-1/2 rounded-md mb-4" />
-                  <div className="space-y-2 mb-6">
-                    <Skeleton className="h-4 w-full rounded" />
-                    <Skeleton className="h-4 w-11/12 rounded" />
-                    <Skeleton className="h-4 w-4/5 rounded" />
-                  </div>
-                  <div className="border-t border-white/10 pt-4 mt-auto">
-                    <Skeleton className="h-5 w-1/4 rounded" />
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            menuItems.map((item) => (
+          {menuItems.map((item) => (
               <motion.div 
                 key={item.nameEn} 
                 variants={cardVariants}
@@ -245,8 +219,7 @@ export default function MenuSection() {
                   </div>
                 </div>
               </motion.div>
-            ))
-          )}
+            ))}
         </motion.div>
 
         {/* Order Now (Guest/Direct Order) Call to Action */}

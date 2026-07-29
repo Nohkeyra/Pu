@@ -50,9 +50,7 @@ import {
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
-  const PORT = process.env.NODE_ENV === "production" && process.env.PORT
-    ? parseInt(process.env.PORT)
-    : 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
   // Middleware
   const DEFAULT_ORIGINS = [
@@ -115,6 +113,7 @@ async function startServer() {
           "https://*.firebaseio.com",
           "https://*.firebasestorage.app",
           "https://fcm.googleapis.com",
+          "https://nominatim.openstreetmap.org",
           "wss:",
         ],
         frameSrc: ["'self'", "blob:"],
@@ -1728,7 +1727,7 @@ async function startServer() {
   });
 
   // Vite middleware for development
-  const isProduction = process.env.NODE_ENV === "production" && fs.existsSync(path.join(process.cwd(), "dist/index.html"));
+  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");

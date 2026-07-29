@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -21,11 +21,11 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import AppSplashScreen from './components/AppSplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 import LandingPage from './pages/LandingPage';
-import OrderPage from './pages/OrderPage';
-import AdminPage from './pages/AdminPage';
-import LoginPage from './pages/LoginPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
+const OrderPage = lazy(() => import('./pages/OrderPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change
