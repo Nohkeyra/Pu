@@ -119,9 +119,9 @@ Documentation/
 
 ## 🔗 Useful Links
 
-- **Actions Dashboard**: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/actions
-- **Releases**: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/releases
-- **Workflows**: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/tree/main/.github/workflows
+- **Actions Dashboard**: https://github.com/Nohkeyra/Pu/actions
+- **Releases**: https://github.com/Nohkeyra/Pu/releases
+- **Workflows**: https://github.com/Nohkeyra/Pu/tree/main/.github/workflows
 
 ---
 
