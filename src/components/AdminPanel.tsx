@@ -23,7 +23,6 @@ import {
   AlertTriangle,
   XCircle,
   Loader2,
-  Save,
   FileDown,
   ArrowLeft,
   Send,
@@ -41,7 +40,8 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { generateInvoicePDF, generateCombinedInvoicePDF, generateConsolidatedInvoicePDF, preloadLogoForPDF } from '@/services/pdfService';
+import { generateInvoicePDF, generateCombinedInvoicePDF, preloadLogoForPDF } from '@/services/pdfService';
+import { generateConsolidatedInvoicePDF } from '@/services/consolidatedInvoiceService';
 import { numberToWords } from '@/services/numberToWordsBM';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -107,7 +107,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
   const [dateToFilter, setDateToFilter] = useState<string>('');
-  const [dateSortOrder, setDateSortOrder] = useState<'desc' | 'asc'>('desc');
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
 
@@ -616,70 +615,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminToken]);
 
-  const handleSavePricesOnly = async (orderId: string) => {
-    setIsApproving(true);
-    try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-
-      const mealPrices: Record<string, number> = {};
-      let total = 0;
-      let totalUnitPriceSum = 0;
-      
-      order.meals.forEach(meal => {
-        const price = parseFloat(prices[meal] || '0');
-        const roundedPrice = Math.round(price * 100) / 100;
-        mealPrices[meal] = roundedPrice;
-        totalUnitPriceSum += roundedPrice;
-        total += roundedPrice * order.quantity;
-      });
-
-      total = Math.round(total * 100) / 100;
-      const avgUnitPrice = order.meals.length > 0 ? Math.round((totalUnitPriceSum / order.meals.length) * 100) / 100 : totalUnitPriceSum;
-
-      const updateResponse = await fetch(getApiUrl('/api/admin/orders'), {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          action: 'update',
-          orderId,
-          data: {
-            prices: mealPrices,
-            unitPrice: avgUnitPrice,
-            totalAmount: total,
-            status: 'PRICED',
-            pricedAt: new Date().toISOString(),
-          }
-        })
-      });
-
-      if (!updateResponse.ok) {
-        throw new Error('Failed to update order pricing on server');
-      }
-
-      setPrices({});
-      setSelectedOrder(null);
-      setIsDetailOpen(false);
-      fetchOrders();
-      
-      toast({
-        title: t('success'),
-        description: language === 'bm' ? 'Harga per unit disimpan. Tempahan sedia untuk invois.' : 'Price per unit saved. Order is now ready for invoice.',
-        variant: 'success',
-        duration: 5000
-      });
-    } catch (error) {
-      console.error('Error saving prices:', error);
-      toast({
-        title: t('error'),
-        description: language === 'bm' ? 'Gagal menyimpan harga per unit.' : 'Failed to save price per unit.',
-        variant: 'error'
-      });
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
   const handleApprove = async (orderId: string) => {
     setIsApproving(true);
     try {
@@ -689,32 +624,29 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       // Calculate total from prices
       const mealPrices: Record<string, number> = {};
       let total = 0;
-      let totalUnitPriceSum = 0;
       
       order.meals.forEach(meal => {
         const price = parseFloat(prices[meal] || '0');
         const roundedPrice = Math.round(price * 100) / 100;
         mealPrices[meal] = roundedPrice;
-        totalUnitPriceSum += roundedPrice;
         total += roundedPrice * order.quantity;
       });
 
       total = Math.round(total * 100) / 100;
-      const avgUnitPrice = order.meals.length > 0 ? Math.round((totalUnitPriceSum / order.meals.length) * 100) / 100 : totalUnitPriceSum;
 
-      // Update meal prices and status via secure admin endpoint
+      const invoiceNo = order.invoiceNo || `RW${orderId.substring(0, 6).toUpperCase()}`;
+
+      // Update meal prices and invoiceNo on the order document via secure admin endpoint
       const updateResponse = await fetch(getApiUrl('/api/admin/orders'), {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
-          action: 'generate_invoice',
+          action: 'update',
           orderId,
           data: {
             prices: mealPrices,
-            unitPrice: avgUnitPrice,
-            totalAmount: total,
-            status: 'INVOICED',
-            invoicedAt: new Date().toISOString(),
+            invoiceNo,
+            approvedAt: new Date().toISOString(),
           }
         })
       });
@@ -723,17 +655,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         throw new Error('Failed to update order details on server');
       }
 
-      const updateResult = await updateResponse.json();
-      const invoiceNo = updateResult?.invoiceNo || order.invoiceNo || `RW-${Math.floor(1000 + Math.random() * 9000)}`;
-
       // Generate and download PDF
       const pdfData = {
         ...order,
         prices: mealPrices,
-        unitPrice: avgUnitPrice,
         totalAmount: total,
         invoiceNo,
-        status: 'INVOICED',
       };
       
       const pdfDoc = generateInvoicePDF(pdfData, true, order.lang);
@@ -762,7 +689,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       try {
         const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
         
-        await fetch(getApiUrl('/api/submissions/bill'), {
+        const response = await fetch(getApiUrl('/api/submissions/bill'), {
           method: 'POST',
           headers: authHeaders(),
           body: JSON.stringify({
@@ -773,6 +700,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             collectionName: 'orders'
           })
         });
+        
+        if (!response.ok) {
+          console.warn('Could not send email or update status via server. Have you configured SMTP in .env?');
+        } else {
+          console.log('Invoice email sent and document billed successfully via backend!');
+        }
       } catch (err) {
         console.error('Error triggering billing and email API:', err);
       }
@@ -780,11 +713,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       setPrices({});
       setSelectedOrder(null);
       setIsDetailOpen(false);
+      // Refresh the orders list to show updated status/invoice immediately
       fetchOrders();
       
       toast({
         title: t('success'),
-        description: language === 'bm' ? 'Invois rasmi berjaya dijana dan disimpan!' : 'Final invoice successfully generated and saved!',
+        description: t('order_approved'),
         variant: 'success',
         duration: 5000
       });
@@ -977,10 +911,36 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   const handleToggleOrderSelect = (id?: string) => {
     if (!id) return;
+    const targetOrder = orders.find(o => o.id === id);
+    if (!targetOrder) return;
+
     setSelectedOrderIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        return next;
+      }
+
+      // Consolidated invoices are single-client only. If there's already a
+      // different client selected, reject this pick instead of silently
+      // allowing a mixed-client selection (which would otherwise only be
+      // caught later, inside generateConsolidatedInvoicePDF, at PDF-generation time).
+      if (next.size > 0) {
+        const firstSelectedId = Array.from(next)[0];
+        const firstSelectedOrder = orders.find(o => o.id === firstSelectedId);
+        if (firstSelectedOrder && firstSelectedOrder.to !== targetOrder.to) {
+          toast({
+            title: t('error') || 'Error',
+            description: language === 'bm'
+              ? `Tidak boleh pilih klien berbeza. Invois konsolidasi hanya untuk satu klien (${firstSelectedOrder.to}) sahaja.`
+              : `Cannot select a different client. Consolidated invoices are limited to a single client (${firstSelectedOrder.to}) at a time.`,
+            variant: 'error'
+          });
+          return prev;
+        }
+      }
+
+      next.add(id);
       return next;
     });
   };
@@ -1089,29 +1049,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         throw new Error('Failed to send email. Please verify SMTP is configured.');
       }
 
-      // Mark request as handled if order exists
-      if (sendOrder.id) {
-        try {
-          await fetch(getApiUrl('/api/admin/orders'), {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({
-              action: 'update',
-              orderId: sendOrder.id,
-              data: {
-                invoiceEmailHandled: true,
-                invoiceEmailHandledAt: new Date().toISOString(),
-                invoiceEmailSentAt: new Date().toISOString(),
-                invoiceEmailRequested: false,
-              }
-            })
-          });
-          fetchOrders();
-        } catch (updateErr) {
-          console.warn('Failed to update poke handled state in admin order update:', updateErr);
-        }
-      }
-
       toast({
         title: t('invoice_emailed'),
         description: t('invoice_emailed_desc').replace('{email}', recipientEmail),
@@ -1175,77 +1112,68 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const getStatusBadge = (status?: string) => {
     const s = status ? status.toLowerCase() : '';
     switch (s) {
-      case 'invoiced':
+      case 'cancel_requested':
+        return (
+          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold animate-pulse shadow-sm">
+            {t('cancel_requested') || 'Cancel Requested'}
+          </Badge>
+        );
       case 'billed':
       case 'dibilkan':
         return (
-          <Badge className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 font-semibold shadow-sm gap-1.5 px-2.5 py-1">
-            <span className="relative flex h-2 w-2">
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
-            </span>
-            {language === 'bm' ? 'Invois Dijana' : 'Invoiced Order'}
+          <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-semibold shadow-sm">
+            {t('billed') || 'Billed'}
           </Badge>
         );
-      case 'priced':
       case 'approved':
       case 'diluluskan':
         return (
-          <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-semibold shadow-sm gap-1.5 px-2.5 py-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.8)]"></span>
-            </span>
-            {language === 'bm' ? 'Sedia Untuk Invois' : 'Ready for Invoice'}
-          </Badge>
-        );
-      case 'cancel_requested':
-        return (
-          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold animate-pulse shadow-sm px-2.5 py-1">
-            {t('cancel_requested') || 'Cancel Requested'}
+          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium shadow-sm">
+            {t('approved') || 'Approved'}
           </Badge>
         );
       case 'cancelled':
       case 'dibatalkan':
         return (
-          <Badge className="bg-stone/15 text-stone dark:text-stone-300 border border-stone/20 font-normal shadow-sm px-2.5 py-1">
+          <Badge className="bg-stone/15 text-stone dark:text-stone-300 border border-stone/20 font-normal shadow-sm">
             {t('cancelled') || 'Cancelled'}
           </Badge>
         );
       case 'rejected':
       case 'ditolak':
         return (
-          <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-medium shadow-sm px-2.5 py-1">
+          <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-medium shadow-sm">
             {t('rejected') || 'Rejected'}
           </Badge>
         );
-      case 'submitted':
       case 'menunggu':
       case 'pending':
       default:
         return (
-          <Badge className="bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-500/30 font-bold shadow-sm gap-1.5 px-2.5 py-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.8)]"></span>
-            </span>
-            {language === 'bm' ? 'Perlu Tindakan' : 'Needs Attention'}
+          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium shadow-sm">
+            {t('pending') || 'Pending'}
           </Badge>
         );
     }
   };
 
-  // Distinct client names (order.to) present in the current order set
+  // Distinct client names (order.to) present in the current order set,
+  // used to populate the Client filter dropdown. Derived from real data
+  // rather than the SAVED_COMPANIES constants list, since that list holds
+  // multiple address variants per client and isn't 1:1 with what's
+  // actually been ordered.
   const clientOptions = Array.from(
     new Set(orders.map(o => o.to).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
 
+  // Status filter groups map UI selections to the underlying bm/en status
+  // strings stored on the order (see getStatusBadge above for the same
+  // pairs). 'all' intentionally still excludes cancelled orders below,
+  // matching the pre-existing default behavior of this list.
   const STATUS_FILTER_GROUPS: Record<string, string[]> = {
-    submitted: ['submitted', 'pending', 'menunggu', ''],
-    priced: ['priced', 'approved', 'diluluskan'],
-    invoiced: ['invoiced', 'billed', 'dibilkan'],
-    pending: ['submitted', 'pending', 'menunggu', ''],
-    approved: ['priced', 'approved', 'diluluskan'],
-    billed: ['invoiced', 'billed', 'dibilkan'],
+    pending: ['pending', 'menunggu'],
+    approved: ['approved', 'diluluskan'],
+    billed: ['billed', 'dibilkan'],
     rejected: ['rejected', 'ditolak'],
     cancelled: ['cancelled', 'dibatalkan'],
     cancel_requested: ['cancel_requested'],
@@ -1310,20 +1238,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     })();
 
     return matchesSearch && matchesStatus && matchesClient && matchesDateRange;
-  }).sort((a, b) => {
-    const getEventTime = (o: Order) => {
-      if (!o.dateTime) return 0;
-      const t = new Date(o.dateTime).getTime();
-      return isNaN(t) ? 0 : t;
-    };
-    const timeA = getEventTime(a);
-    const timeB = getEventTime(b);
-    if (timeA !== timeB) {
-      return dateSortOrder === 'desc' ? timeB - timeA : timeA - timeB;
-    }
-    const idA = a.id || '';
-    const idB = b.id || '';
-    return idA.localeCompare(idB);
   });
 
   const cancelRequests = orders.filter(o => o.status === 'cancel_requested');
@@ -1698,8 +1612,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               setDateFromFilter={setDateFromFilter}
               dateToFilter={dateToFilter}
               setDateToFilter={setDateToFilter}
-              dateSortOrder={dateSortOrder}
-              setDateSortOrder={setDateSortOrder}
               isSelectMode={isSelectMode}
               setIsSelectMode={setIsSelectMode}
               selectedOrderIds={selectedOrderIds}
@@ -1956,26 +1868,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 </Button>
               </>
             ) : (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={() => handleSavePricesOnly(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
-                  variant="outline"
-                  className="border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 font-bold"
-                >
-                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  {language === 'bm' ? 'Simpan Harga Per Unit' : 'Save Price Per Unit'}
-                </Button>
-
-                <Button
-                  onClick={() => handleApprove(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-                  {language === 'bm' ? 'Jana Invois Rasmi' : 'Generate Final Invoice'}
-                </Button>
-              </div>
+              <Button
+                onClick={() => handleApprove(selectedOrder?.id || '')}
+                disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                {selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? t('update_invoice') || 'Update Invoice' : t('approve')}
+              </Button>
             )}
             <Button
               variant="outline"

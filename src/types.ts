@@ -51,19 +51,12 @@ export interface Order {
   menu?: string;
   notes?: string;
   prices?: Record<string, number>;
-  unitPrice?: number;
   totalAmount?: number;
   invoiceNo?: string;
-  invoicedAt?: string;
   lang?: 'en' | 'bm';
   status?: string;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
   userId?: string;
-  invoiceEmailRequested?: boolean;
-  invoiceEmailRequestedAt?: string;
-  invoiceEmailHandled?: boolean;
-  invoiceEmailHandledAt?: string;
-  invoiceEmailSentAt?: string;
 }
 
 export interface CombinedInvoicePayload {
@@ -72,9 +65,14 @@ export interface CombinedInvoicePayload {
   lang?: 'en' | 'bm';
 }
 
-// Admin-only: orders can span multiple corporate clients (different `to`
-// values) in one export, unlike CombinedInvoicePayload which assumes a
-// single client (customers only ever select their own orders).
+// Admin-only: consolidates MULTIPLE ORDERS from a SINGLE client into one
+// multi-page export (e.g. every meeting order for Gas District Cooling in a
+// given month), matching how real invoices work — one client per invoice.
+// All orders passed in must belong to the same client (`to`);
+// generateConsolidatedInvoicePDF validates this and throws if orders from
+// more than one client are passed in. Each resulting page gets its own
+// fresh random invoice number generated internally (not supplied here) and
+// its own separate total, since each page is treated as its own invoice.
 export interface ConsolidatedInvoicePayload {
   orders: Order[];
   includeNotes: boolean;
