@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ImgHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
+interface ResponsiveImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   alt: string;
   sizes?: string;
@@ -17,16 +17,10 @@ interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>,
 /**
  * ResponsiveImage
  * 
- * Automatically generates srcset for images in /assets/.
- * Assumes responsive variants exist at /assets/{name}-{width}w.jpg.
+ * Uses the original src as fallback, and adds srcSet for responsive variants
+ * if they exist at /assets/{name}-{width}w.jpg.
  * 
- * Usage:
- *   <ResponsiveImage
- *     src="/assets/nasi-lemak.jpg"
- *     alt="Nasi Lemak"
- *     sizes="(max-width: 768px) 100vw, 50vw"
- *     className="rounded-2xl"
- *   />
+ * If responsive variants are missing, the original image loads normally.
  */
 export default function ResponsiveImage({
   src,
@@ -54,9 +48,6 @@ export default function ResponsiveImage({
   const srcSet = widths
     .map((w) => `${basePath}-${w}w${extension} ${w}w`)
     .join(', ');
-
-  // Fallback src (original or smallest variant)
-  const fallbackSrc = `${basePath}-400w${extension}`;
 
   useEffect(() => {
     // If the image is already cached, onLoad won't fire — check complete
@@ -93,7 +84,7 @@ export default function ResponsiveImage({
       )}
       <img
         ref={imgRef}
-        src={fallbackSrc}
+        src={src}
         srcSet={srcSet}
         sizes={sizes}
         alt={alt}

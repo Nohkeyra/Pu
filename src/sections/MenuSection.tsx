@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'motion/react';
@@ -7,26 +6,10 @@ import { getAssetUrl } from '@/lib/utils';
 import { MENU_ITEMS } from '@/data/menu';
 import ResponsiveImage from '@/components/ResponsiveImage';
 
-
 export default function MenuSection() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const isBm = language === 'bm';
-  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
-
-  useEffect(() => {
-    // Basic localStorage caching strategy for menu items
-    const cachedItems = localStorage.getItem('menu_items');
-    if (cachedItems) {
-      try {
-        setMenuItems(JSON.parse(cachedItems));
-      } catch {
-        // Fallback if parsing failed
-      }
-    } else {
-      localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
-    }
-  }, []);
 
   const headerVariants = {
     hidden: {},
@@ -68,7 +51,7 @@ export default function MenuSection() {
     <section id="menu" className="section-padding bg-cream relative">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
-        
+
         <motion.div 
           variants={headerVariants}
           initial="hidden"
@@ -98,54 +81,54 @@ export default function MenuSection() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {menuItems.map((item) => (
-              <motion.div 
-                key={item.nameEn} 
-                variants={cardVariants}
-                className="menu-card group relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 hover:shadow-premium transition-all duration-500"
-              >
-                <div className="aspect-[4/3] overflow-hidden relative">
-                  <ResponsiveImage
-                    src={item.image}
-                    alt={isBm ? item.nameBm : item.nameEn}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    containerClassName="w-full h-full"
-                    className="group-hover:scale-110 transition-transform duration-700"
+          {MENU_ITEMS.map((item) => (
+            <motion.div 
+              key={item.id} 
+              variants={cardVariants}
+              className="menu-card group relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 hover:shadow-premium transition-all duration-500"
+            >
+              <div className="aspect-[4/3] overflow-hidden relative">
+                <ResponsiveImage
+                  src={item.image}
+                  alt={isBm ? item.nameBm : item.nameEn}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  containerClassName="w-full h-full"
+                  className="group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-sunshine/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </div>
+              <div className="p-7 md:p-8 relative">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-display font-black text-2xl text-sunshine group-hover:scale-[1.02] transition-transform duration-300">
+                    {isBm ? item.nameBm : item.nameEn}
+                  </h3>
+                </div>
+                <p className="font-body text-stone dark:text-stone/70 leading-relaxed mb-6 font-light text-sm h-[60px] overflow-hidden line-clamp-3">
+                  {isBm ? item.descBm : item.descEn}
+                </p>
+                <div className="relative mt-auto overflow-hidden rounded-2xl bg-gradient-to-r from-[#023341] via-[#0B4A5C] to-[#023341] dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-sunshine/30 dark:border-sunshine/60 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/80 transition-all duration-300">
+                  {/* Authentic Non-Repeating Malaysian Batik Overlay */}
+                  <div 
+                    className="absolute inset-0 opacity-35 dark:opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-65 mix-blend-overlay dark:mix-blend-soft-light"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center',
+                    }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-sunshine/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
-                <div className="p-7 md:p-8 relative">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-display font-black text-2xl text-sunshine group-hover:scale-[1.02] transition-transform duration-300">
-                      {isBm ? item.nameBm : item.nameEn}
-                    </h3>
-                  </div>
-                  <p className="font-body text-stone dark:text-stone/70 leading-relaxed mb-6 font-light text-sm h-[60px] overflow-hidden line-clamp-3">
-                    {isBm ? item.descBm : item.descEn}
-                  </p>
-                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-gradient-to-r from-[#023341] via-[#0B4A5C] to-[#023341] dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-sunshine/30 dark:border-sunshine/60 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/80 transition-all duration-300">
-                    {/* Authentic Non-Repeating Malaysian Batik Overlay */}
-                    <div 
-                      className="absolute inset-0 opacity-35 dark:opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-65 mix-blend-overlay dark:mix-blend-soft-light"
-                      style={{
-                        backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
-                        backgroundSize: 'cover',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                      }}
-                    />
-                    <div className="relative z-10 flex items-center justify-between w-full">
-                      <span className="text-[11px] font-black text-sunshine dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
-                        {isBm ? 'Harga Bermula' : 'Price Starts'}
-                      </span>
-                      <span className="font-sans font-black text-white dark:text-amber-50 text-base drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-300">
-                        {isBm ? item.priceBm : item.priceEn}
-                      </span>
-                    </div>
+                  <div className="relative z-10 flex items-center justify-between w-full">
+                    <span className="text-[11px] font-black text-sunshine dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+                      {isBm ? 'Harga Bermula' : 'Price Starts'}
+                    </span>
+                    <span className="font-sans font-black text-white dark:text-amber-50 text-base drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-300">
+                      {isBm ? item.priceBm : item.priceEn}
+                    </span>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* Order Now (Guest/Direct Order) Call to Action */}
@@ -159,7 +142,7 @@ export default function MenuSection() {
           <div className="bg-cream-dark/60 backdrop-blur-md rounded-[2.5rem] p-8 md:p-10 border border-deep-forest/[0.08] dark:border-white/[0.08] shadow-xl relative overflow-hidden group">
             {/* Ambient decorative gradient */}
             <div className="absolute -inset-px bg-gradient-to-r from-sunshine/5 to-crisp-carrot/5 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            
+
             <h3 className="font-display font-bold text-2xl md:text-3xl text-deep-forest mb-3">
               {isBm ? 'Sedia untuk Memesan?' : 'Ready to Order?'}
             </h3>
