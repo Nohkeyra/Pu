@@ -21,6 +21,31 @@ export interface UserProfile {
   savedLocations?: SavedLocation[];
 }
 
+export interface CompanyPreset {
+  id: string;
+  userId: string;
+  presetName: string;
+  companyName: string;
+  department: string;
+  billingAddress: string;
+  deliveryAddress: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  createdAt: string;
+}
+
+export interface AuditLogDocument {
+  id: string;
+  action: string;
+  performedBy: string;
+  performedByName: string;
+  targetType: 'order' | 'invoice' | 'preset';
+  targetId: string;
+  details?: string;
+  timestamp: string;
+}
+
 export interface ExportColumnOptions {
   date: boolean;
   invoiceNo: boolean;
@@ -38,7 +63,10 @@ export interface ExportColumnOptions {
 
 export interface Order {
   id?: string;
+  userId?: string;
+  presetId?: string | null;
   to: string;
+  department?: string;
   attn?: string;
   name: string;
   contact: string;
@@ -47,16 +75,22 @@ export interface Order {
   dateTime: string;
   location: string;
   quantity: number;
-  meals: string[];
+  meals: ('breakfast' | 'lunch' | 'hi_tea' | string)[];
+  preparationType: 'meal_box' | 'buffet';
   menu?: string;
   notes?: string;
   prices?: Record<string, number>;
   totalAmount?: number;
   invoiceNo?: string;
   lang?: 'en' | 'bm';
-  status?: string;
+  status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected';
+  rejectionReason?: string;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
-  userId?: string;
+  updatedAt?: { seconds: number; nanoseconds: number } | string | Date;
+  approvedAt?: string;
+  billedAt?: string;
+  cancelledAt?: string;
+  rejectedAt?: string;
 }
 
 export interface CombinedInvoicePayload {
@@ -65,16 +99,9 @@ export interface CombinedInvoicePayload {
   lang?: 'en' | 'bm';
 }
 
-// Admin-only: consolidates MULTIPLE ORDERS from a SINGLE client into one
-// multi-page export (e.g. every meeting order for Gas District Cooling in a
-// given month), matching how real invoices work — one client per invoice.
-// All orders passed in must belong to the same client (`to`);
-// generateConsolidatedInvoicePDF validates this and throws if orders from
-// more than one client are passed in. Each resulting page gets its own
-// fresh random invoice number generated internally (not supplied here) and
-// its own separate total, since each page is treated as its own invoice.
 export interface ConsolidatedInvoicePayload {
   orders: Order[];
   includeNotes: boolean;
+  invoiceNo?: string;
   lang?: 'en' | 'bm';
 }

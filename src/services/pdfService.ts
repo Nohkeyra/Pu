@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { numberToWords } from './numberToWordsBM';
+import { getBilingualWordsInTotal } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload } from '@/types';
 import { getAssetUrl } from '@/lib/utils';
 
@@ -402,25 +402,26 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   }
   currentY += 7;
 
-  // --- 5. SPELLING & TERM FOOTER (Replaced large Total Amount box with just the written words in bold) ---
-  const textNoteY = currentY + 7;
+  // --- 5. SPELLING & TERM FOOTER (Bilingual Grand Total Words) ---
+  const textNoteY = currentY + 6;
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
 
+  let nextSectionY = textNoteY;
   if (isFinal && totalAmountNum > 0) {
-    const spelledWords = numberToWords(totalAmountNum, lang).toUpperCase();
-    doc.text(spelledWords, 15, textNoteY);
+    const bilingual = getBilingualWordsInTotal(totalAmountNum);
+    doc.text(bilingual.bm, 15, textNoteY);
+    doc.text(bilingual.en, 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
   } else {
-    if (lang === 'en') {
-      doc.text('RINGGIT MALAYSIA ____________________________________________________________________ ONLY', 15, textNoteY);
-    } else {
-      doc.text('RINGGIT MALAYSIA ____________________________________________________________________ SAHAJA', 15, textNoteY);
-    }
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ sahaja.', 15, textNoteY);
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ only.', 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
   }
 
   // Orange vertical bar accent
-  const disclaimerY = textNoteY + 4;
+  const disclaimerY = nextSectionY + 2;
   doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.rect(15, disclaimerY, 1, 7.5, 'F');
 
@@ -806,23 +807,24 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
 
   checkPageBreak(40);
   
-  const textNoteY = currentY + 7;
+  const textNoteY = currentY + 6;
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
 
+  let nextSectionY = textNoteY;
   if (isFinal && grandTotal > 0) {
-    const spelledWords = numberToWords(grandTotal, lang).toUpperCase();
-    doc.text(spelledWords, 15, textNoteY);
+    const bilingual = getBilingualWordsInTotal(grandTotal);
+    doc.text(bilingual.bm, 15, textNoteY);
+    doc.text(bilingual.en, 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
   } else {
-    if (lang === 'en') {
-      doc.text('RINGGIT MALAYSIA ____________________________________________________________________ ONLY', 15, textNoteY);
-    } else {
-      doc.text('RINGGIT MALAYSIA ____________________________________________________________________ SAHAJA', 15, textNoteY);
-    }
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ sahaja.', 15, textNoteY);
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ only.', 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
   }
 
-  const disclaimerY = textNoteY + 4;
+  const disclaimerY = nextSectionY + 2;
   doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.rect(15, disclaimerY, 1, 7.5, 'F');
 
