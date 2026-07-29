@@ -1,106 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { motion } from 'motion/react';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
+import { MENU_ITEMS } from '@/data/menu';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
-const MENU_ITEMS = [
-  {
-    nameEn: 'Asam Pedas',
-    nameBm: 'Asam Pedas',
-    descEn: 'Our #1 crowd favorite — spicy tamarind fish stew with tangy, bold flavors. A true Malay classic.',
-    descBm: 'Kegemaran ramai #1 — rebusan ikan asam pedas dengan rasa masam dan berani yang ketara. Klasik Melayu sejati.',
-    priceEn: 'From RM 8',
-    priceBm: 'Daripada RM 8',
-    image: `/assets/asam-pedas.jpg`,
-  },
-  {
-    nameEn: 'Nasi Lemak',
-    nameBm: 'Nasi Lemak',
-    descEn: "Malaysia's national dish — fragrant coconut rice with sambal, anchovies, peanuts, cucumber & egg.",
-    descBm: 'Hidangan kebangsaan Malaysia — nasi santan wangi bersama sambal, ikan bilis, kacang tanah, timun & telur.',
-    priceEn: 'From RM 3',
-    priceBm: 'Daripada RM 3',
-    image: `/assets/nasi-lemak.jpg`,
-  },
-  {
-    nameEn: 'Lontong Singapore',
-    nameBm: 'Lontong Singapore',
-    descEn: 'Compressed rice cakes in rich coconut vegetable curry with cabbage, long beans, and sambal.',
-    descBm: 'Nasi himpit di dalam kuah lodeh sayur bersantan pekat bersama kuubisan, kacang panjang, dan sambal.',
-    priceEn: 'From RM 7',
-    priceBm: 'Daripada RM 7',
-    image: `/assets/lontong-singapore.jpg`,
-  },
-  {
-    nameEn: 'Mee Soto',
-    nameBm: 'Mee Soto',
-    descEn: 'Aromatic chicken noodle soup with shredded chicken, bean sprouts, and crispy fried shallots.',
-    descBm: 'Sup mi ayam aromatik bersama carikan isi ayam, taugeh, dan bawang goreng garing.',
-    priceEn: 'From RM 6',
-    priceBm: 'Daripada RM 6',
-    image: `/assets/mee-soto.jpg`,
-  },
-  {
-    nameEn: 'Soto Ayam',
-    nameBm: 'Soto Ayam',
-    descEn: 'Rich, spiced chicken broth served with compressed rice cubes (nasi impit) and potato croquette.',
-    descBm: 'Sup ayam berempah pekat dihidang bersama nasi himpit dan bergedil kentang.',
-    priceEn: 'From RM 6',
-    priceBm: 'Daripada RM 6',
-    image: `/assets/soto-ayam.jpg`,
-  },
-  {
-    nameEn: 'Nasi Campur',
-    nameBm: 'Nasi Campur',
-    descEn: 'Mixed rice with your choice of daily freshly cooked dishes, from curries to stir-fried greens.',
-    descBm: 'Nasi putih berlauk dengan pilihan hidangan segar harian, dari kari hingga sayur tumis.',
-    priceEn: 'Various',
-    priceBm: 'Pelbagai',
-    image: `/assets/nasi-campur.jpg`,
-  },
-  {
-    nameEn: 'Teh Tarik',
-    nameBm: 'Teh Tarik',
-    descEn: 'Classic Malaysian pulled black tea with sweet condensed milk, frothed to perfection.',
-    descBm: 'Teh tarik hitam klasik Malaysia dengan susu pekat manis, berbuih sempurna.',
-    priceEn: 'From RM 2.50',
-    priceBm: 'Daripada RM 2.50',
-    image: `/assets/teh-tarik.jpg`,
-  },
-  {
-    nameEn: 'Kopi 434 Kopi Kampung',
-    nameBm: 'Kopi 434 Kopi Kampung',
-    descEn: 'Classic rich, dark roasted Malaysian village black coffee, served sweet and aromatic.',
-    descBm: 'Kopi kampung hitam panggang klasik Malaysia yang pekat dan harum, dihidangkan manis aromatik.',
-    priceEn: 'From RM 2.80',
-    priceBm: 'Daripada RM 2.80',
-    image: `/assets/kopi_kampung.jpg`,
-  },
-];
 
 export default function MenuSection() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const isBm = language === 'bm';
-  const [menuItems] = useState(MENU_ITEMS);
+  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
 
   useEffect(() => {
     // Basic localStorage caching strategy for menu items
     const cachedItems = localStorage.getItem('menu_items');
     if (cachedItems) {
-      setMenuItems(JSON.parse(cachedItems));
+      try {
+        setMenuItems(JSON.parse(cachedItems));
+      } catch {
+        // Fallback if parsing failed
+      }
     } else {
       localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
     }
-
-    // Simulate loading menu items
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 850);
-    return () => clearTimeout(timer);
   }, []);
 
   const headerVariants = {
@@ -180,11 +105,12 @@ export default function MenuSection() {
                 className="menu-card group relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 hover:shadow-premium transition-all duration-500"
               >
                 <div className="aspect-[4/3] overflow-hidden relative">
-                  <img
+                  <ResponsiveImage
                     src={item.image}
                     alt={isBm ? item.nameBm : item.nameEn}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    containerClassName="w-full h-full"
+                    className="group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-sunshine/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>

@@ -138,55 +138,65 @@ function AppContent() {
             transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1.0] }}
             className="w-full flex-grow"
           >
-            <Routes location={location}>
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              
-              {/* Client Routes protected by SessionGuard */}
-              <Route 
-                path="/home" 
-                element={
-                  <SessionGuard>
-                    <LandingPage />
-                  </SessionGuard>
-                } 
-              />
-              <Route 
-                path="/main" 
-                element={
-                  <SessionGuard>
-                    <LandingPage />
-                  </SessionGuard>
-                } 
-              />
-              <Route 
-                path="/order" 
-                element={
-                  <SessionGuard>
-                    <OrderPage />
-                  </SessionGuard>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <SessionGuard>
-                    <ProfilePage />
-                  </SessionGuard>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <SessionGuard>
-                    <SettingsPage />
-                  </SessionGuard>
-                } 
-              />
-              
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="*" element={<LoginPage />} />
-            </Routes>
+            <Suspense fallback={
+              <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
+                <Skeleton className="w-24 h-24 rounded-full animate-pulse" />
+                <div className="w-full max-w-sm space-y-3">
+                  <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse" />
+                  <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse" />
+                </div>
+              </div>
+            }>
+              <Routes location={location}>
+                <Route path="/" element={<LoginPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                
+                {/* Client Routes protected by SessionGuard */}
+                <Route 
+                  path="/home" 
+                  element={
+                    <SessionGuard>
+                      <LandingPage />
+                    </SessionGuard>
+                  } 
+                />
+                <Route 
+                  path="/main" 
+                  element={
+                    <SessionGuard>
+                      <LandingPage />
+                    </SessionGuard>
+                  } 
+                />
+                <Route 
+                  path="/order" 
+                  element={
+                    <SessionGuard>
+                      <OrderPage />
+                    </SessionGuard>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <SessionGuard>
+                      <ProfilePage />
+                    </SessionGuard>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <SessionGuard>
+                      <SettingsPage />
+                    </SessionGuard>
+                  } 
+                />
+                
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="*" element={<LoginPage />} />
+              </Routes>
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
