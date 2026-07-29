@@ -1,7 +1,6 @@
-<?xml version='1.0'?>
-<!-- F-11 (audit): origin explicitly restricted instead of "*".
-     This is a Cordova-legacy file kept for compatibility with the
-     app-linked scanner ecosystem; Capacitor 8 does not use it. -->
+<?xml version='1.0' encoding='utf-8'?>
 <widget version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-  <access origin="https://restoran-wawasan-bio.onrender.com"/>
+  <access origin="*" />
+  
+  
 </widget>

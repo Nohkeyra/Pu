@@ -50,7 +50,9 @@ import {
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
-  const PORT = 3000;
+  const PORT = process.env.NODE_ENV === "production" && process.env.PORT
+    ? parseInt(process.env.PORT)
+    : 3000;
 
   // Middleware
   const DEFAULT_ORIGINS = [
