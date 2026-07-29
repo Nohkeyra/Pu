@@ -1,10 +1,9 @@
-import fs from "fs";
 import type express from "express";
 import { initializeApp, cert, getApps, type App } from "firebase-admin/app";
 import { getFirestore as getFirestoreModular, Timestamp, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getMessaging } from "firebase-admin/messaging";
-import { firebaseConfig, STRICT_FIREBASE_ADMIN, ENABLE_LOCAL_FALLBACK, LOCAL_DB_PATH } from "./config.js";
+import { firebaseConfig, STRICT_FIREBASE_ADMIN } from "./config.js";
 
 let adminApp: App | undefined;
 
@@ -138,30 +137,6 @@ export async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delayMs
     }
   }
   throw lastError;
-}
-
-export function getLocalOrders(): Record<string, unknown>[] {
-  if (!ENABLE_LOCAL_FALLBACK) return [];
-  try {
-    if (fs.existsSync(LOCAL_DB_PATH)) {
-      console.warn("[WARNING] Reading from local fallback file 'orders.json'. Note: This local file system is ephemeral and transient. All local changes will be lost upon container restart or redeployment.");
-      const data = JSON.parse(fs.readFileSync(LOCAL_DB_PATH, "utf-8"));
-      return Array.isArray(data) ? data : [];
-    }
-  } catch (err) {
-    console.error("Error reading local orders database:", err);
-  }
-  return [];
-}
-
-export function saveLocalOrders(orders: Record<string, unknown>[]) {
-  if (!ENABLE_LOCAL_FALLBACK) return;
-  try {
-    console.warn("[WARNING] Writing to local fallback file 'orders.json'. Note: This local file system is ephemeral and transient. All local changes will be lost upon container restart or redeployment.");
-    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(orders, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing to local orders database:", err);
-  }
 }
 
 export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | null {

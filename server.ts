@@ -14,7 +14,6 @@ import { getMessaging } from "firebase-admin/messaging";
 
 import {
   firebaseConfig,
-  ENABLE_LOCAL_FALLBACK,
   clean,
 } from "./server/config.js";
 
@@ -24,8 +23,6 @@ import {
   verifyCustomerIdToken,
   sendNotificationToTopic,
   runWithRetry,
-  getLocalOrders,
-  saveLocalOrders,
   createOrderWithSequentialInvoice,
   generateSequentialInvoiceNo,
   type OrderData,
@@ -361,14 +358,6 @@ async function startServer() {
         orders.push({ id: doc.id, ...doc.data() } as OrderData);
       });
 
-      // Also check local orders if available
-      const localOrders = getLocalOrders() as unknown as OrderData[];
-      localOrders.forEach((l) => {
-        if (!orders.some((o) => o.id === l.id)) {
-          orders.push(l);
-        }
-      });
-
       // Apply Filters
       if (statusFilter && statusFilter !== "all") {
         orders = orders.filter((o) => String(o.status || "").toLowerCase() === statusFilter.toLowerCase());
@@ -584,21 +573,7 @@ async function startServer() {
           });
         }
       } catch (dbErr) {
-        console.warn("Widget endpoint: Firestore fetch failed, falling back to local orders:", dbErr);
-        const localOrders = getLocalOrders() as unknown as (OrderData & { id: string })[];
-        localOrders.forEach((d) => {
-          const eventDate = d.dateTime ? new Date(d.dateTime) : (d.date ? new Date(`${d.date}T${d.time || '12:00'}:00+08:00`) : null);
-          if (eventDate && !isNaN(eventDate.getTime()) && eventDate.getTime() >= now.getTime()) {
-            results.push({
-              id: d.id,
-              date: eventDate.toISOString(),
-              quantity: d.quantity,
-              meals: Array.isArray(d.meals) ? d.meals.join(", ") : d.meals,
-              location: d.location,
-              menu: d.menu,
-            });
-          }
-        });
+        console.warn("Widget endpoint: Firestore fetch failed:", dbErr);
       }
 
       results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -662,27 +637,7 @@ async function startServer() {
           }
         }
       } catch (dbErr) {
-        console.warn("KWGT endpoint: Firestore fetch failed, falling back to local orders:", dbErr);
-        const localOrders = getLocalOrders() as unknown as (OrderData & { id: string })[];
-        const upcomingLocal: UpcomingOrder[] = [];
-        localOrders.forEach((d) => {
-          const eventDate = d.dateTime ? new Date(d.dateTime) : (d.date ? new Date(`${d.date}T${d.time || '12:00'}:00+08:00`) : null);
-          if (eventDate && !isNaN(eventDate.getTime()) && eventDate.getTime() >= now.getTime()) {
-            upcomingLocal.push({
-              ...d,
-              id: d.id,
-              computedDate: eventDate
-            });
-          }
-        });
-        if (upcomingLocal.length > 0) {
-          upcomingLocal.sort((a, b) => {
-            const aTime = a.computedDate?.getTime() || 0;
-            const bTime = b.computedDate?.getTime() || 0;
-            return aTime - bTime;
-          });
-          nextOrder = upcomingLocal[0];
-        }
+        console.warn("KWGT endpoint: Firestore fetch failed:", dbErr);
       }
 
       if (!nextOrder) {
@@ -732,27 +687,7 @@ async function startServer() {
   });
 
   // Debug Endpoint
-  if (process.env.ENABLE_DEBUG_ENDPOINTS === "true") {
-    app.get("/api/widget/debug-all-orders", verifyAdminToken, async (_req, res) => {
-      try {
-        const results: Record<string, unknown>[] = [];
-        try {
-          const adminDb = getFirestore();
-          const snapshot = await adminDb.collection("orders").get();
-          snapshot.forEach((docSnap) => {
-            results.push({ id: docSnap.id, ...docSnap.data() });
-          });
-        } catch (dbErr) {
-          console.warn("Debug endpoint: Firestore fetch failed:", dbErr);
-        }
-        const localOrders = getLocalOrders();
-        res.json({ success: true, firestoreCount: results.length, localCount: localOrders.length, firestoreOrders: results, localOrders });
-      } catch (err) {
-        console.error("Debug endpoint error:", err);
-        res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
-      }
-    });
-  }
+
 
   // Submit Order
   app.post("/api/orders", orderSubmissionLimiter, async (req, res) => {
@@ -771,19 +706,8 @@ async function startServer() {
         const created = await runWithRetry(() => createOrderWithSequentialInvoice(orderData));
         orderId = created.orderId;
       } catch (firestoreErr) {
-        if (ENABLE_LOCAL_FALLBACK) {
-          console.warn("Firestore order submission failed; ENABLE_LOCAL_FALLBACK=true so saving locally:", firestoreErr);
-          orderId = "order_" + Math.random().toString(36).substring(2, 10);
-          const localOrders = getLocalOrders();
-          localOrders.push({
-            id: orderId,
-            ...orderData,
-            createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-          });
-          saveLocalOrders(localOrders);
-        } else {
-          throw firestoreErr;
-        }
+        console.error('[ORDER FALLBACK FAILED]', firestoreErr);
+        return res.status(500).json({ error: 'Failed to create order' });
       }
 
       syncGoogleCalendarEvent(orderId, orderData).catch(err => {
@@ -1492,12 +1416,6 @@ async function startServer() {
         } catch (dbErr) {
           console.warn("Could not update order status in Firestore during send-invoice:", dbErr);
         }
-        const localOrders = getLocalOrders();
-        const localIdx = localOrders.findIndex(o => o.id === orderId);
-        if (localIdx !== -1) {
-          localOrders[localIdx] = { ...localOrders[localIdx], status: 'billed', billedAt };
-          saveLocalOrders(localOrders);
-        }
       }
 
       res.json({ success: true, message: "Email sent successfully" });
@@ -1508,11 +1426,16 @@ async function startServer() {
   });
 
   // Admin Revoke JTI
-  app.post("/api/admin/revoke", adminOpsLimiter, verifyAdminToken, (req: express.Request, res: express.Response) => {
-    const { jti } = (req.body || {}) as { jti?: string };
-    if (!jti) return res.status(400).json({ error: "Missing jti" });
-    revokeJti(jti);
-    res.json({ success: true });
+  app.post("/api/admin/revoke", adminOpsLimiter, verifyAdminToken, async (req: express.Request, res: express.Response) => {
+    try {
+      const { jti, exp } = (req.body || {}) as { jti?: string; exp?: number };
+      if (!jti) return res.status(400).json({ error: "Missing jti" });
+      await revokeJti(jti, exp);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error in token revocation route:", err);
+      res.status(500).json({ error: "Internal server error during token revocation" });
+    }
   });
 
   // Admin Login

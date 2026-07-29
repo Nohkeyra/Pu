@@ -3,6 +3,22 @@ import { getBilingualWordsInTotal } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload } from '@/types';
 import { getAssetUrl } from '@/lib/utils';
 
+const getBankDetails = () => {
+  const bankName = (import.meta.env?.VITE_BANK_NAME) || 
+                   (typeof process !== 'undefined' && process?.env?.BANK_NAME) || 
+                   'BANK MUAMALAT';
+                   
+  const bankAccountName = (import.meta.env?.VITE_BANK_ACCOUNT_NAME) || 
+                          (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NAME) || 
+                          'RESTORAN WAWASAN';
+                          
+  const bankAccountNumber = (import.meta.env?.VITE_BANK_ACCOUNT_NUMBER) || 
+                            (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NUMBER) || 
+                            '16010000-405710';
+                            
+  return { bankName, bankAccountName, bankAccountNumber };
+};
+
 let cachedLogoBase64: string | null = null;
 let cachedBatikHeaderBase64: string | null = null;
 
@@ -452,9 +468,10 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.text(lang === 'en' ? 'Account No.' : 'No. Akaun', 18, bankBoxY + 19);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('RESTORAN WAWASAN', 42, bankBoxY + 11);
-  doc.text('BANK MUAMALAT', 42, bankBoxY + 15);
-  doc.text('16010000-405710', 42, bankBoxY + 19);
+  const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
+  doc.text(bankAccountName, 42, bankBoxY + 11);
+  doc.text(bankName, 42, bankBoxY + 15);
+  doc.text(bankAccountNumber, 42, bankBoxY + 19);
 
   // --- 8. PAGE 1 FOOTER LINE ---
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
@@ -854,9 +871,10 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
   doc.text(lang === 'en' ? 'Account No.' : 'No. Akaun', 18, bankBoxY + 19);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('RESTORAN WAWASAN', 42, bankBoxY + 11);
-  doc.text('BANK MUAMALAT', 42, bankBoxY + 15);
-  doc.text('16010000-405710', 42, bankBoxY + 19);
+  const bData = getBankDetails();
+  doc.text(bData.bankAccountName, 42, bankBoxY + 11);
+  doc.text(bData.bankName, 42, bankBoxY + 15);
+  doc.text(bData.bankAccountNumber, 42, bankBoxY + 19);
 
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
