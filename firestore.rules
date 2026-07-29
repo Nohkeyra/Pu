@@ -58,7 +58,7 @@ service cloud.firestore {
         && request.resource.data.meals.size() > 0
         && request.resource.data.meals.size() <= 10
         && request.resource.data.meals.toSet()
-             .difference(['breakfast','lunch','dinner','tea_break','hi_tea'].toSet())
+             .difference(['breakfast','lunch','hi_tea'].toSet())
              .size() == 0
         && request.resource.data.name     is string && request.resource.data.name.size()     <= 150
         && request.resource.data.email    is string && request.resource.data.email.size()    <= 150
@@ -106,6 +106,17 @@ service cloud.firestore {
 
     match /orders_archive/{archiveId} {
       allow read:  if isAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
+    match /company_presets/{presetId} {
+      allow read: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
       allow write: if false; // Admin SDK only
     }
 

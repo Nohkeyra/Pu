@@ -46,6 +46,11 @@ export function AdminOrdersTab({
   setDateToFilter,
   isSelectMode,
   setIsSelectMode,
+  filterBySameEmail = true,
+  setFilterBySameEmail,
+  consolidatedInvoiceNo = '',
+  setConsolidatedInvoiceNo,
+  prepareConsolidateModal,
   selectedOrderIds,
   setSelectedOrderIds,
   showConsolidateModal,
@@ -85,6 +90,11 @@ export function AdminOrdersTab({
   setDateToFilter: (v: string) => void;
   isSelectMode: boolean;
   setIsSelectMode: (v: boolean) => void;
+  filterBySameEmail?: boolean;
+  setFilterBySameEmail?: (v: boolean) => void;
+  consolidatedInvoiceNo?: string;
+  setConsolidatedInvoiceNo?: (v: string) => void;
+  prepareConsolidateModal?: () => void;
   selectedOrderIds: Set<string>;
   setSelectedOrderIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   showConsolidateModal: boolean;
@@ -99,7 +109,7 @@ export function AdminOrdersTab({
   handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (orderId: string) => void;
   handleRejectCancellation: (orderId: string) => void;
-  handleGenerateConsolidatedInvoice: (withNotes: boolean) => void;
+  handleGenerateConsolidatedInvoice: (withNotes: boolean, invoiceNo?: string) => void;
   authHeaders: () => HeadersInit;
   getApiUrl: (path: string) => string;
   fetchOrders: () => void;
@@ -200,6 +210,22 @@ export function AdminOrdersTab({
               {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
             </label>
           </div>
+
+          {isSelectMode && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl h-10 shrink-0" title="Auto-tapis order dengan emel yang sama sahaja">
+              <Switch
+                id="email-filter-toggle"
+                checked={filterBySameEmail}
+                onCheckedChange={(checked) => {
+                  if (setFilterBySameEmail) setFilterBySameEmail(checked);
+                }}
+              />
+              <label htmlFor="email-filter-toggle" className="text-xs font-bold text-deep-forest/80 cursor-pointer select-none">
+                {language === 'bm' ? 'Emel Sama Sahaja' : 'Same Email Only'}
+              </label>
+            </div>
+          )}
+
           {isSelectMode && filteredOrders.length > 0 && (
             <Button
               variant="outline"
@@ -221,7 +247,15 @@ export function AdminOrdersTab({
                   });
                   return;
                 }
-                setSelectedOrderIds(new Set(filteredOrders.filter(o => o.id).map(o => o.id!)));
+                let toSelect = filteredOrders.filter(o => Boolean(o.id));
+                if (filterBySameEmail) {
+                  const firstWithEmail = toSelect.find(o => Boolean(o.email));
+                  if (firstWithEmail && firstWithEmail.email) {
+                    const targetEmail = firstWithEmail.email.trim().toLowerCase();
+                    toSelect = toSelect.filter(o => (o.email || '').trim().toLowerCase() === targetEmail);
+                  }
+                }
+                setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
               }}
               className="border-stone/15 dark:border-white/5 bg-white dark:bg-card text-deep-forest hover:bg-sunshine/10 text-xs font-bold shrink-0 h-10 px-4 rounded-xl flex items-center gap-1.5"
             >
@@ -523,7 +557,13 @@ export function AdminOrdersTab({
             {t('orders_selected') || 'Orders Selected'}
           </div>
           <Button
-            onClick={() => setShowConsolidateModal(true)}
+            onClick={() => {
+              if (prepareConsolidateModal) {
+                prepareConsolidateModal();
+              } else {
+                setShowConsolidateModal(true);
+              }
+            }}
             disabled={isGeneratingConsolidated}
             className="h-10 px-5 bg-white text-sunshine hover:bg-cream rounded-xl text-xs font-bold flex items-center gap-2"
           >
@@ -544,27 +584,45 @@ export function AdminOrdersTab({
             onClick={() => setShowConsolidateModal(false)}
             className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-2xl space-y-6">
-            <div className="space-y-2">
+          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-2xl space-y-5">
+            <div className="space-y-1.5">
               <h3 className="font-display font-bold text-lg text-deep-forest">
-                {t('invoice_layout') || 'Invoice Layout'}
+                {language === 'bm' ? 'Invois Konsolidasi' : 'Consolidated Invoice'}
               </h3>
               <p className="text-xs text-stone leading-relaxed">
-                {t('consolidate_notes_prompt') ||
-                  'Include the "Notes" column in this consolidated invoice? Orders are grouped by client automatically.'}
+                {language === 'bm'
+                  ? 'Sila sahkan nombor invois dan tetapan lajur nota untuk invois konsolidasi ini.'
+                  : 'Confirm invoice number and notes layout for this consolidated invoice.'}
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-deep-forest dark:text-stone-200">
+                {language === 'bm' ? 'Nombor Invois Konsolidasi (Auto / Boleh Diubah)' : 'Consolidated Invoice Number (Auto / Editable)'}
+              </label>
+              <Input
+                value={consolidatedInvoiceNo}
+                onChange={(e) => setConsolidatedInvoiceNo && setConsolidatedInvoiceNo(e.target.value)}
+                placeholder="RW0015"
+                className="font-mono bg-white dark:bg-card border-stone/20 focus:border-sunshine text-sm font-bold"
+              />
+              <p className="text-[11px] text-stone">
+                {language === 'bm'
+                  ? 'Nombor ini akan digunakan untuk keseluruhan kelompok invois konsolidasi ini.'
+                  : 'This number applies to all pages in this consolidated invoice batch.'}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
               <button
-                onClick={() => handleGenerateConsolidatedInvoice(true)}
-                className="w-full h-12 bg-sunshine text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
+                onClick={() => handleGenerateConsolidatedInvoice(true, consolidatedInvoiceNo)}
+                className="w-full h-11 bg-sunshine text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
               >
                 {t('include_notes') || 'Yes, include Notes'}
               </button>
               <button
-                onClick={() => handleGenerateConsolidatedInvoice(false)}
-                className="w-full h-12 bg-cream border border-border text-deep-forest rounded-xl text-sm font-bold hover:bg-black/5 transition-colors"
+                onClick={() => handleGenerateConsolidatedInvoice(false, consolidatedInvoiceNo)}
+                className="w-full h-11 bg-cream border border-border text-deep-forest rounded-xl text-sm font-bold hover:bg-black/5 transition-colors"
               >
                 {t('exclude_notes') || 'No, hide Notes'}
               </button>

@@ -25,19 +25,19 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-export function getStatusCopy(status: string, name: string, invoiceNo: string, lang: NotifyLang): StatusCopy {
+export function getStatusCopy(
+  status: string,
+  name: string,
+  invoiceNo: string,
+  lang: NotifyLang,
+  rejectionReason?: string
+): StatusCopy {
   const s = (status || "").toLowerCase();
   const who = name || (lang === "bm" ? "Pelanggan" : "Customer");
   const invoiceSuffix = invoiceNo ? (lang === "bm" ? ` (No. Invois: ${invoiceNo})` : ` (Invoice No: ${invoiceNo})`) : "";
+  const reasonNote = rejectionReason ? (lang === "bm" ? ` Sebab penolakan: ${rejectionReason}.` : ` Reason for rejection: ${rejectionReason}.`) : "";
 
   const en: Record<string, StatusCopy> = {
-    submitted: {
-      subject: `Your order is received and under review`,
-      heading: "Order Received — Pending Price Review",
-      message: `Hi ${who}, we've received your catering order. Restoran Wawasan is reviewing your order details to set the unit price.`,
-      pushTitle: "Order received",
-      pushBody: `Your catering order is being reviewed for unit pricing.`,
-    },
     pending: {
       subject: `Your order is being reviewed${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Order Received — Pending Review",
@@ -45,26 +45,12 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
       pushTitle: "Order pending review",
       pushBody: `Your order${invoiceSuffix} is pending review.`,
     },
-    priced: {
-      subject: `Price set for your catering order`,
-      heading: "Order Priced — Ready for Invoice",
-      message: `Hi ${who}, unit pricing has been set for your catering order. The official invoice will be generated shortly.`,
-      pushTitle: "Order priced",
-      pushBody: `Unit pricing has been updated for your order.`,
-    },
     approved: {
       subject: `Your order is approved${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Order Approved 🎉",
-      message: `Great news ${who}! Your catering order${invoiceSuffix} has been approved. We look forward to serving you.`,
+      message: `Great news ${who}! Your catering order${invoiceSuffix} has been approved and pricing has been set. We look forward to serving you.`,
       pushTitle: "Order approved 🎉",
       pushBody: `Your order${invoiceSuffix} has been approved.`,
-    },
-    invoiced: {
-      subject: `Your official invoice is ready${invoiceNo ? ` — ${invoiceNo}` : ""}`,
-      heading: "Official Invoice Generated",
-      message: `Hi ${who}, your official PDF invoice${invoiceSuffix} has been generated for your catering order.`,
-      pushTitle: "Invoice ready",
-      pushBody: `Your official invoice${invoiceSuffix} is now ready.`,
     },
     billed: {
       subject: `Your invoice is ready${invoiceNo ? ` — ${invoiceNo}` : ""}`,
@@ -76,16 +62,9 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
     rejected: {
       subject: `Update on your order${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Order Could Not Be Confirmed",
-      message: `Hi ${who}, unfortunately we were unable to confirm your catering order${invoiceSuffix} at this time. Please contact us if you'd like to discuss alternatives.`,
+      message: `Hi ${who}, unfortunately we were unable to confirm your catering order${invoiceSuffix} at this time.${reasonNote} Please contact us if you'd like to discuss alternatives.`,
       pushTitle: "Order update",
       pushBody: `There's an update on your order${invoiceSuffix}.`,
-    },
-    completed: {
-      subject: `Thank you from Restoran Wawasan${invoiceNo ? ` — ${invoiceNo}` : ""}`,
-      heading: "Order Completed — Thank You!",
-      message: `Hi ${who}, your catering order${invoiceSuffix} is now marked as completed. Thank you for choosing Restoran Wawasan — we hope to serve you again!`,
-      pushTitle: "Order completed",
-      pushBody: `Your order${invoiceSuffix} is completed. Thank you!`,
     },
     cancel_requested: {
       subject: `Your cancellation request is being reviewed${invoiceNo ? ` — ${invoiceNo}` : ""}`,
@@ -104,13 +83,6 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
   };
 
   const bm: Record<string, StatusCopy> = {
-    submitted: {
-      subject: `Pesanan anda telah diterima dan sedang disemak`,
-      heading: "Pesanan Diterima — Menunggu Penetapan Harga",
-      message: `Salam ${who}, pihak Restoran Wawasan telah menerima tempahan katering anda dan sedang menyemak butiran untuk penetapan harga per unit.`,
-      pushTitle: "Pesanan diterima",
-      pushBody: `Tempahan katering anda sedang disemak untuk penetapan harga.`,
-    },
     pending: {
       subject: `Pesanan anda sedang disemak${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Pesanan Diterima — Menunggu Semakan",
@@ -118,26 +90,12 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
       pushTitle: "Pesanan menunggu semakan",
       pushBody: `Pesanan anda${invoiceSuffix} sedang disemak.`,
     },
-    priced: {
-      subject: `Harga telah ditetapkan untuk tempahan anda`,
-      heading: "Harga Ditetapkan — Sedia Untuk Invois",
-      message: `Salam ${who}, harga per unit telah ditetapkan untuk tempahan katering anda. Invois rasmi akan dijana sebentar lagi.`,
-      pushTitle: "Harga ditetapkan",
-      pushBody: `Harga per unit telah dikemas kini untuk tempahan anda.`,
-    },
     approved: {
       subject: `Pesanan anda telah diluluskan${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Pesanan Diluluskan 🎉",
-      message: `Berita baik ${who}! Tempahan katering anda${invoiceSuffix} telah diluluskan. Kami menantikan peluang untuk berkhidmat kepada anda.`,
+      message: `Berita baik ${who}! Tempahan katering anda${invoiceSuffix} telah diluluskan dan harga telah ditetapkan. Kami menantikan peluang untuk berkhidmat kepada anda.`,
       pushTitle: "Pesanan diluluskan 🎉",
       pushBody: `Pesanan anda${invoiceSuffix} telah diluluskan.`,
-    },
-    invoiced: {
-      subject: `Invois rasmi anda telah sedia${invoiceNo ? ` — ${invoiceNo}` : ""}`,
-      heading: "Invois Rasmi Dikeluarkan",
-      message: `Salam ${who}, invois rasmi PDF${invoiceSuffix} telah dijana untuk tempahan katering anda.`,
-      pushTitle: "Invois sedia",
-      pushBody: `Invois rasmi anda${invoiceSuffix} kini sedia.`,
     },
     billed: {
       subject: `Invois anda telah sedia${invoiceNo ? ` — ${invoiceNo}` : ""}`,
@@ -149,16 +107,9 @@ export function getStatusCopy(status: string, name: string, invoiceNo: string, l
     rejected: {
       subject: `Kemas kini tempahan anda${invoiceNo ? ` — ${invoiceNo}` : ""}`,
       heading: "Tempahan Tidak Dapat Disahkan",
-      message: `Salam ${who}, malangnya kami tidak dapat mengesahkan tempahan katering anda${invoiceSuffix} pada masa ini. Sila hubungi kami jika anda ingin membincangkan pilihan lain.`,
+      message: `Salam ${who}, malangnya kami tidak dapat mengesahkan tempahan katering anda${invoiceSuffix} pada masa ini.${reasonNote} Sila hubungi kami jika anda ingin membincangkan pilihan lain.`,
       pushTitle: "Kemas kini tempahan",
       pushBody: `Terdapat kemas kini pada tempahan anda${invoiceSuffix}.`,
-    },
-    completed: {
-      subject: `Terima kasih daripada Restoran Wawasan${invoiceNo ? ` — ${invoiceNo}` : ""}`,
-      heading: "Tempahan Selesai — Terima Kasih!",
-      message: `Salam ${who}, tempahan katering anda${invoiceSuffix} kini ditanda sebagai selesai. Terima kasih kerana memilih Restoran Wawasan — kami harap dapat berkhidmat lagi!`,
-      pushTitle: "Tempahan selesai",
-      pushBody: `Tempahan anda${invoiceSuffix} telah selesai. Terima kasih!`,
     },
     cancel_requested: {
       subject: `Permintaan pembatalan anda sedang disemak${invoiceNo ? ` — ${invoiceNo}` : ""}`,
@@ -227,7 +178,7 @@ export function buildStatusEmailHtml(copy: StatusCopy, lang: NotifyLang): string
 
 export async function sendOrderStatusEmail(
   transporter: nodemailer.Transporter,
-  order: Partial<OrderData> & { email?: string; name?: string; invoiceNo?: string; lang?: string },
+  order: Partial<OrderData> & { email?: string; name?: string; invoiceNo?: string; lang?: string; rejectionReason?: string },
   newStatus: string,
   senderEmail: string,
   smtpUser?: string,
@@ -244,7 +195,7 @@ export async function sendOrderStatusEmail(
   }
 
   const lang: NotifyLang = order.lang === "bm" ? "bm" : "en";
-  const copy = getStatusCopy(newStatus, order.name || "", order.invoiceNo || "", lang);
+  const copy = getStatusCopy(newStatus, order.name || "", order.invoiceNo || "", lang, order.rejectionReason);
 
   await transporter.sendMail({
     from: `"Restoran Wawasan" <${senderEmail}>`,

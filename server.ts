@@ -36,6 +36,9 @@ import {
   notifyCustomerOfStatusChange,
 } from "./server/emailService.js";
 
+import { logAuditEvent } from "./server/auditLogger.js";
+import { generateOrdersWorkbook, generateOrdersCSV } from "./server/exportService.js";
+
 import {
   getGoogleCalendarClient,
   syncGoogleCalendarEvent,
@@ -188,6 +191,247 @@ async function startServer() {
   // API routes
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Company Presets: GET /api/presets
+  app.get("/api/presets", async (req, res) => {
+    try {
+      const uid = await verifyCustomerIdToken(req);
+      if (!uid) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const db = getFirestore();
+      const snap = await db.collection("company_presets").where("userId", "==", uid).get();
+      const presets: Record<string, unknown>[] = [];
+      snap.forEach((doc) => {
+        presets.push({ id: doc.id, ...doc.data() });
+      });
+      return res.json({ success: true, presets });
+    } catch (err) {
+      console.error("Error fetching presets:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Company Presets: POST /api/presets
+  app.post("/api/presets", async (req, res) => {
+    try {
+      const uid = await verifyCustomerIdToken(req);
+      if (!uid) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const { presetName, companyName, department, billingAddress, deliveryAddress, contactName, contactPhone, contactEmail } = req.body;
+      if (!presetName || !companyName) {
+        return res.status(400).json({ error: "Preset Name and Company Name are required" });
+      }
+      const db = getFirestore();
+      const docRef = db.collection("company_presets").doc();
+      const presetData = {
+        id: docRef.id,
+        userId: uid,
+        presetName,
+        companyName,
+        department: department || "",
+        billingAddress: billingAddress || "",
+        deliveryAddress: deliveryAddress || "",
+        contactName: contactName || "",
+        contactPhone: contactPhone || "",
+        contactEmail: contactEmail || "",
+        createdAt: new Date().toISOString(),
+      };
+      await docRef.set(presetData);
+      await logAuditEvent({
+        action: "preset_created",
+        performedBy: uid,
+        targetType: "preset",
+        targetId: docRef.id,
+        details: `Created company preset: ${presetName} (${companyName})`,
+      });
+      return res.json({ success: true, preset: presetData });
+    } catch (err) {
+      console.error("Error creating preset:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Company Presets: DELETE /api/presets/:id
+  app.delete("/api/presets/:id", async (req, res) => {
+    try {
+      const uid = await verifyCustomerIdToken(req);
+      if (!uid) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const presetId = req.params.id;
+      const db = getFirestore();
+      const docRef = db.collection("company_presets").doc(presetId);
+      const snap = await docRef.get();
+      if (!snap.exists) {
+        return res.status(404).json({ error: "Preset not found" });
+      }
+      const data = snap.data();
+      if (data?.userId !== uid) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      await docRef.delete();
+      await logAuditEvent({
+        action: "preset_deleted",
+        performedBy: uid,
+        targetType: "preset",
+        targetId: presetId,
+        details: `Deleted preset: ${data?.presetName || presetId}`,
+      });
+      return res.json({ success: true });
+    } catch (err) {
+      console.error("Error deleting preset:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Admin Next Sequential Invoice Number: GET /api/admin/next-invoice-number
+  app.get("/api/admin/next-invoice-number", verifyAdminToken, async (_req, res) => {
+    try {
+      const db = getFirestore();
+      const counterSnap = await db.collection("meta").doc("invoiceCounter").get();
+      let nextCount = 1;
+      if (counterSnap.exists) {
+        const data = counterSnap.data();
+        if (data && typeof data.count === "number") {
+          nextCount = data.count + 1;
+        }
+      }
+      const nextInvoiceNo = `RW${String(nextCount).padStart(4, "0")}`;
+      return res.json({ success: true, nextInvoiceNo });
+    } catch (err) {
+      console.error("Error fetching next invoice number:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Admin Check Invoice Unique: POST /api/admin/check-invoice-unique
+  app.post("/api/admin/check-invoice-unique", verifyAdminToken, async (req, res) => {
+    try {
+      const { invoiceNo, orderId } = req.body;
+      if (!invoiceNo) {
+        return res.status(400).json({ error: "Missing invoiceNo" });
+      }
+      const db = getFirestore();
+      const snap = await db.collection("orders").where("invoiceNo", "==", invoiceNo).get();
+      let isUnique = true;
+      snap.forEach((doc) => {
+        if (doc.id !== orderId) {
+          isUnique = false;
+        }
+      });
+
+      let suggestedNext: string | undefined = undefined;
+      if (!isUnique) {
+        const counterSnap = await db.collection("meta").doc("invoiceCounter").get();
+        let nextCount = 1;
+        if (counterSnap.exists) {
+          const data = counterSnap.data();
+          if (data && typeof data.count === "number") {
+            nextCount = data.count + 1;
+          }
+        }
+        suggestedNext = `RW${String(nextCount).padStart(4, "0")}`;
+      }
+
+      return res.json({ success: true, isUnique, suggestedNext });
+    } catch (err) {
+      console.error("Error checking invoice uniqueness:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Data Export: GET /api/exports/orders
+  app.get("/api/exports/orders", async (req, res) => {
+    try {
+      const format = (req.query.format as string) || "csv";
+      const statusFilter = req.query.status as string;
+      const dateFrom = req.query.dateFrom as string;
+      const dateTo = req.query.dateTo as string;
+      const clientCompanyId = req.query.clientCompanyId as string;
+
+      const db = getFirestore();
+      const query = db.collection("orders").orderBy("createdAt", "desc");
+      const snap = await query.get();
+
+      let orders: OrderData[] = [];
+      snap.forEach((doc) => {
+        orders.push({ id: doc.id, ...doc.data() } as OrderData);
+      });
+
+      // Also check local orders if available
+      const localOrders = getLocalOrders() as unknown as OrderData[];
+      localOrders.forEach((l) => {
+        if (!orders.some((o) => o.id === l.id)) {
+          orders.push(l);
+        }
+      });
+
+      // Apply Filters
+      if (statusFilter && statusFilter !== "all") {
+        orders = orders.filter((o) => String(o.status || "").toLowerCase() === statusFilter.toLowerCase());
+      }
+      if (clientCompanyId) {
+        orders = orders.filter((o) => String(o.presetId || o.to || "").toLowerCase().includes(clientCompanyId.toLowerCase()));
+      }
+      if (dateFrom) {
+        const fromTs = new Date(dateFrom).getTime();
+        orders = orders.filter((o) => {
+          const dt = o.date ? new Date(o.date).getTime() : 0;
+          return dt >= fromTs;
+        });
+      }
+      if (dateTo) {
+        const toTs = new Date(dateTo).getTime();
+        orders = orders.filter((o) => {
+          const dt = o.date ? new Date(o.date).getTime() : 0;
+          return dt <= toTs;
+        });
+      }
+
+      await logAuditEvent({
+        action: "export_performed",
+        performedBy: "admin",
+        targetType: "export",
+        details: `Exported ${orders.length} orders in ${format.toUpperCase()} format`,
+      });
+
+      const timestampStr = new Date().toISOString().slice(0, 10);
+
+      if (format === "xlsx") {
+        const workbook = await generateOrdersWorkbook(orders);
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="Orders_Export_${timestampStr}.xlsx"`);
+        return res.send(buffer);
+      } else {
+        const csv = generateOrdersCSV(orders);
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="Orders_Export_${timestampStr}.csv"`);
+        return res.send(csv);
+      }
+    } catch (err) {
+      console.error("Error exporting orders:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
+  });
+
+  // Admin Audit Logs: GET /api/admin/audit-logs
+  app.get("/api/admin/audit-logs", verifyAdminToken, async (_req, res) => {
+    try {
+      const db = getFirestore();
+      const snap = await db.collection("audit_logs").orderBy("createdAt", "desc").limit(100).get();
+      const logs: Record<string, unknown>[] = [];
+      snap.forEach((doc) => {
+        logs.push({ id: doc.id, ...doc.data() });
+      });
+      return res.json({ success: true, logs });
+    } catch (err) {
+      console.error("Error fetching audit logs:", err);
+      return res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+    }
   });
 
   // Diagnostics: Firebase
@@ -516,7 +760,7 @@ async function startServer() {
       const rawOrderData = req.body as OrderData;
       const orderData: OrderData = {
         ...rawOrderData,
-        status: rawOrderData.status || "SUBMITTED",
+        status: (rawOrderData.status as string)?.toLowerCase() || "pending",
         invoiceNo: undefined,
         unitPrice: rawOrderData.unitPrice ?? null,
         totalAmount: rawOrderData.totalAmount ?? null,
@@ -549,6 +793,15 @@ async function startServer() {
       sendNotificationToTopic("new_orders", "New Catering Request!", `New request from ${orderData.name || 'Customer'} - ${orderData.quantity || '0'} pax. Needs Pricing.`).catch(err => {
         console.error("Background push notification error:", err);
       });
+
+      logAuditEvent({
+        action: "order_submitted",
+        performedBy: orderData.userId || "guest",
+        performedByName: orderData.name || "Customer",
+        targetType: "order",
+        targetId: orderId,
+        details: `Submitted order for ${orderData.quantity || 0} pax (${orderData.preparationType || 'N/A'})`,
+      }).catch(err => console.error("Audit log error:", err));
 
       res.json({ success: true, id: orderId });
     } catch (err) {
@@ -999,9 +1252,7 @@ async function startServer() {
         `;
       }
 
-      const emailSubject = lang === 'bm'
-        ? `Invois Rasmi - ${invoiceNo} (Restoran Wawasan)`
-        : `Official Invoice - ${invoiceNo} (Restoran Wawasan)`;
+      const emailSubject = `Invois Rasmi ${invoiceNo} - Restoran Wawasan Putrajaya`;
 
       const titleText = lang === 'bm' ? 'INVOIS RASMI' : 'OFFICIAL INVOICE';
       const billToText = lang === 'bm' ? 'Bil Kepada:' : 'Bill To:';
@@ -1088,7 +1339,7 @@ async function startServer() {
       const emailAttachments = [];
       if (pdfBase64) {
         emailAttachments.push({
-          filename: fileName || `Invoice_${invoiceNo}.pdf`,
+          filename: fileName || `Invois_${invoiceNo}.pdf`,
           content: pdfBase64,
           encoding: 'base64'
         });
@@ -1100,6 +1351,14 @@ async function startServer() {
         subject: emailSubject,
         html: htmlBody,
         attachments: emailAttachments.length > 0 ? emailAttachments : undefined
+      });
+
+      await logAuditEvent({
+        action: "invoice_email_sent",
+        performedBy: "admin",
+        targetType: "invoice",
+        targetId: submissionId,
+        details: `Sent official invoice email to ${customerEmail} (Invoice: ${invoiceNo}, Total: RM ${parsedAmount.toFixed(2)})`,
       });
 
       console.log(`Invoice email sent successfully to ${customerEmail} for submission ${submissionId}`);
@@ -1123,7 +1382,7 @@ async function startServer() {
   // Public send invoice endpoint
   app.post("/api/send-invoice", publicEmailLimiter, async (req, res) => {
     try {
-      const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails } = req.body;
+      const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails, orderId } = req.body;
 
       if (!email || !pdfBase64) {
         return res.status(400).json({ error: "Missing required fields (email, pdfBase64)" });
@@ -1221,6 +1480,26 @@ async function startServer() {
       });
 
       console.log(`Invoice email sent successfully to ${emailStr}`);
+
+      if (orderId && isFinal) {
+        const billedAt = new Date().toISOString();
+        try {
+          const adminDb = getFirestore();
+          await runWithRetry(() => adminDb.collection("orders").doc(orderId).update({
+            status: 'billed',
+            billedAt,
+          }));
+        } catch (dbErr) {
+          console.warn("Could not update order status in Firestore during send-invoice:", dbErr);
+        }
+        const localOrders = getLocalOrders();
+        const localIdx = localOrders.findIndex(o => o.id === orderId);
+        if (localIdx !== -1) {
+          localOrders[localIdx] = { ...localOrders[localIdx], status: 'billed', billedAt };
+          saveLocalOrders(localOrders);
+        }
+      }
+
       res.json({ success: true, message: "Email sent successfully" });
     } catch (error) {
       console.error("Error sending invoice email:", error);
@@ -1374,14 +1653,14 @@ async function startServer() {
           previousOrder = localOrdersBefore.find(o => o.id === orderId);
         }
 
-        // If transitioning to INVOICED or billed and no invoice number exists yet, generate one
+        // If transitioning to approved or billed and no invoice number exists yet, generate one
         const targetStatus = (data.status as string | undefined)?.toLowerCase();
-        if ((targetStatus === "invoiced" || targetStatus === "billed" || action === "generate_invoice") && !previousOrder?.invoiceNo && !data.invoiceNo) {
+        if ((targetStatus === "approved" || targetStatus === "billed" || action === "generate_invoice") && !previousOrder?.invoiceNo && !data.invoiceNo) {
           const newInvoiceNo = await generateSequentialInvoiceNo();
           data.invoiceNo = newInvoiceNo;
-          data.invoicedAt = new Date().toISOString();
+          data.approvedAt = data.approvedAt || new Date().toISOString();
           if (!data.status) {
-            data.status = "INVOICED";
+            data.status = "approved";
           }
         }
         const previousStatus = (previousOrder?.status as string | undefined) || "";
@@ -1423,11 +1702,25 @@ async function startServer() {
             ...(previousOrder || {}),
             ...(data as Record<string, unknown>),
             id: orderId,
-          } as Partial<OrderData> & { id?: string; uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string };
+          } as Partial<OrderData> & { id?: string; uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string; rejectionReason?: string };
           console.log(`[StatusNotify] Order ${orderId} status changed: "${previousStatus}" -> "${newStatus}". Notifying customer.`);
           notifyCustomerOfStatusChange(transporter, mergedOrder, newStatus, senderEmail, smtpUser, smtpPass).catch(err => {
             console.error("[StatusNotify] Background status notification error:", err);
           });
+
+          const normStatus = newStatus.toLowerCase();
+          let auditAction = `order_status_${normStatus}`;
+          if (normStatus === "approved") auditAction = "order_approved";
+          if (normStatus === "rejected") auditAction = "order_rejected";
+          if (normStatus === "cancelled") auditAction = "order_cancelled";
+
+          logAuditEvent({
+            action: auditAction,
+            performedBy: "admin",
+            targetType: "order",
+            targetId: orderId,
+            details: `Status changed from '${previousStatus}' to '${newStatus}'${mergedOrder.rejectionReason ? ` (Reason: ${mergedOrder.rejectionReason})` : ''}${mergedOrder.invoiceNo ? ` (Invoice: ${mergedOrder.invoiceNo})` : ''}`,
+          }).catch(err => console.error("Audit log error:", err));
         }
 
         return res.json({ success: true });

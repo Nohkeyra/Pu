@@ -114,6 +114,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   // multiple different clients and export one grouped-by-client PDF.
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [filterBySameEmail, setFilterBySameEmail] = useState(true);
+  const [consolidatedInvoiceNo, setConsolidatedInvoiceNo] = useState('');
   const [showConsolidateModal, setShowConsolidateModal] = useState(false);
   const [isGeneratingConsolidated, setIsGeneratingConsolidated] = useState(false);
 
@@ -636,7 +638,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       const invoiceNo = order.invoiceNo || `RW${orderId.substring(0, 6).toUpperCase()}`;
 
-      // Update meal prices and invoiceNo on the order document via secure admin endpoint
+      const newStatus = order.status === 'billed' ? 'billed' : 'approved';
+
+      // Update meal prices, total, and invoiceNo on the order document via secure admin endpoint
       const updateResponse = await fetch(getApiUrl('/api/admin/orders'), {
         method: 'POST',
         headers: authHeaders(),
@@ -645,8 +649,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           orderId,
           data: {
             prices: mealPrices,
+            totalAmount: total,
             invoiceNo,
-            approvedAt: new Date().toISOString(),
+            status: newStatus,
+            approvedAt: order.approvedAt || new Date().toISOString(),
           }
         })
       });
@@ -683,31 +689,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         }
       } else {
         pdfDoc.save(fileName);
-      }
-      
-      // Extract as a Base64 string and POST it to backend endpoint (/api/submissions/bill)
-      try {
-        const pdfBase64 = pdfDoc.output('datauristring').split(',')[1];
-        
-        const response = await fetch(getApiUrl('/api/submissions/bill'), {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({
-            submissionId: orderId,
-            totalAmount: total,
-            pdfBase64: pdfBase64,
-            fileName: fileName,
-            collectionName: 'orders'
-          })
-        });
-        
-        if (!response.ok) {
-          console.warn('Could not send email or update status via server. Have you configured SMTP in .env?');
-        } else {
-          console.log('Invoice email sent and document billed successfully via backend!');
-        }
-      } catch (err) {
-        console.error('Error triggering billing and email API:', err);
       }
 
       setPrices({});
@@ -763,6 +744,91 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         description: 'Failed to delete order.',
         variant: 'error'
       });
+    }
+  };
+
+  const handleRejectOrder = async (orderId: string) => {
+    const reason = prompt(t('rejection_reason_prompt') || 'Please enter the reason for rejection:');
+    if (reason === null) return;
+
+    setIsApproving(true);
+    try {
+      const response = await fetch(getApiUrl('/api/admin/orders'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: 'update',
+          orderId,
+          data: {
+            status: 'rejected',
+            rejectionReason: reason || 'Order rejected by admin',
+            rejectedAt: new Date().toISOString()
+          }
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: t('success') || 'Success',
+          description: t('rejected') || 'Order rejected',
+          variant: 'success'
+        });
+        setIsDetailOpen(false);
+        fetchOrders();
+      } else {
+        throw new Error('Failed to reject order');
+      }
+    } catch (error) {
+      console.error('Error rejecting order:', error);
+      toast({
+        title: t('error') || 'Error',
+        description: 'Failed to reject order.',
+        variant: 'error'
+      });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleCancelOrderAdmin = async (orderId: string) => {
+    const confirmCancel = confirm(t('confirm_cancel_order') || 'Are you sure you want to cancel this order?');
+    if (!confirmCancel) return;
+
+    setIsApproving(true);
+    try {
+      const response = await fetch(getApiUrl('/api/admin/orders'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: 'update',
+          orderId,
+          data: {
+            status: 'cancelled',
+            cancelledAt: new Date().toISOString()
+          }
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: t('success') || 'Success',
+          description: t('cancelled') || 'Order cancelled',
+          variant: 'success'
+        });
+        setIsDetailOpen(false);
+        fetchOrders();
+      } else {
+        throw new Error('Failed to cancel order');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: t('error') || 'Error',
+        description: 'Failed to cancel order.',
+        variant: 'error'
+      });
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -909,6 +975,25 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     }, 50);
   };
 
+  const prepareConsolidateModal = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.nextInvoiceNo) {
+          setConsolidatedInvoiceNo(data.nextInvoiceNo);
+        } else {
+          setConsolidatedInvoiceNo(`RW${Math.floor(1000 + Math.random() * 9000)}`);
+        }
+      } else {
+        setConsolidatedInvoiceNo(`RW${Math.floor(1000 + Math.random() * 9000)}`);
+      }
+    } catch {
+      setConsolidatedInvoiceNo(`RW${Math.floor(1000 + Math.random() * 9000)}`);
+    }
+    setShowConsolidateModal(true);
+  };
+
   const handleToggleOrderSelect = (id?: string) => {
     if (!id) return;
     const targetOrder = orders.find(o => o.id === id);
@@ -921,22 +1006,37 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         return next;
       }
 
-      // Consolidated invoices are single-client only. If there's already a
-      // different client selected, reject this pick instead of silently
-      // allowing a mixed-client selection (which would otherwise only be
-      // caught later, inside generateConsolidatedInvoicePDF, at PDF-generation time).
       if (next.size > 0) {
         const firstSelectedId = Array.from(next)[0];
         const firstSelectedOrder = orders.find(o => o.id === firstSelectedId);
-        if (firstSelectedOrder && firstSelectedOrder.to !== targetOrder.to) {
-          toast({
-            title: t('error') || 'Error',
-            description: language === 'bm'
-              ? `Tidak boleh pilih klien berbeza. Invois konsolidasi hanya untuk satu klien (${firstSelectedOrder.to}) sahaja.`
-              : `Cannot select a different client. Consolidated invoices are limited to a single client (${firstSelectedOrder.to}) at a time.`,
-            variant: 'error'
-          });
-          return prev;
+        if (firstSelectedOrder) {
+          // Company check
+          if (firstSelectedOrder.to !== targetOrder.to) {
+            toast({
+              title: t('error') || 'Error',
+              description: language === 'bm'
+                ? `Tidak boleh pilih klien berbeza. Invois konsolidasi hanya untuk satu syarikat (${firstSelectedOrder.to}) sahaja.`
+                : `Cannot select a different client. Consolidated invoices are limited to a single company (${firstSelectedOrder.to}) at a time.`,
+              variant: 'error'
+            });
+            return prev;
+          }
+
+          // Email check if filterBySameEmail is enabled
+          if (filterBySameEmail) {
+            const firstEmail = (firstSelectedOrder.email || '').trim().toLowerCase();
+            const targetEmail = (targetOrder.email || '').trim().toLowerCase();
+            if (firstEmail && targetEmail && firstEmail !== targetEmail) {
+              toast({
+                title: language === 'bm' ? 'Penyaring Emel Diaktifkan' : 'Email Filter Active',
+                description: language === 'bm'
+                  ? `Penyaring emel diaktifkan: Hanya pesanan dari emel yang sama (${firstSelectedOrder.email}) dibenarkan. Matikan suis penyaring emel jika ingin memilih emel berbeza.`
+                  : `Email filter active: Only orders with the exact same email address (${firstSelectedOrder.email}) are allowed. Disable the email filter toggle to allow manual selection of different emails.`,
+                variant: 'error'
+              });
+              return prev;
+            }
+          }
         }
       }
 
@@ -945,7 +1045,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     });
   };
 
-  const handleGenerateConsolidatedInvoice = async (withNotes: boolean) => {
+  const handleGenerateConsolidatedInvoice = async (withNotes: boolean, customInvoiceNo?: string) => {
     setShowConsolidateModal(false);
     setIsGeneratingConsolidated(true);
 
@@ -953,11 +1053,28 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       await preloadLogoForPDF();
 
       const selectedOrderData = orders.filter(o => o.id && selectedOrderIds.has(o.id));
+      if (selectedOrderData.length === 0) {
+        setIsGeneratingConsolidated(false);
+        return;
+      }
+
+      // Check if selected orders have different email addresses
+      const distinctEmails = new Set(selectedOrderData.map(o => o.email?.trim().toLowerCase()).filter(Boolean));
+      if (distinctEmails.size > 1) {
+        const confirmMerge = window.confirm("Anda menggabungkan order daripada emel yang berbeza. Sila sahkan ini adalah betul.");
+        if (!confirmMerge) {
+          setIsGeneratingConsolidated(false);
+          return;
+        }
+      }
+
+      const finalInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim() || `RW${Math.floor(1000 + Math.random() * 9000)}`;
+
       const pdfDoc = generateConsolidatedInvoicePDF(
-        { orders: selectedOrderData, includeNotes: withNotes },
+        { orders: selectedOrderData, includeNotes: withNotes, invoiceNo: finalInvoiceNo, lang: language as 'bm' | 'en' },
         true
       );
-      const fileName = `Invois_Konsolidasi_Wawasan_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
+      const fileName = `Invois_Konsolidasi_${finalInvoiceNo}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         try {
@@ -981,7 +1098,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       setSelectedOrderIds(new Set());
       toast({
         title: t('success') || 'Success',
-        description: 'Consolidated invoice generated.',
+        description: `Consolidated invoice ${finalInvoiceNo} generated.`,
         variant: 'success'
       });
     } catch (error: unknown) {
@@ -1036,11 +1153,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          orderId: sendOrder.id,
           email: recipientEmail,
           name: sendOrder.name,
           invoiceNo,
           pdfBase64,
-          isFinal: sendOrder.status === 'approved',
+          isFinal: true,
           lang: sendOrder.lang
         })
       });
@@ -1056,6 +1174,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         duration: 4000
       });
       setIsSendDialogOpen(false);
+      fetchOrders();
     } catch (err: unknown) {
       console.error('Error sending invoice email:', err);
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1614,6 +1733,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               setDateToFilter={setDateToFilter}
               isSelectMode={isSelectMode}
               setIsSelectMode={setIsSelectMode}
+              filterBySameEmail={filterBySameEmail}
+              setFilterBySameEmail={setFilterBySameEmail}
+              consolidatedInvoiceNo={consolidatedInvoiceNo}
+              setConsolidatedInvoiceNo={setConsolidatedInvoiceNo}
+              prepareConsolidateModal={prepareConsolidateModal}
               selectedOrderIds={selectedOrderIds}
               setSelectedOrderIds={setSelectedOrderIds}
               showConsolidateModal={showConsolidateModal}
@@ -1817,43 +1941,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             {selectedOrder?.status === 'cancel_requested' ? (
               <>
                 <Button
-                  onClick={async () => {
-                    const confirmCancelApprove = confirm("Are you sure you want to APPROVE this cancellation? This will permanently delete the order and notify the customer.");
-                    if (!confirmCancelApprove) return;
-                    setIsApproving(true);
-                    try {
-                      const response = await fetch(getApiUrl('/api/admin/orders'), {
-                        method: 'POST',
-                        headers: authHeaders(),
-                        body: JSON.stringify({
-                          action: 'delete',
-                          orderId: selectedOrder.id
-                        })
-                      });
-                      if (response.ok) {
-                        toast({
-                          title: t('success') || 'Success',
-                          description: 'Order cancelled and deleted successfully.',
-                          variant: 'success'
-                        });
-                        setIsDetailOpen(false);
-                        fetchOrders();
-                      } else {
-                        throw new Error('Failed to delete order');
-                      }
-                    } catch (error) {
-                      console.error('Error deleting cancelled order:', error);
-                      toast({
-                        title: t('error') || 'Error',
-                        description: 'Failed to delete order.',
-                        variant: 'error'
-                      });
-                    } finally {
-                      setIsApproving(false);
-                    }
-                  }}
+                  onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
                   disabled={isApproving}
-                  className="bg-tomato-burst hover:bg-tomato-burst/85 text-white"
+                  className="bg-rose-600 hover:bg-rose-700 text-white"
                 >
                   {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                   {t('approve_cancellation') || 'Approve Cancellation'}
@@ -1867,16 +1957,53 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   {t('reject_cancellation') || 'Reject Cancellation'}
                 </Button>
               </>
-            ) : (
-              <Button
-                onClick={() => handleApprove(selectedOrder?.id || '')}
-                disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                {selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? t('update_invoice') || 'Update Invoice' : t('approve')}
-              </Button>
-            )}
+            ) : selectedOrder?.status === 'pending' ? (
+              <>
+                <Button
+                  onClick={() => handleApprove(selectedOrder?.id || '')}
+                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                  {t('approve') || 'Approve & Set Pricing'}
+                </Button>
+                <Button
+                  onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
+                  disabled={isApproving}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  {t('reject_order') || 'Reject Order'}
+                </Button>
+              </>
+            ) : selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? (
+              <>
+                <Button
+                  onClick={() => handleApprove(selectedOrder?.id || '')}
+                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                  {t('update_invoice') || 'Update Invoice'}
+                </Button>
+                <Button
+                  onClick={() => selectedOrder && openSendDialog(selectedOrder)}
+                  disabled={isApproving}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  {t('send_invoice') || 'Send Invoice'}
+                </Button>
+                <Button
+                  onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
+                  disabled={isApproving}
+                  className="bg-stone-600 hover:bg-stone-700 text-white"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  {t('cancel_order') || 'Cancel Order'}
+                </Button>
+              </>
+            ) : null}
             <Button
               variant="outline"
               onClick={() => setIsDetailOpen(false)}
