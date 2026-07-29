@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 type Language = 'en' | 'bm';
 
@@ -141,6 +141,10 @@ const translations: Translation = {
   hero_subtitle: { en: 'Est. 1986', bm: 'Ditubuh 1986' },
   hero_tagline: { en: 'Where Heritage Meets Flavor in the Heart of Putrajaya', bm: 'Tempat Warisan Bertemu Rasa di Tengah-Tengah Putrajaya' },
   hero_description: { en: 'Experience authentic Malaysian cuisine crafted with passion and tradition since 1986.', bm: 'Nikmati masakan Malaysia autentik yang disediakan dengan minat dan tradisi sejak 1986.' },
+  hero_glitch: { en: 'Sincerity . Blessings', bm: 'Keikhlasan . Keberkatan' },
+  explore_menu_btn: { en: 'Explore Menu', bm: 'Lihat Menu' },
+  order_catering_btn: { en: 'Order Catering', bm: 'Tempah Katering' },
+
   view_our_menu: { en: 'View Our Menu', bm: 'Lihat Menu Kami' },
   halal_certified: { en: 'Halal Certified', bm: 'Disahkan Halal' },
   
@@ -354,6 +358,11 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('en');
+
+  // Sync <html lang> attribute for a11y and SEO
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   const t = (key: keyof typeof translations): string => {
     return translations[key]?.[language] ?? String(key);

@@ -9,7 +9,6 @@ import {
   inMemoryPersistence,
   type Auth,
 } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
 import { Capacitor } from '@capacitor/core';
 
 // F-01 (audit): hardcoded Firebase web API key + full config bundle
@@ -99,22 +98,8 @@ try {
 }
 export const auth = authInstance;
 
-// Initialize Analytics (browser + production builds only)
-let analyticsInstance: ReturnType<typeof getAnalytics> | null = null;
-if (typeof window !== "undefined" && import.meta.env.PROD) {
-  isSupported().then(supported => {
-    if (supported) {
-      try {
-        analyticsInstance = getAnalytics(app);
-      } catch {
-        // Ignore analytics failures
-      }
-    }
-  }).catch(() => {
-    // Ignore analytics failures
-  });
-}
-export const analytics = analyticsInstance;
+// Initialize Analytics (disabled to prevent CSP and network Failed to fetch errors)
+export const analytics = null;
 
 export default function getApp() {
   return app;
