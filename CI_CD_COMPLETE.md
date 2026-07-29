@@ -45,7 +45,7 @@ Your repository **Restoran Wawasan Pak Usop** now has a complete, production-rea
 
 ```bash
 # Go to your repository
-cd /path/to/Restoran-Wawasan-Bio
+cd /path/to/Pu
 
 # Checkout the new branch
 git fetch origin ci/setup-github-actions
@@ -61,7 +61,7 @@ git push origin main
 
 ### **Option 2: Create a Pull Request**
 
-1. Go to: https://github.com/Nohkeyra/Restoran-Wawasan-Bio
+1. Go to: https://github.com/Nohkeyra/Pu
 2. Click "Pull requests" → "New pull request"
 3. Compare `ci/setup-github-actions` with `main`
 4. Review changes
@@ -117,7 +117,7 @@ git push origin main
 ```
 
 ### **Step 2: Verify Workflows** (Recommended)
-- Go to: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/actions
+- Go to: https://github.com/Nohkeyra/Pu/actions
 - Watch for the first build
 - Download and test the debug APK
 
@@ -142,7 +142,7 @@ base64 -i release.keystore
 ```
 
 **Add GitHub Secrets:**
-1. Go to: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/settings/secrets/actions
+1. Go to: https://github.com/Nohkeyra/Pu/settings/secrets/actions
 2. Create 4 new secrets:
    - `RELEASE_KEYSTORE_BASE64` → paste base64 output
    - `RELEASE_KEYSTORE_PASSWORD` → your keystore password
@@ -165,13 +165,13 @@ This will:
 ## 📥 Downloading APKs
 
 ### **From GitHub Actions**
-1. Go to: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/actions
+1. Go to: https://github.com/Nohkeyra/Pu/actions
 2. Click the latest workflow run
 3. Scroll to "Artifacts" section
 4. Download desired APK
 
 ### **From GitHub Releases**
-1. Go to: https://github.com/Nohkeyra/Restoran-Wawasan-Bio/releases
+1. Go to: https://github.com/Nohkeyra/Pu/releases
 2. Find your release tag (e.g., v1.0.0)
 3. Download `app-release-signed.apk`
 
@@ -268,9 +268,9 @@ Your CI/CD pipeline is **fully configured** and **ready to use**.
 
 | Need | Command/Link |
 |------|--------------|
-| View Actions | https://github.com/Nohkeyra/Restoran-Wawasan-Bio/actions |
-| View Releases | https://github.com/Nohkeyra/Restoran-Wawasan-Bio/releases |
-| Add Secrets | https://github.com/Nohkeyra/Restoran-Wawasan-Bio/settings/secrets/actions |
+| View Actions | https://github.com/Nohkeyra/Pu/actions |
+| View Releases | https://github.com/Nohkeyra/Pu/releases |
+| Add Secrets | https://github.com/Nohkeyra/Pu/settings/secrets/actions |
 | Merge Branch | `git checkout main && git merge ci/setup-github-actions` |
 | Create Release | `git tag v1.0.0 && git push origin v1.0.0` |
 | Local Build | `./scripts/build-apk.sh` |
