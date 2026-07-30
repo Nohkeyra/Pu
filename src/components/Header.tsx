@@ -197,10 +197,7 @@ export default function Header() {
       <MobileMenu
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        links={NAV_LINKS.map((link) => ({
-          ...link,
-          label: link.label.charAt(0).toUpperCase() + link.label.slice(1),
-        }))}
+        links={NAV_LINKS}
         currentUser={currentUser}
         onAuthClick={handleAuthClick}
       />

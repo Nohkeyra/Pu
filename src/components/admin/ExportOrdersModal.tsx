@@ -75,7 +75,18 @@ export function ExportOrdersModal({
       }
 
       if (exportFormat === 'json') {
-        const jsonStr = JSON.stringify(targetOrders, null, 2);
+        const jsonStr = JSON.stringify(
+          targetOrders,
+          (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+              if ('toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
+                return (value as { toDate: () => Date }).toDate().toISOString();
+              }
+            }
+            return value;
+          },
+          2
+        );
         const fileName = `Wawasan_Orders_Export_${format(new Date(), 'yyyyMMdd_HHmm')}.json`;
         
         if (Capacitor.isNativePlatform()) {
