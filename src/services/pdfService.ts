@@ -3,19 +3,19 @@ import { getBilingualWordsInTotal } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload } from '@/types';
 import { getAssetUrl } from '@/lib/utils';
 
-// This module runs in the browser / Capacitor WebView (client bundle), where
-// there is no Node `process` global. The previous `typeof process !==
-// 'undefined' && process?.env?.X` fallback referenced `process` as a bare
-// identifier, which TypeScript rejects (TS2591: Cannot find name 'process')
-// since tsconfig.app.json intentionally does not include Node types for the
-// client build. Vite already exposes build-time env vars via
-// `import.meta.env.VITE_*`, so that alone is the correct and sufficient
-// source here.
 const getBankDetails = () => {
-  const bankName = import.meta.env?.VITE_BANK_NAME || 'BANK MUAMALAT';
-  const bankAccountName = import.meta.env?.VITE_BANK_ACCOUNT_NAME || 'RESTORAN WAWASAN';
-  const bankAccountNumber = import.meta.env?.VITE_BANK_ACCOUNT_NUMBER || '16010000-405710';
-
+  const bankName = (import.meta.env?.VITE_BANK_NAME) || 
+                   (typeof process !== 'undefined' && process?.env?.BANK_NAME) || 
+                   'BANK MUAMALAT';
+                   
+  const bankAccountName = (import.meta.env?.VITE_BANK_ACCOUNT_NAME) || 
+                          (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NAME) || 
+                          'RESTORAN WAWASAN';
+                          
+  const bankAccountNumber = (import.meta.env?.VITE_BANK_ACCOUNT_NUMBER) || 
+                            (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NUMBER) || 
+                            '16010000-405710';
+                            
   return { bankName, bankAccountName, bankAccountNumber };
 };
 
