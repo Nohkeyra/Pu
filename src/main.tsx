@@ -47,7 +47,7 @@ createRoot(rootElement).render(
 // Register Background Sync Service Worker (Production only to prevent caching issues in development)
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   const isDevSandbox = 
-    window.location.hostname.endsWith(".run.app") ||
+    window.location.hostname.endsWith("-aistudio.run.app") ||
     window.location.hostname.includes("aistudio") ||
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";

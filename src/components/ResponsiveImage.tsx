@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ImgHTMLAttributes } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getAssetUrl } from '@/lib/utils';
 
 interface ResponsiveImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -37,24 +37,34 @@ export default function ResponsiveImage({
 }: ResponsiveImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [useSrcSet, setUseSrcSet] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Generate srcSet from the base src path
+  // Reset states when src changes
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+    setUseSrcSet(true);
+  }, [src]);
+
+  const resolvedSrc = getAssetUrl(src);
+
+  // Generate srcSet from the resolved src path
   // e.g., /assets/nasi-lemak.jpg → /assets/nasi-lemak-400w.jpg, /assets/nasi-lemak-800w.jpg, etc.
-  const basePath = src.replace(/\.[^.]+$/, '');
-  const extension = src.match(/\.[^.]+$/)?.[0] || '.jpg';
+  const basePath = resolvedSrc.replace(/\.[^.]+$/, '');
+  const extension = resolvedSrc.match(/\.[^.]+$/)?.[0] || '.jpg';
 
   const widths = [400, 800, 1200, 1600];
-  const srcSet = widths
-    .map((w) => `${basePath}-${w}w${extension} ${w}w`)
-    .join(', ');
+  const srcSet = useSrcSet
+    ? widths.map((w) => `${basePath}-${w}w${extension} ${w}w`).join(', ')
+    : undefined;
 
   useEffect(() => {
     // If the image is already cached, onLoad won't fire — check complete
     if (imgRef.current?.complete) {
       setLoaded(true);
     }
-  }, []);
+  }, [resolvedSrc, useSrcSet]);
 
   if (error) {
     return (
@@ -84,7 +94,7 @@ export default function ResponsiveImage({
       )}
       <img
         ref={imgRef}
-        src={src}
+        src={resolvedSrc}
         srcSet={srcSet}
         sizes={sizes}
         alt={alt}
@@ -94,7 +104,14 @@ export default function ResponsiveImage({
           setLoaded(true);
           onLoad?.();
         }}
-        onError={() => setError(true)}
+        onError={() => {
+          if (useSrcSet) {
+            console.warn(`Responsive variant load failed for: ${resolvedSrc}, falling back to original source.`);
+            setUseSrcSet(false);
+          } else {
+            setError(true);
+          }
+        }}
         className={cn(
           'w-full h-full transition-opacity duration-500',
           loaded ? 'opacity-100' : 'opacity-0',

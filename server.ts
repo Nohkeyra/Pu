@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import crypto, { timingSafeEqual } from "crypto";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getMessaging } from "firebase-admin/messaging";
@@ -23,7 +23,7 @@ import {
   verifyCustomerIdToken,
   sendNotificationToTopic,
   runWithRetry,
-  createOrderWithSequentialInvoice,
+  createOrder,
   generateSequentialInvoiceNo,
   type OrderData,
 } from "./server/firebaseAdmin.js";
@@ -74,14 +74,13 @@ async function startServer() {
       if (!origin || origin === "null") return cb(null, true);
       if (
         ALLOWED_ORIGINS.includes(origin) ||
-        origin.startsWith("https://localhost") ||
-        origin.startsWith("http://localhost") ||
+        /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
         origin.startsWith("capacitor://") ||
         origin.startsWith("file://") ||
         origin.endsWith(".run.app") ||
         origin.endsWith(".onrender.com") ||
-        origin.endsWith(".google.com") ||
-        origin.endsWith(".googleusercontent.com")
+        /^https:\/\/[a-z0-9-]+\.google\.com$/.test(origin) ||
+        /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origin)
       ) {
         return cb(null, true);
       }
@@ -152,7 +151,7 @@ async function startServer() {
   });
   app.use(globalLimiter);
 
-  app.use(express.json({ limit: '25mb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   // SMTP configuration — Brevo relay (smtp-relay.brevo.com:2525)
   const smtpHost   = clean(process.env.SMTP_HOST) || "smtp-relay.brevo.com";
@@ -553,7 +552,7 @@ async function startServer() {
         });
 
         if (results.length === 0) {
-          const legacySnap = await adminDb.collection("orders").get();
+          const legacySnap = await adminDb.collection("orders").orderBy("createdAt", "desc").limit(100).get();
           legacySnap.forEach((docSnap) => {
             const d = docSnap.data() as OrderData;
             const eventDate = d.dateTime
@@ -611,7 +610,7 @@ async function startServer() {
           const docSnap = snapshot.docs[0];
           nextOrder = { id: docSnap.id, ...docSnap.data() } as UpcomingOrder;
         } else {
-          const legacySnap = await adminDb.collection("orders").get();
+          const legacySnap = await adminDb.collection("orders").orderBy("createdAt", "desc").limit(50).get();
           const legacyOrders: UpcomingOrder[] = [];
           legacySnap.forEach((docSnap) => {
             const d = docSnap.data() as OrderData;
@@ -704,7 +703,7 @@ async function startServer() {
 
       let orderId = "";
       try {
-        const created = await runWithRetry(() => createOrderWithSequentialInvoice(orderData));
+        const created = await runWithRetry(() => createOrder(orderData));
         orderId = created.orderId;
       } catch (firestoreErr) {
         console.error('[ORDER FALLBACK FAILED]', firestoreErr);
@@ -807,7 +806,7 @@ async function startServer() {
         }
       }
 
-      syncGoogleCalendarEvent(orderId).catch(err => {
+      syncGoogleCalendarEvent(orderId, { ...data, ...updatedFields }).catch(err => {
         console.error("Background Google Calendar event sync error during cancel request:", err);
       });
 
@@ -1038,7 +1037,7 @@ async function startServer() {
   });
 
   // Invoice Billing & Delivery
-  app.post("/api/submissions/bill", adminOpsLimiter, verifyAdminToken, async (req, res) => {
+  app.post("/api/submissions/bill", adminOpsLimiter, verifyAdminToken, express.json({ limit: '2mb' }), async (req, res) => {
     try {
       const { submissionId, totalAmount, pdfBase64, fileName, collectionName = 'submissions' } = req.body;
 
@@ -1305,7 +1304,7 @@ async function startServer() {
   });
 
   // Public send invoice endpoint
-  app.post("/api/send-invoice", publicEmailLimiter, async (req, res) => {
+  app.post("/api/send-invoice", publicEmailLimiter, express.json({ limit: '2mb' }), async (req, res) => {
     try {
       const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails, orderId } = req.body;
 
@@ -1454,7 +1453,9 @@ async function startServer() {
       if (looksLikeBcryptHash) {
         passwordMatches = await bcrypt.compare(password, adminPassword);
       } else {
-        passwordMatches = (password === adminPassword);
+        const a = Buffer.from(password);
+        const b = Buffer.from(adminPassword);
+        passwordMatches = a.length === b.length && timingSafeEqual(a, b);
       }
 
       if (!passwordMatches) {
@@ -1521,7 +1522,7 @@ async function startServer() {
         const orders: Record<string, unknown>[] = [];
         try {
           const adminDb = getFirestore();
-          const snapshot = await adminDb.collection("orders").orderBy("createdAt", "desc").get();
+          const snapshot = await adminDb.collection("orders").orderBy("createdAt", "desc").limit(200).get();
           snapshot.forEach((docSnap) => {
             const docData = docSnap.data();
             const createdAt = docData.createdAt as { seconds?: number; nanoseconds?: number } | null;

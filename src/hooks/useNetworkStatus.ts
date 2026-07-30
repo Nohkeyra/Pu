@@ -6,6 +6,10 @@ export function useNetworkStatus() {
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(true);
   const prevStatusRef = useRef<boolean | null>(null);
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   useEffect(() => {
     // Initial check
@@ -16,7 +20,7 @@ export function useNetworkStatus() {
         prevStatusRef.current = status.connected;
         
         if (!status.connected) {
-          toast({
+          toastRef.current({
             title: 'Tiada Internet / No Internet',
             description: 'Sila periksa sambungan rangkaian anda / Please check your connection.',
             variant: 'warning',
@@ -50,7 +54,7 @@ export function useNetworkStatus() {
           if (wasOnline === isNowOnline) return;
           
           if (!isNowOnline) {
-            toast({
+            toastRef.current({
               title: 'Talian Terputus / Connection Lost',
               description: 'Mod luar talian aktif. Sesetengah ciri mungkin tidak tersedia.',
               variant: 'error',
@@ -59,7 +63,7 @@ export function useNetworkStatus() {
           } else {
             // Only show "Restored" if we were previously offline
             if (wasOnline === false) {
-              toast({
+              toastRef.current({
                 title: 'Talian Disambung / Connection Restored',
                 description: 'Anda kembali dalam talian.',
                 variant: 'success',
@@ -79,7 +83,7 @@ export function useNetworkStatus() {
       isActive = false;
       Network.removeAllListeners();
     };
-  }, [toast]);
+  }, []);
 
   return { isOnline };
 }

@@ -99,10 +99,15 @@ export interface OrderData {
   approvedAt?: string;
   billedAt?: string;
   cancelRequestedAt?: string;
-  totalAmount?: number;
+  totalAmount?: number | null;
   eventTimestamp?: Timestamp;
   createdAt?: Timestamp | { seconds?: number; nanoseconds?: number } | FieldValue;
-  [key: string]: unknown;
+  updatedAt?: Timestamp | { seconds?: number; nanoseconds?: number } | FieldValue | string;
+  presetId?: string;
+  unitPrice?: number | null;
+  preparationType?: string;
+  prices?: Record<string, number>;
+  department?: string;
 }
 
 export async function sendNotificationToTopic(topic: string, title: string, body: string) {
@@ -175,7 +180,7 @@ export async function generateSequentialInvoiceNo(): Promise<string> {
   });
 }
 
-export async function createOrderWithSequentialInvoice(orderData: OrderData): Promise<{ orderId: string; invoiceNo?: string }> {
+export async function createOrder(orderData: OrderData): Promise<{ orderId: string; invoiceNo?: string }> {
   const db = getFirestore();
   const orderRef = db.collection("orders").doc();
   const eventTimestamp = toEventTimestamp(orderData);

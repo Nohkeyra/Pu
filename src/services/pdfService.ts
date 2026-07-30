@@ -52,6 +52,8 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
           ctx.fillRect(0, 0, 1200, 240);
 
           cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
+          canvas.width = 0;
+          canvas.height = 0;
           resolve(cachedBatikHeaderBase64);
           return;
         }
@@ -77,6 +79,8 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
             ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
             ctx.fillRect(0, 0, 1200, 240);
             cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            canvas.width = 0;
+            canvas.height = 0;
             resolve(cachedBatikHeaderBase64);
             return;
           }
@@ -127,6 +131,8 @@ export const preloadLogoForPDF = (): Promise<string> => {
           ctx.putImageData(imageData, 0, 0);
 
           cachedLogoBase64 = canvas.toDataURL('image/png');
+          canvas.width = 0;
+          canvas.height = 0;
           resolve(cachedLogoBase64);
           return;
         }
@@ -205,9 +211,13 @@ export const drawCreamBox = (
 
   const maxTextWidth = w - 8;
   const splitLines = doc.splitTextToSize(content || '', maxTextWidth);
+  const maxVisibleLines = Math.floor((h - 11) / 4.5);
   splitLines.forEach((line: string, idx: number) => {
-    if (11 + (idx * 4.5) < h) {
-      doc.text(line, x + 4, y + 11 + (idx * 4.5));
+    if (idx < maxVisibleLines) {
+      const displayLine = (idx === maxVisibleLines - 1 && splitLines.length > maxVisibleLines)
+        ? line.slice(0, -3) + '...'
+        : line;
+      doc.text(displayLine, x + 4, y + 11 + (idx * 4.5));
     }
   });
 };
