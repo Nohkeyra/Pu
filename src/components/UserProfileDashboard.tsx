@@ -472,7 +472,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       // Standardize date and initial values
       const pdfData = {
         ...order,
-        date: order.date || format(new Date(order.dateTime), 'yyyy-MM-dd'),
+        date: order.date || (order.dateTime && !isNaN(new Date(order.dateTime).getTime()) ? format(new Date(order.dateTime), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')),
       };
 
       const pdfDoc = generateInvoicePDF(pdfData, false, language);

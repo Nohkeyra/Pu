@@ -1150,6 +1150,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders(),
         },
         body: JSON.stringify({
           orderId: sendOrder.id,
@@ -1216,7 +1217,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     const messageText = sendOrder.lang === 'bm' ? msgBm : msgEn;
     const encodedText = encodeURIComponent(messageText);
     
-    window.open(`https://wa.me/${formattedPhone}?text=${encodedText}`, '_blank');
+    window.open(`https://wa.me/${formattedPhone}?text=${encodedText}`, '_blank', 'noopener,noreferrer');
 
     toast({
       title: t('whatsapp_opened'),
@@ -1960,7 +1961,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               <>
                 <Button
                   onClick={() => handleApprove(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
+                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
@@ -1979,7 +1980,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               <>
                 <Button
                   onClick={() => handleApprove(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => !prices[m] || parseFloat(prices[m]) <= 0)}
+                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}

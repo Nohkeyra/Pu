@@ -90,10 +90,10 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   const modalTitle = title || (language === 'bm' ? 'Pratonton Invois' : 'Invoice Preview');
 
   // Calculation helpers
-  const totalAmount = order?.totalAmount || (order?.quantity ?? 0) * (order?.prices?.['pack'] || 10.00) || 0;
+  const totalAmount = order?.totalAmount ?? (order?.prices?.['pack'] ? (order.quantity ?? 0) * order.prices['pack'] : 0);
   const dateObj = order?.dateTime ? new Date(order.dateTime) : (order?.date ? new Date(order.date) : new Date());
   const formattedDate = isNaN(dateObj.getTime()) ? format(new Date(), 'dd/MM/yyyy') : format(dateObj, 'dd/MM/yyyy');
-  const qrData = `INVOICE: ${invoiceNo}\nDATE: ${formattedDate}\nTO: ${order?.to || '-'}\nTOTAL: RM ${totalAmount.toFixed(2)}`;
+  const qrData = `INVOICE: ${invoiceNo}\nDATE: ${formattedDate}\nTO: ${order?.to || '-'}\nTOTAL: ${totalAmount > 0 ? `RM ${totalAmount.toFixed(2)}` : 'Quotation Pending'}`;
 
   const handleDownloadOrShare = async () => {
     if (onDownload) {

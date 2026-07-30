@@ -117,8 +117,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(28);
-    doc.text('CONSOLIDATED INVOICE', 195, 22, { align: 'right' });
+    doc.setFontSize(26);
+    doc.text('INVOICE', 195, 20, { align: 'right' });
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
@@ -259,7 +259,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.rect(15, currentY, 180, rowHeight, 'S');
 
     [xQty, xNotes, xMenu, xMealsStartActual, ...activeMeals.map((_, i) => xMealsStartActual + i * 15), xRM].forEach(x => {
-      if (x > xDate && x < xRM + colRM && x !== xNotes || (includeNotes && x === xNotes)) {
+      if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
         doc.line(x, currentY, x, currentY + rowHeight);
       }
     });
@@ -397,7 +397,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('RESTORAN WAWASAN — CONSOLIDATED INVOICE', 15, 20);
+  doc.text('RESTORAN WAWASAN — INVOICE', 15, 20);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
@@ -413,8 +413,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setFontSize(8.5);
   doc.text(
     lang === 'bm'
-      ? `RINGKASAN PESANAN & JUMLAH (NO. INVOIS KONSOLIDASI: ${batchInvoiceNo})`
-      : `ORDER SUMMARY & TOTALS (CONSOLIDATED INVOICE NO: ${batchInvoiceNo})`,
+      ? `RINGKASAN PESANAN & JUMLAH (NO. INVOIS: ${batchInvoiceNo})`
+      : `ORDER SUMMARY & TOTALS (INVOICE NO: ${batchInvoiceNo})`,
     18, picHeaderY + 5
   );
 

@@ -473,6 +473,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const mappedMeals = orderState.mealTypes.map(m => {
         if (m === 'sarapan') return 'breakfast';
         if (m === 'tengahari') return 'lunch';
+        if (m === 'hitea') return 'hi_tea';
         return 'tea_break';
       });
 
