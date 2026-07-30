@@ -93,6 +93,7 @@ export default function ResponsiveImage({
         />
       )}
       <img
+        key={useSrcSet ? 'srcset' : 'fallback'}
         ref={imgRef}
         src={resolvedSrc}
         srcSet={srcSet}

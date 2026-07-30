@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { OrderData } from "./firebaseAdmin.js";
+import type { OrderData } from "./firebaseAdmin.js";
 
 export interface ExportFilterOptions {
   status?: string;

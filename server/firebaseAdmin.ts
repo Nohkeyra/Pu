@@ -11,10 +11,22 @@ export function getAdminApp(): App {
   if (!adminApp) {
     const apps = getApps();
     if (apps.length === 0) {
-      const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-      const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-        ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n")
+      let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+        ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
         : undefined;
+      if (email && email.startsWith('"') && email.endsWith('"')) {
+        email = email.slice(1, -1).trim();
+      }
+
+      let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
+        : undefined;
+      if (privateKey) {
+        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+          privateKey = privateKey.slice(1, -1).trim();
+        }
+        privateKey = privateKey.replace(/\\n/g, "\n");
+      }
 
       if (email && privateKey) {
         adminApp = initializeApp({

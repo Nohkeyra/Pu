@@ -74,11 +74,3 @@ services:
         sync: false
       - key: ADMIN_JWT_SECRET
         generateValue: true
-
-      # Google OAuth2 Form-to-Calendar Sync
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: REDIRECT_URI
-        value: https://restoran-wawasan-bio.onrender.com/api/auth/google/callback
