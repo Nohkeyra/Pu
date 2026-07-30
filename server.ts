@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import crypto, { timingSafeEqual } from "crypto";
+import crypto from "crypto";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getMessaging } from "firebase-admin/messaging";
@@ -152,7 +152,7 @@ async function startServer() {
   });
   app.use(globalLimiter);
 
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '10mb' })); // Increased limit to allow PDF uploads
 
   // SMTP configuration — Brevo relay (smtp-relay.brevo.com:2525)
   const smtpHost   = clean(process.env.SMTP_HOST) || "smtp-relay.brevo.com";
@@ -297,7 +297,7 @@ async function startServer() {
           nextCount = data.count + 1;
         }
       }
-      const nextInvoiceNo = `RW${String(nextCount).padStart(4, "0")}`;
+      const nextInvoiceNo = `RW-${String(nextCount).padStart(4, "0")}`;
       return res.json({ success: true, nextInvoiceNo });
     } catch (err) {
       console.error("Error fetching next invoice number:", err);
@@ -331,7 +331,7 @@ async function startServer() {
             nextCount = data.count + 1;
           }
         }
-        suggestedNext = `RW${String(nextCount).padStart(4, "0")}`;
+        suggestedNext = `RW-${String(nextCount).padStart(4, "0")}`;
       }
 
       return res.json({ success: true, isUnique, suggestedNext });
@@ -694,13 +694,24 @@ async function startServer() {
   app.post("/api/orders", orderSubmissionLimiter, async (req, res) => {
     try {
       const rawOrderData = req.body as OrderData;
+      const callerUid = await verifyCustomerIdToken(req);
+
+      if (rawOrderData.userId && callerUid && rawOrderData.userId !== callerUid) {
+        return res.status(403).json({ success: false, error: "Unauthorized: userId mismatch for session" });
+      }
+      
+      if (callerUid && !rawOrderData.userId) {
+        rawOrderData.userId = callerUid;
+      }
+
       const orderData: OrderData = {
         ...rawOrderData,
-        status: (rawOrderData.status as string)?.toLowerCase() || "pending",
-        invoiceNo: undefined,
-        unitPrice: rawOrderData.unitPrice ?? null,
-        totalAmount: rawOrderData.totalAmount ?? null,
+        status: "pending",
+        unitPrice: null,
+        totalAmount: 0,
+        prices: {},
       };
+      delete orderData.invoiceNo;
 
       let orderId = "";
       try {
@@ -1038,7 +1049,7 @@ async function startServer() {
   });
 
   // Invoice Billing & Delivery
-  app.post("/api/submissions/bill", adminOpsLimiter, verifyAdminToken, express.json({ limit: '2mb' }), async (req, res) => {
+  app.post("/api/submissions/bill", adminOpsLimiter, verifyAdminToken, express.json({ limit: '10mb' }), async (req, res) => {
     try {
       const { submissionId, totalAmount, pdfBase64, fileName, collectionName = 'submissions' } = req.body;
 
@@ -1305,12 +1316,44 @@ async function startServer() {
   });
 
   // Public send invoice endpoint
-  app.post("/api/send-invoice", publicEmailLimiter, express.json({ limit: '2mb' }), async (req, res) => {
+  app.post("/api/send-invoice", publicEmailLimiter, express.json({ limit: '10mb' }), async (req, res) => {
     try {
       const { email, name, invoiceNo, pdfBase64, isFinal, lang, orderDetails, orderId } = req.body;
 
       if (!email || !pdfBase64) {
         return res.status(400).json({ error: "Missing required fields (email, pdfBase64)" });
+      }
+
+      let isAdmin = false;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+      if (token) {
+        try {
+          const payload = jwt.verify(token, effectiveJwtSecret) as jwt.JwtPayload;
+          if (payload.role === "admin" && payload.admin === true) {
+             isAdmin = true;
+          }
+        } catch {
+          // ignore invalid tokens
+        }
+      }
+
+      if (!isAdmin) {
+         if (isFinal) {
+            return res.status(403).json({ error: "Only admins can send final invoices" });
+         }
+         if (!orderId) {
+            return res.status(400).json({ error: "orderId is required" });
+         }
+         const adminDb = getFirestore();
+         const docSnap = await adminDb.collection("orders").doc(orderId).get();
+         if (!docSnap.exists) {
+            return res.status(404).json({ error: "Order not found" });
+         }
+         const data = docSnap.data();
+         if (data?.email !== email) {
+            return res.status(403).json({ error: "Email mismatch" });
+         }
       }
 
       const emailStr = typeof email === "string" ? email.trim() : "";
@@ -1454,9 +1497,9 @@ async function startServer() {
       if (looksLikeBcryptHash) {
         passwordMatches = await bcrypt.compare(password, adminPassword);
       } else {
-        const a = Buffer.from(password);
-        const b = Buffer.from(adminPassword);
-        passwordMatches = a.length === b.length && timingSafeEqual(a, b);
+        const a = crypto.createHash('sha256').update(password).digest();
+        const b = crypto.createHash('sha256').update(adminPassword).digest();
+        passwordMatches = crypto.timingSafeEqual(a, b);
       }
 
       if (!passwordMatches) {

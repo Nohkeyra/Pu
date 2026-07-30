@@ -5,15 +5,15 @@ import { getAssetUrl } from '@/lib/utils';
 
 const getBankDetails = () => {
   const bankName = (import.meta.env?.VITE_BANK_NAME) || 
-                   (typeof process !== 'undefined' && process?.env?.BANK_NAME) || 
+                   (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_NAME) || 
                    'BANK MUAMALAT';
                    
   const bankAccountName = (import.meta.env?.VITE_BANK_ACCOUNT_NAME) || 
-                          (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NAME) || 
+                          (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_ACCOUNT_NAME) || 
                           'RESTORAN WAWASAN';
                           
   const bankAccountNumber = (import.meta.env?.VITE_BANK_ACCOUNT_NUMBER) || 
-                            (typeof process !== 'undefined' && process?.env?.BANK_ACCOUNT_NUMBER) || 
+                            (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_ACCOUNT_NUMBER) || 
                             '16010000-405710';
                             
   return { bankName, bankAccountName, bankAccountNumber };

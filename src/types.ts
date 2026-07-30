@@ -76,7 +76,10 @@ export interface Order {
   location: string;
   quantity: number;
   meals: ('breakfast' | 'lunch' | 'hi_tea' | string)[];
-  preparationType: 'meal_box' | 'buffet';
+  preparationType?: 'meal_box' | 'buffet';
+  invoiceEmailRequested?: boolean;
+  invoiceEmailHandled?: boolean;
+  invoiceEmailSentAt?: string;
   menu?: string;
   notes?: string;
   prices?: Record<string, number>;

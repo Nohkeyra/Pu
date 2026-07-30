@@ -153,7 +153,11 @@ export function generateOrdersCSV(orders: OrderData[]): string {
 
   const escapeCSV = (val: unknown): string => {
     if (val === null || val === undefined) return '""';
-    const str = String(val).replace(/"/g, '""');
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = "'" + str;
+    }
+    str = str.replace(/"/g, '""');
     return `"${str}"`;
   };
 

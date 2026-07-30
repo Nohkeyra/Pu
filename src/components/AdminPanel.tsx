@@ -14,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog';
-import { Timestamp, collection, onSnapshot, query, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { 
   LogOut, 
@@ -576,17 +576,16 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         const result = await response.json();
         if (result.success) {
           const formattedOrders = result.orders.map((order: SerializedOrder) => {
-            let timestamp = null;
+            let createdAtObj = order.createdAt;
             if (order.createdAt && typeof order.createdAt.seconds === 'number') {
-              try {
-                timestamp = new Timestamp(order.createdAt.seconds, order.createdAt.nanoseconds || 0);
-              } catch (e) {
-                console.error('Failed to create timestamp for order', order.id, e);
-              }
+              createdAtObj = {
+                seconds: order.createdAt.seconds,
+                nanoseconds: order.createdAt.nanoseconds || 0,
+              };
             }
             return {
               ...order,
-              createdAt: timestamp
+              createdAt: createdAtObj,
             };
           });
           setOrders(formattedOrders);
