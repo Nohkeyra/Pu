@@ -287,98 +287,177 @@ export function AdminTablesTab({
     }
   };
 
-  // Export Filtered/Selected Table to Excel
+  // Export Filtered/Selected Table to Excel using the provided RW_Invoice_v3_Blank.xlsx template
   const handleExportExcel = async () => {
     try {
       const ExcelJS = await import('exceljs');
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Submissions');
-
-      // Add Title Block / Branding
-      worksheet.addRow(['RESTORAN WAWASAN PAK USOP - SUBMISSIONS EXPORT']);
-      worksheet.addRow([`Generated on: ${new Date().toLocaleString()}`]);
-      worksheet.addRow([]); // Blank spacer
-
-      const headers = [
-        'Ref / Invoice No',
-        'Submitted Date',
-        'Client / Organization',
-        'Contact Person',
-        'Phone Number',
-        'Email Address',
-        'Event Date & Time',
-        'Event Location',
-        'Prep Type',
-        'Pax',
-        'Meal Types',
-        'Total Amount (RM)',
-        'Status'
-      ];
-
-      // Add Headers Row
-      const headerRow = worksheet.addRow(headers);
       
-      // Style headers
-      headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FF1C1C1E' } // Deep charcoal color matching brand
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      });
+      // Fetch the blank template file
+      const response = await fetch('/RW_Invoice_v3_Blank.xlsx');
+      if (!response.ok) {
+        throw new Error('Failed to fetch Excel template file');
+      }
+      const arrayBuffer = await response.arrayBuffer();
 
-      // Filter based on whether specific rows are selected
+      // Determine target orders based on selection
       const targetOrders = selectedIds.size > 0 
         ? filteredAndSortedOrders.filter(o => o.id && selectedIds.has(o.id))
         : filteredAndSortedOrders;
 
-      targetOrders.forEach(o => {
-        const submittedDate = o.createdAt 
-          ? (typeof o.createdAt === 'object' && 'toDate' in o.createdAt 
-              ? (o.createdAt as { toDate: () => Date }).toDate().toLocaleString() 
-              : new Date(o.createdAt).toLocaleString())
-          : '-';
+      if (targetOrders.length === 0) {
+        toast({
+          title: isBm ? 'Tiada Rekod' : 'No Records',
+          description: isBm ? 'Tiada rekod untuk dieksport' : 'There are no records to export',
+          variant: 'warning',
+        });
+        return;
+      }
 
-        worksheet.addRow([
-          o.invoiceNo || o.id || '',
-          submittedDate,
-          o.to || 'Majlis Persendirian',
-          o.name || '',
-          o.contact || '',
-          o.email || '',
-          o.dateTime || '',
-          o.location || '',
-          o.preparationType === 'meal_box' ? 'Meal Box' : 'Buffet',
-          o.quantity || 0,
-          (o.meals || []).join(', '),
-          o.totalAmount ? parseFloat(o.totalAmount.toFixed(2)) : 0,
-          (o.status || 'pending').toUpperCase()
-        ]);
-      });
+      const workbook = new ExcelJS.Workbook();
 
-      // Adjust column widths automatically
-      worksheet.columns.forEach((column) => {
-        let maxLen = 10;
-        column.eachCell!({ includeEmpty: true }, (cell) => {
-          const valStr = cell.value ? cell.value.toString() : '';
-          if (valStr.length > maxLen) {
-            maxLen = valStr.length;
+      // Helper function to copy a worksheet's structure, styling and merges
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const copyWorksheet = (sourceSheet: any, targetSheet: any) => {
+        targetSheet.pageSetup = { ...sourceSheet.pageSetup };
+        targetSheet.views = [...sourceSheet.views];
+
+        // Copy merged cells
+        if (sourceSheet.model && sourceSheet.model.merges) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          sourceSheet.model.merges.forEach((mergeRange: any) => {
+            targetSheet.mergeCells(mergeRange);
+          });
+        }
+
+        // Copy column widths and styling
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sourceSheet.columns.forEach((col: any, idx: number) => {
+          const targetCol = targetSheet.getColumn(idx + 1);
+          targetCol.width = col.width;
+          if (col.style) {
+            targetCol.style = { ...col.style };
           }
         });
-        column.width = maxLen + 4;
-      });
 
-      // Set number format for Total Amount column (column 12 is Total Amount (RM))
-      worksheet.getColumn(12).numFmt = '"RM"#,##0.00';
+        // Copy row heights and cells
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sourceSheet.eachRow({ includeEmpty: true }, (row: any, rowNumber: number) => {
+          const targetRow = targetSheet.getRow(rowNumber);
+          targetRow.height = row.height;
+          
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          row.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
+            const targetCell = targetRow.getCell(colNumber);
+            
+            if (cell.value && typeof cell.value === 'object' && 'formula' in cell.value) {
+              targetCell.value = { formula: cell.value.formula, result: cell.value.result };
+            } else {
+              targetCell.value = cell.value;
+            }
 
+            if (cell.style) {
+              targetCell.style = { ...cell.style };
+            }
+          });
+        });
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const populateOrderSheet = (o: any, sheet: any) => {
+        // Safe worksheet name (max 31 chars, no special characters: \ / ? * : [ ])
+        const rawName = o.invoiceNo || (o.id ? `RW-${o.id.substring(0, 6).toUpperCase()}` : 'Invoice');
+        let safeName = rawName.replace(/[\\/?*:[\]]/g, '_');
+        if (safeName.length > 30) safeName = safeName.substring(0, 30);
+        sheet.name = safeName;
+
+        // Fill client and billing metadata
+        sheet.getCell('C8').value = o.to || 'Majlis Persendirian'; // C8
+        sheet.getCell('C9').value = o.name || o.attn || ''; // C9 (Attn)
+        sheet.getCell('I8').value = o.invoiceNo || (o.id ? `RW${o.id.substring(0, 6).toUpperCase()}` : '-'); // I8 (Invoice No)
+        
+        let formattedDate = '-';
+        if (o.dateTime) {
+          try {
+            formattedDate = format(new Date(o.dateTime), 'dd/MM/yyyy');
+          } catch {
+            formattedDate = String(o.dateTime);
+          }
+        } else if (o.date) {
+          try {
+            formattedDate = format(new Date(o.date), 'dd/MM/yyyy');
+          } catch {
+            formattedDate = String(o.date);
+          }
+        }
+        sheet.getCell('I9').value = formattedDate; // I9 (Date)
+
+        // Reset and fill order details starting at Row 15 to Row 24 (10 rows available)
+        // Since we want to use the template exactly as is, we fill Row 15 and clear the remaining detail rows,
+        // which leaves the existing formulas in columns J, K, L, M completely untouched to compute correctly.
+        for (let r = 15; r <= 24; r++) {
+          if (r === 15) {
+            sheet.getCell(`B${r}`).value = formattedDate; // Date
+            sheet.getCell(`C${r}`).value = o.preparationType === 'meal_box' ? 'Meal Box' : 'Buffet'; // For / Prep Type
+            sheet.getCell(`D${r}`).value = o.quantity || 0; // QTY / Pax
+            sheet.getCell(`E${r}`).value = o.notes || ''; // Notes
+            sheet.getCell(`F${r}`).value = o.menu || ''; // Menu Details
+
+            const prices = o.prices || {};
+            const meals = o.meals || [];
+            
+            // Normalize meal selection list
+            const normalizedMeals = meals.map((m: string) => String(m).toLowerCase());
+            const hasBreakfast = normalizedMeals.includes('breakfast');
+            const hasLunch = normalizedMeals.includes('lunch');
+            const hasHiTea = normalizedMeals.includes('hi_tea') || normalizedMeals.includes('hi-tea') || normalizedMeals.includes('hi tea');
+
+            sheet.getCell(`G${r}`).value = hasBreakfast ? (prices.breakfast || 0) : null;
+            sheet.getCell(`H${r}`).value = hasLunch ? (prices.lunch || 0) : null;
+            sheet.getCell(`I${r}`).value = hasHiTea ? (prices.hi_tea || prices['hi-tea'] || prices['hi tea'] || 0) : null;
+          } else {
+            // Clear details for rows 16-24 to avoid stale/placeholder data
+            sheet.getCell(`B${r}`).value = null;
+            sheet.getCell(`C${r}`).value = null;
+            sheet.getCell(`D${r}`).value = null;
+            sheet.getCell(`E${r}`).value = null;
+            sheet.getCell(`F${r}`).value = null;
+            sheet.getCell(`G${r}`).value = null;
+            sheet.getCell(`H${r}`).value = null;
+            sheet.getCell(`I${r}`).value = null;
+          }
+        }
+      };
+
+      if (targetOrders.length === 1) {
+        // For a single order, load and modify the template workbook directly to preserve all background drawing media and layouts perfectly!
+        await workbook.xlsx.load(arrayBuffer);
+        const worksheet = workbook.worksheets[0];
+        populateOrderSheet(targetOrders[0], worksheet);
+      } else {
+        // For multiple orders, copy the template worksheet structure into a single spreadsheet, with one sheet per order
+        const tempWorkbook = new ExcelJS.Workbook();
+        await tempWorkbook.xlsx.load(arrayBuffer);
+        const sourceSheet = tempWorkbook.worksheets[0];
+
+        targetOrders.forEach((o, index) => {
+          const targetSheet = workbook.addWorksheet(`TempSheet_${index}`);
+          copyWorksheet(sourceSheet, targetSheet);
+          populateOrderSheet(o, targetSheet);
+        });
+      }
+
+      // Generate spreadsheet binary write buffer
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `wawasan_submissions_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      
+      const downloadName = targetOrders.length === 1
+        ? `Invoice_${targetOrders[0].invoiceNo || targetOrders[0].id?.substring(0, 8) || 'Order'}.xlsx`
+        : `Wawasan_Invoices_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      link.setAttribute('download', downloadName);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -386,7 +465,7 @@ export function AdminTablesTab({
 
       toast({
         title: isBm ? 'Kejayaan' : 'Success',
-        description: isBm ? 'Fail Excel berjaya dimuat turun' : 'Excel file downloaded successfully',
+        description: isBm ? 'Fail Excel berjaya dimuat turun menggunakan template' : 'Excel file downloaded successfully using the template',
         variant: 'success',
       });
     } catch (err) {
