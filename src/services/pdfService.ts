@@ -790,7 +790,7 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
     doc.rect(15, currentY, 180, rowHeight, 'S');
 
     [xQty, xNotes, xMenu, xMealsStart, ...activeMeals.map((_, i) => xMealsStart + i * 15), xRM].forEach(x => {
-      if (x > xDate && x < xRM + colRM && x !== xNotes || (includeNotes && x === xNotes)) {
+      if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
         doc.line(x, currentY, x, currentY + rowHeight);
       }
     });
