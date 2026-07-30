@@ -66,3 +66,40 @@ export async function safeCopyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+/**
+ * Safely converts any value to JSON string without throwing Uncaught TypeError
+ * on circular structures, DOM elements, or custom objects.
+ */
+export function safeJsonStringify(value: unknown, space?: number | string): string {
+  const seen = new WeakSet();
+  return JSON.stringify(
+    value,
+    (key, val) => {
+      if (typeof val === 'bigint') {
+        return val.toString();
+      }
+      if (typeof val === 'object' && val !== null) {
+        // Handle Firestore timestamp objects or objects with custom toDate
+        if ('toDate' in val && typeof (val as { toDate?: unknown }).toDate === 'function') {
+          return (val as { toDate: () => Date }).toDate().toISOString();
+        }
+        // Handle DOM nodes / HTML elements / window / synthetic events
+        if (
+          'nodeType' in val ||
+          ('src' in val && 'width' in val && 'height' in val) ||
+          (typeof window !== 'undefined' && (val === window || val instanceof HTMLElement))
+        ) {
+          return '[Object]';
+        }
+        // Guard against circular references
+        if (seen.has(val)) {
+          return '[Circular]';
+        }
+        seen.add(val);
+      }
+      return val;
+    },
+    space
+  );
+}
+

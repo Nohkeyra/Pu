@@ -806,7 +806,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       {/* Content Scrollable Area */}
       <motion.div 
         className={cn(
-          "flex-1 p-6 space-y-8 font-sans",
+          "flex-1 p-6 md:p-8 space-y-6 md:space-y-8 font-sans",
           isEmbedded ? "overflow-y-visible" : "overflow-y-auto pb-24"
         )}
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
@@ -815,26 +815,26 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         
         {/* Dashboard Headers & Summary */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
+          <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
             <span className="text-[10px] text-stone dark:text-stone/60 uppercase tracking-wider font-black mb-1.5">{t('Total', 'Jumlah')}</span>
-            <span className="text-2xl font-display font-black text-deep-forest ">{orders.length}</span>
+            <span className="text-2xl font-display font-black text-deep-forest dark:text-white">{orders.length}</span>
           </div>
-          <div className="bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
+          <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
             <span className="text-[10px] text-sunshine uppercase tracking-wider font-black mb-1.5">{t('Active', 'Aktif')}</span>
             <span className="text-2xl font-display font-black text-sunshine">
               {orders.filter(o => ['approved', 'pending'].includes(o.status || 'pending')).length}
             </span>
           </div>
-          <div className="bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
+          <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
             <span className="text-[10px] text-kiwi uppercase tracking-wider font-black mb-1.5">{t('Billed', 'Dibilkan')}</span>
-            <span className="text-2xl font-display font-black text-deep-forest ">
+            <span className="text-2xl font-display font-black text-deep-forest dark:text-white">
               {orders.filter(o => ['billed'].includes(o.status || '')).length}
             </span>
           </div>
         </div>
 
         {/* FEATURED DISH (FOOD-FIRST UX) */}
-        <div className="bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl p-5 flex gap-5 items-center shadow-premium relative overflow-hidden group">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex gap-5 items-center shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 opacity-10">
             <Utensils className="w-12 h-12 rotate-12" />
           </div>
@@ -844,13 +844,13 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                <div className="w-1.5 h-1.5 rounded-full bg-sunshine animate-pulse" />
                {t('Daily Special', 'Istimewa Hari Ini')}
              </span>
-             <h4 className="font-display font-black text-deep-forest  text-lg leading-tight">Nasi Lemak Ayam Berempah</h4>
+             <h4 className="font-display font-black text-deep-forest dark:text-white text-lg leading-tight">Nasi Lemak Ayam Berempah</h4>
              <p className="text-xs text-stone dark:text-stone/70 mt-1 font-medium">{t('Perfect for your next catering event.', 'Pilihan tepat untuk katering anda.')}</p>
           </div>
         </div>
 
         {/* 1. PROFILE PROFILE MANAGEMENT */}
-        <div className="bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl p-7 relative overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-7 relative overflow-hidden shadow-sm">
           <div className="absolute top-0 right-0 p-4">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -997,8 +997,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
 
         {/* 2. NOTIFICATION SETTINGS */}
-        <div className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm">
-          <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white mb-6 flex items-center gap-2">
             <Bell className="w-4 h-4 text-sunshine" />
             {tGlobal('notification_settings')}
           </h3>
@@ -1007,10 +1007,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             {/* Order Status Updates */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <label className="text-sm font-semibold text-deep-forest block">
+                <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('order_status_updates')}
                 </label>
-                <span className="text-[10px] text-stone leading-none">
+                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
                   {tGlobal('order_status_desc')}
                 </span>
               </div>
@@ -1025,10 +1025,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             {/* Billed Updates */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <label className="text-sm font-semibold text-deep-forest block">
+                <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('billed_updates')}
                 </label>
-                <span className="text-[10px] text-stone leading-none">
+                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
                   {tGlobal('billed_updates_desc')}
                 </span>
               </div>
@@ -1041,10 +1041,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             {/* Cancel Approval Updates */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <label className="text-sm font-semibold text-deep-forest block">
+                <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('cancel_approval')}
                 </label>
-                <span className="text-[10px] text-stone leading-none">
+                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
                   {tGlobal('cancel_approval_desc')}
                 </span>
               </div>
@@ -1068,9 +1068,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
 
         {/* 2.5 SAVED LOCATIONS */}
-        <div className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest  flex items-center gap-2">
+            <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
               <MapPin className="w-4 h-4 text-sunshine" />
               {tGlobal('saved_locations')}
             </h3>
@@ -1084,7 +1084,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   setNewLocationAddress('');
                   setIsAddingLocation(true);
                 }}
-                className="h-8 rounded-xl text-xs flex items-center gap-1.5 border-sunshine/30 hover:border-sunshine text-deep-forest  dark:hover:bg-cream/10"
+                className="h-8 rounded-xl text-xs flex items-center gap-1.5 border-sunshine/30 hover:border-sunshine text-deep-forest dark:text-white/90 dark:hover:bg-cream/10"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t('Add New', 'Tambah Baru')}
@@ -1214,8 +1214,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
 
         {/* 2.6 HELP & SUPPORT FAQ */}
-        <div className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest  flex items-center gap-2">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
             <Sliders className="w-4 h-4 text-sunshine" />
             {tGlobal('help_support')}
           </h3>
@@ -1235,8 +1235,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 a: t('Cancellations can be requested from your bookings panel and must be approved by the admin.', 'Pembatalan boleh diminta dari panel rekod tempahan anda dan mesti diluluskan oleh admin.')
               }
             ].map((faq, i) => (
-              <details key={i} className="group border-b border-border/55 last:border-0 pb-3.5 last:pb-0 text-xs">
-                <summary className="flex justify-between items-center font-semibold cursor-pointer list-none text-deep-forest  hover:text-sunshine transition-colors">
+              <details key={i} className="group border-b border-stone/15 dark:border-white/10 last:border-0 pb-3.5 last:pb-0 text-xs">
+                <summary className="flex justify-between items-center font-semibold cursor-pointer list-none text-deep-forest dark:text-white hover:text-sunshine dark:hover:text-sunshine transition-colors">
                   <span>{faq.q}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-stone dark:text-stone/50 group-open:rotate-180 transition-transform duration-200" />
                 </summary>
@@ -1251,7 +1251,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 href="https://wa.me/60123456789" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-full h-11 border border-sunshine/40 hover:bg-sunshine/5 hover:border-sunshine text-deep-forest  rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent decoration-transparent hover:no-underline"
+                className="w-full h-11 border border-sunshine/40 hover:bg-sunshine/5 hover:border-sunshine text-deep-forest dark:text-white/90 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent decoration-transparent hover:no-underline"
               >
                 <Utensils className="w-4 h-4 text-sunshine" />
                 {tGlobal('contact_support_whatsapp')}
@@ -1263,7 +1263,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {/* 3. ORDER HISTORY SECTION */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-            <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest flex items-center gap-2">
+            <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
               <History className="w-4 h-4 text-sunshine" />
               {t('Catering Order History', 'Sejarah Tempahan Katering')}
             </h3>
@@ -1280,7 +1280,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   }}
                   className="scale-90"
                 />
-                <label htmlFor="user-select-mode" className="text-[10px] font-bold text-deep-forest/80 cursor-pointer select-none">
+                <label htmlFor="user-select-mode" className="text-[10px] font-bold text-deep-forest/80 dark:text-white/80 cursor-pointer select-none">
                   {t('Select Mode', 'Mod Pilih')}
                 </label>
               </div>
@@ -1307,7 +1307,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           {isLoadingOrders ? (
             <div className="space-y-4">
               {Array.from({ length: 2 }).map((_, idx) => (
-                <div key={idx} className="bg-white dark:bg-card border border-border rounded-3xl p-5 space-y-4 shadow-sm">
+                <div key={idx} className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 space-y-4 shadow-sm">
                   <div className="flex justify-between items-start gap-2">
                     <div className="space-y-1.5 flex-1">
                       <Skeleton className="h-3 w-1/4 rounded bg-black/5" />
@@ -1315,7 +1315,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                     </div>
                     <Skeleton className="h-5 w-16 rounded-full bg-black/5" />
                   </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 border-t border-border pt-4">
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 border-t border-stone/15 dark:border-white/10 pt-4">
                     <div className="space-y-1">
                       <Skeleton className="h-2.5 w-1/3 rounded bg-black/5" />
                       <Skeleton className="h-3.5 w-1/2 rounded bg-black/5" />
@@ -1329,8 +1329,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               ))}
             </div>
           ) : orders.length === 0 ? (
-            <div className="bg-white dark:bg-card border border-border rounded-3xl p-8 text-center shadow-sm">
-              <p className="text-xs text-stone font-medium">
+            <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-xs text-stone dark:text-stone/70 font-medium">
                 {t('No past catering orders found.', 'Tiada rekod tempahan katering dijumpai.')}
               </p>
             </div>
@@ -1340,8 +1340,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 <div 
                   key={order.id || `order-${idx}`}
                   className={cn(
-                    "bg-white dark:bg-card border rounded-3xl p-5 transition-all duration-300 space-y-4 shadow-sm",
-                    (isSelectMode && selectedOrders.has(order.id!)) ? 'border-sunshine ring-1 ring-sunshine' : 'border-border hover:border-sunshine/30'
+                    "bg-white dark:bg-card border rounded-2xl p-5 transition-all duration-300 space-y-4 shadow-sm",
+                    (isSelectMode && selectedOrders.has(order.id!)) ? 'border-sunshine ring-1 ring-sunshine' : 'border-stone/15 dark:border-white/10 hover:border-sunshine/30'
                   )}
                 >
                   {/* Top Row: Invoice + Status */}
@@ -1364,7 +1364,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                         <span className="text-[10px] text-sunshine font-mono font-bold tracking-wider block">
                           {order.invoiceNo || `RW-${order.id!.slice(0, 8).toUpperCase()}`}
                         </span>
-                        <span className="font-display font-bold text-sm text-deep-forest block mt-0.5">
+                        <span className="font-display font-bold text-sm text-deep-forest dark:text-white block mt-0.5">
                           {order.menu || 'Set box katering'} ({order.quantity} Pax)
                         </span>
                       </div>
@@ -1374,7 +1374,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                          {getStatusText(order.status || 'menunggu')}
                        </span>
                        {order.totalAmount && (
-                         <span className="text-xs font-bold text-deep-forest">
+                         <span className="text-xs font-bold text-deep-forest dark:text-white">
                            RM {Number(order.totalAmount).toFixed(2)}
                          </span>
                        )}
@@ -1382,19 +1382,19 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   </div>
 
                   {/* Info block */}
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-[10px] border-t border-border pt-4">
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-[10px] border-t border-stone/15 dark:border-white/10 pt-4">
                     <div>
-                      <span className="block text-[8px] text-stone uppercase font-bold">{t('Event Date', 'Tarikh Acara')}</span>
-                      <span className="font-medium text-deep-forest">{renderOrderDate(order.date)}</span>
+                      <span className="block text-[8px] text-stone dark:text-stone/60 uppercase font-bold">{t('Event Date', 'Tarikh Acara')}</span>
+                      <span className="font-medium text-deep-forest dark:text-white/90">{renderOrderDate(order.date)}</span>
                     </div>
                     <div>
-                      <span className="block text-[8px] text-stone uppercase font-bold">{t('Location', 'Lokasi')}</span>
-                      <span className="font-medium text-deep-forest truncate block max-w-[150px]">{order.location || '—'}</span>
+                      <span className="block text-[8px] text-stone dark:text-stone/60 uppercase font-bold">{t('Location', 'Lokasi')}</span>
+                      <span className="font-medium text-deep-forest dark:text-white/90 truncate block max-w-[150px]">{order.location || '—'}</span>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 border-t border-border pt-4 flex-wrap">
+                  <div className="flex gap-2 border-t border-stone/15 dark:border-white/10 pt-4 flex-wrap">
                     {/* Request Invoice Email ("Poke" Feature) */}
                     {order.invoiceEmailRequested && !order.invoiceEmailHandled ? (
                       <span className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5">
@@ -1425,9 +1425,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                     {/* Download PDF */}
                     <button
                       onClick={() => setPreviewOrder(order)}
-                      className="flex-1 min-w-[80px] h-10 bg-cream border border-border text-xs text-deep-forest hover:text-sunshine hover:border-sunshine/30 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 font-semibold"
+                      className="flex-1 min-w-[80px] h-10 bg-cream border border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white/90 hover:text-sunshine hover:border-sunshine/30 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 font-semibold"
                     >
-                      <FileDown className="w-4 h-4 text-stone" />
+                      <FileDown className="w-4 h-4 text-stone dark:text-stone/70" />
                       {t('Invoice PDF', 'Invois PDF')}
                     </button>
 
@@ -1493,7 +1493,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className={cn(
-              "absolute bottom-6 left-6 right-6 bg-sunshine border border-border/10 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between z-50 overflow-hidden",
+              "absolute bottom-6 left-6 right-6 bg-sunshine border border-white/10 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between z-50 overflow-hidden",
               isEmbedded && "bottom-4 left-4 right-4"
             )}
           >
@@ -1532,13 +1532,13 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-sm bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-2xl space-y-6"
+            className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-2xl space-y-6"
           >
             <div className="space-y-2">
-              <h3 className="font-display font-bold text-lg text-deep-forest">
+              <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
                 {t('Invoice Layout', 'Susun Atur Invois')}
               </h3>
-              <p className="text-xs text-stone leading-relaxed">
+              <p className="text-xs text-stone dark:text-stone/75 leading-relaxed">
                 {t('Would you like to include the "Notes" section in this consolidated invoice?', 'Adakah anda ingin memasukkan bahagian "Nota" dalam invois gabungan ini?')}
               </p>
             </div>

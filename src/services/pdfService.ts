@@ -202,22 +202,23 @@ export const drawCreamBox = (
   doc.setTextColor(140, 101, 16);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.text(label, x + 4, y + 5);
+  doc.text(label, x + 4, y + 4.8);
 
   // 4. Draw content (charcoal, normal/bold)
   doc.setTextColor(26, 24, 22);
   doc.setFont('helvetica', isBoldContent ? 'bold' : 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
 
   const maxTextWidth = w - 8;
-  const splitLines = doc.splitTextToSize(content || '', maxTextWidth);
-  const maxVisibleLines = Math.floor((h - 11) / 4.5);
+  const contentText = content || '-';
+  const splitLines = doc.splitTextToSize(contentText, maxTextWidth);
+  const maxVisibleLines = Math.max(1, Math.floor((h - 5) / 4.2));
   splitLines.forEach((line: string, idx: number) => {
     if (idx < maxVisibleLines) {
       const displayLine = (idx === maxVisibleLines - 1 && splitLines.length > maxVisibleLines)
         ? line.slice(0, -3) + '...'
         : line;
-      doc.text(displayLine, x + 4, y + 11 + (idx * 4.5));
+      doc.text(displayLine, x + 4, y + 9.8 + (idx * 4.2));
     }
   });
 };

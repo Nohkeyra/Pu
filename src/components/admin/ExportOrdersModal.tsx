@@ -9,6 +9,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import type { Order, ExportColumnOptions } from '@/types';
 import type { ToastVariant } from '@/components/ui/Toast';
+import { safeJsonStringify } from '@/lib/utils';
 
 interface ExportOrdersModalProps {
   isOpen: boolean;
@@ -75,18 +76,7 @@ export function ExportOrdersModal({
       }
 
       if (exportFormat === 'json') {
-        const jsonStr = JSON.stringify(
-          targetOrders,
-          (key, value) => {
-            if (typeof value === 'object' && value !== null) {
-              if ('toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
-                return (value as { toDate: () => Date }).toDate().toISOString();
-              }
-            }
-            return value;
-          },
-          2
-        );
+        const jsonStr = safeJsonStringify(targetOrders, 2);
         const fileName = `Wawasan_Orders_Export_${format(new Date(), 'yyyyMMdd_HHmm')}.json`;
         
         if (Capacitor.isNativePlatform()) {
@@ -199,7 +189,7 @@ export function ExportOrdersModal({
     <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4">
       <div onClick={onClose} className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm" />
 
-      <div className="relative w-full max-w-lg bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-3xl p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone/10 pb-4">

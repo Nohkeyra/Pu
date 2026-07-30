@@ -30,7 +30,7 @@ import {
   MessageSquare,
   Activity,
   RefreshCw,
-  Palette,
+  Table,
   Sun,
   Moon,
   Bell
@@ -56,7 +56,7 @@ import { measureDbLatency } from '@/utils/diagnostics';
 import type { Order } from '@/types';
 import { AdminOrdersTab } from './admin/AdminOrdersTab';
 import { AdminDiagnosticsTab } from './admin/AdminDiagnosticsTab';
-import { AdminBrandingTab } from './admin/AdminBrandingTab';
+import { AdminTablesTab } from './admin/AdminTablesTab';
 
 interface SerializedOrder extends Omit<Order, 'createdAt'> {
   createdAt: { seconds: number; nanoseconds: number } | null;
@@ -83,7 +83,7 @@ const getDisplayInvoiceNo = (order: Order): string => {
 
 export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void }) {
   const { t, language } = useLanguage();
-  const { theme, toggleTheme, accent, updateAccentInDb } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -137,7 +137,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     loading: boolean;
   }>({ ok: false, loading: true });
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'branding'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'tables'>('orders');
 
   // Real-time synchronization and Firestore WebSocket monitoring status
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
@@ -275,23 +275,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           console.warn('Eruda destroy error:', e);
         }
       }
-    }
-  };
-
-  const handleAccentChange = async (newAccent: 'sunshine' | 'kiwi') => {
-    try {
-      await updateAccentInDb(newAccent, adminToken);
-      toast({
-        title: 'Branding Updated',
-        description: `Theme accent color switched to ${newAccent === 'sunshine' ? 'Sunshine Orange' : 'Kiwi Green'} successfully.`,
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Could not update global branding setting.';
-      toast({
-        title: 'Branding Update Failed',
-        description: errorMessage,
-        variant: 'error',
-      });
     }
   };
 
@@ -1319,13 +1302,15 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       }
     })();
 
-    const status = order.status ? order.status.toLowerCase() : '';
+    const status = order.status ? String(order.status).toLowerCase() : '';
     const isCancelled = status === 'cancelled' || status === 'dibatalkan';
 
     const matchesSearch = (
-      order.to.toLowerCase().includes(sLower) ||
-      order.name.toLowerCase().includes(sLower) ||
-      order.email.toLowerCase().includes(sLower) ||
+      (order.to || '').toLowerCase().includes(sLower) ||
+      (order.name || '').toLowerCase().includes(sLower) ||
+      (order.email || '').toLowerCase().includes(sLower) ||
+      (order.orderId || '').toLowerCase().includes(sLower) ||
+      (order.officialInvoiceNo || order.invoiceNo || '').toLowerCase().includes(sLower) ||
       dateMatch
     );
 
@@ -1380,7 +1365,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
         <div className="space-y-4">
           <Skeleton className="h-12 w-full rounded-xl" />
-          <div className="bg-white/50 dark:bg-card/50 rounded-3xl border border-border p-1 space-y-1">
+          <div className="bg-white/50 dark:bg-card/50 rounded-2xl border border-stone/15 dark:border-white/10 p-1 space-y-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full rounded-2xl" />
             ))}
@@ -1408,11 +1393,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </motion.div>
 
       {/* Header */}
-      <header className="[grid-area:header] z-50 bg-white dark:bg-background border-b border-deep-forest/[0.03] dark:border-white/5 pt-[var(--sat)]">
+      <header className="[grid-area:header] z-50 bg-white dark:bg-background border-b border-stone/15 dark:border-white/10 pt-[var(--sat)]">
         <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
           <div className="flex items-center gap-4">
             <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer transition-all hover:opacity-80">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-sm border border-deep-forest/5">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-sm border border-stone/15 dark:border-white/10">
                 <img
                   src={getAssetUrl("/assets/wawasan_logo.jpg")}
                   alt="Restoran Wawasan Logo"
@@ -1472,7 +1457,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         </div>
 
         {/* Subtle Syncing Indicator Bar */}
-        <div className={`w-full h-8 px-6 md:px-12 border-t border-deep-forest/[0.03] dark:border-white/5 flex items-center justify-between text-xs font-semibold transition-all duration-300 ${
+        <div className={`w-full h-8 px-6 md:px-12 border-t border-stone/15 dark:border-white/10 flex items-center justify-between text-xs font-semibold transition-all duration-300 ${
           syncStatus === 'connected' 
             ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' 
             : syncStatus === 'syncing'
@@ -1520,7 +1505,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </header>
 
       {/* Sidebar Navigation */}
-      <nav className="[grid-area:nav] p-6 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-deep-forest/[0.03] dark:border-white/5 relative overflow-hidden flex flex-col justify-start">
+      <nav className="[grid-area:nav] p-6 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
         {/* Background Batik Pattern for Tab Navigation Bar */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <Batik3DMotion
@@ -1617,14 +1602,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               <span className="z-10">Diagnostics</span>
             </button>
             <button
-              onClick={() => setActiveTab('branding')}
+              onClick={() => setActiveTab('tables')}
               className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'branding'
+                activeTab === 'tables'
                   ? 'text-sunshine'
                   : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
-              {activeTab === 'branding' && (
+              {activeTab === 'tables' && (
                 <motion.div
                   layoutId="adminActiveTab"
                   className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
@@ -1647,8 +1632,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   }}
                 />
               )}
-              <Palette className="w-4 h-4 z-10" />
-              <span className="z-10">Branding</span>
+              <Table className="w-4 h-4 z-10" />
+              <span className="z-10">Tables View</span>
             </button>
           </div>
         </div>
@@ -1669,19 +1654,19 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   ? t('orders') 
                   : activeTab === 'diagnostics' 
                   ? 'Diagnostics' 
-                  : 'Branding'}
+                  : 'Submissions Table'}
               </h1>
               <p className="text-deep-forest/50 text-sm">
                 {activeTab === 'orders' 
                   ? t('orders_subtitle') 
                   : activeTab === 'diagnostics' 
                   ? 'Run system diagnostics, API connection probes, and trace telemetry.' 
-                  : 'Personalize the administrative workspace palette, accent theme, and visual styling.'}
+                  : 'Jotform-style submission grid with customizable columns, inline status editing, and CSV exports.'}
               </p>
             </div>
             
             {calendarState.loading ? (
-              <div className="flex items-center gap-2 px-4 py-2 bg-cream dark:bg-background/5 text-deep-forest/50 border border-deep-forest/10 rounded-md">
+              <div className="flex items-center gap-2 px-4 py-2 bg-cream dark:bg-background/5 text-deep-forest/50 border border-stone/15 dark:border-white/10 rounded-md">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm font-medium">Checking Calendar Sync...</span>
               </div>
@@ -1782,9 +1767,17 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               setDiagTests={setDiagTests}
             />
           ) : (
-            <AdminBrandingTab
-              accent={accent}
-              onAccentChange={handleAccentChange}
+            <AdminTablesTab
+              orders={orders}
+              language={language}
+              openOrderDetail={openOrderDetail}
+              handlePreviewPDF={handlePreviewPDF}
+              handleDownloadPDF={handleDownloadPDF}
+              handleDelete={handleDelete}
+              fetchOrders={fetchOrders}
+              authHeaders={authHeaders}
+              getApiUrl={getApiUrl}
+              toast={toast}
             />
           )}
         </div>
