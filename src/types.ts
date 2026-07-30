@@ -76,7 +76,11 @@ export interface Order {
   location: string;
   quantity: number;
   meals: ('breakfast' | 'lunch' | 'hi_tea' | string)[];
-  preparationType: 'meal_box' | 'buffet';
+  // Optional: not yet collected by the current OrderForm UI (no meal_box vs
+  // buffet selector exists client-side). Server (firebaseAdmin.ts OrderData)
+  // already treats this as optional; keeping it required here broke every
+  // order-creation call site (OrderForm submission, testData fixtures).
+  preparationType?: 'meal_box' | 'buffet';
   menu?: string;
   notes?: string;
   prices?: Record<string, number>;
@@ -91,6 +95,14 @@ export interface Order {
   billedAt?: string;
   cancelledAt?: string;
   rejectedAt?: string;
+  delivery?: 'delivery' | 'pickup';
+  // "Poke"/request-invoice-email feature (UserProfileDashboard + server.ts
+  // /api/orders/poke) reads/writes these fields but they were missing from
+  // the shared Order type, causing TS2339 errors.
+  invoiceEmailRequested?: boolean;
+  invoiceEmailRequestedAt?: string;
+  invoiceEmailHandled?: boolean;
+  invoiceEmailSentAt?: string;
 }
 
 export interface CombinedInvoicePayload {
