@@ -9,9 +9,6 @@ import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
@@ -183,192 +180,181 @@ export function AdminOrdersTab({
         </div>
       )}
 
-      {/* Search & Bulk Select Action Bar */}
-      <div className="mb-3 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-deep-forest/40" />
-          <Input
-            placeholder={t('search_placeholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 shadow-sm text-deep-forest placeholder:text-deep-forest/30 focus:border-sunshine/50"
-          />
-        </div>
-        <div className="flex items-center gap-3 justify-between sm:justify-end">
-          <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl h-10 shrink-0">
-            <Switch
-              id="select-mode-toggle"
-              checked={isSelectMode}
-              onCheckedChange={(checked) => {
-                setIsSelectMode(checked);
-                if (!checked) {
-                  setSelectedOrderIds(new Set());
-                }
-              }}
+      {/* Streamlined Compact Toolbar (Matching Table View Style) */}
+      <div className="mb-4 bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-2xl p-3 shadow-sm space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-deep-forest/40 dark:text-stone/40" />
+            <Input
+              placeholder={t('search_placeholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-deep-forest/40 focus:ring-1 focus:ring-sunshine/50 rounded-xl"
             />
-            <label htmlFor="select-mode-toggle" className="text-xs font-bold text-deep-forest/80 cursor-pointer select-none">
-              {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
-            </label>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-deep-forest/40 hover:text-deep-forest dark:text-stone/40 dark:hover:text-white"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          {isSelectMode && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl h-10 shrink-0" title="Auto-tapis order dengan emel yang sama sahaja">
+          {/* Inline Compact Filter Dropdowns & Mode Toggles */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
+              <Filter className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+              >
+                <option value="all">{language === 'bm' ? 'Semua Status' : 'All Statuses'}</option>
+                <option value="pending">{t('pending') || 'Pending'}</option>
+                <option value="approved">{t('approved') || 'Approved'}</option>
+                <option value="billed">{t('billed') || 'Billed'}</option>
+                <option value="rejected">{t('rejected') || 'Rejected'}</option>
+                <option value="cancel_requested">{t('cancel_requested') || 'Cancel Requested'}</option>
+                <option value="cancelled">{t('cancelled') || 'Cancelled'}</option>
+              </select>
+            </div>
+
+            {/* Client Filter */}
+            {clientOptions.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9 max-w-[170px]">
+                <select
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer truncate w-full"
+                >
+                  <option value="all">{language === 'bm' ? 'Semua Klien' : 'All Clients'}</option>
+                  {clientOptions.map((client) => (
+                    <option key={client} value={client}>{client}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Clear Filter Button */}
+            {(statusFilter !== 'all' || clientFilter !== 'all' || dateFromFilter || dateToFilter) && (
+              <button
+                onClick={() => {
+                  setStatusFilter('all');
+                  setClientFilter('all');
+                  setDateFromFilter('');
+                  setDateToFilter('');
+                }}
+                className="h-9 w-9 flex items-center justify-center text-rose-500 hover:bg-rose-500/10 rounded-xl text-xs font-bold transition-all border border-rose-500/20"
+                title={language === 'bm' ? 'Reset Tapisan' : 'Reset Filters'}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Select Mode Switch */}
+            <div className="flex items-center gap-2 px-3 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-9">
               <Switch
-                id="email-filter-toggle"
-                checked={filterBySameEmail}
+                id="select-mode-toggle"
+                checked={isSelectMode}
                 onCheckedChange={(checked) => {
-                  if (setFilterBySameEmail) setFilterBySameEmail(checked);
+                  setIsSelectMode(checked);
+                  if (!checked) {
+                    setSelectedOrderIds(new Set());
+                  }
                 }}
               />
-              <label htmlFor="email-filter-toggle" className="text-xs font-bold text-deep-forest/80 cursor-pointer select-none">
-                {language === 'bm' ? 'Emel Sama Sahaja' : 'Same Email Only'}
+              <label htmlFor="select-mode-toggle" className="text-xs font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none">
+                {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
               </label>
             </div>
-          )}
 
-          {isSelectMode && filteredOrders.length > 0 && (
+            {isSelectMode && (
+              <div className="flex items-center gap-2 px-3 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-9">
+                <Switch
+                  id="email-filter-toggle"
+                  checked={filterBySameEmail}
+                  onCheckedChange={(checked) => {
+                    if (setFilterBySameEmail) setFilterBySameEmail(checked);
+                  }}
+                />
+                <label htmlFor="email-filter-toggle" className="text-xs font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none">
+                  {language === 'bm' ? 'Emel Sama' : 'Same Email'}
+                </label>
+              </div>
+            )}
+
+            {isSelectMode && filteredOrders.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allSelected = filteredOrders.length > 0 && filteredOrders.every(o => o.id && selectedOrderIds.has(o.id));
+                  if (allSelected) {
+                    setSelectedOrderIds(new Set());
+                    return;
+                  }
+                  const distinctClients = new Set(filteredOrders.map(o => o.to));
+                  if (distinctClients.size > 1) {
+                    toast({
+                      title: t('error') || 'Error',
+                      description: language === 'bm'
+                        ? 'Paparan semasa merangkumi lebih daripada satu klien. Sila gunakan tapisan Klien untuk pilih satu klien sahaja sebelum "Select All".'
+                        : 'The current view spans more than one client. Please use the Client filter to narrow to a single client before "Select All".',
+                      variant: 'error'
+                    });
+                    return;
+                  }
+                  let toSelect = filteredOrders.filter(o => Boolean(o.id));
+                  if (filterBySameEmail) {
+                    const firstWithEmail = toSelect.find(o => Boolean(o.email));
+                    if (firstWithEmail && firstWithEmail.email) {
+                      const targetEmail = String(firstWithEmail.email).trim().toLowerCase();
+                      toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === targetEmail);
+                    }
+                  }
+                  setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
+                }}
+                className="border-stone/15 dark:border-white/10 bg-cream/60 dark:bg-background/40 text-deep-forest dark:text-white hover:bg-sunshine/10 text-xs font-semibold h-9 px-3 rounded-xl flex items-center gap-1.5 !min-h-0"
+              >
+                {filteredOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-sunshine" />
+                    {t('deselect_all') || 'Deselect'}
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-deep-forest/40" />
+                    {t('select_all_orders') || 'Select All'}
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Export CSV Button */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                const allSelected = filteredOrders.length > 0 && filteredOrders.every(o => o.id && selectedOrderIds.has(o.id));
-                if (allSelected) {
-                  setSelectedOrderIds(new Set());
-                  return;
-                }
-                const distinctClients = new Set(filteredOrders.map(o => o.to));
-                if (distinctClients.size > 1) {
-                  toast({
-                    title: t('error') || 'Error',
-                    description: language === 'bm'
-                      ? 'Paparan semasa merangkumi lebih daripada satu klien. Sila gunakan tapisan Klien untuk pilih satu klien sahaja sebelum "Select All", kerana invois konsolidasi hanya untuk satu klien.'
-                      : 'The current view spans more than one client. Please use the Client filter to narrow to a single client before "Select All" — consolidated invoices are limited to one client at a time.',
-                    variant: 'error'
-                  });
-                  return;
-                }
-                let toSelect = filteredOrders.filter(o => Boolean(o.id));
-                if (filterBySameEmail) {
-                  const firstWithEmail = toSelect.find(o => Boolean(o.email));
-                  if (firstWithEmail && firstWithEmail.email) {
-                    const targetEmail = firstWithEmail.email.trim().toLowerCase();
-                    toSelect = toSelect.filter(o => (o.email || '').trim().toLowerCase() === targetEmail);
-                  }
-                }
-                setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
-              }}
-              className="border-stone/15 dark:border-white/5 bg-white dark:bg-card text-deep-forest hover:bg-sunshine/10 text-xs font-bold shrink-0 h-10 px-4 rounded-xl flex items-center gap-1.5"
+              onClick={() => setIsExportOpen(true)}
+              className="border-sunshine/30 bg-sunshine/10 text-deep-forest dark:text-sunshine hover:bg-sunshine/20 text-xs font-bold h-9 px-3.5 rounded-xl flex items-center gap-1.5 !min-h-0"
             >
-              {filteredOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-sunshine" />
-                  {t('deselect_all') || 'Deselect All'}
-                </>
-              ) : (
-                <>
-                  <Check className="w-3.5 h-3.5 text-deep-forest/40" />
-                  {t('select_all_orders') || 'Select All'}
-                </>
-              )}
+              <FileSpreadsheet className="w-3.5 h-3.5 text-sunshine" />
+              <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
             </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Table Filters: Status / Client / Date Range */}
-      <div className="mb-6 p-4 bg-white dark:bg-card border border-stone/15 dark:border-white/5 shadow-sm rounded-xl flex flex-col lg:flex-row gap-3 lg:items-center">
-        <div className="flex items-center gap-1.5 text-deep-forest/50 shrink-0">
-          <Filter className="w-3.5 h-3.5" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">
-            {language === 'bm' ? 'Tapis' : 'Filters'}
-          </span>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 flex-1 min-w-0">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 text-sm">
-              <SelectValue placeholder={language === 'bm' ? 'Status' : 'Status'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === 'bm' ? 'Semua Status' : 'All Statuses'}</SelectItem>
-              <SelectItem value="pending">{t('pending') || 'Pending'}</SelectItem>
-              <SelectItem value="approved">{t('approved') || 'Approved'}</SelectItem>
-              <SelectItem value="billed">{t('billed') || 'Billed'}</SelectItem>
-              <SelectItem value="rejected">{t('rejected') || 'Rejected'}</SelectItem>
-              <SelectItem value="cancel_requested">{t('cancel_requested') || 'Cancel Requested'}</SelectItem>
-              <SelectItem value="cancelled">{t('cancelled') || 'Cancelled'}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="h-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 text-sm">
-              <SelectValue placeholder={language === 'bm' ? 'Klien' : 'Client'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{language === 'bm' ? 'Semua Klien' : 'All Clients'}</SelectItem>
-              {clientOptions.map((client) => (
-                <SelectItem key={client} value={client} className="max-w-[280px] truncate">
-                  {client}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Input
-              type="date"
-              value={dateFromFilter}
-              onChange={(e) => setDateFromFilter(e.target.value)}
-              aria-label={language === 'bm' ? 'Dari tarikh' : 'Date from'}
-              className="h-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 text-sm w-[140px]"
-            />
-            <span className="text-deep-forest/30 text-xs shrink-0">{language === 'bm' ? 'hingga' : 'to'}</span>
-            <Input
-              type="date"
-              value={dateToFilter}
-              onChange={(e) => setDateToFilter(e.target.value)}
-              aria-label={language === 'bm' ? 'Hingga tarikh' : 'Date to'}
-              className="h-10 bg-white dark:bg-card border-stone/15 dark:border-white/5 text-sm w-[140px]"
-            />
           </div>
         </div>
-
-        {(statusFilter !== 'all' || clientFilter !== 'all' || dateFromFilter || dateToFilter) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setStatusFilter('all');
-              setClientFilter('all');
-              setDateFromFilter('');
-              setDateToFilter('');
-            }}
-            className="h-10 px-3 text-deep-forest/60 hover:text-red-500 hover:bg-red-500/10 text-xs font-bold shrink-0 flex items-center gap-1.5"
-          >
-            <X className="w-3.5 h-3.5" />
-            {language === 'bm' ? 'Kosongkan Tapisan' : 'Clear Filters'}
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsExportOpen(true)}
-          className="border-stone/15 dark:border-white/5 bg-white dark:bg-card text-deep-forest hover:bg-sunshine/10 text-xs font-bold shrink-0 h-10 px-4 rounded-xl flex items-center gap-1.5"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-sunshine" />
-          {language === 'bm' ? 'Eksport Excel/CSV' : 'Export Excel/CSV'}
-        </Button>
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white dark:bg-card rounded-xl border border-stone/15 dark:border-white/5 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-stone/10 dark:border-white/5 hover:bg-transparent">
+              <TableRow className="bg-cream/70 dark:bg-white/5 border-b border-stone/15 dark:border-white/10 hover:bg-transparent">
                 {isSelectMode && (
-                  <TableHead className="text-deep-forest/60 w-10">
+                  <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs w-10">
                     <input
                       type="checkbox"
                       aria-label={t('select_all') || 'Select all'}
@@ -392,30 +378,30 @@ export function AdminOrdersTab({
                         }
                         setSelectedOrderIds(new Set(filteredOrders.filter(o => o.id).map(o => o.id!)));
                       }}
-                      className="w-4 h-4 accent-sunshine cursor-pointer"
+                      className="w-4 h-4 accent-sunshine cursor-pointer rounded border-stone/30"
                     />
                   </TableHead>
                 )}
-                <TableHead className="text-deep-forest/60 font-bold">{language === 'bm' ? 'Klien' : 'Client'}</TableHead>
-                <TableHead className="text-deep-forest/60 font-bold">{t('date')}</TableHead>
-                <TableHead className="text-deep-forest/60 font-bold">{t('quantity')}</TableHead>
-                <TableHead className="text-deep-forest/60 font-bold">{t('status')}</TableHead>
-                <TableHead className="text-deep-forest/60 font-bold text-right">{t('actions')}</TableHead>
+                <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider">{language === 'bm' ? 'Klien' : 'Client'}</TableHead>
+                <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider">{t('date')}</TableHead>
+                <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider">{t('quantity')}</TableHead>
+                <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider">{t('status')}</TableHead>
+                <TableHead className="text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isSelectMode ? 6 : 5} className="text-center text-deep-forest/60 py-20 bg-stone/5 dark:bg-white/5">
+                  <TableCell colSpan={isSelectMode ? 6 : 5} className="text-center text-deep-forest/60 dark:text-stone/60 py-20 bg-stone/5 dark:bg-white/5">
                     <div className="flex flex-col items-center gap-2">
-                      <p className="text-lg font-display font-bold opacity-80">{t('no_orders')}</p>
-                      <p className="text-xs opacity-50">Try adjusting your filters or search term</p>
+                      <p className="text-lg font-display font-bold opacity-80 text-deep-forest dark:text-white">{t('no_orders')}</p>
+                      <p className="text-xs opacity-50 dark:text-stone/60">Try adjusting your filters or search term</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredOrders.map((order, idx) => (
-                  <TableRow key={order.id || `order-${idx}`} className={`border-stone/10 dark:border-white/5 hover:bg-sunshine/5 ${order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''}`}>
+                  <TableRow key={order.id || `order-${idx}`} className={`border-b border-stone/10 dark:border-white/5 hover:bg-cream/40 dark:hover:bg-white/5 transition-colors ${order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''}`}>
                     {isSelectMode && (
                       <TableCell>
                         <input
@@ -423,17 +409,17 @@ export function AdminOrdersTab({
                           aria-label={t('select_order') || 'Select order'}
                           checked={Boolean(order.id && selectedOrderIds.has(order.id))}
                           onChange={() => handleToggleOrderSelect(order.id)}
-                          className="w-4 h-4 accent-sunshine cursor-pointer"
+                          className="w-4 h-4 accent-sunshine cursor-pointer rounded border-stone/30"
                         />
                       </TableCell>
                     )}
-                    <TableCell className="text-deep-forest/70 max-w-[200px]">
+                    <TableCell className="text-deep-forest dark:text-white font-medium text-xs max-w-[200px]">
                       <span className="block truncate" title={order.to}>{order.to || '-'}</span>
                     </TableCell>
-                    <TableCell className="text-deep-forest/70">
+                    <TableCell className="text-deep-forest/70 dark:text-stone/70 text-xs">
                       {order.dateTime ? format(new Date(order.dateTime), 'PP') : '-'}
                     </TableCell>
-                    <TableCell className="text-deep-forest/70">
+                    <TableCell className="text-deep-forest dark:text-white text-xs font-semibold">
                       {order.quantity} pax
                     </TableCell>
                     <TableCell>
@@ -446,7 +432,7 @@ export function AdminOrdersTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-deep-forest/60 hover:text-sunshine hover:bg-sunshine/10"
+                              className="text-deep-forest/60 dark:text-stone/60 hover:text-sunshine dark:hover:text-sunshine hover:bg-sunshine/10"
                               onClick={() => openOrderDetail(order)}
                             >
                               <Eye className="w-4 h-4" />
@@ -462,7 +448,7 @@ export function AdminOrdersTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-deep-forest/60 hover:text-blue-400 hover:bg-blue-500/10"
+                              className="text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10"
                               onClick={() => handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''))}
                             >
                               <FileText className="w-4 h-4" />
@@ -478,7 +464,7 @@ export function AdminOrdersTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-deep-forest/60 hover:text-green-400 hover:bg-green-500/10"
+                              className="text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10"
                               onClick={() => handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''))}
                               disabled={generatingInvoice === order.id}
                             >
@@ -499,7 +485,7 @@ export function AdminOrdersTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-deep-forest/60 hover:text-sunshine hover:bg-sunshine/10"
+                              className="text-deep-forest/60 dark:text-stone/60 hover:text-sunshine hover:bg-sunshine/10"
                               onClick={() => openSendDialog(order)}
                             >
                               <Send className="w-4 h-4" />
@@ -515,7 +501,7 @@ export function AdminOrdersTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-deep-forest/60 hover:text-red-400 hover:bg-red-500/10"
+                              className="text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10"
                               onClick={() => order.id && handleDelete(order.id)}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -584,12 +570,12 @@ export function AdminOrdersTab({
             onClick={() => setShowConsolidateModal(false)}
             className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-2xl space-y-5">
+          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
             <div className="space-y-1.5">
-              <h3 className="font-display font-bold text-lg text-deep-forest">
+              <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
                 {language === 'bm' ? 'Invois Konsolidasi' : 'Consolidated Invoice'}
               </h3>
-              <p className="text-xs text-stone leading-relaxed">
+              <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
                 {language === 'bm'
                   ? 'Sila sahkan nombor invois dan tetapan lajur nota untuk invois konsolidasi ini.'
                   : 'Confirm invoice number and notes layout for this consolidated invoice.'}
@@ -597,16 +583,16 @@ export function AdminOrdersTab({
             </div>
 
             <div className="space-y-1.5 text-left">
-              <label className="text-xs font-bold text-deep-forest dark:text-stone-200">
+              <label className="text-xs font-bold text-deep-forest dark:text-white">
                 {language === 'bm' ? 'Nombor Invois Konsolidasi (Auto / Boleh Diubah)' : 'Consolidated Invoice Number (Auto / Editable)'}
               </label>
               <Input
                 value={consolidatedInvoiceNo}
                 onChange={(e) => setConsolidatedInvoiceNo && setConsolidatedInvoiceNo(e.target.value)}
                 placeholder="RW0015"
-                className="font-mono bg-white dark:bg-card border-stone/20 focus:border-sunshine text-sm font-bold"
+                className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-sunshine text-sm font-bold text-deep-forest dark:text-white"
               />
-              <p className="text-[11px] text-stone">
+              <p className="text-[11px] text-stone dark:text-stone/70">
                 {language === 'bm'
                   ? 'Nombor ini akan digunakan untuk keseluruhan kelompok invois konsolidasi ini.'
                   : 'This number applies to all pages in this consolidated invoice batch.'}
@@ -616,13 +602,13 @@ export function AdminOrdersTab({
             <div className="space-y-2.5">
               <button
                 onClick={() => handleGenerateConsolidatedInvoice(true, consolidatedInvoiceNo)}
-                className="w-full h-11 bg-sunshine text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
+                className="w-full h-11 bg-sunshine text-charcoal rounded-xl text-sm font-bold hover:bg-sunshine/90 transition-colors"
               >
                 {t('include_notes') || 'Yes, include Notes'}
               </button>
               <button
                 onClick={() => handleGenerateConsolidatedInvoice(false, consolidatedInvoiceNo)}
-                className="w-full h-11 bg-cream border border-border text-deep-forest rounded-xl text-sm font-bold hover:bg-black/5 transition-colors"
+                className="w-full h-11 bg-cream dark:bg-white/10 border border-stone/15 dark:border-white/10 text-deep-forest dark:text-white rounded-xl text-sm font-bold hover:bg-black/5 dark:hover:bg-white/15 transition-colors"
               >
                 {t('exclude_notes') || 'No, hide Notes'}
               </button>

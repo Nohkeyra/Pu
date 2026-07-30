@@ -26,7 +26,7 @@ import {
   Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, safeCopyToClipboard, getAssetUrl } from '@/lib/utils';
+import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { motion, AnimatePresence } from 'motion/react';
@@ -211,8 +211,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       // Restore chosen dishes from previous order text or menu field
       const previousMenuText = asString(initialData.menu).toLowerCase();
-      const matchedDishes = LAUK_UTAMA.filter(d => previousMenuText.includes(d.nameBm.toLowerCase()) || previousMenuText.includes(d.nameEn.toLowerCase()));
-      const matchedVeggies = SAYURAN.filter(v => previousMenuText.includes(v.nameBm.toLowerCase()) || previousMenuText.includes(v.nameEn.toLowerCase()));
+      const matchedDishes = LAUK_UTAMA.filter(d => previousMenuText.includes((d.nameBm || '').toLowerCase()) || previousMenuText.includes((d.nameEn || '').toLowerCase()));
+      const matchedVeggies = SAYURAN.filter(v => previousMenuText.includes((v.nameBm || '').toLowerCase()) || previousMenuText.includes((v.nameEn || '').toLowerCase()));
 
       const restoredMealTypes: ('sarapan' | 'tengahari' | 'hitea')[] = [];
       if (Array.isArray(initialData.meals)) {
@@ -437,7 +437,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         return;
       }
 
-      if (orderState.email.trim().toLowerCase() !== orderState.confirmEmail.trim().toLowerCase()) {
+      if ((orderState.email || '').trim().toLowerCase() !== (orderState.confirmEmail || '').trim().toLowerCase()) {
         triggerWarning();
         toast({ title: tText('Email Mismatch', 'Emel Tidak Sepadan'), description: tText('The confirm email field does not match.', 'Alamat emel pengesahan tidak sepadan.'), variant: 'warning' });
         return;
@@ -531,7 +531,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const response = await fetch(getApiUrl('/api/orders'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
+        body: safeJsonStringify(orderData)
       });
 
       if (!response.ok) {
@@ -562,7 +562,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         const emailResponse = await fetch(getApiUrl('/api/send-invoice'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: safeJsonStringify({
             email: orderData.email,
             name: orderData.name,
             invoiceNo: finalInvoiceNo,
@@ -695,7 +695,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Main Container mirroring Kimi mockup mobile shell but fully responsive on large screens */}
-      <div className="w-full max-w-2xl mx-auto bg-card rounded-3xl border border-stone/10 shadow-2xl overflow-hidden font-sans">
+      <div className="w-full max-w-2xl mx-auto bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-2xl overflow-hidden font-sans">
         
         {/* App Header Bar mirroring Wawasan brand */}
         <div className="bg-charcoal text-white p-5 rounded-b-[24px] shadow-lg border-b border-charcoal/80 relative overflow-hidden">

@@ -446,22 +446,22 @@ export function AdminDiagnosticsTab({
       </div>
 
       {/* Feature Stress Testing Hub */}
-      <div className="p-6 bg-white dark:bg-card border border-deep-forest/[0.03] dark:border-white/5 rounded-2xl shadow-premium space-y-6">
+      <div className="p-6 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl shadow-sm space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-sunshine/10 text-sunshine rounded-xl">
               <Zap className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="font-display font-black text-deep-forest text-lg">Logic & Feature Stress Tests</h4>
-              <p className="text-xs text-stone font-medium">Simulate complex services with dummy data to verify system health</p>
+              <h4 className="font-display font-black text-deep-forest dark:text-white text-lg">Logic & Feature Stress Tests</h4>
+              <p className="text-xs text-stone dark:text-stone/70 font-medium">Simulate complex services with dummy data to verify system health</p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setDiagTests(prev => prev.map(t => ({ ...t, status: 'idle' })))}
-            className="text-[10px] uppercase tracking-widest font-black border-deep-forest/10 hover:bg-sunshine/5 text-deep-forest"
+            className="text-[10px] uppercase tracking-widest font-black border-deep-forest/10 hover:bg-sunshine/5 text-deep-forest dark:text-white"
           >
             Reset Tests
           </Button>
@@ -471,7 +471,7 @@ export function AdminDiagnosticsTab({
           {diagTests.map((test) => (
             <div
               key={test.id}
-              className="group p-4 bg-cream/30 dark:bg-white/[0.03] rounded-xl border border-deep-forest/[0.05] dark:border-white/5 flex items-center justify-between hover:border-sunshine/20 transition-all"
+              className="group p-4 bg-cream/30 dark:bg-white/[0.03] rounded-xl border border-stone/15 dark:border-white/10 flex items-center justify-between hover:border-sunshine/20 transition-all"
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${

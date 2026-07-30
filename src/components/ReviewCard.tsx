@@ -8,7 +8,7 @@ interface ReviewCardProps {
 
 export default function ReviewCard({ text, name, rating }: ReviewCardProps) {
   return (
-    <div className="group relative bg-cream-dark/60 backdrop-blur-md rounded-3xl p-8 min-h-[320px] flex flex-col transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(232,144,37,0.12)] border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-sunshine/40 hover:bg-sunshine/5">
+    <div className="group relative bg-cream-dark/60 dark:bg-card/60 backdrop-blur-md rounded-2xl p-8 min-h-[320px] flex flex-col transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(232,144,37,0.12)] border border-stone/15 dark:border-white/10 hover:border-sunshine/40 hover:bg-sunshine/5">
       <div className="mb-6 opacity-30 group-hover:opacity-100 transition-opacity">
         <Quote className="w-10 h-10 text-sunshine" strokeWidth={1.5} />
       </div>
