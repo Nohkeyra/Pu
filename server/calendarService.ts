@@ -2,10 +2,22 @@ import { google } from "googleapis";
 import { getFirestore, type OrderData } from "./firebaseAdmin.js";
 
 export function getGoogleCalendarClient() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-    ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n")
+  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+    ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
     : undefined;
+  if (email && email.startsWith('"') && email.endsWith('"')) {
+    email = email.slice(1, -1).trim();
+  }
+
+  let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+    ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
+    : undefined;
+  if (privateKey) {
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1).trim();
+    }
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
 
   if (!email || !privateKey) {
     console.warn("GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY not configured. Google Calendar event creation will be skipped.");

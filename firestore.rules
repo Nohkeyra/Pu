@@ -38,7 +38,7 @@ service cloud.firestore {
 
       // ID bounds (F-04 / C-03): regex-anchored so traversal/
       // poison IDs are rejected upstream of any business logic.
-      allow read, write: if false;
+      // (Enforced by the `allow create` regex below.)
 
       // Reads: customer sees only OWN orders; admins see all.
       allow read: if request.auth != null
@@ -105,7 +105,7 @@ service cloud.firestore {
     }
 
     match /orders_archive/{archiveId} {
-      allow read:  if isAdmin();
+      allow read:  if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
       allow write: if false; // Admin SDK only
     }
 

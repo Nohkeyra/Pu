@@ -39,6 +39,7 @@ export const getBMWordsAmount = (num: number): string => {
         const chunkWords = convertLessThanThousand(chunk);
         if (scaleIndex === 0) result = chunkWords;
         else if (scaleIndex === 1) result = (chunk === 1 ? 'Seribu' : chunkWords + ' Ribu') + (result ? ' ' + result : '');
+        else if (scaleIndex === 2) result = (chunk === 1 ? 'Sejuta' : chunkWords + ' Juta') + (result ? ' ' + result : '');
         else result = chunkWords + ' ' + scales[scaleIndex] + (result ? ' ' + result : '');
       }
       n = Math.floor(n / 1000);
