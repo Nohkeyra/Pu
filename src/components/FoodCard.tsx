@@ -12,7 +12,7 @@ interface FoodCardProps {
 
 export default function FoodCard({ name, description, price, image, isBestseller, isSpicy }: FoodCardProps) {
   return (
-    <div className="group relative bg-white dark:bg-card rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-sm border border-stone/15 dark:border-white/10 hover:border-sunshine/30 h-full flex flex-col">
+    <div className="group relative bg-white dark:bg-card rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-premium border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 h-full flex flex-col">
       <div className="relative aspect-[4/3] overflow-hidden">
         <ResponsiveImage
           src={getAssetUrl(image)}
@@ -47,7 +47,7 @@ export default function FoodCard({ name, description, price, image, isBestseller
         <p className="font-body text-sm text-stone dark:text-stone/70 leading-relaxed mb-4 flex-1">
           {description}
         </p>
-        <div className="mt-auto pt-4 border-t border-stone/15 dark:border-white/10">
+        <div className="mt-auto pt-4 border-t border-deep-forest/[0.06] dark:border-white/5">
           <span className="font-display font-bold text-deep-forest dark:text-white/90">
             {price}
           </span>

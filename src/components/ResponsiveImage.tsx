@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ImgHTMLAttributes } from 'react';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
-interface ResponsiveImageProps extends ImgHTMLAttributes<HTMLImageElement> {
+interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;
   alt: string;
   sizes?: string;
@@ -17,10 +17,16 @@ interface ResponsiveImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 /**
  * ResponsiveImage
  * 
- * Uses the original src as fallback, and adds srcSet for responsive variants
- * if they exist at /assets/{name}-{width}w.jpg.
+ * Automatically generates srcset for images in /assets/.
+ * Assumes responsive variants exist at /assets/{name}-{width}w.jpg.
  * 
- * If responsive variants are missing, the original image loads normally.
+ * Usage:
+ *   <ResponsiveImage
+ *     src="/assets/nasi-lemak.jpg"
+ *     alt="Nasi Lemak"
+ *     sizes="(max-width: 768px) 100vw, 50vw"
+ *     className="rounded-2xl"
+ *   />
  */
 export default function ResponsiveImage({
   src,
@@ -37,34 +43,27 @@ export default function ResponsiveImage({
 }: ResponsiveImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [useSrcSet, setUseSrcSet] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Reset states when src changes
-  useEffect(() => {
-    setLoaded(false);
-    setError(false);
-    setUseSrcSet(true);
-  }, [src]);
-
-  const resolvedSrc = getAssetUrl(src);
-
-  // Generate srcSet from the resolved src path
+  // Generate srcSet from the base src path
   // e.g., /assets/nasi-lemak.jpg → /assets/nasi-lemak-400w.jpg, /assets/nasi-lemak-800w.jpg, etc.
-  const basePath = resolvedSrc.replace(/\.[^.]+$/, '');
-  const extension = resolvedSrc.match(/\.[^.]+$/)?.[0] || '.jpg';
+  const basePath = src.replace(/\.[^.]+$/, '');
+  const extension = src.match(/\.[^.]+$/)?.[0] || '.jpg';
 
   const widths = [400, 800, 1200, 1600];
-  const srcSet = useSrcSet
-    ? widths.map((w) => `${basePath}-${w}w${extension} ${w}w`).join(', ')
-    : undefined;
+  const srcSet = widths
+    .map((w) => `${basePath}-${w}w${extension} ${w}w`)
+    .join(', ');
+
+  // Fallback src (original or smallest variant)
+  const fallbackSrc = `${basePath}-400w${extension}`;
 
   useEffect(() => {
     // If the image is already cached, onLoad won't fire — check complete
     if (imgRef.current?.complete) {
       setLoaded(true);
     }
-  }, [resolvedSrc, useSrcSet]);
+  }, []);
 
   if (error) {
     return (
@@ -93,9 +92,8 @@ export default function ResponsiveImage({
         />
       )}
       <img
-        key={useSrcSet ? 'srcset' : 'fallback'}
         ref={imgRef}
-        src={resolvedSrc}
+        src={fallbackSrc}
         srcSet={srcSet}
         sizes={sizes}
         alt={alt}
@@ -105,14 +103,7 @@ export default function ResponsiveImage({
           setLoaded(true);
           onLoad?.();
         }}
-        onError={() => {
-          if (useSrcSet) {
-            console.warn(`Responsive variant load failed for: ${resolvedSrc}, falling back to original source.`);
-            setUseSrcSet(false);
-          } else {
-            setError(true);
-          }
-        }}
+        onError={() => setError(true)}
         className={cn(
           'w-full h-full transition-opacity duration-500',
           loaded ? 'opacity-100' : 'opacity-0',
