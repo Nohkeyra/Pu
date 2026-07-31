@@ -9,6 +9,7 @@ import AdminPanel from '@/components/AdminPanel';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
+import { TransparentLogo } from '@/components/TransparentLogo';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -107,12 +108,13 @@ export default function AdminPage() {
         <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border pt-[var(--sat)]">
           <div className="flex items-center justify-between px-6 md:px-12 h-[72px]">
             <div onClick={() => navigate('/login')} className="flex items-center gap-3 group cursor-pointer">
-              <img
-                src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
-                alt="Restoran Wawasan Logo"
-                className="w-10 h-10 object-contain shrink-0 mix-blend-multiply"
-                referrerPolicy="no-referrer"
-              />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <TransparentLogo
+                  src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
+                  alt="Restoran Wawasan Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
               <div>
                 <span className="font-display font-semibold text-xl text-deep-forest leading-none">
                   Wawasan

@@ -85,6 +85,8 @@ export interface Order {
   prices?: Record<string, number>;
   totalAmount?: number;
   invoiceNo?: string;
+  orderId?: string;
+  officialInvoiceNo?: string;
   lang?: 'en' | 'bm';
   status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected';
   rejectionReason?: string;

@@ -14,6 +14,8 @@ import { SettingsProvider } from './context/SettingsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
+import { RefreshCw } from 'lucide-react';
+import { usePullToRefresh } from './hooks/usePullToRefresh';
 import PushNotificationHandler from './components/PushNotificationHandler';
 import NativeBackButtonHandler from './components/NativeBackButtonHandler';
 import NativeAppListeners from './components/NativeAppListeners';
@@ -123,11 +125,32 @@ function AppContent() {
   const hideNavPaths = ['/', '/login'];
   const showNav = !hideNavPaths.includes(pathname);
 
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      window.dispatchEvent(new CustomEvent('app:global-refresh'));
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+  });
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
       <ScrollToTop />
       <SmoothScrollHandler />
       <ScrollToTopButton />
+
+      {/* Global Pull-to-Refresh Indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div 
+          className="fixed top-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-150"
+          style={{ transform: `translateY(${Math.min(pullDistance, 120)}px)` }}
+        >
+          <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
+            <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
+          </div>
+        </div>
+      )}
+
       <main className={cn("flex-grow", showNav && "pb-[calc(96px+env(safe-area-inset-bottom,16px))]")}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div

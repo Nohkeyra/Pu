@@ -81,8 +81,21 @@ export default function ParticleCanvas() {
     }
 
     let lastTime = performance.now();
+    let isVisible = !document.hidden;
+    const handleVisibility = () => {
+      isVisible = !document.hidden;
+      if (isVisible) {
+        lastTime = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     const animate = (currentTime: number) => {
+      if (!isVisible) {
+        rafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
       const elapsed = currentTime - lastTime;
       lastTime = currentTime;
 
@@ -117,6 +130,7 @@ export default function ParticleCanvas() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibility);
       particlesRef.current = [];
     };
   }, []);

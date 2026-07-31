@@ -36,6 +36,7 @@ import {
   Bell
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { TransparentLogo } from '@/components/TransparentLogo';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -1397,12 +1398,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
           <div className="flex items-center gap-4">
             <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer transition-all hover:opacity-80">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-sm border border-stone/15 dark:border-white/10">
-                <img
+              <div className="w-10 h-10 flex items-center justify-center">
+                <TransparentLogo
                   src={getAssetUrl("/assets/wawasan_logo.jpg")}
                   alt="Restoran Wawasan Logo"
-                  className="w-7 h-7 object-contain mix-blend-multiply"
-                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div>

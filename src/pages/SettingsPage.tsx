@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
+import { TransparentLogo } from '@/components/TransparentLogo';
 import { 
   ArrowLeft, 
   Sun, 
@@ -24,12 +25,13 @@ import { Capacitor } from '@capacitor/core';
 
 function BrandMark() {
   return (
-    <img
-      src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
-      alt="Restoran Wawasan Logo"
-      className="w-10 h-10 object-contain shrink-0 mix-blend-multiply"
-      referrerPolicy="no-referrer"
-    />
+    <div className="w-10 h-10 flex items-center justify-center">
+      <TransparentLogo
+        src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
+        alt="Restoran Wawasan Logo"
+        className="w-full h-full object-contain"
+      />
+    </div>
   );
 }
 

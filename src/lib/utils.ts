@@ -74,7 +74,7 @@ export function safeJsonStringify(value: unknown, space?: number | string): stri
   const seen = new WeakSet();
   return JSON.stringify(
     value,
-    (key, val) => {
+    (_key, val) => {
       if (typeof val === 'bigint') {
         return val.toString();
       }

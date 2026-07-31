@@ -17,19 +17,21 @@ import {
   Layers,
   ChevronDown
 } from 'lucide-react';
-import { Order } from '../../types';
+import { format } from 'date-fns';
+import type { Order } from '../../types';
+import type { ToastMessage } from '../ui/Toast';
 
 interface AdminTablesTabProps {
   orders: Order[];
   language: 'en' | 'bm';
   openOrderDetail: (order: Order) => void;
-  handlePreviewPDF: (order: Order, isBilled?: boolean) => void;
-  handleDownloadPDF: (order: Order, isBilled?: boolean) => void;
+  handlePreviewPDF: (order: Order, isFinal: boolean) => Promise<void> | void;
+  handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (id: string) => void;
   fetchOrders: () => Promise<void>;
-  authHeaders: Record<string, string>;
+  authHeaders: () => HeadersInit;
   getApiUrl: (endpoint: string) => string;
-  toast: (options: { title: string; description?: string; variant?: 'default' | 'destructive' | 'success' | 'warning' }) => void;
+  toast: (options: Omit<ToastMessage, 'id'>) => void;
 }
 
 type SortField = 'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt';
@@ -280,7 +282,7 @@ export function AdminTablesTab({
       toast({
         title: isBm ? 'Ralat' : 'Error',
         description: isBm ? 'Gagal mengemaskini status' : 'Failed to update order status',
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setUpdatingId(null);
@@ -473,7 +475,7 @@ export function AdminTablesTab({
       toast({
         title: isBm ? 'Ralat' : 'Error',
         description: isBm ? 'Gagal mengeksport fail Excel' : 'Failed to export Excel file',
-        variant: 'destructive',
+        variant: 'error',
       });
     }
   };
@@ -914,7 +916,7 @@ export function AdminTablesTab({
               ) : (
                 paginatedOrders.map((order, index) => {
                   const isSelected = selectedIds.has(order.id!);
-                  const isBilled = order.status === 'billed' || order.status === 'dibilkan';
+                  const isBilled = order.status === 'billed' || order.status === ('dibilkan' as string);
 
                   return (
                     <tr

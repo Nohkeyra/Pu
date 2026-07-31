@@ -9,6 +9,7 @@ import { Share } from '@capacitor/share';
 import type jsPDF from 'jspdf';
 import type { Order } from '@/types';
 import { generateInvoicePDF } from '@/services/pdfService';
+import { TransparentLogo } from '@/components/TransparentLogo';
 import { numberToWords } from '@/services/numberToWordsBM';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -261,7 +262,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                   />
                   <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div className="flex items-start gap-3">
-                      <img src="/assets/wawasan_logo.jpg" alt="Logo" className="w-12 h-12 rounded-full object-cover border border-amber-400/80 shrink-0 shadow-xs" />
+                      <TransparentLogo src="/assets/wawasan_logo.jpg" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-amber-400/80 shrink-0 shadow-xs" />
                       <div>
                         <h3 className="text-lg font-extrabold text-amber-900 uppercase tracking-tight leading-none">
                           RESTORAN WAWASAN
