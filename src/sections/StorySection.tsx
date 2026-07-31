@@ -1,7 +1,6 @@
 import { Award } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getAssetUrl } from '@/lib/utils';
-import ResponsiveImage from '@/components/ResponsiveImage';
 import { motion } from 'motion/react';
 
 export default function StorySection() {
