@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { motion } from 'motion/react';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
@@ -13,7 +12,7 @@ export default function MenuSection() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const isBm = language === 'bm';
-  const [menuItems] = useState(MENU_ITEMS);
+  const [menuItems, setMenuItems] = useState(MENU_ITEMS);
 
   useEffect(() => {
     // Basic localStorage caching strategy for menu items
@@ -23,12 +22,6 @@ export default function MenuSection() {
     } else {
       localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
     }
-
-    // Simulate loading menu items
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 850);
-    return () => clearTimeout(timer);
   }, []);
 
   const headerVariants = {
