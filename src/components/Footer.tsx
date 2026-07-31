@@ -2,18 +2,18 @@ import { Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetUrl } from '../lib/utils';
-import ResponsiveImage from './ResponsiveImage';
+import { TransparentLogo } from './TransparentLogo';
 import { Batik3DMotion } from './Batik3DMotion';
 
 function BrandMark() {
   return (
-    <ResponsiveImage
-      src={getAssetUrl("/assets/wawasan_logo.jpg")}
-      alt="Restoran Wawasan Logo"
-      sizes="48px"
-      containerClassName="w-12 h-12 shrink-0 mix-blend-multiply"
-      className="object-contain"
-    />
+    <div className="w-12 h-12 shrink-0 flex items-center justify-center">
+      <TransparentLogo
+        src={getAssetUrl("/assets/wawasan_logo.jpg")}
+        alt="Restoran Wawasan Logo"
+        className="w-full h-full object-contain"
+      />
+    </div>
   );
 }
 

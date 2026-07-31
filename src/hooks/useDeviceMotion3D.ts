@@ -53,22 +53,32 @@ export function useDeviceMotion3D(maxRotation = 15) {
             window.addEventListener('deviceorientation', handleOrientation, true);
           }
 
-          // 2. Mouse move handler for Desktop
+          // 2. Mouse move handler for Desktop (throttled with rAF)
+          let rafId = 0;
+          let mouseX = 0;
+          let mouseY = 0;
+
           const handleMouseMove = (e: MouseEvent) => {
             if (!isActive || hasGyroscope) return;
-            const xPos = (e.clientX / window.innerWidth) - 0.5;
-            const yPos = (e.clientY / window.innerHeight) - 0.5;
-            
-            x.set(-yPos * maxRotation * 1.8);
-            y.set(xPos * maxRotation * 1.8);
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+
+            if (!rafId) {
+              rafId = requestAnimationFrame(() => {
+                x.set(-mouseY * maxRotation * 1.8);
+                y.set(mouseX * maxRotation * 1.8);
+                rafId = 0;
+              });
+            }
           };
 
-          window.addEventListener('mousemove', handleMouseMove);
+          window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
           listenerHandle = {
             remove: () => {
               window.removeEventListener('deviceorientation', handleOrientation, true);
               window.removeEventListener('mousemove', handleMouseMove);
+              if (rafId) cancelAnimationFrame(rafId);
             }
           };
         }

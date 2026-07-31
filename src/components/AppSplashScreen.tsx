@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl } from '@/lib/utils';
+import { TransparentLogo } from './TransparentLogo';
 
 interface AppSplashScreenProps {
   isLoading: boolean;
@@ -47,16 +48,12 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
               initial={{ scale: 0.9, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
-              className="relative z-10"
+              className="relative z-10 p-2"
             >
-              <img 
+              <TransparentLogo 
                 src={getAssetUrl('/assets/wawasan_logo-800w.jpg')} 
                 alt="Restoran Wawasan Logo" 
-                className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl rounded-full"
-                onError={(e) => {
-                  // Fallback if logo is not found
-                  (e.currentTarget as HTMLImageElement).src = "https://placehold.co/200x200/F97316/FFFFFF?text=RW";
-                }}
+                className="w-28 h-28 md:w-36 md:h-36 object-contain drop-shadow-md"
               />
             </motion.div>
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, User as UserIcon } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { TransparentLogo } from '@/components/TransparentLogo';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -53,11 +54,13 @@ export default function ProfilePage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border shadow-sm pt-[var(--sat)]">
         <div className="flex items-center justify-between px-6 h-[76px]">
           <div onClick={() => navigate('/home')} className="flex items-center gap-3 cursor-pointer">
-            <img
-              src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
-              alt="Logo"
-              className="w-10 h-10 object-contain mix-blend-multiply"
-            />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <TransparentLogo
+                src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
             <div>
               <span className="font-display font-semibold text-xl text-deep-forest  tracking-tight">
                 {t('nav_profile')}
