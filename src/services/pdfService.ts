@@ -145,7 +145,7 @@ export const preloadLogoForPDF = (): Promise<string> => {
       console.error('Failed to load logo for PDF preloading');
       resolve('');
     };
-    img.src = getAssetUrl('/assets/wawasan_logo.jpg');
+    img.src = getAssetUrl('/assets/wawasan_logo-800w.jpg');
   });
 };
 

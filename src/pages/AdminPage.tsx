@@ -108,7 +108,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between px-6 md:px-12 h-[72px]">
             <div onClick={() => navigate('/login')} className="flex items-center gap-3 group cursor-pointer">
               <img
-                src={getAssetUrl("/assets/wawasan_logo.jpg")}
+                src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
                 alt="Restoran Wawasan Logo"
                 className="w-10 h-10 object-contain shrink-0 mix-blend-multiply"
                 referrerPolicy="no-referrer"

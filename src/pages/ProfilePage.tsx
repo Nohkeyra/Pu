@@ -54,7 +54,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between px-6 h-[76px]">
           <div onClick={() => navigate('/home')} className="flex items-center gap-3 cursor-pointer">
             <img
-              src={getAssetUrl("/assets/wawasan_logo.jpg")}
+              src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
               alt="Logo"
               className="w-10 h-10 object-contain mix-blend-multiply"
             />

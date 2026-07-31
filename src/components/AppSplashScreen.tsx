@@ -50,7 +50,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
               className="relative z-10"
             >
               <img 
-                src={getAssetUrl('/assets/wawasan_logo.jpg')} 
+                src={getAssetUrl('/assets/wawasan_logo-800w.jpg')} 
                 alt="Restoran Wawasan Logo" 
                 className="w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl rounded-full"
                 onError={(e) => {

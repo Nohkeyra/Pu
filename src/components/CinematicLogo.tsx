@@ -299,11 +299,11 @@ export const CinematicLogo: React.FC<CinematicLogoProps> = ({
         }}
         className={`relative flex items-center justify-center ${sizeClassName} z-10 cursor-grab active:cursor-grabbing touch-none select-none`}
       >
-        {/* Floating 3D Logo Image with mix-blend-multiply to naturally key out the white background, and drop-shadow-2xl to give accurate shape shadows */}
+        {/* Floating 3D Logo Image with mix-blend-multiply to naturally key out the white background */}
         <img
-          src={getAssetUrl('/assets/wawasan_logo.jpg')}
+          src={getAssetUrl('/assets/wawasan_logo-800w.jpg')}
           alt="Pak Usop Catering Logo"
-          className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl select-none"
+          className="w-full h-full object-contain mix-blend-multiply rounded-full select-none"
           style={{ transform: 'translateZ(40px)' }}
         />
       </motion.div>

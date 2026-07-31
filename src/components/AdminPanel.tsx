@@ -1401,7 +1401,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 <img
                   src={getAssetUrl("/assets/wawasan_logo.jpg")}
                   alt="Restoran Wawasan Logo"
-                  className="w-full h-full object-contain mix-blend-multiply"
+                  className="w-7 h-7 object-contain mix-blend-multiply"
                   referrerPolicy="no-referrer"
                 />
               </div>
