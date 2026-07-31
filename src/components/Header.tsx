@@ -7,7 +7,7 @@ import { useHeaderScroll } from '@/hooks/useHeaderScroll';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { getAssetUrl } from '@/lib/utils';
-import { TransparentLogo } from './TransparentLogo';
+import ResponsiveImage from '@/components/ResponsiveImage';
 import { triggerLightImpact } from '@/lib/haptics';
 import MobileMenu from './MobileMenu';
 import AuthModal from './AuthModal';
@@ -23,13 +23,14 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 
 function BrandMark() {
   return (
-    <div className="h-11 w-11 flex items-center justify-center">
-      <TransparentLogo
-        src={getAssetUrl('/assets/wawasan_logo.jpg')}
-        alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
-      />
-    </div>
+    <ResponsiveImage
+      src={getAssetUrl('/assets/wawasan_logo.jpg')}
+      alt="Restoran Wawasan Logo"
+      sizes="48px"
+      containerClassName="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10"
+      className="rounded-2xl"
+      lazy={false}
+    />
   );
 }
 
@@ -196,7 +197,10 @@ export default function Header() {
       <MobileMenu
         isOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        links={NAV_LINKS}
+        links={NAV_LINKS.map((link) => ({
+          ...link,
+          label: link.label.charAt(0).toUpperCase() + link.label.slice(1),
+        }))}
         currentUser={currentUser}
         onAuthClick={handleAuthClick}
       />
