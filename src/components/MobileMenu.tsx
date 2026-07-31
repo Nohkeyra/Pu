@@ -72,7 +72,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
         <nav ref={itemsRef} className="flex flex-1 flex-col overflow-y-auto pb-6 pt-12">
           <Link to={currentUser ? '/home' : '/'} onClick={onClose} className="mb-8 flex items-center gap-3">
             <img
-              src={getAssetUrl('/assets/wawasan_logo.jpg')}
+              src={getAssetUrl('/assets/wawasan_logo-800w.jpg')}
               alt="Restoran Wawasan Logo"
               className="h-12 w-12 rounded-2xl object-contain bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10"
               referrerPolicy="no-referrer"

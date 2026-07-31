@@ -25,7 +25,7 @@ import { Capacitor } from '@capacitor/core';
 function BrandMark() {
   return (
     <img
-      src={getAssetUrl("/assets/wawasan_logo.jpg")}
+      src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
       alt="Restoran Wawasan Logo"
       className="w-10 h-10 object-contain shrink-0 mix-blend-multiply"
       referrerPolicy="no-referrer"
