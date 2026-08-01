@@ -39,6 +39,19 @@ export const TransparentLogo: React.FC<TransparentLogoProps> = ({
   useEffect(() => {
     if (!src) return;
 
+    if (
+      src.toLowerCase().endsWith('.png') || 
+      src.toLowerCase().endsWith('.svg') || 
+      src.toLowerCase().includes('.png') || 
+      src.toLowerCase().includes('.svg') || 
+      src.toLowerCase().includes('data:image/png') ||
+      src.toLowerCase().includes('data:image/svg+xml')
+    ) {
+      setProcessedSrc(src);
+      setIsProcessing(false);
+      return;
+    }
+
     if (processedLogoCache.has(cacheKey)) {
       setProcessedSrc(processedLogoCache.get(cacheKey)!);
       setIsProcessing(false);

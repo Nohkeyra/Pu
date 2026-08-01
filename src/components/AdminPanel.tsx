@@ -1401,7 +1401,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer transition-all hover:opacity-80">
               <div className="w-10 h-10 flex items-center justify-center">
                 <TransparentLogo
-                  src={getAssetUrl("/assets/wawasan_logo.jpg")}
+                  src={getAssetUrl("/assets/wawasan_logo.svg")}
                   alt="Restoran Wawasan Logo"
                   className="w-full h-full object-contain"
                 />

@@ -56,7 +56,7 @@ export default function ProfilePage() {
           <div onClick={() => navigate('/home')} className="flex items-center gap-3 cursor-pointer">
             <div className="w-10 h-10 flex items-center justify-center">
               <TransparentLogo
-                src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
+                src={getAssetUrl("/assets/wawasan_logo.svg")}
                 alt="Logo"
                 className="w-full h-full object-contain"
               />

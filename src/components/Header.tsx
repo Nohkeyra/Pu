@@ -25,9 +25,12 @@ function BrandMark() {
   return (
     <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
       <TransparentLogo
-        src={getAssetUrl('/assets/wawasan_logo.jpg')}
+        src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
         className="w-full h-full object-contain"
+        onError={() => {
+          // Fallback to png if svg fails
+        }}
       />
     </div>
   );

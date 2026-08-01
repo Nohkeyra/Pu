@@ -61,7 +61,7 @@ export default function StorySection() {
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = getAssetUrl('/assets/wawasan_logo.jpg');
+                    target.src = getAssetUrl('/assets/wawasan_logo.png');
                   }}
                 />
               </div>
