@@ -113,27 +113,72 @@ export function AdminOrdersTab({
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
 
+  // Calculate quick summary metrics from current orders list
+  const totalCount = orders.length;
+  const pendingCount = orders.filter((o) => o.status === 'pending' || !o.status).length;
+  const approvedCount = orders.filter((o) => o.status === 'approved' || o.status === 'diluluskan').length;
+  const billedCount = orders.filter((o) => o.status === 'billed' || o.status === 'dibilkan').length;
+  const totalPax = orders.reduce((sum, o) => sum + (Number(o.quantity) || 0), 0);
+
   return (
     <>
+      {/* KPI Summary Header Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
+          <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+            {language === 'bm' ? 'Jumlah Pesanan' : 'Total Orders'}
+          </p>
+          <p className="text-xl font-black text-deep-forest dark:text-white mt-1">{totalCount}</p>
+        </div>
+
+        <div className="bg-white dark:bg-card border border-amber-500/20 rounded-2xl p-3.5 shadow-sm">
+          <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            {language === 'bm' ? 'Menunggu' : 'Pending'}
+          </p>
+          <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</p>
+        </div>
+
+        <div className="bg-white dark:bg-card border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
+          <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+            {language === 'bm' ? 'Diluluskan' : 'Approved'}
+          </p>
+          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{approvedCount}</p>
+        </div>
+
+        <div className="bg-white dark:bg-card border border-blue-500/20 rounded-2xl p-3.5 shadow-sm">
+          <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            {language === 'bm' ? 'Dibilkan' : 'Billed'}
+          </p>
+          <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">{billedCount}</p>
+        </div>
+
+        <div className="col-span-2 sm:col-span-1 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
+          <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+            {language === 'bm' ? 'Jumlah Pax' : 'Total Pax'}
+          </p>
+          <p className="text-xl font-black text-sunshine dark:text-sunshine mt-1">{totalPax.toLocaleString()} pax</p>
+        </div>
+      </div>
+
       {/* Cancellation Requests Section */}
       {cancelRequests.length > 0 && (
-        <div className="mb-8 p-6 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-          <h2 className="text-xl font-bold text-amber-800 dark:text-amber-400 mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            {t('cancellation_requests') || 'Cancellation Requests'}
+        <div className="mb-6 p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl backdrop-blur-sm">
+          <h2 className="text-base font-bold text-amber-900 dark:text-amber-300 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            {t('cancellation_requests') || 'Cancellation Requests'} ({cancelRequests.length})
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {cancelRequests.map((order, idx) => (
-              <div key={order.id || `cancel-${idx}`} className="flex items-center justify-between p-4 bg-white dark:bg-card border border-amber-500/10 rounded-lg">
+              <div key={order.id || `cancel-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white dark:bg-card border border-amber-500/20 rounded-xl shadow-sm">
                 <div>
-                  <p className="font-semibold">{order.name} ({order.quantity} pax)</p>
-                  <p className="text-sm text-deep-forest/60">{order.dateTime ? format(new Date(order.dateTime), 'PP') : '-'}</p>
+                  <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{order.name} ({order.quantity} pax)</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">{order.dateTime ? format(new Date(order.dateTime), 'PP p') : '-'}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 font-semibold"
+                    className="h-8 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 border-emerald-500/30 font-bold text-xs"
                     onClick={async () => {
                       setIsApproving(true);
                       try {
@@ -166,7 +211,7 @@ export function AdminOrdersTab({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20 border-rose-500/20 font-semibold"
+                    className="h-8 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 border-rose-500/30 font-bold text-xs"
                     onClick={() => order.id && handleRejectCancellation(order.id)}
                   >
                     {t('reject')}
@@ -178,22 +223,22 @@ export function AdminOrdersTab({
         </div>
       )}
 
-      {/* Streamlined Compact Toolbar (Matching Table View Style) */}
-      <div className="mb-4 bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-2xl p-3 shadow-sm space-y-3">
+      {/* Streamlined Compact Toolbar */}
+      <div className="mb-4 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-deep-forest/40 dark:text-stone/40" />
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
             <Input
               placeholder={t('search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-deep-forest/40 focus:ring-1 focus:ring-sunshine/50 rounded-xl"
+              className="pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-stone-400 focus:ring-1 focus:ring-sunshine/50 rounded-xl"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-deep-forest/40 hover:text-deep-forest dark:text-stone/40 dark:hover:text-white"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-700 dark:hover:text-white"
               >
                 ✕
               </button>
@@ -204,7 +249,7 @@ export function AdminOrdersTab({
           <div className="flex flex-wrap items-center gap-2">
             {/* Status Filter */}
             <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
-              <Filter className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
+              <Filter className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -235,6 +280,25 @@ export function AdminOrdersTab({
                 </select>
               </div>
             )}
+
+            {/* Date From & Date To */}
+            <div className="flex items-center gap-1 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-2.5 h-9">
+              <input
+                type="date"
+                aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
+                value={dateFromFilter}
+                onChange={(e) => setDateFromFilter(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+              />
+              <span className="text-stone-400 text-[10px]">-</span>
+              <input
+                type="date"
+                aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
+                value={dateToFilter}
+                onChange={(e) => setDateToFilter(e.target.value)}
+                className="bg-transparent text-[11px] font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+              />
+            </div>
 
             {/* Clear Filter Button */}
             {(statusFilter !== 'all' || clientFilter !== 'all' || dateFromFilter || dateToFilter) && (

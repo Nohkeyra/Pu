@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UsePullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -8,40 +8,60 @@ interface UsePullToRefreshProps {
 export function usePullToRefresh({ onRefresh, threshold = 80 }: UsePullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [startY, setStartY] = useState(0);
+
+  // Use refs for touch tracking so callbacks don't need to re-register on every render
+  const startYRef = useRef<number | null>(null);
+  const isRefreshingRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isRefreshingRef.current = isRefreshing;
+  }, [isRefreshing]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    // Only allow pull to refresh if we are at the top of the page
-    if (window.scrollY <= 0) {
-      setStartY(e.touches[0].pageY);
+    // Only arm pull-to-refresh if page is truly at the top.
+    // Use a small tolerance (2px) to handle subpixel/floating-point scroll values
+    // that some mobile browsers report even when visually at the top.
+    if (window.scrollY <= 2) {
+      startYRef.current = e.touches[0].pageY;
     } else {
-      setStartY(0);
+      startYRef.current = null;
     }
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (startY === 0 || isRefreshing) return;
+    if (startYRef.current === null || isRefreshingRef.current) return;
 
     const currentY = e.touches[0].pageY;
-    const diff = currentY - startY;
+    const diff = currentY - startYRef.current;
 
-    if (diff > 0) {
-      // Damping effect
-      const dampedDiff = Math.pow(diff, 0.8);
-      setPullDistance(dampedDiff);
-
-      // Prevent default scrolling when pulling down at the top
-      if (dampedDiff > 5) {
-        if (e.cancelable) e.preventDefault();
-      }
+    // Only activate for downward swipes
+    if (diff <= 0) {
+      // User swiped up — disarm to avoid accidental triggers
+      startYRef.current = null;
+      setPullDistance(0);
+      return;
     }
-  }, [startY, isRefreshing]);
+
+    // Damping effect so it feels natural and doesn't race to threshold too fast
+    const dampedDiff = Math.pow(diff, 0.8);
+    setPullDistance(dampedDiff);
+
+    // Block native browser scroll/pull-to-refresh while we're handling it
+    if (dampedDiff > 5 && e.cancelable) {
+      e.preventDefault();
+    }
+  }, []);
 
   const handleTouchEnd = useCallback(async () => {
-    if (pullDistance > threshold && !isRefreshing) {
+    if (startYRef.current === null) return;
+
+    const currentPull = pullDistance;
+    startYRef.current = null;
+
+    if (currentPull > threshold && !isRefreshingRef.current) {
       setIsRefreshing(true);
-      setPullDistance(threshold); // Keep it at threshold during refresh
-      
+      setPullDistance(threshold); // Hold indicator at threshold during refresh
       try {
         await onRefresh();
       } finally {
@@ -51,13 +71,12 @@ export function usePullToRefresh({ onRefresh, threshold = 80 }: UsePullToRefresh
     } else {
       setPullDistance(0);
     }
-    setStartY(0);
-  }, [pullDistance, threshold, isRefreshing, onRefresh]);
+  }, [pullDistance, threshold, onRefresh]);
 
   useEffect(() => {
-    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);

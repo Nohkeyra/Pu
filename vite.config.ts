@@ -27,15 +27,23 @@ export default defineConfig({
     // browsers will not auto-fetch or expose the original source to end users.
     sourcemap: 'hidden',
     rollupOptions: {
+      external: ['@firebase/webchannel-wrapper/bloom-blob'],
+      onwarn(warning, warn) {
+        // Ignore "eval" warnings from third-party packages (like eruda)
+        if (warning.code === 'EVAL' && (warning.id?.includes('node_modules') || warning.id?.includes('eruda'))) {
+          return;
+        }
+        warn(warning);
+      },
       output: {
         manualChunks: {
           'vendor-core': ['react', 'react-dom', 'react-router-dom'],
           'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tooltip', '@radix-ui/react-select', 'clsx', 'tailwind-merge'],
           'vendor-icons': ['lucide-react'],
-          'vendor-motion': ['motion/react'],
+          'vendor-motion': ['motion'],
           'vendor-firebase': ['firebase/app', 'firebase/firestore', 'firebase/auth'],
           'vendor-excel': ['exceljs'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable'],
           'vendor-charts': ['recharts'],
         },
       },

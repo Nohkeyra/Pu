@@ -1,90 +1,89 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-interface UseCarouselOptions {
+interface UseCarouselProps {
   totalSlides: number;
-  autoPlayInterval?: number;
   slidesToShow?: number;
+  autoPlayInterval?: number;
+  infinite?: boolean;
 }
 
 export function useCarousel({
   totalSlides,
+  slidesToShow = 1,
   autoPlayInterval = 5000,
-  slidesToShow = 3,
-}: UseCarouselOptions) {
+  infinite = true
+}: UseCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
+  
+  // Touch support
+  const touchStartX = useRef<number | null>(null);
+  const touchMoveX = useRef<number | null>(null);
 
   const maxIndex = Math.max(0, totalSlides - slidesToShow);
 
-  const goTo = useCallback((index: number) => {
-    setCurrentIndex(Math.max(0, Math.min(index, maxIndex)));
-  }, [maxIndex]);
-
   const goNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-  }, [maxIndex]);
+    setCurrentIndex((prev) => {
+      if (prev >= maxIndex) {
+        return infinite ? 0 : prev;
+      }
+      return prev + 1;
+    });
+  }, [maxIndex, infinite]);
 
   const goPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
-  }, [maxIndex]);
+    setCurrentIndex((prev) => {
+      if (prev <= 0) {
+        return infinite ? maxIndex : prev;
+      }
+      return prev - 1;
+    });
+  }, [maxIndex, infinite]);
 
-  // Auto-play
   useEffect(() => {
-    if (isHovered || !isInView) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
+    if (isHovered || !autoPlayInterval) return;
 
-    timerRef.current = setInterval(goNext, autoPlayInterval);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isHovered, isInView, goNext, autoPlayInterval]);
+    const timer = setInterval(() => {
+      goNext();
+    }, autoPlayInterval);
 
-  // IntersectionObserver
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    return () => clearInterval(timer);
+  }, [goNext, isHovered, autoPlayInterval]);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0.2 }
-    );
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  // Touch handlers
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
+  const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
-  }, []);
+  };
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  }, []);
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchMoveX.current = e.touches[0].clientX;
+  };
 
-  const onTouchEnd = useCallback(() => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) goNext();
-      else goPrev();
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchMoveX.current) return;
+
+    const diff = touchStartX.current - touchMoveX.current;
+    const threshold = 50;
+
+    if (diff > threshold) {
+      goNext();
+    } else if (diff < -threshold) {
+      goPrev();
     }
-  }, [goNext, goPrev]);
+
+    touchStartX.current = null;
+    touchMoveX.current = null;
+  };
 
   return {
     currentIndex,
-    goTo,
+    setIsHovered,
     goNext,
     goPrev,
-    setIsHovered,
-    containerRef,
     onTouchStart,
     onTouchMove,
     onTouchEnd,
+    containerRef,
+    setCurrentIndex
   };
 }

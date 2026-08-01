@@ -1,18 +1,40 @@
-import type { ToastMessage } from '@/components/ui/Toast';
+import { getApiUrl } from '@/lib/api';
 
-export const measureDbLatency = async (toast: (props: Omit<ToastMessage, 'id'>) => void) => {
-  const start = Date.now();
+export const measureDbLatency = async () => {
+  const start = performance.now();
   try {
-    const { getFirestore, collection, limit, getDocs, query } = await import('firebase/firestore');
-    const db = getFirestore();
-    const q = query(collection(db, 'orders'), limit(1));
-    await getDocs(q);
-    const end = Date.now();
-    const latency = end - start;
-    toast({ title: 'Database Ping', description: `Round-trip latency: ${latency}ms` });
-    return true;
+    const response = await fetch(getApiUrl('/api/admin/next-invoice-number'), {
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch');
+    await response.json();
+    return Math.round(performance.now() - start);
   } catch (err) {
-    console.error('Latency test failed:', err);
-    return false;
+    console.error('Latency measurement failed:', err);
+    return -1;
   }
+};
+
+export const runDiagnostics = async () => {
+  const results = {
+    api: false,
+    db: false,
+    latency: 0
+  };
+
+  try {
+    const start = performance.now();
+    const response = await fetch(getApiUrl('/api/health'));
+    results.api = response.ok;
+    results.latency = Math.round(performance.now() - start);
+    
+    const dbLatency = await measureDbLatency();
+    results.db = dbLatency > 0;
+  } catch (err) {
+    console.error('Diagnostics failed:', err);
+  }
+
+  return results;
 };
