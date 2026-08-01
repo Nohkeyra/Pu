@@ -694,11 +694,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     <>
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
-      {/* Main Container mirroring Kimi mockup mobile shell but fully responsive on large screens */}
-      <div className="w-full max-w-2xl mx-auto bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-2xl overflow-hidden font-sans">
+      {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
+      <div className="w-full max-w-6xl mx-auto font-sans space-y-6">
         
         {/* App Header Bar mirroring Wawasan brand */}
-        <div className="bg-charcoal text-white p-5 rounded-b-[24px] shadow-lg border-b border-charcoal/80 relative overflow-hidden">
+        <div className="bg-charcoal text-white p-5 sm:p-6 rounded-2xl shadow-xl border border-charcoal/80 relative overflow-hidden">
           {/* Background Batik Pattern for Header */}
           <div 
             className="absolute inset-0 opacity-[0.25] pointer-events-none"
@@ -709,92 +709,95 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             }}
           />
           <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
-          <div className="flex justify-between items-center relative z-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
             <div>
               <span className="text-[11px] text-sunshine font-bold uppercase tracking-widest block mb-0.5">
-                {tText('CATERING BOOKING', 'TEMPAHAN KATERING')}
+                {tText('CATERING BOOKING SYSTEM', 'SISTEM TEMPAHAN KATERING')}
               </span>
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5 font-display">
-                Restoran Wawasan
+              <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2 font-display">
+                Restoran Wawasan Pak Usop
               </h1>
-              <p className="text-[10px] text-stone font-medium tracking-wide mt-0.5">
-                Unit 3, Level B3, Menara PjH, Putrajaya
+              <p className="text-xs text-stone font-medium tracking-wide mt-1">
+                Unit 3, Level B3, Menara PjH, Presint 2, Putrajaya
               </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-sunshine flex items-center justify-center font-bold text-sm shadow-md text-white border border-white/20 select-none">
-              RW
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-kiwi/20 text-kiwi text-xs font-bold border border-kiwi/30">
+                <span className="w-2 h-2 rounded-full bg-kiwi animate-pulse" />
+                {tText('Accepting Bookings', 'Menerima Tempahan')}
+              </span>
+              <a 
+                href="tel:+60178582642" 
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10"
+              >
+                <Phone className="w-3.5 h-3.5 text-sunshine" />
+                +60 17-858 2642
+              </a>
             </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 mt-4 items-center relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-kiwi/20 text-kiwi text-[11px] font-bold border border-kiwi/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-kiwi animate-pulse" />
-              {tText('Accepting Bookings', 'Menerima Tempahan')}
-            </span>
-            <a 
-              href="tel:+60178582642" 
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-colors"
-            >
-              <Phone className="w-3 h-3 text-sunshine" />
-              +60 17-858 2642
-            </a>
           </div>
         </div>
 
-        {/* Progress Bar Indicator */}
-        {currentStep <= 4 && (
-          <div className="px-6 pt-5 pb-2" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
-            <div className="flex items-center justify-between">
-              {[
-                { s: 1, label: tText('Event', 'Jenis') },
-                { s: 2, label: tText('Menu', 'Menu') },
-                { s: 3, label: tText('Billing', 'Butiran') },
-                { s: 4, label: tText('Review', 'Semakan') }
-              ].map((item, idx) => {
-                const isCurrent = currentStep === item.s;
-                const isDone = currentStep > item.s;
-                return (
-                  <div key={item.s} className="flex items-center flex-1 last:flex-none">
-                    <div className="flex flex-col items-center gap-1 relative z-10">
-                      <div
-                        aria-current={isCurrent ? 'step' : undefined}
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
-                          isCurrent
-                            ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp"
-                            : isDone
-                              ? "bg-[#A8E10C] border-[#A8E10C] text-[#161618]"
-                              : "bg-muted border-stone/20 text-stone"
+        {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Column: Stepper Wizard & Inputs Panel */}
+          <div className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl overflow-hidden">
+            
+            {/* Progress Bar Indicator */}
+            {currentStep <= 4 && (
+              <div className="px-6 pt-6 pb-4 bg-muted/40 border-b border-stone/10" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+                <div className="flex items-center justify-between">
+                  {[
+                    { s: 1, label: tText('Event', 'Jenis') },
+                    { s: 2, label: tText('Menu', 'Menu') },
+                    { s: 3, label: tText('Billing', 'Butiran') },
+                    { s: 4, label: tText('Review', 'Semakan') }
+                  ].map((item, idx) => {
+                    const isCurrent = currentStep === item.s;
+                    const isDone = currentStep > item.s;
+                    return (
+                      <div key={item.s} className="flex items-center flex-1 last:flex-none">
+                        <div className="flex flex-col items-center gap-1 relative z-10">
+                          <div
+                            aria-current={isCurrent ? 'step' : undefined}
+                            className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
+                              isCurrent
+                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp scale-105"
+                                : isDone
+                                  ? "bg-[#A8E10C] border-[#A8E10C] text-[#161618]"
+                                  : "bg-muted border-stone/20 text-stone"
+                            )}
+                          >
+                            {isDone ? <Check className="w-4 h-4" /> : item.s}
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-semibold transition-colors duration-300",
+                            isCurrent ? "text-crisp-carrot font-bold" : "text-stone"
+                          )}>
+                            {item.label}
+                          </span>
+                        </div>
+
+                        {idx < 3 && (
+                          <div className="flex-1 h-[2px] mx-2 bg-stone/10 relative -translate-y-2.5" aria-hidden="true">
+                            <div
+                              className="absolute inset-y-0 left-0 bg-[#A8E10C] transition-all duration-500"
+                              style={{ width: isDone ? '100%' : '0%' }}
+                            />
+                          </div>
                         )}
-                      >
-                        {isDone ? <Check className="w-4 h-4" /> : item.s}
                       </div>
-                      <span className={cn(
-                        "text-[10px] font-semibold transition-colors duration-300",
-                        isCurrent ? "text-crisp-carrot font-bold" : "text-stone"
-                      )}>
-                        {item.label}
-                      </span>
-                    </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                    {idx < 3 && (
-                      <div className="flex-1 h-[2px] mx-2 bg-stone/10 relative -translate-y-2.5" aria-hidden="true">
-                        <div
-                          className="absolute inset-y-0 left-0 bg-[#A8E10C] transition-all duration-500"
-                          style={{ width: isDone ? '100%' : '0%' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Stepper Wizard Panels */}
-        <div className="p-6">
-          <AnimatePresence mode="wait">
+            {/* Form Steps Container */}
+            <div className="p-6 sm:p-8">
+              <AnimatePresence mode="wait">
             
             {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
             {currentStep === 1 && (
@@ -1755,66 +1758,194 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           </AnimatePresence>
         </div>
 
-        {/* PDF Preview Modal for submitted order */}
-        {submittedOrder && (
-          <PDFPreviewModal
-            isOpen={showPdfPreviewModal}
-            onClose={() => setShowPdfPreviewModal(false)}
-            order={submittedOrder}
-            language={language}
-          />
-        )}
+          {/* Bottom Navigation mimics Kimi bottom bar layout inside form panel */}
+          {currentStep <= 4 && (
+            <div className="bg-card border-t border-stone/10 p-3 pb-4 flex justify-around items-center select-none">
+              <button
+                type="button"
+                onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold px-4 py-1.5 rounded-xl transition-all",
+                  currentStep < 5 ? "text-crisp-carrot bg-crisp-carrot/15" : "text-stone"
+                )}
+              >
+                <Utensils className="w-5 h-5 shrink-0" />
+                <span>{tText('Booking', 'Tempahan')}</span>
+              </button>
 
-        {/* Bottom Navigation mimics Kimi bottom bar layout */}
-        {currentStep <= 4 && (
-          <div className="bg-card border-t border-stone/10 p-3 pb-6 flex justify-around items-center select-none">
-            <button
-              type="button"
-              onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
-              className={cn(
-                "flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold px-4 py-1.5 rounded-xl transition-all",
-                currentStep < 5 ? "text-crisp-carrot bg-crisp-carrot/15" : "text-stone"
+              <a
+                href="tel:+60178582642"
+                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
+              >
+                <Phone className="w-5 h-5 shrink-0" />
+                <span>{tText('Call Now', 'Hubungi')}</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleShareForm}
+                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
+              >
+                <Share2 className="w-5 h-5 shrink-0 text-crisp-carrot" />
+                <span>{tText('Share', 'Kongsi')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  toast({
+                    title: tText('Restoran Wawasan', 'Restoran Wawasan'),
+                    description: tText('Putrajaya, Malaysia. Open Mon-Sat 7AM - 4PM.', 'Putrajaya, Malaysia. Buka Isnin-Sabtu 7AM - 4PM.'),
+                    variant: 'success'
+                  });
+                }}
+                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
+              >
+                <Clock className="w-5 h-5 shrink-0" />
+                <span>{tText('Information', 'Maklumat')}</span>
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* Right Column: Interactive Sticky Live Summary Card */}
+        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-28 space-y-4">
+          <div className="bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl p-5 sm:p-6 overflow-hidden relative">
+            {/* Card Title Header */}
+            <div className="flex justify-between items-center pb-3 mb-4 border-b border-stone/10">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-crisp-carrot animate-pulse" />
+                <h3 className="text-xs font-extrabold text-deep-forest dark:text-white uppercase tracking-wider font-display">
+                  {tText('Live Order Summary', 'Ringkasan Tempahan')}
+                </h3>
+              </div>
+              <span className="text-[10px] font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
+                Step {currentStep} / 4
+              </span>
+            </div>
+
+            {/* Event Type & Pax Badge */}
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-stone font-medium">{tText('Event Type:', 'Jenis Majlis:')}</span>
+                <span className="font-bold text-deep-forest dark:text-white">
+                  {orderState.eventType === 'pejabat' 
+                    ? tText('Office Feast', 'Jamuan Pejabat') 
+                    : orderState.eventType === 'lain'
+                      ? tText('Private Event', 'Lain-Lain')
+                      : tText('Not Selected', 'Belum Dipilih')}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-stone font-medium">{tText('Guest Count:', 'Kuantiti Pax:')}</span>
+                <span className="font-bold text-deep-forest dark:text-white">
+                  {orderState.guests} {tText('pax', 'orang')}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-stone font-medium">{tText('Serving Time:', 'Hidangan Untuk:')}</span>
+                <span className="font-bold text-deep-forest dark:text-white text-right">
+                  {getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}
+                </span>
+              </div>
+
+              {orderState.date && (
+                <div className="flex justify-between items-center">
+                  <span className="text-stone font-medium">{tText('Date & Time:', 'Tarikh & Masa:')}</span>
+                  <span className="font-bold text-deep-forest dark:text-white">
+                    {orderState.date} @ {orderState.time}
+                  </span>
+                </div>
               )}
-            >
-              <Utensils className="w-5 h-5 shrink-0" />
-              <span>{tText('Booking', 'Tempahan')}</span>
-            </button>
 
-            <a
-              href="tel:+60178582642"
-              className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-            >
-              <Phone className="w-5 h-5 shrink-0" />
-              <span>{tText('Call Now', 'Hubungi')}</span>
-            </a>
+              {/* Selected Dishes Badges */}
+              <div className="pt-2 border-t border-stone/10 space-y-1.5">
+                <span className="text-[10px] font-extrabold text-stone uppercase tracking-wider block">
+                  {tText('Selected Menu Items:', 'Menu Pilihan:')}
+                </span>
+                
+                {orderState.dishes.length > 0 || orderState.veggies.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1">
+                    {orderState.dishes.map(d => (
+                      <span key={d.id} className="inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded text-[10px] border border-crisp-carrot/20">
+                        {tText(d.nameEn, d.nameBm)}
+                      </span>
+                    ))}
+                    {orderState.veggies.map(v => (
+                      <span key={v.id} className="inline-block bg-[#A8E10C]/20 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] border border-[#A8E10C]/30">
+                        {tText(v.nameEn, v.nameBm)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-stone italic block">
+                    {tText('Select dishes in Step 2 or auto default to Box Set.', 'Pilih lauk di Langkah 2 atau ditetapkan lalai ke Set Kotak.')}
+                  </span>
+                )}
+              </div>
 
-            <button
-              type="button"
-              onClick={handleShareForm}
-              className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-            >
-              <Share2 className="w-5 h-5 shrink-0 text-crisp-carrot" />
-              <span>{tText('Share', 'Kongsi')}</span>
-            </button>
+              {/* Estimation Total Calculation */}
+              <div className="bg-charcoal text-white p-4 rounded-xl border border-charcoal/80 relative overflow-hidden mt-4 space-y-2">
+                <div 
+                  className="absolute inset-0 opacity-[0.2] pointer-events-none"
+                  style={{
+                    backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+                <div className="relative z-10 flex justify-between items-center">
+                  <span className="text-stone-300 text-[11px] font-medium uppercase tracking-wider">
+                    {tText('Rate / Pax:', 'Kadar / Orang:')}
+                  </span>
+                  <span className="font-bold text-sunshine text-xs">
+                    {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}` : tText('Quote Pending', 'Ganti Sebut Harga')}
+                  </span>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                toast({
-                  title: tText('Restoran Wawasan', 'Restoran Wawasan'),
-                  description: tText('Putrajaya, Malaysia. Open Mon-Sat 7AM - 4PM.', 'Putrajaya, Malaysia. Buka Isnin-Sabtu 7AM - 4PM.'),
-                  variant: 'success'
-                });
-              }}
-              className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-            >
-              <Clock className="w-5 h-5 shrink-0" />
-              <span>{tText('Information', 'Maklumat')}</span>
-            </button>
+                <div className="relative z-10 flex justify-between items-baseline pt-1 border-t border-white/10">
+                  <span className="text-xs font-extrabold text-white uppercase tracking-wider">
+                    {tText('Est. Total:', 'Anggaran Jumlah:')}
+                  </span>
+                  <span className="text-xl font-black text-sunshine font-display">
+                    {getGrandTotal() > 0 ? `RM ${getGrandTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : tText('Admin Quote', 'Sebut Harga')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Fast Contact & Support Button */}
+              <div className="pt-2">
+                <a
+                  href="https://wa.me/60178582642?text=Hai%20Pak%20Usop,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                >
+                  <Phone className="w-3.5 h-3.5 text-white" />
+                  <span>{tText('Direct WhatsApp Inquiry', 'Tanya Direct WhatsApp')}</span>
+                </a>
+              </div>
+
+            </div>
           </div>
-        )}
+        </div>
 
-      </div>
+      </div> {/* End of Responsive Grid */}
+      </div> {/* End of Outer Wrapper */}
+
+      {/* PDF Preview Modal for submitted order */}
+      {submittedOrder && (
+        <PDFPreviewModal
+          isOpen={showPdfPreviewModal}
+          onClose={() => setShowPdfPreviewModal(false)}
+          order={submittedOrder}
+          language={language}
+        />
+      )}
+
     </>
   );
 }

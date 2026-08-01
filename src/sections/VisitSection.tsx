@@ -1,231 +1,161 @@
-import { MapPin, Clock, Phone, ArrowRight, Navigation } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
-import { getAssetUrl } from '@/lib/utils';
 import { motion } from 'motion/react';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function VisitSection() {
-  const { t, language } = useLanguage();
-
-  const HOURS = [
-    { day: t('mon_thu'), time: t('time_730_400') },
-    { day: t('friday'), time: t('time_730_400'), note: t('rojak_note') },
-    { day: t('saturday'), time: t('closed') },
-    { day: t('sunday'), time: t('closed') },
-  ];
-
-  const headerVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.12,
-      },
-    },
-  };
-
-  const headerItemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-    },
-  };
+  const { language } = useLanguage();
+  const isBm = language === 'bm';
 
   const containerVariants = {
-    hidden: {},
+    hidden: { opacity: 0 },
     visible: {
+      opacity: 1,
       transition: {
-        staggerChildren: 0.15,
-      },
-    },
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
   };
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
       y: 0,
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-    },
-  };
-
-  const ctaVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-    },
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    }
   };
 
   return (
-    <section id="visit" className="section-padding bg-cream relative overflow-hidden paper-texture kp-songkok">
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-sunshine/10 to-transparent pointer-events-none" />
-      <div className="content-container relative">
+    <section id="visit" className="py-24 bg-white dark:bg-zinc-950 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-sunshine/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-deep-forest/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div 
-          variants={headerVariants}
+          variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.15 }}
-          className="mb-12"
+          viewport={{ once: true, amount: 0.2 }}
+          className="grid lg:grid-cols-2 gap-16 items-center"
         >
-          <motion.div variants={headerItemVariants} className="visit-animate mb-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10">
-              <span className="text-xs font-semibold text-deep-forest/80 uppercase tracking-[0.2em]">
-                {t('visit_us')}
-              </span>
-            </div>
-          </motion.div>
-          <motion.h2 variants={headerItemVariants} className="visit-animate font-display font-semibold text-[36px] md:text-[52px] text-deep-forest leading-[1.05] mb-4">
-            {t('come_dine')}
-          </motion.h2>
-          <motion.p variants={headerItemVariants} className="visit-animate font-body text-lg text-deep-forest/70 max-w-[620px] leading-relaxed font-light">
-            {language === 'bm'
-              ? 'Lokasi di Menara PjH menjadikan Restoran Wawasan Pak Usop pilihan mudah untuk sarapan, makan tengah hari, mesyuarat, dan singgah selepas urusan di Putrajaya.'
-              : 'Located in Menara PjH, Restoran Wawasan Pak Usop is an easy stop for breakfast, lunch, meetings, and day-to-day dining in Putrajaya.'}
-          </motion.p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-          <div className="lg:col-span-5">
-            <div className="relative rounded-[28px] overflow-hidden aspect-[4/5] mb-6 group border border-deep-forest/[0.08] dark:border-white/[0.08] shadow-2xl">
-              <img
-                src={getAssetUrl("/assets/restoran-exterior.jpg")}
-                alt="Restoran Wawasan"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = getAssetUrl('/assets/wawasan_logo.jpg');
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-cream via-cream/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="bg-cream-dark/95 backdrop-blur-md rounded-2xl p-5 border border-deep-forest/10 dark:border-white/10 shadow-xl group-hover:border-sunshine/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-deep-forest/[0.04] dark:bg-white/5 flex items-center justify-center border border-deep-forest/10 dark:border-white/10">
-                      <MapPin className="w-6 h-6 text-sunshine" />
-                    </div>
-                    <div>
-                      <p className="text-deep-forest font-medium">Menara PjH, Presint 2</p>
-                      <p className="text-deep-forest/70 text-sm">Unit 3, Level B3, Putrajaya</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=Restoran+Wawasan+Pak+Usop+Menara+PjH+Putrajaya"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-sunshine to-crisp-carrot text-white rounded-full font-semibold text-sm hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)] hover:scale-105 transition-all"
-              >
-                <Navigation className="w-4 h-4" />
-                {t('get_directions')}
-              </a>
-              <a
-                href="tel:+60178582642"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-deep-forest/[0.04] dark:bg-white/5 text-deep-forest rounded-full font-semibold text-sm hover:bg-deep-forest/[0.08] dark:hover:bg-white/10 transition-all border border-deep-forest/10 dark:border-white/10"
-              >
-                <Phone className="w-4 h-4 text-sunshine" />
-                {t('call_now')}
-              </a>
-            </div>
-          </div>
-
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-             className="lg:col-span-7 flex flex-col gap-6"
-          >
-            <motion.div variants={cardVariants} className="info-card bg-cream-dark/60 backdrop-blur-md rounded-[2.5rem] p-6 md:p-8 border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-sunshine/20 hover:shadow-xl transition-all duration-500">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-sunshine" />
-                </div>
-                <h3 className="font-display font-bold text-deep-forest text-2xl">{t('hours')}</h3>
-              </div>
-              
-              <div className="space-y-4">
-                {HOURS.map((h) => (
-                  <div key={h.day} className="flex justify-between items-center py-4 border-b border-deep-forest/5 dark:border-white/5 last:border-0 group gap-6">
-                    <span className="text-deep-forest/70 font-medium group-hover:text-deep-forest transition-colors">{h.day}</span>
-                    <div className="text-right">
-                      <span className={`font-bold ${h.time === 'Closed' || h.time === 'Tutup' ? 'text-crisp-carrot' : 'text-deep-forest'}`}>
-                        {h.time}
-                      </span>
-                      {h.note && <span className="block text-[11px] text-sunshine/90 font-medium uppercase tracking-[0.14em] mt-1">{h.note}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Left Column: Info */}
+          <div className="space-y-12">
+            <motion.div variants={itemVariants} className="space-y-4">
+              <h2 className="text-deep-forest dark:text-sunshine font-display text-4xl md:text-5xl font-bold tracking-tight">
+                {isBm ? 'Jemput Datang' : 'Visit Us'}
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-md leading-relaxed">
+                {isBm 
+                  ? 'Nikmati hidangan asli Malaysia dengan pemandangan tasik yang tenang di tengah-tengah Putrajaya.' 
+                  : 'Experience authentic Malaysian flavors with a serene lakeside view in the heart of Putrajaya.'}
+              </p>
             </motion.div>
 
-            <motion.div variants={cardVariants} className="info-card bg-cream-dark/60 backdrop-blur-md rounded-[2.5rem] p-6 md:p-8 border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-sunshine/20 hover:shadow-xl transition-all duration-500">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center">
+            <div className="grid sm:grid-cols-2 gap-8">
+              <motion.div variants={itemVariants} className="flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-6 h-6 text-sunshine" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-deep-forest dark:text-white mb-1">
+                    {isBm ? 'Lokasi' : 'Location'}
+                  </h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+                    Aras LG, Bangunan Kementerian Kewangan (MoF), No. 2, Persiaran Perdana, Presint 2, 62592 Putrajaya
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
                   <Phone className="w-6 h-6 text-sunshine" />
                 </div>
-                <h3 className="font-display font-bold text-deep-forest text-2xl">Contact</h3>
-              </div>
-              
-              <div className="space-y-5 text-base">
-                <a href="tel:+60178582642" className="flex items-center gap-4 text-deep-forest hover:text-sunshine transition-colors group">
-                  <span className="text-deep-forest/70 w-24 font-medium group-hover:text-sunshine transition-colors">Call</span>
-                  <span className="font-bold">+60 17-858 2642</span>
-                  <span className="text-sm text-deep-forest/50 font-medium">(Pak Usop)</span>
-                </a>
-                <a href="https://wa.me/60173157721" className="flex items-center gap-4 text-deep-forest hover:text-sunshine transition-colors group">
-                  <span className="text-deep-forest/70 w-24 font-medium group-hover:text-sunshine transition-colors">WhatsApp</span>
-                  <span className="font-bold">+60 17-315 7721</span>
-                  <span className="text-sm text-deep-forest/50 font-medium">(Mad)</span>
-                </a>
-                <div className="flex items-center gap-4 text-deep-forest/70">
-                  <span className="w-24 font-medium">Email</span>
-                  <span className="font-medium text-deep-forest">wawasan.orders@gmail.com</span>
+                <div>
+                  <h3 className="font-bold text-deep-forest dark:text-white mb-1">
+                    {isBm ? 'Hubungi' : 'Contact'}
+                  </h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                    +60 19-382 7215<br />
+                    +60 12-345 6789
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
+                  <Clock className="w-6 h-6 text-sunshine" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-deep-forest dark:text-white mb-1">
+                    {isBm ? 'Waktu Operasi' : 'Hours'}
+                  </h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                    {isBm ? 'Isnin - Jumaat' : 'Mon - Fri'}: 7:30 AM - 5:30 PM<br />
+                    {isBm ? 'Sabtu - Ahad' : 'Sat - Sun'}: {isBm ? 'Tutup (Kecuali Tempahan)' : 'Closed (Except Catering)'}
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="flex gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
+                  <Mail className="w-6 h-6 text-sunshine" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-deep-forest dark:text-white mb-1">
+                    {isBm ? 'E-mel' : 'Email'}
+                  </h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                    info@wawasan.my<br />
+                    catering@wawasan.my
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+
+            <motion.div variants={itemVariants}>
+              <a 
+                href="https://maps.google.com/?q=Restoran+Wawasan+Pak+Usop+Putrajaya" 
+                target="_blank" 
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 bg-deep-forest hover:bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-deep-forest/20"
+              >
+                {isBm ? 'Dapatkan Arah' : 'Get Directions'}
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </motion.div>
+          </div>
+
+          {/* Right Column: Map */}
+          <motion.div 
+            variants={itemVariants}
+            className="relative aspect-square md:aspect-video lg:aspect-auto lg:h-[600px] rounded-[32px] overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl"
+          >
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m13.1!3m3!1m2!1s0x31cdb7f646000001%3A0x7d06e2e0e9e4f5a7!2sMinistry%20of%20Finance!5e0!3m2!1sen!2smy!4v1722424000000!5m2!1sen!2smy" 
+              width="100%" 
+              height="100%" 
+              style={{ border: 0 }} 
+              allowFullScreen={false} 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+              className="grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
+            />
+            
+            {/* Map Overlay Card */}
+            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl hidden sm:block">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-sunshine rounded-xl">
+                  <MapPin className="w-5 h-5 text-deep-forest" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-sunshine mb-0.5">Found us at</p>
+                  <p className="text-sm font-bold text-deep-forest dark:text-white">Basement, MoF Building, Putrajaya</p>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
-        </div>
-
-        <motion.div 
-          variants={ctaVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.15 }}
-          className="mt-16 relative rounded-[32px] p-8 md:p-12 overflow-hidden group border border-deep-forest/10 shadow-2xl bg-sunshine"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-sunshine via-honey to-sunshine animate-gradient-shift bg-[length:200%_auto]" />
-          <Batik3DMotion
-            mode="background"
-            opacity={0.25}
-            mixBlendMode="overlay"
-            maxRotation={18}
-          />
-          <div className="relative flex flex-col md:flex-row items-center justify-between gap-8 text-white">
-            <div className="text-center md:text-left">
-              <h3 className="font-display font-bold text-3xl md:text-4xl">
-                {t('cta_title')}
-              </h3>
-              <p className="mt-3 text-white/90 text-lg font-medium max-w-xl">
-                {t('cta_subtitle')}
-              </p>
             </div>
-            <a
-              href="tel:+60178582642"
-              className="inline-flex shrink-0 items-center gap-2 px-8 py-4 bg-white text-sunshine rounded-full font-bold hover:scale-105 transition-all shadow-xl"
-            >
-              {t('contact_pak_usop')}
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

@@ -163,6 +163,8 @@
     background-image: radial-gradient(circle at top, rgba(253, 94, 2, 0.08), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.28), transparent 18%);
     background-attachment: fixed;
     line-height: 1.5;
+    /* Prevent browser native pull-to-refresh from conflicting with our custom hook */
+    overscroll-behavior-y: none;
   }
 
   #root {

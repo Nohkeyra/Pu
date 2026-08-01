@@ -130,15 +130,6 @@ export default function OrderPage() {
           transition={{ type: 'spring', stiffness: 400, damping: 40 }}
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 pt-10">
-              <h1 className="text-4xl md:text-5xl font-display font-bold text-deep-forest mb-4">
-                {t('place_your_order') || 'Place Your Order'}
-              </h1>
-              <p className="text-stone max-w-2xl mx-auto font-medium">
-                {t('order_subtitle') || 'Enjoy authentic Malay cuisine for your events. Delivery available within Putrajaya area.'}
-              </p>
-            </div>
-
             <OrderForm initialData={initialData} />
           </div>
         </motion.main>
