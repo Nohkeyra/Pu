@@ -42,7 +42,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps # FIXED: Added flag to override Capacitor plugin conflicts
+        run: npm install --legacy-peer-deps
 
       - name: Build web assets
         env:
@@ -57,7 +57,7 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: npx @capacitor/cli sync android # FIXED: Explicitly call the CLI tool package to resolve execution mapping
 
       - name: Verify google-services.json
         run: |
