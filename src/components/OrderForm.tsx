@@ -728,11 +728,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {tText('Accepting Bookings', 'Menerima Tempahan')}
               </span>
               <a 
-                href="tel:+60178582642" 
+                href="tel:+60173157721" 
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10"
               >
                 <Phone className="w-3.5 h-3.5 text-sunshine" />
-                +60 17-858 2642
+                017-315 7721 (Noh)
               </a>
             </div>
           </div>
@@ -1774,7 +1774,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               </button>
 
               <a
-                href="tel:+60178582642"
+                href="tel:+60173157721"
                 className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
               >
                 <Phone className="w-5 h-5 shrink-0" />
@@ -1919,7 +1919,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               {/* Fast Contact & Support Button */}
               <div className="pt-2">
                 <a
-                  href="https://wa.me/60178582642?text=Hai%20Pak%20Usop,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
+                  href="https://wa.me/60173157721?text=Hai%20Noh,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"

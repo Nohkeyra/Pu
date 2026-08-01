@@ -9,7 +9,7 @@ function BrandMark() {
   return (
     <div className="w-12 h-12 shrink-0 flex items-center justify-center">
       <TransparentLogo
-        src={getAssetUrl("/assets/wawasan_logo.jpg")}
+        src={getAssetUrl("/assets/wawasan_logo.svg")}
         alt="Restoran Wawasan Logo"
         className="w-full h-full object-contain"
       />

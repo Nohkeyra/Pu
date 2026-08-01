@@ -9,9 +9,6 @@ import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
 import { syncPreferencesToLocalStorage } from './lib/preferences';
 import { preloadLogoForPDF, preloadBatikHeaderForPDF } from './services/pdfService';
-import { LanguageProvider } from './context/LanguageContext';
-import { SettingsProvider } from './context/SettingsContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
 import { RefreshCw } from 'lucide-react';
@@ -331,30 +328,26 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider>
+    <>
       <AppSplashScreen isLoading={isAppLoading} />
-      <SettingsProvider>
-        <LanguageProvider>
-          <TooltipProvider delayDuration={500}>
-            <ToastProvider>
-              <Router>
-                <PushNotificationHandler />
-                <NativeBackButtonHandler />
-                <NativeAppListeners />
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 0 }}
-                  className="flex-grow flex flex-col w-full h-full"
-                >
-                  <AppContent />
-                </motion.div>
-              </Router>
-            </ToastProvider>
-          </TooltipProvider>
-        </LanguageProvider>
-      </SettingsProvider>
-    </ThemeProvider>
+      <TooltipProvider delayDuration={500}>
+        <ToastProvider>
+          <Router>
+            <PushNotificationHandler />
+            <NativeBackButtonHandler />
+            <NativeAppListeners />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0 }}
+              className="flex-grow flex flex-col w-full h-full"
+            >
+              <AppContent />
+            </motion.div>
+          </Router>
+        </ToastProvider>
+      </TooltipProvider>
+    </>
   );
 }
 

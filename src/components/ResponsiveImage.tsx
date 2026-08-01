@@ -61,12 +61,14 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
   // Generate srcSet from the resolved path if enabled
   // e.g. /assets/nasi-lemak.jpg -> /assets/nasi-lemak-400w.jpg 400w, ...
-  const basePath = resolvedSrc.replace(/\.[^.]+$/, '');
-  const extension = resolvedSrc.match(/\.[^.]+$/)?.[0] || '.jpg';
+  const urlWithoutQuery = resolvedSrc.split('?')[0];
+  const queryPart = resolvedSrc.includes('?') ? '?' + resolvedSrc.split('?')[1] : '';
+  const basePath = urlWithoutQuery.replace(/\.[^.]+$/, '');
+  const extension = urlWithoutQuery.match(/\.[^.]+$/)?.[0] || '.jpg';
   const widths = [400, 800];
 
   const srcSet = useSrcSet && resolvedSrc.includes('/assets/')
-    ? widths.map((w) => `${basePath}-${w}w${extension} ${w}w`).join(', ')
+    ? widths.map((w) => `${basePath}-${w}w${extension}${queryPart} ${w}w`).join(', ')
     : undefined;
 
   // Handle cached image instant loads (e.g. browser cache or fast re-render)

@@ -74,7 +74,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
           <Link to={currentUser ? '/home' : '/'} onClick={onClose} className="mb-8 flex items-center gap-3">
             <div className="h-12 w-12 flex items-center justify-center">
               <TransparentLogo
-                src={getAssetUrl('/assets/wawasan_logo-800w.jpg')}
+                src={getAssetUrl('/assets/wawasan_logo.svg')}
                 alt="Restoran Wawasan Logo"
                 className="w-full h-full object-contain"
               />

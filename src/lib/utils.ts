@@ -5,15 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Helper for assets in the public folder (normalizes leading slashes for relative WebView/Capacitor compatibility)
+// Helper for assets in the public folder (ensures correct root pathing across web routes and Capacitor)
 export function getAssetUrl(path: string): string {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
     return path;
   }
-  // Standardize relative path so Capacitor Android WebView (file:// or https://localhost) resolves correctly
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `./${cleanPath}`;
+  // Strip any accidental leading relative markers like "./" or "../"
+  let cleanPath = path.replace(/^(\.\/|\.\.\/)+/, '');
+  // Ensure leading slash for root pathing across nested routes (e.g. /order, /admin)
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+  // If running under local file:// protocol (rare legacy WebView local file access)
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return `.${cleanPath}`;
+  }
+  return cleanPath;
 }
 
 // Additional utility for consistent spacing

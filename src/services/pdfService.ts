@@ -31,42 +31,21 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
       resolve('');
       return;
     }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1200;
-        canvas.height = 240;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // Fill crisp base background
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, 1200, 240);
 
-          // Draw Jawi header pattern
-          ctx.drawImage(img, 0, 0, 1200, 240);
-
-          // Soft light-cream overlay mask so header text and logo remain 100% visible and sharp
-          ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
-          ctx.fillRect(0, 0, 1200, 240);
-
-          cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
-          canvas.width = 0;
-          canvas.height = 0;
-          resolve(cachedBatikHeaderBase64);
-          return;
-        }
-      } catch (err) {
-        console.error('Error processing Jawi header for PDF:', err);
+    const tryLoad = (sources: string[], index: number = 0) => {
+      if (index >= sources.length) {
+        resolve('');
+        return;
       }
-      resolve('');
-    };
-    img.onerror = () => {
-      console.warn('Failed to load Jawi header image for PDF, attempting fallback');
-      const fallbackImg = new Image();
-      fallbackImg.crossOrigin = 'anonymous';
-      fallbackImg.onload = () => {
+
+      const img = new Image();
+      const src = sources[index];
+
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
           canvas.width = 1200;
@@ -75,9 +54,10 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
           if (ctx) {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, 1200, 240);
-            ctx.drawImage(fallbackImg, 0, 0, 1200, 240);
+            ctx.drawImage(img, 0, 0, 1200, 240);
             ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
             ctx.fillRect(0, 0, 1200, 240);
+
             cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
             canvas.width = 0;
             canvas.height = 0;
@@ -85,12 +65,21 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
             return;
           }
         } catch { /* ignore */ }
-        resolve('');
+        tryLoad(sources, index + 1);
       };
-      fallbackImg.onerror = () => resolve('');
-      fallbackImg.src = getAssetUrl('/assets/batik_vector_pattern.jpg');
+
+      img.onerror = () => {
+        tryLoad(sources, index + 1);
+      };
+
+      img.src = src;
     };
-    img.src = getAssetUrl('/assets/Jawi.jpg');
+
+    tryLoad([
+      getAssetUrl('/assets/Jawi.jpg'),
+      getAssetUrl('/assets/batik_vector_pattern.jpg'),
+      getAssetUrl('/assets/batik_pattern.jpg')
+    ], 0);
   });
 };
 
@@ -101,51 +90,65 @@ export const preloadLogoForPDF = (): Promise<string> => {
       resolve('');
       return;
     }
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 180;
-        canvas.height = 180;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // Clear canvas for transparent background
-          ctx.clearRect(0, 0, 180, 180);
 
-          // Draw the full image
-          ctx.drawImage(img, 0, 0, 180, 180);
-          
-          // Make white/near-white background pixels transparent so logo blends seamlessly onto batik header
-          const imageData = ctx.getImageData(0, 0, 180, 180);
-          const data = imageData.data;
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            // If near white, make transparent
-            if (r > 235 && g > 235 && b > 235) {
-              data[i + 3] = 0;
-            }
-          }
-          ctx.putImageData(imageData, 0, 0);
-
-          cachedLogoBase64 = canvas.toDataURL('image/png');
-          canvas.width = 0;
-          canvas.height = 0;
-          resolve(cachedLogoBase64);
-          return;
-        }
-      } catch (err) {
-        console.error('Error scaling logo for PDF:', err);
+    const tryLoad = (sources: string[], index: number = 0) => {
+      if (index >= sources.length) {
+        resolve('');
+        return;
       }
-      resolve('');
+
+      const img = new Image();
+      const src = sources[index];
+
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 180;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, 180, 180);
+            ctx.drawImage(img, 0, 0, 180, 180);
+            
+            const imageData = ctx.getImageData(0, 0, 180, 180);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              if (r > 235 && g > 235 && b > 235) {
+                data[i + 3] = 0;
+              }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            cachedLogoBase64 = canvas.toDataURL('image/png');
+            canvas.width = 0;
+            canvas.height = 0;
+            resolve(cachedLogoBase64);
+            return;
+          }
+        } catch { /* ignore */ }
+        tryLoad(sources, index + 1);
+      };
+
+      img.onerror = () => {
+        tryLoad(sources, index + 1);
+      };
+
+      img.src = src;
     };
-    img.onerror = () => {
-      console.error('Failed to load logo for PDF preloading');
-      resolve('');
-    };
-    img.src = getAssetUrl('/assets/wawasan_logo-800w.jpg');
+
+    tryLoad([
+      getAssetUrl('/assets/wawasan_logo-800w.png'),
+      getAssetUrl('/assets/wawasan_logo-400w.png'),
+      getAssetUrl('/assets/wawasan_logo.png'),
+      getAssetUrl('/assets/wawasan_logo.jpg')
+    ], 0);
   });
 };
 

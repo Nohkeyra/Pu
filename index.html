@@ -38,22 +38,7 @@
         rel="stylesheet"
       />
     </noscript>
-    <script type="module">
-      try {
-        import('/@react-refresh').then((m) => {
-          if (m && m.default) {
-            m.default.injectIntoGlobalHook(window);
-            window.$RefreshReg$ = () => {};
-            window.$RefreshSig$ = () => (type) => type;
-            window.__vite_plugin_react_preamble_installed__ = true;
-          }
-        }).catch(() => {
-          window.__vite_plugin_react_preamble_installed__ = true;
-        });
-      } catch {
-        window.__vite_plugin_react_preamble_installed__ = true;
-      }
-    </script>
+
   </head>
   <body>
     <div id="root" tabindex="-1"></div>

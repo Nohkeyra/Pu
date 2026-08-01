@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebaseConfig';
 import AuthModal from '../components/AuthModal';
-import CinematicLogo from '../components/CinematicLogo';
+import CinematicLogoLayers from '../components/CinematicLogoLayers';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
@@ -64,7 +64,7 @@ export default function LoginPage() {
             transition={{ duration: 0.45, ease: 'easeInOut' }}
             className="relative z-10 flex flex-col items-center justify-center text-center"
           >
-            <CinematicLogo sizeClassName="h-52 w-52" />
+            <CinematicLogoLayers sizeClassName="h-52 w-52" />
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -101,7 +101,7 @@ export default function LoginPage() {
               <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
               <div className="relative z-10 flex flex-col items-center text-center">
-                <CinematicLogo sizeClassName="mb-3 h-40 w-40 sm:h-44 sm:w-44" />
+                <CinematicLogoLayers sizeClassName="mb-3 h-40 w-40 sm:h-44 sm:w-44" />
 
                 <div className="mb-6 space-y-2">
                   <div className="subtle-chip">Since 1986</div>

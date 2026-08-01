@@ -4,28 +4,28 @@ import { getAssetUrl } from '@/lib/utils';
 import { useDeviceMotion3D } from '@/hooks/useDeviceMotion3D';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 
-// Helper
+// Helper for performance timing
 const getTimestamp = (): number => performance.now();
 
-interface CinematicLogoProps {
-  className?: string;
+interface CinematicLogoLayersProps {
   sizeClassName?: string;
 }
 
-const CinematicLogo: React.FC<CinematicLogoProps> = ({
-  className = '',
-  sizeClassName = 'w-56 h-56',
-}) => {
-  const { rotateX, rotateY } = useDeviceMotion3D(15);
+export const CinematicLogoLayers: React.FC<CinematicLogoLayersProps> = ({ sizeClassName = 'h-48 w-48' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Initialize Motion values for interactive 3D spinning
   const spinX = useMotionValue(0);
   const spinY = useMotionValue(0);
 
-  const combinedRotateX = useTransform([spinX, rotateX], ([sx, rx]) => (sx as number) + (rx as number));
-  const combinedRotateY = useTransform([spinY, rotateY], ([sy, ry]) => (sy as number) + (ry as number));
+  // Get smooth gyro motion values from the custom hook
+  const { rotateX: gyroRotateX, rotateY: gyroRotateY } = useDeviceMotion3D(15);
 
+  // Combine gyro/device rotation with the user's manual drag rotation
+  const combinedRotateX = useTransform([spinX, gyroRotateX], ([sx, rx]) => (sx as number) + (rx as number));
+  const combinedRotateY = useTransform([spinY, gyroRotateY], ([sy, ry]) => (sy as number) + (ry as number));
 
+  // Interaction State References
   const isDragging = useRef(false);
   const lastPointerX = useRef(0);
   const lastPointerY = useRef(0);
@@ -192,16 +192,19 @@ const CinematicLogo: React.FC<CinematicLogoProps> = ({
   };
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`} style={{ perspective: 1200 }}>
+    <div
+      ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      className="relative flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+      style={{ perspective: 1200 }}
+    >
       <motion.div
-        ref={containerRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 110, damping: 14 }}
+        transition={{ type: 'spring', stiffness: 120, damping: 15 }}
         style={{
           rotateX: combinedRotateX,
           rotateY: combinedRotateY,
@@ -222,4 +225,4 @@ const CinematicLogo: React.FC<CinematicLogoProps> = ({
   );
 };
 
-export default CinematicLogo;
+export default CinematicLogoLayers;

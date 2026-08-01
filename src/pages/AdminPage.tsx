@@ -110,7 +110,7 @@ export default function AdminPage() {
             <div onClick={() => navigate('/login')} className="flex items-center gap-3 group cursor-pointer">
               <div className="w-10 h-10 flex items-center justify-center">
                 <TransparentLogo
-                  src={getAssetUrl("/assets/wawasan_logo-800w.jpg")}
+                  src={getAssetUrl("/assets/wawasan_logo.svg")}
                   alt="Restoran Wawasan Logo"
                   className="w-full h-full object-contain"
                 />

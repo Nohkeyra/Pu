@@ -3,9 +3,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 interface UsePullToRefreshProps {
   onRefresh: () => Promise<void>;
   threshold?: number;
+  /** Maximum clientY (viewport touch Y position) allowed to initiate pull-to-refresh. Default: 150px (header/top region) */
+  maxHeaderTouchY?: number;
 }
 
-export function usePullToRefresh({ onRefresh, threshold = 80 }: UsePullToRefreshProps) {
+export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 150 }: UsePullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -19,18 +21,50 @@ export function usePullToRefresh({ onRefresh, threshold = 80 }: UsePullToRefresh
   }, [isRefreshing]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    // Only arm pull-to-refresh if page is truly at the top.
-    // Use a small tolerance (2px) to handle subpixel/floating-point scroll values
-    // that some mobile browsers report even when visually at the top.
-    if (window.scrollY <= 2) {
-      startYRef.current = e.touches[0].pageY;
+    if (isRefreshingRef.current) return;
+
+    // 1. Ensure document scroll position is strictly at the top of the page (within 2px tolerance)
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if (scrollTop > 2) {
+      startYRef.current = null;
+      return;
+    }
+
+    // 2. Ensure touch starts in the header / top app region only (viewport clientY)
+    const touch = e.touches[0];
+    if (!touch || touch.clientY > maxHeaderTouchY) {
+      startYRef.current = null;
+      return;
+    }
+
+    // 3. Ensure no sub-container (e.g. scrollable div or table/modal) under touch target is scrolled down
+    let isSubContainerScrolled = false;
+    let target = e.target as HTMLElement | null;
+    while (target && target !== document.body && target !== document.documentElement) {
+      if (target.scrollTop > 2) {
+        isSubContainerScrolled = true;
+        break;
+      }
+      target = target.parentElement;
+    }
+
+    if (!isSubContainerScrolled) {
+      startYRef.current = touch.pageY;
     } else {
       startYRef.current = null;
     }
-  }, []);
+  }, [maxHeaderTouchY]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (startYRef.current === null || isRefreshingRef.current) return;
+
+    // Double check scroll position remains strictly at top
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if (scrollTop > 2) {
+      startYRef.current = null;
+      setPullDistance(0);
+      return;
+    }
 
     const currentY = e.touches[0].pageY;
     const diff = currentY - startYRef.current;

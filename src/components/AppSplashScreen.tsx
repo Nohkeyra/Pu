@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl } from '@/lib/utils';
-import { TransparentLogo } from './TransparentLogo';
 
 interface AppSplashScreenProps {
   isLoading: boolean;
@@ -76,11 +75,14 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
                     <span className="text-white font-display font-black text-4xl tracking-tight">RW</span>
                   </div>
                 ) : (
-                  <TransparentLogo
-                    src={getAssetUrl('/assets/wawasan_logo-800w.jpg')}
+                  <img
+                    src={getAssetUrl('/assets/wawasan_logo.svg')}
                     alt="Restoran Wawasan Logo"
                     className="w-24 h-24 md:w-32 md:h-32 object-contain filter drop-shadow-lg"
-                    onError={() => setLogoError(true)}
+                    onError={() => {
+                      // Fallback to PNG or logo text error state
+                      setLogoError(true);
+                    }}
                   />
                 )}
               </div>
@@ -129,7 +131,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
             transition={{ delay: 0.7, duration: 0.8 }}
             className="text-[10px] font-semibold text-charcoal/50 dark:text-stone-400 uppercase tracking-[0.25em] z-10"
           >
-            EST. 1997 • PUTRAJAYA
+            EST. 1986 • PUTRAJAYA
           </motion.div>
         </motion.div>
       )}
