@@ -25,10 +25,8 @@ module.exports = {
         'cream':         'var(--color-cream)',
         'cream-dark':    'var(--color-cream-dark)',
         'charcoal':      'var(--color-charcoal)',
-        'stone':         'var(--color-stone)',
         
         // Legacy aliases for backward compatibility
-        'amber':         'var(--color-sunshine)',
         'warm-gold':     'var(--color-sunshine)',
         'moss':          'var(--color-kiwi)',
         'sage':          'var(--color-forest)',

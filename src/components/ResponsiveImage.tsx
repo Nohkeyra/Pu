@@ -43,27 +43,49 @@ export default function ResponsiveImage({
 }: ResponsiveImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(src);
+  const [useSrcSet, setUseSrcSet] = useState(true);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Generate srcSet from the base src path
-  // e.g., /assets/nasi-lemak.jpg → /assets/nasi-lemak-400w.jpg, /assets/nasi-lemak-800w.jpg, etc.
+  // Reset state if primary src changes
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+    setCurrentSrc(src);
+    setUseSrcSet(true);
+  }, [src]);
+
+  // Check if image is already cached
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [currentSrc, useSrcSet]);
+
+  // Generate srcSet for local responsive assets if applicable
+  const isLocalAsset = src.startsWith('/assets/') || src.startsWith('assets/');
   const basePath = src.replace(/\.[^.]+$/, '');
   const extension = src.match(/\.[^.]+$/)?.[0] || '.jpg';
 
   const widths = [400, 800, 1200, 1600];
-  const srcSet = widths
-    .map((w) => `${basePath}-${w}w${extension} ${w}w`)
-    .join(', ');
+  const srcSet = isLocalAsset
+    ? widths.map((w) => `${basePath}-${w}w${extension} ${w}w`).join(', ')
+    : undefined;
 
-  // Fallback src (original or smallest variant)
-  const fallbackSrc = `${basePath}-400w${extension}`;
-
-  useEffect(() => {
-    // If the image is already cached, onLoad won't fire — check complete
-    if (imgRef.current?.complete) {
-      setLoaded(true);
+  const handleImageError = () => {
+    // If srcSet was enabled and failed on a specific device width candidate, disable srcSet and load exact src
+    if (useSrcSet && isLocalAsset) {
+      setUseSrcSet(false);
+      return;
     }
-  }, []);
+    // If custom currentSrc failed, attempt original src before declaring error
+    if (currentSrc !== src) {
+      setCurrentSrc(src);
+      setUseSrcSet(false);
+    } else {
+      setError(true);
+    }
+  };
 
   if (error) {
     return (
@@ -84,17 +106,16 @@ export default function ResponsiveImage({
       className={cn('relative overflow-hidden', containerClassName)}
       style={aspectRatio ? { aspectRatio } : undefined}
     >
-      {/* Placeholder / skeleton while loading */}
       {!loaded && (
         <div
-          className="absolute inset-0 animate-pulse"
+          className="absolute inset-0 animate-pulse bg-cream-dark/30"
           style={{ backgroundColor: placeholderColor }}
         />
       )}
       <img
         ref={imgRef}
-        src={fallbackSrc}
-        srcSet={srcSet}
+        src={currentSrc}
+        srcSet={useSrcSet && currentSrc === src ? srcSet : undefined}
         sizes={sizes}
         alt={alt}
         loading={lazy ? 'lazy' : 'eager'}
@@ -103,9 +124,9 @@ export default function ResponsiveImage({
           setLoaded(true);
           onLoad?.();
         }}
-        onError={() => setError(true)}
+        onError={handleImageError}
         className={cn(
-          'w-full h-full transition-opacity duration-500',
+          'w-full h-full transition-opacity duration-300',
           loaded ? 'opacity-100' : 'opacity-0',
           objectFit === 'cover' && 'object-cover',
           objectFit === 'contain' && 'object-contain',

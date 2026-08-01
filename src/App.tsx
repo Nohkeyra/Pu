@@ -246,9 +246,12 @@ function App() {
     // Sync Capacitor Preferences to localStorage for synchronous access fallback
     syncPreferencesToLocalStorage();
 
-    // Preload & scale the Restoran Wawasan logo and Batik header for the invoice PDF
-    preloadLogoForPDF().catch(err => console.warn('Logo preloading failed:', err));
-    preloadBatikHeaderForPDF().catch(err => console.warn('Batik header preloading failed:', err));
+    // Preload & scale the Restoran Wawasan logo and Batik header for the invoice PDF on idle
+    const runWhenIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000));
+    runWhenIdle(() => {
+      preloadLogoForPDF().catch(err => console.warn('Logo preloading failed:', err));
+      preloadBatikHeaderForPDF().catch(err => console.warn('Batik header preloading failed:', err));
+    });
 
     const hideSplash = async () => {
       try {

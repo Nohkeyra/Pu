@@ -1,6 +1,6 @@
 // Service Worker for Restoran Wawasan Pak Usop Admin Control
 const isDevSandbox = 
-  self.location.hostname.endsWith(".run.app") ||
+  self.location.hostname.endsWith("-aistudio.run.app") ||
   self.location.hostname.includes("aistudio") ||
   self.location.hostname === "localhost" ||
   self.location.hostname === "127.0.0.1";
