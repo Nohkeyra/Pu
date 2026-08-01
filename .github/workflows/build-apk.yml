@@ -56,8 +56,12 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
         run: npm run build
 
+      # FIXED: Force-install the required native runtime engine wrapper to clear the error path
+      - name: Install Native Android Core
+        run: npm install @capacitor/android --legacy-peer-deps
+
       - name: Sync Capacitor
-        run: npx @capacitor/cli sync android # FIXED: Explicitly call the CLI tool package to resolve execution mapping
+        run: npx @capacitor/cli sync android
 
       - name: Verify google-services.json
         run: |
