@@ -18,7 +18,23 @@ export default function MenuSection() {
     // Basic localStorage caching strategy for menu items
     const cachedItems = localStorage.getItem('menu_items');
     if (cachedItems) {
-      setMenuItems(JSON.parse(cachedItems));
+      try {
+        const parsed = JSON.parse(cachedItems);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validated = parsed.map((item: any) => {
+            const defaultItem = MENU_ITEMS.find((m) => m.id === item.id);
+            if (defaultItem && (!item.image || typeof item.image !== 'string' || item.image.trim() === '')) {
+              return { ...item, image: defaultItem.image };
+            }
+            return item;
+          });
+          setMenuItems(validated);
+        } else {
+          setMenuItems(MENU_ITEMS);
+        }
+      } catch {
+        setMenuItems(MENU_ITEMS);
+      }
     } else {
       localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
     }

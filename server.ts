@@ -8,6 +8,7 @@ import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo 
 import { verifyAdminToken, effectiveJwtSecret } from './server/adminAuth.js';
 import { notifyCustomerOfStatusChange } from './server/emailService.js';
 import { generateOrdersWorkbook } from './server/exportService.js';
+import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { getAuth } from 'firebase-admin/auth';
@@ -19,13 +20,18 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(platformOptimizerMiddleware);
   app.use(cors());
   app.use(compression() as any);
   app.use(express.json({ limit: '50mb' }));
 
   // API health check
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      platform: (req as any).detectedPlatform || detectServerPlatform(req),
+      timestamp: new Date().toISOString()
+    });
   });
 
   // Admin Login

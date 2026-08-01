@@ -42,6 +42,25 @@
   </head>
   <body>
     <div id="root" tabindex="-1"></div>
+    <script>
+      // Safety net: if module init throws before React can mount (e.g. a
+      // top-level throw in firebaseConfig.ts), show the real error instead
+      // of leaving a blank screen. This does NOT fire once React is mounted
+      // and its own ErrorBoundary is active.
+      window.addEventListener('error', function (e) {
+        var root = document.getElementById('root');
+        if (root && root.childElementCount === 0) {
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#FCF5E3;">' +
+            '<h1 style="font-size:18px;font-weight:700;color:#3a2e1f;margin-bottom:8px;">App failed to start</h1>' +
+            '<pre style="font-size:12px;color:#5a4a35;background:#fff;border:1px solid #e5d9bf;border-radius:12px;padding:12px;max-width:100%;overflow:auto;text-align:left;white-space:pre-wrap;word-break:break-word;">' +
+            (e && e.message ? e.message : 'Unknown error') +
+            (e && e.filename ? ('\n' + e.filename + ':' + e.lineno) : '') +
+            '</pre>' +
+            '</div>';
+        }
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
