@@ -48,26 +48,28 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   const [error, setError] = useState(false);
   const [useSrcSet, setUseSrcSet] = useState(enableSrcSet);
   const imgRef = useRef<HTMLImageElement>(null);
+  const attemptedFallbackRef = useRef(false);
 
   // Reset states when source changes
   useEffect(() => {
     setLoaded(false);
     setError(false);
     setUseSrcSet(enableSrcSet);
+    attemptedFallbackRef.current = false;
   }, [src, enableSrcSet]);
 
   // Resolve path for Capacitor Android WebView and standard Web compatibility
   const resolvedSrc = getAssetUrl(src);
 
-  // Generate srcSet from the resolved path if enabled
-  // e.g. /assets/nasi-lemak.jpg -> /assets/nasi-lemak-400w.jpg 400w, ...
+  // Only generate srcSet for raster images with pre-generated variants (avoid .svg, data URIs, etc.)
   const urlWithoutQuery = resolvedSrc.split('?')[0];
   const queryPart = resolvedSrc.includes('?') ? '?' + resolvedSrc.split('?')[1] : '';
   const basePath = urlWithoutQuery.replace(/\.[^.]+$/, '');
   const extension = urlWithoutQuery.match(/\.[^.]+$/)?.[0] || '.jpg';
+  const isRasterAsset = resolvedSrc.includes('/assets/') && /\.(jpe?g|png|webp)($|\?)/i.test(resolvedSrc);
   const widths = [400, 800];
 
-  const srcSet = useSrcSet && resolvedSrc.includes('/assets/')
+  const srcSet = useSrcSet && isRasterAsset
     ? widths.map((w) => `${basePath}-${w}w${extension}${queryPart} ${w}w`).join(', ')
     : undefined;
 
@@ -87,7 +89,7 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       ? 'object-none'
       : 'object-cover';
 
-  if (error) {
+  if (error || !src) {
     return (
       <div
         className={cn(
@@ -134,14 +136,14 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
         alt={alt}
         loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
-        referrerPolicy="no-referrer"
         onLoad={(e) => {
           setLoaded(true);
           onLoad?.(e);
         }}
         onError={(e) => {
-          if (useSrcSet) {
+          if (useSrcSet && !attemptedFallbackRef.current) {
             // Responsive variant failed - fall back gracefully to original source
+            attemptedFallbackRef.current = true;
             setUseSrcSet(false);
           } else {
             setError(true);

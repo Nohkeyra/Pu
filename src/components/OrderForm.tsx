@@ -718,7 +718,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 Restoran Wawasan Pak Usop
               </h1>
               <p className="text-xs text-stone font-medium tracking-wide mt-1">
-                Unit 3, Level B3, Menara PjH, Presint 2, Putrajaya
+                Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
               </p>
             </div>
             
@@ -728,11 +728,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {tText('Accepting Bookings', 'Menerima Tempahan')}
               </span>
               <a 
-                href="tel:+60173157721" 
+                href="tel:+60178582642" 
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10"
               >
                 <Phone className="w-3.5 h-3.5 text-sunshine" />
-                017-315 7721 (Noh)
+                017-858 2642
               </a>
             </div>
           </div>
@@ -1774,7 +1774,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               </button>
 
               <a
-                href="tel:+60173157721"
+                href="tel:+60178582642"
                 className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
               >
                 <Phone className="w-5 h-5 shrink-0" />

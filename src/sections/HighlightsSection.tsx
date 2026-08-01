@@ -20,7 +20,7 @@ export default function HighlightsSection() {
     {
       icon: MapPin,
       title: isBm ? 'Di Tengah Putrajaya' : 'In the Heart of Putrajaya',
-      subtitle: isBm ? 'Menara PjH dengan suasana tasik yang indah.' : 'Menara PjH with a scenic lakeside feel.',
+      subtitle: isBm ? 'Bangunan Kementerian Kewangan (MoF), Presint 2.' : 'Ministry of Finance Building (MoF), Presint 2.',
     },
   ];
 

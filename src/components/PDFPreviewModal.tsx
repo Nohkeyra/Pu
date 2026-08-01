@@ -80,13 +80,13 @@ export function PDFPreviewModal({
               />
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white">
-                  RESTORAN WAWASAN
+                  RESTORAN WAWASAN PAK USOP
                 </h1>
                 <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
-                  Unit 3, Level B3, Menara PjH, Putrajaya • Est. 1986
+                  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
                 </p>
                 <p className="text-[11px] text-stone-500 dark:text-stone-500">
-                  Tel: 017-315 7721 (Noh) • Email: info@wawasan.my
+                  Tel: 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
                 </p>
               </div>
             </div>

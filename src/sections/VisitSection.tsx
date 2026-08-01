@@ -63,7 +63,7 @@ export default function VisitSection() {
                     {isBm ? 'Lokasi' : 'Location'}
                   </h3>
                   <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
-                    Aras LG, Bangunan Kementerian Kewangan (MoF), No. 2, Persiaran Perdana, Presint 2, 62592 Putrajaya
+                    Unit 3, Level B3, Menara PjH, Jalan P2a, Presint 2, 62100 Putrajaya
                   </p>
                 </div>
               </motion.div>
@@ -77,8 +77,8 @@ export default function VisitSection() {
                     {isBm ? 'Hubungi' : 'Contact'}
                   </h3>
                   <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    +60 19-382 7215<br />
-                    +60 12-345 6789
+                    {isBm ? 'Telefon' : 'Call'}: +60 17-858 2642<br />
+                    WhatsApp: +60 17-315 7721
                   </p>
                 </div>
               </motion.div>
@@ -107,8 +107,7 @@ export default function VisitSection() {
                     {isBm ? 'E-mel' : 'Email'}
                   </h3>
                   <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    info@wawasan.my<br />
-                    catering@wawasan.my
+                    wawasan.orders@gmail.com
                   </p>
                 </div>
               </motion.div>
@@ -116,7 +115,7 @@ export default function VisitSection() {
 
             <motion.div variants={itemVariants}>
               <a 
-                href="https://maps.google.com/?q=Restoran+Wawasan+Pak+Usop+Putrajaya" 
+                href="https://maps.app.goo.gl/F1aswiA657kzhf298" 
                 target="_blank" 
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 bg-deep-forest hover:bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-deep-forest/20"
@@ -133,7 +132,7 @@ export default function VisitSection() {
             className="relative aspect-square md:aspect-video lg:aspect-auto lg:h-[600px] rounded-[32px] overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl"
           >
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m13.1!3m3!1m2!1s0x31cdb7f646000001%3A0x7d06e2e0e9e4f5a7!2sMinistry%20of%20Finance!5e0!3m2!1sen!2smy!4v1722424000000!5m2!1sen!2smy" 
+              src="https://maps.google.com/maps?q=Unit%203,%20Level%20B3,%20Restoran%20Wawasan%20Pak%20Usop,%20Menara%20PjH,%20Jalan%20P2a,%20Presint%202,%2062100%20Putrajaya&t=&z=16&ie=UTF8&iwloc=&output=embed" 
               width="100%" 
               height="100%" 
               style={{ border: 0 }} 
@@ -141,6 +140,7 @@ export default function VisitSection() {
               loading="lazy" 
               referrerPolicy="no-referrer-when-downgrade"
               className="grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
+              title="Restoran Wawasan Map Location"
             />
             
             {/* Map Overlay Card */}
@@ -151,7 +151,7 @@ export default function VisitSection() {
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-widest font-bold text-sunshine mb-0.5">Found us at</p>
-                  <p className="text-sm font-bold text-deep-forest dark:text-white">Basement, MoF Building, Putrajaya</p>
+                  <p className="text-sm font-bold text-deep-forest dark:text-white">Unit 3, Level B3, Menara PjH, Putrajaya</p>
                 </div>
               </div>
             </div>

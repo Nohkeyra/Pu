@@ -1,11 +1,13 @@
-import { Capacitor } from '@capacitor/core';
+import { getAppEnvironment, getPlatformHeaders } from './platform';
+
+export { getAppEnvironment, getPlatformHeaders };
 
 export const getApiUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const isNative = Capacitor.isNativePlatform();
+  const env = getAppEnvironment();
 
-  // 1. If it's a native app, use the Android-specific URL or fallback to the general one
-  if (isNative) {
+  // 1. Android APK native environment
+  if (env === 'android_apk') {
     let baseUrl = (import.meta.env.VITE_API_URL_ANDROID || import.meta.env.VITE_API_URL || '').trim();
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
@@ -24,7 +26,7 @@ export const getApiUrl = (path: string) => {
     return `${baseUrl}${cleanPath}`;
   }
 
-  // 2. For Web: Use relative paths by default to avoid CORS and domain mismatch errors
+  // 2. Web App or AI Studio Preview: Use relative paths by default to avoid CORS and domain mismatch errors
   if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.startsWith('file://')) {
     return cleanPath;
   }
@@ -39,4 +41,5 @@ export const getApiUrl = (path: string) => {
   }
   return `${baseUrl}${cleanPath}`;
 };
+
 
