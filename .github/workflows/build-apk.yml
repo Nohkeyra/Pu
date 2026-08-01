@@ -14,16 +14,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45 # Optimized from 60 to protect against hung runner costs
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # REMOVED: Redundant android-actions/setup-android step because ubuntu-latest pre-installs the Android SDK.
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
           cache: 'npm'
 
       - name: Set up JDK 17
@@ -42,15 +44,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install dependencies
         run: npm ci
 
       - name: Build web assets
         env:
-          VITE_API_URL_ANDROID: https://restoran-wawasan-bio.onrender.com
+          VITE_API_URL_ANDROID: https://onrender.com
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -68,24 +67,19 @@ jobs:
           echo "Checking google-services.json..."
           if [ -f "android/app/google-services.json" ]; then
             echo "✅ android/app/google-services.json exists."
-            ls -la android/app/google-services.json
           elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-            echo "⚠️ android/app/google-services.json missing from checkout, restoring from secret..."
+            echo "⚠️ Restoring google-services.json from secret..."
             echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-            ls -la android/app/google-services.json
           else
-            echo "❌ ERROR: android/app/google-services.json not found after checkout!"
-            echo "Directory listing of android/app:"
-            ls -la android/app
+            echo "❌ ERROR: google-services.json missing!"
             exit 1
           fi
 
       - name: Set app version
         run: |
-          echo "VERSION_CODE=$(date +%Y%m%d.%H%M)" >> $GITHUB_ENV
+          echo "VERSION_CODE=$(date +%Y%m%d%H)" >> $GITHUB_ENV # FIXED: Removed dots; version codes must be plain integers.
           echo "VERSION_NAME=$(date +%Y.%m.%d)" >> $GITHUB_ENV
 
-      # CRUCIAL: This decodes your keystore so Gradle can sign the app
       - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -99,13 +93,17 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Build signed release APK
+      # FIXED: Environment secrets are explicitly passed so Gradle handles the signing at compilation runtime.
+      - name: Build signed release APK & Bundle
         working-directory: ./android
-        run: ./gradlew assembleRelease
-
-      - name: Build Bundle (AAB for Play Store)
-        working-directory: ./android
-        run: ./gradlew bundleRelease
+        env:
+          ANDROID_RELEASE_STORE_FILE: my-release-key.jks
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -114,6 +112,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+      # PATH CORRECTED TRAP: Release apks compile inside the 'release' folder, not 'debug' folder
       - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
@@ -137,5 +136,6 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ APK builds completed successfully!\n\n**Artifacts:**\n- Debug APK: `app-debug.apk`\n- Signed Release APK: `app-release-signed.apk`\n- Release Bundle (AAB): `app-release.aab`\n\nDownload from the Actions artifacts.'
+              body: '✅ APK builds completed successfully!\n\n**Artifacts:**\n- Debug APK: `app-debug.apk`\n- Signed Release APK: `app-release.apk`\n- Release Bundle (AAB): `app-release.aab`\n\nDownload from the Actions artifacts link above.'
             })
+            
