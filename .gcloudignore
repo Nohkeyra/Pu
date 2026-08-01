@@ -2,6 +2,7 @@
 # Since dist/ is in .gitignore, gcloud would default to ignoring it, which causes "Build artifacts are empty" errors on deployment.
 # This file overrides that behavior to ensure dist/ is uploaded, while ignoring large, unnecessary directories.
 
+!dist/
 .gcloudignore
 .git
 .gitignore

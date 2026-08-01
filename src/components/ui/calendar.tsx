@@ -88,6 +88,7 @@ function Calendar({
             : "rounded-md pl-2 pr-1 flex items-center gap-1 text-sm h-8 [&>svg]:text-stone [&>svg]:size-3.5",
           defaultClassNames.caption_label
         ),
+        // @ts-expect-error table is deprecated/renamed in latest react-day-picker but used in shadcn
         table: "w-full border-collapse",
         weekdays: cn("flex", defaultClassNames.weekdays),
         weekday: cn(

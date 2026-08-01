@@ -63,7 +63,7 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   // e.g. /assets/nasi-lemak.jpg -> /assets/nasi-lemak-400w.jpg 400w, ...
   const basePath = resolvedSrc.replace(/\.[^.]+$/, '');
   const extension = resolvedSrc.match(/\.[^.]+$/)?.[0] || '.jpg';
-  const widths = [400, 800, 1200, 1600];
+  const widths = [400, 800];
 
   const srcSet = useSrcSet && resolvedSrc.includes('/assets/')
     ? widths.map((w) => `${basePath}-${w}w${extension} ${w}w`).join(', ')
