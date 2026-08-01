@@ -41,7 +41,7 @@ export const MENU_ITEMS: MenuItem[] = [
     nameEn: 'Lontong Singapore',
     nameBm: 'Lontong Singapore',
     descEn: 'Compressed rice cakes in rich coconut vegetable curry with cabbage, long beans, and sambal.',
-    descBm: 'Nasi himpit di dalam kuah lodeh sayur bersantan pekat bersama kuubisan, kacang panjang, dan sambal.',
+    descBm: 'Nasi himpit di dalam kuah lodeh sayur bersantan pekat bersama kubis, kacang panjang, dan sambal.',
     priceEn: 'From RM 7',
     priceBm: 'Daripada RM 7',
     image: '/assets/lontong-singapore.jpg',

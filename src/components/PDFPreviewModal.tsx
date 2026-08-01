@@ -253,43 +253,43 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               </div>
             ) : order ? (
               /* High Fidelity Interactive Document View */
-              <div className="max-w-xl mx-auto bg-white text-stone-900 rounded-2xl shadow-2xl p-5 sm:p-8 border border-stone-200">
+              <div className="max-w-xl mx-auto bg-white text-slate-900 rounded-2xl shadow-2xl p-5 sm:p-8 border border-slate-200">
                 {/* Header Logo & Title */}
-                <div className="relative overflow-hidden rounded-xl p-4 bg-[#FFFDF8] border border-amber-200/80 mb-6 shadow-xs">
+                <div className="relative overflow-hidden rounded-xl p-4 bg-amber-50/70 border border-amber-200 mb-6 shadow-xs">
                   <div 
                     className="absolute inset-0 opacity-15 bg-cover bg-center pointer-events-none"
                     style={{ backgroundImage: `url('/assets/batik_vector_pattern.jpg')` }}
                   />
                   <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div className="flex items-start gap-3">
-                      <TransparentLogo src="/assets/wawasan_logo.jpg" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-amber-400/80 shrink-0 shadow-xs" />
+                      <TransparentLogo src="/assets/wawasan_logo.jpg" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-amber-300 shrink-0 shadow-xs" />
                       <div>
-                        <h3 className="text-lg font-extrabold text-amber-900 uppercase tracking-tight leading-none">
+                        <h3 className="text-lg font-extrabold text-amber-950 uppercase tracking-tight leading-none">
                           RESTORAN WAWASAN
                         </h3>
-                        <p className="text-xs text-stone-700 mt-1 font-medium">
+                        <p className="text-xs text-slate-700 mt-1 font-semibold">
                           Unit 3, Level B3, Menara PjH
                         </p>
-                        <p className="text-xs text-stone-600">
+                        <p className="text-xs text-slate-600 font-medium">
                           Jalan P2a, Presint 2, 62100 Putrajaya
                         </p>
-                        <p className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                        <p className="text-[11px] text-amber-900 font-bold mt-0.5">
                           Est. 1986 • Restoran Wawasan Pak Usop
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-amber-200/40 w-full sm:w-auto">
-                      <span className="inline-block px-3 py-1 bg-amber-100/90 text-amber-900 font-extrabold text-xs rounded-full uppercase tracking-wider mb-1.5 border border-amber-300/50">
+                    <div className="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-amber-200 w-full sm:w-auto">
+                      <span className="inline-block px-3 py-1 bg-amber-200/80 text-amber-950 font-extrabold text-xs rounded-full uppercase tracking-wider mb-1.5 border border-amber-400/60 shadow-2xs">
                         INVOIS / INVOICE
                       </span>
-                      <p className="text-xs text-stone-600">
+                      <p className="text-xs text-slate-700 font-medium">
                         {tText('No. Invois', 'Invoice No.')}:{' '}
-                        <span className="font-bold text-stone-900 font-mono">{invoiceNo}</span>
+                        <span className="font-bold text-slate-900 font-mono">{invoiceNo}</span>
                       </p>
-                      <p className="text-xs text-stone-600">
+                      <p className="text-xs text-slate-700 font-medium">
                         {tText('Tarikh', 'Date')}:{' '}
-                        <span className="font-bold text-stone-800">{formattedDate}</span>
+                        <span className="font-bold text-slate-900">{formattedDate}</span>
                       </p>
                     </div>
                   </div>
@@ -297,34 +297,34 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
 
                 {/* Recipient & Event Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-5">
-                  <div className="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/60">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
-                      <User className="w-3.5 h-3.5 text-amber-700" />
+                  <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200">
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-950 uppercase tracking-wider mb-1">
+                      <User className="w-3.5 h-3.5 text-amber-800" />
                       <span>{tText('Kepada / Bill To', 'Kepada / Bill To')}</span>
                     </div>
-                    <p className="text-sm font-bold text-stone-900">{order.to}</p>
+                    <p className="text-sm font-black text-slate-900">{order.to}</p>
                     {order.attn && (
-                      <p className="text-xs text-stone-600 mt-0.5">
-                        <span className="font-semibold">Attn:</span> {order.attn}
+                      <p className="text-xs text-slate-700 font-medium mt-0.5">
+                        <span className="font-bold text-slate-900">Attn:</span> {order.attn}
                       </p>
                     )}
                     {order.contact && (
-                      <p className="text-xs text-stone-500 font-mono mt-0.5">{order.contact}</p>
+                      <p className="text-xs text-slate-600 font-mono font-medium mt-0.5">{order.contact}</p>
                     )}
                   </div>
 
-                  <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-stone-600 uppercase tracking-wider mb-1">
-                      <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                      <Calendar className="w-3.5 h-3.5 text-amber-800" />
                       <span>{tText('Butiran Acara', 'Event Details')}</span>
                     </div>
-                    <p className="text-xs text-stone-800 font-medium">
-                      <span className="text-stone-500">{tText('Tarikh Acara', 'Event Date')}:</span>{' '}
+                    <p className="text-xs text-slate-900 font-semibold">
+                      <span className="text-slate-600">{tText('Tarikh Acara', 'Event Date')}:</span>{' '}
                       {formattedDate}
                     </p>
                     {order.location && (
-                      <p className="text-xs text-stone-800 font-medium flex items-start gap-1 mt-1">
-                        <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-slate-900 font-semibold flex items-start gap-1 mt-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
                         <span className="line-clamp-2">{order.location}</span>
                       </p>
                     )}
@@ -332,34 +332,34 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 </div>
 
                 {/* Items & Pricing Table */}
-                <div className="border border-stone-200 rounded-xl overflow-hidden mb-5">
+                <div className="border border-slate-200 rounded-xl overflow-hidden mb-5 shadow-2xs">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-amber-900 text-white font-bold uppercase tracking-wider text-[11px]">
+                    <thead className="bg-amber-950 text-white font-bold uppercase tracking-wider text-[11px]">
                       <tr>
-                        <th className="p-3">{tText('Perkara / Description', 'Perkara / Description')}</th>
-                        <th className="p-3 text-center">{tText('Pax / Qty', 'Pax / Qty')}</th>
-                        <th className="p-3 text-right">{tText('Jumlah (RM)', 'Amount (RM)')}</th>
+                        <th className="p-3 text-white">{tText('Perkara / Description', 'Perkara / Description')}</th>
+                        <th className="p-3 text-center text-white">{tText('Pax / Qty', 'Pax / Qty')}</th>
+                        <th className="p-3 text-right text-white">{tText('Jumlah (RM)', 'Amount (RM)')}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-stone-100 text-stone-800 font-medium">
+                    <tbody className="divide-y divide-slate-100 text-slate-800 font-medium bg-white">
                       <tr>
                         <td className="p-3 align-top">
-                          <p className="font-bold text-stone-900 text-sm">
+                          <p className="font-extrabold text-slate-900 text-sm">
                             {tText('Tempahan Makanan Catering', 'Food Catering Order')}
                           </p>
-                          <p className="text-stone-600 mt-1 leading-relaxed">
+                          <p className="text-slate-700 mt-1 leading-relaxed font-medium">
                             {order.menu || order.meals?.join(', ') || 'Pakej Makanan Citarasa Malaysia'}
                           </p>
                           {order.notes && (
-                            <p className="text-stone-500 italic mt-1 bg-amber-50/50 p-2 rounded-lg border border-amber-100">
+                            <p className="text-slate-700 italic mt-1 bg-amber-50 p-2 rounded-lg border border-amber-200 text-[11px]">
                               Note: {order.notes}
                             </p>
                           )}
                         </td>
-                        <td className="p-3 text-center align-top font-semibold text-stone-900">
+                        <td className="p-3 text-center align-top font-bold text-slate-900">
                           {order.quantity || '-'} PAX
                         </td>
-                        <td className="p-3 text-right align-top font-bold text-stone-900 text-sm">
+                        <td className="p-3 text-right align-top font-black text-slate-900 text-sm">
                           RM {totalAmount.toFixed(2)}
                         </td>
                       </tr>
@@ -368,17 +368,17 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 </div>
 
                 {/* Total & Verification QR */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-4 bg-amber-50/80 rounded-xl border border-amber-200">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-4 bg-amber-50/90 rounded-xl border border-amber-200">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg border border-amber-200 shadow-sm shrink-0">
+                    <div className="p-2 bg-white rounded-lg border border-amber-200 shadow-xs shrink-0">
                       <QRCodeSVG value={qrData} size={64} level="M" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-                        <QrCode className="w-3.5 h-3.5 text-amber-700" />
+                      <div className="flex items-center gap-1 text-[11px] font-extrabold text-amber-950 uppercase tracking-wider">
+                        <QrCode className="w-3.5 h-3.5 text-amber-800" />
                         <span>{tText('Kod Pengesahan', 'Verification Code')}</span>
                       </div>
-                      <p className="text-[10px] text-stone-500 max-w-[160px] leading-tight mt-0.5">
+                      <p className="text-[10px] text-slate-600 font-medium max-w-[160px] leading-tight mt-0.5">
                         {tText(
                           'Imbas kod QR di atas untuk mengesahkan ketulenan invois rasmi ini.',
                           'Scan QR code above to verify authenticity of this official invoice.'
@@ -388,7 +388,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                   </div>
 
                   <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-amber-200">
-                    <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">
+                    <p className="text-xs font-extrabold text-amber-900 uppercase tracking-wider">
                       {tText('Jumlah Keseluruhan', 'Grand Total')}
                     </p>
                     <p className="text-2xl font-black text-amber-950 font-display">
@@ -398,26 +398,26 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 </div>
 
                 {/* Ringgit in Words Banner */}
-                <div className="mt-4 p-3 bg-stone-50 rounded-xl border border-stone-200 text-center">
-                  <p className="text-[11px] text-stone-500 uppercase tracking-wider font-bold mb-0.5">
+                <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                  <p className="text-[11px] text-slate-700 uppercase tracking-wider font-extrabold mb-0.5">
                     {tText('Ringgit dalam Perkataan / In Words', 'Ringgit in Words')}
                   </p>
-                  <p className="text-xs font-bold text-stone-800 italic">
+                  <p className="text-xs font-bold text-slate-900 italic">
                     "{numberToWords(totalAmount, language)}"
                   </p>
                 </div>
 
                 {/* Status Badge */}
-                <div className="mt-4 flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-100 pt-3">
-                  <div className="flex items-center gap-1.5 text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="mt-4 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-3">
+                  <div className="flex items-center gap-1.5 text-emerald-900 font-bold bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-300">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-800" />
                     <span>
                       {order.status === 'approved'
                         ? tText('Invois Diluluskan', 'Approved Invoice')
                         : tText('Invois Diterima', 'Order Submitted')}
                     </span>
                   </div>
-                  <p className="font-mono text-stone-400">
+                  <p className="font-mono text-slate-500 font-medium">
                     Restoran Wawasan • Official Receipt
                   </p>
                 </div>

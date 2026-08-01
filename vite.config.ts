@@ -29,10 +29,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          framework: ['react', 'react-dom', 'react-router-dom', '@radix-ui/react-dialog', '@radix-ui/react-popover', 'lucide-react', 'motion/react'],
-          firebase: ['firebase/app', 'firebase/firestore', 'firebase/auth'],
-          pdf: ['jspdf', 'jspdf-autotable']
-        }
+          'vendor-core': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tooltip', '@radix-ui/react-select', 'clsx', 'tailwind-merge'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-motion': ['motion/react'],
+          'vendor-firebase': ['firebase/app', 'firebase/firestore', 'firebase/auth'],
+          'vendor-excel': ['exceljs'],
+          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
+          'vendor-charts': ['recharts'],
+        },
       },
     },
   },
