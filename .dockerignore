@@ -2,6 +2,7 @@
 # Since dist/ is in .gitignore, docker builds using some tools would default to ignoring it.
 # This file overrides that behavior to ensure dist/ is uploaded, while ignoring large, unnecessary directories.
 
+!dist/
 .dockerignore
 .git
 .gitignore

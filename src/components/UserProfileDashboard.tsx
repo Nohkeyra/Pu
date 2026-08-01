@@ -1489,6 +1489,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       <AnimatePresence>
         {selectedOrders.size >= 2 && (
           <motion.div
+            key="fab-combine"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
@@ -1520,7 +1521,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const combineModal = (
     <AnimatePresence>
       {showCombineModal && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+        <div key="combine-modal" className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1644,30 +1645,31 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   }
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[1500] flex justify-end">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm"
-          />
-
-          {/* Sliding Panel */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl"
-          >
-            {content}
-          </motion.div>
-        </div>
-      )}
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <div key="sliding-panel" className="fixed inset-0 z-[1500] flex justify-end">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm"
+            />
+            {/* Sliding Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-xl h-full flex flex-col z-10 shadow-2xl"
+            >
+              {content}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       {combineModal}
       {confirmModal}
       {previewOrder && (
@@ -1679,6 +1681,6 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           language={language}
         />
       )}
-    </AnimatePresence>
+    </>
   );
 }

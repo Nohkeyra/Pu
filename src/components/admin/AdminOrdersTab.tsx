@@ -116,8 +116,8 @@ export function AdminOrdersTab({
   // Calculate quick summary metrics from current orders list
   const totalCount = orders.length;
   const pendingCount = orders.filter((o) => o.status === 'pending' || !o.status).length;
-  const approvedCount = orders.filter((o) => o.status === 'approved' || o.status === 'diluluskan').length;
-  const billedCount = orders.filter((o) => o.status === 'billed' || o.status === 'dibilkan').length;
+  const approvedCount = orders.filter((o) => (o.status as string) === 'approved' || (o.status as string) === 'diluluskan').length;
+  const billedCount = orders.filter((o) => (o.status as string) === 'billed' || (o.status as string) === 'dibilkan').length;
   const totalPax = orders.reduce((sum, o) => sum + (Number(o.quantity) || 0), 0);
 
   return (

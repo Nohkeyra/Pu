@@ -26,6 +26,7 @@ const CinematicLogo: React.FC<CinematicLogoProps> = ({
   const combinedRotateX = useTransform([spinX, rotateX], ([sx, rx]) => (sx as number) + (rx as number));
   const combinedRotateY = useTransform([spinY, rotateY], ([sy, ry]) => (sy as number) + (ry as number));
 
+
   const isDragging = useRef(false);
   const lastPointerX = useRef(0);
   const lastPointerY = useRef(0);
@@ -206,14 +207,17 @@ const CinematicLogo: React.FC<CinematicLogoProps> = ({
           rotateX: combinedRotateX,
           rotateY: combinedRotateY,
           transformStyle: 'preserve-3d',
-          boxShadow: `${-combinedRotateY.get() * 0.2}px ${combinedRotateX.get() * 0.2}px 25px rgba(0,0,0,0.25)`
+          // Shadow shifts with rotation
+          boxShadow: `${-combinedRotateY.get() * 0.25}px ${combinedRotateX.get() * 0.25}px 25px rgba(0,0,0,0.25)`,
+          // Highlight simulation: gradient overlay shifts opposite shadow
+          backgroundImage: `radial-gradient(circle at ${50 + combinedRotateY.get() * 0.2}% ${50 - combinedRotateX.get() * 0.2}%, rgba(255,255,255,0.25), transparent 70%)`
         }}
         className={`relative flex items-center justify-center ${sizeClassName} z-10 cursor-grab active:cursor-grabbing touch-none select-none`}
       >
         <TransparentLogo
-          src={getAssetUrl('/assets/wawasan_logo-800w.jpg')}
-          alt="Pak Usop Catering Logo"
-          className="w-full h-full object-contain select-none"
+          src={getAssetUrl('/assets/wawasan_logo.jpg')}
+          alt="Restoran Wawasan Logo"
+          className="w-full h-full object-contain drop-shadow-2xl select-none"
           style={{ transform: 'translateZ(40px)' }}
         />
       </motion.div>

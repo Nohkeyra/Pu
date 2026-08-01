@@ -485,7 +485,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         setPreviewFileName(`TEST_CONSOLIDATED_INVOICE_${format(new Date(), 'yyyyMMdd')}.pdf`);
         setIsPreviewOpen(true);
       } else if (testId === 'db_latency') {
-        const ok = await measureDbLatency(toast);
+        const latency = await measureDbLatency();
+        const ok = latency > 0;
         if (!ok) throw new Error('Database ping failed');
       } else if (testId === 'auth_session') {
         if (!adminToken) throw new Error('Token missing');

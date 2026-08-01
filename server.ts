@@ -4,7 +4,6 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import nodemailer from 'nodemailer';
-import { createServer as createViteServer } from 'vite';
 import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret } from './server/adminAuth.js';
 import { notifyCustomerOfStatusChange } from './server/emailService.js';
@@ -21,7 +20,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(compression());
+  app.use(compression() as any);
   app.use(express.json({ limit: '50mb' }));
 
   // API health check
@@ -244,6 +243,7 @@ async function startServer() {
 
   // Vite middleware
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
