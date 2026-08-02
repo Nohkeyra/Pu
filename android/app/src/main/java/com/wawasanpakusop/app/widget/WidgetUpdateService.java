@@ -12,12 +12,16 @@ import android.widget.RemoteViews;
 import com.wawasanpakusop.app.MainActivity;
 import com.wawasanpakusop.app.R;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -97,6 +101,15 @@ public class WidgetUpdateService {
             views.setOnClickPendingIntent(R.id.widget_title, openPendingIntent);
             views.setOnClickPendingIntent(R.id.widget_empty_view, openPendingIntent);
 
+            // Manual Refresh Intent
+            Intent refreshIntent = new Intent(context, WawasanWidgetProvider.class);
+            refreshIntent.setAction(WawasanWidgetProvider.ACTION_REFRESH);
+            PendingIntent refreshPendingIntent = PendingIntent.getBroadcast(
+                context, 1, refreshIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent);
+
             Intent listIntent = new Intent(context, WidgetRemoteViewsService.class);
             listIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
             listIntent.setData(android.net.Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
@@ -119,6 +132,28 @@ public class WidgetUpdateService {
                     fetchSucceeded ? "No upcoming orders" : "Unable to load orders"
                 );
             }
+
+            // Today's summary calculation
+            String todayStr = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+            int todayOrders = 0;
+            int todayPax = 0;
+            try {
+                JSONArray arr = new JSONArray(cachedJson != null ? cachedJson : "[]");
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.getJSONObject(i);
+                    String orderDate = o.optString("date", "");
+                    if (orderDate.startsWith(todayStr)) {
+                        todayOrders++;
+                        todayPax += o.optInt("quantity", 0);
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            String summaryText = todayOrders > 0
+                ? "Hari ini: " + todayPax + " pax (" + todayOrders + " order)"
+                : "Tiada order hari ini";
+
+            views.setTextViewText(R.id.widget_today_summary, summaryText);
 
             manager.updateAppWidget(appWidgetId, views);
         }

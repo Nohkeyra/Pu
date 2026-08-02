@@ -28,6 +28,7 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             // the network fetch which will update the view when it completes.
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
             setOpenAdminIntent(context, views);
+            setRefreshIntent(context, views);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
         WidgetUpdateService.fetchAndUpdate(context, appWidgetIds);
@@ -42,6 +43,16 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
         );
         views.setOnClickPendingIntent(R.id.widget_title, pendingIntent);
         views.setOnClickPendingIntent(R.id.widget_empty_view, pendingIntent);
+    }
+
+    private void setRefreshIntent(Context context, RemoteViews views) {
+        Intent refreshIntent = new Intent(context, WawasanWidgetProvider.class);
+        refreshIntent.setAction(ACTION_REFRESH);
+        PendingIntent refreshPendingIntent = PendingIntent.getBroadcast(
+            context, 1, refreshIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent);
     }
 
     @Override

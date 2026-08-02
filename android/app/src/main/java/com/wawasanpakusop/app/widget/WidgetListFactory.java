@@ -68,7 +68,9 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                     o.optString("meals", "N/A"),
                     o.optString("location", "N/A"),
                     o.optString("menu", "N/A"),
-                    timeLabel
+                    timeLabel,
+                    o.optString("to", "N/A"),
+                    o.optString("status", "pending")
                 );
 
                 grouped.computeIfAbsent(dayLabel, k -> new ArrayList<>()).add(item);
@@ -108,9 +110,18 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         RemoteViews itemView = new RemoteViews(context.getPackageName(), R.layout.widget_order_item);
         OrderRow item = row.order;
 
-        itemView.setTextViewText(R.id.item_time_pax, item.quantity + " Pax | " + item.meals + " | " + item.location + "  •  " + item.time);
-        itemView.setTextViewText(R.id.item_meal_location, "Menu: " + item.menu);
-        itemView.setViewVisibility(R.id.item_menu, android.view.View.GONE);
+        itemView.setTextViewText(R.id.item_client_name, item.clientName);
+        itemView.setTextViewText(R.id.item_time_pax, item.quantity + " Pax  •  " + item.time);
+        itemView.setTextViewText(R.id.item_meal_location, item.location + "  —  " + item.meals);
+        
+        // Status stripe color
+        int stripeColor;
+        switch (item.status) {
+            case "approved": stripeColor = 0xFF4CAF50; break;  // green
+            case "billed":   stripeColor = 0xFF2196F3; break;  // blue
+            default:         stripeColor = 0xFFD4A853; break;  // gold (pending)
+        }
+        itemView.setInt(R.id.item_status_stripe, "setBackgroundColor", stripeColor);
 
         // Tapping an individual order card opens the app directly to /admin,
         // consistent with tapping the widget title.
@@ -199,14 +210,18 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         final String location;
         final String menu;
         final String time;
+        final String clientName;
+        final String status;
 
-        OrderRow(String id, int quantity, String meals, String location, String menu, String time) {
+        OrderRow(String id, int quantity, String meals, String location, String menu, String time, String clientName, String status) {
             this.id = id;
             this.quantity = quantity;
             this.meals = meals;
             this.location = location;
             this.menu = menu;
             this.time = time;
+            this.clientName = clientName;
+            this.status = status;
         }
     }
 }
