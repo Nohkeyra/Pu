@@ -1,6 +1,24 @@
-import type nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAdminApp, getFirestore, type OrderData } from "./firebaseAdmin.js";
+
+export function createBrevoTransporter(): nodemailer.Transporter {
+  const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+  const port = Number(process.env.SMTP_PORT) || 2525;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: false,
+    auth: {
+      user,
+      pass,
+    },
+    family: 4,
+  } as any);
+}
 
 export const ENABLE_ORDER_STATUS_NOTIFICATIONS =
   (process.env.ENABLE_ORDER_STATUS_NOTIFICATIONS || "true") !== "false";

@@ -730,8 +730,8 @@ export function AdminOrdersTab({
               </h3>
               <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
                 {language === 'bm'
-                  ? 'Sila sahkan nombor invois dan tetapan lajur nota untuk invois konsolidasi ini.'
-                  : 'Confirm invoice number and notes layout for this consolidated invoice.'}
+                  ? 'Sila sahkan nombor invois dan tetapan lajur nota. Semakan berasaskan klien dikuatkuasakan secara ketat; penjanaan akan GAGAL jika pesanan merangkumi klien berbeza.'
+                  : 'Confirm invoice number and notes layout. Client-based validation is strictly enforced; generation will FAIL if orders span different clients.'}
               </p>
             </div>
 

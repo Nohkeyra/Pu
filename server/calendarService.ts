@@ -80,16 +80,26 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
 
     const endDateTime = new Date(startDateTime.getTime() + 3 * 60 * 60 * 1000);
 
-    const mealList = Array.isArray(orderData.meals) ? orderData.meals.join(", ") : (orderData.meals || "");
-    const summary = `${orderData.quantity || ""} Pax | ${mealList || "N/A"} | ${orderData.location || "N/A"}`;
-    const description = `Menu: ${orderData.menu || "N/A"}`;
-
     const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
-    const existingEventId = orderData.calendarEventIds?.[calendarId];
+    const currentStatus = (orderData.status || "pending").toLowerCase();
+    
+    // Per-status event key ensures every status transition auto-syncs to Google Calendar with its own separate event
+    const statusEventKey = `${calendarId}_${currentStatus}`;
+    const statusKey = currentStatus;
+
+    const existingEventId =
+      orderData.calendarEventIds?.[statusEventKey] ||
+      orderData.calendarEventIds?.[statusKey];
+
+    const statusLabel = currentStatus.toUpperCase();
+    const mealList = Array.isArray(orderData.meals) ? orderData.meals.join(", ") : (orderData.meals || "");
+    const invPrefix = orderData.invoiceNo ? `[${orderData.invoiceNo}] ` : '';
+    const summary = `[${statusLabel}] ${invPrefix}${orderData.quantity || orderData.pax || ""} Pax | ${mealList || "N/A"} | ${orderData.location || "N/A"}`;
+    const description = `Status: ${statusLabel}\nCustomer: ${orderData.name || orderData.customerName || "N/A"}\nCompany: ${orderData.to || "N/A"}\nMenu: ${orderData.menu || "N/A"}\nNotes: ${orderData.notes || "N/A"}`;
 
     if (existingEventId) {
       try {
-        console.log(`Updating existing Google Calendar event ${existingEventId} for order ${orderId}...`);
+        console.log(`Updating existing Google Calendar event ${existingEventId} for order ${orderId} (${statusLabel})...`);
         await calendar.events.update({
           calendarId: calendarId,
           eventId: existingEventId,
@@ -107,7 +117,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
             },
           },
         });
-        console.log(`Google Calendar event ${existingEventId} updated successfully.`);
+        console.log(`Google Calendar event ${existingEventId} updated successfully for status ${statusLabel}.`);
         return;
       } catch (updateErr) {
         const errObj = updateErr as { status?: number; message?: string };
@@ -119,7 +129,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       }
     }
 
-    console.log(`Creating new Google Calendar event for order ${orderId}...`);
+    console.log(`Creating new Google Calendar event for order ${orderId} status ${statusLabel}...`);
     const response = await calendar.events.insert({
       calendarId: calendarId,
       requestBody: {
@@ -139,11 +149,13 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
 
     const eventId = response.data.id;
     if (eventId) {
-      console.log(`Google Calendar event created successfully! Event Link: ${response.data.htmlLink}`);
+      console.log(`Google Calendar event created successfully for status ${statusLabel}! Link: ${response.data.htmlLink}`);
 
       const updatedCalendarEventIds = {
         ...(orderData.calendarEventIds || {}),
-        [calendarId]: eventId
+        [statusEventKey]: eventId,
+        [statusKey]: eventId,
+        [calendarId]: eventId,
       };
 
       try {

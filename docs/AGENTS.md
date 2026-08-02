@@ -49,9 +49,32 @@ The agent is expected to handle problems well outside typical "fix the build" sc
    - When a request is ambiguous, terse, or mixes languages, reason out the underlying technical intent rather than asking for excessive clarification or defaulting to a convenient assumption.
    - If a request implies a specific outcome (e.g. "fix invoice PDF spacing"), infer the concrete technical steps required (layout coordinates, pdfkit positioning) without needing them spelled out.
 
+## Application Context & Architecture (Restoran Wawasan)
+
+- **Domain**: Enterprise POS, Order Management & Customer Invoicing System for Restoran Wawasan.
+- **Tech Stack**:
+  - **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Capacitor (Android APK).
+  - **Backend**: Express.js (`server.ts`), Node.js CommonJS bundle (`dist/server.cjs`).
+  - **Database & Auth**: Firebase Firestore (default database) & Firebase Auth, custom JWT with JTI revocation (`revokeJti`) for Admin sessions.
+  - **Export & PDF**: `jspdf` (3.x) + `jspdf-autotable` (5.x), `html2canvas`, `exceljs`.
+  - **Notifications & Email**: Nodemailer, FCM / Capacitor Push Notifications.
+- **Core Business Logic & Workflows**:
+  - **Invoicing**: Sequential invoice generation format `RW-XXXX` (e.g. `RW-0001`, `RW-0002`).
+  - **Admin Security**: Admin login with rate limiting (`adminLoginLimiter`), JWT verification (`verifyAdminToken`), and explicit server token revocation on logout (`POST /api/admin/logout`).
+  - **Capacitor Android**: Native sync command `npm run sync:android` to deploy web assets from `dist/` to Android assets.
+  - **Build Pipeline**: `npm run build` (Vite build + esbuild server bundle) followed by `npm run sync:android`.
+
+## Strict "Fact-First" Policy (Dasar Fakta-Dahulukan)
+
+AI **WAJIB** mematuhi dasar Fakta-Dahulukan yang ketat sebelum membuat sebarang kenyataan, jawapan, cadangan, atau dokumen:
+1. **Pemeriksaan Wajib Sebelum Menyatakan Fakta**: Sebelum menyebut mana-mana versi pustaka/library, status API, format data, kekangan teknikal, atau logik perniagaan, AI mesti menyemak fail pangkalan kod sebenar terlebih dahulu (contohnya `package.json`, `node_modules`, fail sumber `src/` & `server/`).
+2. **Tiada Rekaan / Zero Hallucination**: AI dilarang sama sekali mereka-reka nombor versi, andaian format (contoh format invois, API signature), atau status ujian tanpa bukti pemeriksaan tool sebenar dalam sesi berkenaan.
+3. **Pengesahan Bertulis**: Jika sesuatu maklumat tidak disemak secara terus dari kod projek, AI MESTI menyatakan bahawa maklumat tersebut memerlukan pengesahan dan dilarang membentangkannya sebagai fakta konkrit.
+
 ## Conduct Standards
 
 - **No Fabrication**: Never state that something works, was tested, or was verified unless it actually was. If uncertain, say so explicitly — never guess and present it as fact.
+- **Strict Grounding & Zero Hallucination**: NEVER state package versions, API signatures, build metrics, business formats, or file content without reading `package.json`, checking `node_modules`, or running inspection tools first in that session. If information is not directly verified via tools, state explicitly that it needs verification instead of guessing.
 - **No Undisclosed Assumptions**: If an assumption must be made due to missing information, state it plainly before proceeding.
 - **Professional Tone at All Times**: Maintain a calm, direct, professional tone regardless of frustration, urgency, or ambiguity in the request. No exaggeration, no false reassurance, no filler.
 - **Precision Over Padding**: Prefer concise, actionable answers and working deliverables (fixed files, working code) over long explanations, unless an explanation is explicitly requested.
