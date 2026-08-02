@@ -318,21 +318,18 @@ export function AdminTablesTab({
       const workbook = new ExcelJS.Workbook();
 
       // Helper function to copy a worksheet's structure, styling and merges
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const copyWorksheet = (sourceSheet: any, targetSheet: any) => {
         targetSheet.pageSetup = { ...sourceSheet.pageSetup };
         targetSheet.views = [...sourceSheet.views];
 
         // Copy merged cells
         if (sourceSheet.model && sourceSheet.model.merges) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           sourceSheet.model.merges.forEach((mergeRange: any) => {
             targetSheet.mergeCells(mergeRange);
           });
         }
 
         // Copy column widths and styling
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sourceSheet.columns.forEach((col: any, idx: number) => {
           const targetCol = targetSheet.getColumn(idx + 1);
           targetCol.width = col.width;
@@ -342,12 +339,10 @@ export function AdminTablesTab({
         });
 
         // Copy row heights and cells
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sourceSheet.eachRow({ includeEmpty: true }, (row: any, rowNumber: number) => {
           const targetRow = targetSheet.getRow(rowNumber);
           targetRow.height = row.height;
           
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           row.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
             const targetCell = targetRow.getCell(colNumber);
             
@@ -364,7 +359,6 @@ export function AdminTablesTab({
         });
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const populateOrderSheet = (o: any, sheet: any) => {
         // Safe worksheet name (max 31 chars, no special characters: \ / ? * : [ ])
         const rawName = o.invoiceNo || (o.id ? `RW-${o.id.substring(0, 6).toUpperCase()}` : 'Invoice');

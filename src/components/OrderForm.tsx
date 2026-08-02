@@ -555,7 +555,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       try {
         setEmailStatus('sending');
         const pdfDoc = generateInvoicePDF(createdOrder, false, language);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pdfBase64 = (pdfDoc as any).output('datauristring').split(',')[1];
 
         // Email it using Brevo / Nodemailer on backend

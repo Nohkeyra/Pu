@@ -144,8 +144,6 @@ export const preloadLogoForPDF = (): Promise<string> => {
     };
 
     tryLoad([
-      getAssetUrl('/assets/wawasan_logo-800w.png'),
-      getAssetUrl('/assets/wawasan_logo-400w.png'),
       getAssetUrl('/assets/wawasan_logo.png'),
       getAssetUrl('/assets/wawasan_logo.jpg')
     ], 0);

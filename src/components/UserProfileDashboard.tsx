@@ -838,7 +838,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <div className="absolute top-0 right-0 p-3 opacity-10">
             <Utensils className="w-12 h-12 rotate-12" />
           </div>
-          <img src={getAssetUrl('assets/nasi-lemak.jpg')} alt="Nasi Lemak" className="w-20 h-20 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500" />
+          <img src={getAssetUrl('/assets/nasi-lemak.jpg')} alt="Nasi Lemak" className="w-20 h-20 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500" />
           <div className="relative z-10">
              <span className="text-[10px] font-black text-sunshine uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
                <div className="w-1.5 h-1.5 rounded-full bg-sunshine animate-pulse" />
