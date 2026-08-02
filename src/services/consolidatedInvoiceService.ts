@@ -82,13 +82,23 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const cCharcoal = [26, 24, 22];
   const cGrey = [148, 163, 184];
 
-  // Batch Invoice Number applied to all pages in this consolidated PDF
-  const batchInvoiceNo = providedInvoiceNo?.trim() || generateRandomInvoiceNo();
+  // Per-page invoice numbers. Confirmed spec: every page in a consolidated
+  // invoice is treated as its own separate invoice, so each one gets its
+  // own fresh random RW#### number — never shared across pages. If the
+  // admin supplied a manual invoice number, that applies only to page 1;
+  // every subsequent overflow page still gets its own fresh random number,
+  // same as if no manual number had been provided at all.
+  const pageInvoiceNos: Record<number, string> = {
+    1: providedInvoiceNo?.trim() || generateRandomInvoiceNo(),
+  };
   const pageTotals: Record<number, number> = {};
   let currentPageTotal = 0;
 
-  const getInvoiceNoForPage = (): string => {
-    return batchInvoiceNo;
+  const getInvoiceNoForPage = (pageNumber: number): string => {
+    if (!pageInvoiceNos[pageNumber]) {
+      pageInvoiceNos[pageNumber] = generateRandomInvoiceNo();
+    }
+    return pageInvoiceNos[pageNumber];
   };
 
   const drawPageHeader = (pageNumber: number) => {
@@ -124,7 +134,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 31, { align: 'right' });
-    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${getInvoiceNoForPage()}`, 195, 35, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${getInvoiceNoForPage(pageNumber)}`, 195, 35, { align: 'right' });
     doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${pageNumber}`, 195, 39, { align: 'right' });
   };
 
@@ -413,8 +423,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setFontSize(8.5);
   doc.text(
     lang === 'bm'
-      ? `RINGKASAN PESANAN & JUMLAH (NO. INVOIS: ${batchInvoiceNo})`
-      : `ORDER SUMMARY & TOTALS (INVOICE NO: ${batchInvoiceNo})`,
+      ? 'RINGKASAN PESANAN & JUMLAH (SETIAP MUKA SURAT ADALAH INVOIS BERASINGAN)'
+      : 'ORDER SUMMARY & TOTALS (EACH PAGE IS A SEPARATE INVOICE)',
     18, picHeaderY + 5
   );
 
@@ -424,11 +434,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   for (let p = 1; p <= totalContentPages; p++) {
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'bold');
-    const orderForPage = orders[p - 1];
-    const orderIdStr = orderForPage
-      ? (orderForPage.invoiceNo || (orderForPage.id ? `#${orderForPage.id.slice(0, 8).toUpperCase()}` : `Pesanan ${p}`))
-      : `Pesanan ${p}`;
-    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${p} (${orderIdStr})`, 18, summaryY);
+    const pageInvoiceNo = pageInvoiceNos[p] || '-';
+    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${p} (${pageInvoiceNo})`, 18, summaryY);
     doc.setFont('helvetica', 'normal');
     const pTotal = pageTotals[p] || 0;
     doc.text(`RM ${pTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });

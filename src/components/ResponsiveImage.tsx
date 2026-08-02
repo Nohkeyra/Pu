@@ -30,7 +30,6 @@ export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageEl
 export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   src,
   alt,
-  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
   aspectRatio,
   objectFit = 'cover',
   placeholderColor,
@@ -39,46 +38,35 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   containerClassName = '',
   onLoad,
   onError,
-  enableSrcSet = true,
   fallbackText,
   style,
   ...imgProps
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [useSrcSet, setUseSrcSet] = useState(enableSrcSet);
   const imgRef = useRef<HTMLImageElement>(null);
-  const attemptedFallbackRef = useRef(false);
 
   // Reset states when source changes
   useEffect(() => {
     setLoaded(false);
     setError(false);
-    setUseSrcSet(enableSrcSet);
-    attemptedFallbackRef.current = false;
-  }, [src, enableSrcSet]);
+  }, [src]);
 
   // Resolve path for Capacitor Android WebView and standard Web compatibility
   const resolvedSrc = getAssetUrl(src);
 
-  // Only generate srcSet for raster images with pre-generated variants (avoid .svg, data URIs, etc.)
-  const urlWithoutQuery = resolvedSrc.split('?')[0];
-  const queryPart = resolvedSrc.includes('?') ? '?' + resolvedSrc.split('?')[1] : '';
-  const basePath = urlWithoutQuery.replace(/\.[^.]+$/, '');
-  const extension = urlWithoutQuery.match(/\.[^.]+$/)?.[0] || '.jpg';
-  const isRasterAsset = resolvedSrc.includes('/assets/') && /\.(jpe?g|png|webp)($|\?)/i.test(resolvedSrc);
-  const widths = [400, 800];
-
-  const srcSet = useSrcSet && isRasterAsset
-    ? widths.map((w) => `${basePath}-${w}w${extension}${queryPart} ${w}w`).join(', ')
-    : undefined;
-
   // Handle cached image instant loads (e.g. browser cache or fast re-render)
   useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
-      setLoaded(true);
+    if (imgRef.current) {
+      if (imgRef.current.complete) {
+        if (imgRef.current.naturalWidth > 0) {
+          setLoaded(true);
+        } else {
+          setError(true);
+        }
+      }
     }
-  }, [resolvedSrc, useSrcSet]);
+  }, [resolvedSrc]);
 
   const fitClass =
     objectFit === 'contain'
@@ -128,11 +116,8 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
       {/* Main image */}
       <img
-        key={useSrcSet ? 'srcset' : 'fallback'}
         ref={imgRef}
         src={resolvedSrc}
-        srcSet={srcSet}
-        sizes={srcSet ? sizes : undefined}
         alt={alt}
         loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
@@ -141,21 +126,12 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
           onLoad?.(e);
         }}
         onError={(e) => {
-          if (useSrcSet && !attemptedFallbackRef.current) {
-            // Responsive variant failed - fall back gracefully to original source
-            attemptedFallbackRef.current = true;
-            setUseSrcSet(false);
-          } else {
-            setError(true);
-            onError?.(e);
-          }
+          setError(true);
+          onError?.(e);
         }}
         className={cn(
-          'w-full h-full transition-all duration-500 ease-out',
+          'w-full h-full transition-all duration-300 ease-out opacity-100',
           fitClass,
-          loaded
-            ? 'opacity-100 blur-0 scale-100'
-            : 'opacity-0 blur-sm scale-105',
           className
         )}
         {...imgProps}

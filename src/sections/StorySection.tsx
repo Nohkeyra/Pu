@@ -1,6 +1,6 @@
 import { Award } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { getAssetUrl } from '@/lib/utils';
+import ResponsiveImage from '@/components/ResponsiveImage';
 import { motion } from 'motion/react';
 
 export default function StorySection() {
@@ -52,17 +52,12 @@ export default function StorySection() {
             variants={imageVariants}
           >
             <div className="relative max-w-md mx-auto lg:max-w-none">
-              <div className="relative rounded-3xl overflow-hidden aspect-[16/9] border border-deep-forest/[0.03] dark:border-white/5 shadow-premium bg-white dark:bg-card flex items-center justify-center">
-                <img 
-                  src={getAssetUrl("/assets/high-tea.jpg")} 
-                  alt={language === 'bm' ? 'Kotak Katering Minum Petang' : 'High-Tea Catering Box'} 
-                  loading="lazy"
-                  className="w-full h-full object-contain p-4"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = getAssetUrl('/assets/wawasan_logo.png');
-                  }}
+              <div className="relative rounded-3xl overflow-hidden aspect-[16/9] border border-deep-forest/[0.03] dark:border-white/5 shadow-premium bg-white dark:bg-card">
+                <ResponsiveImage 
+                  src="/assets/story-interior.jpg" 
+                  alt={language === 'bm' ? 'Ruang Makan Restoran Wawasan' : 'Restoran Wawasan Dining Area'} 
+                  objectFit="cover"
+                  containerClassName="w-full h-full"
                 />
               </div>
               

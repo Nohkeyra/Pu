@@ -1,4 +1,3 @@
-import { getAssetUrl } from "@/lib/utils";
 import ResponsiveImage from "@/components/ResponsiveImage";
 
 interface FoodCardProps {
@@ -15,7 +14,7 @@ export default function FoodCard({ name, description, price, image, isBestseller
     <div className="group relative bg-white dark:bg-card rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-premium border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 h-full flex flex-col">
       <div className="relative aspect-[4/3] overflow-hidden">
         <ResponsiveImage
-          src={getAssetUrl(image)}
+          src={image}
           alt={name}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           containerClassName="w-full h-full"

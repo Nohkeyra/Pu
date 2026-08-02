@@ -42,15 +42,25 @@ export default function VisitSection() {
         >
           {/* Left Column: Info */}
           <div className="space-y-12">
-            <motion.div variants={itemVariants} className="space-y-4">
-              <h2 className="text-deep-forest dark:text-sunshine font-display text-4xl md:text-5xl font-bold tracking-tight">
-                {isBm ? 'Jemput Datang' : 'Visit Us'}
-              </h2>
-              <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-md leading-relaxed">
-                {isBm 
-                  ? 'Nikmati hidangan asli Malaysia dengan pemandangan tasik yang tenang di tengah-tengah Putrajaya.' 
-                  : 'Experience authentic Malaysian flavors with a serene lakeside view in the heart of Putrajaya.'}
-              </p>
+            <motion.div variants={itemVariants} className="space-y-6">
+              <div className="space-y-4">
+                <h2 className="text-deep-forest dark:text-sunshine font-display text-4xl md:text-5xl font-bold tracking-tight">
+                  {isBm ? 'Jemput Datang' : 'Visit Us'}
+                </h2>
+                <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-md leading-relaxed">
+                  {isBm 
+                    ? 'Nikmati hidangan asli Malaysia dengan pemandangan tasik yang tenang di tengah-tengah Putrajaya.' 
+                    : 'Experience authentic Malaysian flavors with a serene lakeside view in the heart of Putrajaya.'}
+                </p>
+              </div>
+              
+              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-zinc-200 dark:border-zinc-800">
+                <img 
+                  src="/assets/restoran-exterior.jpg" 
+                  alt="Restoran Wawasan Exterior" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </motion.div>
 
             <div className="grid sm:grid-cols-2 gap-8">

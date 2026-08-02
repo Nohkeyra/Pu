@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import nodemailer from 'nodemailer';
 import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
-import { verifyAdminToken, effectiveJwtSecret } from './server/adminAuth.js';
+import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter } from './server/adminAuth.js';
 import { notifyCustomerOfStatusChange } from './server/emailService.js';
 import { generateOrdersWorkbook } from './server/exportService.js';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
@@ -35,7 +35,7 @@ async function startServer() {
   });
 
   // Admin Login
-  app.post('/api/admin/login', async (req, res) => {
+  app.post('/api/admin/login', adminLoginLimiter, async (req, res) => {
     const { password } = req.body;
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 

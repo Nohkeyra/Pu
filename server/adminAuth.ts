@@ -1,8 +1,27 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import { getFirestore } from "./firebaseAdmin.js";
 import { Timestamp } from "firebase-admin/firestore";
+
+// F-XX (audit 2026-08-02): express-rate-limit was already declared in
+// package.json but never actually wired to any route — the admin login
+// endpoint accepted unlimited password guesses from any IP. This limiter
+// is in-memory only (no Redis), which is appropriate for the current
+// single-instance Render deployment. If the deployment ever moves to
+// multiple instances, this must be swapped for a shared store (e.g.
+// Redis-backed) or each instance will track attempts independently.
+export const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 10, // 10 attempts per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many login attempts. Please try again later." },
+  // Only count failed attempts against the limit; a successful login
+  // shouldn't consume the same budget as a string of bad guesses.
+  skipSuccessfulRequests: true,
+});
 
 let ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.trim() === "") {
