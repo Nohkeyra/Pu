@@ -348,6 +348,18 @@ async function startServer() {
         await transporter.verify();
         return res.json({ status: 'healthy', service: 'SMTP' });
       }
+      if (type === 'calendar') {
+        const { getGoogleCalendarClient } = await import('./server/calendarService.js');
+        const calendar = getGoogleCalendarClient();
+        if (!calendar) {
+          return res.json({ status: 'unconfigured', service: 'Google Calendar' });
+        }
+        // calendarList.list() is a lightweight read-only check — confirms
+        // the service account JWT is valid without touching any real event.
+        const listResp = await calendar.calendarList.list();
+        const calendarsReturned = listResp.data.items?.length || 0;
+        return res.json({ status: 'healthy', service: 'Google Calendar', calendarsReturned });
+      }
       res.status(400).json({ error: 'Unknown diagnostic type' });
     } catch (err) {
       res.status(500).json({ status: "error", error: String(err) });
