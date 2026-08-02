@@ -229,8 +229,21 @@ export default function AdminPage() {
   return (
     <AdminPanel
       adminToken={token}
-      onLogout={() => {
-        removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+      onLogout={async () => {
+        if (token) {
+          try {
+            await fetch(getApiUrl('/api/admin/logout'), {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+          } catch (err) {
+            console.warn('[Admin Auth] Server logout token revocation failed (non-fatal):', err);
+          }
+        }
+        await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
         // F-31 (audit): also end the Firebase Auth session started at
         // login, so a stale request.auth doesn't outlive the admin JWT.
         signOut(auth).catch((err) => {

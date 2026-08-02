@@ -3,10 +3,10 @@ import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
-import nodemailer from 'nodemailer';
 import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
-import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter } from './server/adminAuth.js';
-import { notifyCustomerOfStatusChange } from './server/emailService.js';
+import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from './server/adminAuth.js';
+import { notifyCustomerOfStatusChange, createBrevoTransporter } from './server/emailService.js';
+import { syncGoogleCalendarEvent } from './server/calendarService.js';
 import { generateOrdersWorkbook } from './server/exportService.js';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import jwt from 'jsonwebtoken';
@@ -54,6 +54,20 @@ async function startServer() {
       res.json({ success: true, token, firebaseCustomToken });
     } else {
       res.status(401).json({ success: false, error: 'Invalid password' });
+    }
+  });
+
+  // Admin Logout
+  app.post('/api/admin/logout', verifyAdminToken, async (req, res) => {
+    try {
+      const adminReq = req as any;
+      if (adminReq.adminPayload && adminReq.adminPayload.jti) {
+        await revokeJti(adminReq.adminPayload.jti, adminReq.adminPayload.exp);
+      }
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Admin Auth] Logout error:', err);
+      res.status(500).json({ success: false, error: String(err) });
     }
   });
 
@@ -114,22 +128,23 @@ async function startServer() {
         await orderRef.update(updates);
 
         if (data.status && data.status !== oldData.status) {
-          const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: process.env.SMTP_USER,
-              pass: process.env.SMTP_PASS,
-            },
-          });
+          const transporter = createBrevoTransporter();
+          const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
           await notifyCustomerOfStatusChange(
             transporter,
             { ...oldData, ...updates, id: orderId },
             data.status,
-            process.env.SMTP_USER || '',
+            senderEmail,
             process.env.SMTP_USER,
             process.env.SMTP_PASS
           ).catch(err => console.error('[Email] Failed to notify status change:', err));
         }
+
+        // Auto-sync calendar event for the order update / status transition
+        const updatedOrderForCalendar = { ...oldData, ...updates, id: orderId };
+        syncGoogleCalendarEvent(orderId, updatedOrderForCalendar).catch(err => {
+          console.error('[Calendar] Auto-sync on order update failed:', err);
+        });
 
         return res.json({ success: true, invoiceNo: updates.invoiceNo });
       }
@@ -146,6 +161,51 @@ async function startServer() {
     }
   });
 
+  // Admin Quick Status Change Endpoint
+  app.patch('/api/admin/orders/:orderId/status', verifyAdminToken, async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const db = getFirestore();
+
+    try {
+      const orderRef = db.collection('orders').doc(orderId);
+      const oldSnap = await orderRef.get();
+      if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
+
+      const oldData = oldSnap.data() as OrderData;
+      const updates: Partial<OrderData> = { status, updatedAt: FieldValue.serverTimestamp() };
+
+      if ((status === 'approved' || status === 'billed') && !oldData.invoiceNo) {
+        updates.invoiceNo = await generateSequentialInvoiceNo();
+      }
+
+      await orderRef.update(updates);
+
+      if (status && status !== oldData.status) {
+        const transporter = createBrevoTransporter();
+        const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
+        await notifyCustomerOfStatusChange(
+          transporter,
+          { ...oldData, ...updates, id: orderId },
+          status,
+          senderEmail,
+          process.env.SMTP_USER,
+          process.env.SMTP_PASS
+        ).catch(err => console.error('[Email] Failed to notify status change:', err));
+      }
+
+      const mergedOrderData = { ...oldData, ...updates, id: orderId, status };
+      syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
+        console.error('[Calendar] Failed to auto-sync calendar event on PATCH status:', err);
+      });
+
+      return res.json({ success: true, invoiceNo: updates.invoiceNo });
+    } catch (err) {
+      console.error('[Admin API] PATCH order status failed:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Public Order Submission
   app.post('/api/orders', async (req, res) => {
     try {
@@ -156,8 +216,63 @@ async function startServer() {
         status: 'pending',
         createdAt: FieldValue.serverTimestamp()
       });
+
+      // Auto-sync initial 'pending' status to Google Calendar
+      const initialOrderData: OrderData = {
+        ...orderData,
+        id: docRef.id,
+        status: 'pending'
+      };
+      syncGoogleCalendarEvent(docRef.id, initialOrderData).catch(err => {
+        console.error('[Calendar] Auto-sync initial pending status failed:', err);
+      });
+
       res.json({ id: docRef.id });
     } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Customer Cancellation Request Endpoint
+  app.post('/api/orders/cancel', async (req, res) => {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const db = getFirestore();
+
+    try {
+      const orderRef = db.collection('orders').doc(orderId);
+      const oldSnap = await orderRef.get();
+      if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
+
+      const oldData = oldSnap.data() as OrderData;
+      const updates: Partial<OrderData> = {
+        status: 'cancel_requested',
+        cancelRequestedAt: new Date().toISOString(),
+        updatedAt: FieldValue.serverTimestamp()
+      };
+
+      await orderRef.update(updates);
+
+      const mergedOrderData = { ...oldData, ...updates, id: orderId, status: 'cancel_requested' };
+
+      const transporter = createBrevoTransporter();
+      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
+      await notifyCustomerOfStatusChange(
+        transporter,
+        mergedOrderData,
+        'cancel_requested',
+        senderEmail,
+        process.env.SMTP_USER,
+        process.env.SMTP_PASS
+      ).catch(err => console.error('[Email] Failed to notify cancel request:', err));
+
+      syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
+        console.error('[Calendar] Failed to auto-sync calendar event on cancel request:', err);
+      });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Orders API] Cancel request failed:', err);
       res.status(500).json({ error: String(err) });
     }
   });
@@ -171,13 +286,8 @@ async function startServer() {
         throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
       }
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+      const transporter = createBrevoTransporter();
+      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
 
       const attachments = pdfBase64 ? [
         {
@@ -188,7 +298,7 @@ async function startServer() {
       ] : [];
 
       await transporter.sendMail({
-        from: `"Restoran Wawasan" <${process.env.SMTP_USER}>`,
+        from: `"Restoran Wawasan" <${senderEmail}>`,
         to: email,
         subject: subject || 'Your Invoice from Restoran Wawasan',
         text: body || 'Please find your invoice attached.',
@@ -234,10 +344,7 @@ async function startServer() {
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
           return res.json({ status: 'unconfigured', service: 'SMTP' });
         }
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        });
+        const transporter = createBrevoTransporter();
         await transporter.verify();
         return res.json({ status: 'healthy', service: 'SMTP' });
       }

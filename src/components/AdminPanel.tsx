@@ -82,7 +82,7 @@ const getDisplayInvoiceNo = (order: Order): string => {
   return 'RW------';
 };
 
-export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void }) {
+export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void | Promise<void> }) {
   const { t, language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -119,12 +119,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [consolidatedInvoiceNo, setConsolidatedInvoiceNo] = useState('');
   const [showConsolidateModal, setShowConsolidateModal] = useState(false);
   const [isGeneratingConsolidated, setIsGeneratingConsolidated] = useState(false);
-  // F-XX (audit 2026-08-02): window.confirm() is unreliable in the
-  // Capacitor Android WebView, so the cross-email confirmation for
-  // consolidated invoices is a proper Radix Dialog instead. This holds
-  // the args of the generation call that's paused waiting for that
-  // confirmation.
-  const [pendingConsolidatedArgs, setPendingConsolidatedArgs] = useState<{ withNotes: boolean; customInvoiceNo?: string } | null>(null);
 
   // PDF Preview States
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -1000,32 +994,18 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         const firstSelectedId = Array.from(next)[0];
         const firstSelectedOrder = orders.find(o => o.id === firstSelectedId);
         if (firstSelectedOrder) {
-          // Company check
-          if (firstSelectedOrder.to !== targetOrder.to) {
+          // Client check strictly based on 'to' field matching consolidatedInvoiceService
+          const firstClient = (firstSelectedOrder.to || '-').trim();
+          const targetClient = (targetOrder.to || '-').trim();
+          if (firstClient !== targetClient) {
             toast({
               title: t('error') || 'Error',
               description: language === 'bm'
-                ? `Tidak boleh pilih klien berbeza. Invois konsolidasi hanya untuk satu syarikat (${firstSelectedOrder.to}) sahaja.`
-                : `Cannot select a different client. Consolidated invoices are limited to a single company (${firstSelectedOrder.to}) at a time.`,
+                ? `Tidak boleh pilih klien berbeza. Invois konsolidasi hanya untuk satu syarikat (${firstSelectedOrder.to || '-'}) sahaja.`
+                : `Cannot select a different client. Consolidated invoices are limited to a single company (${firstSelectedOrder.to || '-'}) at a time.`,
               variant: 'error'
             });
             return prev;
-          }
-
-          // Email check if filterBySameEmail is enabled
-          if (filterBySameEmail) {
-            const firstEmail = (firstSelectedOrder.email || '').trim().toLowerCase();
-            const targetEmail = (targetOrder.email || '').trim().toLowerCase();
-            if (firstEmail && targetEmail && firstEmail !== targetEmail) {
-              toast({
-                title: language === 'bm' ? 'Penyaring Emel Diaktifkan' : 'Email Filter Active',
-                description: language === 'bm'
-                  ? `Penyaring emel diaktifkan: Hanya pesanan dari emel yang sama (${firstSelectedOrder.email}) dibenarkan. Matikan suis penyaring emel jika ingin memilih emel berbeza.`
-                  : `Email filter active: Only orders with the exact same email address (${firstSelectedOrder.email}) are allowed. Disable the email filter toggle to allow manual selection of different emails.`,
-                variant: 'error'
-              });
-              return prev;
-            }
           }
         }
       }
@@ -1043,15 +1023,22 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       return;
     }
 
-    // Check if selected orders have different email addresses. window.confirm()
-    // is unreliable in the Capacitor Android WebView, so this pauses via a
-    // proper Dialog (see pendingConsolidatedArgs) instead of a blocking confirm().
-    const distinctEmails = new Set(selectedOrderData.map(o => o.email?.trim().toLowerCase()).filter(Boolean));
-    if (distinctEmails.size > 1) {
-      setPendingConsolidatedArgs({ withNotes, customInvoiceNo });
+    // Check if selected orders have different clients based strictly on 'to' field.
+    // Matching consolidatedInvoiceService.ts enforcement.
+    const distinctClients = new Set(selectedOrderData.map(o => (o.to || '-').trim()));
+    if (distinctClients.size > 1) {
+      const clientList = Array.from(distinctClients).join(', ');
+      toast({
+        title: language === 'bm' ? 'Klien Berbeza Dikesan' : 'Different Clients Detected',
+        description: language === 'bm'
+          ? `Invois konsolidasi hanya dibenarkan untuk SATU klien/syarikat sahaja. Pesanan yang dipilih merangkumi ${distinctClients.size} klien berbeza (${clientList}). Sila pilih pesanan daripada satu klien sahaja.`
+          : `Consolidated invoices are strictly limited to a SINGLE client/company. The selected orders span ${distinctClients.size} different clients (${clientList}). Please select orders from one client only.`,
+        variant: 'error'
+      });
       return;
     }
 
+    // Different emails on the same client do NOT warn — proceed directly to PDF generation
     await runGenerateConsolidatedInvoice(withNotes, customInvoiceNo);
   };
 
@@ -1111,17 +1098,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     } finally {
       setIsGeneratingConsolidated(false);
     }
-  };
-
-  const confirmDifferentEmailsConsolidated = async () => {
-    if (!pendingConsolidatedArgs) return;
-    const { withNotes, customInvoiceNo } = pendingConsolidatedArgs;
-    setPendingConsolidatedArgs(null);
-    await runGenerateConsolidatedInvoice(withNotes, customInvoiceNo);
-  };
-
-  const cancelDifferentEmailsConsolidated = () => {
-    setPendingConsolidatedArgs(null);
   };
 
   const openOrderDetail = (order: Order) => {
@@ -1470,8 +1446,22 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               className="h-11 px-6 rounded-2xl text-deep-forest/40 hover:text-red-500 hover:bg-red-500/5 font-bold transition-all"
               onClick={async () => {
                 if (onLogout) {
-                  onLogout();
+                  await onLogout();
                 } else {
+                  if (adminToken) {
+                    try {
+                      await fetch(getApiUrl('/api/admin/logout'), {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${adminToken}`,
+                          'Content-Type': 'application/json',
+                        },
+                      });
+                    } catch (err) {
+                      console.warn('[Admin Auth] Server logout token revocation failed (non-fatal):', err);
+                    }
+                  }
+                  await removeSecureItem('wawasan_admin_token');
                   await removeSecureItem('wawasan_admin_authenticated');
                   window.location.reload();
                 }
@@ -2035,33 +2025,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         </DialogContent>
       </Dialog>
 
-      {/* Send Invoice Dialog */}
-      <Dialog open={pendingConsolidatedArgs !== null} onOpenChange={(open) => { if (!open) cancelDifferentEmailsConsolidated(); }}>
-        <DialogContent className="max-w-md bg-cream dark:bg-card border-sunshine/20 text-deep-forest">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display font-bold text-sunshine flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-sunshine" />
-              {language === 'bm' ? 'Emel Berbeza Dikesan' : 'Different Emails Detected'}
-            </DialogTitle>
-            <DialogDescription>
-              {language === 'bm'
-                ? 'Anda menggabungkan order daripada emel yang berbeza. Sila sahkan ini adalah betul.'
-                : 'You are merging orders from different email addresses. Please confirm this is correct.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={cancelDifferentEmailsConsolidated} className="rounded-xl">
-              {language === 'bm' ? 'Batal' : 'Cancel'}
-            </Button>
-            <Button
-              onClick={confirmDifferentEmailsConsolidated}
-              className="bg-sunshine hover:bg-crisp-carrot text-white rounded-xl"
-            >
-              {language === 'bm' ? 'Sahkan & Teruskan' : 'Confirm & Continue'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
         <DialogContent className="max-w-md bg-cream dark:bg-card border-sunshine/20 text-deep-forest">

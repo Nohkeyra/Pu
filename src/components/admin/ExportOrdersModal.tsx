@@ -113,7 +113,11 @@ export function ExportOrdersModal({
 
         const escapeCsvCell = (val: string | number | undefined | null) => {
           if (val === undefined || val === null) return '""';
-          const str = String(val).replace(/"/g, '""');
+          let str = String(val);
+          if (/^[=+\-@\t\r]/.test(str)) {
+            str = "'" + str;
+          }
+          str = str.replace(/"/g, '""');
           return `"${str}"`;
         };
 
@@ -144,7 +148,7 @@ export function ExportOrdersModal({
         });
 
         // Add UTF-8 BOM (\uFEFF) so Excel opens UTF-8 text correctly without encoding artifacts
-        const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        const csvContent = '\uFEFF' + [headers.map(escapeCsvCell).join(','), ...rows].join('\r\n');
         const fileName = `Wawasan_Accounting_Orders_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`;
 
         if (Capacitor.isNativePlatform()) {
