@@ -67,7 +67,7 @@ export const MENU_ITEMS: MenuItem[] = [
     descBm: 'Sup ayam berempah pekat dihidang bersama nasi himpit dan bergedil kentang.',
     priceEn: 'From RM 6',
     priceBm: 'Daripada RM 6',
-    image: '/assets/soto-ayam-v2.jpg',
+    image: '/assets/soto-ayam.jpg',
     category: 'mains',
   },
   {
@@ -78,7 +78,7 @@ export const MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi putih berlauk dengan pilihan hidangan segar harian, dari kari hingga sayur tumis.',
     priceEn: 'Various',
     priceBm: 'Pelbagai',
-    image: '/assets/nasi-campur-v2.jpg',
+    image: '/assets/nasi-campur.jpg',
     category: 'mains',
     tags: ['daily-special'],
   },

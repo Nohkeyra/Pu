@@ -80,7 +80,7 @@ export default function HeroSection() {
           <a href="#menu" className="px-10 py-4 bg-sunshine text-deep-forest rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
             {t('explore_menu_btn')}
           </a>
-          <Link to="/order" className="px-10 py-4 bg-white/10 backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">
+          <Link to="/order" style={{ backgroundColor: '#454545' }} className="px-10 py-4 bg-[#454545] backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">
             {t('order_catering_btn')}
           </Link>
         </motion.div>
