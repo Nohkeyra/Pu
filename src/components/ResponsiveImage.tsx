@@ -57,14 +57,8 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 
   // Handle cached image instant loads (e.g. browser cache or fast re-render)
   useEffect(() => {
-    if (imgRef.current) {
-      if (imgRef.current.complete) {
-        if (imgRef.current.naturalWidth > 0) {
-          setLoaded(true);
-        } else {
-          setError(true);
-        }
-      }
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
     }
   }, [resolvedSrc]);
 

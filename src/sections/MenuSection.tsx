@@ -23,12 +23,13 @@ export default function MenuSection() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const validated = parsed.map((item: any) => {
             const defaultItem = MENU_ITEMS.find((m) => m.id === item.id);
-            if (defaultItem && (!item.image || typeof item.image !== 'string' || item.image.trim() === '')) {
+            if (defaultItem) {
               return { ...item, image: defaultItem.image };
             }
             return item;
           });
           setMenuItems(validated);
+          localStorage.setItem('menu_items', JSON.stringify(validated));
         } else {
           setMenuItems(MENU_ITEMS);
         }

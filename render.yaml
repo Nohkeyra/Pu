@@ -2,7 +2,7 @@ services:
   - type: web
     name: restoran-wawasan-bio
     runtime: node
-    buildCommand: npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       # Node and Environment Configuration
