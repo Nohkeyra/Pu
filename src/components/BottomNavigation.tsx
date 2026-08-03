@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Home, Utensils, Settings, Lock, User } from 'lucide-react';
+import { Home, Utensils, Settings, User } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
@@ -27,9 +27,8 @@ export default function BottomNavigation() {
   const tabs = [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
-    { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
-    { id: 'admin', icon: Lock, label: t('nav_admin'), path: '/admin' },
     { id: 'profile', icon: User, label: t('nav_profile'), path: '/profile' },
+    { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
   ];
 
   const showNav = ['/home', '/main', '/order', '/profile', '/admin', '/settings'].includes(location.pathname);
@@ -68,10 +67,7 @@ export default function BottomNavigation() {
                   } catch (storageErr) {
                     console.warn('SessionStorage unavailable:', storageErr);
                   }
-                  if (tab.id === 'profile' && currentUser?.uid === 'admin') {
-                    // Admin Firebase session — profile tab should go to admin panel
-                    navigate('/admin');
-                  } else if (tab.id === 'profile' && !currentUser) {
+                  if (tab.id === 'profile' && !currentUser) {
                     setAuthModalOpen(true);
                   } else {
                     navigate(tab.path);

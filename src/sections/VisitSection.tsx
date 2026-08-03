@@ -128,7 +128,8 @@ export default function VisitSection() {
                 href="https://maps.app.goo.gl/F1aswiA657kzhf298" 
                 target="_blank" 
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 bg-deep-forest hover:bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-deep-forest/20"
+                style={{ backgroundColor: '#287407', color: '#ffc701', fontFamily: 'Verdana, sans-serif' }}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-deep-forest/20"
               >
                 {isBm ? 'Dapatkan Arah' : 'Get Directions'}
                 <ExternalLink className="w-4 h-4" />

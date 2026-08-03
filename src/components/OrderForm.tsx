@@ -694,7 +694,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
-      <div className="w-full max-w-6xl mx-auto font-sans space-y-6">
+      <div className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0">
         
         {/* App Header Bar mirroring Wawasan brand */}
         <div className="bg-charcoal text-white p-5 sm:p-6 rounded-2xl shadow-xl border border-charcoal/80 relative overflow-hidden">
@@ -1943,6 +1943,54 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           order={submittedOrder}
           language={language}
         />
+      )}
+
+      {/* Sticky Mobile Price Bar (< lg breakpoint) */}
+      {currentStep <= 4 && (
+        <div className="fixed bottom-[74px] left-0 right-0 z-40 lg:hidden border-t border-sunshine/20 bg-charcoal/95 backdrop-blur-xl px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 text-[10px] text-stone-300 font-semibold uppercase tracking-wider truncate">
+              <span>{orderState.guests} pax</span>
+              <span>•</span>
+              <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[11px] text-sunshine font-bold shrink-0">
+                {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}/pax` : tText('Quote', 'Sebut Harga')}
+              </span>
+              <span className="text-base font-extrabold text-white font-display shrink-0">
+                {getGrandTotal() > 0 ? `RM ${getGrandTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'RM 0.00'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {currentStep < 4 ? (
+              <Button
+                onClick={() => handleStepNext(currentStep)}
+                className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
+              >
+                <span>{tText('Next', 'Seterusnya')}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleOrderSubmission}
+                disabled={isSubmitting}
+                className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <span>{tText('Submit', 'Hantar')}</span>
+                    <Check className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
       )}
 
     </>
