@@ -183,7 +183,10 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
         console.error("Failed to update local orders with calendarEventIds:", localErr);
       }
     }
-  } catch (err) {
-    console.error(`Error syncing Google Calendar event for order ${orderId}:`, err);
+  } catch (err: any) {
+    console.error(`[Calendar Error] Sync failed for order ${orderId}:`, err.message || err);
+    if (err.response && err.response.data) {
+      console.error('Calendar API Error Details:', JSON.stringify(err.response.data, null, 2));
+    }
   }
 }
