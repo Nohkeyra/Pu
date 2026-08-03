@@ -285,7 +285,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       const response = await fetch(getApiUrl('/api/diagnostics/firebase'), { headers: authHeaders() });
       if (response.ok) {
         const data = await response.json();
-        setDiagFirebase({ status: 'pass', projectId: data.projectId });
+        setDiagFirebase({ 
+          status: 'pass', 
+          projectId: data.projectId,
+          message: `Connected from ${Capacitor.isNativePlatform() ? 'Android APK' : 'Web Browser'}` 
+        });
       } else {
         const data = await response.json();
         setDiagFirebase({ status: 'fail', message: data.error || 'Failed to authenticate/write to Firestore' });
@@ -1203,8 +1207,13 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
     const messageText = sendOrder.lang === 'bm' ? msgBm : msgEn;
     const encodedText = encodeURIComponent(messageText);
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedText}`;
     
-    window.open(`https://wa.me/${formattedPhone}?text=${encodedText}`, '_blank', 'noopener,noreferrer');
+    if (Capacitor.isNativePlatform()) {
+      window.location.assign(whatsappUrl);
+    } else {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    }
 
     toast({
       title: t('whatsapp_opened'),
