@@ -283,16 +283,18 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     setDiagFirebase({ status: 'running' });
     try {
       const response = await fetch(getApiUrl('/api/diagnostics/firebase'), { headers: authHeaders() });
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         setDiagFirebase({ 
           status: 'pass', 
           projectId: data.projectId,
-          message: `Connected from ${Capacitor.isNativePlatform() ? 'Android APK' : 'Web Browser'}` 
+          message: data.message || `Connected from ${Capacitor.isNativePlatform() ? 'Android APK' : 'Web Browser'}` 
         });
       } else {
-        const data = await response.json();
-        setDiagFirebase({ status: 'fail', message: data.error || 'Failed to authenticate/write to Firestore' });
+        setDiagFirebase({ 
+          status: 'fail', 
+          message: data.message || data.error || 'Failed to authenticate/write to Firestore' 
+        });
       }
     } catch (err: unknown) {
       setDiagFirebase({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });
@@ -303,12 +305,18 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     setDiagCalendar({ status: 'running' });
     try {
       const response = await fetch(getApiUrl('/api/diagnostics/calendar'), { headers: authHeaders() });
-      if (response.ok) {
-        const data = await response.json();
-        setDiagCalendar({ status: 'pass', calendarsReturned: data.calendarsReturned });
+      const data = await response.json();
+      if (response.ok && data.status === 'healthy') {
+        setDiagCalendar({ 
+          status: 'pass', 
+          calendarsReturned: data.calendarsReturned,
+          message: data.message 
+        });
       } else {
-        const data = await response.json();
-        setDiagCalendar({ status: 'fail', message: data.message || data.error || 'Google Calendar API connection failed' });
+        setDiagCalendar({ 
+          status: 'fail', 
+          message: data.message || data.error || `Status: ${data.status || response.status}` 
+        });
       }
     } catch (err: unknown) {
       setDiagCalendar({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });

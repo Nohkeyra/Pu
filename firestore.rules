@@ -22,7 +22,7 @@ service cloud.firestore {
     // function only matters for the small set of direct client reads.
     //
     // email_verified was dropped from this check: the admin custom token
-    // is minted for a fixed synthetic uid ("admin-wawasan"), not a real
+    // is minted for a fixed synthetic uid ("admin"), not a real
     // email-based Firebase user, so there is no email to verify. Adding it
     // back would make isAdmin() permanently false again.
     function isAdmin() {

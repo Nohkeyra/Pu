@@ -42,6 +42,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     const init = async () => {
+      try {
+        sessionStorage.setItem('wawasan_session_started', 'true');
+        sessionStorage.setItem('wawasan_guest_allowed', 'true');
+      } catch (storageErr) {
+        console.warn('SessionStorage unavailable:', storageErr);
+      }
       const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
       if (storedToken) {
         setToken(storedToken);

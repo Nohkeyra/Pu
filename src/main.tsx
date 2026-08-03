@@ -8,10 +8,12 @@ import { SettingsProvider } from './context/SettingsContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // Auto-initialize Eruda in workspace preview environment for immediate console diagnostics
+// Eruda debug console: only in AI Studio preview or when manually enabled via localStorage.
+// Deliberately excludes 'localhost' to avoid loading in Capacitor native WebView
+// (which also resolves to localhost) and in Render production.
 if (typeof window !== 'undefined' && (
   window.location.hostname.endsWith('.run.app') ||
   window.location.hostname.includes('aistudio') ||
-  window.location.hostname === 'localhost' ||
   localStorage.getItem('wawasan_eruda_enabled') === 'true'
 )) {
   import('eruda').then((eruda) => {

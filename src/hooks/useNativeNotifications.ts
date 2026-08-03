@@ -3,7 +3,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { FCM } from '@capacitor-community/fcm';
 import { Capacitor } from '@capacitor/core';
 import { db, auth } from '@/firebaseConfig';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useSettings } from '@/context/SettingsContext';
 import { getApiUrl } from '@/lib/api';
@@ -76,7 +76,7 @@ export function useNativeNotifications() {
             const currentUser = auth.currentUser;
             if (currentUser) {
               const userDocRef = doc(db, 'users', currentUser.uid);
-              await updateDoc(userDocRef, { fcmToken });
+              await setDoc(userDocRef, { fcmToken }, { merge: true });
               console.log('FCM token mapped to user profile on registration:', currentUser.uid);
             }
           } catch (tokenErr) {
@@ -110,7 +110,7 @@ export function useNativeNotifications() {
       if (user && tokenRef.current) {
         try {
           const userDocRef = doc(db, 'users', user.uid);
-          await updateDoc(userDocRef, { fcmToken: tokenRef.current });
+          await setDoc(userDocRef, { fcmToken: tokenRef.current }, { merge: true });
           console.log('FCM token mapped to user profile on auth change:', user.uid);
         } catch (err) {
           console.error('Error mapping FCM token on auth change:', err);
