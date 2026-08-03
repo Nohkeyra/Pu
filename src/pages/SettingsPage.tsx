@@ -271,7 +271,8 @@ export default function SettingsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <a
-                    href="https://github.com/Nohkeyra/Pu/releases/download/7/restoran-wawasan.apk"
+                    href="https://github.com/Nohkeyra/Pu/releases/download/7/Wawasan-Hub.apk"
+                    download="Wawasan Hub.apk"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={async () => {
@@ -280,7 +281,7 @@ export default function SettingsPage() {
                     className="btn-cta flex-1 rounded-2xl min-h-[44px] font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
                   >
                     <Download className="w-5 h-5" />
-                    {language === 'bm' ? 'Muat Turun APK Android' : 'Download Android APK'}
+                    {language === 'bm' ? 'Muat Turun APK Wawasan Hub' : 'Download Wawasan Hub APK'}
                   </a>
                 </div>
 
@@ -297,7 +298,7 @@ export default function SettingsPage() {
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">
             <div className="text-xs text-stone dark:text-stone/60 space-y-1 font-mono">
               <p className="font-semibold text-deep-forest dark:text-white font-sans text-sm mb-1">
-                Restoran Wawasan App
+                Wawasan Hub
               </p>
               <p>Version: 1.2.4 (Production Stable)</p>
               <p>Platform: {Capacitor.getPlatform().toUpperCase()} Runtime</p>
