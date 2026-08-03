@@ -7,27 +7,31 @@ import { Button } from '@/components/ui/button';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
-import { 
-  ArrowLeft, 
-  Sun, 
-  Moon, 
-  Globe, 
-  Bell, 
-  Sliders, 
-  Cpu, 
-  Check, 
+import {
+  ArrowLeft,
+  Sun,
+  Moon,
+  Globe,
+  Bell,
+  Sliders,
+  Cpu,
+  Check,
   Settings,
   Download,
-  Smartphone
+  Smartphone,
 } from 'lucide-react';
 import { triggerLightImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 
 function BrandMark() {
   return (
-    <div className="w-10 h-10 flex items-center justify-center">
+    <div className="h-10 w-10 flex items-center justify-center">
+      {/*
+        Brand asset path preserved verbatim — visual logo /
+        Malaysian heritage graphic must remain 100% intact.
+      */}
       <TransparentLogo
-        src={getAssetUrl("/assets/wawasan_logo.svg")}
+        src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
         className="w-full h-full object-contain"
       />
@@ -38,11 +42,11 @@ function BrandMark() {
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { 
-    notificationsEnabled, 
-    setNotificationsEnabled, 
-    developerMode, 
-    setDeveloperMode 
+  const {
+    notificationsEnabled,
+    setNotificationsEnabled,
+    developerMode,
+    setDeveloperMode,
   } = useSettings();
   const navigate = useNavigate();
 
@@ -70,28 +74,33 @@ export default function SettingsPage() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots pb-[calc(100px+env(safe-area-inset-bottom,16px))]">
-        {/* Fixed Top Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border shadow-sm pt-[var(--sat)]">
-          <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
-            <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer">
+        {/* P0 — standardised dark-mode text colour override via .glass-header */}
+        <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
+          <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
+            <button
+              type="button"
+              onClick={() => navigate('/home', { replace: true })}
+              className="touch-target-row flex items-center gap-3 group text-left"
+              aria-label="Go to home"
+            >
               <BrandMark />
               <div>
-                <span className="font-display font-semibold text-xl text-deep-forest  leading-none tracking-tight">
+                <span className="font-display font-semibold text-xl page-header-text leading-none tracking-tight">
                   Restoran Wawasan
                 </span>
-                <span className="block font-accent text-[10px] text-crisp-carrot uppercase tracking-[0.18em] leading-tight mt-0.5 font-bold">
+                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5">
                   Pak Usop
                 </span>
               </div>
-            </div>
+            </button>
 
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={async () => {
                 await triggerLightImpact();
                 navigate(-1);
-              }} 
-              className="rounded-full h-10 px-4 text-stone hover:text-deep-forest dark:hover:text-white"
+              }}
+              className="touch-target-row rounded-full min-h-[44px] px-4 text-stone hover:text-deep-forest dark:hover:text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('back')}
@@ -100,18 +109,18 @@ export default function SettingsPage() {
         </header>
 
         {/* Main Settings Content */}
-        <main className="pt-[calc(76px+var(--sat)+2rem)] px-4 max-w-2xl mx-auto space-y-6">
+        <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-2xl mx-auto space-y-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-sunshine/10 dark:bg-sunshine/20 rounded-2xl flex items-center justify-center">
-              <Settings className="w-6 h-6 text-sunshine" />
+            <div className="w-12 h-12 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
+              <Settings className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
             </div>
             <div>
               <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white">
                 {t('nav_settings')}
               </h1>
-              <p className="text-stone dark:text-stone/80 text-sm">
-                {language === 'bm' 
-                  ? 'Konfigurasikan pilihan aplikasi dan tetapan sistem anda.' 
+              <p className="page-header-text-muted microcopy-14">
+                {language === 'bm'
+                  ? 'Konfigurasikan pilihan aplikasi dan tetapan sistem anda.'
                   : 'Configure your application preferences and system settings.'}
               </p>
             </div>
@@ -119,30 +128,30 @@ export default function SettingsPage() {
 
           {/* 1. App Display (Language & Theme) */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="text-xs uppercase tracking-wider font-extrabold text-deep-forest dark:text-sunshine mb-4 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-sunshine" />
+            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Paparan' : 'Display Preferences'}
             </h3>
 
             {/* Theme Toggle Row */}
-            <div className="flex items-center justify-between py-2 border-b border-border/65 last:border-0">
+            <div className="flex items-center justify-between py-2 border-b border-border/65 last:border-0 gap-3">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Gelap' : 'Dark Mode'}
                 </span>
-                <span className="text-xs text-stone dark:text-stone/60 leading-none">
-                  {language === 'bm' 
-                    ? 'Tukar tema antara paparan cerah dan gelap.' 
+                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
+                  {language === 'bm'
+                    ? 'Tukar tema antara paparan cerah dan gelap.'
                     : 'Switch theme between light and dark display modes.'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 {theme === 'dark' ? (
-                  <Moon className="w-4 h-4 text-sunshine" />
+                  <Moon className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 ) : (
-                  <Sun className="w-4 h-4 text-sunshine" />
+                  <Sun className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 )}
-                <Switch 
+                <Switch
                   checked={theme === 'dark'}
                   onCheckedChange={handleToggleTheme}
                   aria-label="Toggle dark mode"
@@ -156,9 +165,9 @@ export default function SettingsPage() {
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Bahasa Aplikasi' : 'Application Language'}
                 </span>
-                <span className="text-xs text-stone dark:text-stone/60 leading-none">
-                  {language === 'bm' 
-                    ? 'Pilih bahasa pilihan anda untuk sistem.' 
+                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
+                  {language === 'bm'
+                    ? 'Pilih bahasa pilihan anda untuk sistem.'
                     : 'Select your preferred language for the interface.'}
                 </span>
               </div>
@@ -166,9 +175,9 @@ export default function SettingsPage() {
                 <Button
                   variant={language === 'en' ? 'default' : 'outline'}
                   onClick={() => handleLanguageChange('en')}
-                  className={`flex-1 rounded-2xl h-11 font-semibold ${
-                    language === 'en' 
-                      ? 'bg-sunshine text-deep-forest font-extrabold hover:bg-sunshine/95' 
+                  className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
+                    language === 'en'
+                      ? 'btn-cta text-white font-extrabold'
                       : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
                   }`}
                 >
@@ -179,9 +188,9 @@ export default function SettingsPage() {
                 <Button
                   variant={language === 'bm' ? 'default' : 'outline'}
                   onClick={() => handleLanguageChange('bm')}
-                  className={`flex-1 rounded-2xl h-11 font-semibold ${
-                    language === 'bm' 
-                      ? 'bg-sunshine text-deep-forest font-extrabold hover:bg-sunshine/95' 
+                  className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
+                    language === 'bm'
+                      ? 'btn-cta text-white font-extrabold'
                       : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
                   }`}
                 >
@@ -195,23 +204,23 @@ export default function SettingsPage() {
 
           {/* 2. Notification Preferences */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="text-xs uppercase tracking-wider font-extrabold text-deep-forest dark:text-sunshine mb-4 flex items-center gap-2">
-              <Bell className="w-4 h-4 text-sunshine" />
+            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+              <Bell className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Notifikasi' : 'Notification Preferences'}
             </h3>
 
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-3 py-2">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Notifikasi Push Aplikasi' : 'App Push Notifications'}
                 </span>
-                <span className="text-xs text-stone dark:text-stone/60 leading-normal block max-w-sm">
-                  {language === 'bm' 
-                    ? 'Benarkan pemberitahuan untuk maklum balas tempahan, status kelulusan, dan invois rasmi.' 
+                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal block max-w-sm">
+                  {language === 'bm'
+                    ? 'Benarkan pemberitahuan untuk maklum balas tempahan, status kelulusan, dan invois rasmi.'
                     : 'Receive notifications for order feedback, approval status updates, and official invoice generation.'}
                 </span>
               </div>
-              <Switch 
+              <Switch
                 checked={notificationsEnabled}
                 onCheckedChange={handleToggleNotifications}
                 aria-label="Toggle notifications"
@@ -221,23 +230,23 @@ export default function SettingsPage() {
 
           {/* 3. Advanced Settings */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="text-xs uppercase tracking-wider font-extrabold text-deep-forest dark:text-sunshine mb-4 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-sunshine" />
+            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Pembangun' : 'Developer & Advanced'}
             </h3>
 
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-3 py-2">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
                 </span>
-                <span className="text-xs text-stone dark:text-stone/60 leading-normal block max-w-sm">
-                  {language === 'bm' 
-                    ? 'Papar data diagnosis tambahan, log status sambungan API, dan kebenaran fail.' 
+                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal block max-w-sm">
+                  {language === 'bm'
+                    ? 'Papar data diagnosis tambahan, log status sambungan API, dan kebenaran fail.'
                     : 'Display extra diagnostic details, connection logs, and filesystem parameters.'}
                 </span>
               </div>
-              <Switch 
+              <Switch
                 checked={developerMode}
                 onCheckedChange={handleToggleDeveloper}
                 aria-label="Toggle developer mode"
@@ -245,38 +254,37 @@ export default function SettingsPage() {
             </div>
           </section>
 
-
           {/* APK Download - Visible on Web platform so users can download the native app */}
           {Capacitor.getPlatform() === 'web' && (
-            <section className="bg-gradient-to-br from-crisp-carrot/10 to-sunshine/10 dark:from-crisp-carrot/15 dark:to-sunshine/15 border border-crisp-carrot/20 rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="text-xs uppercase tracking-wider font-extrabold text-crisp-carrot dark:text-sunshine mb-2 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-crisp-carrot" />
+            <section className="bg-gradient-to-br from-[var(--color-sunshine-cta)]/10 to-[var(--color-sunshine)]/10 dark:from-[var(--color-sunshine-cta)]/15 dark:to-[var(--color-sunshine)]/15 border border-[var(--color-sunshine-cta)]/20 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 className="microcopy-14-upper text-[var(--color-sunshine-cta)] mb-2 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 {language === 'bm' ? 'Aplikasi Android Rasmi' : 'Official Android App'}
               </h3>
-              
+
               <div className="space-y-3">
                 <p className="text-sm text-deep-forest dark:text-white leading-relaxed">
-                  {language === 'bm' 
-                    ? 'Dapatkan aplikasi Restoran Wawasan Pak Usop terus pada skrin utama anda! Nikmati prestasi yang lebih pantas, haptik lancar, dan notifikasi push masa nyata untuk tempahan anda.' 
+                  {language === 'bm'
+                    ? 'Dapatkan aplikasi Restoran Wawasan Pak Usop terus pada skrin utama anda! Nikmati prestasi yang lebih pantas, haptik lancar, dan notifikasi push masa nyata untuk tempahan anda.'
                     : 'Get the Restoran Wawasan Pak Usop app right on your home screen! Enjoy faster performance, responsive native haptics, and real-time push notifications for your orders.'}
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <a 
+                  <a
                     href="https://github.com/Nohkeyra/Pu/releases/download/7/restoran-wawasan.apk"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={async () => {
                       await triggerLightImpact();
                     }}
-                    className="flex-1 rounded-2xl h-12 bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
+                    className="btn-cta flex-1 rounded-2xl min-h-[44px] font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
                   >
                     <Download className="w-5 h-5" />
                     {language === 'bm' ? 'Muat Turun APK Android' : 'Download Android APK'}
                   </a>
                 </div>
-                
-                <p className="text-[11px] text-stone dark:text-stone/60 leading-normal">
+
+                <p className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
                   {language === 'bm'
                     ? 'Arahan pemasangan: Selepas memuat turun, buka fail APK dan pilih "Pasang". Anda mungkin perlu membenarkan pemasangan daripada sumber tidak dikenali dalam tetapan penyemak imbas anda.'
                     : 'Installation guidance: After downloading, open the APK file and select "Install". You may need to allow installations from unknown sources in your browser settings.'}
@@ -287,15 +295,15 @@ export default function SettingsPage() {
 
           {/* 4. System Information */}
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">
-            <div className="text-xs text-stone dark:text-stone/50 space-y-1 font-mono">
-              <p className="font-semibold text-deep-forest  font-sans text-sm mb-1">
+            <div className="text-xs text-stone dark:text-stone/60 space-y-1 font-mono">
+              <p className="font-semibold text-deep-forest dark:text-white font-sans text-sm mb-1">
                 Restoran Wawasan App
               </p>
               <p>Version: 1.2.4 (Production Stable)</p>
               <p>Platform: {Capacitor.getPlatform().toUpperCase()} Runtime</p>
               <p>Backend: Render Remote Host</p>
               <p>Database: restoran-wawasan (Google Firebase)</p>
-              <p className="mt-2 text-[10px] text-stone/40">
+              <p className="mt-2 microcopy-12 text-stone/65 dark:text-stone/55">
                 &copy; {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.
               </p>
             </div>

@@ -93,7 +93,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                     key={link.href}
                     to={link.href}
                     onClick={onClose}
-                    className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-sunshine px-6 py-3 font-semibold text-white shadow-sunshine-glow transition-all duration-300 hover:brightness-105"
+                    className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-sunshine-cta)] px-6 py-3 font-semibold text-[var(--color-sunshine-cta-fg)] shadow-sunshine-glow transition-all duration-300 hover:brightness-105"
                   >
                     {t(link.label as Parameters<typeof t>[0])}
                     <ArrowRight className="h-5 w-5" />
@@ -106,10 +106,10 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                   key={link.href}
                   href={link.href}
                   onClick={onClose}
-                  className="flex items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-lg font-semibold text-deep-forest transition-all duration-300 hover:border-sunshine/15 hover:bg-white/70 hover:text-crisp-carrot dark:hover:bg-white/5 dark:hover:text-sunshine"
+                  className="nav-link-row flex min-h-[44px] items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-lg font-semibold text-deep-forest dark:text-white transition-all duration-300 hover:border-[var(--color-sunshine-cta)]/15 hover:bg-white/70 hover:text-[var(--color-sunshine-cta)] dark:hover:bg-white/5 dark:hover:text-[var(--color-sunshine-cta)]"
                 >
                   <span>{t(link.label as Parameters<typeof t>[0]) || link.label}</span>
-                  <ArrowRight className="h-4 w-4 text-sunshine/80" />
+                  <ArrowRight className="h-4 w-4 text-[var(--color-sunshine-cta)]/80" />
                 </a>
               );
             })}
@@ -122,14 +122,14 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             >
               {currentUser ? (
                 <>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-crisp-carrot text-[10px] font-black text-white">
+                  <div className="flex min-h-[44px] min-w-[44px] h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
                     {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                   </div>
                   <span>Account / Dashboard</span>
                 </>
               ) : (
                 <>
-                  <UserIcon className="h-4 w-4 text-sunshine" />
+                  <UserIcon className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
                   <span>Member Sign In</span>
                 </>
               )}
@@ -140,9 +140,9 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-deep-forest dark:text-white"
             >
               <span className="tracking-wider">
-                <span className={language === 'en' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/45 dark:text-white/45'}>EN</span>
+                <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-deep-forest/55 dark:text-white/55'}>EN</span>
                 <span className="mx-1.5 text-deep-forest/25 dark:text-white/25">/</span>
-                <span className={language === 'bm' ? 'text-crisp-carrot font-extrabold' : 'text-deep-forest/45 dark:text-white/45'}>BM</span>
+                <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-deep-forest/55 dark:text-white/55'}>BM</span>
               </span>
             </button>
 
@@ -151,7 +151,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               onClick={onClose}
               className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-deep-forest/75 dark:text-white/75"
             >
-              <Shield className="h-4 w-4 text-sunshine" />
+              <Shield className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
               <span>{t('admin_login')}</span>
             </Link>
           </div>

@@ -28,8 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-cream dark:bg-background pattern-dots p-6 text-center">
-          <div className="w-16 h-16 bg-sunshine/10 dark:bg-sunshine/20 rounded-2xl flex items-center justify-center mb-6 border border-sunshine/20 animate-pulse">
-            <AlertTriangle className="w-8 h-8 text-sunshine" />
+          <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center mb-6 border border-[var(--color-sunshine-cta)]/20 animate-pulse">
+            <AlertTriangle className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
           </div>
           <h1 className="font-display text-2xl font-bold text-deep-forest dark:text-white mb-2">
             Something went wrong
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="flex items-center gap-2 px-6 py-3.5 bg-sunshine text-white rounded-2xl font-semibold shadow-sunshine-glow hover:brightness-105 active:scale-[0.98] transition-all duration-300"
+            className="flex items-center gap-2 px-6 py-3.5 bg-[var(--color-sunshine-cta)] text-white rounded-2xl font-semibold shadow-sunshine-glow hover:brightness-105 active:scale-[0.98] transition-all duration-300"
           >
             <RefreshCw className="w-4 h-4" />
             Reload Application

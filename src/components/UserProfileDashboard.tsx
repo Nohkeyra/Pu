@@ -748,9 +748,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
         }}
       >
-        <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-sunshine/20 flex items-center gap-2">
-          <RotateCcw className={`w-4 h-4 text-sunshine ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }} />
-          {isRefreshing && <span className="text-[10px] font-black text-sunshine uppercase tracking-widest">Refreshing</span>}
+        <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-[var(--color-sunshine-cta)]/20 flex items-center gap-2">
+          <RotateCcw className={`w-4 h-4 text-[var(--color-sunshine-cta)] ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }} />
+          {isRefreshing && <span className="microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest">Refreshing</span>}
         </div>
       </motion.div>
 
@@ -758,14 +758,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       <div className="px-6 border-b border-border flex items-center justify-between pt-[var(--sat)] h-[calc(76px+var(--sat))] relative overflow-hidden bg-white dark:bg-card">
         <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none"></div>
         <div className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 rounded-full bg-sunshine/10 border border-sunshine/20 flex items-center justify-center text-sunshine">
+          <div className="w-10 h-10 rounded-full bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/20 flex items-center justify-center text-[var(--color-sunshine-cta)]">
             <UserIcon className="w-5 h-5" />
           </div>
           <div>
             <h2 className="font-display text-lg font-bold text-deep-forest tracking-wide">
               {t('Member Portal', 'Portal Ahli')}
             </h2>
-            <p className="text-[10px] text-stone uppercase tracking-widest font-bold">
+            <p className="microcopy-12-upper text-stone uppercase tracking-widest font-bold">
               Restoran Wawasan
             </p>
           </div>
@@ -816,17 +816,17 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {/* Dashboard Headers & Summary */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
-            <span className="text-[10px] text-stone dark:text-stone/60 uppercase tracking-wider font-black mb-1.5">{t('Total', 'Jumlah')}</span>
+            <span className="microcopy-12-upper text-stone dark:text-stone/60 uppercase tracking-wider font-black mb-1.5">{t('Total', 'Jumlah')}</span>
             <span className="text-2xl font-display font-black text-deep-forest dark:text-white">{orders.length}</span>
           </div>
           <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
-            <span className="text-[10px] text-sunshine uppercase tracking-wider font-black mb-1.5">{t('Active', 'Aktif')}</span>
-            <span className="text-2xl font-display font-black text-sunshine">
+            <span className="microcopy-12-upper text-[var(--color-sunshine-cta)] uppercase tracking-wider font-black mb-1.5">{t('Active', 'Aktif')}</span>
+            <span className="text-2xl font-display font-black text-[var(--color-sunshine-cta)]">
               {orders.filter(o => ['approved', 'pending'].includes(o.status || 'pending')).length}
             </span>
           </div>
           <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-5 flex flex-col justify-center shadow-sm">
-            <span className="text-[10px] text-kiwi uppercase tracking-wider font-black mb-1.5">{t('Billed', 'Dibilkan')}</span>
+            <span className="microcopy-12-upper text-kiwi uppercase tracking-wider font-black mb-1.5">{t('Billed', 'Dibilkan')}</span>
             <span className="text-2xl font-display font-black text-deep-forest dark:text-white">
               {orders.filter(o => ['billed'].includes(o.status || '')).length}
             </span>
@@ -840,8 +840,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           </div>
           <img src={getAssetUrl('/assets/nasi-lemak.jpg')} alt="Nasi Lemak" className="w-20 h-20 rounded-xl object-cover shadow-md group-hover:scale-105 transition-transform duration-500" />
           <div className="relative z-10">
-             <span className="text-[10px] font-black text-sunshine uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
-               <div className="w-1.5 h-1.5 rounded-full bg-sunshine animate-pulse" />
+             <span className="microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-[0.15em] flex items-center gap-1.5 mb-1">
+               <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-sunshine-cta)] animate-pulse" />
                {t('Daily Special', 'Istimewa Hari Ini')}
              </span>
              <h4 className="font-display font-black text-deep-forest dark:text-white text-lg leading-tight">Nasi Lemak Ayam Berempah</h4>
@@ -856,7 +856,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="p-1.5 bg-cream border border-border text-sunshine hover:text-crisp-carrot hover:border-sunshine/40 rounded-xl transition-all duration-200"
+                  className="p-1.5 bg-cream border border-border text-[var(--color-sunshine-cta)] hover:text-crisp-carrot hover:border-[var(--color-sunshine-cta)]/40 rounded-xl transition-all duration-200"
                 >
                   {isEditing ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
                 </button>
@@ -868,7 +868,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           </div>
 
           <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest mb-4 flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-sunshine" />
+            <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
             {t('Billing Profile Details', 'Profil Pengebilan')}
           </h3>
 
@@ -888,27 +888,27 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             <form onSubmit={handleSaveProfile} className="space-y-4 text-sm text-deep-forest">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone uppercase font-bold">{t('Name', 'Nama')}</label>
+                  <label className="microcopy-12-upper text-stone uppercase font-bold">{t('Name', 'Nama')}</label>
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none"
+                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone uppercase font-bold">{t('Contact', 'Telefon')}</label>
+                  <label className="microcopy-12-upper text-stone uppercase font-bold">{t('Contact', 'Telefon')}</label>
                   <input
                     type="text"
                     value={editContact}
                     onChange={(e) => setEditContact(e.target.value)}
-                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none"
+                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone uppercase font-bold">{t('Organization', 'Syarikat')}</label>
+                  <label className="microcopy-12-upper text-stone uppercase font-bold">{t('Organization', 'Syarikat')}</label>
                   <div className="relative">
                     <select
                       value={selectedCompany}
@@ -921,7 +921,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                           setEditTo(val);
                         }
                       }}
-                      className="w-full h-11 pl-4 pr-10 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none appearance-none"
+                      className="w-full h-11 pl-4 pr-10 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none appearance-none"
                     >
                       <option value="" className="text-stone">-- {t('Select Company', 'Pilih Syarikat')} --</option>
                       {SAVED_COMPANIES.map((company, idx) => (
@@ -929,7 +929,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                           {company}
                         </option>
                       ))}
-                      <option value="other" className="text-sunshine font-semibold">{t('Other (Specify)', 'Lain-lain (Nyatakan)')}</option>
+                      <option value="other" className="text-[var(--color-sunshine-cta)] font-semibold">{t('Other (Specify)', 'Lain-lain (Nyatakan)')}</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone pointer-events-none" />
                   </div>
@@ -939,24 +939,24 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                       value={editTo}
                       onChange={(e) => setEditTo(e.target.value)}
                       placeholder={t('e.g. PMO Putrajaya', 'cth. PMO Putrajaya')}
-                      className="w-full h-11 px-4 mt-2 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none"
+                      className="w-full h-11 px-4 mt-2 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none"
                     />
                   )}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone uppercase font-bold">{t('Attention (Attn)', 'Untuk Perhatian')}</label>
+                  <label className="microcopy-12-upper text-stone uppercase font-bold">{t('Attention (Attn)', 'Untuk Perhatian')}</label>
                   <input
                     type="text"
                     value={editAttn}
                     onChange={(e) => setEditAttn(e.target.value)}
-                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none"
+                    className="w-full h-11 px-4 bg-cream border border-border rounded-xl text-xs text-deep-forest focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none"
                   />
                 </div>
               </div>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="h-11 px-6 bg-sunshine text-white rounded-xl text-xs font-bold hover:bg-crisp-carrot transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
+                className="h-11 px-6 bg-[var(--color-sunshine-cta)] text-white rounded-xl text-xs font-bold hover:bg-crisp-carrot transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 {t('Save Details', 'Simpan Butiran')}
@@ -965,30 +965,30 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs text-deep-forest">
               <div className="flex gap-3 items-start">
-                <UserIcon className="w-4 h-4 text-sunshine shrink-0 mt-0.5" />
+                <UserIcon className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 mt-0.5" />
                 <div>
-                  <span className="block text-[9px] text-stone uppercase font-bold">{t('PIC Name', 'Nama PIC')}</span>
+                  <span className="block microcopy-12 text-stone uppercase font-bold">{t('PIC Name', 'Nama PIC')}</span>
                   <span className="font-semibold text-deep-forest">{profile?.name || '—'}</span>
                 </div>
               </div>
               <div className="flex gap-3 items-start">
-                <Phone className="w-4 h-4 text-sunshine shrink-0 mt-0.5" />
+                <Phone className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 mt-0.5" />
                 <div>
-                  <span className="block text-[9px] text-stone uppercase font-bold">{t('Phone Number', 'No. Telefon')}</span>
+                  <span className="block microcopy-12 text-stone uppercase font-bold">{t('Phone Number', 'No. Telefon')}</span>
                   <span className="font-semibold text-deep-forest">{profile?.contact || '—'}</span>
                 </div>
               </div>
               <div className="flex gap-3 items-start">
-                <Building className="w-4 h-4 text-sunshine shrink-0 mt-0.5" />
+                <Building className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 mt-0.5" />
                 <div>
-                  <span className="block text-[9px] text-stone uppercase font-bold">{t('Company / Org', 'Organisasi / Syarikat')}</span>
+                  <span className="block microcopy-12 text-stone uppercase font-bold">{t('Company / Org', 'Organisasi / Syarikat')}</span>
                   <span className="font-semibold text-deep-forest">{profile?.to || '—'}</span>
                 </div>
               </div>
               <div className="flex gap-3 items-start">
-                <Briefcase className="w-4 h-4 text-sunshine shrink-0 mt-0.5" />
+                <Briefcase className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 mt-0.5" />
                 <div>
-                  <span className="block text-[9px] text-stone uppercase font-bold">{t('Attention (Attn)', 'Untuk Perhatian (Attn)')}</span>
+                  <span className="block microcopy-12 text-stone uppercase font-bold">{t('Attention (Attn)', 'Untuk Perhatian (Attn)')}</span>
                   <span className="font-semibold text-deep-forest">{profile?.attn || '—'}</span>
                 </div>
               </div>
@@ -999,7 +999,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {/* 2. NOTIFICATION SETTINGS */}
         <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm">
           <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white mb-6 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-sunshine" />
+            <Bell className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
             {tGlobal('notification_settings')}
           </h3>
 
@@ -1010,7 +1010,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('order_status_updates')}
                 </label>
-                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
+                <span className="microcopy-12-upper text-stone dark:text-stone/75 leading-none">
                   {tGlobal('order_status_desc')}
                 </span>
               </div>
@@ -1028,7 +1028,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('billed_updates')}
                 </label>
-                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
+                <span className="microcopy-12-upper text-stone dark:text-stone/75 leading-none">
                   {tGlobal('billed_updates_desc')}
                 </span>
               </div>
@@ -1044,7 +1044,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 <label className="text-sm font-semibold text-deep-forest dark:text-white/95 block">
                   {tGlobal('cancel_approval')}
                 </label>
-                <span className="text-[10px] text-stone dark:text-stone/75 leading-none">
+                <span className="microcopy-12-upper text-stone dark:text-stone/75 leading-none">
                   {tGlobal('cancel_approval_desc')}
                 </span>
               </div>
@@ -1058,7 +1058,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               <Button 
                 onClick={handleSaveProfile} 
                 disabled={isSaving}
-                className="w-full h-10 bg-sunshine hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold transition-all"
+                className="w-full h-10 bg-[var(--color-sunshine-cta)] hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold transition-all"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
                 {tGlobal('update_notifications')}
@@ -1071,7 +1071,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-sunshine" />
+              <MapPin className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {tGlobal('saved_locations')}
             </h3>
             {!isAddingLocation && (
@@ -1084,7 +1084,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   setNewLocationAddress('');
                   setIsAddingLocation(true);
                 }}
-                className="h-8 rounded-xl text-xs flex items-center gap-1.5 border-sunshine/30 hover:border-sunshine text-deep-forest dark:text-white/90 dark:hover:bg-cream/10"
+                className="h-8 rounded-xl text-xs flex items-center gap-1.5 border-[var(--color-sunshine-cta)]/30 hover:border-[var(--color-sunshine-cta)] text-deep-forest dark:text-white/90 dark:hover:bg-cream/10"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t('Add New', 'Tambah Baru')}
@@ -1093,7 +1093,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           </div>
 
           {isAddingLocation ? (
-            <form onSubmit={handleAddLocation} className="space-y-4 border border-sunshine/15 bg-cream/35 dark:bg-cream/5 p-4 rounded-2xl">
+            <form onSubmit={handleAddLocation} className="space-y-4 border border-[var(--color-sunshine-cta)]/15 bg-cream/35 dark:bg-cream/5 p-4 rounded-2xl">
               <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
                 <span className="text-xs font-bold text-deep-forest ">
                   {editingLocationId ? tGlobal('edit_location') : tGlobal('add_location')}
@@ -1111,30 +1111,30 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               </div>
               <div className="space-y-3 text-xs">
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone dark:text-stone/80 uppercase font-bold">{tGlobal('location_label')}</label>
+                  <label className="microcopy-12-upper text-stone dark:text-stone/80 uppercase font-bold">{tGlobal('location_label')}</label>
                   <input
                     type="text"
                     value={newLocationLabel}
                     onChange={(e) => setNewLocationLabel(e.target.value)}
                     placeholder="e.g. Office HQ, Main Hall, Home"
-                    className="w-full h-10 px-3 bg-cream dark:bg-background border border-border rounded-xl text-xs text-deep-forest  focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none"
+                    className="w-full h-10 px-3 bg-cream dark:bg-background border border-border rounded-xl text-xs text-deep-forest  focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] text-stone dark:text-stone/80 uppercase font-bold">{tGlobal('location_address')}</label>
+                  <label className="microcopy-12-upper text-stone dark:text-stone/80 uppercase font-bold">{tGlobal('location_address')}</label>
                   <textarea
                     value={newLocationAddress}
                     onChange={(e) => setNewLocationAddress(e.target.value)}
                     placeholder="Full delivery address for catering..."
-                    className="w-full h-20 p-3 bg-cream dark:bg-background border border-border rounded-xl text-xs text-deep-forest  focus:border-sunshine focus:ring-1 focus:ring-sunshine outline-none resize-none"
+                    className="w-full h-20 p-3 bg-cream dark:bg-background border border-border rounded-xl text-xs text-deep-forest  focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] outline-none resize-none"
                     required
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button
                     type="submit"
-                    className="flex-1 h-9 bg-sunshine hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold"
+                    className="flex-1 h-9 bg-[var(--color-sunshine-cta)] hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold"
                   >
                     <Check className="w-3.5 h-3.5 mr-1" />
                     {t('Save Location', 'Simpan Lokasi')}
@@ -1159,7 +1159,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               <p className="text-xs text-stone dark:text-stone/70 font-medium">
                 {t('No saved locations yet.', 'Tiada lokasi disimpan lagi.')}
               </p>
-              <p className="text-[10px] text-stone/60 dark:text-stone/50 mt-0.5">
+              <p className="microcopy-12-upper text-stone/60 dark:text-stone/50 mt-0.5">
                 {t('Save common event venues for faster booking.', 'Simpan tempat acara biasa untuk tempahan lebih cepat.')}
               </p>
             </div>
@@ -1168,14 +1168,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               {savedLocations.map((loc) => (
                 <div 
                   key={loc.id} 
-                  className="group relative flex items-start gap-3 p-3.5 bg-cream/15 dark:bg-card/40 border border-border/60 rounded-2xl hover:border-sunshine/30 transition-all"
+                  className="group relative flex items-start gap-3 p-3.5 bg-cream/15 dark:bg-card/40 border border-border/60 rounded-2xl hover:border-[var(--color-sunshine-cta)]/30 transition-all"
                 >
-                  <div className="w-8 h-8 bg-sunshine/10 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-4 h-4 text-sunshine" />
+                  <div className="w-8 h-8 bg-[var(--color-sunshine-cta)]/10 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                   </div>
                   <div className="flex-1 min-w-0 pr-16 text-xs text-deep-forest ">
                     <span className="font-semibold block truncate text-sm">{loc.label}</span>
-                    <span className="text-[11px] text-stone dark:text-stone/80 line-clamp-2 mt-0.5 leading-normal">{loc.address}</span>
+                    <span className="microcopy-12 text-stone dark:text-stone/80 line-clamp-2 mt-0.5 leading-normal">{loc.address}</span>
                   </div>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <Tooltip>
@@ -1183,7 +1183,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                         <button
                           type="button"
                           onClick={() => handleEditLocationClick(loc)}
-                          className="p-1.5 hover:bg-cream dark:hover:bg-cream/10 border border-transparent hover:border-border rounded-lg text-sunshine hover:text-crisp-carrot transition-all"
+                          className="p-1.5 hover:bg-cream dark:hover:bg-cream/10 border border-transparent hover:border-border rounded-lg text-[var(--color-sunshine-cta)] hover:text-crisp-carrot transition-all"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -1216,7 +1216,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {/* 2.6 HELP & SUPPORT FAQ */}
         <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-sm space-y-4">
           <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-sunshine" />
+            <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
             {tGlobal('help_support')}
           </h3>
 
@@ -1236,7 +1236,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               }
             ].map((faq, i) => (
               <details key={i} className="group border-b border-stone/15 dark:border-white/10 last:border-0 pb-3.5 last:pb-0 text-xs">
-                <summary className="flex justify-between items-center font-semibold cursor-pointer list-none text-deep-forest dark:text-white hover:text-sunshine dark:hover:text-sunshine transition-colors">
+                <summary className="flex justify-between items-center font-semibold cursor-pointer list-none text-deep-forest dark:text-white hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] transition-colors">
                   <span>{faq.q}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-stone dark:text-stone/50 group-open:rotate-180 transition-transform duration-200" />
                 </summary>
@@ -1251,9 +1251,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 href="https://wa.me/60123456789" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="w-full h-11 border border-sunshine/40 hover:bg-sunshine/5 hover:border-sunshine text-deep-forest dark:text-white/90 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent decoration-transparent hover:no-underline"
+                className="w-full h-11 border border-[var(--color-sunshine-cta)]/40 hover:bg-[var(--color-sunshine-cta)]/5 hover:border-[var(--color-sunshine-cta)] text-deep-forest dark:text-white/90 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent decoration-transparent hover:no-underline"
               >
-                <Utensils className="w-4 h-4 text-sunshine" />
+                <Utensils className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 {tGlobal('contact_support_whatsapp')}
               </a>
             </div>
@@ -1264,11 +1264,11 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
             <h3 className="text-xs uppercase tracking-wider font-bold text-deep-forest dark:text-white flex items-center gap-2">
-              <History className="w-4 h-4 text-sunshine" />
+              <History className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {t('Catering Order History', 'Sejarah Tempahan Katering')}
             </h3>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-cream/50 dark:bg-card border border-sunshine/10 rounded-lg">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-cream/50 dark:bg-card border border-[var(--color-sunshine-cta)]/10 rounded-lg">
                 <Switch
                   id="user-select-mode"
                   checked={isSelectMode}
@@ -1280,7 +1280,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   }}
                   className="scale-90"
                 />
-                <label htmlFor="user-select-mode" className="text-[10px] font-bold text-deep-forest/80 dark:text-white/80 cursor-pointer select-none">
+                <label htmlFor="user-select-mode" className="microcopy-12-upper font-bold text-deep-forest/80 dark:text-white/80 cursor-pointer select-none">
                   {t('Select Mode', 'Mod Pilih')}
                 </label>
               </div>
@@ -1294,7 +1294,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                       setSelectedOrders(new Set(orders.filter(o => o.id).map(o => o.id!)));
                     }
                   }}
-                  className="text-[11px] font-black text-sunshine hover:text-crisp-carrot transition-colors cursor-pointer bg-transparent border-0"
+                  className="microcopy-12 font-black text-[var(--color-sunshine-cta)] hover:text-crisp-carrot transition-colors cursor-pointer bg-transparent border-0"
                 >
                   {orders.every(o => o.id && selectedOrders.has(o.id))
                     ? t('Deselect All', 'Nyahpilih Semua')
@@ -1341,7 +1341,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   key={order.id || `order-${idx}`}
                   className={cn(
                     "bg-white dark:bg-card border rounded-2xl p-5 transition-all duration-300 space-y-4 shadow-sm",
-                    (isSelectMode && selectedOrders.has(order.id!)) ? 'border-sunshine ring-1 ring-sunshine' : 'border-stone/15 dark:border-white/10 hover:border-sunshine/30'
+                    (isSelectMode && selectedOrders.has(order.id!)) ? 'border-[var(--color-sunshine-cta)] ring-1 ring-[var(--color-sunshine-cta)]' : 'border-stone/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/30'
                   )}
                 >
                   {/* Top Row: Invoice + Status */}
@@ -1353,15 +1353,15 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                           className={cn(
                             "mt-1 w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0",
                             selectedOrders.has(order.id!) 
-                              ? 'bg-sunshine border-sunshine text-white' 
-                              : 'border-stone/40 hover:border-sunshine'
+                              ? 'bg-[var(--color-sunshine-cta)] border-[var(--color-sunshine-cta)] text-white' 
+                              : 'border-stone/40 hover:border-[var(--color-sunshine-cta)]'
                           )}
                         >
                           {selectedOrders.has(order.id!) && <Check className="w-3.5 h-3.5" />}
                         </button>
                       )}
                       <div>
-                        <span className="text-[10px] text-sunshine font-mono font-bold tracking-wider block">
+                        <span className="microcopy-12-upper text-[var(--color-sunshine-cta)] font-mono font-bold tracking-wider block">
                           {order.invoiceNo || `RW-${order.id!.slice(0, 8).toUpperCase()}`}
                         </span>
                         <span className="font-display font-bold text-sm text-deep-forest dark:text-white block mt-0.5">
@@ -1370,7 +1370,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                       <span className={cn("text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider", getStatusColor(order.status || 'menunggu'))}>
+                       <span className={cn("microcopy-12 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider", getStatusColor(order.status || 'menunggu'))}>
                          {getStatusText(order.status || 'menunggu')}
                        </span>
                        {order.totalAmount && (
@@ -1382,7 +1382,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   </div>
 
                   {/* Info block */}
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-[10px] border-t border-stone/15 dark:border-white/10 pt-4">
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-2 microcopy-12-upper border-t border-stone/15 dark:border-white/10 pt-4">
                     <div>
                       <span className="block text-[8px] text-stone dark:text-stone/60 uppercase font-bold">{t('Event Date', 'Tarikh Acara')}</span>
                       <span className="font-medium text-deep-forest dark:text-white/90">{renderOrderDate(order.date)}</span>
@@ -1397,12 +1397,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   <div className="flex gap-2 border-t border-stone/15 dark:border-white/10 pt-4 flex-wrap">
                     {/* Request Invoice Email ("Poke" Feature) */}
                     {order.invoiceEmailRequested && !order.invoiceEmailHandled ? (
-                      <span className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5">
+                      <span className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl flex items-center justify-center gap-1.5 font-bold microcopy-12 px-2.5">
                         <Mail className="w-3.5 h-3.5 animate-pulse text-amber-600" />
                         {t('Email Requested ⏳', 'Permintaan Emel ⏳')}
                       </span>
                     ) : order.invoiceEmailSentAt ? (
-                      <span className="flex-1 min-w-[110px] h-10 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5">
+                      <span className="flex-1 min-w-[110px] h-10 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-xl flex items-center justify-center gap-1.5 font-bold microcopy-12 px-2.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         {t('Invoiced via Email ✓', 'Invois Dihantar ✓')}
                       </span>
@@ -1410,7 +1410,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                       <button
                         onClick={() => handleRequestInvoiceEmail(order)}
                         disabled={pokingOrderId === order.id}
-                        className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold text-[11px] px-2.5 cursor-pointer"
+                        className="flex-1 min-w-[110px] h-10 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold microcopy-12 px-2.5 cursor-pointer"
                         title={t('Request Invoice Email', 'Pohon Hantar Emel Invois')}
                       >
                         {pokingOrderId === order.id ? (
@@ -1425,7 +1425,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                     {/* Download PDF */}
                     <button
                       onClick={() => setPreviewOrder(order)}
-                      className="flex-1 min-w-[80px] h-10 bg-cream border border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white/90 hover:text-sunshine hover:border-sunshine/30 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 font-semibold"
+                      className="flex-1 min-w-[80px] h-10 bg-cream border border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white/90 hover:text-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)]/30 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 font-semibold"
                     >
                       <FileDown className="w-4 h-4 text-stone dark:text-stone/70" />
                       {t('Invoice PDF', 'Invois PDF')}
@@ -1437,7 +1437,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                         onReorder(order);
                         onClose();
                       }}
-                      className="flex-1 min-w-[80px] h-10 bg-sunshine/10 border border-sunshine/20 text-xs text-sunshine hover:bg-sunshine hover:text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
+                      className="flex-1 min-w-[80px] h-10 bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/20 text-xs text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)] hover:text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 font-bold"
                     >
                       <RotateCcw className="w-4 h-4" />
                       {t('Reorder', 'Tempah Semula')}
@@ -1494,7 +1494,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className={cn(
-              "absolute bottom-6 left-6 right-6 bg-sunshine border border-white/10 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between z-50 overflow-hidden",
+              "absolute bottom-6 left-6 right-6 bg-[var(--color-sunshine-cta)] border border-white/10 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between z-50 overflow-hidden",
               isEmbedded && "bottom-4 left-4 right-4"
             )}
           >
@@ -1507,7 +1507,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             </div>
             <button
               onClick={() => setShowCombineModal(true)}
-              className="h-10 px-5 bg-white text-sunshine rounded-2xl text-xs font-bold hover:bg-cream transition-colors flex items-center gap-2 relative z-10 shadow-sm hover:-translate-y-0.5"
+              className="h-10 px-5 bg-white text-[var(--color-sunshine-cta)] rounded-2xl text-xs font-bold hover:bg-cream transition-colors flex items-center gap-2 relative z-10 shadow-sm hover:-translate-y-0.5"
             >
               <FileDown className="w-4 h-4" />
               {t('Combine Invoice', 'Gabung Invois')}
@@ -1550,7 +1550,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   setIncludeNotes(true);
                   handleGenerateCombinedInvoice(true);
                 }}
-                className="w-full h-12 bg-sunshine text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
+                className="w-full h-12 bg-[var(--color-sunshine-cta)] text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
               >
                 {t('Yes, include Notes', 'Ya, masukkan Nota')}
               </button>

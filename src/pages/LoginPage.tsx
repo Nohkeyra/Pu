@@ -24,15 +24,15 @@ export default function LoginPage() {
         <div className="content-container flex h-[76px] items-center justify-between">
           <button
             onClick={toggleTheme}
-            className="icon-button-soft h-11 w-11"
+            className="icon-button-soft touch-target h-11 w-11"
             aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
           >
-            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-sunshine" />}
+            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
           </button>
 
           <button
             onClick={() => navigate('/admin')}
-            className="icon-button-soft h-11 w-11 text-deep-forest/50 hover:text-sunshine"
+            className="icon-button-soft touch-target h-11 w-11 text-deep-forest/50 hover:text-[var(--color-sunshine-cta)]"
             aria-label="Admin Access"
             id="admin-secret-trigger"
           >
@@ -65,10 +65,10 @@ export default function LoginPage() {
                 <h1 className="font-display text-3xl font-bold tracking-tight text-deep-forest dark:text-white">
                   Restoran Wawasan
                 </h1>
-                <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-crisp-carrot">
+                <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-[var(--color-sunshine-cta)]">
                   Pak Usop
                 </p>
-                <p className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/68 dark:text-white/72">
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/72 dark:text-white/72">
                   {tLocal(
                     'Catering, signature dishes, and a smoother ordering flow in one place.',
                     'Katering, hidangan istimewa, dan aliran tempahan yang lebih kemas dalam satu aplikasi.'
@@ -86,7 +86,7 @@ export default function LoginPage() {
                       setAuthOpen(true);
                     }
                   }}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-sunshine px-5 py-4 text-base font-semibold text-white shadow-sunshine-glow transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.99]"
+                  className="btn-cta flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-4 min-h-[52px] text-base font-semibold shadow-sunshine-glow transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99]"
                 >
                   <LogIn className="h-5 w-5" />
                   {tLocal('Sign In / Register', 'Log Masuk / Daftar')}
@@ -98,9 +98,9 @@ export default function LoginPage() {
                     sessionStorage.setItem('wawasan_guest_allowed', 'true');
                     navigate('/order');
                   }}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-deep-forest/10 bg-white/80 px-5 py-4 text-base font-semibold text-deep-forest shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-sunshine/25 hover:bg-white active:scale-[0.99] dark:border-white/10 dark:bg-white/6 dark:text-white dark:hover:bg-white/10"
+                  className="flex w-full min-h-[52px] items-center justify-center gap-3 rounded-2xl border border-deep-forest/10 bg-white/80 px-5 py-4 text-base font-semibold text-deep-forest shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-sunshine-cta)]/35 hover:bg-white active:scale-[0.99] dark:border-white/10 dark:bg-white/6 dark:text-white dark:hover:bg-white/10"
                 >
-                  <ShoppingBag className="h-5 w-5 text-sunshine" />
+                  <ShoppingBag className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
                   {tLocal('Order as Guest', 'Pesan Sebagai Tetamu')}
                 </button>
 
@@ -110,9 +110,9 @@ export default function LoginPage() {
                     sessionStorage.setItem('wawasan_guest_allowed', 'true');
                     navigate('/home', { replace: true });
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-deep-forest/70 transition-all duration-300 hover:bg-deep-forest/[0.04] hover:text-deep-forest active:scale-[0.99] dark:text-white/70 dark:hover:bg-white/6 dark:hover:text-white"
+                  className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-deep-forest/75 transition-all duration-300 hover:bg-deep-forest/[0.04] hover:text-deep-forest active:scale-[0.99] dark:text-white/75 dark:hover:bg-white/6 dark:hover:text-white"
                 >
-                  <Compass className="h-4.5 w-4.5 text-sunshine" />
+                  <Compass className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
                   {tLocal('Explore menu & story', 'Teroka menu & cerita')}
                 </button>
               </div>

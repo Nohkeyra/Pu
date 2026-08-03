@@ -24,7 +24,7 @@ const badgeVariants = cva(
         sage:
           "border-transparent bg-sage/15 text-sage border border-sage/20 [a&]:hover:bg-sage/25",
         sunshine:
-          "border-transparent bg-sunshine/15 text-sunshine border border-sunshine/30 [a&]:hover:bg-sunshine/25",
+          "border-transparent bg-[var(--color-sunshine-cta)]/15 text-[var(--color-sunshine-cta)] border border-[var(--color-sunshine-cta)]/30 [a&]:hover:bg-[var(--color-sunshine-cta)]/25",
         kiwi:
           "border-transparent bg-kiwi/15 text-kiwi border border-kiwi/30 [a&]:hover:bg-kiwi/25",
         carrot:

@@ -58,7 +58,7 @@ export default function HighlightsSection() {
           {highlights.map((item, index) => {
             const Icon = item.icon;
             const accentColors = [
-              'border-sunshine/20 bg-sunshine/[0.03] text-sunshine',
+              'border-[var(--color-sunshine-cta)]/20 bg-[var(--color-sunshine-cta)]/[0.03] text-[var(--color-sunshine-cta)]',
               'border-kiwi/20 bg-kiwi/[0.03] text-kiwi',
               'border-stone/20 bg-stone/[0.03] text-stone'
             ];

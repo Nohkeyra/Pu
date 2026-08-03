@@ -125,38 +125,38 @@ export function AdminOrdersTab({
       {/* KPI Summary Header Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
         <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
-          <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+          <p className="microcopy-12 font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
             {language === 'bm' ? 'Jumlah Pesanan' : 'Total Orders'}
           </p>
           <p className="text-xl font-black text-deep-forest dark:text-white mt-1">{totalCount}</p>
         </div>
 
         <div className="bg-white dark:bg-card border border-amber-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+          <p className="microcopy-12 font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
             {language === 'bm' ? 'Menunggu' : 'Pending'}
           </p>
           <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</p>
         </div>
 
         <div className="bg-white dark:bg-card border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+          <p className="microcopy-12 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
             {language === 'bm' ? 'Diluluskan' : 'Approved'}
           </p>
           <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{approvedCount}</p>
         </div>
 
         <div className="bg-white dark:bg-card border border-blue-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+          <p className="microcopy-12 font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
             {language === 'bm' ? 'Dibilkan' : 'Billed'}
           </p>
           <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">{billedCount}</p>
         </div>
 
         <div className="col-span-2 sm:col-span-1 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
-          <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+          <p className="microcopy-12 font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
             {language === 'bm' ? 'Jumlah Pax' : 'Total Pax'}
           </p>
-          <p className="text-xl font-black text-sunshine dark:text-sunshine mt-1">{totalPax.toLocaleString()} pax</p>
+          <p className="text-xl font-black text-[var(--color-sunshine-cta)] dark:text-[var(--color-sunshine-cta)] mt-1">{totalPax.toLocaleString()} pax</p>
         </div>
       </div>
 
@@ -233,7 +233,7 @@ export function AdminOrdersTab({
               placeholder={t('search_placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-stone-400 focus:ring-1 focus:ring-sunshine/50 rounded-xl"
+              className="pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-stone-400 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]/50 rounded-xl"
             />
             {searchTerm && (
               <button
@@ -288,15 +288,15 @@ export function AdminOrdersTab({
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
                 onChange={(e) => setDateFromFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+                className="bg-transparent microcopy-12 font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
               />
-              <span className="text-stone-400 text-[10px]">-</span>
+              <span className="text-stone-400 microcopy-12-upper">-</span>
               <input
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
                 onChange={(e) => setDateToFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+                className="bg-transparent microcopy-12 font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
               />
             </div>
 
@@ -379,11 +379,11 @@ export function AdminOrdersTab({
                   }
                   setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                 }}
-                className="border-stone/15 dark:border-white/10 bg-cream/60 dark:bg-background/40 text-deep-forest dark:text-white hover:bg-sunshine/10 text-xs font-semibold h-9 px-3 rounded-xl flex items-center gap-1.5 !min-h-0"
+                className="border-stone/15 dark:border-white/10 bg-cream/60 dark:bg-background/40 text-deep-forest dark:text-white hover:bg-[var(--color-sunshine-cta)]/10 text-xs font-semibold h-9 px-3 rounded-xl flex items-center gap-1.5 !min-h-0"
               >
                 {filteredOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-sunshine" />
+                    <Check className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
                     {t('deselect_all') || 'Deselect'}
                   </>
                 ) : (
@@ -400,9 +400,9 @@ export function AdminOrdersTab({
               variant="outline"
               size="sm"
               onClick={() => setIsExportOpen(true)}
-              className="border-sunshine/30 bg-sunshine/10 text-deep-forest dark:text-sunshine hover:bg-sunshine/20 text-xs font-bold h-9 px-3.5 rounded-xl flex items-center gap-1.5 !min-h-0"
+              className="border-[var(--color-sunshine-cta)]/30 bg-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/20 text-xs font-bold h-9 px-3.5 rounded-xl flex items-center gap-1.5 !min-h-0"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-sunshine" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
               <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
             </Button>
           </div>
@@ -459,7 +459,7 @@ export function AdminOrdersTab({
                 onClick={() => openOrderDetail(order)}
                 className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative ${
                   order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''
-                } ${isSelected ? 'bg-sunshine/5 dark:bg-sunshine/5 border-l-4 border-l-sunshine' : ''}`}
+                } ${isSelected ? 'bg-[var(--color-sunshine-cta)]/5 dark:bg-[var(--color-sunshine-cta)]/5 border-l-4 border-l-sunshine' : ''}`}
               >
                 {/* Left Side: Select or Star & Details */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -530,7 +530,7 @@ export function AdminOrdersTab({
                         <span className="text-stone-400 dark:text-stone-500 font-medium">
                           {language === 'bm' ? 'Kuantiti:' : 'Quantity:'}
                         </span>
-                        <span className="font-bold text-deep-forest dark:text-white bg-stone/10 dark:bg-white/10 px-1.5 py-0.5 rounded text-[11px]">
+                        <span className="font-bold text-deep-forest dark:text-white bg-stone/10 dark:bg-white/10 px-1.5 py-0.5 rounded microcopy-12">
                           {order.quantity} pax
                         </span>
                       </div>
@@ -547,7 +547,7 @@ export function AdminOrdersTab({
 
                     {/* Additional Details (Meals) in small footer text */}
                     {order.meals && order.meals.length > 0 && (
-                      <div className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
+                      <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate">
                         <span className="opacity-70">{language === 'bm' ? 'Menu Hidangan: ' : 'Meals: '}</span>
                         {order.meals.map(m => t(m) || m).join(', ')}
                         {order.preparationType && ` (${order.preparationType === 'buffet' ? (language === 'bm' ? 'Bufet' : 'Buffet') : (language === 'bm' ? 'Kotak' : 'Meal Box')})`}
@@ -559,7 +559,7 @@ export function AdminOrdersTab({
                 {/* Right Side: Status badge & Compact actions */}
                 <div className="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch md:self-auto pl-7 md:pl-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-stone-400 dark:text-stone-500 md:hidden font-medium">
+                    <span className="microcopy-12 text-stone-400 dark:text-stone-500 md:hidden font-medium">
                       {relativeTime} ago
                     </span>
                     {getStatusBadge(order.status)}
@@ -572,7 +572,7 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-sunshine dark:hover:text-sunshine hover:bg-sunshine/10 rounded-lg"
+                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             openOrderDetail(order);
@@ -634,7 +634,7 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-sunshine hover:bg-sunshine/10 rounded-lg"
+                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             openSendDialog(order);
@@ -688,7 +688,7 @@ export function AdminOrdersTab({
         without touching the pull-to-refresh animation in AdminPanel.tsx.
       */}
       {selectedOrderIds.size >= 2 && createPortal(
-        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-sunshine border border-border/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between z-[110]">
+        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-[var(--color-sunshine-cta)] border border-border/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between z-[110]">
           <div className="text-sm font-bold text-white flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <span className="text-white">{selectedOrderIds.size}</span>
@@ -704,7 +704,7 @@ export function AdminOrdersTab({
               }
             }}
             disabled={isGeneratingConsolidated}
-            className="h-10 px-5 bg-white text-sunshine hover:bg-cream rounded-xl text-xs font-bold flex items-center gap-2"
+            className="h-10 px-5 bg-white text-[var(--color-sunshine-cta)] hover:bg-cream rounded-xl text-xs font-bold flex items-center gap-2"
           >
             {isGeneratingConsolidated ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -743,9 +743,9 @@ export function AdminOrdersTab({
                 value={consolidatedInvoiceNo}
                 onChange={(e) => setConsolidatedInvoiceNo && setConsolidatedInvoiceNo(e.target.value)}
                 placeholder="RW0015"
-                className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-sunshine text-sm font-bold text-deep-forest dark:text-white"
+                className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-[var(--color-sunshine-cta)] text-sm font-bold text-deep-forest dark:text-white"
               />
-              <p className="text-[11px] text-stone dark:text-stone/70">
+              <p className="microcopy-12 text-stone dark:text-stone/70">
                 {language === 'bm'
                   ? 'Nombor ini akan digunakan untuk keseluruhan kelompok invois konsolidasi ini.'
                   : 'This number applies to all pages in this consolidated invoice batch.'}
@@ -755,7 +755,7 @@ export function AdminOrdersTab({
             <div className="space-y-2.5">
               <button
                 onClick={() => handleGenerateConsolidatedInvoice(true, consolidatedInvoiceNo)}
-                className="w-full h-11 bg-sunshine text-charcoal rounded-xl text-sm font-bold hover:bg-sunshine/90 transition-colors"
+                className="w-full h-11 bg-[var(--color-sunshine-cta)] text-charcoal rounded-xl text-sm font-bold hover:bg-[var(--color-sunshine-cta)]/90 transition-colors"
               >
                 {t('include_notes') || 'Yes, include Notes'}
               </button>

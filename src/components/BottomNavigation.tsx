@@ -74,22 +74,33 @@ export default function BottomNavigation() {
                   }
                 }}
                 className={cn(
-                  'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40',
-                  isActive ? 'text-crisp-carrot' : 'text-stone hover:text-deep-forest dark:hover:text-white'
+                  /* P0 — focus ring uses --color-sunshine-cta (AA token). */
+                  'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] min-h-[44px]',
+                  isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-white'
                 )}
               >
                 <div className="relative flex h-9 w-16 items-center justify-center">
                   {isActive && (
                     <motion.div
                       layoutId="activeTabPill"
-                      className="absolute inset-0 rounded-full border border-sunshine/25 bg-sunshine/12 dark:bg-sunshine/18"
+                      className="absolute inset-0 rounded-full border border-[var(--color-sunshine-cta)]/25 bg-[var(--color-sunshine-cta)]/12 dark:bg-[var(--color-sunshine-cta)]/18"
                       transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                     />
                   )}
                   <Icon className={cn('relative z-10 h-5 w-5 transition-transform duration-300', isActive ? 'scale-110' : 'group-hover:scale-105')} />
                 </div>
 
-                <span className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', isActive ? 'opacity-100' : 'opacity-70')}>
+                {/*
+                  P1 — bottom-nav inactive label brightness was opacity-70
+                  (poor scan on small mobile viewports); now 90 %
+                  ("nav-label-inactive") for inactive state, full opacity
+                  for active.  Class comes from .nav-label-* in index.css.
+                */}
+                <span className={cn(
+                  'nav-label',
+                  isActive ? 'nav-label-active text-[var(--color-sunshine-cta)]' :
+                            'nav-label-inactive text-deep-forest/85 dark:text-white/85'
+                )}>
                   {tab.label}
                 </span>
               </button>

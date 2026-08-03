@@ -85,7 +85,7 @@ export function PDFPreviewModal({
                 <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
                   Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
                 </p>
-                <p className="text-[11px] text-stone-500 dark:text-stone-500">
+                <p className="microcopy-12 text-stone-500 dark:text-stone-500">
                   Tel: 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
                 </p>
               </div>
@@ -223,7 +223,7 @@ export function PDFPreviewModal({
             </div>
           )}
 
-          <div className="text-center pt-4 text-[11px] text-stone-500 dark:text-stone-500 border-t border-stone-200 dark:border-stone-800">
+          <div className="text-center pt-4 microcopy-12 text-stone-500 dark:text-stone-500 border-t border-stone-200 dark:border-stone-800">
             {language === 'bm' ? 'Terima kasih atas sokongan anda kepada Restoran Wawasan Pak Usop.' : 'Thank you for your continued support to Restoran Wawasan Pak Usop.'}
           </div>
 

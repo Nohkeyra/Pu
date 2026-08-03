@@ -710,7 +710,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
             <div>
-              <span className="text-[11px] text-sunshine font-bold uppercase tracking-widest block mb-0.5">
+              <span className="microcopy-12 text-[var(--color-sunshine-cta)] font-bold uppercase tracking-widest block mb-0.5">
                 {tText('CATERING BOOKING SYSTEM', 'SISTEM TEMPAHAN KATERING')}
               </span>
               <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2 font-display">
@@ -730,7 +730,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 href="tel:+60178582642" 
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10"
               >
-                <Phone className="w-3.5 h-3.5 text-sunshine" />
+                <Phone className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
                 017-858 2642
               </a>
             </div>
@@ -772,7 +772,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             {isDone ? <Check className="w-4 h-4" /> : item.s}
                           </div>
                           <span className={cn(
-                            "text-[10px] font-semibold transition-colors duration-300",
+                            "microcopy-12-upper font-semibold transition-colors duration-300",
                             isCurrent ? "text-crisp-carrot font-bold" : "text-stone"
                           )}>
                             {item.label}
@@ -838,7 +838,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       <Briefcase className="w-5 h-5" />
                     </div>
                     <span className="text-sm font-bold block">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-                    <span className="text-[10px] text-stone leading-tight font-light">{tText('Meetings, workshops & corporate.', 'Urusan rasmi menteri, mesyuarat, kursus.')}</span>
+                    <span className="microcopy-12-upper text-stone leading-tight font-light">{tText('Meetings, workshops & corporate.', 'Urusan rasmi menteri, mesyuarat, kursus.')}</span>
                   </button>
 
                   <button
@@ -860,7 +860,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       <Smile className="w-5 h-5" />
                     </div>
                     <span className="text-sm font-bold block">{tText('Private Events', 'Lain-lain')}</span>
-                    <span className="text-[10px] text-stone leading-tight font-light">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
+                    <span className="microcopy-12-upper text-stone leading-tight font-light">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
                   </button>
                 </div>
 
@@ -898,8 +898,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             </div>
                           )}
                           <Icon className={cn("w-4 h-4", isSelected ? "text-crisp-carrot" : "text-stone")} />
-                          <span className="text-[11px] font-bold block leading-none">{m.label()}</span>
-                          <span className="text-[9px] text-stone leading-none font-light">{m.time}</span>
+                          <span className="microcopy-12 font-bold block leading-none">{m.label()}</span>
+                          <span className="microcopy-12 text-stone leading-none font-light">{m.time}</span>
                         </button>
                       );
                     })}
@@ -913,7 +913,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest">
                         {tText('Quantity', 'Kuantiti')}
                       </Label>
-                      <span className="text-[10px] text-stone font-light block leading-none mt-1">
+                      <span className="microcopy-12-upper text-stone font-light block leading-none mt-1">
                         {tText('Minimum order: 1 pax.', 'Minima tempahan katering: 1 orang.')}
                       </span>
                     </div>
@@ -998,7 +998,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
                       {tText('Main Dishes', 'Lauk Utama')}
                     </Label>
-                    <span className="text-[10px] font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                    <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
                       {orderState.dishes.length} / 8
                     </span>
                   </div>
@@ -1028,7 +1028,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             <span className="text-xs font-bold block text-deep-forest truncate">
                               {tText(d.nameEn, d.nameBm)}
                             </span>
-                            <span className="text-[10px] text-stone leading-tight block truncate font-light">
+                            <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
                               {tText(d.descEn, d.descBm)}
                             </span>
                           </div>
@@ -1044,7 +1044,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
                       {tText('Vegetable Selection', 'Sayur-sayuran')}
                     </Label>
-                    <span className="text-[10px] font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                    <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
                       {orderState.veggies.length} / 3
                     </span>
                   </div>
@@ -1074,7 +1074,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             <span className="text-xs font-bold block text-deep-forest truncate">
                               {tText(v.nameEn, v.nameBm)}
                             </span>
-                            <span className="text-[10px] text-stone leading-tight block truncate font-light">
+                            <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
                               {tText(v.descEn, v.descBm)}
                             </span>
                           </div>
@@ -1089,7 +1089,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
                     {tText('Other / Custom Menu Request (Optional)', 'Permintaan Menu Lain / Khas (Pilihan)')}
                   </Label>
-                  <p className="text-[11px] text-stone font-light leading-tight">
+                  <p className="microcopy-12 text-stone font-light leading-tight">
                     {tText(
                       'Feel free to specify any custom dishes, drinks, or requests. If you skip this menu step completely, the app will auto-setup to our default "Set Box Makanan & Minuman".',
                       'Sila nyatakan jika ada lauk, minuman atau permintaan khas. Jika anda melangkau bahagian menu ini, tempahan akan ditetapkan secara automatik kepada "Set Box Makanan & Minuman".'
@@ -1130,10 +1130,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     </span>
                   </div>
                   <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
-                    <span className="text-sm font-bold text-sunshine uppercase tracking-wider">
+                    <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
                       {tText('Pricing Status:', 'Status Harga:')}
                     </span>
-                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-sunshine/30">
+                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-[var(--color-sunshine-cta)]/30">
                       {tText('To Be Quoted by Admin', 'Ditentukan oleh Admin')}
                     </span>
                   </div>
@@ -1307,7 +1307,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                         type="button"
                         onClick={handleDetectLocation}
                         disabled={isDetectingLocation}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-crisp-carrot hover:text-crisp-carrot/80 transition-colors disabled:opacity-50 cursor-pointer"
+                        className="inline-flex items-center gap-1 microcopy-12 font-bold text-crisp-carrot hover:text-crisp-carrot/80 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {isDetectingLocation ? (
                           <>
@@ -1325,7 +1325,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                     {savedLocations.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1 pb-1">
-                        <span className="text-[10px] text-stone font-bold uppercase tracking-wider block w-full">
+                        <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block w-full">
                           {tText('Choose from Saved Locations:', 'Pilih dari Lokasi Disimpan:')}
                         </span>
                         {savedLocations.map((loc) => (
@@ -1334,8 +1334,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             type="button"
                             onClick={() => setOrderState(prev => ({ ...prev, location: loc.address }))}
                             className={cn(
-                              "px-3 py-1.5 bg-cream/30 dark:bg-card border border-stone/10 hover:border-sunshine text-[11px] font-medium rounded-xl text-deep-forest  transition-all cursor-pointer",
-                              orderState.location === loc.address && "border-sunshine bg-sunshine/5 ring-1 ring-sunshine"
+                              "px-3 py-1.5 bg-cream/30 dark:bg-card border border-stone/10 hover:border-[var(--color-sunshine-cta)] microcopy-12 font-medium rounded-xl text-deep-forest  transition-all cursor-pointer",
+                              orderState.location === loc.address && "border-[var(--color-sunshine-cta)] bg-[var(--color-sunshine-cta)]/5 ring-1 ring-[var(--color-sunshine-cta)]"
                             )}
                           >
                             {loc.label}
@@ -1371,7 +1371,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       >
                         <Truck className="w-5 h-5 text-crisp-carrot" />
                         <span className="text-xs font-bold block">{tText('Delivery to Location', 'Hantar ke Lokasi')}</span>
-                        <span className="text-[9px] text-stone leading-tight font-light">{tText('Delivered to your event address.', 'Dihantar terus ke tapak majlis.')}</span>
+                        <span className="microcopy-12 text-stone leading-tight font-light">{tText('Delivered to your event address.', 'Dihantar terus ke tapak majlis.')}</span>
                       </button>
 
                       <button
@@ -1388,7 +1388,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       >
                         <Store className="w-5 h-5 text-crisp-carrot" />
                         <span className="text-xs font-bold block">{tText('Pickup at Restaurant', 'Ambil di Restoran')}</span>
-                        <span className="text-[9px] text-stone leading-tight font-light">{tText('Collect directly from Pak Usop.', 'Ambil sendiri di Restoran Wawasan.')}</span>
+                        <span className="microcopy-12 text-stone leading-tight font-light">{tText('Collect directly from Pak Usop.', 'Ambil sendiri di Restoran Wawasan.')}</span>
                       </button>
                     </div>
                   </div>
@@ -1451,7 +1451,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   
                   {/* Event & Serve Summary */}
                   <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
+                    <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
                       {tText('Event Summary', 'Maklumat Majlis')}
                     </span>
                     <div className="flex justify-between items-center text-xs">
@@ -1480,7 +1480,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                   {/* Customer Billing Summary */}
                   <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
+                    <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
                       {tText('Customer & Billing Info', 'Maklumat Pembayar')}
                     </span>
                     {orderState.eventType === 'pejabat' && (
@@ -1522,16 +1522,16 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       />
                       <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
-                      <span className="relative z-10 text-[10px] font-black text-sunshine uppercase tracking-wider block mb-1">
+                      <span className="relative z-10 microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider block mb-1">
                         {tText('Selected Dishes Menu', 'Senarai Hidangan')}
                       </span>
                       <div className="relative z-10 text-xs text-white space-y-1.5 font-semibold">
                         {orderState.dishes.length > 0 && (
                           <>
-                            <p className="text-stone-300 text-[11px] uppercase">{tText('Main Lauk:', 'Lauk Utama:')}</p>
+                            <p className="text-stone-300 microcopy-12 uppercase">{tText('Main Lauk:', 'Lauk Utama:')}</p>
                             <div className="pl-2 flex flex-wrap gap-1">
                               {orderState.dishes.map(d => (
-                                <span key={d.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded text-[10px] text-white">
+                                <span key={d.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded microcopy-12-upper text-white">
                                   {tText(d.nameEn, d.nameBm)}
                                 </span>
                               ))}
@@ -1541,10 +1541,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                         {orderState.veggies.length > 0 && (
                           <>
-                            <p className="text-stone-300 text-[11px] uppercase pt-1">{tText('Vegetables:', 'Sayur-sayuran:')}</p>
+                            <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Vegetables:', 'Sayur-sayuran:')}</p>
                             <div className="pl-2 flex flex-wrap gap-1">
                               {orderState.veggies.map(v => (
-                                <span key={v.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded text-[10px] text-white">
+                                <span key={v.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded microcopy-12-upper text-white">
                                   {tText(v.nameEn, v.nameBm)}
                                 </span>
                               ))}
@@ -1554,19 +1554,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                         {orderState.customMenu && (
                           <>
-                            <p className="text-stone-300 text-[11px] uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
-                            <p className="pl-2 text-[11px] font-normal text-white italic whitespace-pre-wrap bg-white/10 p-2 rounded-lg border border-white/5 mt-0.5">
+                            <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
+                            <p className="pl-2 microcopy-12 font-normal text-white italic whitespace-pre-wrap bg-white/10 p-2 rounded-lg border border-white/5 mt-0.5">
                               "{orderState.customMenu}"
                             </p>
                           </>
                         )}
 
                         {orderState.dishes.length === 0 && orderState.veggies.length === 0 && !orderState.customMenu && (
-                          <div className="bg-sunshine/15 border border-sunshine/30 p-2.5 rounded-lg text-center mt-2 relative z-10">
-                            <p className="text-xs font-bold text-sunshine">
+                          <div className="bg-[var(--color-sunshine-cta)]/15 border border-[var(--color-sunshine-cta)]/30 p-2.5 rounded-lg text-center mt-2 relative z-10">
+                            <p className="text-xs font-bold text-[var(--color-sunshine-cta)]">
                               {tText('Set Box Makanan & Minuman (Default)', 'Set Box Makanan & Minuman (Lalai)')}
                             </p>
-                            <p className="text-[10px] text-stone-300 font-light mt-0.5 leading-tight">
+                            <p className="microcopy-12-upper text-stone-300 font-light mt-0.5 leading-tight">
                               {tText('You have skipped individual dish selection. Standard boxed meal set will be served.', 'Anda melangkau pilihan lauk. Set hidangan kotak standard akan disediakan.')}
                             </p>
                           </div>
@@ -1574,7 +1574,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       </div>
 
                       <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 flex justify-between items-center">
-                        <span className="text-xs font-bold text-sunshine uppercase tracking-wider">
+                        <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
                           {tText('Catering Price:', 'Harga Katering:')}
                         </span>
                         <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
@@ -1583,7 +1583,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       </div>
                     </div>
 
-                  <p className="text-[10px] text-stone leading-tight italic text-center px-4">
+                  <p className="microcopy-12-upper text-stone leading-tight italic text-center px-4">
                     {tText(
                       '* Note: The restaurant admin will review your booking details and provide a finalized quote via WhatsApp or Email within 24 hours.',
                       '* Nota: Admin restoran akan menyemak butiran tempahan dan memberikan sebut harga muktamad melalui WhatsApp atau E-mel dalam masa 24 jam.'
@@ -1685,7 +1685,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                 {/* Email Delivery relay receipt check */}
                 <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm" aria-live="polite">
-                  <span className="text-[10px] text-stone font-bold uppercase tracking-wider block">
+                  <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block">
                     {tText('INVOICE / RECEIPT STATUS', 'STATUS PENGHANTARAN INVOIS')}
                   </span>
 
@@ -1718,7 +1718,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   </div>
                 </div>
 
-                <p className="text-[10px] text-stone italic">
+                <p className="microcopy-12-upper text-stone italic">
                   {tText('Please save or share this reference number for future inquiries.', 'Sila simpan nombor rujukan ini untuk rujukan masa hadapan.')}
                 </p>
 
@@ -1819,7 +1819,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   {tText('Live Order Summary', 'Ringkasan Tempahan')}
                 </h3>
               </div>
-              <span className="text-[10px] font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
+              <span className="microcopy-12-upper font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
                 Step {currentStep} / 4
               </span>
             </div>
@@ -1862,25 +1862,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
               {/* Selected Dishes Badges */}
               <div className="pt-2 border-t border-stone/10 space-y-1.5">
-                <span className="text-[10px] font-extrabold text-stone uppercase tracking-wider block">
+                <span className="microcopy-12-upper font-extrabold text-stone uppercase tracking-wider block">
                   {tText('Selected Menu Items:', 'Menu Pilihan:')}
                 </span>
                 
                 {orderState.dishes.length > 0 || orderState.veggies.length > 0 ? (
                   <div className="flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1">
                     {orderState.dishes.map(d => (
-                      <span key={d.id} className="inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded text-[10px] border border-crisp-carrot/20">
+                      <span key={d.id} className="inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20">
                         {tText(d.nameEn, d.nameBm)}
                       </span>
                     ))}
                     {orderState.veggies.map(v => (
-                      <span key={v.id} className="inline-block bg-[#A8E10C]/20 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded text-[10px] border border-[#A8E10C]/30">
+                      <span key={v.id} className="inline-block bg-[#A8E10C]/20 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded microcopy-12-upper border border-[#A8E10C]/30">
                         {tText(v.nameEn, v.nameBm)}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[11px] text-stone italic block">
+                  <span className="microcopy-12 text-stone italic block">
                     {tText('Select dishes in Step 2 or auto default to Box Set.', 'Pilih lauk di Langkah 2 atau ditetapkan lalai ke Set Kotak.')}
                   </span>
                 )}
@@ -1897,10 +1897,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   }}
                 />
                 <div className="relative z-10 flex justify-between items-center">
-                  <span className="text-stone-300 text-[11px] font-medium uppercase tracking-wider">
+                  <span className="text-stone-300 microcopy-12 font-medium uppercase tracking-wider">
                     {tText('Rate / Pax:', 'Kadar / Orang:')}
                   </span>
-                  <span className="font-bold text-sunshine text-xs">
+                  <span className="font-bold text-[var(--color-sunshine-cta)] text-xs">
                     {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}` : tText('Quote Pending', 'Ganti Sebut Harga')}
                   </span>
                 </div>
@@ -1909,7 +1909,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   <span className="text-xs font-extrabold text-white uppercase tracking-wider">
                     {tText('Est. Total:', 'Anggaran Jumlah:')}
                   </span>
-                  <span className="text-xl font-black text-sunshine font-display">
+                  <span className="text-xl font-black text-[var(--color-sunshine-cta)] font-display">
                     {getGrandTotal() > 0 ? `RM ${getGrandTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : tText('Admin Quote', 'Sebut Harga')}
                   </span>
                 </div>
@@ -1947,15 +1947,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {currentStep <= 4 && (
-        <div className="fixed bottom-[74px] left-0 right-0 z-40 lg:hidden border-t border-sunshine/20 bg-charcoal/95 backdrop-blur-xl px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
+        <div className="fixed bottom-[74px] left-0 right-0 z-40 lg:hidden border-t border-[var(--color-sunshine-cta)]/20 bg-charcoal/95 backdrop-blur-xl px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
           <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-stone-300 font-semibold uppercase tracking-wider truncate">
+            <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
               <span>{orderState.guests} pax</span>
               <span>•</span>
               <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-[11px] text-sunshine font-bold shrink-0">
+              <span className="microcopy-12 text-[var(--color-sunshine-cta)] font-bold shrink-0">
                 {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}/pax` : tText('Quote', 'Sebut Harga')}
               </span>
               <span className="text-base font-extrabold text-white font-display shrink-0">

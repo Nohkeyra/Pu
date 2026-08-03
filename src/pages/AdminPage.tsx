@@ -112,9 +112,23 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col">
         <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border pt-[var(--sat)]">
-          <div className="flex items-center justify-between px-6 md:px-12 h-[72px]">
-            <div onClick={() => navigate('/login')} className="flex items-center gap-3 group cursor-pointer">
+          <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
+            {/*
+              P0 — `<div onClick>` collapsed to a real <button> so
+              keyboard activation, focus ring, and the 44 × 44 tap
+              floor all behave correctly.
+            */}
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="touch-target-row flex items-center gap-3 group text-left"
+              aria-label="Go to login"
+            >
               <div className="w-10 h-10 flex items-center justify-center">
+                {/*
+                  Brand asset path preserved verbatim — visual logo /
+                  Malaysian heritage graphic must remain 100% intact.
+                */}
                 <TransparentLogo
                   src={getAssetUrl("/assets/wawasan_logo.svg")}
                   alt="Restoran Wawasan Logo"
@@ -122,14 +136,14 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <span className="font-display font-semibold text-xl text-deep-forest leading-none">
+                <span className="font-display font-semibold text-xl text-deep-forest dark:text-white leading-none">
                   Wawasan
                 </span>
-                <span className="block font-body text-[10px] text-crisp-carrot font-bold uppercase tracking-[0.18em] leading-tight mt-0.5">
+                <span className="block font-body microcopy-12-upper text-[var(--color-sunshine-cta)] font-bold uppercase tracking-[0.18em] leading-tight mt-0.5">
                   Pak Usop
                 </span>
               </div>
-            </div>
+            </button>
             
             <div className="flex items-center gap-2">
               <button 
@@ -140,10 +154,10 @@ export default function AdminPage() {
                 {theme === 'light' ? (
                   <Moon className="w-5 h-5 text-deep-forest" />
                 ) : (
-                  <Sun className="w-5 h-5 text-sunshine" />
+                  <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
                 )}
               </button>
-              <Button variant="ghost" onClick={() => navigate('/login')} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
+              <Button variant="ghost" onClick={() => navigate('/login')} className="text-stone hover:text-crisp-carrot hover:bg-[var(--color-sunshine-cta)]/10 rounded-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('back')}
               </Button>
@@ -167,15 +181,15 @@ export default function AdminPage() {
               
               <div className="p-8 md:p-10 relative z-10">
                 <div className="flex justify-center mb-6">
-                  <div className="w-16 h-16 rounded-full bg-sunshine/10 flex items-center justify-center border border-sunshine/20">
-                    <Lock className="w-8 h-8 text-sunshine" />
+                  <div className="w-16 h-16 rounded-full bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center border border-[var(--color-sunshine-cta)]/20">
+                    <Lock className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
                   </div>
                 </div>
 
                 <h2 className="text-2xl md:text-3xl font-display font-bold text-deep-forest text-center mb-2">
                   {t('admin_login')}
                 </h2>
-                <p className="text-stone text-center text-sm font-medium mb-8 uppercase tracking-widest text-[10px]">
+                <p className="text-stone text-center text-sm font-medium mb-8 uppercase tracking-widest microcopy-12-upper">
                   Restricted Access • Staff Only
                 </p>
 
@@ -189,7 +203,7 @@ export default function AdminPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="bg-cream dark:bg-background border-border text-deep-forest placeholder:text-stone focus:border-sunshine focus:ring-1 focus:ring-sunshine h-12 rounded-xl"
+                      className="bg-cream dark:bg-background border-border text-deep-forest placeholder:text-stone focus:border-[var(--color-sunshine-cta)] focus:ring-1 focus:ring-[var(--color-sunshine-cta)] h-12 rounded-xl"
                     />
                   </div>
 
@@ -203,7 +217,7 @@ export default function AdminPage() {
                     <Button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full h-12 bg-sunshine text-white font-bold hover:bg-crisp-carrot transition-colors duration-300 disabled:opacity-50 flex items-center justify-center gap-2 rounded-xl shadow-sm"
+                      className="w-full h-12 bg-[var(--color-sunshine-cta)] text-white font-bold hover:bg-crisp-carrot transition-colors duration-300 disabled:opacity-50 flex items-center justify-center gap-2 rounded-xl shadow-sm"
                     >
                       {isLoading ? (
                         <>
@@ -220,7 +234,7 @@ export default function AdminPage() {
                   </div>
                 </form>
 
-                <p className="mt-8 text-center text-[10px] text-stone">
+                <p className="mt-8 text-center microcopy-12-upper text-stone">
                   This area is protected. Unauthorized access is prohibited.
                 </p>
               </div>

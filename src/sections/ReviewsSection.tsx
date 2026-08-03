@@ -112,24 +112,24 @@ export default function ReviewsSection() {
           
           <motion.div variants={headerItemVariants} className="review-header flex items-center justify-center gap-6 mt-8 md:mt-0">
             <div className="flex items-center gap-3 bg-cream-dark/60 backdrop-blur-md border border-deep-forest/10 dark:border-white/10 rounded-2xl px-5 py-3 shadow-lg">
-              <Star className="w-5 h-5 text-sunshine fill-sunshine animate-pulse" />
+              <Star className="w-5 h-5 text-[var(--color-sunshine-cta)] fill-sunshine animate-pulse" />
               <div className="flex flex-col">
                 <span className="font-bold text-deep-forest leading-none">4.9</span>
-                <span className="text-deep-forest/50 text-[10px] uppercase font-bold tracking-widest mt-1">Rating</span>
+                <span className="text-deep-forest/50 microcopy-12-upper uppercase font-bold tracking-widest mt-1">Rating</span>
               </div>
             </div>
             
             <div className="flex gap-2">
               <button
                 onClick={goPrev}
-                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-sunshine hover:border-sunshine hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
+                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
               <button
                 onClick={goNext}
-                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-sunshine hover:border-sunshine hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
+                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
                 aria-label="Next slide"
               >
                 <ChevronRight className="w-6 h-6" />

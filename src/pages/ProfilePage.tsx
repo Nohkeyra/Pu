@@ -50,30 +50,48 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-background pb-[calc(100px+env(safe-area-inset-bottom,16px))]">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border shadow-sm pt-[var(--sat)]">
-        <div className="flex items-center justify-between px-6 h-[76px]">
-          <div onClick={() => navigate('/home')} className="flex items-center gap-3 cursor-pointer">
-            <div className="w-10 h-10 flex items-center justify-center">
+      {/*
+        P0 — standardised dark-mode text colour override so header
+        label stays legible in both modes.  Page Shell-like surface
+        (.glass-header) is reused so behaviour matches other pages.
+      */}
+      <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
+        <div className="flex items-center justify-between px-4 sm:px-6 min-h-[60px] sm:min-h-[64px]">
+          <button
+            type="button"
+            onClick={() => navigate('/home')}
+            className="touch-target-row flex items-center gap-3 text-left"
+            aria-label="Go to home"
+          >
+            <div className="h-10 w-10 flex items-center justify-center">
+              {/*
+                Brand asset path preserved verbatim — visual logo /
+                Malaysian heritage graphic must remain 100% intact.
+              */}
               <TransparentLogo
-                src={getAssetUrl("/assets/wawasan_logo.svg")}
+                src={getAssetUrl('/assets/wawasan_logo.svg')}
                 alt="Logo"
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <span className="font-display font-semibold text-xl text-deep-forest dark:text-white tracking-tight">
+              <span className="font-display font-semibold text-xl page-header-text tracking-tight">
                 {t('nav_profile')}
               </span>
             </div>
-          </div>
-          <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full">
+          </button>
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="touch-target-row rounded-full min-h-[44px] text-stone hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('back')}
           </Button>
         </div>
       </header>
 
-      <main className="pt-[calc(76px+var(--sat)+2rem)] px-4 max-w-4xl mx-auto space-y-6">
+      <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-4xl mx-auto space-y-6">
         {isAdmin && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
@@ -84,14 +102,14 @@ export default function ProfilePage() {
                 <p className="text-sm font-bold text-deep-forest dark:text-white">
                   {language === 'bm' ? 'Akaun Pentadbir Sesi Aktif' : 'Active System Administrator Account'}
                 </p>
-                <p className="text-xs text-stone dark:text-stone/70">
-                  {language === 'bm' ? 'Anda dilog masuk sebagai Admin Wawasan Pak Usop.' : 'You are currently logged in as Wawasan Pak Usop Admin.'}
+                <p className="microcopy-14 text-stone dark:text-stone/75">
+                  {language === 'bm' ? 'Anda dilog masuk sebagai Admin Wawasan Pak Usop.' : 'You are currently logged in as Wawasan Pak Usop.'}
                 </p>
               </div>
             </div>
             <Button
               onClick={() => navigate('/admin')}
-              className="bg-sunshine hover:bg-crisp-carrot text-white font-bold rounded-2xl px-5 py-2.5 flex items-center gap-2 text-xs flex-shrink-0"
+              className="btn-cta rounded-2xl px-5 py-2.5 min-h-[44px] flex items-center gap-2 text-xs font-bold"
             >
               <span>{language === 'bm' ? 'Buka Panel Admin' : 'Open Admin Panel'}</span>
               <ExternalLink className="w-4 h-4" />
@@ -101,16 +119,19 @@ export default function ProfilePage() {
 
         {!currentUser ? (
           <div className="bg-white dark:bg-card border border-border rounded-3xl p-12 text-center shadow-sm">
-            <div className="w-16 h-16 bg-sunshine/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UserIcon className="w-8 h-8 text-sunshine" />
+            <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UserIcon className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
             </div>
             <h2 className="text-2xl font-display font-bold text-deep-forest dark:text-white mb-4">
               Access Your Bookings
             </h2>
-            <p className="text-stone dark:text-stone/70 mb-8">
+            <p className="text-stone dark:text-stone/75 microcopy-14 mb-8">
               Please sign in to view your order history and manage your professional catering documentation.
             </p>
-            <Button onClick={() => navigate('/order')} className="bg-sunshine hover:bg-crisp-carrot px-8 py-6 rounded-2xl text-lg font-bold">
+            <Button
+              onClick={() => navigate('/order')}
+              className="btn-cta px-8 py-6 min-h-[52px] rounded-2xl text-lg font-bold"
+            >
               Go to Order Page
             </Button>
           </div>
@@ -118,14 +139,14 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white mb-1">Your Dashboard</h1>
-              <p className="text-stone font-medium text-sm">Manage your profile and track your catering requests.</p>
+              <p className="text-stone dark:text-stone/75 microcopy-14 font-medium">Manage your profile and track your catering requests.</p>
             </div>
 
             <div className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg">
-              <UserProfileDashboard 
-                isOpen={true} 
+              <UserProfileDashboard
+                isOpen={true}
                 isEmbedded={true}
-                onClose={() => navigate('/home')} 
+                onClose={() => navigate('/home')}
                 onReorder={(data) => navigate('/order', { state: { reorderData: data } })}
               />
             </div>

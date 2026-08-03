@@ -1407,18 +1407,32 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
         }}
       >
-        <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-sunshine/20 flex items-center gap-2">
-          <RefreshCw className={`w-4 h-4 text-sunshine ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }} />
-          {isRefreshing && <span className="text-[10px] font-black text-sunshine uppercase tracking-widest">Refreshing</span>}
+        <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-[var(--color-sunshine-cta)]/20 flex items-center gap-2">
+          <RefreshCw className={`w-4 h-4 text-[var(--color-sunshine-cta)] ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }} />
+          {isRefreshing && <span className="microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest">Refreshing</span>}
         </div>
       </motion.div>
 
       {/* Header */}
       <header className="[grid-area:header] z-50 bg-white dark:bg-background border-b border-stone/15 dark:border-white/10 pt-[var(--sat)]">
-        <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
+        <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
           <div className="flex items-center gap-4">
-            <div onClick={() => navigate('/home', { replace: true })} className="flex items-center gap-3 group cursor-pointer transition-all hover:opacity-80">
+            {/*
+              P0 — `<div onClick>` collapsed to a semantic <button> so
+              keyboard activation, focus ring, and the 44 × 44 px tap
+              floor all behave correctly.
+            */}
+            <button
+              type="button"
+              onClick={() => navigate('/home', { replace: true })}
+              className="touch-target-row flex items-center gap-3 group transition-all hover:opacity-80"
+              aria-label="Go to home"
+            >
               <div className="w-10 h-10 flex items-center justify-center">
+                {/*
+                  Brand asset path preserved verbatim — visual logo /
+                  Malaysian heritage graphic must remain 100% intact.
+                */}
                 <TransparentLogo
                   src={getAssetUrl("/assets/wawasan_logo.svg")}
                   alt="Restoran Wawasan Logo"
@@ -1426,14 +1440,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 />
               </div>
               <div>
-                <span className="font-display font-black text-xl text-deep-forest leading-none tracking-tight">
+                <span className="font-display font-black text-xl text-deep-forest dark:text-white leading-none tracking-tight">
                   Wawasan
                 </span>
-                <span className="block font-sans text-[10px] text-sunshine font-black uppercase tracking-widest leading-tight mt-0.5">
+                <span className="block font-sans microcopy-12-upper text-[var(--color-sunshine-cta)] font-black uppercase tracking-widest leading-tight mt-0.5">
                   Admin Control
                 </span>
               </div>
-            </div>
+            </button>
           </div>
           
           <div className="flex items-center gap-3">
@@ -1445,14 +1459,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               {theme === 'light' ? (
                 <Moon className="w-5 h-5 text-deep-forest" />
               ) : (
-                <Sun className="w-5 h-5 text-sunshine" />
+                <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
               )}
             </button>
 
             <Button 
               variant="ghost" 
               onClick={() => navigate('/home', { replace: true })} 
-              className="hidden sm:flex h-11 px-6 rounded-2xl text-deep-forest/60 hover:text-sunshine hover:bg-sunshine/5 font-bold transition-all"
+              className="hidden sm:flex h-11 px-6 rounded-2xl text-deep-forest/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/5 font-bold transition-all"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('back')}
@@ -1529,7 +1543,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             </span>
           </div>
           
-          <span className="text-[10px] uppercase tracking-wider opacity-60">
+          <span className="microcopy-12-upper uppercase tracking-wider opacity-60">
             {syncStatus === 'connected' && 'Synced'}
             {syncStatus === 'connecting' && 'Connecting'}
             {syncStatus === 'syncing' && 'Syncing'}
@@ -1550,7 +1564,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         </div>
 
         <div className="relative z-10 flex flex-col h-full">
-          <p className="hidden lg:block text-[11px] font-black text-sunshine uppercase tracking-widest mb-4">
+          <p className="hidden lg:block microcopy-12 font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest mb-4">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
           <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-none">
@@ -1558,14 +1572,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               onClick={() => setActiveTab('orders')}
               className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
                 activeTab === 'orders'
-                  ? 'text-sunshine'
+                  ? 'text-[var(--color-sunshine-cta)]'
                   : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
               {activeTab === 'orders' && (
                 <motion.div
                   layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
                   animate={{
                     boxShadow: [
                       '0 0 2px rgba(251, 191, 36, 0.15)',
@@ -1605,14 +1619,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               }}
               className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
                 activeTab === 'diagnostics'
-                  ? 'text-sunshine'
+                  ? 'text-[var(--color-sunshine-cta)]'
                   : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
               {activeTab === 'diagnostics' && (
                 <motion.div
                   layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
                   animate={{
                     boxShadow: [
                       '0 0 2px rgba(251, 191, 36, 0.15)',
@@ -1639,14 +1653,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               onClick={() => setActiveTab('tables')}
               className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
                 activeTab === 'tables'
-                  ? 'text-sunshine'
+                  ? 'text-[var(--color-sunshine-cta)]'
                   : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
               }`}
             >
               {activeTab === 'tables' && (
                 <motion.div
                   layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-sunshine/20 dark:bg-sunshine/25 rounded-xl border border-sunshine/40 z-0"
+                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
                   animate={{
                     boxShadow: [
                       '0 0 2px rgba(251, 191, 36, 0.15)',
@@ -1819,7 +1833,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       {/* Order Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl bg-cream dark:bg-card border-sunshine/20 text-deep-forest max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-display">
               {t('order_details')}
@@ -1839,7 +1853,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
               {/* Customer Info */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-sunshine">{t('customer_info')}</h4>
+                <h4 className="font-semibold text-[var(--color-sunshine-cta)]">{t('customer_info')}</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-deep-forest/50">{t('to')}:</span>
@@ -1866,7 +1880,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
               {/* Event Details */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-sunshine">{t('event_details')}</h4>
+                <h4 className="font-semibold text-[var(--color-sunshine-cta)]">{t('event_details')}</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-deep-forest/50">{t('datetime')}:</span>
@@ -1891,7 +1905,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                         <Badge 
                           key={`${meal}-${idx}`} 
                           variant="outline" 
-                          className="border-sunshine/30 text-deep-forest"
+                          className="border-[var(--color-sunshine-cta)]/30 text-deep-forest"
                         >
                           {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
                         </Badge>
@@ -1914,8 +1928,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               </div>
 
               {/* Pricing Section */}
-              <div className="space-y-4 pt-4 border-t border-sunshine/10">
-                <h4 className="font-semibold text-sunshine">{t('price_pax')}</h4>
+              <div className="space-y-4 pt-4 border-t border-[var(--color-sunshine-cta)]/10">
+                <h4 className="font-semibold text-[var(--color-sunshine-cta)]">{t('price_pax')}</h4>
                 <div className="space-y-3">
                   {selectedOrder.meals.map((meal, idx) => (
                     <div key={`${meal}-${idx}`} className="flex items-center gap-4">
@@ -1933,7 +1947,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                             ...prev, 
                             [meal]: e.target.value 
                           }))}
-                          className="pl-10 bg-cream dark:bg-background/50 border-sunshine/20 text-deep-forest"
+                          className="pl-10 bg-cream dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest"
                           placeholder="0.00"
                         />
                       </div>
@@ -1945,7 +1959,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 <div className="p-4 bg-cream dark:bg-background/50 rounded-lg">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-deep-forest/60">{t('grand_total')}:</span>
-                    <span className="text-2xl font-bold text-sunshine">
+                    <span className="text-2xl font-bold text-[var(--color-sunshine-cta)]">
                       RM {selectedOrder.meals.reduce((total, meal) => {
                         const price = parseFloat(prices[meal] || '0');
                         return total + (price * selectedOrder.quantity);
@@ -2034,7 +2048,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <Button
               variant="outline"
               onClick={() => setIsDetailOpen(false)}
-              className="border-sunshine/30 text-deep-forest hover:bg-sunshine/10"
+              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
             >
               {t('close')}
             </Button>
@@ -2045,10 +2059,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
 
       <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
-        <DialogContent className="max-w-md bg-cream dark:bg-card border-sunshine/20 text-deep-forest">
+        <DialogContent className="max-w-md bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest">
           <DialogHeader>
-            <DialogTitle className="text-xl font-display font-bold text-sunshine flex items-center gap-2">
-              <Send className="w-5 h-5 text-sunshine" />
+            <DialogTitle className="text-xl font-display font-bold text-[var(--color-sunshine-cta)] flex items-center gap-2">
+              <Send className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
               {t('send_invoice_pdf')}
             </DialogTitle>
             <DialogDescription>
@@ -2059,7 +2073,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           {sendOrder && (
             <div className="space-y-6 py-4">
               {/* Summary Box */}
-              <div className="p-4 bg-cream dark:bg-background/50 rounded-xl border border-sunshine/10 text-sm space-y-2">
+              <div className="p-4 bg-cream dark:bg-background/50 rounded-xl border border-[var(--color-sunshine-cta)]/10 text-sm space-y-2">
                 <div className="flex justify-between">
                   <span className="text-deep-forest/50">{t('invoice_no_label')}</span>
                   <span className="font-mono font-medium text-deep-forest">
@@ -2072,7 +2086,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 </div>
                 <div className="flex justify-between">
                   <span className="text-deep-forest/50">{t('grand_total_label')}</span>
-                  <span className="font-bold text-sunshine">
+                  <span className="font-bold text-[var(--color-sunshine-cta)]">
                     RM {(sendOrder.totalAmount || sendOrder.meals.reduce((sum, meal) => {
                       const price = sendOrder.prices?.[meal] || 0;
                       return sum + (price * sendOrder.quantity);
@@ -2084,9 +2098,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               {/* Options */}
               <div className="space-y-5">
                 {/* Email Option */}
-                <div className="p-4 rounded-xl border border-sunshine/10 bg-cream dark:bg-background/20 space-y-4">
+                <div className="p-4 rounded-xl border border-[var(--color-sunshine-cta)]/10 bg-cream dark:bg-background/20 space-y-4">
                   <div className="flex items-center gap-2 font-semibold text-deep-forest">
-                    <Mail className="w-4 h-4 text-sunshine" />
+                    <Mail className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                     <span>{t('option_email')}</span>
                   </div>
                   <p className="text-xs text-deep-forest/60">
@@ -2101,14 +2115,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       type="email"
                       value={recipientEmail}
                       onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="bg-cream dark:bg-background/50 border-sunshine/20 text-deep-forest focus:border-sunshine/50 h-10 text-sm"
+                      className="bg-cream dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest focus:border-[var(--color-sunshine-cta)]/50 h-10 text-sm"
                       placeholder="customer@email.com"
                     />
                   </div>
                   <Button
                     onClick={handleSendEmail}
                     disabled={sendingEmail || !recipientEmail}
-                    className="w-full bg-sunshine text-charcoal font-semibold hover:bg-[#E0BC74] transition-all duration-200 h-10 text-sm"
+                    className="w-full bg-[var(--color-sunshine-cta)] text-charcoal font-semibold hover:bg-[#E0BC74] transition-all duration-200 h-10 text-sm"
                   >
                     {sendingEmail ? (
                       <span className="flex items-center gap-2">
@@ -2125,7 +2139,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 </div>
 
                 {/* WhatsApp Option */}
-                <div className="p-4 rounded-xl border border-sunshine/10 bg-cream dark:bg-background/20 space-y-4">
+                <div className="p-4 rounded-xl border border-[var(--color-sunshine-cta)]/10 bg-cream dark:bg-background/20 space-y-4">
                   <div className="flex items-center gap-2 font-semibold text-deep-forest">
                     <MessageSquare className="w-4 h-4 text-emerald-500" />
                     <span>{t('option_whatsapp')}</span>
@@ -2142,7 +2156,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       type="text"
                       value={recipientPhone}
                       onChange={(e) => setRecipientPhone(e.target.value)}
-                      className="bg-cream dark:bg-background/50 border-sunshine/20 text-deep-forest focus:border-sunshine/50 h-10 text-sm"
+                      className="bg-cream dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest focus:border-[var(--color-sunshine-cta)]/50 h-10 text-sm"
                       placeholder="e.g. 0123456789"
                     />
                   </div>
@@ -2165,7 +2179,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <Button
               variant="outline"
               onClick={() => setIsSendDialogOpen(false)}
-              className="border-sunshine/30 text-deep-forest hover:bg-sunshine/10 w-full md:w-auto text-sm"
+              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10 w-full md:w-auto text-sm"
             >
               {t('cancel')}
             </Button>
@@ -2175,9 +2189,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       {/* PDF Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[90vw] h-[85vh] bg-cream dark:bg-card border-sunshine/20 text-deep-forest flex flex-col p-6">
-          <DialogHeader className="pb-2 border-b border-sunshine/10 flex-shrink-0">
-            <DialogTitle className="text-xl font-display font-bold text-sunshine">
+        <DialogContent className="max-w-4xl w-[90vw] h-[85vh] bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-6">
+          <DialogHeader className="pb-2 border-b border-[var(--color-sunshine-cta)]/10 flex-shrink-0">
+            <DialogTitle className="text-xl font-display font-bold text-[var(--color-sunshine-cta)]">
               {previewFileName || 'PDF Preview'}
             </DialogTitle>
             <DialogDescription>
@@ -2185,7 +2199,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 bg-cream dark:bg-background/50 rounded-lg overflow-hidden relative my-4 border border-sunshine/10">
+          <div className="flex-1 min-h-0 bg-cream dark:bg-background/50 rounded-lg overflow-hidden relative my-4 border border-[var(--color-sunshine-cta)]/10">
             {previewPdfUrl ? (
               <iframe
                 src={previewPdfUrl}
@@ -2200,19 +2214,19 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </div>
 
           {/* Mobile / Sandbox Preview Tip Box */}
-          <div className="mb-4 p-4 bg-sunshine/5 border border-sunshine/10 rounded-xl text-xs text-deep-forest/70 space-y-1">
-            <p className="font-bold flex items-center gap-1.5 text-sunshine">
+          <div className="mb-4 p-4 bg-[var(--color-sunshine-cta)]/5 border border-[var(--color-sunshine-cta)]/10 rounded-xl text-xs text-deep-forest/70 space-y-1">
+            <p className="font-bold flex items-center gap-1.5 text-[var(--color-sunshine-cta)]">
               <span>💡</span>
               {language === 'bm' ? 'Nota Pratonton PDF:' : 'PDF Preview Note:'}
             </p>
-            <p className="leading-relaxed text-[11px]">
+            <p className="leading-relaxed microcopy-12">
               {language === 'bm' 
                 ? 'Pratonton dalam talian mungkin kelihatan kosong pada peranti mudah alih atau dalam kotak pasir. Ini adalah perkara biasa. Sila klik butang Muat Turun di bawah untuk melihat atau menyimpan PDF anda.' 
                 : 'Inline previews may appear blank on mobile devices or inside sandboxed environments. This is normal behavior. Please click the Download/Share button below to view or save your PDF.'}
             </p>
           </div>
 
-          <DialogFooter className="gap-2 pt-2 border-t border-sunshine/10 justify-end flex-shrink-0">
+          <DialogFooter className="gap-2 pt-2 border-t border-[var(--color-sunshine-cta)]/10 justify-end flex-shrink-0">
             <Button
               onClick={async () => {
                 if (Capacitor.isNativePlatform()) {
@@ -2273,7 +2287,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   document.body.removeChild(link);
                 }
               }}
-              className="bg-sunshine text-charcoal font-semibold hover:bg-[#E0BC74]"
+              className="bg-[var(--color-sunshine-cta)] text-charcoal font-semibold hover:bg-[#E0BC74]"
             >
               <FileDown className="w-4 h-4 mr-2" />
               {t('download')}
@@ -2284,7 +2298,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 setIsPreviewOpen(false);
                 setPreviewPdfUrl('');
               }}
-              className="border-sunshine/30 text-deep-forest hover:bg-sunshine/10"
+              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
             >
               {t('close')}
             </Button>

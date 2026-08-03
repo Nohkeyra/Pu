@@ -18,9 +18,13 @@ import { triggerLightImpact } from '@/lib/haptics';
 
 function BrandMark() {
   return (
-    <div className="w-10 h-10 flex items-center justify-center">
+    <div className="h-10 w-10 flex items-center justify-center">
+      {/*
+        Brand asset path preserved verbatim — visual logo /
+        Malaysian heritage graphic must remain 100% intact.
+      */}
       <TransparentLogo
-        src={getAssetUrl("/assets/wawasan_logo.svg")}
+        src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
         className="w-full h-full object-contain"
       />
@@ -45,7 +49,7 @@ export default function OrderPage() {
       // Just simulate a refresh by incrementing key to remount OrderForm or similar
       setRefreshKey(prev => prev + 1);
       await new Promise(resolve => setTimeout(resolve, 800));
-    }
+    },
   });
 
   useEffect(() => {
@@ -59,48 +63,74 @@ export default function OrderPage() {
     <ErrorBoundary>
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots">
         {/* Pull to Refresh Indicator */}
-        <motion.div 
+        <motion.div
           className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
-          animate={{ 
+          animate={{
             y: isRefreshing ? 20 : Math.min(pullDistance - 40, 20),
             opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
-            scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
+            scale: pullDistance > 10 || isRefreshing ? 1 : 0.8,
           }}
         >
-          <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-sunshine/20 flex items-center gap-2">
-            <RefreshCw className={`w-4 h-4 text-sunshine ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }} />
-            {isRefreshing && <span className="text-[10px] font-black text-sunshine uppercase tracking-widest">Refreshing</span>}
+          <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-[var(--color-sunshine-cta)]/20 flex items-center gap-2">
+            <RefreshCw
+              className={`w-4 h-4 text-[var(--color-sunshine-cta)] ${
+                isRefreshing ? 'animate-spin' : ''
+              }`}
+              style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 2}deg)` }}
+            />
+            {isRefreshing && (
+              <span className="microcopy-12-upper text-[var(--color-sunshine-cta)]">
+                Refreshing
+              </span>
+            )}
           </div>
         </motion.div>
 
-        <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border shadow-sm pt-[var(--sat)]">
-          <div className="flex items-center justify-between px-6 md:px-12 h-[76px]">
-            <div onClick={async () => { await triggerLightImpact(); navigate('/home', { replace: true }); }} className="flex items-center gap-3 group cursor-pointer">
+        {/*
+          P0 — standardised dark-mode text colour override so header
+          label and "Pak Usop" eyebrow stay legible on dark surfaces.
+        */}
+        <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
+          <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
+            <button
+              type="button"
+              onClick={async () => {
+                await triggerLightImpact();
+                navigate('/home', { replace: true });
+              }}
+              className="touch-target-row flex items-center gap-3 group text-left"
+              aria-label="Go to home"
+            >
               <BrandMark />
               <div>
-                <span className="font-display font-semibold text-xl text-deep-forest leading-none tracking-tight">
+                <span className="font-display font-semibold text-xl page-header-text leading-none tracking-tight">
                   Restoran Wawasan
                 </span>
-                <span className="block font-accent text-[10px] text-crisp-carrot uppercase tracking-[0.18em] leading-tight mt-0.5 font-bold">
+                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5">
                   Pak Usop
                 </span>
               </div>
-            </div>
-            
+            </button>
+
             <div className="flex items-center gap-2">
               <button
-                onClick={async () => { await triggerLightImpact(); toggleTheme(); }}
-                className="p-2 md:p-3 rounded-full hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40"
+                type="button"
+                onClick={async () => {
+                  await triggerLightImpact();
+                  toggleTheme();
+                }}
+                className="icon-button-soft touch-target"
                 aria-label="Toggle theme"
               >
                 {theme === 'light' ? (
-                  <Moon className="w-5 h-5 text-deep-forest" />
+                  <Moon className="w-5 h-5" />
                 ) : (
-                  <Sun className="w-5 h-5 text-sunshine" />
+                  <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
                 )}
               </button>
 
               <button
+                type="button"
                 onClick={async () => {
                   await triggerLightImpact();
                   if (currentUser) {
@@ -109,13 +139,28 @@ export default function OrderPage() {
                     setAuthModalOpen(true);
                   }
                 }}
-                className="p-2.5 text-deep-forest hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40"
+                className="icon-button-soft touch-target"
                 aria-label={currentUser ? 'Account' : 'Sign in'}
               >
-                <UserIcon className="w-5 h-5" />
+                {currentUser ? (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] microcopy-12 font-black text-white">
+                    {currentUser.displayName?.slice(0, 2).toUpperCase() ||
+                      currentUser.email?.slice(0, 2).toUpperCase()}
+                  </div>
+                ) : (
+                  <UserIcon className="w-5 h-5" />
+                )}
               </button>
 
-              <Button variant="ghost" onClick={async () => { await triggerLightImpact(); navigate('/home', { replace: true }); }} className="text-stone hover:text-crisp-carrot hover:bg-sunshine/10 rounded-full">
+              {/* P0 — semantic back button + 44 px tap target. */}
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await triggerLightImpact();
+                  navigate('/home', { replace: true });
+                }}
+                className="touch-target-row text-stone hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-full min-h-[44px]"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('back')}
               </Button>
@@ -123,28 +168,24 @@ export default function OrderPage() {
           </div>
         </header>
 
-        <motion.main 
+        <motion.main
           key={refreshKey}
-          className="pt-[calc(76px+var(--sat)+2rem)] pb-16"
+          className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] pb-16"
           animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
           transition={{ type: 'spring', stiffness: 400, damping: 40 }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <OrderForm initialData={initialData} />
-          </div>
+          <OrderForm initialData={initialData} />
         </motion.main>
 
         <footer className="bg-charcoal border-t border-border pt-8 pb-[calc(100px+env(safe-area-inset-bottom,16px))] mt-14">
           <div className="max-w-3xl mx-auto px-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-sunshine" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-sunshine-cta)]" />
               <span className="text-white text-xs tracking-[0.18em] uppercase font-semibold">
                 Restoran Wawasan Pak Usop
               </span>
             </div>
-            <p className="text-stone text-sm">
-              © 2026 All rights reserved
-            </p>
+            <p className="text-stone text-sm">© 2026 All rights reserved</p>
           </div>
         </footer>
 
