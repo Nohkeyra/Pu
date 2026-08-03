@@ -88,7 +88,7 @@ export default function SettingsPage() {
                 <span className="font-display font-semibold text-xl page-header-text leading-none tracking-tight">
                   Restoran Wawasan
                 </span>
-                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5">
+                <span className="block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)] leading-tight mt-1">
                   Pak Usop
                 </span>
               </div>
@@ -118,7 +118,7 @@ export default function SettingsPage() {
               <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white">
                 {t('nav_settings')}
               </h1>
-              <p className="page-header-text-muted microcopy-14">
+              <p className="page-header-text-muted text-[14px] leading-5">
                 {language === 'bm'
                   ? 'Konfigurasikan pilihan aplikasi dan tetapan sistem anda.'
                   : 'Configure your application preferences and system settings.'}
@@ -128,7 +128,7 @@ export default function SettingsPage() {
 
           {/* 1. App Display (Language & Theme) */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+            <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Paparan' : 'Display Preferences'}
             </h3>
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Gelap' : 'Dark Mode'}
                 </span>
-                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
                   {language === 'bm'
                     ? 'Tukar tema antara paparan cerah dan gelap.'
                     : 'Switch theme between light and dark display modes.'}
@@ -165,7 +165,7 @@ export default function SettingsPage() {
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Bahasa Aplikasi' : 'Application Language'}
                 </span>
-                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
                   {language === 'bm'
                     ? 'Pilih bahasa pilihan anda untuk sistem.'
                     : 'Select your preferred language for the interface.'}
@@ -173,7 +173,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex gap-2 mt-1">
                 <Button
+                  type="button"
                   variant={language === 'en' ? 'default' : 'outline'}
+                  aria-pressed={language === 'en'}
                   onClick={() => handleLanguageChange('en')}
                   className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
                     language === 'en'
@@ -186,7 +188,9 @@ export default function SettingsPage() {
                   {language === 'en' && <Check className="w-4 h-4 ml-auto" />}
                 </Button>
                 <Button
+                  type="button"
                   variant={language === 'bm' ? 'default' : 'outline'}
+                  aria-pressed={language === 'bm'}
                   onClick={() => handleLanguageChange('bm')}
                   className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
                     language === 'bm'
@@ -204,7 +208,7 @@ export default function SettingsPage() {
 
           {/* 2. Notification Preferences */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+            <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Bell className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Notifikasi' : 'Notification Preferences'}
             </h3>
@@ -214,7 +218,7 @@ export default function SettingsPage() {
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Notifikasi Push Aplikasi' : 'App Push Notifications'}
                 </span>
-                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal block max-w-sm">
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
                   {language === 'bm'
                     ? 'Benarkan pemberitahuan untuk maklum balas tempahan, status kelulusan, dan invois rasmi.'
                     : 'Receive notifications for order feedback, approval status updates, and official invoice generation.'}
@@ -230,7 +234,7 @@ export default function SettingsPage() {
 
           {/* 3. Advanced Settings */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
-            <h3 className="microcopy-14-upper text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
+            <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Pilihan Pembangun' : 'Developer & Advanced'}
             </h3>
@@ -240,7 +244,7 @@ export default function SettingsPage() {
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
                 </span>
-                <span className="microcopy-14 text-stone dark:text-stone/65 leading-normal block max-w-sm">
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
                   {language === 'bm'
                     ? 'Papar data diagnosis tambahan, log status sambungan API, dan kebenaran fail.'
                     : 'Display extra diagnostic details, connection logs, and filesystem parameters.'}
@@ -257,7 +261,7 @@ export default function SettingsPage() {
           {/* APK Download - Visible on Web platform so users can download the native app */}
           {Capacitor.getPlatform() === 'web' && (
             <section className="bg-gradient-to-br from-[var(--color-sunshine-cta)]/10 to-[var(--color-sunshine)]/10 dark:from-[var(--color-sunshine-cta)]/15 dark:to-[var(--color-sunshine)]/15 border border-[var(--color-sunshine-cta)]/20 rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="microcopy-14-upper text-[var(--color-sunshine-cta)] mb-2 flex items-center gap-2">
+              <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--color-sunshine-cta)] mb-2 flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 {language === 'bm' ? 'Aplikasi Android Rasmi' : 'Official Android App'}
               </h3>
@@ -285,7 +289,7 @@ export default function SettingsPage() {
                   </a>
                 </div>
 
-                <p className="microcopy-14 text-stone dark:text-stone/65 leading-normal">
+                <p className="text-[14px] leading-5 text-stone dark:text-stone/75">
                   {language === 'bm'
                     ? 'Arahan pemasangan: Selepas memuat turun, buka fail APK dan pilih "Pasang". Anda mungkin perlu membenarkan pemasangan daripada sumber tidak dikenali dalam tetapan penyemak imbas anda.'
                     : 'Installation guidance: After downloading, open the APK file and select "Install". You may need to allow installations from unknown sources in your browser settings.'}
@@ -304,7 +308,7 @@ export default function SettingsPage() {
               <p>Platform: {Capacitor.getPlatform().toUpperCase()} Runtime</p>
               <p>Backend: Render Remote Host</p>
               <p>Database: restoran-wawasan (Google Firebase)</p>
-              <p className="mt-2 microcopy-12 text-stone/65 dark:text-stone/55">
+              <p className="mt-2 text-[12px] leading-4 text-stone/70 dark:text-stone/60">
                 &copy; {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.
               </p>
             </div>
@@ -313,4 +317,4 @@ export default function SettingsPage() {
       </div>
     </ErrorBoundary>
   );
-      }
+}

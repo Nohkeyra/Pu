@@ -170,7 +170,7 @@ export default function OrderPage() {
 
         <motion.main
           key={refreshKey}
-          className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] pb-16"
+          className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] pb-[calc(140px+env(safe-area-inset-bottom,16px))] lg:pb-16"
           animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
           transition={{ type: 'spring', stiffness: 400, damping: 40 }}
         >

@@ -139,7 +139,7 @@ export default function AdminPage() {
                 <span className="font-display font-semibold text-xl text-deep-forest dark:text-white leading-none">
                   Wawasan
                 </span>
-                <span className="block font-body microcopy-12-upper text-[var(--color-sunshine-cta)] font-bold uppercase tracking-[0.18em] leading-tight mt-0.5">
+                <span className="block font-body text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)] mt-1 leading-tight">
                   Pak Usop
                 </span>
               </div>

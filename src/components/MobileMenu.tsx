@@ -63,9 +63,10 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
     >
       <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         <button
+          type="button"
           onClick={onClose}
-          className="icon-button-soft absolute right-6 top-[calc(1rem+var(--sat))] h-10 w-10"
-          aria-label="Close menu"
+          className="icon-button-soft absolute right-6 top-[calc(1rem+var(--sat))] h-11 w-11 text-base"
+          aria-label={language === 'bm' ? 'Tutup menu' : 'Close menu'}
         >
           ✕
         </button>

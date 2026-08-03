@@ -144,35 +144,44 @@ export function PDFPreviewModal({
               <thead>
                 <tr className="bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs uppercase tracking-wider font-semibold">
                   <th className="py-3 px-4">{language === 'bm' ? 'Butiran / Menu' : 'Description / Menu'}</th>
-                  <th className="py-3 px-4 text-center">{language === 'bm' ? 'Jenis' : 'Type'}</th>
+                  <th className="py-3 px-4 text-center">{language === 'bm' ? 'Harga / Pax' : 'Price / Pax'}</th>
                   <th className="py-3 px-4 text-center">{language === 'bm' ? 'Kuantiti' : 'Qty'}</th>
                   <th className="py-3 px-4 text-right">{language === 'bm' ? 'Jumlah (RM)' : 'Amount (RM)'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200 dark:divide-stone-700 text-sm">
                 {order?.meals && order.meals.length > 0 ? (
-                  order.meals.map((meal, idx) => (
-                    <tr key={idx} className="hover:bg-stone-50 dark:hover:bg-stone-800/30">
-                      <td className="py-3 px-4 font-medium capitalize">
-                        {String(meal).replace(/_/g, ' ')}
-                        {idx === 0 && order?.menu && <div className="text-xs text-stone-500 font-normal">{order.menu}</div>}
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs text-stone-600 dark:text-stone-400">
-                        {order?.preparationType ? order.preparationType.replace(/_/g, ' ') : 'Buffet'}
-                      </td>
-                      <td className="py-3 px-4 text-center">{order?.quantity || 1} pax</td>
-                      <td className="py-3 px-4 text-right font-mono font-medium">
-                        RM {((totalAmount / (order?.meals?.length || 1))).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))
+                  order.meals.map((meal, idx) => {
+                    const mealPriceRaw = order?.prices?.[meal];
+                    const mealPrice = mealPriceRaw !== undefined && mealPriceRaw !== null && mealPriceRaw !== '' ? Number(mealPriceRaw) : null;
+                    const qty = order?.quantity || 1;
+                    const mealCount = order?.meals?.length || 1;
+                    const pricePerPax = mealPrice !== null ? mealPrice : (totalAmount / (qty * mealCount));
+                    const mealSubtotal = mealPrice !== null ? mealPrice * qty : (totalAmount / mealCount);
+
+                    return (
+                      <tr key={idx} className="hover:bg-stone-50 dark:hover:bg-stone-800/30">
+                        <td className="py-3 px-4 font-medium capitalize">
+                          {String(meal).replace(/_/g, ' ')}
+                          {idx === 0 && order?.menu && <div className="text-xs text-stone-500 font-normal">{order.menu}</div>}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-mono font-medium text-stone-700 dark:text-stone-300">
+                          RM {pricePerPax.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-center">{qty} pax</td>
+                        <td className="py-3 px-4 text-right font-mono font-medium">
+                          RM {mealSubtotal.toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td className="py-3 px-4 font-medium">
                       {order?.menu || (language === 'bm' ? 'Katering Makanan Tradisional & Melayu' : 'Traditional & Malay Catering Services')}
                     </td>
-                    <td className="py-3 px-4 text-center text-xs text-stone-600 dark:text-stone-400">
-                      {order?.preparationType || 'Buffet'}
+                    <td className="py-3 px-4 text-center text-xs font-mono font-medium text-stone-700 dark:text-stone-300">
+                      RM {((order?.quantity || 1) > 0 ? totalAmount / (order?.quantity || 1) : totalAmount).toFixed(2)}
                     </td>
                     <td className="py-3 px-4 text-center">{order?.quantity || 1} pax</td>
                     <td className="py-3 px-4 text-right font-mono font-medium">

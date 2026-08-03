@@ -29,14 +29,15 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialMode?: 'signin' | 'signup' | 'forgot';
 }
 
 type AuthMode = 'signin' | 'signup' | 'forgot';
 
-export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }: AuthModalProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
 
   // Form Fields
@@ -54,13 +55,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      if (initialMode) {
+        setMode(initialMode);
+      }
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, initialMode]);
 
   const resetForm = () => {
     setEmail('');

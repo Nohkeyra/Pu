@@ -119,6 +119,7 @@ export default function Header() {
 
           <div className="hidden items-center gap-2 md:flex">
             <button
+              type="button"
               onClick={handleThemeToggle}
               className={desktopActionClass}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
@@ -127,6 +128,7 @@ export default function Header() {
             </button>
 
             <button
+              type="button"
               onClick={toggleLanguage}
               className={`${desktopActionClass} gap-2 text-xs font-bold`}
               aria-label="Toggle Language"
@@ -137,6 +139,7 @@ export default function Header() {
             </button>
 
             <button
+              type="button"
               onClick={handleAuthClick}
               className={`${desktopActionClass} gap-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={currentUser ? 'Account' : 'Sign in'}
@@ -161,6 +164,7 @@ export default function Header() {
 
           <div className="flex items-center gap-2 md:hidden">
             <button
+              type="button"
               onClick={handleThemeToggle}
               className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
@@ -169,6 +173,7 @@ export default function Header() {
             </button>
 
             <button
+              type="button"
               onClick={handleAuthClick}
               className={mobileActionClass}
               aria-label={currentUser ? 'Account' : 'Sign in'}
@@ -183,6 +188,7 @@ export default function Header() {
             </button>
 
             <button
+              type="button"
               onClick={async () => {
                 await triggerLightImpact();
                 setMobileOpen(true);

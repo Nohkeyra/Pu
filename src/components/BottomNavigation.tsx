@@ -74,8 +74,7 @@ export default function BottomNavigation() {
                   }
                 }}
                 className={cn(
-                  /* P0 — focus ring uses --color-sunshine-cta (AA token). */
-                  'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] min-h-[44px]',
+                  'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-2',
                   isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-white'
                 )}
               >
