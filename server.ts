@@ -30,6 +30,7 @@ const ALLOWED_ORIGINS = [
   // Capacitor WebView origin — native Android sends this
   'capacitor://localhost',
   'http://localhost',
+  'https://localhost',
 ];
 
 // Google AI Studio sandbox origins follow the pattern:
@@ -44,6 +45,11 @@ function isAllowedOrigin(origin: string): boolean {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Render (and most cloud platforms) sit behind a reverse proxy that sets
+  // X-Forwarded-For. Without trust proxy=1, express-rate-limit throws
+  // ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and cannot identify client IPs.
+  app.set('trust proxy', 1);
 
   app.use(platformOptimizerMiddleware);
 
@@ -407,15 +413,36 @@ async function startServer() {
       }
       if (type === 'calendar') {
         const { getGoogleCalendarClient } = await import('./server/calendarService.js');
+        
+        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+        const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+        
+        if (!email || !key) {
+          return res.status(200).json({ 
+            status: 'unconfigured', 
+            service: 'Google Calendar', 
+            message: 'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in environment variables.' 
+          });
+        }
+
         const calendar = getGoogleCalendarClient();
         if (!calendar) {
-          return res.json({ status: 'unconfigured', service: 'Google Calendar' });
+          return res.status(200).json({ 
+            status: 'fail', 
+            service: 'Google Calendar', 
+            message: 'Failed to initialize Calendar client. Check private key format.' 
+          });
         }
-        // calendarList.list() is a lightweight read-only check — confirms
-        // the service account JWT is valid without touching any real event.
+
+        // calendarList.list() is a lightweight read-only check
         const listResp = await calendar.calendarList.list();
         const calendarsReturned = listResp.data.items?.length || 0;
-        return res.json({ status: 'healthy', service: 'Google Calendar', calendarsReturned });
+        return res.json({ 
+          status: 'healthy', 
+          service: 'Google Calendar', 
+          calendarsReturned,
+          message: `Connected successfully. Found ${calendarsReturned} accessible calendars.`
+        });
       }
       res.status(400).json({ error: 'Unknown diagnostic type' });
     } catch (err) {
