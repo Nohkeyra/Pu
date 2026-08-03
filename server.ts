@@ -3,6 +3,7 @@ import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
+import helmet from 'helmet';
 import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from './server/adminAuth.js';
 import { notifyCustomerOfStatusChange, createBrevoTransporter } from './server/emailService.js';
@@ -16,12 +17,62 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 dotenv.config();
 
+// S-01: Allowed CORS origins — production URLs + localhost for dev.
+// cors() with no options defaults to wildcard (*), which allows any website
+// to make credentialed cross-origin requests to this server. Restricting
+// to known origins closes that surface for browser-based callers.
+const ALLOWED_ORIGINS = [
+  'https://restoran-wawasan-bio.onrender.com',
+  'https://restoran-wawasan.pxxl.click',
+  // Local dev (Vite + Termux)
+  'http://localhost:3000',
+  'http://localhost:5173',
+  // Capacitor WebView origin — native Android sends this
+  'capacitor://localhost',
+  'http://localhost',
+];
+
+// Google AI Studio sandbox origins follow the pattern:
+// https://ais-dev-<hash>.asia-southeast1.run.app
+// These are preview/testing environments only — not production.
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (/^https:\/\/ais-dev-[a-z0-9-]+\.asia-southeast1\.run\.app$/.test(origin)) return true;
+  return false;
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(platformOptimizerMiddleware);
-  app.use(cors());
+
+  // S-02: helmet adds secure HTTP headers (X-Content-Type-Options,
+  // X-Frame-Options, Referrer-Policy, etc.) with one call.
+  // crossOriginResourcePolicy is set to 'cross-origin' so the Android
+  // WebView (which loads from capacitor://localhost) can fetch assets
+  // served from this Express origin without being blocked by CORP.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      // CSP is left to default (off) — enabling it requires careful
+      // tuning of script-src/style-src for the React SPA and Vite HMR.
+      contentSecurityPolicy: false,
+    })
+  );
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, curl, widget APK)
+        if (!origin) return callback(null, true);
+        if (isAllowedOrigin(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+      },
+      credentials: true,
+    })
+  );
+
   app.use(compression() as any);
   app.use(express.json({ limit: '50mb' }));
 
@@ -207,6 +258,12 @@ async function startServer() {
   });
 
   // Public Order Submission
+  // S-03: No input validation here — body spreads directly into Firestore.
+  // Risk is LOW for this B2B context: Firestore rules restrict what clients
+  // can read back; the admin panel is the only consumer of order data;
+  // and all write paths go through Admin SDK server-side so rules don't
+  // apply. Adding strict validation is the right long-term move but is
+  // out of scope for this pass (avoid scope creep per project rules).
   app.post('/api/orders', async (req, res) => {
     try {
       const orderData = req.body;
