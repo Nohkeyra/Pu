@@ -33,7 +33,8 @@ import {
   Table,
   Sun,
   Moon,
-  Bell
+  Bell,
+  Type
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { TransparentLogo } from '@/components/TransparentLogo';
@@ -99,6 +100,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isMamaMode, setIsMamaMode] = useState(false);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [searchTerm, setSearchTerm] = useState('');
   // Table filters (Orders tab): status/client/date-range narrow down
@@ -1114,6 +1116,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   const openOrderDetail = (order: Order) => {
     setSelectedOrder(order);
+    setIsMamaMode(false);
     if (order.status === 'approved' && order.prices) {
       const prices = order.prices;
       const priceStrings = Object.keys(prices).reduce((acc, key) => {
@@ -1833,17 +1836,80 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       {/* Order Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest max-h-[90vh] overflow-y-auto relative">
+          {/*
+            Mama Mode floating toggle — bottom-left, positioned relative to
+            DialogContent (not document.body) so it stays anchored to the
+            dialog itself rather than the full viewport, and survives the
+            dialog's own overflow-y-auto scrolling via `sticky` instead of
+            `fixed`. Placed after DialogHeader/body in DOM order but pinned
+            visually via sticky+bottom so it doesn't require a portal.
+          */}
+          {selectedOrder && (
+            <button
+              type="button"
+              onClick={() => setIsMamaMode(prev => !prev)}
+              aria-pressed={isMamaMode}
+              className={`sticky bottom-3 left-3 z-[120] w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-2 transition-colors ${
+                isMamaMode
+                  ? 'bg-[var(--color-sunshine-cta)] border-[var(--color-sunshine-cta)] text-charcoal'
+                  : 'bg-white dark:bg-card border-[var(--color-sunshine-cta)]/40 text-[var(--color-sunshine-cta)]'
+              }`}
+              title={language === 'bm' ? 'Mod Mama — Paparan Mudah' : 'Mama Mode — Easy View'}
+            >
+              <Type className="w-6 h-6" />
+            </button>
+          )}
+
           <DialogHeader>
             <DialogTitle className="text-xl font-display">
               {t('order_details')}
             </DialogTitle>
             <DialogDescription>
-              {t('order_details_desc')}
+              {isMamaMode
+                ? (language === 'bm' ? 'Paparan mudah — hanya untuk lihat' : 'Easy view — for viewing only')
+                : t('order_details_desc')}
             </DialogDescription>
           </DialogHeader>
 
-          {selectedOrder && (
+          {selectedOrder && isMamaMode && (
+            /*
+              Mama Mode: view-only, single-column, large/bold text.
+              No pricing inputs, no admin action buttons — deliberately
+              excludes anything that mutates order state so it's safe
+              for a non-admin family member to browse without risk of
+              accidentally approving/rejecting/pricing an order.
+            */
+            <div className="space-y-5 py-4">
+              <div className="p-4 rounded-xl bg-cream dark:bg-background/50">
+                {getStatusBadge(selectedOrder.status)}
+              </div>
+
+              {[
+                { label: language === 'bm' ? 'Untuk Hidangan' : 'Meal For', value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
+                { label: language === 'bm' ? 'Tarikh' : 'Date', value: selectedOrder.dateTime ? format(new Date(selectedOrder.dateTime), 'PPp') : '-' },
+                { label: language === 'bm' ? 'Lokasi Acara' : 'Event Location', value: selectedOrder.location || '-' },
+                { label: language === 'bm' ? 'Kuantiti' : 'Quantity', value: selectedOrder.quantity != null ? `${selectedOrder.quantity} pax` : '-' },
+                { label: language === 'bm' ? 'Menu' : 'Menu', value: selectedOrder.menu || '-' },
+                { label: language === 'bm' ? 'Jumlah Keseluruhan' : 'Total Amount', value: `RM ${(selectedOrder.totalAmount ?? 0).toFixed(2)}` },
+                { label: language === 'bm' ? 'Nama' : 'Name', value: selectedOrder.name || '-' },
+                { label: language === 'bm' ? 'Nombor Telefon' : 'Contact Number', value: selectedOrder.contact || '-' },
+                { label: language === 'bm' ? 'Emel' : 'Email', value: selectedOrder.email || '-' },
+                { label: language === 'bm' ? 'Nota' : 'Notes', value: selectedOrder.notes || '-' },
+              ].map((field, idx) => (
+                <div key={idx} className="pb-4 border-b border-[var(--color-sunshine-cta)]/10">
+                  <p className="text-base text-deep-forest/60 dark:text-stone/60 mb-1">
+                    {field.label}
+                  </p>
+                  <p className="text-2xl font-bold text-deep-forest dark:text-white leading-snug break-words">
+                    {field.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selectedOrder && !isMamaMode && (
             <div className="space-y-6 py-4">
               {/* Status Banner */}
               <div className="flex items-center justify-between p-4 rounded-lg bg-cream dark:bg-background/50">
@@ -1978,81 +2044,92 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             </div>
           )}
 
-          <DialogFooter className="gap-2 mt-6 flex-wrap md:flex-nowrap">
-            {selectedOrder?.status === 'cancel_requested' ? (
-              <>
-                <Button
-                  onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
-                  disabled={isApproving}
-                  className="bg-rose-600 hover:bg-rose-700 text-white"
-                >
-                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {t('approve_cancellation') || 'Approve Cancellation'}
-                </Button>
-                <Button
-                  onClick={() => selectedOrder.id && handleRejectCancellation(selectedOrder.id)}
-                  disabled={isApproving}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  {t('reject_cancellation') || 'Reject Cancellation'}
-                </Button>
-              </>
-            ) : selectedOrder?.status === 'pending' ? (
-              <>
-                <Button
-                  onClick={() => handleApprove(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {t('approve') || 'Approve & Set Pricing'}
-                </Button>
-                <Button
-                  onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
-                  disabled={isApproving}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  {t('reject_order') || 'Reject Order'}
-                </Button>
-              </>
-            ) : selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? (
-              <>
-                <Button
-                  onClick={() => handleApprove(selectedOrder?.id || '')}
-                  disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {t('update_invoice') || 'Update Invoice'}
-                </Button>
-                <Button
-                  onClick={() => selectedOrder && openSendDialog(selectedOrder)}
-                  disabled={isApproving}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  {t('send_invoice') || 'Send Invoice'}
-                </Button>
-                <Button
-                  onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
-                  disabled={isApproving}
-                  className="bg-stone-600 hover:bg-stone-700 text-white"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  {t('cancel_order') || 'Cancel Order'}
-                </Button>
-              </>
-            ) : null}
-            <Button
-              variant="outline"
-              onClick={() => setIsDetailOpen(false)}
-              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
-            >
-              {t('close')}
-            </Button>
-          </DialogFooter>
+          {isMamaMode ? (
+            <DialogFooter className="mt-6">
+              <Button
+                onClick={() => setIsDetailOpen(false)}
+                className="w-full h-14 text-lg font-bold bg-[var(--color-sunshine-cta)] text-charcoal hover:bg-[var(--color-sunshine-cta)]/90"
+              >
+                {language === 'bm' ? 'Tutup' : 'Close'}
+              </Button>
+            </DialogFooter>
+          ) : (
+            <DialogFooter className="gap-2 mt-6 flex-wrap md:flex-nowrap">
+              {selectedOrder?.status === 'cancel_requested' ? (
+                <>
+                  <Button
+                    onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
+                    disabled={isApproving}
+                    className="bg-rose-600 hover:bg-rose-700 text-white"
+                  >
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {t('approve_cancellation') || 'Approve Cancellation'}
+                  </Button>
+                  <Button
+                    onClick={() => selectedOrder.id && handleRejectCancellation(selectedOrder.id)}
+                    disabled={isApproving}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {t('reject_cancellation') || 'Reject Cancellation'}
+                  </Button>
+                </>
+              ) : selectedOrder?.status === 'pending' ? (
+                <>
+                  <Button
+                    onClick={() => handleApprove(selectedOrder?.id || '')}
+                    disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {t('approve') || 'Approve & Set Pricing'}
+                  </Button>
+                  <Button
+                    onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
+                    disabled={isApproving}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {t('reject_order') || 'Reject Order'}
+                  </Button>
+                </>
+              ) : selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? (
+                <>
+                  <Button
+                    onClick={() => handleApprove(selectedOrder?.id || '')}
+                    disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {t('update_invoice') || 'Update Invoice'}
+                  </Button>
+                  <Button
+                    onClick={() => selectedOrder && openSendDialog(selectedOrder)}
+                    disabled={isApproving}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {t('send_invoice') || 'Send Invoice'}
+                  </Button>
+                  <Button
+                    onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
+                    disabled={isApproving}
+                    className="bg-stone-600 hover:bg-stone-700 text-white"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {t('cancel_order') || 'Cancel Order'}
+                  </Button>
+                </>
+              ) : null}
+              <Button
+                variant="outline"
+                onClick={() => setIsDetailOpen(false)}
+                className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
+              >
+                {t('close')}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

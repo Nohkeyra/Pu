@@ -35,6 +35,8 @@ export default function ScrollToTopButton() {
     return null;
   }
 
+  const isOrderPage = location.pathname.startsWith('/order');
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -43,9 +45,12 @@ export default function ScrollToTopButton() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.8 }}
           onClick={scrollToTop}
-          className="fixed right-6 z-[110] p-3 md:p-3.5 bg-gradient-to-tr from-sunshine to-crisp-carrot text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-sunshine-glow hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center"
+          className={`fixed right-4 md:right-6 z-[110] p-3 md:p-3.5 bg-gradient-to-tr from-sunshine to-crisp-carrot text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-sunshine-glow hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center ${
+            isOrderPage
+              ? 'bottom-[calc(148px+env(safe-area-inset-bottom,12px))] lg:bottom-[calc(88px+env(safe-area-inset-bottom,12px))]'
+              : 'bottom-[calc(88px+env(safe-area-inset-bottom,12px))]'
+          }`}
           aria-label="Scroll to top"
-          style={{ bottom: 'calc(88px + env(safe-area-inset-bottom, 12px))' }}
         >
           <ChevronUp className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
         </motion.button>

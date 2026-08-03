@@ -5,16 +5,19 @@ import { auth } from '@/firebaseConfig';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User as UserIcon, Shield, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Shield, ExternalLink, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { TransparentLogo } from '@/components/TransparentLogo';
+import AuthModal from '@/components/AuthModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -118,22 +121,60 @@ export default function ProfilePage() {
         )}
 
         {!currentUser ? (
-          <div className="bg-white dark:bg-card border border-border rounded-3xl p-12 text-center shadow-sm">
+          <div className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <UserIcon className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
             </div>
-            <h2 className="text-2xl font-display font-bold text-deep-forest dark:text-white mb-4">
-              Access Your Bookings
+            <h2 className="text-2xl font-display font-bold text-deep-forest dark:text-white mb-2">
+              {language === 'bm' ? 'Akses Tempahan Anda' : 'Access Your Bookings'}
             </h2>
-            <p className="text-stone dark:text-stone/75 microcopy-14 mb-8">
-              Please sign in to view your order history and manage your professional catering documentation.
+            <p className="text-stone dark:text-stone/75 microcopy-14 mb-8 max-w-md mx-auto">
+              {language === 'bm'
+                ? 'Sila log masuk atau daftar akaun untuk melihat sejarah pesanan dan menguruskan dokumen katering rasmi anda.'
+                : 'Please sign in or register to view your order history and manage your professional catering documentation.'}
             </p>
-            <Button
-              onClick={() => navigate('/order')}
-              className="btn-cta px-8 py-6 min-h-[52px] rounded-2xl text-lg font-bold"
-            >
-              Go to Order Page
-            </Button>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    setAuthMode('signin');
+                    setAuthModalOpen(true);
+                  }}
+                  className="btn-cta w-full py-4 min-h-[52px] rounded-2xl text-base font-bold flex items-center justify-center gap-2 shadow-sunshine-glow"
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthModalOpen(true);
+                  }}
+                  className="w-full py-4 min-h-[52px] rounded-2xl text-base font-bold border-stone/20 hover:border-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center gap-2 text-deep-forest dark:text-white"
+                >
+                  <UserPlus className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
+                  <span>{language === 'bm' ? 'Daftar Akaun' : 'Sign Up'}</span>
+                </Button>
+              </div>
+
+              <div className="pt-2 border-t border-stone/10">
+                <button
+                  type="button"
+                  onClick={() => navigate('/order')}
+                  className="w-full py-3 px-2 min-h-[44px] text-xs font-semibold text-stone hover:text-deep-forest dark:hover:text-white flex items-center justify-center gap-2 transition-colors group text-center leading-relaxed"
+                >
+                  <span>
+                    {language === 'bm'
+                      ? 'Atau teruskan ke Borang Pesanan tanpa kisah tentang tempahan terkini anda'
+                      : 'Or proceed directly to Order Form without even caring about what you have ordered recently'}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 transition-transform group-hover:translate-x-1" />
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -153,6 +194,12 @@ export default function ProfilePage() {
           </div>
         )}
       </main>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authMode}
+      />
     </div>
   );
 }

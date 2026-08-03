@@ -23,7 +23,10 @@ import {
   Smile,
   Coffee,
   Sun,
-  Eye
+  Eye,
+  UtensilsCrossed,
+  Package,
+  User as UserIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
@@ -47,6 +50,7 @@ import type { SavedLocation, Order } from '@/types';
 interface OrderState {
   eventType: 'pejabat' | 'lain' | '';
   mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
+  preparationType: 'buffet' | 'meal_box';
   guests: number;
   dishes: typeof LAUK_UTAMA[number][];
   veggies: typeof SAYURAN[number][];
@@ -97,6 +101,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [showPdfPreviewModal, setShowPdfPreviewModal] = useState<boolean>(false);
   
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -107,6 +112,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [orderState, setOrderState] = useState<OrderState>({
     eventType: '',
     mealTypes: [],
+    preparationType: 'buffet',
     guests: 50,
     dishes: [],
     veggies: [],
@@ -226,6 +232,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       setOrderState({
         eventType: initialData.to ? 'pejabat' : 'lain',
         mealTypes: restoredMealTypes,
+        preparationType: (initialData.preparationType as 'buffet' | 'meal_box') || 'buffet',
         guests: Number(initialData.quantity) || 50,
         dishes: matchedDishes,
         veggies: matchedVeggies,
@@ -517,6 +524,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         quantity: orderState.guests,
         meals: mappedMeals,
         menu: combinedMenuStr,
+        preparationType: orderState.preparationType || 'buffet',
         notes: orderState.notes,
         dateTime: new Date(`${formattedDateStr}T${orderState.time || '12:00'}`).toISOString(),
         lang: language,
@@ -691,7 +699,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   return (
     <>
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={authMode} />
 
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
       <div className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0">
@@ -736,6 +744,39 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             </div>
           </div>
         </div>
+
+        {/* Sign In / Sign Up banner for unauthenticated guests */}
+        {!currentUser && (
+          <div className="bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/25 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3 text-deep-forest dark:text-stone-200">
+              <div className="w-9 h-9 rounded-xl bg-[var(--color-sunshine-cta)]/15 flex items-center justify-center shrink-0">
+                <UserIcon className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
+              </div>
+              <p className="text-xs font-medium">
+                <span className="font-bold block text-sm text-deep-forest dark:text-white">
+                  {tText('Have an account with Restoran Wawasan?', 'Ada akaun dengan Restoran Wawasan?')}
+                </span>
+                {tText('Sign in or register to auto-fill your saved profile & billing details.', 'Log masuk atau daftar untuk isi automatik maklumat profil & bil anda.')}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signin'); setAuthModalOpen(true); }}
+                className="btn-cta px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span>{tText('Sign In', 'Log Masuk')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}
+                className="px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold border border-stone/20 hover:border-[var(--color-sunshine-cta)] bg-white dark:bg-card text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-800 transition-all flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
+              >
+                <span>{tText('Sign Up', 'Daftar')}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -903,6 +944,62 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* Serving Style / Preparation Type */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-deep-forest block">
+                    {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan')}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={orderState.preparationType === 'buffet'}
+                      onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'buffet' }))}
+                      className={cn(
+                        "p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 text-left cursor-pointer",
+                        orderState.preparationType === 'buffet'
+                          ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
+                          : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
+                        orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                      )}>
+                        <UtensilsCrossed className="w-4.5 h-4.5" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold block leading-tight">{tText('Buffet Style', 'Hidangan Bufet')}</span>
+                        <span className="microcopy-12 text-stone font-light block mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={orderState.preparationType === 'meal_box'}
+                      onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'meal_box' }))}
+                      className={cn(
+                        "p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 text-left cursor-pointer",
+                        orderState.preparationType === 'meal_box'
+                          ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
+                          : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
+                        orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                      )}>
+                        <Package className="w-4.5 h-4.5" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold block leading-tight">{tText('Pre-Pack Box', 'Set Box / Bungkus')}</span>
+                        <span className="microcopy-12 text-stone font-light block mt-0.5">{tText('Packed meal boxes', 'Kotak makanan individu')}</span>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
@@ -1465,6 +1562,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
+                      <span className="text-stone">{tText('Serving Style', 'Gaya Hidangan')}</span>
+                      <span className="font-bold text-deep-forest">
+                        {orderState.preparationType === 'meal_box' ? tText('Pre-Pack Box', 'Set Box / Bungkus') : tText('Buffet Style', 'Hidangan Bufet')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
                       <span className="text-stone">{tText('Quantity', 'Kuantiti')}</span>
                       <span className="font-bold text-deep-forest">{orderState.guests} {tText('pax', 'orang')}</span>
                     </div>
@@ -1947,7 +2050,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {currentStep <= 4 && (
-        <div className="fixed bottom-[74px] left-0 right-0 z-40 lg:hidden border-t border-[var(--color-sunshine-cta)]/20 bg-charcoal/95 backdrop-blur-xl px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
+        <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom,12px))] left-0 right-0 z-40 lg:hidden border-t border-[var(--color-sunshine-cta)]/20 bg-charcoal/95 backdrop-blur-xl px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
               <span>{orderState.guests} pax</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   collection, 
   query, 
@@ -54,6 +54,7 @@ import { Share } from '@capacitor/share';
 import { getAssetUrl } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api';
 import { InvoicePreviewModal } from '@/components/InvoicePreviewModal';
+import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
 
 // Remove local interface UserProfile since we imported it from types
 
@@ -180,6 +181,11 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [showCombineModal, setShowCombineModal] = useState(false);
+
+  const panelRefEph = useRef<HTMLDivElement>(null);
+  const combineDialogRef = useRef<HTMLDivElement>(null);
+  useOverlayAccessibility({ isOpen: !isEmbedded && isOpen, onClose, containerRef: panelRefEph, lockBodyScroll: false });
+  useOverlayAccessibility({ isOpen: showCombineModal, onClose: () => setShowCombineModal(false), containerRef: combineDialogRef, lockBodyScroll: false });
   const [, setIncludeNotes] = useState(true);
 
   // Edit fields state
