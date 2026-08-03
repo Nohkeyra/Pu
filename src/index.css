@@ -25,37 +25,6 @@
     --color-charcoal: #023341;          /* Re-mapped to Deep Navy for legacy classes */
     --color-stone: #6B7280;             /* Muted Grey Text */
 
-    /* ============================================================
-       NEW DIRECTION — playful/energetic dark palette (2026)
-       Dark charcoal base, orange primary CTA, lime/mint secondary
-       accents. Bold/saturated, WCAG-checked. Added additively —
-       does NOT replace the tokens above yet. Migrate screen-by-
-       screen (customer-facing only; admin panel stays as-is).
-
-       --on-* variables give the correct-contrast text color for
-       that background — always use them together, e.g.:
-         background: var(--color-orange);
-         color: var(--on-orange);
-       This avoids ever hardcoding white/dark text on a color that
-       doesn't support it.
-       ============================================================ */
-    --color-charcoal-bg:   #151714;     /* Page background (dark base) */
-    --color-charcoal-surf: #1F2320;     /* Card / elevated surface */
-    --color-orange-new:    #FF6A1A;     /* Primary CTA */
-    --color-orange-hover:  #FF8A45;     /* Primary CTA hover */
-    --color-lime-new:      #B4FF39;     /* Secondary accent */
-    --color-mint-new:      #2EE6A6;     /* Secondary accent (alt) */
-    --color-text-new:      #F4F5F0;     /* Primary text on dark bg */
-    --color-text-muted-new:#A8ADA4;     /* Secondary text on dark bg */
-
-    /* Auto-contrast pairs — verified via WCAG 2.1 contrast ratio */
-    --on-charcoal-bg:   var(--color-text-new);      /* 16.46:1 AAA */
-    --on-charcoal-surf: var(--color-text-new);      /* 14.52:1 AAA */
-    --on-orange-new:    var(--color-charcoal-bg);   /*  6.29:1 AA  */
-    --on-orange-hover:  var(--color-charcoal-bg);   /*  7.71:1 AAA */
-    --on-lime-new:      var(--color-charcoal-bg);   /* 14.86:1 AAA */
-    --on-mint-new:      var(--color-charcoal-bg);   /* 11.15:1 AAA */
-
     /* Shadcn tokens */
     --background: 42 66% 94%;           /* Matches #FCF5E3 */
     --foreground: 193 94% 13%;          /* Matches #023341 */
@@ -163,7 +132,6 @@
     background-image: radial-gradient(circle at top, rgba(253, 94, 2, 0.08), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.28), transparent 18%);
     background-attachment: fixed;
     line-height: 1.5;
-    /* Prevent browser native pull-to-refresh from conflicting with our custom hook */
     overscroll-behavior-y: none;
   }
 
@@ -188,7 +156,6 @@
     color: var(--color-selection-text);
   }
   
-  /* Scrollbar custom style */
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -203,7 +170,6 @@
     background: var(--color-scrollbar-hover);
   }
 
-  /* Global input overlays to ensure beautiful inputs throughout order sheets, etc. */
   input, textarea, select, [role="combobox"] {
     background-color: var(--color-input-bg) !important;
     color: var(--color-input-text) !important;
@@ -216,18 +182,15 @@
 }
 
 @layer components {
-  /* Layout helpers - Updated for premium theme */
   .section-padding    { @apply py-20 md:py-[120px]; }
   .content-container  { @apply max-w-[1200px] mx-auto px-6 md:px-12; }
   
-  /* Brand surfaces - Now with variables */
   .nature-card {
     background-color: var(--color-card-bg);
     border: 1px solid var(--color-card-border);
     @apply backdrop-blur-md rounded-3xl shadow-xl overflow-hidden;
   }
   
-  /* Brand gradient text */
   .gradient-text {
     @apply bg-gradient-to-r from-deep-forest via-crisp-carrot to-sunshine bg-clip-text text-transparent;
   }
@@ -235,7 +198,6 @@
     @apply bg-gradient-to-r from-crisp-carrot via-sunshine to-tomato-burst bg-clip-text text-transparent;
   }
   
-  /* Accents */
   .kiwi-accent {
     @apply text-kiwi drop-shadow-[0_0_8px_rgba(56,142,60,0.3)];
   }
@@ -246,7 +208,6 @@
     @apply text-sunshine drop-shadow-[0_0_8px_rgba(232,122,0,0.4)];
   }
 
-  /* Premium Shadows - Multi-layered for tactile 3D/8K finish depth */
   .shadow-sunshine-glow {
     box-shadow: 
       0 12px 36px -6px rgba(253, 94, 2, 0.35), 
@@ -269,7 +230,6 @@
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);
   }
   
-  /* Glassmorphism for headers with premium light reflections */
   .glass-header {
     background-color: var(--color-header-bg);
     border-bottom: 1px solid var(--color-header-border);
@@ -284,7 +244,7 @@
       inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
   }
   
-  /* Batik Pattern for overlays */
+  /* Batik Pattern Overlays */
   .pattern-batik {
     background-image: url("/assets/batik_pattern.jpg");
     background-size: 140px auto;
@@ -296,7 +256,6 @@
     -webkit-mask-image: radial-gradient(circle, black 90%, transparent 100%);
   }
 
-  /* High Opacity Flat Batik Borders for Tabs & Containers */
   .border-b-batik {
     position: relative;
   }
@@ -372,13 +331,11 @@
     z-index: 25;
   }
   
-  /* Geometric Star Pattern (Islamic Geometry) for headers */
   .pattern-dots {
     background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l2.5 12.5L35 15l-10 7.5L28 35 20 25l-8 10 3-12.5-10-7.5 12.5-2.5L20 0z' fill='%23E87A00' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
     background-size: 40px 40px;
   }
   
-  /* Touch targets */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
@@ -482,7 +439,6 @@
   }
 }
 
-/* Utility for hiding scrollbar */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -490,11 +446,23 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.kp-skip { position: absolute; top: -100px; left: 0; background: var(--color-sunshine); color: #fff; padding: 8px 16px; z-index: 9999; transition: top 0.2s; font-weight: bold; } .kp-skip:focus { top: 0; }
 
-/* Keyboard focus ring (migrated from enhancements.css, rewritten to use brand variables) */
-:where(a, button, [role="button"], input, select, textarea,
-       [tabindex], summary):focus-visible {
+.kp-skip { 
+  position: absolute; 
+  top: -100px; 
+  left: 0; 
+  background: var(--color-sunshine); 
+  color: #fff; 
+  padding: 8px 16px; 
+  z-index: 9999; 
+  transition: top 0.2s; 
+  font-weight: bold; 
+} 
+.kp-skip:focus { 
+  top: 0; 
+}
+
+:where(a, button, [role="button"], input, select, textarea, [tabindex], summary):focus-visible {
   outline: 3px solid var(--color-sunshine);
   outline-offset: 2px;
   border-radius: 6px;
@@ -503,7 +471,6 @@
   outline: none;
 }
 
-/* Respect user motion preferences (migrated from enhancements.css) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -513,66 +480,28 @@
   }
 }
 
-/* Print / PDF receipt utilities (migrated from enhancements.css) */
 @media print {
   .kp-no-print { display: none !important; }
   body { background: white !important; color: black !important; }
   .kp-print-area { padding: 0 !important; }
 }
 
-/* Elegant Custom Glitch Animations & Classes */
 @keyframes glitch-anim-1 {
-  0% {
-    clip-path: inset(40% 0 61% 0);
-    transform: skew(0.3deg);
-  }
-  20% {
-    clip-path: inset(92% 0 1% 0);
-    transform: skew(-0.5deg) translate(-2px, 1px);
-  }
-  40% {
-    clip-path: inset(15% 0 80% 0);
-    transform: skew(0.8deg) translate(2px, -1px);
-  }
-  60% {
-    clip-path: inset(80% 0 5% 0);
-    transform: skew(-0.3deg) translate(-1px, -2px);
-  }
-  80% {
-    clip-path: inset(3% 0 92% 0);
-    transform: skew(0.5deg) translate(1px, 2px);
-  }
-  100% {
-    clip-path: inset(40% 0 61% 0);
-    transform: skew(0deg);
-  }
+  0% { clip-path: inset(40% 0 61% 0); transform: skew(0.3deg); }
+  20% { clip-path: inset(92% 0 1% 0); transform: skew(-0.5deg) translate(-2px, 1px); }
+  40% { clip-path: inset(15% 0 80% 0); transform: skew(0.8deg) translate(2px, -1px); }
+  60% { clip-path: inset(80% 0 5% 0); transform: skew(-0.3deg) translate(-1px, -2px); }
+  80% { clip-path: inset(3% 0 92% 0); transform: skew(0.5deg) translate(1px, 2px); }
+  100% { clip-path: inset(40% 0 61% 0); transform: skew(0deg); }
 }
 
 @keyframes glitch-anim-2 {
-  0% {
-    clip-path: inset(25% 0 58% 0);
-    transform: skew(-0.3deg);
-  }
-  20% {
-    clip-path: inset(70% 0 15% 0);
-    transform: skew(0.5deg) translate(2px, -1px);
-  }
-  40% {
-    clip-path: inset(5% 0 85% 0);
-    transform: skew(-0.8deg) translate(-2px, 1px);
-  }
-  60% {
-    clip-path: inset(85% 0 2% 0);
-    transform: skew(0.3deg) translate(1px, 2px);
-  }
-  80% {
-    clip-path: inset(12% 0 78% 0);
-    transform: skew(-0.5deg) translate(-1px, -2px);
-  }
-  100% {
-    clip-path: inset(25% 0 58% 0);
-    transform: skew(0deg);
-  }
+  0% { clip-path: inset(25% 0 58% 0); transform: skew(-0.3deg); }
+  20% { clip-path: inset(70% 0 15% 0); transform: skew(0.5deg) translate(2px, -1px); }
+  40% { clip-path: inset(5% 0 85% 0); transform: skew(-0.8deg) translate(-2px, 1px); }
+  60% { clip-path: inset(85% 0 2% 0); transform: skew(0.3deg) translate(1px, 2px); }
+  80% { clip-path: inset(12% 0 78% 0); transform: skew(-0.5deg) translate(-1px, -2px); }
+  100% { clip-path: inset(25% 0 58% 0); transform: skew(0deg); }
 }
 
 .animate-glitch-cyan {
@@ -582,4 +511,3 @@
 .animate-glitch-magenta {
   animation: glitch-anim-2 0.75s infinite linear alternate-reverse;
 }
-
