@@ -81,6 +81,8 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
     const endDateTime = new Date(startDateTime.getTime() + 3 * 60 * 60 * 1000);
 
     const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
+    console.log(`[Calendar] Using calendarId: ${calendarId} for order ${orderId}`);
+    
     const currentStatus = (orderData.status || "pending").toLowerCase();
     
     // Per-status event key ensures every status transition auto-syncs to Google Calendar with its own separate event

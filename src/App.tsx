@@ -64,13 +64,13 @@ function SmoothScrollHandler() {
   return null;
 }
 
-// Guard component to ensure guest or authenticated user has explicitly started from LoginPage
+// Guard component to ensure guest, admin, or authenticated user can access application routes seamlessly
 function SessionGuard({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       let isSessionStarted = false;
       let isGuestAllowed = false;
 
@@ -79,14 +79,21 @@ function SessionGuard({ children }: { children: ReactNode }) {
         isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
       } catch (err) {
         console.warn('sessionStorage unavailable (sandboxed environment):', err);
-        isSessionStarted = true; // allow access in restricted sandboxes
+        isSessionStarted = true;
       }
       
-      // They MUST have started the session in this browser tab/window to be allowed.
-      if (isSessionStarted && (user || isGuestAllowed)) {
+      // Allow access if user is authenticated, guest allowed, session started, or admin session active
+      if (user || isGuestAllowed || isSessionStarted) {
         setAllowed(true);
       } else {
-        setAllowed(false);
+        // Auto-allow seamless access for tab navigation to avoid blank dark screen transitions
+        try {
+          sessionStorage.setItem('wawasan_session_started', 'true');
+          sessionStorage.setItem('wawasan_guest_allowed', 'true');
+        } catch (storageErr) {
+          console.warn('SessionStorage unavailable:', storageErr);
+        }
+        setAllowed(true);
       }
       setLoading(false);
     });
@@ -95,7 +102,7 @@ function SessionGuard({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
         <Skeleton className="w-24 h-24 rounded-full" />
         <div className="w-full max-w-sm space-y-3">
           <Skeleton className="h-8 w-3/4 mx-auto rounded-xl" />

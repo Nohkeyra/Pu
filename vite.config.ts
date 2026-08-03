@@ -25,7 +25,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: false,
+    emptyOutDir: true,
     copyPublicDir: true, // CRITICAL: Ensures public/ copies correctly
     chunkSizeWarningLimit: 800,
     // 'hidden' generates .map files for server-side error tracing (Render logs,

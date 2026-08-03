@@ -38,7 +38,10 @@ const ALLOWED_ORIGINS = [
 // These are preview/testing environments only — not production.
 function isAllowedOrigin(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (/^https:\/\/ais-dev-[a-z0-9-]+\.asia-southeast1\.run\.app$/.test(origin)) return true;
+  // AI Studio and Google domains
+  if (origin.includes('run.app') || origin.includes('ai.studio') || origin.includes('google.com')) return true;
+  // Pattern matching for sandbox origins
+  if (/^https:\/\/ais-(dev|pre)-[a-z0-9-]+\.asia-southeast1\.run\.app$/.test(origin)) return true;
   return false;
 }
 
@@ -340,6 +343,32 @@ async function startServer() {
     }
   });
 
+  // Customer "Poke" Endpoint (Nudge Admin)
+  app.post('/api/orders/poke', async (req, res) => {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const db = getFirestore();
+
+    try {
+      const orderRef = db.collection('orders').doc(orderId);
+      const snap = await orderRef.get();
+      if (!snap.exists) return res.status(404).json({ error: 'Order not found' });
+
+      await orderRef.update({
+        lastPokedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+      });
+
+      console.log(`[Orders API] Order ${orderId} was poked by user.`);
+      // In a real scenario, you might trigger a specific Push Notification to the admin here
+      
+      res.json({ success: true, message: 'Admin has been nudged!' });
+    } catch (err) {
+      console.error('[Orders API] Poke failed:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Send Invoice Email
   app.post('/api/send-invoice', verifyAdminToken, async (req, res) => {
     const { orderId, email, subject, body, pdfBase64 } = req.body;
@@ -371,6 +400,28 @@ async function startServer() {
       res.json({ success: true });
     } catch (err) {
       console.error('[Email API] Failed to send invoice email:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Subscribe to FCM topic for push notifications
+  app.post('/api/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
+    const { token, topic } = req.body;
+    if (!token || !topic) {
+      return res.status(400).json({ error: 'token and topic are required' });
+    }
+
+    try {
+      const { getAdminApp } = await import('./server/firebaseAdmin.js');
+      const { getMessaging } = await import('firebase-admin/messaging');
+      
+      const adminApp = getAdminApp();
+      await getMessaging(adminApp).subscribeToTopic(token, topic);
+      
+      console.log(`[Messaging] Successfully subscribed token to topic: ${topic}`);
+      res.json({ success: true, message: `Subscribed to ${topic}` });
+    } catch (err) {
+      console.error('[Messaging API] Subscribe to topic failed:', err);
       res.status(500).json({ error: String(err) });
     }
   });
@@ -419,6 +470,7 @@ async function startServer() {
         
         if (!email || !key) {
           return res.status(200).json({ 
+            ok: false,
             status: 'unconfigured', 
             service: 'Google Calendar', 
             message: 'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in environment variables.' 
@@ -428,6 +480,7 @@ async function startServer() {
         const calendar = getGoogleCalendarClient();
         if (!calendar) {
           return res.status(200).json({ 
+            ok: false,
             status: 'fail', 
             service: 'Google Calendar', 
             message: 'Failed to initialize Calendar client. Check private key format.' 
@@ -438,6 +491,7 @@ async function startServer() {
         const listResp = await calendar.calendarList.list();
         const calendarsReturned = listResp.data.items?.length || 0;
         return res.json({ 
+          ok: true,
           status: 'healthy', 
           service: 'Google Calendar', 
           calendarsReturned,

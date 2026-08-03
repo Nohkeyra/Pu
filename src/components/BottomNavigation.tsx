@@ -62,7 +62,16 @@ export default function BottomNavigation() {
                 aria-current={isActive ? 'page' : undefined}
                 onClick={async () => {
                   await triggerLightImpact();
-                  if (tab.id === 'profile' && !currentUser) {
+                  try {
+                    sessionStorage.setItem('wawasan_session_started', 'true');
+                    sessionStorage.setItem('wawasan_guest_allowed', 'true');
+                  } catch (storageErr) {
+                    console.warn('SessionStorage unavailable:', storageErr);
+                  }
+                  if (tab.id === 'profile' && currentUser?.uid === 'admin') {
+                    // Admin Firebase session — profile tab should go to admin panel
+                    navigate('/admin');
+                  } else if (tab.id === 'profile' && !currentUser) {
                     setAuthModalOpen(true);
                   } else {
                     navigate(tab.path);

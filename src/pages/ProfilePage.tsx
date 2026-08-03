@@ -18,11 +18,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Admin login mints a Firebase custom token with UID 'admin'.
+      // If that UID lands here, redirect to admin panel — admin is not a client.
+      if (user?.uid === 'admin') {
+        navigate('/admin', { replace: true });
+        return;
+      }
       setCurrentUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   if (loading) {
     return (
