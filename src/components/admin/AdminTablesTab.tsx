@@ -490,7 +490,7 @@ export function AdminTablesTab({
             <span className="text-xs font-semibold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider">
               {isBm ? 'Jumlah Permohonan' : 'Total Submissions'}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-sunshine/10 text-sunshine flex items-center justify-center font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold text-xs">
               <Layers className="w-4 h-4" />
             </div>
           </div>
@@ -536,17 +536,17 @@ export function AdminTablesTab({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-card border border-sunshine/30 dark:border-sunshine/20 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div className="bg-white dark:bg-card border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/20 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider">
               {isBm ? 'Hasil Terkumpul' : 'Total Revenue'}
             </span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sunshine/20 text-deep-forest dark:text-sunshine">
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)]">
               RM
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xs font-bold text-sunshine">RM</span>
+            <span className="text-xs font-bold text-[var(--color-sunshine-cta)]">RM</span>
             <span className="text-2xl font-display font-bold text-deep-forest dark:text-white">
               {stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -565,7 +565,7 @@ export function AdminTablesTab({
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               placeholder={isBm ? "Cari rujukan, nama, emel, klien, lokasi..." : "Search ref, name, email, client, location..."}
-              className="w-full pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sunshine/40 text-deep-forest dark:text-white transition-all"
+              className="w-full pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-sunshine-cta)]/40 text-deep-forest dark:text-white transition-all"
             />
             {searchTerm && (
               <button
@@ -619,7 +619,7 @@ export function AdminTablesTab({
                 onClick={() => setShowColumnPicker(!showColumnPicker)}
                 className="flex items-center gap-1.5 px-3 h-9 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl text-xs font-semibold text-deep-forest dark:text-white hover:bg-stone/10 transition-all"
               >
-                <Columns className="w-3.5 h-3.5 text-sunshine" />
+                <Columns className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
                 <span>{isBm ? 'Lajur' : 'Columns'}</span>
                 <ChevronDown className="w-3 h-3 text-deep-forest/50 dark:text-stone/50" />
               </button>
@@ -638,7 +638,7 @@ export function AdminTablesTab({
                       </span>
                       <button
                         onClick={() => setVisibleColumns(new Set(ALL_COLUMNS.map(c => c.key)))}
-                        className="text-[10px] text-sunshine hover:underline font-semibold"
+                        className="microcopy-12-upper text-[var(--color-sunshine-cta)] hover:underline font-semibold"
                       >
                         {isBm ? 'Pilih Semua' : 'Select All'}
                       </button>
@@ -656,7 +656,7 @@ export function AdminTablesTab({
                             type="checkbox"
                             checked={visibleColumns.has(col.key)}
                             onChange={() => toggleColumn(col.key)}
-                            className="rounded border-stone/30 text-sunshine focus:ring-sunshine cursor-pointer"
+                            className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)] cursor-pointer"
                           />
                         </label>
                       ))}
@@ -672,7 +672,7 @@ export function AdminTablesTab({
                 onClick={() => setDensity('compact')}
                 title="Compact View"
                 className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  density === 'compact' ? 'bg-sunshine text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
+                  density === 'compact' ? 'bg-[var(--color-sunshine-cta)] text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
                 }`}
               >
                 S
@@ -681,7 +681,7 @@ export function AdminTablesTab({
                 onClick={() => setDensity('normal')}
                 title="Normal View"
                 className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  density === 'normal' ? 'bg-sunshine text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
+                  density === 'normal' ? 'bg-[var(--color-sunshine-cta)] text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
                 }`}
               >
                 M
@@ -690,7 +690,7 @@ export function AdminTablesTab({
                 onClick={() => setDensity('spacious')}
                 title="Spacious View"
                 className={`px-2 py-1 text-xs font-semibold rounded-lg transition-all ${
-                  density === 'spacious' ? 'bg-sunshine text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
+                  density === 'spacious' ? 'bg-[var(--color-sunshine-cta)] text-charcoal shadow-xs' : 'text-deep-forest/60 dark:text-stone/60'
                 }`}
               >
                 L
@@ -700,7 +700,7 @@ export function AdminTablesTab({
             {/* Export Excel Button */}
             <button
               onClick={handleExportExcel}
-              className="flex items-center gap-1.5 px-3 py-2 bg-sunshine/15 hover:bg-sunshine/25 text-deep-forest dark:text-sunshine font-semibold rounded-xl text-xs transition-all border border-sunshine/30"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[var(--color-sunshine-cta)]/15 hover:bg-[var(--color-sunshine-cta)]/25 text-deep-forest dark:text-[var(--color-sunshine-cta)] font-semibold rounded-xl text-xs transition-all border border-[var(--color-sunshine-cta)]/30"
               title="Export visible table rows to Excel"
             >
               <Download className="w-3.5 h-3.5" />
@@ -723,9 +723,9 @@ export function AdminTablesTab({
       <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden">
         {/* Active Filters Bar if active */}
         {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all') && (
-          <div className="bg-sunshine/10 dark:bg-sunshine/5 border-b border-sunshine/20 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
+          <div className="bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/5 border-b border-[var(--color-sunshine-cta)]/20 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-deep-forest dark:text-sunshine">{isBm ? 'Tapis Active:' : 'Active Filters:'}</span>
+              <span className="font-bold text-deep-forest dark:text-[var(--color-sunshine-cta)]">{isBm ? 'Tapis Active:' : 'Active Filters:'}</span>
               {searchTerm && (
                 <span className="px-2 py-0.5 bg-white dark:bg-background/80 rounded-md border border-stone/15 font-medium">
                   "{searchTerm}"
@@ -744,7 +744,7 @@ export function AdminTablesTab({
             </div>
             <button
               onClick={() => { setSearchTerm(''); setStatusFilter('all'); setClientFilter('all'); }}
-              className="text-xs font-bold text-deep-forest hover:underline dark:text-sunshine"
+              className="text-xs font-bold text-deep-forest hover:underline dark:text-[var(--color-sunshine-cta)]"
             >
               {isBm ? 'Set Semula Tapis' : 'Reset All Filters'}
             </button>
@@ -755,7 +755,7 @@ export function AdminTablesTab({
         {selectedIds.size > 0 && (
           <div className="bg-charcoal text-white px-4 py-3 flex items-center justify-between text-xs">
             <div className="flex items-center gap-3">
-              <Check className="w-4 h-4 text-sunshine" />
+              <Check className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               <span className="font-semibold">
                 {selectedIds.size} {isBm ? 'rekod dipilih' : 'rows selected'}
               </span>
@@ -763,7 +763,7 @@ export function AdminTablesTab({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportExcel}
-                className="px-3 py-1 bg-sunshine text-charcoal font-bold rounded-lg hover:bg-sunshine/90 transition-all"
+                className="px-3 py-1 bg-[var(--color-sunshine-cta)] text-charcoal font-bold rounded-lg hover:bg-[var(--color-sunshine-cta)]/90 transition-all"
               >
                 Export Selected Excel
               </button>
@@ -787,7 +787,7 @@ export function AdminTablesTab({
                     type="checkbox"
                     checked={paginatedOrders.length > 0 && selectedIds.size === paginatedOrders.length}
                     onChange={handleSelectAll}
-                    className="rounded border-stone/30 text-sunshine focus:ring-sunshine"
+                    className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
                   />
                 </th>
 
@@ -916,7 +916,7 @@ export function AdminTablesTab({
                     <tr
                       key={order.id || index}
                       className={`hover:bg-cream/40 dark:hover:bg-white/5 transition-colors group ${
-                        isSelected ? 'bg-sunshine/10 dark:bg-sunshine/5' : ''
+                        isSelected ? 'bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/5' : ''
                       }`}
                     >
                       {/* Checkbox */}
@@ -925,7 +925,7 @@ export function AdminTablesTab({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleSelectRow(order.id!)}
-                          className="rounded border-stone/30 text-sunshine focus:ring-sunshine"
+                          className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
                         />
                       </td>
 
@@ -934,7 +934,7 @@ export function AdminTablesTab({
                         <td className={`${densityCellPadding} font-mono font-bold text-deep-forest dark:text-white whitespace-nowrap`}>
                           <button
                             onClick={() => openOrderDetail(order)}
-                            className="hover:text-sunshine text-left underline-offset-2 hover:underline transition-colors"
+                            className="hover:text-[var(--color-sunshine-cta)] text-left underline-offset-2 hover:underline transition-colors"
                           >
                             {order.invoiceNo || order.id || 'N/A'}
                           </button>
@@ -980,7 +980,7 @@ export function AdminTablesTab({
                       {visibleColumns.has('email') && (
                         <td className={`${densityCellPadding} text-deep-forest/70 dark:text-stone/70 max-w-[160px] truncate font-mono text-xs`}>
                           {order.email ? (
-                            <a href={`mailto:${order.email}`} className="hover:text-sunshine hover:underline">
+                            <a href={`mailto:${order.email}`} className="hover:text-[var(--color-sunshine-cta)] hover:underline">
                               {order.email}
                             </a>
                           ) : '-'}
@@ -991,7 +991,7 @@ export function AdminTablesTab({
                       {visibleColumns.has('dateTime') && (
                         <td className={`${densityCellPadding} text-deep-forest/80 dark:text-stone/80 whitespace-nowrap`}>
                           <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-sunshine shrink-0" />
+                            <Calendar className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] shrink-0" />
                             <span>{order.dateTime || '-'}</span>
                           </div>
                         </td>
@@ -1007,7 +1007,7 @@ export function AdminTablesTab({
                       {/* Prep Type */}
                       {visibleColumns.has('preparationType') && (
                         <td className={`${densityCellPadding} whitespace-nowrap`}>
-                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          <span className={`px-2 py-0.5 rounded-full microcopy-12 font-semibold ${
                             order.preparationType === 'meal_box'
                               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
                               : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300'
@@ -1029,7 +1029,7 @@ export function AdminTablesTab({
                         <td className={`${densityCellPadding} whitespace-nowrap`}>
                           <div className="flex flex-wrap gap-1">
                             {(order.meals || []).map(m => (
-                              <span key={m} className="px-1.5 py-0.5 bg-stone/10 dark:bg-white/10 rounded text-[10px] font-medium uppercase tracking-wider text-deep-forest dark:text-white">
+                              <span key={m} className="px-1.5 py-0.5 bg-stone/10 dark:bg-white/10 rounded microcopy-12-upper font-medium uppercase tracking-wider text-deep-forest dark:text-white">
                                 {m}
                               </span>
                             ))}
@@ -1092,7 +1092,7 @@ export function AdminTablesTab({
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => openOrderDetail(order)}
-                              className="p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-sunshine transition-colors"
+                              className="p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] transition-colors"
                               title="View Full Submission Details"
                             >
                               <Eye className="w-4 h-4" />

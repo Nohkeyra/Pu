@@ -29,7 +29,7 @@ export default function VisitSection() {
   return (
     <section id="visit" className="py-24 bg-white dark:bg-zinc-950 relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-sunshine/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-sunshine-cta)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-deep-forest/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -44,7 +44,7 @@ export default function VisitSection() {
           <div className="space-y-12">
             <motion.div variants={itemVariants} className="space-y-6">
               <div className="space-y-4">
-                <h2 className="text-deep-forest dark:text-sunshine font-display text-4xl md:text-5xl font-bold tracking-tight">
+                <h2 className="text-deep-forest dark:text-[var(--color-sunshine-cta)] font-display text-4xl md:text-5xl font-bold tracking-tight">
                   {isBm ? 'Jemput Datang' : 'Visit Us'}
                 </h2>
                 <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-md leading-relaxed">
@@ -65,8 +65,8 @@ export default function VisitSection() {
 
             <div className="grid sm:grid-cols-2 gap-8">
               <motion.div variants={itemVariants} className="flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
-                  <MapPin className="w-6 h-6 text-sunshine" />
+                <div className="w-12 h-12 rounded-2xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
@@ -79,8 +79,8 @@ export default function VisitSection() {
               </motion.div>
 
               <motion.div variants={itemVariants} className="flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
-                  <Phone className="w-6 h-6 text-sunshine" />
+                <div className="w-12 h-12 rounded-2xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center shrink-0">
+                  <Phone className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
@@ -94,8 +94,8 @@ export default function VisitSection() {
               </motion.div>
 
               <motion.div variants={itemVariants} className="flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
-                  <Clock className="w-6 h-6 text-sunshine" />
+                <div className="w-12 h-12 rounded-2xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center shrink-0">
+                  <Clock className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
@@ -109,8 +109,8 @@ export default function VisitSection() {
               </motion.div>
 
               <motion.div variants={itemVariants} className="flex gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-sunshine/10 flex items-center justify-center shrink-0">
-                  <Mail className="w-6 h-6 text-sunshine" />
+                <div className="w-12 h-12 rounded-2xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center shrink-0">
+                  <Mail className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
@@ -157,11 +157,11 @@ export default function VisitSection() {
             {/* Map Overlay Card */}
             <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl hidden sm:block">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-sunshine rounded-xl">
+                <div className="p-3 bg-[var(--color-sunshine-cta)] rounded-xl">
                   <MapPin className="w-5 h-5 text-deep-forest" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-sunshine mb-0.5">Found us at</p>
+                  <p className="microcopy-12-upper uppercase tracking-widest font-bold text-[var(--color-sunshine-cta)] mb-0.5">Found us at</p>
                   <p className="text-sm font-bold text-deep-forest dark:text-white">Unit 3, Level B3, Menara PjH, Putrajaya</p>
                 </div>
               </div>

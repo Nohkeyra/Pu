@@ -35,7 +35,7 @@ export function SuccessState({ title, subtitle, className, showConfetti = false 
           transition={{ delay: 0.4 }}
           className="mt-4"
         >
-          <PartyPopper className="w-6 h-6 text-sunshine mx-auto" />
+          <PartyPopper className="w-6 h-6 text-[var(--color-sunshine-cta)] mx-auto" />
         </motion.div>
       )}
     </motion.div>

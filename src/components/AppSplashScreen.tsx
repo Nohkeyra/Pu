@@ -41,7 +41,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] md:w-[500px] md:h-[500px] rounded-full bg-sunshine/20 dark:bg-amber-500/10 blur-3xl"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] md:w-[500px] md:h-[500px] rounded-full bg-[var(--color-sunshine-cta)]/20 dark:bg-amber-500/10 blur-3xl"
             />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.03)_100%)] dark:bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
           </div>
@@ -66,7 +66,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
                   repeat: Infinity,
                   ease: "linear",
                 }}
-                className="absolute w-36 h-36 md:w-44 md:h-44 rounded-full border border-dashed border-sunshine/40 dark:border-amber-400/20"
+                className="absolute w-36 h-36 md:w-44 md:h-44 rounded-full border border-dashed border-[var(--color-sunshine-cta)]/40 dark:border-amber-400/20"
               />
 
               <div className="relative z-10 p-4 rounded-3xl bg-white/40 dark:bg-stone-900/40 backdrop-blur-md shadow-xl ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
@@ -96,7 +96,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
               className="mt-8 flex flex-col items-center text-center space-y-2"
             >
               <h1 className="text-2xl md:text-3xl font-black text-charcoal dark:text-stone-50 tracking-tight uppercase">
-                Restoran <span className="text-sunshine">Wawasan</span>
+                Restoran <span className="text-[var(--color-sunshine-cta)]">Wawasan</span>
               </h1>
               <p className="text-xs md:text-sm font-medium text-charcoal/70 dark:text-stone-400 tracking-wide">
                 Hidangan Warisan & Katering Terbaik
@@ -129,7 +129,7 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 0.6, y: 0 }}
             transition={{ delay: 0.7, duration: 0.8 }}
-            className="text-[10px] font-semibold text-charcoal/50 dark:text-stone-400 uppercase tracking-[0.25em] z-10"
+            className="microcopy-12-upper font-semibold text-charcoal/50 dark:text-stone-400 uppercase tracking-[0.25em] z-10"
           >
             EST. 1986 • PUTRAJAYA
           </motion.div>

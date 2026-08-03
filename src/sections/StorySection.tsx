@@ -63,14 +63,14 @@ export default function StorySection() {
               
               <div className="absolute -bottom-8 -right-4 sm:-right-8 bg-white/95 dark:bg-card/95 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl hidden sm:block max-w-[280px]">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 shrink-0 rounded-xl bg-sunshine/10 flex items-center justify-center border border-sunshine/10">
-                    <Award className="w-6 h-6 text-sunshine" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center border border-[var(--color-sunshine-cta)]/10">
+                    <Award className="w-6 h-6 text-[var(--color-sunshine-cta)]" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </div>
                   <div>
                     <p className="font-display font-medium text-deep-forest text-base leading-tight mb-1">
                       {language === 'bm' ? 'Halal & mesra keluarga' : 'Halal & family-friendly'}
                     </p>
-                    <p className="text-[11px] text-deep-forest/50 uppercase tracking-[0.1em] font-semibold">
+                    <p className="microcopy-12 text-deep-forest/50 uppercase tracking-[0.1em] font-semibold">
                       {language === 'bm' ? 'Sarapan, makan tengah hari, katering' : 'Breakfast, lunch, catering'}
                     </p>
                   </div>
@@ -113,10 +113,10 @@ export default function StorySection() {
             <motion.div variants={itemVariants} className="grid grid-cols-3 gap-8 border-t border-deep-forest/10 dark:border-white/10 pt-10">
               {STATS.map((stat) => (
                 <div key={stat.label}>
-                  <span className="font-display font-bold text-4xl text-sunshine">
+                  <span className="font-display font-bold text-4xl text-[var(--color-sunshine-cta)]">
                     {stat.number}
                   </span>
-                  <span className="block font-sans font-medium text-[11px] uppercase tracking-[0.1em] text-deep-forest/50 mt-3">
+                  <span className="block font-sans font-medium microcopy-12 uppercase tracking-[0.1em] text-deep-forest/50 mt-3">
                     {stat.label}
                   </span>
                 </div>

@@ -78,11 +78,11 @@ export default function Header() {
     : 'bg-transparent pb-5 pt-[calc(1.15rem+var(--sat))]';
 
   const desktopActionClass = isScrolled
-    ? 'icon-button-soft h-11 px-4 font-bold'
-    : 'inline-flex h-11 items-center justify-center rounded-2xl border border-white/30 bg-black/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-black/60 hover:text-sunshine active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
+    ? 'icon-button-soft touch-target-row h-11 px-4 font-bold'
+    : 'inline-flex h-11 items-center justify-center rounded-2xl border border-white/30 bg-black/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-black/60 hover:text-[var(--color-sunshine-cta)] active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
 
   const mobileActionClass = isScrolled
-    ? 'icon-button-soft h-10 w-10 font-bold'
+    ? 'icon-button-soft touch-target h-10 w-10 font-bold'
     : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/30 bg-black/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-black/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
 
   return (
@@ -95,7 +95,7 @@ export default function Header() {
               <span className={`block truncate text-lg md:text-xl font-bold ${isScrolled ? 'brand-title' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`}>
                 Restoran Wawasan
               </span>
-              <span className={`block text-[10px] font-extrabold uppercase tracking-[0.18em] ${isScrolled ? 'brand-subtitle' : 'text-sunshine drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`}>
+              <span className={`block microcopy-12-upper ${isScrolled ? 'brand-subtitle' : 'text-[var(--color-sunshine-cta)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`}>
                 Pak Usop
               </span>
             </div>
@@ -109,7 +109,7 @@ export default function Header() {
                 className={
                   isScrolled
                     ? 'nav-pill'
-                    : 'rounded-full px-4 py-1.5 text-sm font-bold text-white transition-all duration-300 hover:bg-white/20 hover:text-sunshine drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
+                    : 'rounded-full px-4 py-2 microcopy-14-upper text-white transition-all duration-300 hover:bg-white/20 hover:text-[var(--color-sunshine-cta)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
                 }
               >
                 {t(link.label as Parameters<typeof t>[0]) || link.label.charAt(0).toUpperCase() + link.label.slice(1)}
@@ -123,7 +123,7 @@ export default function Header() {
               className={desktopActionClass}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
-              {theme === 'light' ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5 text-sunshine" />}
+              {theme === 'light' ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />}
             </button>
 
             <button
@@ -131,19 +131,19 @@ export default function Header() {
               className={`${desktopActionClass} gap-2 text-xs font-bold`}
               aria-label="Toggle Language"
             >
-              <span className={language === 'en' ? 'text-sunshine' : ''}>EN</span>
+              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)]' : ''}>EN</span>
               <span className={isScrolled ? 'text-deep-forest/25 dark:text-white/25' : 'text-white/30'}>/</span>
-              <span className={language === 'bm' ? 'text-sunshine' : ''}>BM</span>
+              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)]' : ''}>BM</span>
             </button>
 
             <button
               onClick={handleAuthClick}
-              className={`${desktopActionClass} gap-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40`}
+              className={`${desktopActionClass} gap-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
                 <>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-sunshine text-[10px] font-black text-white shadow-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white shadow-sm">
                     {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                   </div>
                   <span className="hidden max-w-[140px] truncate lg:inline">
@@ -152,7 +152,7 @@ export default function Header() {
                 </>
               ) : (
                 <>
-                  <UserIcon className="h-4.5 w-4.5 text-sunshine" />
+                  <UserIcon className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
                   <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
                 </>
               )}
@@ -162,10 +162,10 @@ export default function Header() {
           <div className="flex items-center gap-2 md:hidden">
             <button
               onClick={handleThemeToggle}
-              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine/40`}
+              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-sunshine" />}
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
             </button>
 
             <button
@@ -174,7 +174,7 @@ export default function Header() {
               aria-label={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-sunshine text-[10px] font-black text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
                   {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                 </div>
               ) : (

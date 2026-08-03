@@ -236,7 +236,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               {mode === 'signup' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                       {t('Full Name *', 'Nama Penuh *')}
                     </label>
                     <div className="relative">
@@ -253,7 +253,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                       {t('Contact Number *', 'No. Telefon *')}
                     </label>
                     <div className="relative">
@@ -270,7 +270,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                       {t('Organization / Company', 'Syarikat / Organisasi')}
                     </label>
                     <div className="relative">
@@ -313,7 +313,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                       {t('Department / Attention (Attn)', 'Bahagian / Untuk Perhatian')}
                     </label>
                     <div className="relative">
@@ -332,7 +332,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
               {/* Core Email Field */}
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                   {t('Email Address', 'Alamat E-mel')}
                 </label>
                 <div className="relative">
@@ -352,14 +352,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               {mode !== 'forgot' && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
                       {t('Password', 'Kata Laluan')}
                     </label>
                     {mode === 'signin' && (
                       <button
                         type="button"
                         onClick={() => handleModeChange('forgot')}
-                        className="text-[10px] text-[#FF7A1A] hover:underline"
+                        className="microcopy-12-upper text-[#FF7A1A] hover:underline"
                       >
                         {t('Forgot Password?', 'Lupa Kata Laluan?')}
                       </button>

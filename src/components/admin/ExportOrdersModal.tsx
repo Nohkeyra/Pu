@@ -191,14 +191,24 @@ export function ExportOrdersModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4">
-      <div onClick={onClose} className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm" />
+      {/*
+        P0 — backdrop click converts from <div onClick> to a real
+        <button> so keyboard users (Esc + Tab) get the same affordance
+        and the element sits on the 44 × 44 tap floor on mobile.
+      */}
+      <button
+        type="button"
+        aria-label="Close dialog"
+        onClick={onClose}
+        className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm cursor-default"
+      />
 
       <div className="relative w-full max-w-lg bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sunshine/10 text-sunshine flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
@@ -226,7 +236,7 @@ export function ExportOrdersModal({
               onClick={() => setScope('filtered')}
               className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-colors ${
                 scope === 'filtered'
-                  ? 'bg-sunshine text-white border-sunshine'
+                  ? 'bg-[var(--color-sunshine-cta)] text-white border-[var(--color-sunshine-cta)]'
                   : 'bg-cream/40 dark:bg-background/40 border-stone/15 text-stone'
               }`}
             >
@@ -238,7 +248,7 @@ export function ExportOrdersModal({
               disabled={selectedOrderIds.size === 0}
               className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-colors disabled:opacity-40 ${
                 scope === 'selected'
-                  ? 'bg-sunshine text-white border-sunshine'
+                  ? 'bg-[var(--color-sunshine-cta)] text-white border-[var(--color-sunshine-cta)]'
                   : 'bg-cream/40 dark:bg-background/40 border-stone/15 text-stone'
               }`}
             >
@@ -249,7 +259,7 @@ export function ExportOrdersModal({
               onClick={() => setScope('all')}
               className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-colors ${
                 scope === 'all'
-                  ? 'bg-sunshine text-white border-sunshine'
+                  ? 'bg-[var(--color-sunshine-cta)] text-white border-[var(--color-sunshine-cta)]'
                   : 'bg-cream/40 dark:bg-background/40 border-stone/15 text-stone'
               }`}
             >
@@ -316,7 +326,7 @@ export function ExportOrdersModal({
                     notes: nextState,
                   });
                 }}
-                className="text-[10px] font-bold text-sunshine hover:underline"
+                className="microcopy-12-upper font-bold text-[var(--color-sunshine-cta)] hover:underline"
               >
                 Toggle All Fields
               </button>
@@ -345,7 +355,7 @@ export function ExportOrdersModal({
                     onClick={() => toggleColumn(colKey)}
                     className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
                       isChecked
-                        ? 'bg-sunshine/10 border-sunshine/40'
+                        ? 'bg-[var(--color-sunshine-cta)]/10 border-[var(--color-sunshine-cta)]/40'
                         : 'bg-cream/20 dark:bg-background/20 border-stone/10 opacity-60'
                     }`}
                   >
@@ -371,7 +381,7 @@ export function ExportOrdersModal({
           <Button
             onClick={handleExport}
             disabled={isExporting}
-            className="bg-sunshine hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold h-11 px-6 flex items-center gap-2 shadow-md"
+            className="bg-[var(--color-sunshine-cta)] hover:bg-crisp-carrot text-white rounded-xl text-xs font-bold h-11 px-6 flex items-center gap-2 shadow-md"
           >
             <Download className="w-4 h-4" />
             {isExporting ? 'Exporting...' : `Export ${targetOrders.length} Order(s)`}

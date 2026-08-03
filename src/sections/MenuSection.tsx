@@ -115,7 +115,7 @@ export default function MenuSection() {
               <motion.div 
                 key={item.nameEn} 
                 variants={cardVariants}
-                className="menu-card group relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-deep-forest/[0.03] dark:border-white/5 hover:border-sunshine/30 hover:shadow-premium transition-all duration-500"
+                className="menu-card group relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-deep-forest/[0.03] dark:border-white/5 hover:border-[var(--color-sunshine-cta)]/30 hover:shadow-premium transition-all duration-500"
               >
                 <div className="aspect-[4/3] overflow-hidden relative">
                   <ResponsiveImage
@@ -129,14 +129,14 @@ export default function MenuSection() {
                 </div>
                 <div className="p-7 md:p-8 relative">
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-display font-black text-2xl text-sunshine group-hover:scale-[1.02] transition-transform duration-300">
+                    <h3 className="font-display font-black text-2xl text-[var(--color-sunshine-cta)] group-hover:scale-[1.02] transition-transform duration-300">
                       {isBm ? item.nameBm : item.nameEn}
                     </h3>
                   </div>
                   <p className="font-body text-stone dark:text-stone/70 leading-relaxed mb-6 font-light text-sm h-[60px] overflow-hidden line-clamp-3">
                     {isBm ? item.descBm : item.descEn}
                   </p>
-                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-gradient-to-r from-[#023341] via-[#0B4A5C] to-[#023341] dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-sunshine/30 dark:border-sunshine/60 p-4 flex items-center justify-between shadow-md group-hover:border-sunshine/80 transition-all duration-300">
+                  <div className="relative mt-auto overflow-hidden rounded-2xl bg-gradient-to-r from-[#023341] via-[#0B4A5C] to-[#023341] dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/60 p-4 flex items-center justify-between shadow-md group-hover:border-[var(--color-sunshine-cta)]/80 transition-all duration-300">
                     {/* Authentic Non-Repeating Malaysian Batik Overlay */}
                     <div 
                       className="absolute inset-0 opacity-35 dark:opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-65 mix-blend-overlay dark:mix-blend-soft-light"
@@ -148,7 +148,7 @@ export default function MenuSection() {
                       }}
                     />
                     <div className="relative z-10 flex items-center justify-between w-full">
-                      <span className="text-[11px] font-black text-sunshine dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+                      <span className="microcopy-12 font-black text-[var(--color-sunshine-cta)] dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
                         {isBm ? 'Harga Bermula' : 'Price Starts'}
                       </span>
                       <span className="font-sans font-black text-white dark:text-amber-50 text-base drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-300">
@@ -184,7 +184,7 @@ export default function MenuSection() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => navigate('/order')}
-                className="w-full sm:w-auto px-10 py-4.5 bg-sunshine text-white font-black rounded-2xl shadow-sunshine-glow hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer group-hover:scale-[1.02]"
+                className="w-full sm:w-auto px-10 py-4.5 bg-[var(--color-sunshine-cta)] text-white font-black rounded-2xl shadow-sunshine-glow hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer group-hover:scale-[1.02]"
               >
                 <ShoppingBag className="w-5 h-5" />
                 {isBm ? 'Pesan Sekarang (Pelawat)' : 'Order Now (Guest)'}

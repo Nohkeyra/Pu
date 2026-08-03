@@ -53,7 +53,7 @@ export default function HeroSection() {
       </div>
 
       {/* Decorative ambient radial glows */}
-      <div className="absolute top-[15%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-sunshine/20 blur-[140px] pointer-events-none" />
+      <div className="absolute top-[15%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-[var(--color-sunshine-cta)]/20 blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[20%] right-[10%] w-[30vw] h-[30vw] rounded-full bg-crisp-carrot/15 blur-[120px] pointer-events-none" />
 
       <motion.div 
@@ -77,7 +77,7 @@ export default function HeroSection() {
         </motion.p>
         
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-6 sm:px-0">
-          <a href="#menu" className="px-10 py-4 bg-sunshine text-deep-forest rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
+          <a href="#menu" className="px-10 py-4 bg-[var(--color-sunshine-cta)] text-deep-forest rounded-2xl font-black text-sm md:text-base hover:brightness-110 transition-all shadow-xl hover:shadow-sunshine-glow hover:-translate-y-1 flex items-center justify-center">
             {t('explore_menu_btn')}
           </a>
           <Link to="/order" style={{ backgroundColor: '#454545' }} className="px-10 py-4 bg-[#454545] backdrop-blur-xl border border-white/20 text-white rounded-2xl font-bold text-sm md:text-base hover:bg-white/20 transition-all shadow-xl hover:-translate-y-1 flex items-center justify-center">

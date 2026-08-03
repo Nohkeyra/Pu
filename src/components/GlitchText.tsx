@@ -40,7 +40,7 @@ export default function GlitchText({ text, className = "" }: GlitchTextProps) {
 
       {/* Sunshine Orange Glitch Layer */}
       <span 
-        className={`absolute top-0 left-0 w-full h-full text-sunshine/80 mix-blend-screen pointer-events-none select-none ${
+        className={`absolute top-0 left-0 w-full h-full text-[var(--color-sunshine-cta)]/80 mix-blend-screen pointer-events-none select-none ${
           isGlitching ? 'animate-glitch-magenta opacity-80' : 'opacity-0 group-hover:animate-glitch-magenta group-hover:opacity-80 transition-opacity duration-300'
         }`}
         aria-hidden="true"
