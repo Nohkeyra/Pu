@@ -126,7 +126,16 @@ function SessionGuard({ children }: { children: ReactNode }) {
 function AppContent() {
   const location = useLocation();
   const { pathname } = location;
-  const hideNavPaths = ['/', '/login'];
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAdmin(user?.uid === 'admin');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const hideNavPaths = ['/', '/login', ...(isAdmin ? [] : ['/admin'])];
   const showNav = !hideNavPaths.includes(pathname);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({

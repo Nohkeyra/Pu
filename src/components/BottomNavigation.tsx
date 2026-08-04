@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Home, Utensils, Settings, User } from 'lucide-react';
+import { Home, Utensils, Settings, User, Shield } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
@@ -24,14 +24,21 @@ export default function BottomNavigation() {
     return () => unsubscribe();
   }, []);
 
+  const isAdmin = currentUser?.uid === 'admin';
+
   const tabs = [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
-    { id: 'profile', icon: User, label: t('nav_profile'), path: '/profile' },
+    {
+      id: isAdmin ? 'admin' : 'profile',
+      icon: isAdmin ? Shield : User,
+      label: isAdmin ? t('nav_admin') : t('nav_profile'),
+      path: isAdmin ? '/admin' : '/profile',
+    },
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
   ];
 
-  const showNav = ['/home', '/main', '/order', '/profile', '/admin', '/settings'].includes(location.pathname);
+  const showNav = ['/home', '/main', '/order', '/profile', '/settings', ...(isAdmin ? ['/admin'] : [])].includes(location.pathname);
 
   if (!showNav) return null;
 
