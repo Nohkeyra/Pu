@@ -642,6 +642,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     setOrderState({
       eventType: '',
       mealTypes: [],
+      preparationType: 'buffet',
       guests: 50,
       dishes: [],
       veggies: [],
