@@ -11,7 +11,8 @@ import {
   X, 
   Utensils, 
   RefreshCw,
-  Info
+  Info,
+  CupSoda
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
 
@@ -22,7 +23,7 @@ export interface MenuItem {
   descEn: string;
   descBm: string;
   price: number;
-  category: 'breakfast' | 'lunch' | 'hi tea';
+  category: 'breakfast' | 'lunch' | 'hi tea' | 'drinks';
 }
 
 interface AdminMenuTabProps {
@@ -41,7 +42,7 @@ export default function AdminMenuTab({
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'breakfast' | 'lunch' | 'hi tea'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'breakfast' | 'lunch' | 'hi tea' | 'drinks'>('all');
   
   // Form modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -303,6 +304,17 @@ export default function AdminMenuTab({
             <Cake className="w-3.5 h-3.5 text-pink-500" />
             {tText('Hi Tea', 'Hi-Tea')}
           </button>
+          <button
+            onClick={() => setSelectedCategory('drinks')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+              selectedCategory === 'drinks' 
+                ? 'bg-white dark:bg-card shadow text-deep-forest' 
+                : 'text-stone hover:text-deep-forest'
+            }`}
+          >
+            <CupSoda className="w-3.5 h-3.5 text-blue-500" />
+            {tText('Drinks', 'Minuman')}
+          </button>
         </div>
       </div>
 
@@ -339,9 +351,17 @@ export default function AdminMenuTab({
                       ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                       : item.category === 'lunch'
                       ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
-                      : 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20'
+                      : item.category === 'hi tea'
+                      ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20'
+                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                   }`}>
-                    {item.category === 'breakfast' ? tText('🍳 Breakfast', '🍳 Sarapan') : item.category === 'lunch' ? tText('🍛 Lunch', '🍛 Tengahari') : tText('🍰 Hi-Tea', '🍰 Hi-Tea')}
+                    {item.category === 'breakfast' 
+                      ? tText('🍳 Breakfast', '🍳 Sarapan') 
+                      : item.category === 'lunch' 
+                      ? tText('🍛 Lunch', '🍛 Tengahari') 
+                      : item.category === 'hi tea'
+                      ? tText('🍰 Hi-Tea', '🍰 Hi-Tea')
+                      : tText('🥤 Drinks', '🥤 Minuman')}
                   </span>
                   <span className="text-sm font-black text-crisp-carrot">
                     RM {item.price.toFixed(2)}
@@ -411,6 +431,7 @@ export default function AdminMenuTab({
                   <option value="breakfast">{tText('Breakfast (Sarapan)', 'Sarapan (Breakfast)')}</option>
                   <option value="lunch">{tText('Lunch (Tengahari)', 'Tengahari (Lunch)')}</option>
                   <option value="hi tea">{tText('Hi Tea', 'Hi Tea')}</option>
+                  <option value="drinks">{tText('Drinks (Minuman)', 'Minuman (Drinks)')}</option>
                 </select>
               </div>
 

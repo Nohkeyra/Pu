@@ -575,7 +575,23 @@ async function startServer() {
     { id: 'pisang_goreng', nameEn: 'Banana Fritters', nameBm: 'Pisang Goreng Crisp', descEn: 'Crispy golden fried local sweet bananas', descBm: 'Pisang goreng rangup manis tradisi', price: 3, category: 'hi tea' },
     { id: 'samosa', nameEn: 'Samosa', nameBm: 'Samosa Kentang', descEn: 'Fried triangular pastry filled with spiced vegetables', descBm: 'Samosa garing berinti ubi kentang pedas', price: 2.8, category: 'hi tea' },
     { id: 'kuih_talam', nameEn: 'Kuih Talam', nameBm: 'Kuih Talam Pandan', descEn: 'Two-layered traditional steamed sweet pandan cake', descBm: 'Kuih talam pandan kelapa lemak manis', price: 2.5, category: 'hi tea' },
-    { id: 'teh_tarik', nameEn: 'Teh Tarik', nameBm: 'Teh Tarik', descEn: 'Foamy frothy traditional pulled sweet milk tea', descBm: 'Teh tarik kaw berbuih pekat manis', price: 2, category: 'hi tea' }
+    { id: 'teh_tarik', nameEn: 'Teh Tarik', nameBm: 'Teh Tarik', descEn: 'Foamy frothy traditional pulled sweet milk tea', descBm: 'Teh tarik kaw berbuih pekat manis', price: 2, category: 'hi tea' },
+
+    // Drinks
+    { id: 'teh_tarik_drink', nameEn: 'Teh Tarik', nameBm: 'Teh Tarik', descEn: 'Traditional foamy pulled milk tea', descBm: 'Teh tarik kaw berbuih pekat manis', price: 2, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'teh_o', nameEn: 'Teh O', nameBm: 'Teh O', descEn: 'Sweet traditional black tea', descBm: 'Teh hitam manis panas segar', price: 1.8, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'kopi', nameEn: 'Kopi', nameBm: 'Kopi', descEn: 'Traditional local coffee with milk', descBm: 'Kopi susu panas kaw tradisional', price: 2.2, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'kopi_o', nameEn: 'Kopi O', nameBm: 'Kopi O', descEn: 'Traditional black coffee', descBm: 'Kopi hitam tradisional kaw', price: 1.8, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'nescafe', nameEn: 'Nescafe', nameBm: 'Nescafe', descEn: 'Rich instant coffee with milk', descBm: 'Kopi Nescafe panas bancuh susu', price: 2.5, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'nescafe_o', nameEn: 'Nescafe O', nameBm: 'Nescafe O', descEn: 'Black instant coffee with sugar', descBm: 'Kopi Nescafe hitam manis', price: 2.2, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'milo', nameEn: 'Milo', nameBm: 'Milo', descEn: 'Hot chocolate malt drink with milk', descBm: 'Minuman coklat malt Milo berkrim', price: 2.5, category: 'drinks', suitability: 'breakfast_hitea' },
+    { id: 'milo_o', nameEn: 'Milo O', nameBm: 'Milo O', descEn: 'Hot chocolate malt drink without milk', descBm: 'Minuman coklat malt Milo panas tanpa susu', price: 2.2, category: 'drinks', suitability: 'breakfast_hitea' },
+    
+    { id: 'air_tetra_pak', nameEn: 'Flavored Tetra Pak Drink', nameBm: 'Air Tetra Pak Berperisa', descEn: 'Convenient flavored juice box (Chrysanthemum/Soya)', descBm: 'Air kotak Tetra Pak pelbagai perisa segar', price: 2, category: 'drinks', suitability: 'lunch' },
+    { id: 'air_kordial', nameEn: 'Cordial Drink', nameBm: 'Air Kordial', descEn: 'Chilled sweet rose/orange cordial', descBm: 'Minuman kordial buah manis sejuk segar', price: 1.5, category: 'drinks', suitability: 'lunch' },
+    { id: 'air_mineral_botol', nameEn: 'Bottled Mineral Water', nameBm: 'Air Mineral Botol', descEn: 'Clean bottled drinking mineral water', descBm: 'Air mineral botol bersih menyegarkan', price: 1.5, category: 'drinks', suitability: 'lunch' },
+    { id: 'peel_fresh_kecik', nameEn: 'Peel Fresh Small Tetra Pak', nameBm: 'Tetra Pak Peel Fresh Kecil', descEn: 'Small pasteurized fruit juice box', descBm: 'Kotak Peel Fresh kecil jus buah segar', price: 2.8, category: 'drinks', suitability: 'lunch' },
+    { id: 'tetra_pak_mineral_water', nameEn: 'Tetra Pak Mineral Water', nameBm: 'Tetra Pak Mineral Water', descEn: 'Eco-friendly boxed mineral water', descBm: 'Air mineral kotak Tetra Pak mesra alam', price: 2, category: 'drinks', suitability: 'lunch' }
   ];
 
   app.get('/api/menu', async (req, res) => {
@@ -592,7 +608,24 @@ async function startServer() {
         await batch.commit();
         return res.json({ menuItems: DEFAULT_MENU_ITEMS });
       }
-      const menuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const menuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      
+      // Check if any DEFAULT_MENU_ITEMS are missing and merge them
+      const existingIds = new Set(menuItems.map(item => item.id));
+      const missingItems = DEFAULT_MENU_ITEMS.filter(item => !existingIds.has(item.id));
+      if (missingItems.length > 0) {
+        console.log(`[Menu API] Adding ${missingItems.length} missing default items...`);
+        const batch = db.batch();
+        missingItems.forEach(item => {
+          const docRef = db.collection('menu_items').doc(item.id);
+          batch.set(docRef, { ...item, createdAt: FieldValue.serverTimestamp() });
+        });
+        await batch.commit();
+        missingItems.forEach(item => {
+          menuItems.push({ id: item.id, ...item });
+        });
+      }
+      
       return res.json({ menuItems });
     } catch (err) {
       console.error('[Menu API] Failed to fetch or seed menu:', err);

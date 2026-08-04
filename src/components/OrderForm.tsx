@@ -498,12 +498,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const bfDishes = orderState.dishes.filter(d => d.category === 'breakfast').map(d => d.nameBm).join(', ');
       const lhDishes = orderState.dishes.filter(d => d.category === 'lunch').map(d => d.nameBm).join(', ');
       const htDishes = orderState.dishes.filter(d => d.category === 'hi tea').map(d => d.nameBm).join(', ');
+      const drDishes = orderState.dishes.filter(d => d.category === 'drinks').map(d => d.nameBm).join(', ');
       
       let combinedMenuStr = '';
       const sections: string[] = [];
       if (bfDishes) sections.push(`Sarapan: ${bfDishes}`);
       if (lhDishes) sections.push(`Tengahari: ${lhDishes}`);
       if (htDishes) sections.push(`Hi Tea: ${htDishes}`);
+      if (drDishes) sections.push(`Minuman: ${drDishes}`);
       
       const legacyDishes = orderState.dishes.filter(d => !d.category).map(d => d.nameBm).join(', ');
       const legacyVeg = orderState.veggies.map(v => v.nameBm).join(', ');
@@ -1266,6 +1268,114 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             );
                           })}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Drinks Section */}
+                    {dynamicMenu.some(item => item.category === 'drinks') && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
+                          <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block">
+                            {tText('🥤 Drinks Selection', '🥤 Pilihan Minuman')}
+                          </Label>
+                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                            {orderState.dishes.filter(d => d.category === 'drinks').length} {tText('items', 'sajian')}
+                          </span>
+                        </div>
+
+                        {/* Breakfast & Hi-Tea Drinks */}
+                        {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (
+                          <div className="space-y-2">
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block">
+                              {tText('☕ Hot/Warm Drinks (Recommended for Breakfast & Hi-Tea)', '☕ Minuman Panas/Suam (Disyorkan untuk Sarapan & Hi-Tea)')}
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                              {dynamicMenu
+                                .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
+                                .map(item => {
+                                  const isSelected = orderState.dishes.some(x => x.id === item.id);
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      onClick={() => handleToggleDish(item)}
+                                      className={cn(
+                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                        isSelected 
+                                          ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
+                                          : "bg-muted border-stone/10 hover:bg-muted/80"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                      )}>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-bold block text-deep-forest truncate">
+                                          {tText(item.nameEn, item.nameBm)}
+                                        </span>
+                                        <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                          {tText(item.descEn || '', item.descBm || '')}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+                                        RM {item.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Lunch Drinks */}
+                        {(orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length) && (
+                          <div className="space-y-2 pt-2">
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 block">
+                              {tText('🥤 Refreshing Box/Cordial/Mineral Drinks (Recommended for Lunch)', '🥤 Minuman Kotak/Kordial/Mineral Segar (Disyorkan untuk Tengah Hari)')}
+                            </span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                              {dynamicMenu
+                                .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
+                                .map(item => {
+                                  const isSelected = orderState.dishes.some(x => x.id === item.id);
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      onClick={() => handleToggleDish(item)}
+                                      className={cn(
+                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                        isSelected 
+                                          ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
+                                          : "bg-muted border-stone/10 hover:bg-muted/80"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                      )}>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                      </div>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-bold block text-deep-forest truncate">
+                                          {tText(item.nameEn, item.nameBm)}
+                                        </span>
+                                        <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                          {tText(item.descEn || '', item.descBm || '')}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+                                        RM {item.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
