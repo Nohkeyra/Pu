@@ -275,8 +275,8 @@ export default function SettingsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <a
-                    href="https://github.com/Nohkeyra/Pu/releases/download/Wawasan/Wawasan-hub.apk"
-                    download="Wawasan Hub.apk"
+                    href="https://github.com/Nohkeyra/Pu/releases/download/Wawasan/Restoran-Wawasan.apk"
+                    download="Restoran-Wawasan.apk"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={async () => {
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                     className="btn-cta flex-1 rounded-2xl min-h-[44px] font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
                   >
                     <Download className="w-5 h-5" />
-                    {language === 'bm' ? 'Muat Turun APK Wawasan Hub' : 'Download Wawasan Hub APK'}
+                    {language === 'bm' ? 'Muat Turun APK Restoran Wawasan' : 'Download Restoran Wawasan APK'}
                   </a>
                 </div>
 
