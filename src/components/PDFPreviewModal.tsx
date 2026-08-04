@@ -152,7 +152,7 @@ export function PDFPreviewModal({
               <tbody className="divide-y divide-stone-200 dark:divide-stone-700 text-sm">
                 {order?.meals && order.meals.length > 0 ? (
                   order.meals.map((meal, idx) => {
-                    const mealPriceRaw = order?.prices?.[meal];
+                    const mealPriceRaw = order?.prices?.[meal] as unknown;
                     const mealPrice = mealPriceRaw !== undefined && mealPriceRaw !== null && mealPriceRaw !== '' ? Number(mealPriceRaw) : null;
                     const qty = order?.quantity || 1;
                     const mealCount = order?.meals?.length || 1;

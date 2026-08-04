@@ -102,12 +102,16 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isMamaMode, setIsMamaMode] = useState(false);
   const [prices, setPrices] = useState<Record<string, string>>({});
-  const [searchTerm, setSearchTerm] = useState('');
-  // Table filters (Orders tab): status/client/date-range narrow down
-  // filteredOrders in addition to the free-text searchTerm above.
-  // 'all' is the default/no-op value for each.
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [clientFilter, setClientFilter] = useState<string>('all');
+  const [searchTerm] = useState('');
+  // Table filters (Orders tab): status/client narrow down filteredOrders in
+  // addition to the free-text searchTerm above. Both permanently sit at
+  // 'all' (no-op) now — the UI to change them was removed from the Orders
+  // tab as a duplicate of Tables View's own independent filter controls.
+  // Kept as read-only state (not full useState) because filteredOrders'
+  // memo below still reads them; AdminTablesTab.tsx has its own separate
+  // statusFilter/clientFilter local state and is unaffected by this.
+  const [statusFilter] = useState<string>('all');
+  const [clientFilter] = useState<string>('all');
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
   const [dateToFilter, setDateToFilter] = useState<string>('');
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
@@ -1283,15 +1287,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     }
   };
 
-  // Distinct client names (order.to) present in the current order set,
-  // used to populate the Client filter dropdown. Derived from real data
-  // rather than the SAVED_COMPANIES constants list, since that list holds
-  // multiple address variants per client and isn't 1:1 with what's
-  // actually been ordered.
-  const clientOptions = Array.from(
-    new Set(orders.map(o => o.to).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b));
-
   // Status filter groups map UI selections to the underlying bm/en status
   // strings stored on the order (see getStatusBadge above for the same
   // pairs). 'all' intentionally still excludes cancelled orders below,
@@ -1753,16 +1748,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <AdminOrdersTab
               t={t}
               language={language}
-              orders={orders}
               filteredOrders={filteredOrders}
               cancelRequests={cancelRequests}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              clientFilter={clientFilter}
-              setClientFilter={setClientFilter}
-              clientOptions={clientOptions}
               dateFromFilter={dateFromFilter}
               setDateFromFilter={setDateFromFilter}
               dateToFilter={dateToFilter}

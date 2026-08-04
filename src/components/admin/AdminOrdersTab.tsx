@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
-  AlertTriangle, Search, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, Filter, X, Star,
+  AlertTriangle, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, X, Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import type { Order } from '@/types';
-import { ExportOrdersModal } from './ExportOrdersModal';
+import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 
 // Extracted from AdminPanel.tsx (previously the `activeTab === 'orders'`
 // JSX block, lines ~1326-1664). Purely presentational — no local state
@@ -24,16 +24,8 @@ import { ExportOrdersModal } from './ExportOrdersModal';
 export function AdminOrdersTab({
   t,
   language,
-  orders = [],
   filteredOrders,
   cancelRequests,
-  searchTerm,
-  setSearchTerm,
-  statusFilter,
-  setStatusFilter,
-  clientFilter,
-  setClientFilter,
-  clientOptions,
   dateFromFilter,
   setDateFromFilter,
   dateToFilter,
@@ -68,16 +60,8 @@ export function AdminOrdersTab({
 }: {
   t: (key: string) => string;
   language: string;
-  orders: Order[];
   filteredOrders: Order[];
   cancelRequests: Order[];
-  searchTerm: string;
-  setSearchTerm: (v: string) => void;
-  statusFilter: string;
-  setStatusFilter: (v: string) => void;
-  clientFilter: string;
-  setClientFilter: (v: string) => void;
-  clientOptions: string[];
   dateFromFilter: string;
   setDateFromFilter: (v: string) => void;
   dateToFilter: string;
@@ -113,53 +97,8 @@ export function AdminOrdersTab({
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
 
-  // Calculate quick summary metrics from current orders list
-  const totalCount = orders.length;
-  const pendingCount = orders.filter((o) => o.status === 'pending' || !o.status).length;
-  const approvedCount = orders.filter((o) => (o.status as string) === 'approved' || (o.status as string) === 'diluluskan').length;
-  const billedCount = orders.filter((o) => (o.status as string) === 'billed' || (o.status as string) === 'dibilkan').length;
-  const totalPax = orders.reduce((sum, o) => sum + (Number(o.quantity) || 0), 0);
-
   return (
     <>
-      {/* KPI Summary Header Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-5">
-        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
-          <p className="microcopy-12 font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-            {language === 'bm' ? 'Jumlah Pesanan' : 'Total Orders'}
-          </p>
-          <p className="text-xl font-black text-deep-forest dark:text-white mt-1">{totalCount}</p>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-amber-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="microcopy-12 font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-            {language === 'bm' ? 'Menunggu' : 'Pending'}
-          </p>
-          <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</p>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="microcopy-12 font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-            {language === 'bm' ? 'Diluluskan' : 'Approved'}
-          </p>
-          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{approvedCount}</p>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-blue-500/20 rounded-2xl p-3.5 shadow-sm">
-          <p className="microcopy-12 font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-            {language === 'bm' ? 'Dibilkan' : 'Billed'}
-          </p>
-          <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1">{billedCount}</p>
-        </div>
-
-        <div className="col-span-2 sm:col-span-1 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm">
-          <p className="microcopy-12 font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-            {language === 'bm' ? 'Jumlah Pax' : 'Total Pax'}
-          </p>
-          <p className="text-xl font-black text-[var(--color-sunshine-cta)] dark:text-[var(--color-sunshine-cta)] mt-1">{totalPax.toLocaleString()} pax</p>
-        </div>
-      </div>
-
       {/* Cancellation Requests Section */}
       {cancelRequests.length > 0 && (
         <div className="mb-6 p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl backdrop-blur-sm">
@@ -225,62 +164,9 @@ export function AdminOrdersTab({
 
       {/* Streamlined Compact Toolbar */}
       <div className="mb-4 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500" />
-            <Input
-              placeholder={t('search_placeholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 text-xs text-deep-forest dark:text-white placeholder:text-stone-400 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]/50 rounded-xl"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-700 dark:hover:text-white"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
+        <div className="flex flex-col lg:flex-row lg:items-center justify-end gap-3">
           {/* Inline Compact Filter Dropdowns & Mode Toggles */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Status Filter */}
-            <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
-              <Filter className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
-              >
-                <option value="all">{language === 'bm' ? 'Semua Status' : 'All Statuses'}</option>
-                <option value="pending">{t('pending') || 'Pending'}</option>
-                <option value="approved">{t('approved') || 'Approved'}</option>
-                <option value="billed">{t('billed') || 'Billed'}</option>
-                <option value="rejected">{t('rejected') || 'Rejected'}</option>
-                <option value="cancel_requested">{t('cancel_requested') || 'Cancel Requested'}</option>
-                <option value="cancelled">{t('cancelled') || 'Cancelled'}</option>
-              </select>
-            </div>
-
-            {/* Client Filter */}
-            {clientOptions.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9 max-w-[170px]">
-                <select
-                  value={clientFilter}
-                  onChange={(e) => setClientFilter(e.target.value)}
-                  className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer truncate w-full"
-                >
-                  <option value="all">{language === 'bm' ? 'Semua Klien' : 'All Clients'}</option>
-                  {clientOptions.map((client) => (
-                    <option key={client} value={client}>{client}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* Date From & Date To */}
             <div className="flex items-center gap-1 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-2.5 h-9">
               <input
@@ -301,11 +187,9 @@ export function AdminOrdersTab({
             </div>
 
             {/* Clear Filter Button */}
-            {(statusFilter !== 'all' || clientFilter !== 'all' || dateFromFilter || dateToFilter) && (
+            {(dateFromFilter || dateToFilter) && (
               <button
                 onClick={() => {
-                  setStatusFilter('all');
-                  setClientFilter('all');
                   setDateFromFilter('');
                   setDateToFilter('');
                 }}
@@ -771,13 +655,15 @@ export function AdminOrdersTab({
         document.body
       )}
 
-      <ExportOrdersModal
+      <AdminOrdersExportSheet
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
-        orders={orders}
         filteredOrders={filteredOrders}
         selectedOrderIds={selectedOrderIds}
+        setSelectedOrderIds={setSelectedOrderIds}
+        language={language}
         toast={toast}
+        prepareConsolidateModal={prepareConsolidateModal}
       />
     </>
   );
