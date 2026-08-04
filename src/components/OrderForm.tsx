@@ -107,6 +107,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+  const [dynamicMenu, setDynamicMenu] = useState<any[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch(getApiUrl('/api/menu'));
+        if (response.ok) {
+          const data = await response.json();
+          setDynamicMenu(data.menuItems || []);
+        }
+      } catch (err) {
+        console.error('Failed to load menu items:', err);
+      } finally {
+        setMenuLoading(false);
+      }
+    };
+    fetchMenu();
+  }, []);
 
   // Multi-step State
   const [orderState, setOrderState] = useState<OrderState>({
@@ -308,8 +327,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   // REALTIME CALCULATIONS FOR STEP 2 BUDGET PREVIEW
   const getPricePerPax = () => {
-    const dishSum = orderState.dishes.reduce((acc, curr) => acc + curr.price, 0);
-    const vegSum = orderState.veggies.reduce((acc, curr) => acc + curr.price, 0);
+    const dishSum = orderState.dishes.reduce((acc, curr) => acc + (curr.price || 0), 0);
+    const vegSum = orderState.veggies.reduce((acc, curr) => acc + (curr.price || 0), 0);
     return dishSum + vegSum;
   };
 
@@ -318,7 +337,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   // HANDLERS FOR FIELD UPDATES
-  const handleToggleDish = async (dish: typeof LAUK_UTAMA[number]) => {
+  const handleToggleDish = async (dish: any) => {
     await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.dishes.some(d => d.id === dish.id);
@@ -329,19 +348,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       }
     });
   };
-
-  const handleToggleVeggie = async (veg: typeof SAYURAN[number]) => {
-    await triggerLightImpact();
-    setOrderState(prev => {
-      const exists = prev.veggies.some(v => v.id === veg.id);
-      if (exists) {
-        return { ...prev, veggies: prev.veggies.filter(v => v.id !== veg.id) };
-      } else {
-        return { ...prev, veggies: [...prev.veggies, veg] };
-      }
-    });
-  };
-
   const adjustGuests = async (delta: number) => {
     await triggerLightImpact();
     setOrderState(prev => {
@@ -489,12 +495,23 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         : '';
 
       // Construct dishes list text for the single menu string field
-      const dishListText = orderState.dishes.map(d => d.nameBm).join(', ');
-      const vegListText = orderState.veggies.map(v => v.nameBm).join(', ');
+      const bfDishes = orderState.dishes.filter(d => d.category === 'breakfast').map(d => d.nameBm).join(', ');
+      const lhDishes = orderState.dishes.filter(d => d.category === 'lunch').map(d => d.nameBm).join(', ');
+      const htDishes = orderState.dishes.filter(d => d.category === 'hi tea').map(d => d.nameBm).join(', ');
       
       let combinedMenuStr = '';
-      if (dishListText || vegListText) {
-        combinedMenuStr = `Lauk Utama: ${dishListText || '-'} | Sayuran: ${vegListText || '-'}`;
+      const sections: string[] = [];
+      if (bfDishes) sections.push(`Sarapan: ${bfDishes}`);
+      if (lhDishes) sections.push(`Tengahari: ${lhDishes}`);
+      if (htDishes) sections.push(`Hi Tea: ${htDishes}`);
+      
+      const legacyDishes = orderState.dishes.filter(d => !d.category).map(d => d.nameBm).join(', ');
+      const legacyVeg = orderState.veggies.map(v => v.nameBm).join(', ');
+      if (legacyDishes) sections.push(`Lauk Utama: ${legacyDishes}`);
+      if (legacyVeg) sections.push(`Sayuran: ${legacyVeg}`);
+
+      if (sections.length > 0) {
+        combinedMenuStr = sections.join(' | ');
         if (orderState.customMenu) {
           combinedMenuStr += ` | Menu Lain: ${orderState.customMenu}`;
         }
@@ -1090,97 +1107,169 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   </p>
                 </div>
 
-                {/* Main Dishes */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                    <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
-                      {tText('Main Dishes', 'Lauk Utama')}
-                    </Label>
-                    <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                      {orderState.dishes.length} / 8
-                    </span>
+                {menuLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-6 h-6 animate-spin text-[var(--color-sunshine-cta)]" />
+                    <p className="text-xs text-stone font-light">
+                      {tText('Loading fresh menu items...', 'Memuatkan sajian menu terkini...')}
+                    </p>
                   </div>
-
-                  <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-                    {LAUK_UTAMA.map(d => {
-                      const isSelected = orderState.dishes.some(x => x.id === d.id);
-                      return (
-                        <div
-                          key={d.id}
-                          onClick={() => handleToggleDish(d)}
-                          className={cn(
-                            "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
-                            isSelected 
-                              ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                              : "bg-muted border-stone/10 hover:bg-muted/80"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                            isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
-                          )}>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs font-bold block text-deep-forest truncate">
-                              {tText(d.nameEn, d.nameBm)}
-                            </span>
-                            <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
-                              {tText(d.descEn, d.descBm)}
-                            </span>
-                          </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Breakfast Section */}
+                    {orderState.mealTypes.includes('sarapan') && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
+                          <Label className="text-xs font-black text-amber-500 uppercase tracking-wider block">
+                            {tText('🍳 Breakfast Selection', '🍳 Pilihan Sarapan')}
+                          </Label>
+                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                            {orderState.dishes.filter(d => d.category === 'breakfast').length} {tText('items', 'sajian')}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Vegetables */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                    <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
-                      {tText('Vegetable Selection', 'Sayur-sayuran')}
-                    </Label>
-                    <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                      {orderState.veggies.length} / 3
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2">
-                    {SAYURAN.map(v => {
-                      const isSelected = orderState.veggies.some(x => x.id === v.id);
-                      return (
-                        <div
-                          key={v.id}
-                          onClick={() => handleToggleVeggie(v)}
-                          className={cn(
-                            "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
-                            isSelected 
-                              ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                              : "bg-muted border-stone/10 hover:bg-muted/80"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                            isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
-                          )}>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs font-bold block text-deep-forest truncate">
-                              {tText(v.nameEn, v.nameBm)}
-                            </span>
-                            <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
-                              {tText(v.descEn, v.descBm)}
-                            </span>
-                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
+                          {dynamicMenu.filter(item => item.category === 'breakfast').map(item => {
+                            const isSelected = orderState.dishes.some(x => x.id === item.id);
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleToggleDish(item)}
+                                className={cn(
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  isSelected 
+                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
+                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                )}>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                    {tText(item.nameEn, item.nameBm)}
+                                  </span>
+                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                    {tText(item.descEn || '', item.descBm || '')}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+                                  RM {item.price.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
+
+                    {/* Lunch Section */}
+                    {orderState.mealTypes.includes('tengahari') && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
+                          <Label className="text-xs font-black text-orange-500 uppercase tracking-wider block">
+                            {tText('🍛 Lunch Selection', '🍛 Pilihan Tengahari')}
+                          </Label>
+                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                            {orderState.dishes.filter(d => d.category === 'lunch').length} {tText('items', 'sajian')}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
+                          {dynamicMenu.filter(item => item.category === 'lunch').map(item => {
+                            const isSelected = orderState.dishes.some(x => x.id === item.id);
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleToggleDish(item)}
+                                className={cn(
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  isSelected 
+                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
+                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                )}>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                    {tText(item.nameEn, item.nameBm)}
+                                  </span>
+                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                    {tText(item.descEn || '', item.descBm || '')}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+                                  RM {item.price.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hi Tea Section */}
+                    {orderState.mealTypes.includes('hitea') && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
+                          <Label className="text-xs font-black text-pink-500 uppercase tracking-wider block">
+                            {tText('🍰 Hi-Tea Selection', '🍰 Pilihan Hi-Tea')}
+                          </Label>
+                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
+                            {orderState.dishes.filter(d => d.category === 'hi tea').length} {tText('items', 'sajian')}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
+                          {dynamicMenu.filter(item => item.category === 'hi tea').map(item => {
+                            const isSelected = orderState.dishes.some(x => x.id === item.id);
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleToggleDish(item)}
+                                className={cn(
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  isSelected 
+                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
+                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                )}>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                    {tText(item.nameEn, item.nameBm)}
+                                  </span>
+                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                    {tText(item.descEn || '', item.descBm || '')}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+                                  RM {item.price.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
                 {/* Custom Menu Request */}
                 <div className="space-y-2 pt-2 border-t border-stone/10">
@@ -1213,6 +1302,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
+                      referrerPolicy: 'no-referrer'
                     }}
                   />
                   <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />

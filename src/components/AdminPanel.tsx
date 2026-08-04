@@ -59,6 +59,8 @@ import type { Order } from '@/types';
 import { AdminOrdersTab } from './admin/AdminOrdersTab';
 import { AdminDiagnosticsTab } from './admin/AdminDiagnosticsTab';
 import { AdminTablesTab } from './admin/AdminTablesTab';
+import AdminMenuTab from './admin/AdminMenuTab';
+import { Utensils as UtensilsIcon } from 'lucide-react';
 
 interface SerializedOrder extends Omit<Order, 'createdAt'> {
   createdAt: { seconds: number; nanoseconds: number } | null;
@@ -144,7 +146,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     loading: boolean;
   }>({ ok: false, loading: true });
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'tables'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'tables' | 'menu'>('orders');
 
   // Real-time synchronization and Firestore WebSocket monitoring status
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
@@ -1681,6 +1683,40 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               <Table className="w-4 h-4 z-10" />
               <span className="z-10">Tables View</span>
             </button>
+            <button
+              onClick={() => setActiveTab('menu')}
+              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
+                activeTab === 'menu'
+                  ? 'text-[var(--color-sunshine-cta)]'
+                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
+              }`}
+            >
+              {activeTab === 'menu' && (
+                <motion.div
+                  layoutId="adminActiveTab"
+                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
+                  animate={{
+                    boxShadow: [
+                      '0 0 2px rgba(251, 191, 36, 0.15)',
+                      '0 0 10px rgba(251, 191, 36, 0.55)',
+                      '0 0 2px rgba(251, 191, 36, 0.15)'
+                    ],
+                    borderColor: [
+                      'rgba(251, 191, 36, 0.4)',
+                      'rgba(251, 191, 36, 0.85)',
+                      'rgba(251, 191, 36, 0.4)'
+                    ]
+                  }}
+                  transition={{
+                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                  }}
+                />
+              )}
+              <UtensilsIcon className="w-4 h-4 z-10" />
+              <span className="z-10">{language === 'en' ? 'Menu Manager' : 'Pengurus Menu'}</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -1803,6 +1839,13 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               toggleEruda={toggleEruda}
               setTestEmailAddress={setTestEmailAddress}
               setDiagTests={setDiagTests}
+            />
+          ) : activeTab === 'menu' ? (
+            <AdminMenuTab
+              language={language}
+              authHeaders={authHeaders}
+              getApiUrl={getApiUrl}
+              toast={toast}
             />
           ) : (
             <AdminTablesTab
