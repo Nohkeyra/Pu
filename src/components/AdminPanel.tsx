@@ -52,6 +52,7 @@ import { Device } from '@capacitor/device';
 import { removeSecureItem } from '@/lib/preferences';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
+import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { getAssetUrl } from '@/lib/utils';
 import { getDummyCombinedOrders, getDummyConsolidatedOrders } from '@/utils/testData';
 import { measureDbLatency } from '@/utils/diagnostics';
@@ -131,6 +132,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState('');
   const [previewFileName, setPreviewFileName] = useState('');
+  const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
 
   // Send Invoice Dialog States
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -906,6 +908,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       const pdfDataUri = pdfDoc.output('datauristring');
       setPreviewPdfUrl(pdfDataUri);
       setPreviewFileName(fileName);
+      setPreviewOrder(order);
       setIsPreviewOpen(true);
 
       if (Capacitor.isNativePlatform()) {
@@ -1873,10 +1876,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       {/* Order Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-4xl w-[95vw] max-h-[90vh] bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-0 overflow-hidden relative">
+        <DialogContent showCloseButton={false} className="sm:max-w-4xl w-[95vw] max-h-[90dvh] !flex bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-0 overflow-hidden relative">
           
           {/* Header */}
-          <div className="px-6 py-4 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/20 dark:bg-background/20">
+          <div className="px-6 py-4 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/20 dark:bg-background/20 flex-shrink-0">
             <div>
               <DialogTitle className="text-xl font-display font-bold text-deep-forest dark:text-white">
                 {t('order_details')}
@@ -1895,7 +1898,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8">
             {selectedOrder && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
@@ -1988,7 +1991,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </div>
 
           {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-[var(--color-sunshine-cta)]/10 bg-white/20 dark:bg-background/20 flex flex-wrap gap-2 items-center justify-end">
+          <div className="px-6 py-4 border-t border-[var(--color-sunshine-cta)]/10 bg-white/20 dark:bg-background/20 flex flex-wrap gap-2 items-center justify-end flex-shrink-0">
             {selectedOrder && (
               <>
                 {selectedOrder?.status === 'cancel_requested' ? (
@@ -2202,8 +2205,30 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </Dialog>
 
       {/* PDF Preview Dialog */}
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="sm:max-w-4xl w-[90vw] h-[85vh] bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-6">
+      {Capacitor.isNativePlatform() && isPreviewOpen && previewOrder ? (
+        <PDFPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => {
+            setIsPreviewOpen(false);
+            setPreviewPdfUrl('');
+                setPreviewOrder(null);
+            setPreviewOrder(null);
+          }}
+          order={previewOrder}
+          language={previewOrder.lang || 'en'}
+          onDownload={() => handleDownloadPDF(previewOrder, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(previewOrder.status || ''))}
+          isFinal={['approved', 'diluluskan', 'billed', 'dibilkan'].includes(previewOrder.status || '')}
+        />
+      ) : (
+        <Dialog open={isPreviewOpen} onOpenChange={(open) => {
+          setIsPreviewOpen(open);
+          if (!open) {
+            setPreviewPdfUrl('');
+                setPreviewOrder(null);
+            setPreviewOrder(null);
+          }
+        }}>
+          <DialogContent className="sm:max-w-4xl w-[90vw] h-[85dvh] !flex bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-6">
           <DialogHeader className="pb-2 border-b border-[var(--color-sunshine-cta)]/10 flex-shrink-0">
             <DialogTitle className="text-xl font-display font-bold text-[var(--color-sunshine-cta)]">
               {previewFileName || 'PDF Preview'}
@@ -2215,11 +2240,23 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
           <div className="flex-1 min-h-0 bg-cream dark:bg-background/50 rounded-lg overflow-hidden relative my-4 border border-[var(--color-sunshine-cta)]/10">
             {previewPdfUrl ? (
-              <iframe
-                src={previewPdfUrl}
-                title="PDF Preview Frame"
-                className="w-full h-full border-0"
-              />
+              Capacitor.isNativePlatform() ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 text-deep-forest dark:text-stone/80">
+                  <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
+                  </div>
+                  <h3 className="text-xl font-display font-bold text-deep-forest dark:text-white">Preview Not Available</h3>
+                  <p className="text-sm max-w-sm leading-relaxed">
+                    In-app PDF preview is not supported on this mobile device. Please download or share the file to view it.
+                  </p>
+                </div>
+              ) : (
+                <iframe
+                  src={previewPdfUrl}
+                  title="PDF Preview Frame"
+                  className="w-full h-full border-0"
+                />
+              )
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-deep-forest/40">
                 {t('loading') || 'Loading preview...'}
@@ -2311,6 +2348,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               onClick={() => {
                 setIsPreviewOpen(false);
                 setPreviewPdfUrl('');
+                setPreviewOrder(null);
               }}
               className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
             >
@@ -2319,6 +2357,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }
