@@ -20,11 +20,34 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import AppSplashScreen from './components/AppSplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 import LandingPage from './pages/LandingPage';
-const OrderPage = lazy(() => import('./pages/OrderPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+// A resilient dynamic importer that catches chunk-load errors (commonly caused by redeploys
+// or dev server restarts where old asset hashes no longer exist) and automatically reloads
+// the application to fetch the latest index.html and compiled asset chunks.
+const lazyWithRetry = (componentImport: () => Promise<any>) => {
+  return lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.error("Dynamic import failed. Auto-refreshing app to fetch the latest updates...", error);
+      try {
+        const hasReloaded = sessionStorage.getItem('wawasan_last_retry_route');
+        if (!hasReloaded) {
+          sessionStorage.setItem('wawasan_last_retry_route', 'true');
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
+      throw error;
+    }
+  });
+};
+
+const OrderPage = lazyWithRetry(() => import('./pages/OrderPage'));
+const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change
@@ -132,6 +155,13 @@ function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsAdmin(user?.uid === 'admin');
     });
+
+    try {
+      sessionStorage.removeItem('wawasan_last_retry_route');
+    } catch {
+      // Ignored
+    }
+
     return () => unsubscribe();
   }, []);
 
@@ -165,24 +195,24 @@ function AppContent() {
       )}
 
       <main className={cn("flex-grow", showNav && "pb-[calc(96px+env(safe-area-inset-bottom,16px))]")}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1.0] }}
-            className="w-full flex-grow"
-          >
-            <Suspense fallback={
-              <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
-                <Skeleton className="w-24 h-24 rounded-full animate-pulse" />
-                <div className="w-full max-w-sm space-y-3">
-                  <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse" />
-                  <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse" />
-                </div>
-              </div>
-            }>
+        <Suspense fallback={
+          <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
+            <Skeleton className="w-24 h-24 rounded-full animate-pulse" />
+            <div className="w-full max-w-sm space-y-3">
+              <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse" />
+              <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse" />
+            </div>
+          </div>
+        }>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1.0] }}
+              className="w-full flex-grow"
+            >
               <Routes location={location}>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -232,9 +262,9 @@ function AppContent() {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="*" element={<LoginPage />} />
               </Routes>
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </Suspense>
       </main>
       {showNav && <BottomNavigation />}
     </div>
