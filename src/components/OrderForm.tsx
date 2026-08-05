@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -96,6 +96,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // C-03 (2026-08-06): stable per-attempt key so a retried/duplicate submit
+  // (network timeout + retry, offline-queue replay) can't create a second
+  // order — the server dedupes on this. Regenerated in handleResetForm()
+  // below whenever the user actually starts a fresh order.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
   const [referenceNumber, setReferenceNumber] = useState('');
   const [submittedOrder, setSubmittedOrder] = useState<Order | null>(null);
   const [showPdfPreviewModal, setShowPdfPreviewModal] = useState<boolean>(false);
@@ -551,7 +556,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         prices: pricesRecord,
         totalAmount: getGrandTotal(),
         userId: currentUser?.uid || null,
-        delivery: orderState.delivery
+        delivery: orderState.delivery,
+        idempotencyKey: idempotencyKeyRef.current
       };
 
       // Submit to Backend Server API
@@ -668,6 +674,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleResetForm = () => {
+    idempotencyKeyRef.current = crypto.randomUUID();
     setOrderState({
       eventType: '',
       mealTypes: [],

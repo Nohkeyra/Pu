@@ -4,7 +4,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import helmet from 'helmet';
-import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
+import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken } from './server/firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from './server/adminAuth.js';
 import rateLimit from 'express-rate-limit';
 import { notifyCustomerOfStatusChange, createBrevoTransporter } from './server/emailService.js';
@@ -118,7 +118,16 @@ async function startServer() {
   // Admin Login
   app.post('/api/admin/login', adminLoginLimiter, async (req, res) => {
     const { password } = req.body;
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    // C-01 (2026-08-06): previously fell back to a hardcoded 'admin123'
+    // password whenever ADMIN_PASSWORD was unset/empty, which would silently
+    // turn into an open admin panel on any deploy that forgot to configure
+    // it. Fail closed instead — no fallback password, ever.
+    if (!adminPassword) {
+      console.error('[Admin Auth] ADMIN_PASSWORD is not set. Refusing all admin login attempts.');
+      return res.status(503).json({ success: false, error: 'Admin login is not configured on this server.' });
+    }
 
     if (password === adminPassword) {
       const jti = crypto.randomUUID();
@@ -294,33 +303,80 @@ async function startServer() {
   // and all write paths go through Admin SDK server-side so rules don't
   // apply. Adding strict validation is the right long-term move but is
   // out of scope for this pass (avoid scope creep per project rules).
+  //
+  // C-03 (2026-08-06): duplicate-order protection. If the client sends an
+  // idempotencyKey (a UUID generated once per submission attempt — see
+  // OrderForm.tsx), it's used as the Firestore document ID via .create(),
+  // which atomically fails if that ID already exists. A retried/duplicate
+  // request with the same key gets back the *same* order instead of
+  // creating a second one. Same ID-format rule as firestore.rules' orderId
+  // regex, so a client-supplied key can never collide with the shape of a
+  // Firestore auto-ID. Callers that don't send a key (or send an
+  // invalid one) fall back to the old .add() behavior unchanged.
+  const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
+
   app.post('/api/orders', async (req, res) => {
     try {
-      const orderData = req.body;
+      const { idempotencyKey, ...orderData } = req.body || {};
       const db = getFirestore();
-      const docRef = await db.collection('orders').add({
-        ...orderData,
-        status: 'pending',
-        createdAt: FieldValue.serverTimestamp()
-      });
+
+      let orderId: string;
+      let isDuplicate = false;
+
+      if (typeof idempotencyKey === 'string' && IDEMPOTENCY_KEY_RE.test(idempotencyKey)) {
+        const docRef = db.collection('orders').doc(idempotencyKey);
+        try {
+          await docRef.create({
+            ...orderData,
+            status: 'pending',
+            createdAt: FieldValue.serverTimestamp()
+          });
+          orderId = docRef.id;
+        } catch (createErr: any) {
+          const alreadyExists = createErr?.code === 6 || /ALREADY_EXISTS/i.test(String(createErr?.message || ''));
+          if (!alreadyExists) throw createErr;
+          // Same key seen before — this is a retry of a request that already
+          // succeeded. Return the existing order instead of erroring or
+          // creating a duplicate.
+          console.log(`[Orders API] Duplicate submission detected for idempotencyKey ${idempotencyKey}; returning existing order.`);
+          orderId = docRef.id;
+          isDuplicate = true;
+        }
+      } else {
+        const docRef = await db.collection('orders').add({
+          ...orderData,
+          status: 'pending',
+          createdAt: FieldValue.serverTimestamp()
+        });
+        orderId = docRef.id;
+      }
 
       // Auto-sync initial 'pending' status to Google Calendar
+      // (skipped for duplicates — the original submission already synced it)
       const initialOrderData: OrderData = {
         ...orderData,
-        id: docRef.id,
+        id: orderId,
         status: 'pending'
       };
-      syncGoogleCalendarEvent(docRef.id, initialOrderData).catch(err => {
+      if (!isDuplicate) syncGoogleCalendarEvent(orderId, initialOrderData).catch(err => {
         console.error('[Calendar] Auto-sync initial pending status failed:', err);
       });
 
-      res.json({ id: docRef.id });
+      res.json({ id: orderId, duplicate: isDuplicate });
     } catch (err) {
       res.status(500).json({ error: String(err) });
     }
   });
 
   // Customer Cancellation Request Endpoint
+  // C-02 (2026-08-06): previously accepted only {orderId} with no auth check
+  // at all — anyone who knew an order ID (returned to the client on every
+  // order creation) could cancel it. Now verifies the caller's Firebase ID
+  // token and requires it to match the order's userId/uid.
+  // NOTE: guest orders (userId/uid null, no account) still cannot be
+  // ownership-checked this way — there's no identity to check against. That
+  // gap is unresolved and is a product decision (e.g. requiring login to
+  // cancel, or a mailed cancellation link), not something this fix covers.
   app.post('/api/orders/cancel', async (req, res) => {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: 'orderId is required' });
@@ -332,6 +388,14 @@ async function startServer() {
       if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
 
       const oldData = oldSnap.data() as OrderData;
+      const ownerUid = oldData.userId || oldData.uid || null;
+      if (ownerUid) {
+        const callerUid = await verifyCustomerIdToken(req);
+        if (!callerUid || callerUid !== ownerUid) {
+          return res.status(403).json({ error: 'Not authorized to cancel this order' });
+        }
+      }
+
       const updates: Partial<OrderData> = {
         status: 'cancel_requested',
         cancelRequestedAt: new Date().toISOString(),
@@ -365,6 +429,8 @@ async function startServer() {
   });
 
   // Customer "Poke" Endpoint (Nudge Admin)
+  // C-02 (2026-08-06): same IDOR fix as /api/orders/cancel above — see that
+  // endpoint's comment for the guest-order caveat.
   app.post('/api/orders/poke', async (req, res) => {
     const { orderId } = req.body;
     if (!orderId) return res.status(400).json({ error: 'orderId is required' });
@@ -374,6 +440,15 @@ async function startServer() {
       const orderRef = db.collection('orders').doc(orderId);
       const snap = await orderRef.get();
       if (!snap.exists) return res.status(404).json({ error: 'Order not found' });
+
+      const ownerData = snap.data() as OrderData;
+      const ownerUid = ownerData.userId || ownerData.uid || null;
+      if (ownerUid) {
+        const callerUid = await verifyCustomerIdToken(req);
+        if (!callerUid || callerUid !== ownerUid) {
+          return res.status(403).json({ error: 'Not authorized to poke this order' });
+        }
+      }
 
       await orderRef.update({
         lastPokedAt: FieldValue.serverTimestamp(),
