@@ -1,0 +1,106 @@
+import { Facebook } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import { getAssetUrl } from '../lib/utils';
+import { TransparentLogo } from './TransparentLogo';
+import { Batik3DMotion } from './Batik3DMotion';
+
+function BrandMark() {
+  return (
+    <div className="w-12 h-12 shrink-0 flex items-center justify-center">
+      {/*
+        Brand asset path preserved verbatim — visual logo /
+        Malaysian heritage graphic must remain 100% intact.
+      */}
+      <TransparentLogo
+        src={getAssetUrl('/assets/wawasan_logo.svg')}
+        alt="Restoran Wawasan Logo"
+        className="w-full h-full object-contain"
+      />
+    </div>
+  );
+}
+
+export default function Footer() {
+  const { t } = useLanguage();
+
+  const NAV_LINKS = [
+    { label: t('our_story'), href: '#story' },
+    { label: t('menu'), href: '#menu' },
+    { label: t('experience'), href: '#experience' },
+    { label: t('reviews'), href: '#reviews' },
+    { label: t('visit_us'), href: '#visit' },
+  ];
+
+  return (
+    <footer className="bg-charcoal border-t border-white/5 pt-20 pb-[calc(100px+env(safe-area-inset-bottom,16px))] text-white/90 relative overflow-hidden">
+      <Batik3DMotion
+        mode="background"
+        src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
+        backgroundSize="cover"
+        backgroundRepeat="no-repeat"
+        opacity={0.12}
+        mixBlendMode="overlay"
+        maskImage="radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)"
+        maxRotation={12}
+      />
+      <div className="content-container relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">
+
+          <div className="lg:col-span-2 space-y-6">
+            <Link to="/" className="flex items-center gap-3 group min-h-[44px]">
+              <BrandMark />
+              <div>
+                <span className="font-display font-semibold text-2xl text-white tracking-tight group-hover:text-[var(--color-sunshine-cta)] transition-colors">
+                  Restoran Wawasan
+                </span>
+                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] mt-1">
+                  Pak Usop
+                </span>
+              </div>
+            </Link>
+            <p className="font-body text-white/75 text-sm max-w-sm leading-relaxed font-light">
+              A culinary legacy from Singapore since 1986, now serving authentic Nusantara comfort food in the heart of Putrajaya.
+            </p>
+            <div className="flex gap-4 pt-2">
+              <a
+                href="https://www.facebook.com/WawasanRestoran"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-white/75 hover:bg-[var(--color-sunshine-cta)] hover:text-white transition-all duration-300 border border-white/10 hover:border-[var(--color-sunshine-cta)]"
+              >
+                <Facebook className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="font-display font-semibold text-lg text-white">Explore</h4>
+            <ul className="space-y-3">
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    className="inline-flex min-h-[44px] items-center text-white/70 hover:text-[var(--color-sunshine-cta)] transition-colors text-sm font-light"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-light text-white/55">
+          <p>© {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link to="/order" className="hover:text-white transition-colors min-h-[44px] inline-flex items-center">
+              Order Online
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

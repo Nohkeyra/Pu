@@ -1,0 +1,113 @@
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// Helper for assets in the public folder (ensures correct root pathing across web routes and Capacitor)
+export function getAssetUrl(path: string): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+  // Strip any accidental leading relative markers like "./" or "../"
+  let cleanPath = path.replace(/^(\.\/|\.\.\/)+/, '');
+  // Ensure leading slash for root pathing across nested routes (e.g. /order, /admin)
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+  // If running under local file:// protocol (rare legacy WebView local file access)
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return `.${cleanPath}`;
+  }
+  return cleanPath;
+}
+
+// Additional utility for consistent spacing
+export function sectionId(id: string) {
+  return `section-${id}`
+}
+
+// Format price consistently
+export function formatPrice(price: number) {
+  return `RM ${price.toFixed(2)}`
+}
+
+/**
+ * Safely copies text to the clipboard using the modern Clipboard API
+ * with a reliable document.execCommand('copy') fallback if the modern
+ * API is blocked (e.g. inside a sandboxed/non-focused iframe).
+ */
+export async function safeCopyToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Modern clipboard API failed, attempting fallback:', err);
+    }
+  }
+
+  // Fallback: document.execCommand('copy') via temporary textarea
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Position outside screen to avoid layout disturbance
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    textArea.style.pointerEvents = "none";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return !!successful;
+  } catch (err) {
+    console.error('Fallback clipboard copy failed:', err);
+    return false;
+  }
+}
+
+/**
+ * Safely converts any value to JSON string without throwing Uncaught TypeError
+ * on circular structures, DOM elements, or custom objects.
+ */
+export function safeJsonStringify(value: unknown, space?: number | string): string {
+  const seen = new WeakSet();
+  return JSON.stringify(
+    value,
+    (_key, val) => {
+      if (typeof val === 'bigint') {
+        return val.toString();
+      }
+      if (typeof val === 'object' && val !== null) {
+        // Handle Firestore timestamp objects or objects with custom toDate
+        if ('toDate' in val && typeof (val as { toDate?: unknown }).toDate === 'function') {
+          return (val as { toDate: () => Date }).toDate().toISOString();
+        }
+        // Handle DOM nodes / HTML elements / window / synthetic events
+        if (
+          'nodeType' in val ||
+          ('src' in val && 'width' in val && 'height' in val) ||
+          (typeof window !== 'undefined' && (val === window || val instanceof HTMLElement))
+        ) {
+          return '[Object]';
+        }
+        // Guard against circular references
+        if (seen.has(val)) {
+          return '[Circular]';
+        }
+        seen.add(val);
+      }
+      return val;
+    },
+    space
+  );
+}
+

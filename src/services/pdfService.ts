@@ -1,0 +1,1016 @@
+import jsPDF from 'jspdf';
+import { getBilingualWordsInTotal } from './numberToWordsBM';
+import type { Order, CombinedInvoicePayload } from '@/types';
+import { getAssetUrl } from '@/lib/utils';
+
+const getBankDetails = () => {
+  const bankName = (import.meta.env?.VITE_BANK_NAME) || 
+                   (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_NAME) || 
+                   'BANK MUAMALAT';
+                   
+  const bankAccountName = (import.meta.env?.VITE_BANK_ACCOUNT_NAME) || 
+                          (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_ACCOUNT_NAME) || 
+                          'RESTORAN WAWASAN';
+                          
+  const bankAccountNumber = (import.meta.env?.VITE_BANK_ACCOUNT_NUMBER) || 
+                            (typeof globalThis !== 'undefined' && (globalThis as unknown as { process?: { env?: Record<string, string> } })?.process?.env?.BANK_ACCOUNT_NUMBER) || 
+                            '16010000-405710';
+                            
+  return { bankName, bankAccountName, bankAccountNumber };
+};
+
+let cachedLogoBase64: string | null = null;
+let cachedBatikHeaderBase64: string | null = null;
+
+export const getCachedLogoBase64 = (): string | null => cachedLogoBase64;
+
+export const preloadBatikHeaderForPDF = (): Promise<string> => {
+  if (cachedBatikHeaderBase64) return Promise.resolve(cachedBatikHeaderBase64);
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      resolve('');
+      return;
+    }
+
+    const tryLoad = (sources: string[], index: number = 0) => {
+      if (index >= sources.length) {
+        resolve('');
+        return;
+      }
+
+      const img = new Image();
+      const src = sources[index];
+
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1200;
+          canvas.height = 240;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 1200, 240);
+            ctx.drawImage(img, 0, 0, 1200, 240);
+            ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
+            ctx.fillRect(0, 0, 1200, 240);
+
+            cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            canvas.width = 0;
+            canvas.height = 0;
+            resolve(cachedBatikHeaderBase64);
+            return;
+          }
+        } catch { /* ignore */ }
+        tryLoad(sources, index + 1);
+      };
+
+      img.onerror = () => {
+        tryLoad(sources, index + 1);
+      };
+
+      img.src = src;
+    };
+
+    tryLoad([
+      getAssetUrl('/assets/Jawi.jpg'),
+      getAssetUrl('/assets/batik_vector_pattern.jpg'),
+      getAssetUrl('/assets/batik_pattern.jpg')
+    ], 0);
+  });
+};
+
+export const preloadLogoForPDF = (): Promise<string> => {
+  if (cachedLogoBase64) return Promise.resolve(cachedLogoBase64);
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      resolve('');
+      return;
+    }
+
+    const tryLoad = (sources: string[], index: number = 0) => {
+      if (index >= sources.length) {
+        resolve('');
+        return;
+      }
+
+      const img = new Image();
+      const src = sources[index];
+
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
+      }
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 180;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, 180, 180);
+            ctx.drawImage(img, 0, 0, 180, 180);
+            
+            const imageData = ctx.getImageData(0, 0, 180, 180);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              if (r > 235 && g > 235 && b > 235) {
+                data[i + 3] = 0;
+              }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            cachedLogoBase64 = canvas.toDataURL('image/png');
+            canvas.width = 0;
+            canvas.height = 0;
+            resolve(cachedLogoBase64);
+            return;
+          }
+        } catch { /* ignore */ }
+        tryLoad(sources, index + 1);
+      };
+
+      img.onerror = () => {
+        tryLoad(sources, index + 1);
+      };
+
+      img.src = src;
+    };
+
+    tryLoad([
+      getAssetUrl('/assets/wawasan_logo.png'),
+      getAssetUrl('/assets/wawasan_logo_fallback.png')
+    ], 0);
+  });
+};
+
+export const formatDateSafe = (dateString: string | undefined, lang: 'en' | 'bm'): string => {
+  if (!dateString) return '-';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-';
+    
+    const day = d.getDate().toString().padStart(2, '0');
+    
+    const monthsBM = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+    const monthsEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const monthName = lang === 'bm' ? monthsBM[d.getMonth()] : monthsEN[d.getMonth()];
+    const year = d.getFullYear();
+    
+    return `${day} ${monthName} ${year}`;
+  } catch (e) {
+    console.error('Date parsing error:', e);
+    return '-';
+  }
+};
+
+// Map meal values to dual labels
+export const mealLabelsMap: Record<string, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  tea_break: 'Tea Break',
+  hi_tea: 'Hi-Tea',
+};
+
+export const drawCreamBox = (
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  label: string,
+  content: string,
+  isBoldContent: boolean = true
+) => {
+  // 1. Fill background (light cream)
+  doc.setFillColor(250, 247, 240);
+  doc.rect(x, y, w, h, 'F');
+
+  // 2. Draw gold/amber border
+  doc.setDrawColor(194, 147, 45);
+  doc.setLineWidth(0.35);
+  doc.rect(x, y, w, h, 'S');
+
+  // 3. Draw dual label (antique gold, uppercase, bold, very small)
+  doc.setTextColor(140, 101, 16);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text(label, x + 4, y + 4.8);
+
+  // 4. Draw content (charcoal, normal/bold)
+  doc.setTextColor(26, 24, 22);
+  doc.setFont('helvetica', isBoldContent ? 'bold' : 'normal');
+  doc.setFontSize(9);
+
+  const maxTextWidth = w - 8;
+  const contentText = content || '-';
+  const splitLines = doc.splitTextToSize(contentText, maxTextWidth);
+  const maxVisibleLines = Math.max(1, Math.floor((h - 5) / 4.2));
+  splitLines.forEach((line: string, idx: number) => {
+    if (idx < maxVisibleLines) {
+      const displayLine = (idx === maxVisibleLines - 1 && splitLines.length > maxVisibleLines)
+        ? line.slice(0, -3) + '...'
+        : line;
+      doc.text(displayLine, x + 4, y + 9.8 + (idx * 4.2));
+    }
+  });
+};
+
+export const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 36) => {
+  if (cachedBatikHeaderBase64) {
+    try {
+      doc.addImage(cachedBatikHeaderBase64, 'JPEG', 0, 0, 210, headerHeight);
+      doc.setDrawColor(194, 147, 45);
+      doc.setLineWidth(0.4);
+      doc.line(15, headerHeight, 195, headerHeight);
+    } catch (err) {
+      console.warn('Error rendering header in PDF:', err);
+    }
+  } else {
+    doc.setFillColor(252, 249, 242);
+    doc.rect(0, 0, 210, headerHeight, 'F');
+    doc.setDrawColor(194, 147, 45);
+    doc.setLineWidth(0.4);
+    doc.line(15, headerHeight, 195, headerHeight);
+  }
+};
+
+export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 'bm' = 'bm'): jsPDF => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  // Color Palette Definitions (from the provided design)
+  const cCreamBg = [250, 247, 240];
+  const cGoldBorder = [194, 147, 45];
+  const cHeaderGold = [166, 124, 30];
+  const cDarkBrown = [96, 64, 8];
+  const cCharcoal = [26, 24, 22];
+  const cGrey = [148, 163, 184];
+
+  // ==========================================
+  // PAGE 1: PRIMARY INVOICE & ACCOUNTS
+  // ==========================================
+
+  // --- 1. HEADER SECTION ---
+  // Draw Header background image (height: 36mm)
+  drawBatikHeaderBackground(doc, 36);
+
+  // Logo on left
+  if (cachedLogoBase64) {
+    try {
+      doc.addImage(cachedLogoBase64, 'PNG', 15, 8, 20, 20);
+    } catch (err) {
+      console.error('Error adding logo to PDF:', err);
+    }
+  }
+
+  // Restoran details
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('RESTORAN WAWASAN PAK USOP', 39, 16);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Unit 3, Level B3, Menara PjH', 39, 21);
+  doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 39, 25);
+  doc.text('Est. 1986', 39, 29);
+
+  // Invoice Big Heading on right
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(26);
+  doc.text('INVOICE', 195, 20, { align: 'right' });
+
+  // Tarikh / Date
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  const formattedInvoiceDate = formatDateSafe(order.dateTime || new Date().toISOString(), lang);
+  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 29, { align: 'right' });
+
+  // --- 2. GRID INFO BOXES ---
+  // Row 1: Invoice No & Event Date
+  const invoiceNoVal = order.invoiceNo || 'PENDING';
+  drawCreamBox(doc, 15, 42, 87, 15, 'INVOICE NO.', invoiceNoVal, true);
+  
+  const formattedEventDate = formatDateSafe(order.dateTime, lang);
+  drawCreamBox(doc, 108, 42, 87, 15, 'TARIKH ACARA / EVENT DATE', formattedEventDate, true);
+
+  // Row 2: Kepada / To (Full-Width)
+  const recipientText = order.to + (order.attn ? ` (Attn: ${order.attn})` : '');
+  drawCreamBox(doc, 15, 61, 180, 15, 'KEPADA / TO', recipientText, true);
+
+  // Row 3: Event Location & Meal For
+  drawCreamBox(doc, 15, 80, 87, 15, 'LOKASI ACARA / EVENT LOCATION', order.location, true);
+
+  const mealForText = order.meals.map(m => mealLabelsMap[m] || m).join(' / ');
+  drawCreamBox(doc, 108, 80, 87, 15, 'JENIS HIDANGAN / MEAL FOR', mealForText, true);
+
+  // Row 4: Quantity (Full-Width)
+  const qtyText = order.quantity ? `${order.quantity} PAX` : '-';
+  drawCreamBox(doc, 15, 99, 180, 12, 'BILANGAN PAX / QUANTITY', qtyText, true);
+
+  // --- 3. MENU BOX ---
+  // Menu Header Bar
+  doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.rect(15, 115, 180, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('MENU', 18, 120);
+
+  // Menu Content Area with dynamic wrapping
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  const menuString = order.menu || 'Set Box Makanan & Minuman';
+  const splitMenu = doc.splitTextToSize(menuString, 174);
+  const lineCount = splitMenu.length;
+  const menuBoxHeight = Math.max(12, lineCount * 4.5 + 4);
+
+  doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+  doc.rect(15, 122, 180, menuBoxHeight, 'F');
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.35);
+  doc.rect(15, 122, 180, menuBoxHeight, 'S');
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  // Render multi-line wrapped text
+  doc.text(splitMenu, 18, 126.5);
+
+  // --- 4. MEAL ITEMS TABLE ---
+  const tableStartY = 122 + menuBoxHeight + 5;
+  
+  // Table Header Row
+  doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+  doc.rect(15, tableStartY, 180, 7, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  const headerLabels = lang === 'en' 
+    ? { item: 'Meal Type', price: 'Price / Pax (RM)', total: 'Amount (RM)' }
+    : { item: 'Jenis Hidangan', price: 'Harga / Pax (RM)', total: 'Jumlah (RM)' };
+    
+  doc.text(headerLabels.item, 18, tableStartY + 4.8);
+  doc.text(headerLabels.price, 137.5, tableStartY + 4.8, { align: 'center' });
+  doc.text(headerLabels.total, 192, tableStartY + 4.8, { align: 'right' });
+
+  // Render Table Rows
+  let currentY = tableStartY + 7;
+  const rowHeight = 7.5;
+
+  order.meals.forEach((meal) => {
+    // Fill Cream background
+    doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+    doc.rect(15, currentY, 180, rowHeight, 'F');
+
+    // Draw borders
+    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+    doc.setLineWidth(0.35);
+    doc.rect(15, currentY, 105, rowHeight, 'S'); // Col 1
+    doc.rect(120, currentY, 35, rowHeight, 'S');  // Col 2
+    doc.rect(155, currentY, 40, rowHeight, 'S');  // Col 3
+
+    // Content
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    
+    // Use translated meal label if available
+    const mealLabel = mealLabelsMap[meal] || meal;
+    doc.text(mealLabel, 18, currentY + 4.8);
+
+    doc.setFont('helvetica', 'normal');
+    const hasPrice = isFinal && order.prices && order.prices[meal] !== undefined;
+    const priceValRaw = hasPrice ? order.prices![meal] : 0;
+    const priceVal = typeof priceValRaw === 'number' ? priceValRaw : parseFloat(priceValRaw as unknown as string) || 0;
+    const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 0;
+    const subtotal = priceVal * quantityNum;
+
+    if (isFinal) {
+      doc.text(priceVal.toFixed(2), 137.5, currentY + 4.8, { align: 'center' });
+      doc.text(subtotal.toFixed(2), 192, currentY + 4.8, { align: 'right' });
+    } else {
+      doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
+      doc.setFont('helvetica', 'italic');
+      doc.text('-', 137.5, currentY + 4.8, { align: 'center' });
+      doc.text('-', 192, currentY + 4.8, { align: 'right' });
+    }
+
+    currentY += rowHeight;
+  });
+
+  // Grand Total Row
+  doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+  doc.rect(15, currentY, 180, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('JUMLAH KESELURUHAN / GRAND TOTAL', 18, currentY + 4.8);
+
+  const totalAmountNum = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount as unknown as string) || 0;
+
+  if (isFinal && totalAmountNum > 0) {
+    doc.text(`RM ${totalAmountNum.toFixed(2)}`, 192, currentY + 4.8, { align: 'right' });
+  } else {
+    doc.text('RM —', 192, currentY + 4.8, { align: 'right' });
+  }
+  currentY += 7;
+
+  // --- 5. SPELLING & TERM FOOTER (Bilingual Grand Total Words) ---
+  const textNoteY = currentY + 6;
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(8);
+
+  let nextSectionY = textNoteY;
+  if (isFinal && totalAmountNum > 0) {
+    const bilingual = getBilingualWordsInTotal(totalAmountNum);
+    doc.text(bilingual.bm, 15, textNoteY);
+    doc.text(bilingual.en, 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
+  } else {
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ sahaja.', 15, textNoteY);
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ only.', 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
+  }
+
+  // Orange vertical bar accent
+  const disclaimerY = nextSectionY + 2;
+  doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.rect(15, disclaimerY, 1, 7.5, 'F');
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.text('* Harga yang diberikan termasuk caj perkhidmatan & set pembungkusan biodegradable.', 18, disclaimerY + 3);
+  doc.text('* The price given includes service charge & biodegradable packaging sets.', 18, disclaimerY + 6.5);
+
+  // --- 6. BANK ACCOUNT DETAILS BOX ---
+  const bankBoxY = disclaimerY + 11;
+  doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+  doc.rect(15, bankBoxY, 180, 22, 'F');
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.35);
+  doc.rect(15, bankBoxY, 180, 22, 'S');
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('MAKLUMAT AKAUN BANK / BANK ACCOUNT DETAILS', 18, bankBoxY + 5);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(lang === 'en' ? 'Name' : 'Nama', 18, bankBoxY + 11);
+  doc.text(lang === 'en' ? 'Bank' : 'Bank', 18, bankBoxY + 15);
+  doc.text(lang === 'en' ? 'Account No.' : 'No. Akaun', 18, bankBoxY + 19);
+
+  doc.setFont('helvetica', 'bold');
+  const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
+  doc.text(bankAccountName, 42, bankBoxY + 11);
+  doc.text(bankName, 42, bankBoxY + 15);
+  doc.text(bankAccountNumber, 42, bankBoxY + 19);
+
+  // --- 8. PAGE 1 FOOTER LINE ---
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.3);
+  doc.line(15, 280, 195, 280);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Restoran Wawasan Pak Usop  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+
+
+  // Final page with PIC info
+  doc.addPage();
+
+  // --- 1. PAGE 2 HEADER ---
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('RESTORAN WAWASAN — INVOICE', 15, 20);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Maklumat Pegawai Bertanggungjawab / Person in Charge Details', 15, 24.5);
+
+  // Invoice Number reference on the right
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Invoice No: ${invoiceNoVal}`, 195, 22, { align: 'right' });
+
+  // --- 2. PERSON IN CHARGE DETAILS TABLE/BOX ---
+  const picHeaderY = 31;
+  doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.rect(15, picHeaderY, 180, 7.5, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('PERSON IN CHARGE DETAILS', 18, picHeaderY + 5);
+
+  const picBoxY = picHeaderY + 7.5;
+  const picBoxHeight = 44;
+  doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+  doc.rect(15, picBoxY, 180, picBoxHeight, 'F');
+  
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.35);
+  doc.rect(15, picBoxY, 180, picBoxHeight, 'S');
+
+  // Internal grid division lines
+  doc.line(105, picBoxY, 105, picBoxY + 30); // vertical split in center
+  doc.line(15, picBoxY + 15, 195, picBoxY + 15); // horizontal line 1
+  doc.line(15, picBoxY + 30, 195, picBoxY + 30); // horizontal line 2
+
+  // Populate Grid Fields
+  // Field 1: Nama / Name
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NAMA / NAME', 18, picBoxY + 5.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(order.name || '-', 18, picBoxY + 10.5);
+
+  // Field 2: No Telefon / Contact Number
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NO. TELEFON / CONTACT NUMBER', 108, picBoxY + 5.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(order.contact || '-', 108, picBoxY + 10.5);
+
+  // Field 3: E-mel / Email
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('E-MEL / EMAIL', 18, picBoxY + 20.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(order.email || '-', 18, picBoxY + 25.5);
+
+  // Field 4: Attn
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('ATTN', 108, picBoxY + 20.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(order.attn || '-', 108, picBoxY + 25.5);
+
+  // Field 5: Nota / Notes (Full width)
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NOTA / NOTES', 18, picBoxY + 35.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  
+  const notesText = order.notes || '-';
+  const splitNotes = doc.splitTextToSize(notesText, 174);
+  doc.text(splitNotes, 18, picBoxY + 40);
+
+  // --- 3. SIGNATURE SECTION ---
+  const sigSectionY = picBoxY + picBoxHeight + 25;
+
+  // Prepared By (Left)
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('DISEDIAKAN OLEH / PREPARED BY', 15, sigSectionY);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Restoran Wawasan', 15, sigSectionY + 4.5);
+
+  doc.setDrawColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setLineWidth(0.4);
+  doc.line(15, sigSectionY + 25, 80, sigSectionY + 25); // signature line
+
+  // --- 4. PAGE 2 FOOTER LINE & TEXTS ---
+  const footerLineY = sigSectionY + 42;
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.3);
+  doc.line(15, footerLineY, 195, footerLineY);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Terima kasih di atas kepercayaan anda  |  ON BEHALF OF RESTORAN WAWASAN', 105, footerLineY + 5, { align: 'center' });
+
+  doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.text('* This file is computer generated — no company stamp required', 105, footerLineY + 9, { align: 'center' });
+
+  return doc;
+};
+
+export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFinal: boolean = true): jsPDF => {
+  const { orders, includeNotes, lang = 'bm' } = payload;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const cCreamBg = [250, 247, 240];
+  const cGoldBorder = [194, 147, 45];
+  const cHeaderGold = [166, 124, 30];
+  const cDarkBrown = [96, 64, 8];
+  const cCharcoal = [26, 24, 22];
+  const cGrey = [148, 163, 184];
+
+  const drawPageHeader = (pageNumber: number) => {
+    drawBatikHeaderBackground(doc, 38);
+
+    if (cachedLogoBase64) {
+      try {
+        doc.addImage(cachedLogoBase64, 'PNG', 15, 12, 21, 21);
+      } catch { console.warn('Logo err'); }
+    }
+
+    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('RESTORAN WAWASAN PAK USOP', 40, 18);
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
+    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
+    doc.text('Est. 1986', 40, 31);
+
+    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(28);
+    doc.text('COMBINED INVOICE', 195, 22, { align: 'right' });
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 31, { align: 'right' });
+    if (pageNumber > 1) {
+      doc.text(`Page ${pageNumber}`, 195, 35, { align: 'right' });
+    }
+  };
+
+  let pageNumber = 1;
+  drawPageHeader(pageNumber);
+
+  const firstOrder = orders[0] || {} as Order;
+  const recipientText = firstOrder.to + (firstOrder.attn ? ` (Attn: ${firstOrder.attn})` : '');
+  
+  drawCreamBox(doc, 15, 42, 180, 15, 'KEPADA / TO', recipientText, true);
+
+  const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
+  const activeMeals = allPossibleMeals.filter(m => orders.some(o => (o.meals || []).includes(m)));
+  
+  const startX = 15;
+  const colDate = 20;
+  const colQty = 10;
+  const colNotes = includeNotes ? 30 : 0;
+  const colMealsWidth = activeMeals.length * 15;
+  const colRM = 16;
+  const colMenu = 180 - colDate - colQty - colNotes - colMealsWidth - colRM;
+
+  const xDate = startX;
+  const xQty = xDate + colDate;
+  const xNotes = xQty + colQty;
+  const xMenu = includeNotes ? xNotes + colNotes : xNotes;
+  const xMealsStart = xMenu + colMenu;
+  const xRM = xMealsStart + colMealsWidth;
+
+  const drawMatrixHeader = (y: number) => {
+    doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.rect(15, y, 180, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    
+    doc.text('ORDER DETAILS', xDate + (xMealsStart - xDate) / 2, y + 4.8, { align: 'center' });
+    
+    if (activeMeals.length > 0) {
+      doc.line(xMealsStart, y, xMealsStart, y + 7);
+      doc.text('PRICE PER UNIT (RM)', xMealsStart + colMealsWidth / 2, y + 4.8, { align: 'center' });
+    }
+    
+    doc.line(xRM, y, xRM, y + 7);
+    doc.text('TOTAL', xRM + colRM / 2, y + 4.8, { align: 'center' });
+
+    const r2Y = y + 7;
+    doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+    doc.rect(15, r2Y, 180, 7, 'F');
+    
+    doc.setFontSize(7.5);
+    const centerText = (txt: string, x: number, w: number) => {
+      doc.text(txt, x + w / 2, r2Y + 4.8, { align: 'center' });
+    };
+
+    centerText('Date', xDate, colDate);
+    centerText('QTY', xQty, colQty);
+    if (includeNotes) centerText('Notes', xNotes, colNotes);
+    centerText('Menu', xMenu, colMenu);
+
+    activeMeals.forEach((meal, i) => {
+      const shortLabel = mealLabelsMap[meal] || meal;
+      centerText(shortLabel, xMealsStart + (i * 15), 15);
+    });
+
+    centerText('RM', xRM, colRM);
+    
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.1);
+    [xQty, xNotes, xMenu, xMealsStart, ...activeMeals.map((_, i) => xMealsStart + i * 15), xRM].forEach(x => {
+      if (x > xDate && x < xRM + colRM) {
+        doc.line(x, r2Y, x, r2Y + 7);
+      }
+    });
+
+    return r2Y + 7;
+  };
+
+  let currentY = 62;
+  currentY = drawMatrixHeader(currentY);
+
+  let grandTotal = 0;
+
+  const checkPageBreak = (neededHeight: number) => {
+    if (currentY + neededHeight > 265) {
+      doc.addPage();
+      pageNumber++;
+      drawPageHeader(pageNumber);
+      currentY = 42;
+      currentY = drawMatrixHeader(currentY);
+    }
+  };
+
+  orders.forEach(order => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    
+    const formattedDate = formatDateSafe(order.dateTime, lang);
+    const splitDate = doc.splitTextToSize(formattedDate, colDate - 2);
+    const splitNotes = includeNotes ? doc.splitTextToSize(order.notes || '-', colNotes - 2) : [];
+    const splitMenu = doc.splitTextToSize(order.menu || 'Set Box', colMenu - 2);
+    const qtyStr = (order.quantity || 0).toString();
+    
+    const maxLines = Math.max(splitDate.length, splitNotes.length, splitMenu.length, 1);
+    const rowHeight = Math.max(7, maxLines * 4 + 3);
+    
+    checkPageBreak(rowHeight);
+
+    doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+    doc.rect(15, currentY, 180, rowHeight, 'F');
+    
+    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+    doc.setLineWidth(0.35);
+    doc.rect(15, currentY, 180, rowHeight, 'S');
+
+    [xQty, xNotes, xMenu, xMealsStart, ...activeMeals.map((_, i) => xMealsStart + i * 15), xRM].forEach(x => {
+      if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
+        doc.line(x, currentY, x, currentY + rowHeight);
+      }
+    });
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    const textY = currentY + 5;
+    
+    doc.text(splitDate, xDate + colDate / 2, textY, { align: 'center' });
+    doc.text(qtyStr, xQty + colQty / 2, textY, { align: 'center' });
+    if (includeNotes) doc.text(splitNotes, xNotes + colNotes / 2, textY, { align: 'center' });
+    doc.text(splitMenu, xMenu + colMenu / 2, textY, { align: 'center' });
+
+    activeMeals.forEach((meal, i) => {
+      if (order.meals.includes(meal) && order.prices && order.prices[meal] !== undefined) {
+        const p = order.prices[meal];
+        const val = typeof p === 'number' ? p : parseFloat(p as string);
+        doc.text(val.toFixed(2), xMealsStart + (i * 15) + 7.5, textY, { align: 'center' });
+      } else {
+        doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
+        doc.text('-', xMealsStart + (i * 15) + 7.5, textY, { align: 'center' });
+        doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+      }
+    });
+
+    const totalNum = typeof order.totalAmount === 'number' ? order.totalAmount : (parseFloat(String(order.totalAmount ?? '')) || 0);
+    doc.text(totalNum.toFixed(2), xRM + colRM - 2, textY, { align: 'right' });
+    
+    grandTotal += totalNum;
+    currentY += rowHeight;
+  });
+
+  checkPageBreak(7);
+  doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+  doc.rect(15, currentY, 180, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('JUMLAH KESELURUHAN / GRAND TOTAL', 18, currentY + 4.8);
+  doc.text(`RM ${grandTotal.toFixed(2)}`, xRM + colRM - 2, currentY + 4.8, { align: 'right' });
+  currentY += 7;
+
+  checkPageBreak(40);
+  
+  const textNoteY = currentY + 6;
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(8);
+
+  let nextSectionY = textNoteY;
+  if (isFinal && grandTotal > 0) {
+    const bilingual = getBilingualWordsInTotal(grandTotal);
+    doc.text(bilingual.bm, 15, textNoteY);
+    doc.text(bilingual.en, 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
+  } else {
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ sahaja.', 15, textNoteY);
+    doc.text('Ringgit Malaysia: ____________________________________________________________________ only.', 15, textNoteY + 4);
+    nextSectionY = textNoteY + 8;
+  }
+
+  const disclaimerY = nextSectionY + 2;
+  doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.rect(15, disclaimerY, 1, 7.5, 'F');
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.text('* Harga yang diberikan termasuk caj perkhidmatan & set pembungkusan biodegradable.', 18, disclaimerY + 3);
+  doc.text('* The price given includes service charge & biodegradable packaging sets.', 18, disclaimerY + 6.5);
+
+  const bankBoxY = disclaimerY + 11;
+  doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+  doc.rect(15, bankBoxY, 180, 22, 'F');
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.35);
+  doc.rect(15, bankBoxY, 180, 22, 'S');
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('MAKLUMAT AKAUN BANK / BANK ACCOUNT DETAILS', 18, bankBoxY + 5);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(lang === 'en' ? 'Name' : 'Nama', 18, bankBoxY + 11);
+  doc.text(lang === 'en' ? 'Bank' : 'Bank', 18, bankBoxY + 15);
+  doc.text(lang === 'en' ? 'Account No.' : 'No. Akaun', 18, bankBoxY + 19);
+
+  doc.setFont('helvetica', 'bold');
+  const bData = getBankDetails();
+  doc.text(bData.bankAccountName, 42, bankBoxY + 11);
+  doc.text(bData.bankName, 42, bankBoxY + 15);
+  doc.text(bData.bankAccountNumber, 42, bankBoxY + 19);
+
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+    doc.setLineWidth(0.3);
+    doc.line(15, 280, 195, 280);
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Restoran Wawasan Pak Usop  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+  }
+
+  doc.addPage();
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('RESTORAN WAWASAN — COMBINED INVOICE', 15, 20);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Maklumat Pegawai Bertanggungjawab / Person in Charge Details', 15, 24.5);
+
+  const picHeaderY = 31;
+  doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.rect(15, picHeaderY, 180, 7.5, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('PERSON IN CHARGE DETAILS', 18, picHeaderY + 5);
+
+  const picBoxY = picHeaderY + 7.5;
+  const picBoxHeight = 44;
+  doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+  doc.rect(15, picBoxY, 180, picBoxHeight, 'F');
+  
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.35);
+  doc.rect(15, picBoxY, 180, picBoxHeight, 'S');
+
+  doc.line(105, picBoxY, 105, picBoxY + 30);
+  doc.line(15, picBoxY + 15, 195, picBoxY + 15);
+  doc.line(15, picBoxY + 30, 195, picBoxY + 30);
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NAMA / NAME', 18, picBoxY + 5.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(firstOrder.name || '-', 18, picBoxY + 10.5);
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NO. TELEFON / CONTACT NUMBER', 108, picBoxY + 5.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(firstOrder.contact || '-', 108, picBoxY + 10.5);
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('E-MEL / EMAIL', 18, picBoxY + 20.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(firstOrder.email || '-', 18, picBoxY + 25.5);
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('ATTN', 108, picBoxY + 20.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(firstOrder.attn || '-', 108, picBoxY + 25.5);
+
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.text('NOTA / NOTES', 18, picBoxY + 35.5);
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Combined invoice for multiple selected orders.', 18, picBoxY + 40);
+
+  const sigSectionY = picBoxY + picBoxHeight + 25;
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('DISEDIAKAN OLEH / PREPARED BY', 15, sigSectionY);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Restoran Wawasan', 15, sigSectionY + 4.5);
+
+  doc.setDrawColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setLineWidth(0.4);
+  doc.line(15, sigSectionY + 25, 80, sigSectionY + 25);
+
+  const footerLineY = sigSectionY + 42;
+  doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+  doc.setLineWidth(0.3);
+  doc.line(15, footerLineY, 195, footerLineY);
+
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Terima kasih di atas kepercayaan anda  |  ON BEHALF OF RESTORAN WAWASAN', 105, footerLineY + 5, { align: 'center' });
+
+  doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.text('* This file is computer generated — no company stamp required', 105, footerLineY + 9, { align: 'center' });
+
+  return doc;
+};
+
+
+export default generateInvoicePDF;
+

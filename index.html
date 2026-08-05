@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#FCF5E3" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Wawasan" />
+
+    <title>Restoran Wawasan Pak Usop — Since 1986</title>
+    <meta name="description" content="Restoran Wawasan Pak Usop - A legacy of flavor since 1986. Malaysian multi-cuisine restaurant in Putrajaya with lake view." />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Restoran Wawasan Pak Usop" />
+    <meta property="og:description" content="A legacy of flavor since 1986 — Malaysian multi-cuisine with a Putrajaya lake view." />
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:locale" content="en_MY" />
+
+    <!-- Performance Resource Hints & Non-blocking Google Fonts with display=swap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Permanent+Marker&family=Sedgwick+Ave+Display&family=Uncial+Antiqua&display=swap"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Permanent+Marker&family=Sedgwick+Ave+Display&family=Uncial+Antiqua&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Permanent+Marker&family=Sedgwick+Ave+Display&family=Uncial+Antiqua&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+
+  </head>
+  <body>
+    <div id="root" tabindex="-1"></div>
+    <script>
+      // Safety net: if module init throws before React can mount (e.g. a
+      // top-level throw in firebaseConfig.ts), show the real error instead
+      // of leaving a blank screen. This does NOT fire once React is mounted
+      // and its own ErrorBoundary is active.
+      window.addEventListener('error', function (e) {
+        var root = document.getElementById('root');
+        if (root && root.childElementCount === 0) {
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#FCF5E3;">' +
+            '<h1 style="font-size:18px;font-weight:700;color:#3a2e1f;margin-bottom:8px;">App failed to start</h1>' +
+            '<pre style="font-size:12px;color:#5a4a35;background:#fff;border:1px solid #e5d9bf;border-radius:12px;padding:12px;max-width:100%;overflow:auto;text-align:left;white-space:pre-wrap;word-break:break-word;">' +
+            (e && e.message ? e.message : 'Unknown error') +
+            (e && e.filename ? ('\n' + e.filename + ':' + e.lineno) : '') +
+            '</pre>' +
+            '</div>';
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
