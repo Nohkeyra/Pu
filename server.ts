@@ -6,6 +6,7 @@ import path from 'path';
 import helmet from 'helmet';
 import { getAdminApp, getFirestore, type OrderData, generateSequentialInvoiceNo } from './server/firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from './server/adminAuth.js';
+import rateLimit from 'express-rate-limit';
 import { notifyCustomerOfStatusChange, createBrevoTransporter } from './server/emailService.js';
 import { syncGoogleCalendarEvent } from './server/calendarService.js';
 import { generateOrdersWorkbook } from './server/exportService.js';
@@ -36,11 +37,31 @@ const ALLOWED_ORIGINS = [
 // Google AI Studio sandbox origins follow the pattern:
 // https://ais-dev-<hash>.asia-southeast1.run.app
 // These are preview/testing environments only — not production.
+//
+// F-CORS (audit 2026-08-06): the previous check used origin.includes('google.com')
+// etc., which is a substring match — 'https://evil.com/google.com' and
+// 'https://google.com.evil.com' both incorrectly passed. Since cors() is
+// configured with credentials: true, this was a real credentialed-request
+// bypass, not cosmetic. Fixed by parsing the origin's actual hostname and
+// checking it against an exact match or a proper "ends with .<domain>" suffix
+// check, so only real subdomains of the trusted domains are allowed.
+const TRUSTED_ORIGIN_SUFFIXES = ['.run.app', '.ai.studio', '.google.com'];
+const TRUSTED_ORIGIN_HOSTS = ['run.app', 'ai.studio', 'google.com'];
+
 function isAllowedOrigin(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // AI Studio and Google domains
-  if (origin.includes('run.app') || origin.includes('ai.studio') || origin.includes('google.com')) return true;
-  // Pattern matching for sandbox origins
+
+  let hostname: string;
+  try {
+    hostname = new URL(origin).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+
+  if (TRUSTED_ORIGIN_HOSTS.includes(hostname)) return true;
+  if (TRUSTED_ORIGIN_SUFFIXES.some(suffix => hostname.endsWith(suffix))) return true;
+
+  // Pattern matching for AI Studio sandbox origins
   if (/^https:\/\/ais-(dev|pre)-[a-z0-9-]+\.asia-southeast1\.run\.app$/.test(origin)) return true;
   return false;
 }
@@ -400,6 +421,81 @@ async function startServer() {
       res.json({ success: true });
     } catch (err) {
       console.error('[Email API] Failed to send invoice email:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // F-INV (audit 2026-08-06): OrderForm.tsx (customer-facing, unauthenticated)
+  // was calling the admin-only /api/send-invoice above to email its own
+  // preliminary PDF right after order submission. That always 401'd, so the
+  // "invoice emailed" flow silently failed for every customer order.
+  // /api/send-invoice itself can't simply be made public: it accepts an
+  // arbitrary email/subject/body/pdfBase64 with no ownership check, so an
+  // unauthenticated caller could use it to relay mail to any address.
+  // This endpoint is the safe alternative: it's public, but it verifies
+  // orderId actually exists in Firestore and that the email being sent to
+  // matches that order's own stored email before sending anything, so it
+  // can't be used as an open relay. Rate-limited since it's unauthenticated.
+  const preliminaryInvoiceLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 10, // 10 requests per IP per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many requests. Please try again later.' },
+  });
+
+  app.post('/api/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
+    const { id } = req.params;
+    const { email, name, pdfBase64, lang } = req.body;
+
+    if (!id || !email || !pdfBase64) {
+      return res.status(400).json({ error: 'id, email and pdfBase64 are required' });
+    }
+
+    try {
+      const db = getFirestore();
+      const orderSnap = await db.collection('orders').doc(id).get();
+      if (!orderSnap.exists) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const orderData = orderSnap.data() as OrderData;
+      if (!orderData.email || orderData.email.toLowerCase() !== String(email).toLowerCase()) {
+        // The email supplied by the client must match the email actually
+        // stored on this order — prevents this endpoint being used to
+        // relay a caller-supplied PDF to an arbitrary address.
+        return res.status(403).json({ error: 'Email does not match order record' });
+      }
+
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
+      }
+
+      const transporter = createBrevoTransporter();
+      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
+      const isBm = lang === 'bm';
+
+      await transporter.sendMail({
+        from: `"Restoran Wawasan" <${senderEmail}>`,
+        to: orderData.email,
+        subject: isBm
+          ? `Tempahan Anda Diterima - Rujukan #${id}`
+          : `Your Booking Was Received - Ref #${id}`,
+        text: isBm
+          ? `Salam ${name || ''}, terima kasih atas tempahan anda. Sila lihat draf invois yang dilampirkan. Ini bukan invois rasmi — invois rasmi akan dikeluarkan selepas tempahan diluluskan.`
+          : `Hi ${name || ''}, thank you for your booking. Please see the attached preliminary invoice. This is not an official invoice — an official one will be issued once your order is approved.`,
+        attachments: [
+          {
+            filename: `Preliminary_Invoice_${id}.pdf`,
+            content: Buffer.from(pdfBase64, 'base64'),
+            contentType: 'application/pdf'
+          }
+        ]
+      });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Email API] Failed to send preliminary invoice email:', err);
       res.status(500).json({ error: String(err) });
     }
   });

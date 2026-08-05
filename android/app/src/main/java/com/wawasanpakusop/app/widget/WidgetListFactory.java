@@ -57,8 +57,15 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
 
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                String isoDate = o.optString("date", "");
-                Date parsed = parseIso(isoDate);
+                // F-WIDGET (audit 2026-08-06): the backend (/api/widget/upcoming-orders
+                // in server.ts) sends 'date' as YYYY-MM-DD and 'time' as HH:mm — two
+                // separate plain fields, never a combined ISO datetime string. This
+                // used to call parseIso(o.optString("date")) alone, expecting
+                // "yyyy-MM-dd'T'HH:mm:ss", which never matched real data and made
+                // every row silently fall back to "Unknown date" with a blank time.
+                String rawDate = o.optString("date", "");
+                String rawTime = o.optString("time", "");
+                Date parsed = parseDateAndTime(rawDate, rawTime);
                 String dayLabel = formatDayLabel(parsed);
                 String timeLabel = formatTime(parsed);
 
@@ -113,6 +120,7 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         itemView.setTextViewText(R.id.item_client_name, item.clientName);
         itemView.setTextViewText(R.id.item_time_pax, item.quantity + " Pax  •  " + item.time);
         itemView.setTextViewText(R.id.item_meal_location, item.location + "  —  " + item.meals);
+        itemView.setTextViewText(R.id.item_menu, item.menu);
         
         // Status stripe color
         int stripeColor;
@@ -153,12 +161,26 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         return true;
     }
 
-    private Date parseIso(String isoDate) {
+    /**
+     * Combines the backend's separate 'date' (YYYY-MM-DD) and 'time' (HH:mm,
+     * optional) fields into a single Date. Falls back to midnight if time is
+     * missing/unparseable, and to null if date itself is missing/unparseable
+     * (caller already handles a null Date as "Unknown date").
+     */
+    private Date parseDateAndTime(String rawDate, String rawTime) {
+        if (rawDate == null || rawDate.isEmpty()) return null;
+        String safeTime = (rawTime == null || rawTime.isEmpty()) ? "00:00" : rawTime;
         try {
-            SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-            return isoFormat.parse(isoDate.replace("Z", ""));
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            return format.parse(rawDate + " " + safeTime);
         } catch (Exception e) {
-            return null;
+            // Fall back to date-only parsing in case 'time' was present but malformed.
+            try {
+                SimpleDateFormat dateOnlyFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                return dateOnlyFormat.parse(rawDate);
+            } catch (Exception e2) {
+                return null;
+            }
         }
     }
 

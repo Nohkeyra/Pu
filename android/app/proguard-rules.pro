@@ -30,5 +30,3 @@
 # widget after this before shipping it.
 -keep class com.wawasanpakusop.app.widget.** { *; }
 -keep class com.wawasanpakusop.app.MainActivity { *; }
--keep class com.wawasanpakusop.app.ShareUtils { *; }
--keep class com.wawasanpakusop.app.ShareUtils$* { *; }

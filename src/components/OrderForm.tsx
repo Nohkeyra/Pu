@@ -567,9 +567,16 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       const resData = await response.json();
       const generatedOrderId = resData.id;
-      const finalInvoiceNo = resData.invoiceNo;
+      // F-INV (audit 2026-08-06): invoiceNo is only ever assigned server-side
+      // when an admin approves/bills an order (see server.ts, generateSequentialInvoiceNo).
+      // A freshly-created 'pending' order never has one, so resData.invoiceNo was
+      // always undefined here and the on-screen reference number was blank.
+      // The order ID is what actually exists at this point, so use that as the
+      // customer-facing booking reference until a real invoice number is issued.
+      const finalInvoiceNo: string | undefined = resData.invoiceNo;
+      const bookingReference = finalInvoiceNo || generatedOrderId;
 
-      setReferenceNumber(finalInvoiceNo);
+      setReferenceNumber(bookingReference);
 
       const createdOrder: Order = {
         ...(orderData as Order),
@@ -584,18 +591,21 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         const pdfDoc = generateInvoicePDF(createdOrder, false, language);
         const pdfBase64 = (pdfDoc as any).output('datauristring').split(',')[1];
 
-        // Email it using Brevo / Nodemailer on backend
-        const emailResponse = await fetch(getApiUrl('/api/send-invoice'), {
+        // F-INV (audit 2026-08-06): this used to call /api/send-invoice, which
+        // requires an admin JWT (verifyAdminToken). OrderForm is customer-facing
+        // and never has one, so this always failed with 401 and the email was
+        // never sent — silently, since only setEmailStatus('failed') ran.
+        // Switched to /api/orders/:id/send-preliminary-invoice, a public endpoint
+        // that verifies pdfBase64/email against the actual stored order before
+        // emailing, so it can't be used to relay mail to arbitrary addresses.
+        const emailResponse = await fetch(getApiUrl(`/api/orders/${generatedOrderId}/send-preliminary-invoice`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: safeJsonStringify({
             email: orderData.email,
             name: orderData.name,
-            invoiceNo: finalInvoiceNo,
             pdfBase64: pdfBase64,
-            isFinal: false,
-            lang: language,
-            orderDetails: orderData
+            lang: language
           })
         });
 

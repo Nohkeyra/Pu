@@ -20,7 +20,7 @@ android {
         release {
             // F-34 (audit, confirmed by Noh 2026-07-27): enabled after adding
             // explicit -keep rules in proguard-rules.pro for the widget
-            // package, MainActivity, and ShareUtils — these are referenced
+            // package and MainActivity — these are referenced
             // only by fully-qualified name from AndroidManifest.xml /
             // RemoteViewsService intents, not by direct code references R8
             // can trace, so without those keep rules this would silently
