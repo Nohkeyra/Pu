@@ -15,7 +15,7 @@ export function SuccessState({ title, subtitle, className, showConfetti = false 
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 200, damping: 15 }}
-      className={cn("bg-moss/20 rounded-2xl p-8 text-center border border-moss/20", className)}
+      className={cn("bg-kiwi/20 rounded-2xl p-8 text-center border border-kiwi/20", className)}
     >
       <motion.div
         initial={{ scale: 0 }}

@@ -26,11 +26,7 @@ module.exports = {
         'cream-dark':    'var(--color-cream-dark)',
         'charcoal':      'var(--color-charcoal)',
         
-        // Legacy aliases for backward compatibility
-        'warm-gold':     'var(--color-sunshine)',
-        'moss':          'var(--color-kiwi)',
-        'sage':          'var(--color-forest)',
-        'deep-brown':    'var(--color-forest)',
+        // Legacy aliases for backward compatibility removed during light-theme migration
 
         // ========== NEW DIRECTION — playful/energetic dark palette ==========
         // Added additively. Use the matching `on-*` color for text/icons

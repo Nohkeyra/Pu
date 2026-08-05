@@ -14,7 +14,6 @@
     ]
   },
   "firestore": {
-    "rules": "firestore.rules",
-    "database": "ai-studio-prompteditai-28355eac-9a25-4f6a-a449-721b566dc328"
+    "rules": "firestore.rules"
   }
 }

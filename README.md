@@ -1,48 +1,67 @@
-# Restoran Wawasan Pak Usop — Landing Page
+# Restoran Wawasan Pak Usop — System Application
 
-Reorganized from a chat transcript containing multiple design iterations for the
-Restoran Wawasan Pak Usop (Putrajaya) website rebuild.
+A full-stack enterprise Point-of-Sale, Order Management, and Customer Invoicing System for Restoran Wawasan Pak Usop.
 
-## How this was organized
+## Architecture
 
-The original transcript contained several rounds of edits to the same files
-(color palette migrations, section rewrites, etc.). Each named file below
-reflects the **most recent version** referenced in the conversation.
+This application is built as a full-stack system consisting of:
+- **Frontend**: React 18, Vite, Tailwind CSS, shadcn/ui.
+- **Mobile**: Capacitor for Android native application support.
+- **Backend**: Express.js server providing API endpoints, PDF invoice generation, and calendar/email integration.
+- **Database & Authentication**: Firebase Firestore and Firebase Authentication.
 
-```
-project/
-├── tailwind.config.js       # Final brand palette (light-theme migration)
-├── index.css                 # Final global styles / CSS variables
-├── src/
-│   ├── pages/
-│   │   ├── LandingPage.tsx   # Main landing page assembly
-│   │   └── OrderPage.tsx     # Order flow page
-│   └── components/
-│       ├── Header.tsx
-│       ├── Footer.tsx
-│       ├── MobileMenu.tsx
-│       ├── HeroSection.tsx
-│       ├── StorySection.tsx
-│       ├── MenuSection.tsx
-│       ├── ExperienceSection.tsx
-│       ├── FoodCard.tsx
-│       ├── ReviewCard.tsx
-│       └── PrincipleCard.tsx
-└── history/
-    └── draft_XX_lineNNN.*     # Earlier full-page drafts, kept for reference
-                                 (superseded by the files above)
+## Setup & Environment Variables
+
+Create a `.env` file at the root of the project by copying `.env.example`:
+
+```bash
+cp .env.example .env
 ```
 
-## Notes
+Ensure you configure the required environment variables:
+- Firebase Admin SDK credentials (e.g., `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`)
+- Email/SMTP credentials for sending invoices
+- Calendar API credentials
 
-- `history/` holds earlier, unnamed full-`LandingPage` drafts (dark "kopi"
-  theme, before the light-theme migration) plus one earlier snippet — kept
-  in case you want to compare or recover something from an earlier direction.
-- Some components reference files not present in the transcript
-  (`@/components/ui/button`, `@/components/SectionLabel`,
-  `@/context/LanguageContext`) — these were pre-existing project files not
-  pasted into the chat, so you'll need to reconnect this to your actual
-  codebase for it to build.
-- Image assets referenced (e.g. `/assets/putrajaya-lake-view.jpg`) are not
-  included — see the image mapping table that was in the original chat if
-  you still have it.
+## Build & Run
+
+### Local Development (Web)
+
+To run the application locally for web development:
+
+```bash
+npm install
+npm run dev
+```
+
+This will start the Express backend and Vite frontend together.
+
+### Production Build
+
+To build the application for production:
+
+```bash
+npm run build
+npm run start
+```
+
+This compiles the frontend assets to `dist/` and bundles the Express server to `dist/server.cjs`.
+
+### Native Android Build
+
+To build the Android APK:
+
+```bash
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+For more comprehensive Android build instructions, refer to `docs/BUILD.md`.
+
+## Deployment
+
+The application is containerized and designed for deployment to Google Cloud Run or any similar Docker-compatible environment. A `Dockerfile` is provided at the root.
+
+Ensure that all required environment variables are set in your deployment environment and that port `3000` is exposed.

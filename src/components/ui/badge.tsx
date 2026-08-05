@@ -11,7 +11,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-moss text-deep-forest [a&]:hover:bg-fern",
+          "border-transparent bg-kiwi text-deep-forest [a&]:hover:bg-fern",
         secondary:
           "border-transparent bg-forest-green text-deep-forest border border-deep-forest/10 [a&]:hover:bg-light-forest",
         destructive:
@@ -22,7 +22,7 @@ const badgeVariants = cva(
         honey:
           "border-transparent bg-honey/15 text-honey border border-honey/20 [a&]:hover:bg-honey/25",
         sage:
-          "border-transparent bg-sage/15 text-sage border border-sage/20 [a&]:hover:bg-sage/25",
+          "border-transparent bg-forest-green/15 text-forest-green border border-forest-green/20 [a&]:hover:bg-forest-green/25",
         sunshine:
           "border-transparent bg-[var(--color-sunshine-cta)]/15 text-[var(--color-sunshine-cta)] border border-[var(--color-sunshine-cta)]/30 [a&]:hover:bg-[var(--color-sunshine-cta)]/25",
         kiwi:

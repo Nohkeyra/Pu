@@ -74,7 +74,7 @@ function Calendar({
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
-          "relative has-focus:border-moss border border-deep-forest/15 shadow-sm has-focus:ring-moss/30 has-focus:ring-[3px] rounded-lg bg-forest-green",
+          "relative has-focus:border-kiwi border border-deep-forest/15 shadow-sm has-focus:ring-kiwi/30 has-focus:ring-[3px] rounded-lg bg-forest-green",
           defaultClassNames.dropdown_root
         ),
         dropdown: cn(
@@ -92,7 +92,7 @@ function Calendar({
         table: "w-full border-collapse",
         weekdays: cn("flex", defaultClassNames.weekdays),
         weekday: cn(
-          "text-sage rounded-md flex-1 font-normal text-[0.8rem] select-none",
+          "text-forest-green rounded-md flex-1 font-normal text-[0.8rem] select-none",
           defaultClassNames.weekday
         ),
         week: cn("flex w-full mt-2", defaultClassNames.week),
@@ -112,13 +112,13 @@ function Calendar({
           defaultClassNames.day
         ),
         range_start: cn(
-          "rounded-l-md bg-moss/20",
+          "rounded-l-md bg-kiwi/20",
           defaultClassNames.range_start
         ),
-        range_middle: cn("rounded-none bg-moss/10", defaultClassNames.range_middle),
-        range_end: cn("rounded-r-md bg-moss/20", defaultClassNames.range_end),
+        range_middle: cn("rounded-none bg-kiwi/10", defaultClassNames.range_middle),
+        range_end: cn("rounded-r-md bg-kiwi/20", defaultClassNames.range_end),
         today: cn(
-          "bg-moss/10 text-moss rounded-md data-[selected=true]:rounded-none",
+          "bg-kiwi/10 text-kiwi rounded-md data-[selected=true]:rounded-none",
           defaultClassNames.today
         ),
         outside: cn(
@@ -209,7 +209,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "data-[selected-single=true]:bg-moss data-[selected-single=true]:text-deep-forest data-[range-middle=true]:bg-moss/15 data-[range-middle=true]:text-deep-forest data-[range-start=true]:bg-moss data-[range-start=true]:text-deep-forest data-[range-end=true]:bg-moss data-[range-end=true]:text-deep-forest group-data-[focused=true]/day:border-moss/50 group-data-[focused=true]/day:ring-moss/20 group-data-[focused=true]/day:ring-[3px] hover:text-deep-forest hover:bg-deep-forest/5 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
+        "data-[selected-single=true]:bg-kiwi data-[selected-single=true]:text-deep-forest data-[range-middle=true]:bg-kiwi/15 data-[range-middle=true]:text-deep-forest data-[range-start=true]:bg-kiwi data-[range-start=true]:text-deep-forest data-[range-end=true]:bg-kiwi data-[range-end=true]:text-deep-forest group-data-[focused=true]/day:border-kiwi/50 group-data-[focused=true]/day:ring-kiwi/20 group-data-[focused=true]/day:ring-[3px] hover:text-deep-forest hover:bg-deep-forest/5 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className
       )}
