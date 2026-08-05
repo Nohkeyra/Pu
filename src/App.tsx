@@ -149,11 +149,17 @@ function SessionGuard({ children }: { children: ReactNode }) {
 function AppContent() {
   const location = useLocation();
   const { pathname } = location;
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAdmin(user?.uid === 'admin');
+      setIsAdmin(user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null);
     });
 
     try {

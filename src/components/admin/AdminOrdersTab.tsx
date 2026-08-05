@@ -319,17 +319,30 @@ export function AdminOrdersTab({
 
             // Relative age: e.g. "8h", "1d"
             const getRelativeTime = (o: Order) => {
-              const dateVal = o.createdAt ? new Date(
-                typeof o.createdAt === 'object' && 'seconds' in o.createdAt
-                  ? o.createdAt.seconds * 1000
-                  : o.createdAt
-              ) : (o.dateTime ? new Date(o.dateTime) : new Date());
+              let dateVal = new Date();
+              if (o.createdAt) {
+                if (typeof o.createdAt === 'object') {
+                  if ('seconds' in o.createdAt && typeof o.createdAt.seconds === 'number') {
+                    dateVal = new Date(o.createdAt.seconds * 1000);
+                  } else if ('_seconds' in o.createdAt && typeof (o.createdAt as any)._seconds === 'number') {
+                    dateVal = new Date((o.createdAt as any)._seconds * 1000);
+                  } else {
+                    dateVal = new Date(o.createdAt as any);
+                  }
+                } else {
+                  dateVal = new Date(o.createdAt);
+                }
+              } else if (o.dateTime) {
+                dateVal = new Date(o.dateTime);
+              }
               
-              const diffMs = Date.now() - dateVal.getTime();
+              const timeMs = dateVal.getTime();
+              const diffMs = isNaN(timeMs) ? 0 : Date.now() - timeMs;
               const diffMins = Math.floor(diffMs / 60000);
               const diffHrs = Math.floor(diffMins / 60);
               const diffDays = Math.floor(diffHrs / 24);
 
+              if (isNaN(diffMins) || diffMs < 0) return '1m';
               if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
               if (diffHrs < 24) return `${diffHrs}h`;
               return `${diffDays}d`;

@@ -22,9 +22,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       const stored = localStorage.getItem('app_theme');
-      return stored === 'dark' ? 'dark' : 'light';
+      return stored === 'light' ? 'light' : 'dark';
     } catch {
-      return 'light';
+      return 'dark';
     }
   });
 
@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setTheme(savedTheme);
         } else {
-          setTheme('light');
+          setTheme('dark');
         }
         const savedAccent = await getSecureItem('app_accent');
         if (savedAccent === 'kiwi' || savedAccent === 'sunshine') {

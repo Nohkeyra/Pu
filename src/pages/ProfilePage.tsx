@@ -49,7 +49,7 @@ export default function ProfilePage() {
     );
   }
 
-  const isAdmin = currentUser?.uid === 'admin';
+  const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
   return (
     <div className="min-h-screen bg-cream dark:bg-background pb-[calc(100px+env(safe-area-inset-bottom,16px))]">

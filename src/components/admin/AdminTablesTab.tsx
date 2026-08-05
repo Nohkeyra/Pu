@@ -181,8 +181,25 @@ export function AdminTablesTab({
         let valB: string | number = '';
 
         if (sortField === 'createdAt' || sortField === 'date') {
-          const timeA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0;
-          const timeB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0;
+          const getMs = (dateVal: any) => {
+            if (!dateVal) return 0;
+            if (typeof dateVal === 'string') {
+              const d = new Date(dateVal);
+              return isNaN(d.getTime()) ? 0 : d.getTime();
+            }
+            if (dateVal instanceof Date) return dateVal.getTime();
+            if (typeof dateVal === 'object') {
+              if ('seconds' in dateVal && typeof dateVal.seconds === 'number') {
+                return dateVal.seconds * 1000;
+              }
+              if ('_seconds' in dateVal && typeof dateVal._seconds === 'number') {
+                return dateVal._seconds * 1000;
+              }
+            }
+            return 0;
+          };
+          const timeA = getMs(a.createdAt);
+          const timeB = getMs(b.createdAt);
           return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
         }
 
@@ -262,7 +279,7 @@ export function AdminTablesTab({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders,
+          ...authHeaders(),
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -605,7 +622,7 @@ export function AdminTablesTab({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-cream/70 dark:bg-white/5 border-b border-stone/15 dark:border-white/10 text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md">
-                <th className="py-3 px-4 w-10 text-center">
+                <th className="py-3 px-4 w-10 min-w-[40px] text-center whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={paginatedOrders.length > 0 && selectedIds.size === paginatedOrders.length}
@@ -615,7 +632,7 @@ export function AdminTablesTab({
                 </th>
 
                 {visibleColumns.has('invoiceNo') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10" onClick={() => handleSort('date')}>
+                  <th className="py-3 px-4 min-w-[150px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('date')}>
                     <div className="flex items-center gap-1.5">
                       <span>{isBm ? 'No. Invois / Ref' : 'Invoice / Ref'}</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -624,7 +641,7 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('createdAt') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10" onClick={() => handleSort('createdAt')}>
+                  <th className="py-3 px-4 min-w-[140px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('createdAt')}>
                     <div className="flex items-center gap-1.5">
                       <span>{isBm ? 'Tarikh Hantar' : 'Submitted'}</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -633,7 +650,7 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('to') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10" onClick={() => handleSort('to')}>
+                  <th className="py-3 px-4 min-w-[200px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('to')}>
                     <div className="flex items-center gap-1.5">
                       <span>{isBm ? 'Organisasi / Klien' : 'Organization'}</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -642,7 +659,7 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('name') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10" onClick={() => handleSort('name')}>
+                  <th className="py-3 px-4 min-w-[160px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('name')}>
                     <div className="flex items-center gap-1.5">
                       <span>{isBm ? 'Pemohon' : 'Contact Person'}</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -651,27 +668,27 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('contact') && (
-                  <th className="py-3 px-4">{isBm ? 'Telefon' : 'Phone'}</th>
+                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap">{isBm ? 'Telefon' : 'Phone'}</th>
                 )}
 
                 {visibleColumns.has('email') && (
-                  <th className="py-3 px-4">{isBm ? 'Emel' : 'Email'}</th>
+                  <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">{isBm ? 'Emel' : 'Email'}</th>
                 )}
 
                 {visibleColumns.has('dateTime') && (
-                  <th className="py-3 px-4">{isBm ? 'Tarikh Acara' : 'Event Date'}</th>
+                  <th className="py-3 px-4 min-w-[165px] whitespace-nowrap">{isBm ? 'Tarikh Acara' : 'Event Date'}</th>
                 )}
 
                 {visibleColumns.has('location') && (
-                  <th className="py-3 px-4">{isBm ? 'Lokasi' : 'Location'}</th>
+                  <th className="py-3 px-4 min-w-[200px] whitespace-nowrap">{isBm ? 'Lokasi' : 'Location'}</th>
                 )}
 
                 {visibleColumns.has('preparationType') && (
-                  <th className="py-3 px-4">{isBm ? 'Sajian' : 'Prep'}</th>
+                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap">{isBm ? 'Sajian' : 'Prep'}</th>
                 )}
 
                 {visibleColumns.has('quantity') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('quantity')}>
+                  <th className="py-3 px-4 min-w-[100px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('quantity')}>
                     <div className="flex items-center justify-end gap-1.5">
                       <span>Pax</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -680,15 +697,15 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('meals') && (
-                  <th className="py-3 px-4">{isBm ? 'Hidangan' : 'Meals'}</th>
+                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap">{isBm ? 'Hidangan' : 'Meals'}</th>
                 )}
 
                 {visibleColumns.has('menu') && (
-                  <th className="py-3 px-4">{isBm ? 'Menu' : 'Menu Details'}</th>
+                  <th className="py-3 px-4 min-w-[220px] whitespace-nowrap">{isBm ? 'Menu' : 'Menu Details'}</th>
                 )}
 
                 {visibleColumns.has('totalAmount') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('totalAmount')}>
+                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('totalAmount')}>
                     <div className="flex items-center justify-end gap-1.5">
                       <span>{isBm ? 'Jumlah' : 'Total'}</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -697,7 +714,7 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('status') && (
-                  <th className="py-3 px-4 cursor-pointer hover:bg-stone/10" onClick={() => handleSort('status')}>
+                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('status')}>
                     <div className="flex items-center gap-1.5">
                       <span>Status</span>
                       <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
@@ -706,7 +723,7 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('actions') && (
-                  <th className="py-3 px-4 text-center sticky right-0 bg-cream/95 dark:bg-background/95 backdrop-blur-md z-10">
+                  <th className="py-3 px-4 min-w-[145px] text-center sticky right-0 bg-cream dark:bg-background border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-20 whitespace-nowrap">
                     {isBm ? 'Tindakan' : 'Actions'}
                   </th>
                 )}
@@ -767,11 +784,26 @@ export function AdminTablesTab({
                       {/* Submitted Date */}
                       {visibleColumns.has('createdAt') && (
                         <td className={`${densityCellPadding} text-deep-forest/70 dark:text-stone/70 whitespace-nowrap`}>
-                          {order.createdAt
-                            ? (typeof order.createdAt === 'string'
-                                ? new Date(order.createdAt).toLocaleDateString('en-GB')
-                                : new Date((order.createdAt as { seconds: number }).seconds * 1000).toLocaleDateString('en-GB'))
-                            : '-'}
+                          {(() => {
+                            if (!order.createdAt) return '-';
+                            let dateVal: Date;
+                            if (typeof order.createdAt === 'string') {
+                              dateVal = new Date(order.createdAt);
+                            } else if (order.createdAt instanceof Date) {
+                              dateVal = order.createdAt;
+                            } else if (typeof order.createdAt === 'object') {
+                              if ('seconds' in order.createdAt && typeof order.createdAt.seconds === 'number') {
+                                dateVal = new Date(order.createdAt.seconds * 1000);
+                              } else if ('_seconds' in order.createdAt && typeof (order.createdAt as any)._seconds === 'number') {
+                                dateVal = new Date((order.createdAt as any)._seconds * 1000);
+                              } else {
+                                dateVal = new Date(order.createdAt as any);
+                              }
+                            } else {
+                              dateVal = new Date(order.createdAt);
+                            }
+                            return isNaN(dateVal.getTime()) ? '-' : dateVal.toLocaleDateString('en-GB');
+                          })()}
                         </td>
                       )}
 
@@ -911,7 +943,7 @@ export function AdminTablesTab({
 
                       {/* Actions Sticky Column */}
                       {visibleColumns.has('actions') && (
-                        <td className={`${densityCellPadding} text-center sticky right-0 bg-white group-hover:bg-cream/90 dark:bg-card dark:group-hover:bg-card/90 z-10 whitespace-nowrap shadow-xs`}>
+                        <td className={`${densityCellPadding} text-center sticky right-0 bg-white dark:bg-card group-hover:bg-cream dark:group-hover:bg-stone/25 border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap`}>
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => openOrderDetail(order)}

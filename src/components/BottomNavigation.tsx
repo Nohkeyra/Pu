@@ -17,14 +17,21 @@ export default function BottomNavigation() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setIsAdmin(user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null);
     });
     return () => unsubscribe();
   }, []);
-
-  const isAdmin = currentUser?.uid === 'admin';
 
   const tabs = [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
