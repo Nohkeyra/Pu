@@ -264,6 +264,15 @@ export default function AdminPage() {
           }
         }
         await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+        // Ensure all possible admin flags are flushed to prevent UI state leakage
+        try {
+          localStorage.removeItem('wawasan_admin_token');
+          localStorage.removeItem('wawasan_admin_authenticated');
+          sessionStorage.removeItem('wawasan_admin_token');
+        } catch (e) {
+          console.warn('Manual storage cleanup warning:', e);
+        }
+
         // F-31 (audit): also end the Firebase Auth session started at
         // login, so a stale request.auth doesn't outlive the admin JWT.
         signOut(auth).catch((err) => {
@@ -271,6 +280,8 @@ export default function AdminPage() {
         });
         setIsAuthenticated(false);
         setToken('');
+        // Ensure a full clean slate of UI states/blurs by reloading
+        window.location.reload();
       }}
     />
   );

@@ -52,7 +52,7 @@ export default function BottomNavigation() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/8 bg-white/88 shadow-[0_-12px_30px_rgba(2,51,65,0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-card/92"
+        className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/8 bg-white/88 shadow-[0_-12px_30px_rgba(2,51,65,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-card/92"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 6px)' }}
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden">

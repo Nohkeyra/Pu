@@ -34,6 +34,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
         duration: 0.25,
         ease: 'power2.out',
         pointerEvents: 'auto',
+        visibility: 'visible',
       });
       gsap.fromTo(
         itemsRef.current.children,
@@ -46,6 +47,9 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
         duration: 0.18,
         ease: 'power2.in',
         pointerEvents: 'none',
+        onComplete: () => {
+          if (overlayRef.current) overlayRef.current.style.visibility = 'hidden';
+        }
       });
       document.body.style.overflow = '';
     }
@@ -62,7 +66,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Menu utama' : 'Main menu'}
-      className="fixed inset-0 z-[1100] opacity-0 pointer-events-none md:hidden bg-cream/92 backdrop-blur-2xl"
+      className="fixed inset-0 z-[1100] opacity-0 pointer-events-none md:hidden bg-cream/92 backdrop-blur-2xl invisible"
     >
       <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         <button
