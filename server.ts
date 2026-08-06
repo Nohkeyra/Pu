@@ -428,6 +428,39 @@ async function startServer() {
     }
   });
 
+  // Customer Order Deletion Endpoint (Soft/Hard delete from history)
+  app.post('/api/orders/delete', async (req, res) => {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+    const db = getFirestore();
+
+    try {
+      const orderRef = db.collection('orders').doc(orderId);
+      const snap = await orderRef.get();
+      if (!snap.exists) return res.status(404).json({ error: 'Order not found' });
+
+      const orderData = snap.data() as OrderData;
+      const ownerUid = orderData.userId || orderData.uid || null;
+
+      // Tight Ownership Check (C-04): ensure order belongs to a specific user
+      // and that the caller matches that user. Guest orders (ownerUid=null)
+      // cannot be deleted via this customer-facing endpoint.
+      const callerUid = await verifyCustomerIdToken(req);
+      if (!ownerUid || !callerUid || callerUid !== ownerUid) {
+        return res.status(403).json({ error: 'Not authorized to delete this order' });
+      }
+
+      // We actually delete it from Firestore as requested by UI
+      await orderRef.delete();
+
+      console.log(`[Orders API] Order ${orderId} deleted by user.`);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[Orders API] Delete failed:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Customer "Poke" Endpoint (Nudge Admin)
   // C-02 (2026-08-06): same IDOR fix as /api/orders/cancel above — see that
   // endpoint's comment for the guest-order caveat.
