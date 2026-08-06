@@ -28,25 +28,6 @@ module.exports = {
         
         // Legacy aliases for backward compatibility removed during light-theme migration
 
-        // ========== NEW DIRECTION — playful/energetic dark palette ==========
-        // Added additively. Use the matching `on-*` color for text/icons
-        // placed on top of these backgrounds (pre-checked for WCAG contrast).
-        'charcoal-bg':      'var(--color-charcoal-bg)',
-        'charcoal-surf':    'var(--color-charcoal-surf)',
-        'orange-new':       'var(--color-orange-new)',
-        'orange-hover':     'var(--color-orange-hover)',
-        'lime-new':         'var(--color-lime-new)',
-        'mint-new':         'var(--color-mint-new)',
-        'text-new':         'var(--color-text-new)',
-        'text-muted-new':   'var(--color-text-muted-new)',
-
-        'on-charcoal-bg':   'var(--on-charcoal-bg)',
-        'on-charcoal-surf': 'var(--on-charcoal-surf)',
-        'on-orange-new':    'var(--on-orange-new)',
-        'on-orange-hover':  'var(--on-orange-hover)',
-        'on-lime-new':      'var(--on-lime-new)',
-        'on-mint-new':      'var(--on-mint-new)',
-        
         // Shadcn tokens updated for dark theme
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -80,8 +61,6 @@ module.exports = {
         body:    ['Inter', 'system-ui', 'sans-serif'],
         accent:  ['"Space Mono"', '"JetBrains Mono"', 'monospace'],
         urban:   ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
-        graffiti: ['"Space Mono"', '"Plus Jakarta Sans"', 'sans-serif'],
-        celtic:   ['"Uncial Antiqua"', 'cursive', 'serif'],
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
