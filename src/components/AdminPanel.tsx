@@ -7,14 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription,
-  DialogFooter 
-} from '@/components/ui/dialog';
 import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { 
@@ -53,7 +45,6 @@ import { Device } from '@capacitor/device';
 import { removeSecureItem } from '@/lib/preferences';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
-import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { getAssetUrl } from '@/lib/utils';
 import { getDummyCombinedOrders, getDummyConsolidatedOrders } from '@/utils/testData';
 import { measureDbLatency } from '@/utils/diagnostics';
@@ -133,7 +124,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState('');
   const [previewFileName, setPreviewFileName] = useState('');
-  const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
 
   // Send Invoice Dialog States
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -909,7 +899,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       const pdfDataUri = pdfDoc.output('datauristring');
       setPreviewPdfUrl(pdfDataUri);
       setPreviewFileName(fileName);
-      setPreviewOrder(order);
       setIsPreviewOpen(true);
 
       if (Capacitor.isNativePlatform()) {

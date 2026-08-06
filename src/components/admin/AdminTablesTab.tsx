@@ -16,8 +16,7 @@ import {
   Calendar,
   Layers,
   ChevronDown,
-  MoreHorizontal,
-  X
+  MoreHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
