@@ -15,8 +15,11 @@ import {
   Building2,
   Calendar,
   Layers,
-  ChevronDown
+  ChevronDown,
+  MoreHorizontal,
+  X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
 import { exportOrdersAsExcelTemplate } from '@/lib/exportUtils';
@@ -34,7 +37,7 @@ interface AdminTablesTabProps {
   toast: (options: Omit<ToastMessage, 'id'>) => void;
 }
 
-type SortField = 'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt';
+type SortField = 'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt' | 'pricePerPax';
 type SortOrder = 'asc' | 'desc';
 type TableDensity = 'compact' | 'normal' | 'spacious';
 
@@ -46,20 +49,21 @@ interface ColumnDef {
 }
 
 const ALL_COLUMNS: ColumnDef[] = [
-  { key: 'invoiceNo', labelEn: 'Ref / Invoice No', labelBm: 'No. Rujukan / Invois', defaultVisible: true },
-  { key: 'createdAt', labelEn: 'Submitted Date', labelBm: 'Tarikh Hantar', defaultVisible: true },
-  { key: 'to', labelEn: 'Client / Organization', labelBm: 'Klien / Organisasi', defaultVisible: true },
-  { key: 'name', labelEn: 'Contact Person', labelBm: 'Pegawai Bertanggungjawab', defaultVisible: true },
-  { key: 'contact', labelEn: 'Phone Number', labelBm: 'No. Telefon', defaultVisible: true },
-  { key: 'email', labelEn: 'Email Address', labelBm: 'Alamat Emel', defaultVisible: true },
-  { key: 'dateTime', labelEn: 'Event Date & Time', labelBm: 'Tarikh & Masa Acara', defaultVisible: true },
-  { key: 'location', labelEn: 'Event Location', labelBm: 'Lokasi Acara', defaultVisible: true },
-  { key: 'preparationType', labelEn: 'Prep Type', labelBm: 'Jenis Sajian', defaultVisible: true },
-  { key: 'quantity', labelEn: 'Pax (Qty)', labelBm: 'Bil. Pax', defaultVisible: true },
-  { key: 'meals', labelEn: 'Meal Types', labelBm: 'Jenis Hidangan', defaultVisible: true },
-  { key: 'menu', labelEn: 'Menu Breakdown', labelBm: 'Butiran Menu', defaultVisible: false },
-  { key: 'totalAmount', labelEn: 'Total (RM)', labelBm: 'Jumlah (RM)', defaultVisible: true },
+  { key: 'dateTime', labelEn: 'Event Date', labelBm: 'Tarikh Acara', defaultVisible: true },
+  { key: 'meals', labelEn: 'Meal', labelBm: 'Hidangan', defaultVisible: true },
+  { key: 'quantity', labelEn: 'Pax', labelBm: 'Pax', defaultVisible: true },
+  { key: 'menu', labelEn: 'Menu', labelBm: 'Menu', defaultVisible: true },
+  { key: 'preparationType', labelEn: 'Prep', labelBm: 'Sajian', defaultVisible: true },
+  { key: 'pricePerPax', labelEn: 'Price per Pax', labelBm: 'Harga per Pax', defaultVisible: true },
+  { key: 'totalAmount', labelEn: 'Total', labelBm: 'Jumlah', defaultVisible: true },
   { key: 'status', labelEn: 'Status', labelBm: 'Status', defaultVisible: true },
+  { key: 'invoiceNo', labelEn: 'Ref / Invoice No', labelBm: 'No. Rujukan / Invois', defaultVisible: false },
+  { key: 'createdAt', labelEn: 'Submitted Date', labelBm: 'Tarikh Hantar', defaultVisible: false },
+  { key: 'to', labelEn: 'Client / Organization', labelBm: 'Klien / Organisasi', defaultVisible: false },
+  { key: 'name', labelEn: 'Contact Person', labelBm: 'Pegawai Bertanggungjawab', defaultVisible: false },
+  { key: 'contact', labelEn: 'Phone Number', labelBm: 'No. Telefon', defaultVisible: false },
+  { key: 'email', labelEn: 'Email Address', labelBm: 'Alamat Emel', defaultVisible: false },
+  { key: 'location', labelEn: 'Event Location', labelBm: 'Lokasi Acara', defaultVisible: false },
   { key: 'actions', labelEn: 'Actions', labelBm: 'Tindakan', defaultVisible: true },
 ];
 
@@ -100,6 +104,7 @@ export function AdminTablesTab({
 
   // Inline status update state
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
 
   const isBm = language === 'bm';
 
@@ -631,6 +636,53 @@ export function AdminTablesTab({
                   />
                 </th>
 
+                {visibleColumns.has('dateTime') && (
+                  <th className="py-3 px-4 min-w-[165px] whitespace-nowrap">{isBm ? 'Tarikh Acara' : 'Event Date'}</th>
+                )}
+
+                {visibleColumns.has('meals') && (
+                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap">{isBm ? 'Hidangan' : 'Meal'}</th>
+                )}
+
+                {visibleColumns.has('quantity') && (
+                  <th className="py-3 px-4 min-w-[100px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('quantity')}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Pax</span>
+                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.has('menu') && (
+                  <th className="py-3 px-4 min-w-[220px] whitespace-nowrap">{isBm ? 'Menu' : 'Menu'}</th>
+                )}
+
+                {visibleColumns.has('preparationType') && (
+                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap">{isBm ? 'Sajian' : 'Prep'}</th>
+                )}
+
+                {visibleColumns.has('pricePerPax') && (
+                  <th className="py-3 px-4 min-w-[150px] whitespace-nowrap text-right">{isBm ? 'Harga/Pax' : 'Price/Pax'}</th>
+                )}
+
+                {visibleColumns.has('totalAmount') && (
+                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('totalAmount')}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>{isBm ? 'Jumlah' : 'Total'}</span>
+                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
+                    </div>
+                  </th>
+                )}
+
+                {visibleColumns.has('status') && (
+                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('status')}>
+                    <div className="flex items-center gap-1.5">
+                      <span>Status</span>
+                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
+                    </div>
+                  </th>
+                )}
+
                 {visibleColumns.has('invoiceNo') && (
                   <th className="py-3 px-4 min-w-[150px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('date')}>
                     <div className="flex items-center gap-1.5">
@@ -675,56 +727,13 @@ export function AdminTablesTab({
                   <th className="py-3 px-4 min-w-[180px] whitespace-nowrap">{isBm ? 'Emel' : 'Email'}</th>
                 )}
 
-                {visibleColumns.has('dateTime') && (
-                  <th className="py-3 px-4 min-w-[165px] whitespace-nowrap">{isBm ? 'Tarikh Acara' : 'Event Date'}</th>
-                )}
-
                 {visibleColumns.has('location') && (
                   <th className="py-3 px-4 min-w-[200px] whitespace-nowrap">{isBm ? 'Lokasi' : 'Location'}</th>
                 )}
 
-                {visibleColumns.has('preparationType') && (
-                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap">{isBm ? 'Sajian' : 'Prep'}</th>
-                )}
-
-                {visibleColumns.has('quantity') && (
-                  <th className="py-3 px-4 min-w-[100px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('quantity')}>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <span>Pax</span>
-                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
-                    </div>
-                  </th>
-                )}
-
-                {visibleColumns.has('meals') && (
-                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap">{isBm ? 'Hidangan' : 'Meals'}</th>
-                )}
-
-                {visibleColumns.has('menu') && (
-                  <th className="py-3 px-4 min-w-[220px] whitespace-nowrap">{isBm ? 'Menu' : 'Menu Details'}</th>
-                )}
-
-                {visibleColumns.has('totalAmount') && (
-                  <th className="py-3 px-4 min-w-[110px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right" onClick={() => handleSort('totalAmount')}>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <span>{isBm ? 'Jumlah' : 'Total'}</span>
-                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
-                    </div>
-                  </th>
-                )}
-
-                {visibleColumns.has('status') && (
-                  <th className="py-3 px-4 min-w-[130px] whitespace-nowrap cursor-pointer hover:bg-stone/10" onClick={() => handleSort('status')}>
-                    <div className="flex items-center gap-1.5">
-                      <span>Status</span>
-                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
-                    </div>
-                  </th>
-                )}
-
                 {visibleColumns.has('actions') && (
-                  <th className="py-3 px-4 min-w-[145px] text-center sticky right-0 bg-cream dark:bg-background border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-20 whitespace-nowrap">
-                    {isBm ? 'Tindakan' : 'Actions'}
+                  <th className={`py-3 px-2 ${openActionRowId ? 'min-w-[320px]' : 'min-w-[60px]'} text-center sticky right-0 bg-cream dark:bg-background border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-20 whitespace-nowrap transition-all duration-300`}>
+                    {openActionRowId ? (isBm ? 'Tindakan' : 'Actions') : <MoreHorizontal className="w-4 h-4 mx-auto opacity-40" />}
                   </th>
                 )}
               </tr>
@@ -768,6 +777,117 @@ export function AdminTablesTab({
                           className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
                         />
                       </td>
+
+                      {/* Event Date & Time */}
+                      {visibleColumns.has('dateTime') && (
+                        <td className={`${densityCellPadding} text-deep-forest/80 dark:text-stone/80 whitespace-nowrap`}>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] shrink-0" />
+                            <span>{order.dateTime || '-'}</span>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Meals */}
+                      {visibleColumns.has('meals') && (
+                        <td className={`${densityCellPadding} whitespace-nowrap`}>
+                          <div className="flex flex-wrap gap-1">
+                            {(order.meals || []).map(m => (
+                              <span key={m} className="px-1.5 py-0.5 bg-stone/10 dark:bg-white/10 rounded microcopy-12-upper font-medium uppercase tracking-wider text-deep-forest dark:text-white">
+                                {m}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Pax */}
+                      {visibleColumns.has('quantity') && (
+                        <td className={`${densityCellPadding} font-bold text-right text-deep-forest dark:text-white whitespace-nowrap`}>
+                          {order.quantity || 0}
+                        </td>
+                      )}
+
+                      {/* Menu Breakdown */}
+                      {visibleColumns.has('menu') && (
+                        <td className={`${densityCellPadding} max-w-[200px] truncate text-xs text-deep-forest/70 dark:text-stone/70`} title={order.menu}>
+                          {order.menu || '-'}
+                        </td>
+                      )}
+
+                      {/* Prep Type */}
+                      {visibleColumns.has('preparationType') && (
+                        <td className={`${densityCellPadding} whitespace-nowrap`}>
+                          <span className={`px-2 py-0.5 rounded-full microcopy-12 font-semibold ${
+                            order.preparationType === 'meal_box'
+                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300'
+                          }`}>
+                            {order.preparationType === 'meal_box' ? 'Meal Box' : 'Buffet'}
+                          </span>
+                        </td>
+                      )}
+
+                      {/* Price per Pax */}
+                      {visibleColumns.has('pricePerPax') && (
+                        <td className={`${densityCellPadding} text-right font-mono font-bold text-deep-forest dark:text-white whitespace-nowrap`}>
+                          {order.prices ? (
+                            <div className="flex flex-col items-end">
+                              {Object.entries(order.prices).map(([meal, price]) => (
+                                <span key={meal} className="text-[10px] leading-tight">
+                                  {meal.charAt(0).toUpperCase() + meal.slice(1)}: RM {price.toFixed(2)}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-deep-forest/40 dark:text-stone/40 font-normal italic text-xs">
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Total Amount */}
+                      {visibleColumns.has('totalAmount') && (
+                        <td className={`${densityCellPadding} text-right font-mono font-bold text-deep-forest dark:text-white whitespace-nowrap`}>
+                          {order.totalAmount ? (
+                            <span className="text-emerald-700 dark:text-emerald-400">
+                              RM {order.totalAmount.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-deep-forest/40 dark:text-stone/40 font-normal italic text-xs">
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* Interactive Status Selector */}
+                      {visibleColumns.has('status') && (
+                        <td className={`${densityCellPadding} whitespace-nowrap`}>
+                          <div className="relative inline-block">
+                            <select
+                              disabled={updatingId === order.id}
+                              value={order.status || 'pending'}
+                              onChange={(e) => handleQuickStatusChange(order.id!, e.target.value)}
+                              className={`text-xs font-semibold rounded-lg px-2 py-1 border border-stone/20 dark:border-white/10 focus:outline-none cursor-pointer ${
+                                (order.status || 'pending') === 'approved'
+                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
+                                  : (order.status || 'pending') === 'billed'
+                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                                  : (order.status || 'pending') === 'cancelled'
+                                  ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300'
+                                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="approved">Approved</option>
+                              <option value="billed">Billed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                        </td>
+                      )}
 
                       {/* Invoice / Ref */}
                       {visibleColumns.has('invoiceNo') && (
@@ -842,16 +962,6 @@ export function AdminTablesTab({
                         </td>
                       )}
 
-                      {/* Event Date & Time */}
-                      {visibleColumns.has('dateTime') && (
-                        <td className={`${densityCellPadding} text-deep-forest/80 dark:text-stone/80 whitespace-nowrap`}>
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] shrink-0" />
-                            <span>{order.dateTime || '-'}</span>
-                          </div>
-                        </td>
-                      )}
-
                       {/* Location */}
                       {visibleColumns.has('location') && (
                         <td className={`${densityCellPadding} text-deep-forest/70 dark:text-stone/70 max-w-[180px] truncate`} title={order.location}>
@@ -859,130 +969,76 @@ export function AdminTablesTab({
                         </td>
                       )}
 
-                      {/* Prep Type */}
-                      {visibleColumns.has('preparationType') && (
-                        <td className={`${densityCellPadding} whitespace-nowrap`}>
-                          <span className={`px-2 py-0.5 rounded-full microcopy-12 font-semibold ${
-                            order.preparationType === 'meal_box'
-                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300'
-                          }`}>
-                            {order.preparationType === 'meal_box' ? 'Meal Box' : 'Buffet'}
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Pax */}
-                      {visibleColumns.has('quantity') && (
-                        <td className={`${densityCellPadding} font-bold text-right text-deep-forest dark:text-white whitespace-nowrap`}>
-                          {order.quantity || 0}
-                        </td>
-                      )}
-
-                      {/* Meals */}
-                      {visibleColumns.has('meals') && (
-                        <td className={`${densityCellPadding} whitespace-nowrap`}>
-                          <div className="flex flex-wrap gap-1">
-                            {(order.meals || []).map(m => (
-                              <span key={m} className="px-1.5 py-0.5 bg-stone/10 dark:bg-white/10 rounded microcopy-12-upper font-medium uppercase tracking-wider text-deep-forest dark:text-white">
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Menu Breakdown */}
-                      {visibleColumns.has('menu') && (
-                        <td className={`${densityCellPadding} max-w-[200px] truncate text-xs text-deep-forest/70 dark:text-stone/70`} title={order.menu}>
-                          {order.menu || '-'}
-                        </td>
-                      )}
-
-                      {/* Total Amount */}
-                      {visibleColumns.has('totalAmount') && (
-                        <td className={`${densityCellPadding} text-right font-mono font-bold text-deep-forest dark:text-white whitespace-nowrap`}>
-                          {order.totalAmount ? (
-                            <span className="text-emerald-700 dark:text-emerald-400">
-                              RM {order.totalAmount.toFixed(2)}
-                            </span>
-                          ) : (
-                            <span className="text-deep-forest/40 dark:text-stone/40 font-normal italic text-xs">
-                              Pending
-                            </span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Interactive Status Selector */}
-                      {visibleColumns.has('status') && (
-                        <td className={`${densityCellPadding} whitespace-nowrap`}>
-                          <div className="relative inline-block">
-                            <select
-                              disabled={updatingId === order.id}
-                              value={order.status || 'pending'}
-                              onChange={(e) => handleQuickStatusChange(order.id!, e.target.value)}
-                              className={`text-xs font-semibold rounded-lg px-2 py-1 border border-stone/20 dark:border-white/10 focus:outline-none cursor-pointer ${
-                                (order.status || 'pending') === 'approved'
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
-                                  : (order.status || 'pending') === 'billed'
-                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                                  : (order.status || 'pending') === 'cancelled'
-                                  ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300'
-                                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                              }`}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="approved">Approved</option>
-                              <option value="billed">Billed</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Actions Sticky Column */}
+                      {/* Actions Sticky Column - Collapsible */}
                       {visibleColumns.has('actions') && (
-                        <td className={`${densityCellPadding} text-center sticky right-0 bg-white dark:bg-card group-hover:bg-cream dark:group-hover:bg-stone/25 border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap`}>
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => openOrderDetail(order)}
-                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] transition-colors min-w-[44px]"
-                              title="View Full Submission Details"
-                              aria-label={isBm ? 'Lihat' : 'View'}
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span className="text-[10px] leading-none">{isBm ? 'Lihat' : 'View'}</span>
-                            </button>
+                        <td className={`${densityCellPadding} text-center sticky right-0 bg-white dark:bg-card group-hover:bg-cream dark:group-hover:bg-stone/25 border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap transition-all duration-300`}>
+                          <div className="flex items-center justify-center">
+                            <AnimatePresence initial={false}>
+                              {openActionRowId === order.id && (
+                                <motion.div
+                                  initial={{ width: 0, opacity: 0, x: 20 }}
+                                  animate={{ width: 'auto', opacity: 1, x: 0 }}
+                                  exit={{ width: 0, opacity: 0, x: 20 }}
+                                  className="flex items-center gap-1 overflow-hidden"
+                                >
+                                  <button
+                                    onClick={() => openOrderDetail(order)}
+                                    className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] transition-colors min-w-[44px]"
+                                    title="View Full Submission Details"
+                                    aria-label={isBm ? 'Lihat' : 'View'}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    <span className="microcopy-12 leading-none">{isBm ? 'Lihat' : 'View'}</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handlePreviewPDF(order, isFinal)}
+                                    className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-blue-500 transition-colors min-w-[44px]"
+                                    title="Preview Official PDF Invoice"
+                                    aria-label={isBm ? 'Pratonton' : 'Preview'}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    <span className="microcopy-12 leading-none">{isBm ? 'Pratonton' : 'Preview'}</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDownloadPDF(order, isFinal)}
+                                    className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-emerald-500 transition-colors min-w-[44px]"
+                                    title="Download PDF"
+                                    aria-label={isBm ? 'Muat Turun' : 'Download'}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    <span className="microcopy-12 leading-none">{isBm ? 'Muat Turun' : 'Download'}</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDelete(order.id!)}
+                                    className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 transition-colors min-w-[44px]"
+                                    title="Delete Submission"
+                                    aria-label={isBm ? 'Padam' : 'Delete'}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span className="microcopy-12 leading-none">{isBm ? 'Padam' : 'Delete'}</span>
+                                  </button>
+                                  <div className="w-[1px] h-4 bg-stone/20 mx-1" />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
 
                             <button
-                              onClick={() => handlePreviewPDF(order, isFinal)}
-                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-blue-500 transition-colors min-w-[44px]"
-                              title="Preview Official PDF Invoice"
-                              aria-label={isBm ? 'Pratonton' : 'Preview'}
+                              onClick={() => setOpenActionRowId(openActionRowId === order.id ? null : order.id)}
+                              className={`p-2 rounded-full transition-all duration-300 ${
+                                openActionRowId === order.id 
+                                  ? 'bg-stone/10 text-deep-forest dark:text-white' 
+                                  : 'text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10'
+                              }`}
+                              title={openActionRowId === order.id ? (isBm ? 'Tutup' : 'Close') : (isBm ? 'Buka Tindakan' : 'Open Actions')}
                             >
-                              <FileText className="w-4 h-4" />
-                              <span className="text-[10px] leading-none">{isBm ? 'Pratonton' : 'Preview'}</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleDownloadPDF(order, isFinal)}
-                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-emerald-500 transition-colors min-w-[44px]"
-                              title="Download PDF"
-                              aria-label={isBm ? 'Muat Turun' : 'Download'}
-                            >
-                              <Download className="w-4 h-4" />
-                              <span className="text-[10px] leading-none">{isBm ? 'Muat Turun' : 'Download'}</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(order.id!)}
-                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 transition-colors min-w-[44px]"
-                              title="Delete Submission"
-                              aria-label={isBm ? 'Padam' : 'Delete'}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span className="text-[10px] leading-none">{isBm ? 'Padam' : 'Delete'}</span>
+                              {openActionRowId === order.id ? (
+                                <ChevronRight className="w-4 h-4" />
+                              ) : (
+                                <ChevronLeft className="w-4 h-4" />
+                              )}
                             </button>
                           </div>
                         </td>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -1875,489 +1876,562 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </motion.main>
 
       {/* Order Detail Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-4xl w-[95vw] max-h-[90dvh] !flex bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-0 overflow-hidden relative">
+      {isDetailOpen && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6"
+          onClick={() => setIsDetailOpen(false)}
+        >
+          {/* Backdrop with blur - separate from content to avoid layout issues */}
+          <div className="absolute inset-0 bg-deep-forest/80 backdrop-blur-md" />
           
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/20 dark:bg-background/20 flex-shrink-0">
-            <div>
-              <DialogTitle className="text-xl font-display font-bold text-deep-forest dark:text-white">
-                {t('order_details')}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-deep-forest/60 dark:text-stone/40 mt-0.5">
-                {selectedOrder?.invoiceNo || selectedOrder?.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
-              </DialogDescription>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="w-full h-full max-w-5xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-deep-forest"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-sm flex-shrink-0">
+              <div className="flex-1">
+                <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
+                  {t('order_details')}
+                </h2>
+                {selectedOrder && (
+                  <p className="text-xs md:text-sm text-deep-forest/60 dark:text-stone/40 mt-0.5 font-medium">
+                    {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setIsDetailOpen(false)}
+                className="ml-4 p-2 rounded-full hover:bg-stone/10 transition-colors flex-shrink-0"
+                aria-label="Close"
+              >
+                <X className="w-6 h-6 text-deep-forest/60 dark:text-stone/60" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsDetailOpen(false)}
-              className="p-1.5 rounded-full hover:bg-stone/10 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5 text-deep-forest/60 dark:text-stone/60" />
-            </button>
-          </div>
 
-          {/* Body */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-6 md:p-8">
-            {selectedOrder && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Main section: 8 requested fields only */}
-                <div className="lg:col-span-2 space-y-8 bg-white dark:bg-background/30 p-6 md:p-8 rounded-2xl border border-[var(--color-sunshine-cta)]/10 shadow-sm">
-                  {[
-                    { label: "Meal For :", value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
-                    { label: "Event Date :", value: selectedOrder.dateTime ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') : '-' },
-                    { label: "Event Location :", value: selectedOrder.location || '-' },
-                    { label: "Quantity :", value: selectedOrder.quantity != null ? `${selectedOrder.quantity} pax` : '-' },
-                    { label: "Menu :", value: selectedOrder.menu || '-' },
-                    { label: "Name :", value: selectedOrder.name || '-' },
-                    { label: "Contact Number :", value: selectedOrder.contact || '-' },
-                    { label: "Notes :", value: selectedOrder.notes || '-' },
-                  ].map((field, idx) => (
-                    <div key={idx} className="pb-6 border-b border-[var(--color-sunshine-cta)]/10 last:border-0 last:pb-0">
-                      <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider block mb-2">
-                        {field.label}
-                      </span>
-                      <p className="text-xl md:text-2xl font-bold text-deep-forest dark:text-white leading-relaxed break-words whitespace-pre-line">
-                        {field.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Sidebar section: Status & Pricing */}
-                <div className="lg:col-span-1 space-y-6">
+            {/* Body - Scrollable Area */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 md:p-10">
+              {selectedOrder ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   
-                  {/* Status Banner */}
-                  <div className="p-5 rounded-2xl bg-white dark:bg-background/30 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-3">
-                    <span className="text-sm font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-wider block">Status</span>
-                    <div className="flex items-center justify-between">
-                      {getStatusBadge(selectedOrder.status)}
-                    </div>
-                  </div>
-
-                  {/* Pricing and Grand Total */}
-                  <div className="p-5 rounded-2xl bg-white dark:bg-background/30 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-5">
-                    <h4 className="font-bold text-deep-forest dark:text-white border-b border-[var(--color-sunshine-cta)]/10 pb-2">{t('price_pax')}</h4>
-                    <div className="space-y-4">
-                      {selectedOrder.meals.map((meal, idx) => (
-                        <div key={`${meal}-${idx}`} className="flex flex-col gap-2">
-                          <Label className="text-sm text-deep-forest/70 dark:text-stone/30 font-semibold">
-                            {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
-                          </Label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-deep-forest/50">RM</span>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={prices[meal] || ''}
-                              onChange={(e) => setPrices(prev => ({ 
-                                ...prev, 
-                                [meal]: e.target.value 
-                              }))}
-                              className="pl-10 h-11 bg-cream/50 dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest text-base rounded-xl"
-                              placeholder="0.00"
-                            />
-                          </div>
+                  {/* Main section: All fields */}
+                  <div className="lg:col-span-2 space-y-10">
+                    <div className="bg-white/50 dark:bg-background/20 p-6 md:p-8 rounded-3xl border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-8">
+                      {[
+                        { label: language === 'bm' ? "Tarikh Hantar :" : "Submitted Date :", value: (() => {
+                          const d = selectedOrder.createdAt;
+                          if (!d) return '-';
+                          const date = d instanceof Date ? d : typeof d === 'string' ? new Date(d) : 'seconds' in d ? new Date((d as any).seconds * 1000) : '_seconds' in d ? new Date((d as any)._seconds * 1000) : null;
+                          return date ? format(date, 'EEEE, d MMMM yyyy, h:mm a') : '-';
+                        })() },
+                        { label: language === 'bm' ? "Klien / Organisasi :" : "Client / Organization :", value: selectedOrder.to || '-' },
+                        selectedOrder.department ? { label: language === 'bm' ? "Jabatan :" : "Department :", value: selectedOrder.department } : null,
+                        selectedOrder.attn ? { label: language === 'bm' ? "Untuk Perhatian :" : "Attn :", value: selectedOrder.attn } : null,
+                        { label: language === 'bm' ? "Pegawai Bertanggungjawab :" : "Contact Person :", value: selectedOrder.name || '-' },
+                        { label: language === 'bm' ? "Nombor Telefon :" : "Contact Number :", value: selectedOrder.contact || '-' },
+                        { label: language === 'bm' ? "Alamat Emel :" : "Email Address :", value: selectedOrder.email || '-' },
+                        { label: language === 'bm' ? "Tarikh & Masa Acara :" : "Event Date & Time :", value: selectedOrder.dateTime ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') : '-' },
+                        { label: language === 'bm' ? "Lokasi Acara :" : "Event Location :", value: selectedOrder.location || '-' },
+                        { label: language === 'bm' ? "Jenis Sajian :" : "Preparation Type :", value: selectedOrder.preparationType === 'meal_box' ? (language === 'bm' ? 'Pek Makanan (Meal Box)' : 'Meal Box') : selectedOrder.preparationType === 'buffet' ? 'Buffet' : '-' },
+                        { label: language === 'bm' ? "Bilangan Pax :" : "Quantity :", value: selectedOrder.quantity != null ? `${selectedOrder.quantity} pax` : '-' },
+                        { label: language === 'bm' ? "Hidangan Untuk :" : "Meal For :", value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
+                        { label: language === 'bm' ? "Butiran Menu :" : "Menu Details :", value: selectedOrder.menu || '-' },
+                        { label: language === 'bm' ? "Nota :" : "Notes :", value: selectedOrder.notes || '-' },
+                      ].filter(Boolean).map((field, idx) => (
+                        <div key={idx} className="pb-6 border-b border-[var(--color-sunshine-cta)]/10 last:border-0 last:pb-0">
+                          <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block mb-2 opacity-80">
+                            {field!.label}
+                          </span>
+                          <p className="text-lg md:text-xl font-bold text-deep-forest dark:text-white leading-relaxed break-words whitespace-pre-line">
+                            {field!.value}
+                          </p>
                         </div>
                       ))}
                     </div>
+                  </div>
 
-                    {/* Total Preview */}
-                    <div className="p-4 bg-cream/30 dark:bg-background/50 rounded-xl border border-[var(--color-sunshine-cta)]/10">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold text-deep-forest/60 dark:text-stone/40">{t('grand_total')}:</span>
-                        <span className="text-xl font-bold text-[var(--color-sunshine-cta)]">
-                          RM {selectedOrder.meals.reduce((total, meal) => {
+                  {/* Sidebar section: Status & Pricing */}
+                  <div className="lg:col-span-1 space-y-6">
+                    
+                    {/* Status Banner */}
+                    <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-3">
+                      <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">Status</span>
+                      <div className="flex items-center justify-between">
+                        {getStatusBadge(selectedOrder.status)}
+                      </div>
+                    </div>
+
+                    {/* Pricing and Grand Total */}
+                    <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-6">
+                      <h4 className="font-bold text-deep-forest dark:text-white border-b border-[var(--color-sunshine-cta)]/10 pb-3 uppercase tracking-wider text-sm">{t('price_pax')}</h4>
+                      <div className="space-y-5">
+                        {selectedOrder.meals.map((meal, idx) => (
+                          <div key={`${meal}-${idx}`} className="flex flex-col gap-2">
+                            <Label className="text-xs text-deep-forest/70 dark:text-stone/40 font-bold uppercase tracking-wide">
+                              {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
+                            </Label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-deep-forest/40">RM</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={prices[meal] || ''}
+                                onChange={(e) => setPrices(prev => ({ 
+                                  ...prev, 
+                                  [meal]: e.target.value 
+                                }))}
+                                className="pl-12 h-12 bg-cream/30 dark:bg-background/40 border-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-white text-lg font-bold rounded-2xl focus:ring-[var(--color-sunshine-cta)]/30"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Total Preview */}
+                      <div className="p-5 bg-[var(--color-sunshine-cta)]/5 dark:bg-background/60 rounded-2xl border border-[var(--color-sunshine-cta)]/10">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/40 uppercase tracking-widest">{t('grand_total')}:</span>
+                          <span className="text-2xl font-black text-[var(--color-sunshine-cta)]">
+                            RM {selectedOrder.meals.reduce((total, meal) => {
+                              const price = parseFloat(prices[meal] || '0');
+                              return total + (price * selectedOrder.quantity);
+                            }, 0).toFixed(2)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-deep-forest/50 dark:text-stone/50 italic leading-relaxed font-medium">
+                          {numberToWords(selectedOrder.meals.reduce((total, meal) => {
                             const price = parseFloat(prices[meal] || '0');
                             return total + (price * selectedOrder.quantity);
-                          }, 0).toFixed(2)}
-                        </span>
+                          }, 0).toFixed(2), selectedOrder.lang)}
+                        </p>
                       </div>
-                      <p className="text-xs text-deep-forest/50 dark:text-stone/50 italic leading-snug">
-                        {numberToWords(selectedOrder.meals.reduce((total, meal) => {
-                          const price = parseFloat(prices[meal] || '0');
-                          return total + (price * selectedOrder.quantity);
-                        }, 0).toFixed(2), selectedOrder.lang)}
-                      </p>
+                    </div>
+
+                  </div>
+
+                </div>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center space-y-4 text-deep-forest/40">
+                  <Loader2 className="w-12 h-12 animate-spin" />
+                  <p className="font-medium">Loading order details...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-5 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-sm flex flex-wrap gap-3 items-center justify-end flex-shrink-0">
+              {selectedOrder && (
+                <div className="flex flex-wrap gap-2 flex-1">
+                  {selectedOrder?.status === 'cancel_requested' ? (
+                    <>
+                      <Button
+                        onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
+                        disabled={isApproving}
+                        className="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-rose-600/20 transition-all active:scale-95"
+                      >
+                        {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                        {t('approve_cancellation') || 'Approve Cancellation'}
+                      </Button>
+                      <Button
+                        onClick={() => selectedOrder.id && handleRejectCancellation(selectedOrder.id)}
+                        disabled={isApproving}
+                        variant="outline"
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                      >
+                        <XCircle className="w-5 h-5 mr-2" />
+                        {t('reject_cancellation') || 'Reject Cancellation'}
+                      </Button>
+                    </>
+                  ) : selectedOrder?.status === 'pending' ? (
+                    <>
+                      <Button
+                        onClick={() => handleApprove(selectedOrder?.id || '')}
+                        disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 py-6 h-auto font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex-1 sm:flex-none"
+                      >
+                        {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                        {t('approve') || 'Approve & Set Pricing'}
+                      </Button>
+                      <Button
+                        onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
+                        disabled={isApproving}
+                        variant="outline"
+                        className="border-red-200 text-red-600 hover:bg-red-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                      >
+                        <XCircle className="w-5 h-5 mr-2" />
+                        {t('reject_order') || 'Reject Order'}
+                      </Button>
+                    </>
+                  ) : (selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed') ? (
+                    <>
+                      <Button
+                        onClick={() => handleApprove(selectedOrder?.id || '')}
+                        disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                      >
+                        {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                        {t('update_invoice') || 'Update Invoice'}
+                      </Button>
+                      <Button
+                        onClick={() => selectedOrder && openSendDialog(selectedOrder)}
+                        disabled={isApproving}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                      >
+                        <Send className="w-5 h-5 mr-2" />
+                        {t('send_invoice') || 'Send Invoice'}
+                      </Button>
+                      <Button
+                        onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
+                        variant="outline"
+                        className="border-stone-200 text-stone-600 hover:bg-stone-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                      >
+                        <XCircle className="w-5 h-5 mr-2" />
+                        {t('cancel_order') || 'Cancel Order'}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                onClick={() => setIsDetailOpen(false)}
+                className="text-deep-forest/60 hover:bg-stone/10 rounded-2xl px-6 py-6 h-auto font-bold"
+              >
+                {t('close')}
+              </Button>
+            </div>
+          </motion.div>
+        </div>, document.body)}
+
+
+
+      {/* Send Invoice Modal */}
+      {isSendDialogOpen && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6"
+        >
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-deep-forest/80 backdrop-blur-md" 
+            onClick={() => setIsSendDialogOpen(false)}
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            className="w-full h-auto max-h-[95vh] max-w-xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/30 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-md flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[var(--color-sunshine-cta)]/10 rounded-2xl">
+                  <Send className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
+                    {t('send_invoice_pdf')}
+                  </h2>
+                  <p className="text-xs text-deep-forest/50 font-medium">
+                    {t('send_invoice_desc')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSendDialogOpen(false)}
+                className="p-2 rounded-full hover:bg-stone/10 transition-all hover:rotate-90"
+              >
+                <X className="w-6 h-6 text-deep-forest/40" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+              {sendOrder && (
+                <div className="space-y-8">
+                  {/* Summary Box */}
+                  <div className="p-6 bg-white/60 dark:bg-background/20 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
+                    <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
+                      <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('invoice_no_label')}</span>
+                      <span className="font-mono font-bold text-deep-forest dark:text-white">
+                        {getDisplayInvoiceNo(sendOrder)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
+                      <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('customer_label')}</span>
+                      <span className="font-bold text-deep-forest dark:text-white">{sendOrder.to}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1">
+                      <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('grand_total_label')}</span>
+                      <span className="text-xl font-black text-[var(--color-sunshine-cta)]">
+                        RM {(sendOrder.totalAmount || sendOrder.meals.reduce((sum, meal) => {
+                          const price = sendOrder.prices?.[meal] || 0;
+                          return sum + (price * sendOrder.quantity);
+                        }, 0)).toFixed(2)}
+                      </span>
                     </div>
                   </div>
 
-                </div>
+                  {/* Options */}
+                  <div className="space-y-6">
+                    {/* Email Option */}
+                    <div className="p-6 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl">
+                          <Mail className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <span className="font-bold text-deep-forest dark:text-white">{t('option_email')}</span>
+                      </div>
+                      <p className="text-xs text-deep-forest/60 leading-relaxed italic">
+                        {t('email_desc')}
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="send-email-input" className="text-[10px] font-black text-deep-forest/40 uppercase tracking-widest ml-1">
+                          {t('recipient_email')}
+                        </Label>
+                        <Input
+                          id="send-email-input"
+                          type="email"
+                          value={recipientEmail}
+                          onChange={(e) => setRecipientEmail(e.target.value)}
+                          className="bg-white/40 dark:bg-background/40 border-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white focus:ring-[var(--color-sunshine-cta)]/30 h-14 rounded-2xl text-base px-5 font-medium"
+                          placeholder="customer@email.com"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleSendEmail}
+                        disabled={sendingEmail || !recipientEmail}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl h-14 text-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest"
+                      >
+                        {sendingEmail ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            {t('sending')}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-3 justify-center">
+                            <Mail className="w-5 h-5" />
+                            {t('send_invoice_email')}
+                          </span>
+                        )}
+                      </Button>
+                    </div>
 
-              </div>
-            )}
-          </div>
-
-          {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-[var(--color-sunshine-cta)]/10 bg-white/20 dark:bg-background/20 flex flex-wrap gap-2 items-center justify-end flex-shrink-0">
-            {selectedOrder && (
-              <>
-                {selectedOrder?.status === 'cancel_requested' ? (
-                  <>
-                    <Button
-                      onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
-                      disabled={isApproving}
-                      className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl px-5 py-2"
-                    >
-                      {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                      {t('approve_cancellation') || 'Approve Cancellation'}
-                    </Button>
-                    <Button
-                      onClick={() => selectedOrder.id && handleRejectCancellation(selectedOrder.id)}
-                      disabled={isApproving}
-                      className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-5 py-2"
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      {t('reject_cancellation') || 'Reject Cancellation'}
-                    </Button>
-                  </>
-                ) : selectedOrder?.status === 'pending' ? (
-                  <>
-                    <Button
-                      onClick={() => handleApprove(selectedOrder?.id || '')}
-                      disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-2 font-bold"
-                    >
-                      {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                      {t('approve') || 'Approve & Set Pricing'}
-                    </Button>
-                    <Button
-                      onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
-                      disabled={isApproving}
-                      className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2"
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      {t('reject_order') || 'Reject Order'}
-                    </Button>
-                  </>
-                ) : selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? (
-                  <>
-                    <Button
-                      onClick={() => handleApprove(selectedOrder?.id || '')}
-                      disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-2"
-                    >
-                      {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                      {t('update_invoice') || 'Update Invoice'}
-                    </Button>
-                    <Button
-                      onClick={() => selectedOrder && openSendDialog(selectedOrder)}
-                      disabled={isApproving}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 py-2"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      {t('send_invoice') || 'Send Invoice'}
-                    </Button>
-                    <Button
-                      onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
-                      disabled={isApproving}
-                      className="bg-stone-600 hover:bg-stone-700 text-white rounded-xl px-5 py-2"
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      {t('cancel_order') || 'Cancel Order'}
-                    </Button>
-                  </>
-                ) : null}
-              </>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => setIsDetailOpen(false)}
-              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10 rounded-xl px-5 py-2"
-            >
-              {t('close')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-
-      <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
-        <DialogContent className="max-w-md bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display font-bold text-[var(--color-sunshine-cta)] flex items-center gap-2">
-              <Send className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
-              {t('send_invoice_pdf')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('send_invoice_desc')}
-            </DialogDescription>
-          </DialogHeader>
-
-          {sendOrder && (
-            <div className="space-y-6 py-4">
-              {/* Summary Box */}
-              <div className="p-4 bg-cream dark:bg-background/50 rounded-xl border border-[var(--color-sunshine-cta)]/10 text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-deep-forest/50">{t('invoice_no_label')}</span>
-                  <span className="font-mono font-medium text-deep-forest">
-                    {getDisplayInvoiceNo(sendOrder)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-deep-forest/50">{t('customer_label')}</span>
-                  <span className="font-medium text-deep-forest">{sendOrder.to}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-deep-forest/50">{t('grand_total_label')}</span>
-                  <span className="font-bold text-[var(--color-sunshine-cta)]">
-                    RM {(sendOrder.totalAmount || sendOrder.meals.reduce((sum, meal) => {
-                      const price = sendOrder.prices?.[meal] || 0;
-                      return sum + (price * sendOrder.quantity);
-                    }, 0)).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-5">
-                {/* Email Option */}
-                <div className="p-4 rounded-xl border border-[var(--color-sunshine-cta)]/10 bg-cream dark:bg-background/20 space-y-4">
-                  <div className="flex items-center gap-2 font-semibold text-deep-forest">
-                    <Mail className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-                    <span>{t('option_email')}</span>
+                    {/* WhatsApp Option */}
+                    <div className="p-6 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl">
+                          <MessageSquare className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <span className="font-bold text-deep-forest dark:text-white">{t('option_whatsapp')}</span>
+                      </div>
+                      <p className="text-xs text-deep-forest/60 leading-relaxed italic">
+                        {t('whatsapp_desc')}
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="send-phone-input" className="text-[10px] font-black text-deep-forest/40 uppercase tracking-widest ml-1">
+                          {t('recipient_phone')}
+                        </Label>
+                        <Input
+                          id="send-phone-input"
+                          type="text"
+                          value={recipientPhone}
+                          onChange={(e) => setRecipientPhone(e.target.value)}
+                          className="bg-white/40 dark:bg-background/40 border-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white focus:ring-emerald-500/30 h-14 rounded-2xl text-base px-5 font-medium"
+                          placeholder="e.g. 0123456789"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleSendWhatsApp}
+                        disabled={!recipientPhone}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl h-14 text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95 uppercase tracking-widest"
+                      >
+                        <span className="flex items-center gap-3 justify-center">
+                          <MessageSquare className="w-5 h-5" />
+                          {t('open_whatsapp')}
+                        </span>
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-deep-forest/60">
-                    {t('email_desc')}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="send-email-input" className="text-xs text-deep-forest/50">
-                      {t('recipient_email')}
-                    </Label>
-                    <Input
-                      id="send-email-input"
-                      type="email"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="bg-cream dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest focus:border-[var(--color-sunshine-cta)]/50 h-10 text-sm"
-                      placeholder="customer@email.com"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSendEmail}
-                    disabled={sendingEmail || !recipientEmail}
-                    className="w-full bg-[var(--color-sunshine-cta)] text-charcoal font-semibold hover:bg-[#E0BC74] transition-all duration-200 h-10 text-sm"
-                  >
-                    {sendingEmail ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        {t('sending')}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2 justify-center">
-                        <Mail className="w-4 h-4" />
-                        {t('send_invoice_email')}
-                      </span>
-                    )}
-                  </Button>
                 </div>
-
-                {/* WhatsApp Option */}
-                <div className="p-4 rounded-xl border border-[var(--color-sunshine-cta)]/10 bg-cream dark:bg-background/20 space-y-4">
-                  <div className="flex items-center gap-2 font-semibold text-deep-forest">
-                    <MessageSquare className="w-4 h-4 text-emerald-500" />
-                    <span>{t('option_whatsapp')}</span>
-                  </div>
-                  <p className="text-xs text-deep-forest/60">
-                    {t('whatsapp_desc')}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="send-phone-input" className="text-xs text-deep-forest/50">
-                      {t('recipient_phone')}
-                    </Label>
-                    <Input
-                      id="send-phone-input"
-                      type="text"
-                      value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
-                      className="bg-cream dark:bg-background/50 border-[var(--color-sunshine-cta)]/20 text-deep-forest focus:border-[var(--color-sunshine-cta)]/50 h-10 text-sm"
-                      placeholder="e.g. 0123456789"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSendWhatsApp}
-                    disabled={!recipientPhone}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-all duration-200 h-10 text-sm"
-                  >
-                    <span className="flex items-center gap-2 justify-center">
-                      <MessageSquare className="w-4 h-4" />
-                      {t('open_whatsapp')}
-                    </span>
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
-          )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsSendDialogOpen(false)}
-              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10 w-full md:w-auto text-sm"
-            >
-              {t('cancel')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div className="px-8 py-6 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-md flex justify-end flex-shrink-0">
+              <Button
+                variant="ghost"
+                onClick={() => setIsSendDialogOpen(false)}
+                className="text-deep-forest/40 hover:text-deep-forest hover:bg-stone/10 rounded-2xl px-10 py-7 h-auto font-black uppercase tracking-widest transition-all"
+              >
+                {t('cancel')}
+              </Button>
+            </div>
+          </motion.div>
+        </div>, document.body)}
 
-      {/* PDF Preview Dialog */}
-      {Capacitor.isNativePlatform() && isPreviewOpen && previewOrder ? (
-        <PDFPreviewModal
-          isOpen={isPreviewOpen}
-          onClose={() => {
-            setIsPreviewOpen(false);
-            setPreviewPdfUrl('');
-                setPreviewOrder(null);
-            setPreviewOrder(null);
-          }}
-          order={previewOrder}
-          language={previewOrder.lang || 'en'}
-          onDownload={() => handleDownloadPDF(previewOrder, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(previewOrder.status || ''))}
-          isFinal={['approved', 'diluluskan', 'billed', 'dibilkan'].includes(previewOrder.status || '')}
-        />
-      ) : (
-        <Dialog open={isPreviewOpen} onOpenChange={(open) => {
-          setIsPreviewOpen(open);
-          if (!open) {
-            setPreviewPdfUrl('');
-                setPreviewOrder(null);
-            setPreviewOrder(null);
-          }
-        }}>
-          <DialogContent className="sm:max-w-4xl w-[90vw] h-[85dvh] !flex bg-cream dark:bg-card border-[var(--color-sunshine-cta)]/20 text-deep-forest flex flex-col p-6">
-          <DialogHeader className="pb-2 border-b border-[var(--color-sunshine-cta)]/10 flex-shrink-0">
-            <DialogTitle className="text-xl font-display font-bold text-[var(--color-sunshine-cta)]">
-              {previewFileName || 'PDF Preview'}
-            </DialogTitle>
-            <DialogDescription>
-              {t('pdf_preview_desc')}
-            </DialogDescription>
-          </DialogHeader>
+      {/* PDF Preview Modal */}
+      {isPreviewOpen && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6"
+        >
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-deep-forest/90 backdrop-blur-md" 
+            onClick={() => setIsPreviewOpen(false)}
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            className="w-full h-full max-w-6xl bg-white dark:bg-stone-900 border border-white/20 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50/80 dark:bg-stone-900/80 backdrop-blur-md flex-shrink-0">
+              <div className="flex-1">
+                <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
+                  {previewFileName || 'PDF Invoice Preview'}
+                </h2>
+                <p className="text-xs md:text-sm text-stone-500 mt-0.5">
+                  {t('pdf_preview_desc')}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPreviewOpen(false)}
+                className="ml-4 p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 transition-all hover:rotate-90"
+              >
+                <X className="w-7 h-7 text-stone-400" />
+              </button>
+            </div>
 
-          <div className="flex-1 min-h-0 bg-cream dark:bg-background/50 rounded-lg overflow-hidden relative my-4 border border-[var(--color-sunshine-cta)]/10">
-            {previewPdfUrl ? (
-              Capacitor.isNativePlatform() ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-4 text-deep-forest dark:text-stone/80">
-                  <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
+            {/* PDF View Container */}
+            <div className="flex-1 min-h-0 bg-stone-100 dark:bg-black/20 overflow-hidden relative">
+              {previewPdfUrl ? (
+                Capacitor.isNativePlatform() ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center space-y-6">
+                    <div className="w-24 h-24 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-[2rem] flex items-center justify-center">
+                      <FileText className="w-12 h-12 text-[var(--color-sunshine-cta)]" />
+                    </div>
+                    <div className="space-y-3 max-w-sm">
+                      <h3 className="text-2xl font-display font-bold text-deep-forest dark:text-white">Mobile View Restricted</h3>
+                      <p className="text-sm text-stone-500 leading-relaxed">
+                        In-app PDF preview is restricted by mobile security. Use the button below to download or share the invoice.
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-display font-bold text-deep-forest dark:text-white">Preview Not Available</h3>
-                  <p className="text-sm max-w-sm leading-relaxed">
-                    In-app PDF preview is not supported on this mobile device. Please download or share the file to view it.
-                  </p>
-                </div>
+                ) : (
+                  <iframe
+                    src={previewPdfUrl}
+                    title="PDF Preview Frame"
+                    className="w-full h-full border-0"
+                  />
+                )
               ) : (
-                <iframe
-                  src={previewPdfUrl}
-                  title="PDF Preview Frame"
-                  className="w-full h-full border-0"
-                />
-              )
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-deep-forest/40">
-                {t('loading') || 'Loading preview...'}
+                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 text-stone-400">
+                  <Loader2 className="w-12 h-12 animate-spin text-[var(--color-sunshine-cta)]" />
+                  <p className="font-bold tracking-widest uppercase text-xs">{t('loading') || 'Generating Document'}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Tip Box */}
+            {!Capacitor.isNativePlatform() && (
+              <div className="px-6 py-4 bg-stone-50 dark:bg-stone-800/40 border-y border-stone-200 dark:border-stone-800 text-xs flex items-center gap-4">
+                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 text-base">💡</span>
+                <p className="text-stone-600 dark:text-stone-400 leading-relaxed italic">
+                  {language === 'bm' 
+                    ? 'Nota: Jika paparan kosong, klik "Muat Turun PDF" untuk membuka fail secara manual.' 
+                    : 'Note: If the preview appears blank, click "Download PDF" to open the file manually.'}
+                </p>
               </div>
             )}
-          </div>
 
-          {/* Mobile / Sandbox Preview Tip Box */}
-          <div className="mb-4 p-4 bg-[var(--color-sunshine-cta)]/5 border border-[var(--color-sunshine-cta)]/10 rounded-xl text-xs text-deep-forest/70 space-y-1">
-            <p className="font-bold flex items-center gap-1.5 text-[var(--color-sunshine-cta)]">
-              <span>💡</span>
-              {language === 'bm' ? 'Nota Pratonton PDF:' : 'PDF Preview Note:'}
-            </p>
-            <p className="leading-relaxed microcopy-12">
-              {language === 'bm' 
-                ? 'Pratonton dalam talian mungkin kelihatan kosong pada peranti mudah alih atau dalam kotak pasir. Ini adalah perkara biasa. Sila klik butang Muat Turun di bawah untuk melihat atau menyimpan PDF anda.' 
-                : 'Inline previews may appear blank on mobile devices or inside sandboxed environments. This is normal behavior. Please click the Download/Share button below to view or save your PDF.'}
-            </p>
-          </div>
+            {/* Footer Actions */}
+            <div className="px-8 py-6 border-t border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 backdrop-blur-md flex flex-wrap gap-4 items-center justify-end flex-shrink-0">
+              <Button
+                onClick={async () => {
+                  if (Capacitor.isNativePlatform()) {
+                    try {
+                      let base64data = '';
+                      if (previewPdfUrl.startsWith('data:')) {
+                        base64data = previewPdfUrl.split(',')[1];
+                      } else {
+                        const response = await fetch(previewPdfUrl);
+                        const blob = await response.blob();
+                        base64data = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const res = reader.result as string;
+                            resolve(res.split(',')[1]);
+                          };
+                          reader.onerror = reject;
+                          reader.readAsDataURL(blob);
+                        });
+                      }
 
-          <DialogFooter className="gap-2 pt-2 border-t border-[var(--color-sunshine-cta)]/10 justify-end flex-shrink-0">
-            <Button
-              onClick={async () => {
-                if (Capacitor.isNativePlatform()) {
-                  try {
-                    let base64data = '';
-                    if (previewPdfUrl.startsWith('data:')) {
-                      base64data = previewPdfUrl.split(',')[1];
-                    } else {
-                      // Promisified fallback in case it's a blob/web URL
-                      const response = await fetch(previewPdfUrl);
-                      const blob = await response.blob();
-                      base64data = await new Promise<string>((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const res = reader.result as string;
-                          resolve(res.split(',')[1]);
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
+                      const savedFile = await Filesystem.writeFile({
+                        path: previewFileName,
+                        data: base64data,
+                        directory: Directory.Cache
                       });
-                    }
 
-                    const savedFile = await Filesystem.writeFile({
-                      path: previewFileName,
-                      data: base64data,
-                      directory: Directory.Cache
-                    });
+                      await Share.share({
+                        title: previewFileName,
+                        url: savedFile.uri,
+                      });
 
-                    await Share.share({
-                      title: previewFileName,
-                      url: savedFile.uri,
-                    });
-
-                    toast({
-                      title: language === 'bm' ? 'Sedia untuk Dikongsi' : 'Ready to Share',
-                      description: language === 'bm' ? 'Invois berjaya dibuka untuk perkongsian.' : 'Invoice shared successfully via native share.',
-                      variant: 'success'
-                    });
-                  } catch (err) {
-                    console.error('Failed to download/share PDF natively:', err);
-                    const errMsg = err instanceof Error ? err.message : String(err);
-                    if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('dismiss')) {
                       toast({
-                        title: 'Error',
-                        description: 'Failed to share PDF: ' + errMsg,
-                        variant: 'error'
+                        title: language === 'bm' ? 'Sedia untuk Dikongsi' : 'Ready to Share',
+                        description: language === 'bm' ? 'Invois berjaya dibuka untuk perkongsian.' : 'Invoice shared successfully.',
+                        variant: 'success'
                       });
+                    } catch (err) {
+                      console.error('Failed to share PDF:', err);
                     }
+                  } else {
+                    const link = document.createElement('a');
+                    link.href = previewPdfUrl;
+                    link.download = previewFileName;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                   }
-                } else {
-                  // Standard web browser fallback download
-                  const link = document.createElement('a');
-                  link.href = previewPdfUrl;
-                  link.download = previewFileName;
-                  link.target = '_blank';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }
-              }}
-              className="bg-[var(--color-sunshine-cta)] text-charcoal font-semibold hover:bg-[#E0BC74]"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              {t('download')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsPreviewOpen(false);
-                setPreviewPdfUrl('');
-                setPreviewOrder(null);
-              }}
-              className="border-[var(--color-sunshine-cta)]/30 text-deep-forest hover:bg-[var(--color-sunshine-cta)]/10"
-            >
-              {t('close')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      )}
+                }}
+                className="bg-[var(--color-sunshine-cta)] text-white hover:brightness-110 rounded-2xl px-10 py-7 h-auto font-black shadow-xl shadow-[var(--color-sunshine-cta)]/20 transition-all active:scale-95 flex-1 md:flex-none uppercase tracking-widest"
+              >
+                <FileDown className="w-6 h-6 mr-3" />
+                {t('download')}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  setPreviewPdfUrl('');
+                }}
+                className="text-stone-500 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 rounded-2xl px-10 py-7 h-auto font-black uppercase tracking-widest transition-all"
+              >
+                {t('close')}
+              </Button>
+            </div>
+          </motion.div>
+        </div>, document.body)}
     </div>
   );
 }
