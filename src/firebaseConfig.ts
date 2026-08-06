@@ -1,5 +1,10 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  enableMultiTabIndexedDbPersistence,
+  type Firestore
+} from "firebase/firestore";
 import {
   initializeAuth,
   getAuth,
@@ -80,6 +85,23 @@ if (dbId && dbId !== "(default)") {
 } else {
   dbInstance = getFirestore(app);
 }
+
+// Enable Firestore offline persistence
+if (typeof window !== 'undefined') {
+  enableMultiTabIndexedDbPersistence(dbInstance).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, fallback to single tab persistence
+      enableIndexedDbPersistence(dbInstance).catch((e) => {
+        console.warn("Firestore offline persistence error:", e);
+      });
+    } else if (err.code === 'unimplemented') {
+      console.warn("Firestore offline persistence is not supported in this environment:", err);
+    } else {
+      console.warn("Firestore offline persistence initialization failed:", err);
+    }
+  });
+}
+
 export const db = dbInstance;
 
 // Initialize Auth
