@@ -70,6 +70,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Enable compression for all responses
+  app.use(compression());
+
   // Render (and most cloud platforms) sit behind a reverse proxy that sets
   // X-Forwarded-For. Without trust proxy=1, express-rate-limit throws
   // ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and cannot identify client IPs.
@@ -103,7 +106,6 @@ async function startServer() {
     })
   );
 
-  app.use(compression() as any);
   app.use(express.json({ limit: '50mb' }));
 
   // API health check
@@ -900,8 +902,17 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '1y',
+      immutable: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+        }
+      }
+    }));
     app.get('*', (req, res) => {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

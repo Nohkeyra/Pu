@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion, AnimatePresence } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -19,7 +20,7 @@ import NativeAppListeners from './components/NativeAppListeners';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import AppSplashScreen from './components/AppSplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
-import LandingPage from './pages/LandingPage';
+
 // A resilient dynamic importer that catches chunk-load errors (commonly caused by redeploys
 // or dev server restarts where old asset hashes no longer exist) and automatically reloads
 // the application to fetch the latest index.html and compiled asset chunks.
@@ -43,6 +44,7 @@ const lazyWithRetry = (componentImport: () => Promise<any>) => {
   });
 };
 
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
 const OrderPage = lazyWithRetry(() => import('./pages/OrderPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
@@ -592,6 +594,7 @@ function App() {
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
           <Router>
+            <SpeedInsights />
             <PushNotificationHandler />
             <NativeBackButtonHandler />
             <NativeAppListeners />
