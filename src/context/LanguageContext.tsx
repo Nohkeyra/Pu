@@ -285,6 +285,15 @@ const translations: Translation = {
   preview_pdf: { en: 'Preview PDF', bm: 'Pratonton PDF' },
   download_pdf: { en: 'Download PDF', bm: 'Muat Turun PDF' },
   send_pdf: { en: 'Send PDF (Email/WhatsApp)', bm: 'Hantar PDF (Emel/WhatsApp)' },
+  // D-01 (2026-08-06): short forms of the four keys above, for use as an
+  // always-visible caption under the order-list action icons (the full
+  // strings above are used for aria-label/tooltip, where extra length is
+  // fine — a persistent 5-across caption row is not).
+  action_view_short: { en: 'View', bm: 'Lihat' },
+  action_preview_short: { en: 'Preview', bm: 'Pratonton' },
+  action_download_short: { en: 'Download', bm: 'Muat Turun' },
+  action_send_short: { en: 'Send', bm: 'Hantar' },
+  action_delete_short: { en: 'Delete', bm: 'Padam' },
   invoice_emailed_desc: { 
     en: 'Successfully sent PDF invoice to {email}', 
     bm: 'Berjaya menghantar PDF invois ke {email}' 

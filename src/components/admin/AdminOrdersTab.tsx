@@ -463,19 +463,37 @@ export function AdminOrdersTab({
                   </div>
 
                   {/* Actions Grid */}
-                  <div className="flex items-center gap-0.5">
+                  {/* D-01 (2026-08-06): tooltip.tsx deliberately returns null
+                      on touch devices (avoids a layout bug), which meant
+                      these 5 icon-only buttons had NO label at all on the
+                      app's primary platform (phone/Capacitor) — not
+                      degraded, actually absent, for both sighted touch
+                      users and screen readers (no aria-label either).
+                      Fix: aria-label on every button (screen readers, all
+                      platforms) + an always-visible micro-label under each
+                      icon (sighted touch users), using the existing 12px
+                      microcopy-12 class rather than a smaller custom size —
+                      see the "P0 — upgrade to legible mobile sizes" comment
+                      in index.css; this file already fixed illegible small
+                      text once, so a new sub-12px label would undo that.
+                      flex-wrap on the container means if 5 labelled buttons
+                      don't fit on one line on a narrow screen, they wrap to
+                      two lines instead of overflowing. */}
+                  <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1.5">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
+                          aria-label={t('view_edit_details')}
+                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             openOrderDetail(order);
                           }}
                         >
                           <Eye className="w-4 h-4" />
+                          <span className="microcopy-12 leading-none">{t('action_view_short')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -488,13 +506,15 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
+                          aria-label={t('preview_pdf')}
+                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
                           }}
                         >
                           <FileText className="w-4 h-4" />
+                          <span className="microcopy-12 leading-none">{t('action_preview_short')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -507,7 +527,8 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
+                          aria-label={t('download_pdf')}
+                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
@@ -519,6 +540,7 @@ export function AdminOrdersTab({
                           ) : (
                             <FileDown className="w-4 h-4" />
                           )}
+                          <span className="microcopy-12 leading-none">{t('action_download_short')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -531,13 +553,15 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
+                          aria-label={t('send_pdf')}
+                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             openSendDialog(order);
                           }}
                         >
                           <Send className="w-4 h-4" />
+                          <span className="microcopy-12 leading-none">{t('action_send_short')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -550,13 +574,15 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                          aria-label={t('delete_order')}
+                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (order.id) handleDelete(order.id);
                           }}
                         >
                           <Trash2 className="w-4 h-4" />
+                          <span className="microcopy-12 leading-none">{t('action_delete_short')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>

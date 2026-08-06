@@ -750,7 +750,7 @@ export function AdminTablesTab({
               ) : (
                 paginatedOrders.map((order, index) => {
                   const isSelected = selectedIds.has(order.id!);
-                  const isBilled = order.status === 'billed' || order.status === ('dibilkan' as string);
+                  const isFinal = ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || '');
 
                   return (
                     <tr
@@ -947,34 +947,42 @@ export function AdminTablesTab({
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => openOrderDetail(order)}
-                              className="p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] transition-colors"
+                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] transition-colors min-w-[44px]"
                               title="View Full Submission Details"
+                              aria-label={isBm ? 'Lihat' : 'View'}
                             >
                               <Eye className="w-4 h-4" />
+                              <span className="text-[10px] leading-none">{isBm ? 'Lihat' : 'View'}</span>
                             </button>
 
                             <button
-                              onClick={() => handlePreviewPDF(order, isBilled)}
-                              className="p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-blue-500 transition-colors"
+                              onClick={() => handlePreviewPDF(order, isFinal)}
+                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-blue-500 transition-colors min-w-[44px]"
                               title="Preview Official PDF Invoice"
+                              aria-label={isBm ? 'Pratonton' : 'Preview'}
                             >
                               <FileText className="w-4 h-4" />
+                              <span className="text-[10px] leading-none">{isBm ? 'Pratonton' : 'Preview'}</span>
                             </button>
 
                             <button
-                              onClick={() => handleDownloadPDF(order, isBilled)}
-                              className="p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-emerald-500 transition-colors"
+                              onClick={() => handleDownloadPDF(order, isFinal)}
+                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-stone/10 rounded-lg text-deep-forest/70 dark:text-stone/70 hover:text-emerald-500 transition-colors min-w-[44px]"
                               title="Download PDF"
+                              aria-label={isBm ? 'Muat Turun' : 'Download'}
                             >
                               <Download className="w-4 h-4" />
+                              <span className="text-[10px] leading-none">{isBm ? 'Muat Turun' : 'Download'}</span>
                             </button>
 
                             <button
                               onClick={() => handleDelete(order.id!)}
-                              className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 transition-colors"
+                              className="flex flex-col items-center gap-0.5 p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg text-rose-500 transition-colors min-w-[44px]"
                               title="Delete Submission"
+                              aria-label={isBm ? 'Padam' : 'Delete'}
                             >
                               <Trash2 className="w-4 h-4" />
+                              <span className="text-[10px] leading-none">{isBm ? 'Padam' : 'Delete'}</span>
                             </button>
                           </div>
                         </td>
