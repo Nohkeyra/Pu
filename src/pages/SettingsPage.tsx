@@ -275,8 +275,8 @@ export default function SettingsPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <a
-                    href="https://github.com/Nohkeyra/Pu/releases/download/Wawasan/Restoran-Wawasan.apk"
-                    download="Restoran-Wawasan.apk"
+                    href="https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk"
+                    download="Wawasan.Hub.apk"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={async () => {
