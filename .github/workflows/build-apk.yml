@@ -52,6 +52,20 @@ jobs:
           npm ci || npm install
           npm install -g @capacitor/cli
 
+      - name: Patch capacitor-updater enum switch cases (Java 17 fix)
+        run: |
+          UPDATER_PATH="node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DelayUpdateUtils.java"
+          if [ -f "$UPDATER_PATH" ]; then
+            echo "🔧 Patching capacitor-updater enum switch cases for Java 17 compatibility..."
+            sed -i 's/case DelayUntilNext\.background:/case background:/g' "$UPDATER_PATH"
+            sed -i 's/case DelayUntilNext\.kill:/case kill:/g' "$UPDATER_PATH"
+            sed -i 's/case DelayUntilNext\.date:/case date:/g' "$UPDATER_PATH"
+            sed -i 's/case DelayUntilNext\.nativeVersion:/case nativeVersion:/g' "$UPDATER_PATH"
+            echo "✅ Successfully patched all 4 enum switch cases"
+          else
+            echo "⚠️ capacitor-updater file not found at expected path, skipping patch"
+          fi
+
       - name: Build web assets
         env:
           VITE_API_URL_ANDROID: https://restoran-wawasan-bio.onrender.com
