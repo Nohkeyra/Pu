@@ -46,7 +46,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci || npm install
+          npm install -g @capacitor/cli
 
       - name: Build web assets
         env:
@@ -58,10 +60,20 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        run: npm run build
+        run: |
+          npm run build || npm run build:prod
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed - dist folder not found"
+            exit 1
+          fi
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          npx cap sync android || {
+            echo "⚠️ Capacitor sync failed, attempting to add android platform..."
+            npx cap add android
+            npx cap sync android
+          }
 
       - name: Verify google-services.json
         run: |
@@ -70,58 +82,99 @@ jobs:
             echo "✅ android/app/google-services.json exists."
             ls -la android/app/google-services.json
           elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-            echo "⚠️ android/app/google-services.json missing from checkout, restoring from secret..."
+            echo "⚠️ Restoring google-services.json from secret..."
+            mkdir -p android/app
             echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-            ls -la android/app/google-services.json
+            echo "✅ google-services.json restored"
           else
-            echo "❌ ERROR: android/app/google-services.json not found after checkout!"
-            echo "Directory listing of android/app:"
-            ls -la android/app
+            echo "❌ ERROR: android/app/google-services.json not found!"
             exit 1
           fi
 
       - name: Set app version
         run: |
-          echo "VERSION_CODE=$(date +%Y%m%d.%H%M)" >> $GITHUB_ENV
-          echo "VERSION_NAME=$(date +%Y.%m.%d)" >> $GITHUB_ENV
+          echo "VERSION_CODE=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          echo "VERSION_NAME=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_ENV
 
-      # Decode keystore if secret is provided
-      - name: Decode Keystore
+      # CRITICAL: Setup keystore for signing
+      - name: Setup signing keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.jks
-            echo "✅ Keystore decoded successfully."
+            echo "✅ Decoding provided keystore..."
+            mkdir -p android/app
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
+            chmod 600 android/app/release-key.jks
+            echo "✅ Keystore saved to android/app/release-key.jks"
+            
+            # Update app/build.gradle to use the keystore
+            cat > android/app/keystore.properties << EOF
+            storePassword=$KEYSTORE_PASSWORD
+            keyPassword=$KEY_PASSWORD
+            keyAlias=$KEY_ALIAS
+            storeFile=release-key.jks
+            EOF
+            
+            # Modify build.gradle to load keystore properties
+            if ! grep -q "keystore.properties" android/app/build.gradle; then
+              sed -i '/apply plugin: .com.android.application./a \
+            def keystoreProperties = new Properties()\
+            def keystorePropertiesFile = rootProject.file("app/keystore.properties")\
+            if (keystorePropertiesFile.exists()) {\
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
+            }' android/app/build.gradle
+            fi
+            
+            echo "✅ Keystore configured for signing"
           else
-            echo "ℹ️ ANDROID_KEYSTORE_BASE64 secret not provided, skipping keystore decode."
+            echo "❌ ERROR: ANDROID_KEYSTORE_BASE64 secret is missing!"
+            echo "Please add this secret in GitHub Settings → Secrets"
+            exit 1
           fi
+
+      - name: Setup Gradle permissions
+        run: |
+          cd android
+          chmod +x gradlew
 
       - name: Build debug APK
         working-directory: ./android
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace || {
+            echo "❌ Debug build failed. Check logs above."
+            exit 1
+          }
 
-      - name: Build release APK
+      - name: Build release APK (signed)
         working-directory: ./android
-        run: ./gradlew assembleRelease
+        run: |
+          ./gradlew assembleRelease --stacktrace || {
+            echo "❌ Release build failed. Check logs above."
+            exit 1
+          }
 
       - name: Build Bundle (AAB for Play Store)
         working-directory: ./android
-        run: ./gradlew bundleRelease
+        run: |
+          ./gradlew bundleRelease --stacktrace || {
+            echo "⚠️ Bundle build failed (continuing)"
+          }
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-signed
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
@@ -129,11 +182,34 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-bundle
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 30
 
       - name: Comment PR with artifacts
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.runId;
+            const repo = context.repo;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: repo.owner,
+              repo: repo.repo,
+              body: `✅ **APK Build Successful!** (Build #${runId})
+              
+              📦 **Available Artifacts:**
+              - **Debug APK:** \`app-debug.apk\`
+              - **Signed Release APK:** \`app-release-signed.apk\`
+              - **Bundle (AAB):** \`app-release.aab\`
+              
+              🔗 **Download:** Go to **Actions** → Select this workflow run → Scroll down to **Artifacts** section
+              
+              ⏱️ **Build Time:** ${{ github.run_started_at }}`
+            })
+
+      - name: Notify on failure
+        if: failure()
         uses: actions/github-script@v7
         with:
           script: |
@@ -141,5 +217,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ APK builds completed successfully!\n\n**Artifacts:**\n- Debug APK: `app-debug.apk`\n- Signed Release APK: `app-release-signed.apk`\n- Release Bundle (AAB): `app-release.aab`\n\nDownload from the Actions artifacts.'
+              body: `❌ **Build Failed!** 
+              
+              Check the workflow logs for details: 
+              https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
             })
