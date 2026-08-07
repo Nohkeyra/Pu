@@ -63,16 +63,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    
-    // Disable resource shrinking for PNG resources to fix compilation errors
-    packagingOptions {
-        resources {
-            excludes += [
-                '/META-INF/proguard/androidx-*.pro',
-                '**/values-**/attrs.xml'
-            ]
-        }
-    }
 }
 
 repositories {

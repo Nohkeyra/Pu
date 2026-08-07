@@ -48,7 +48,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: |
+          npm ci || npm install
+          npm install -g @capacitor/cli
 
       - name: Build web assets
         env:
@@ -150,13 +152,6 @@ jobs:
             echo "❌ Debug build failed. Check logs above."
             exit 1
           }
-          
-      - name: Clean Gradle build cache and resources
-        working-directory: ./android
-        run: |
-           echo "🧹 Cleaning Gradle build artifacts..."
-           ./gradlew clean
-           echo "✅ Gradle cleaned successfully"    
 
       - name: Build release APK (signed)
         working-directory: ./android
