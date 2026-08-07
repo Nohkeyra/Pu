@@ -4,7 +4,7 @@
 
 set -e
 
-SRC_ICON="./public/assets/wawasan_logo.jpg"
+SRC_ICON="./public/assets/wawasan_logo.png"
 
 if [ ! -f "$SRC_ICON" ]; then
     echo "❌ Source icon not found at $SRC_ICON"

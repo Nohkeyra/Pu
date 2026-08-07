@@ -33,7 +33,7 @@ import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/u
 import { generateInvoicePDF } from '@/services/pdfService';
 import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { motion, AnimatePresence } from 'motion/react';
-import { getApiUrl } from '@/lib/api';
+import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -118,11 +118,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const response = await fetch(getApiUrl('/api/menu'));
-        if (response.ok) {
-          const data = await response.json();
-          setDynamicMenu(data.menuItems || []);
-        }
+        const data = await fetchWithCache(getApiUrl('/api/menu'), undefined, 120000); // 2 minutes cache
+        setDynamicMenu(data.menuItems || []);
       } catch (err) {
         console.error('Failed to load menu items:', err);
       } finally {

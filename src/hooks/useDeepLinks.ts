@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import type { URLOpenListenerEvent } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
@@ -29,10 +30,11 @@ export function useDeepLinks() {
     if (!Capacitor.isNativePlatform()) return;
 
     let isActive = true;
+    let listenerHandle: PluginListenerHandle | null = null;
 
     const setupDeepLinks = async () => {
       try {
-        await App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+        listenerHandle = await App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
           if (!isActive) return;
           
           console.log('App opened with URL:', event.url);
@@ -82,7 +84,9 @@ export function useDeepLinks() {
 
     return () => {
       isActive = false;
-      App.removeAllListeners();
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, [navigate]);
 }

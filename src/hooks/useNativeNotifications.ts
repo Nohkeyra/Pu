@@ -87,6 +87,19 @@ export function useNativeNotifications() {
         await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push received in foreground: ', notification);
         });
+
+        await PushNotifications.addListener('registrationError', (error) => {
+          console.error('Push notification registration failed:', error.error);
+        });
+
+        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('Push notification action performed:', action);
+          const data = action.notification.data;
+          if (data && data.orderId) {
+            console.log('Notification has orderId payload:', data.orderId);
+            // In a complete implementation, this can deep-link or alert the user.
+          }
+        });
       } catch (err) {
         console.error('Error setting up push notifications:', err);
       }

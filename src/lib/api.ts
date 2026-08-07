@@ -42,4 +42,69 @@ export const getApiUrl = (path: string) => {
   return `${baseUrl}${cleanPath}`;
 };
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const fetchCache: Record<string, CacheEntry<any>> = {};
+
+/**
+ * Perform a cached JSON fetch to optimize repeated, idempotent network calls.
+ * Caches successfully resolved results for the given TTL.
+ */
+export async function fetchWithCache<T = any>(
+  url: string,
+  options?: RequestInit,
+  ttlMs: number = 30000 // default 30-seconds cache TTL
+): Promise<T> {
+  // Only cache GET requests or requests without a method (which default to GET)
+  const method = options?.method?.toUpperCase() || 'GET';
+  if (method !== 'GET') {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  }
+
+  const cacheKey = `${url}_${JSON.stringify(options || {})}`;
+  const now = Date.now();
+  const cached = fetchCache[cacheKey];
+
+  if (cached && now - cached.timestamp < ttlMs) {
+    return cached.data as T;
+  }
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  const data = await response.json();
+  
+  fetchCache[cacheKey] = {
+    data,
+    timestamp: now,
+  };
+
+  return data as T;
+}
+
+/**
+ * Manually invalidate specific cache entries or clear all cache
+ */
+export function invalidateFetchCache(urlPattern?: string) {
+  if (!urlPattern) {
+    for (const key in fetchCache) {
+      delete fetchCache[key];
+    }
+    return;
+  }
+  for (const key in fetchCache) {
+    if (key.includes(urlPattern)) {
+      delete fetchCache[key];
+    }
+  }
+}
+
 

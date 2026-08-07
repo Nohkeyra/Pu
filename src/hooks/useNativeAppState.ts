@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/components/ui/Toast';
 
@@ -11,10 +12,11 @@ export function useNativeAppState() {
     if (!Capacitor.isNativePlatform()) return;
 
     let isActive = true;
+    let listenerHandle: PluginListenerHandle | null = null;
 
     const setupAppStateListener = async () => {
       try {
-        await App.addListener('appStateChange', ({ isActive: isAppActive }) => {
+        listenerHandle = await App.addListener('appStateChange', ({ isActive: isAppActive }) => {
           if (!isActive) return;
           
           if (!isAppActive) {
@@ -45,7 +47,9 @@ export function useNativeAppState() {
 
     return () => {
       isActive = false;
-      App.removeAllListeners();
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, [toast]);
 }

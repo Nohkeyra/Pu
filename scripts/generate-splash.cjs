@@ -2,7 +2,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const LOGO_PATH = path.resolve(__dirname, '../public/assets/wawasan_logo.jpg');
+const LOGO_PATH = path.resolve(__dirname, '../public/assets/wawasan_logo.png');
 const BG_COLOR = '#052011'; // Deep forest green
 
 const SPLASH_SIZES = [

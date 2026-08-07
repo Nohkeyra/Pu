@@ -15,6 +15,7 @@ import {
   CupSoda
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
+import { invalidateFetchCache } from '@/lib/api';
 
 export interface MenuItem {
   id: string;
@@ -157,6 +158,7 @@ export default function AdminMenuTab({
         variant: 'success'
       });
 
+      invalidateFetchCache('/api/menu');
       setIsModalOpen(false);
       fetchMenuItems();
     } catch (err) {
@@ -190,6 +192,7 @@ export default function AdminMenuTab({
         variant: 'success'
       });
 
+      invalidateFetchCache('/api/menu');
       fetchMenuItems();
     } catch (err) {
       console.error(err);

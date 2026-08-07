@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { App } from '@capacitor/app';
+import type { BackButtonListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
 
@@ -13,7 +14,7 @@ const ROOT_PATHS = ['/', '/main', '/home'];
  * Wires the Android hardware/gesture back button to prioritize:
  * 1. Dismissing open overlays / modals / sheets / mobile menus (via Escape event or close button).
  * 2. Navigating back in React Router history if on a nested route.
- * 3. Exiting the native app if on a top-level root path.
+ * 3. Exiting the native app if on a top-level root path or if browser history cannot go back.
  */
 export function useNativeBackButton() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export function useNativeBackButton() {
 
     const setupListener = async () => {
       try {
-        const handle = await App.addListener('backButton', () => {
+        const handle = await App.addListener('backButton', ({ canGoBack }: BackButtonListenerEvent) => {
           // Priority 1: Check for active open overlays / modals in DOM
           const openOverlay = document.querySelector<HTMLElement>(
             '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-state="open"]'
@@ -59,14 +60,9 @@ export function useNativeBackButton() {
           }
 
           // Priority 2 & 3: Check router location and history stack
-          const isAtRootHistory =
-            window.history.state &&
-            typeof window.history.state.idx === 'number' &&
-            window.history.state.idx === 0;
-
           const isRootPath = ROOT_PATHS.includes(location.pathname);
 
-          if (isRootPath || isAtRootHistory) {
+          if (isRootPath || !canGoBack) {
             App.exitApp();
           } else {
             navigate(-1);

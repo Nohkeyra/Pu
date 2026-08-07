@@ -7,6 +7,12 @@ if (!keyPropertiesFile.exists()) {
 def keyProperties = new Properties()
 if (keyPropertiesFile.exists()) {
     keyProperties.load(new FileInputStream(keyPropertiesFile))
+} else {
+    // Fallback to environment variables for secure CI/CD builds
+    keyProperties['storeFile'] = System.getenv('RELEASE_STORE_FILE') ?: 'release-key.jks'
+    keyProperties['storePassword'] = System.getenv('RELEASE_STORE_PASSWORD') ?: ''
+    keyProperties['keyAlias'] = System.getenv('RELEASE_KEY_ALIAS') ?: ''
+    keyProperties['keyPassword'] = System.getenv('RELEASE_KEY_PASSWORD') ?: ''
 }
 
 def versionPropertiesFile = rootProject.file('version.properties')
@@ -39,7 +45,7 @@ android {
     }
     signingConfigs {
         release {
-            if (keyPropertiesFile.exists()) {
+            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias']) {
                 storeFile file(keyProperties['storeFile'] ?: 'release-key.jks')
                 storePassword keyProperties['storePassword']
                 keyAlias keyProperties['keyAlias']
@@ -49,7 +55,7 @@ android {
     }
     buildTypes {
         release {
-            if (keyPropertiesFile.exists()) {
+            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias']) {
                 signingConfig signingConfigs.release
             }
             minifyEnabled true
