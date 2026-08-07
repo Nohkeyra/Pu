@@ -10,6 +10,7 @@ const path = require('path');
 
 const UPDATER_FILE = path.join(
   __dirname,
+  '..',
   'node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DelayUpdateUtils.java'
 );
 
