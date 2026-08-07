@@ -121,20 +121,16 @@ jobs:
             echo "✅ Keystore saved to android/app/release-key.jks"
             
             # Create keystore properties
-            cat > android/app/keystore.properties << EOF
-storePassword=$KEYSTORE_PASSWORD
-keyPassword=$KEY_PASSWORD
-keyAlias=$KEY_ALIAS
-storeFile=release-key.jks
-EOF
+            echo "storePassword=$KEYSTORE_PASSWORD" > android/app/keystore.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/app/keystore.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/app/keystore.properties
+            echo "storeFile=release-key.jks" >> android/app/keystore.properties
 
             # Create key.properties (read by android/app/build.gradle)
-            cat > android/app/key.properties << EOF
-storePassword=$KEYSTORE_PASSWORD
-keyPassword=$KEY_PASSWORD
-keyAlias=$KEY_ALIAS
-storeFile=release-key.jks
-EOF
+            echo "storePassword=$KEYSTORE_PASSWORD" > android/app/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/app/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/app/key.properties
+            echo "storeFile=release-key.jks" >> android/app/key.properties
             cp android/app/key.properties android/key.properties
             
             echo "✅ Keystore configured for signing"
