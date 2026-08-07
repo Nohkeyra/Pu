@@ -17,6 +17,8 @@ import { usePullToRefresh } from './hooks/usePullToRefresh';
 import PushNotificationHandler from './components/PushNotificationHandler';
 import NativeBackButtonHandler from './components/NativeBackButtonHandler';
 import NativeAppListeners from './components/NativeAppListeners';
+import InAppUpdateModal from './components/InAppUpdateModal';
+import { useInAppUpdates } from './hooks/useInAppUpdates';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import AppSplashScreen from './components/AppSplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
@@ -45,6 +47,19 @@ function VercelSpeedInsights() {
   const location = useLocation();
   if (Capacitor.isNativePlatform()) return null;
   return <SpeedInsights route={location.pathname} />;
+}
+
+function GlobalInAppUpdateHandler() {
+  const { updateAvailable, latestConfig, isForceUpdate, dismissUpdate } = useInAppUpdates();
+
+  return (
+    <InAppUpdateModal
+      isOpen={updateAvailable}
+      config={latestConfig}
+      isForceUpdate={isForceUpdate}
+      onDismiss={dismissUpdate}
+    />
+  );
 }
 
 // Smooth scroll handler for anchor links
@@ -571,6 +586,7 @@ function App() {
             <PushNotificationHandler />
             <NativeBackButtonHandler />
             <NativeAppListeners />
+            <GlobalInAppUpdateHandler />
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}

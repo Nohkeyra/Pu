@@ -4,6 +4,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useDeepLinks } from '@/hooks/useDeepLinks';
 import { Motion } from '@capacitor/motion';
 import { Capacitor } from '@capacitor/core';
+import { notifyCapgoAppReady } from '@/services/updateService';
 
 /**
  * An invisible component that wraps native listeners 
@@ -13,6 +14,11 @@ function NativeAppListeners() {
   useNativeAppState();
   useNetworkStatus();
   useDeepLinks();
+
+  useEffect(() => {
+    // Confirm Capgo OTA bundle ready to prevent automatic rollback
+    notifyCapgoAppReady();
+  }, []);
 
   useEffect(() => {
     let active = true;

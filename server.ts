@@ -754,6 +754,72 @@ async function startServer() {
     }
   });
 
+  // --- IN-APP LIVE UPDATES & VERSION MANAGEMENT API ---
+  const DEFAULT_VERSION_CONFIG = {
+    latestVersion: '1.2.5',
+    minVersion: '1.2.0',
+    buildNumber: 125,
+    apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk',
+    bundleUrl: '',
+    releaseNotes: [
+      'Prestasi aplikasi & kestabilan haptik dipertingkatkan.',
+      'Penyelarasan pesanan automatik & keselamatan Firebase diperkemas.',
+      'Sokongan muat turun APK langsung dan Capgo OTA Live Updates.'
+    ],
+    forceUpdate: false,
+    updatedAt: new Date().toISOString(),
+    publishedBy: 'System Admin'
+  };
+
+  app.get('/api/app-version', async (req, res) => {
+    try {
+      const db = getFirestore();
+      const docSnap = await db.collection('app_config').doc('version').get();
+      if (docSnap.exists) {
+        return res.json({ success: true, ...DEFAULT_VERSION_CONFIG, ...docSnap.data() });
+      }
+      res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
+    } catch (err) {
+      console.warn('[Version API] Failed to read version config:', err);
+      res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
+    }
+  });
+
+  app.post('/api/app-version', async (req, res) => {
+    try {
+      // Verify admin token authorization
+      const adminAuth = verifyAdminToken(req);
+      if (!adminAuth.ok) {
+        return res.status(401).json({ error: 'Unauthorized admin access' });
+      }
+
+      const { latestVersion, minVersion, buildNumber, apkUrl, bundleUrl, releaseNotes, forceUpdate } = req.body;
+      if (!latestVersion) {
+        return res.status(400).json({ error: 'latestVersion is required' });
+      }
+
+      const payload = {
+        latestVersion: String(latestVersion).trim(),
+        minVersion: String(minVersion || '1.2.0').trim(),
+        buildNumber: Number(buildNumber || 125),
+        apkUrl: String(apkUrl || DEFAULT_VERSION_CONFIG.apkUrl).trim(),
+        bundleUrl: String(bundleUrl || '').trim(),
+        releaseNotes: Array.isArray(releaseNotes) ? releaseNotes : [String(releaseNotes)],
+        forceUpdate: Boolean(forceUpdate),
+        updatedAt: new Date().toISOString(),
+        publishedBy: adminAuth.jti || 'System Admin'
+      };
+
+      const db = getFirestore();
+      await db.collection('app_config').doc('version').set(payload, { merge: true });
+
+      res.json({ success: true, message: 'App live version updated successfully', config: payload });
+    } catch (err) {
+      console.error('[Version API] Failed to update app version:', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
   // --- CUSTOM MENU API ENDPOINTS ---
   const DEFAULT_MENU_ITEMS = [
     // Breakfast

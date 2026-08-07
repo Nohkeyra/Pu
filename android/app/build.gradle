@@ -1,5 +1,26 @@
 apply plugin: 'com.android.application'
 
+def keyPropertiesFile = rootProject.file('key.properties')
+if (!keyPropertiesFile.exists()) {
+    keyPropertiesFile = file('key.properties')
+}
+def keyProperties = new Properties()
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(new FileInputStream(keyPropertiesFile))
+}
+
+def versionPropertiesFile = rootProject.file('version.properties')
+if (!versionPropertiesFile.exists()) {
+    versionPropertiesFile = file('version.properties')
+}
+def versionProperties = new Properties()
+if (versionPropertiesFile.exists()) {
+    versionProperties.load(new FileInputStream(versionPropertiesFile))
+}
+
+def appVersionCode = versionProperties['versionCode'] ? versionProperties['versionCode'].toInteger() : 125
+def appVersionName = versionProperties['versionName'] ?: "1.2.5"
+
 android {
     namespace "com.wawasanpakusop.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +28,8 @@ android {
         applicationId "com.wawasanpakusop.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,23 +37,21 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keyPropertiesFile.exists()) {
+                storeFile file(keyProperties['storeFile'] ?: 'release-key.jks')
+                storePassword keyProperties['storePassword']
+                keyAlias keyProperties['keyAlias']
+                keyPassword keyProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
-            // F-34 (audit, confirmed by Noh 2026-07-27): enabled after adding
-            // explicit -keep rules in proguard-rules.pro for the widget
-            // package and MainActivity — these are referenced
-            // only by fully-qualified name from AndroidManifest.xml /
-            // RemoteViewsService intents, not by direct code references R8
-            // can trace, so without those keep rules this would silently
-            // break the home-screen widget in release builds.
-            // shrinkResources requires minifyEnabled and further reduces APK
-            // size by stripping unused resources alongside unused code.
-            //
-            // ACTION REQUIRED before shipping a release build: install an
-            // actual app-release(-signed).apk on-device and verify the
-            // home-screen widget still renders/updates/opens the app
-            // correctly. A successful `assembleRelease` does not prove this
-            // — R8 stripping is a runtime-only failure mode.
+            if (keyPropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
