@@ -40,6 +40,13 @@ function ScrollToTop() {
   return null;
 }
 
+// Speed Insights wrapper to report SPA routes correctly with HashRouter
+function VercelSpeedInsights() {
+  const location = useLocation();
+  if (Capacitor.isNativePlatform()) return null;
+  return <SpeedInsights route={location.pathname} />;
+}
+
 // Smooth scroll handler for anchor links
 function SmoothScrollHandler() {
   useEffect(() => {
@@ -560,7 +567,7 @@ function App() {
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
           <Router>
-            {!Capacitor.isNativePlatform() && <SpeedInsights />}
+            <VercelSpeedInsights />
             <PushNotificationHandler />
             <NativeBackButtonHandler />
             <NativeAppListeners />
