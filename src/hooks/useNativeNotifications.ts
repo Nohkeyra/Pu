@@ -37,8 +37,6 @@ export function useNativeNotifications() {
           return;
         }
 
-        await PushNotifications.register();
-
         await PushNotifications.addListener('registration', async (token) => {
           console.log('Push registration successful, token:', token.value);
           
@@ -100,6 +98,8 @@ export function useNativeNotifications() {
             // In a complete implementation, this can deep-link or alert the user.
           }
         });
+
+        await PushNotifications.register();
       } catch (err) {
         console.error('Error setting up push notifications:', err);
       }

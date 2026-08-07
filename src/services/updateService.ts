@@ -3,6 +3,7 @@ import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { getApiUrl } from '@/lib/api';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
+import semver from 'semver';
 
 export const CURRENT_APP_VERSION = '1.2.5';
 export const CURRENT_BUILD_NUMBER = 125;
@@ -73,26 +74,17 @@ export async function downloadAndApplyCapgoOta(bundleUrl: string, version: strin
   }
   return false;
 }
-
 /**
- * Compare two semver strings (e.g., "1.2.5" vs "1.2.4").
+ * Compare two semver strings (e.g., "1.2.5" vs "1.2.4") using the robust semver package.
  * Returns:
  *   1 if v1 > v2
  *  -1 if v1 < v2
  *   0 if equal
  */
 export function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
-  const parts2 = v2.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
-
-  const maxLength = Math.max(parts1.length, parts2.length);
-  for (let i = 0; i < maxLength; i++) {
-    const num1 = parts1[i] || 0;
-    const num2 = parts2[i] || 0;
-    if (num1 > num2) return 1;
-    if (num1 < num2) return -1;
-  }
-  return 0;
+  const cleanV1 = semver.clean(v1) || semver.coerce(v1)?.version || '0.0.0';
+  const cleanV2 = semver.clean(v2) || semver.coerce(v2)?.version || '0.0.0';
+  return semver.compare(cleanV1, cleanV2);
 }
 
 /**
