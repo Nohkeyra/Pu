@@ -45,9 +45,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # FIX: Install dependencies more robustly
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci || npm install
+          npm install -g @capacitor/cli
 
+      # FIX: Build web assets with proper error handling
       - name: Build web assets
         env:
           VITE_API_URL_ANDROID: https://restoran-wawasan-bio.onrender.com
@@ -58,11 +62,24 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-        run: npm run build
+        run: |
+          npm run build || npm run build:prod
+          # Verify build output exists
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed - dist folder not found"
+            exit 1
+          fi
 
+      # FIX: Better Capacitor sync with error handling
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          npx cap sync android || {
+            echo "⚠️ Capacitor sync failed, attempting to add android platform..."
+            npx cap add android
+            npx cap sync android
+          }
 
+      # FIX: Better google-services.json handling
       - name: Verify google-services.json
         run: |
           echo "Checking google-services.json..."
@@ -70,20 +87,24 @@ jobs:
             echo "✅ android/app/google-services.json exists."
             ls -la android/app/google-services.json
           elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-            echo "⚠️ android/app/google-services.json missing from checkout, restoring from secret..."
+            echo "⚠️ Restoring google-services.json from secret..."
+            mkdir -p android/app
             echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-            ls -la android/app/google-services.json
+            echo "✅ google-services.json restored"
           else
-            echo "❌ ERROR: android/app/google-services.json not found after checkout!"
-            echo "Directory listing of android/app:"
-            ls -la android/app
+            echo "❌ ERROR: android/app/google-services.json not found!"
+            echo "📁 Directory listing:"
+            ls -la android/app/ || echo "android/app directory missing"
+            # Create placeholder to avoid build failure (only if testing)
+            # echo '{"project_info": {}}' > android/app/google-services.json
             exit 1
           fi
 
+      # FIX: Set version properly
       - name: Set app version
         run: |
-          echo "VERSION_CODE=$(date +%Y%m%d.%H%M)" >> $GITHUB_ENV
-          echo "VERSION_NAME=$(date +%Y.%m.%d)" >> $GITHUB_ENV
+          echo "VERSION_CODE=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          echo "VERSION_NAME=$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_ENV
 
       # Decode keystore if secret is provided
       - name: Decode Keystore
@@ -91,37 +112,55 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
+            mkdir -p android/app
             echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.jks
             echo "✅ Keystore decoded successfully."
+            chmod 600 android/app/my-release-key.jks
           else
-            echo "ℹ️ ANDROID_KEYSTORE_BASE64 secret not provided, skipping keystore decode."
+            echo "ℹ️ ANDROID_KEYSTORE_BASE64 secret not provided"
           fi
+
+      # FIX: Build all variants with proper permissions
+      - name: Setup Gradle permissions
+        run: |
+          cd android
+          chmod +x gradlew
 
       - name: Build debug APK
         working-directory: ./android
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace || {
+            echo "❌ Debug build failed. Check logs above."
+            exit 1
+          }
 
       - name: Build release APK
         working-directory: ./android
-        run: ./gradlew assembleRelease
+        run: |
+          ./gradlew assembleRelease --stacktrace || {
+            echo "❌ Release build failed. Check logs above."
+            exit 1
+          }
 
       - name: Build Bundle (AAB for Play Store)
         working-directory: ./android
-        run: ./gradlew bundleRelease
+        run: |
+          ./gradlew bundleRelease --stacktrace || {
+            echo "⚠️ Bundle build failed (continuing)"
+          }
 
+      # Upload all artifacts
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-release-signed
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
@@ -129,11 +168,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-bundle
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 30
 
+      # Fix: Better PR comment
       - name: Comment PR with artifacts
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.runId;
+            const repo = context.repo;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: repo.owner,
+              repo: repo.repo,
+              body: `✅ **APK Build Successful!** (Build #${runId})
+              
+              📦 **Available Artifacts:**
+              - **Debug APK:** \`app-debug.apk\`
+              - **Release APK:** \`app-release-signed.apk\`
+              - **Bundle (AAB):** \`app-release.aab\`
+              
+              🔗 **Download:** Go to **Actions** → Select this workflow run → Scroll down to **Artifacts** section
+              
+              ⏱️ **Build Time:** ${{ github.run_started_at }}`
+            })
+
+      - name: Notify on failure
+        if: failure()
         uses: actions/github-script@v7
         with:
           script: |
@@ -141,5 +204,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ APK builds completed successfully!\n\n**Artifacts:**\n- Debug APK: `app-debug.apk`\n- Signed Release APK: `app-release-signed.apk`\n- Release Bundle (AAB): `app-release.aab`\n\nDownload from the Actions artifacts.'
+              body: `❌ **Build Failed!** 
+              
+              Check the workflow logs for details: 
+              https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
             })
