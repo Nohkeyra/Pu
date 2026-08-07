@@ -291,4 +291,4 @@ EOF
               });
             } else {
               core.info('Workflow failed, but context does not contain a PR/issue number to comment on.');
-            }
+            })
