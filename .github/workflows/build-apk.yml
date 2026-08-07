@@ -111,25 +111,16 @@ jobs:
             chmod 600 android/app/release-key.jks
             echo "✅ Keystore saved to android/app/release-key.jks"
             
-            # Update app/build.gradle to use the keystore
-            cat > android/app/keystore.properties << EOF
-            storePassword=$KEYSTORE_PASSWORD
-            keyPassword=$KEY_PASSWORD
-            keyAlias=$KEY_ALIAS
-            storeFile=release-key.jks
-            EOF
+            # Create key.properties (automatically loaded by android/app/build.gradle)
+            echo "storePassword=$KEYSTORE_PASSWORD" > android/app/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/app/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/app/key.properties
+            echo "storeFile=release-key.jks" >> android/app/key.properties
             
-            # Modify build.gradle to load keystore properties
-            if ! grep -q "keystore.properties" android/app/build.gradle; then
-              sed -i '/apply plugin: .com.android.application./a \
-            def keystoreProperties = new Properties()\
-            def keystorePropertiesFile = rootProject.file("app/keystore.properties")\
-            if (keystorePropertiesFile.exists()) {\
-                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
-            }' android/app/build.gradle
-            fi
+            # Also copy to root android directory
+            cp android/app/key.properties android/key.properties
             
-            echo "✅ Keystore configured for signing"
+            echo "✅ Keystore configured for signing in key.properties"
           else
             echo "❌ ERROR: ANDROID_KEYSTORE_BASE64 secret is missing!"
             echo "Please add this secret in GitHub Settings → Secrets"
@@ -192,33 +183,41 @@ jobs:
           script: |
             const runId = context.runId;
             const repo = context.repo;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: repo.owner,
-              repo: repo.repo,
-              body: `✅ **APK Build Successful!** (Build #${runId})
-              
-              📦 **Available Artifacts:**
-              - **Debug APK:** \`app-debug.apk\`
-              - **Signed Release APK:** \`app-release-signed.apk\`
-              - **Bundle (AAB):** \`app-release.aab\`
-              
-              🔗 **Download:** Go to **Actions** → Select this workflow run → Scroll down to **Artifacts** section
-              
-              ⏱️ **Build Time:** ${{ github.run_started_at }}`
-            })
+            const issueNumber = context.issue && context.issue.number;
+            if (issueNumber) {
+              await github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: repo.owner,
+                repo: repo.repo,
+                body: `✅ **APK Build Successful!** (Build #${runId})
+                
+                📦 **Available Artifacts:**
+                - **Debug APK:** \`app-debug.apk\`
+                - **Signed Release APK:** \`app-release-signed.apk\`
+                - **Bundle (AAB):** \`app-release.aab\`
+                
+                🔗 **Download:** Go to **Actions** → Select this workflow run → Scroll down to **Artifacts** section
+                
+                ⏱️ **Build Time:** ${{ github.run_started_at }}`
+              });
+            }
 
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ **Build Failed!** 
-              
-              Check the workflow logs for details: 
-              https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
-            })
+            const issueNumber = context.issue && context.issue.number;
+            if (issueNumber) {
+              await github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ **Build Failed!** 
+                
+                Check the workflow logs for details: 
+                https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+              });
+            } else {
+              core.info('Workflow failed, but context does not contain a PR/issue number to comment on.');
+            }
