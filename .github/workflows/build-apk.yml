@@ -150,6 +150,13 @@ jobs:
             echo "❌ Debug build failed. Check logs above."
             exit 1
           }
+          
+      - name: Clean Gradle build cache and resources
+        working-directory: ./android
+        run: |
+           echo "🧹 Cleaning Gradle build artifacts..."
+           ./gradlew clean
+           echo "✅ Gradle cleaned successfully"    
 
       - name: Build release APK (signed)
         working-directory: ./android
