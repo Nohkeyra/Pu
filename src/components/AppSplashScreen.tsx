@@ -24,8 +24,8 @@ const AppSplashScreen: React.FC<AppSplashScreenProps> = ({ isLoading }) => {
       {show && (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.03, filter: 'blur(12px)' }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          exit={{ opacity: 0, scale: 1.02 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-between py-12 px-6 bg-cream dark:bg-stone-950 text-charcoal dark:text-stone-100 select-none touch-none overflow-hidden"
         >
           {/* Subtle ambient lighting backdrop */}

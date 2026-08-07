@@ -14,8 +14,8 @@ import AuthModal from '@/components/AuthModal';
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
+  const [loading, setLoading] = useState(() => !auth.currentUser && !sessionStorage.getItem('wawasan_session_started'));
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 

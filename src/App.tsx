@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
+import { useEffect, useState, Suspense, type ReactNode } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion, AnimatePresence } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
@@ -21,35 +21,12 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import AppSplashScreen from './components/AppSplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 
-// A resilient dynamic importer that catches chunk-load errors (commonly caused by redeploys
-// or dev server restarts where old asset hashes no longer exist) and automatically reloads
-// the application to fetch the latest index.html and compiled asset chunks.
-const lazyWithRetry = (componentImport: () => Promise<any>) => {
-  return lazy(async () => {
-    try {
-      return await componentImport();
-    } catch (error) {
-      console.error("Dynamic import failed. Auto-refreshing app to fetch the latest updates...", error);
-      try {
-        const hasReloaded = sessionStorage.getItem('wawasan_last_retry_route');
-        if (!hasReloaded) {
-          sessionStorage.setItem('wawasan_last_retry_route', 'true');
-          window.location.reload();
-        }
-      } catch {
-        window.location.reload();
-      }
-      throw error;
-    }
-  });
-};
-
-const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'));
-const OrderPage = lazyWithRetry(() => import('./pages/OrderPage'));
-const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
-const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
-const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
-const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
+import LandingPage from './pages/LandingPage';
+import OrderPage from './pages/OrderPage';
+import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change
@@ -91,35 +68,28 @@ function SmoothScrollHandler() {
 
 // Guard component to ensure guest, admin, or authenticated user can access application routes seamlessly
 function SessionGuard({ children }: { children: ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  const [loading, setLoading] = useState(() => {
+    if (auth.currentUser) return false;
+    try {
+      if (sessionStorage.getItem('wawasan_session_started') === 'true' || sessionStorage.getItem('wawasan_guest_allowed') === 'true') {
+        return false;
+      }
+    } catch {
+      // Ignored
+    }
+    return false; // Default to false for instant tab switching without blank/skeleton screens
+  });
+  const [allowed, setAllowed] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      let isSessionStarted = false;
-      let isGuestAllowed = false;
-
+    const unsubscribe = onAuthStateChanged(auth, () => {
       try {
-        isSessionStarted = sessionStorage.getItem('wawasan_session_started') === 'true';
-        isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
-      } catch (err) {
-        console.warn('sessionStorage unavailable (sandboxed environment):', err);
-        isSessionStarted = true;
+        sessionStorage.setItem('wawasan_session_started', 'true');
+        sessionStorage.setItem('wawasan_guest_allowed', 'true');
+      } catch {
+        // Ignored
       }
-      
-      // Allow access if user is authenticated, guest allowed, session started, or admin session active
-      if (user || isGuestAllowed || isSessionStarted) {
-        setAllowed(true);
-      } else {
-        // Auto-allow seamless access for tab navigation to avoid blank dark screen transitions
-        try {
-          sessionStorage.setItem('wawasan_session_started', 'true');
-          sessionStorage.setItem('wawasan_guest_allowed', 'true');
-        } catch (storageErr) {
-          console.warn('SessionStorage unavailable:', storageErr);
-        }
-        setAllowed(true);
-      }
+      setAllowed(true);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -132,10 +102,6 @@ function SessionGuard({ children }: { children: ReactNode }) {
         <div className="w-full max-w-sm space-y-3">
           <Skeleton className="h-8 w-3/4 mx-auto rounded-xl" />
           <Skeleton className="h-4 w-1/2 mx-auto rounded-lg" />
-          <div className="pt-4 space-y-2">
-            <Skeleton className="h-10 w-full rounded-xl" />
-            <Skeleton className="h-10 w-full rounded-xl" />
-          </div>
         </div>
       </div>
     );
@@ -215,10 +181,10 @@ function AppContent() {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1.0] }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: "linear" }}
               className="w-full flex-grow"
             >
               <Routes location={location}>
@@ -594,7 +560,7 @@ function App() {
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
           <Router>
-            <SpeedInsights />
+            {!Capacitor.isNativePlatform() && <SpeedInsights />}
             <PushNotificationHandler />
             <NativeBackButtonHandler />
             <NativeAppListeners />

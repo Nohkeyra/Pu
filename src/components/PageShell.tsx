@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Sun, Moon, User as UserIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { useTheme } from '@/context/ThemeContext';
@@ -214,35 +213,24 @@ export default function PageShell({
       ) : null}
 
       {/* ---- Main content area (uniform gutter) ---- */}
-      <main role="main" className="page-shell__main">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18 }}
-            className={cn('relative', variantClass)}
+      <main role="main" className={cn('page-shell__main relative', variantClass)}>
+        {/*
+          Optional decorative Batik kept as a fixed background only —
+          image asset path / file is untouched.
+        */}
+        {showBatik ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
           >
-            {/*
-              Optional decorative Batik kept as a fixed background only —
-              image asset path / file is untouched.
-            */}
-            {showBatik ? (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-              >
-                <Batik3DMotion
-                  maxRotation={4}
-                  imgClassName="opacity-[0.05] dark:opacity-[0.10]"
-                  mode="background"
-                />
-              </div>
-            ) : null}
-            {children}
-          </motion.div>
-        </AnimatePresence>
+            <Batik3DMotion
+              maxRotation={4}
+              imgClassName="opacity-[0.05] dark:opacity-[0.10]"
+              mode="background"
+            />
+          </div>
+        ) : null}
+        {children}
       </main>
 
       <AuthModal

@@ -25,35 +25,30 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
   };
 
   useEffect(() => {
-    if (!overlayRef.current || !itemsRef.current) return;
-
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      gsap.to(overlayRef.current, {
-        opacity: 1,
-        duration: 0.25,
-        ease: 'power2.out',
-        pointerEvents: 'auto',
-        visibility: 'visible',
-      });
-      gsap.fromTo(
-        itemsRef.current.children,
-        { x: 28, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.32, stagger: 0.04, ease: 'power2.out', delay: 0.04 }
-      );
+      if (overlayRef.current && itemsRef.current) {
+        gsap.fromTo(
+          overlayRef.current,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.22, ease: 'power2.out' }
+        );
+        gsap.fromTo(
+          itemsRef.current.children,
+          { x: 20, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.28, stagger: 0.03, ease: 'power2.out' }
+        );
+      }
     } else {
-      gsap.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.18,
-        ease: 'power2.in',
-        pointerEvents: 'none',
-        onComplete: () => {
-          if (overlayRef.current) overlayRef.current.style.visibility = 'hidden';
-        }
-      });
       document.body.style.overflow = '';
     }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const handleAuth = () => {
     if (onAuthClick) onAuthClick();
@@ -66,7 +61,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Menu utama' : 'Main menu'}
-      className="fixed inset-0 z-[1100] opacity-0 pointer-events-none md:hidden bg-cream/92 backdrop-blur-2xl invisible"
+      className="fixed inset-0 z-[1100] md:hidden bg-cream/95 dark:bg-stone-900/95 backdrop-blur-xl"
     >
       <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         <button

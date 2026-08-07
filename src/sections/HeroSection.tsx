@@ -53,8 +53,8 @@ export default function HeroSection() {
       </div>
 
       {/* Decorative ambient radial glows */}
-      <div className="absolute top-[15%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-[var(--color-sunshine-cta)]/20 blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[10%] w-[30vw] h-[30vw] rounded-full bg-crisp-carrot/15 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[15%] left-[10%] w-[35vw] h-[35vw] max-w-[400px] max-h-[400px] rounded-full bg-[var(--color-sunshine-cta)]/15 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[10%] w-[30vw] h-[30vw] max-w-[350px] max-h-[350px] rounded-full bg-crisp-carrot/10 blur-3xl pointer-events-none" />
 
       <motion.div 
         variants={containerVariants}
