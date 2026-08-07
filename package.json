@@ -9,7 +9,8 @@
     "start": "node dist/server.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
-    "sync:android": "npx cap sync android"
+    "sync:android": "npx cap sync android",
+    "postinstall": "node scripts/patch-capacitor.js"
   },
   "dependencies": {
     "@capacitor-community/fcm": "^8.1.0",
