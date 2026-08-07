@@ -122,19 +122,19 @@ jobs:
             
             # Create keystore properties
             cat > android/app/keystore.properties << EOF
-            storePassword=$KEYSTORE_PASSWORD
-            keyPassword=$KEY_PASSWORD
-            keyAlias=$KEY_ALIAS
-            storeFile=release-key.jks
-            EOF
+storePassword=$KEYSTORE_PASSWORD
+keyPassword=$KEY_PASSWORD
+keyAlias=$KEY_ALIAS
+storeFile=release-key.jks
+EOF
 
             # Create key.properties (read by android/app/build.gradle)
             cat > android/app/key.properties << EOF
-            storePassword=$KEYSTORE_PASSWORD
-            keyPassword=$KEY_PASSWORD
-            keyAlias=$KEY_ALIAS
-            storeFile=release-key.jks
-            EOF
+storePassword=$KEYSTORE_PASSWORD
+keyPassword=$KEY_PASSWORD
+keyAlias=$KEY_ALIAS
+storeFile=release-key.jks
+EOF
             cp android/app/key.properties android/key.properties
             
             echo "✅ Keystore configured for signing"

@@ -25,7 +25,7 @@
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/share": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
-    "@capacitor/status-bar": "^8.0.3",
+    "@capacitor/status-bar": "^6.0.0",
     "@capgo/capacitor-updater": "^6.0.0",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-label": "^2.1.15",
