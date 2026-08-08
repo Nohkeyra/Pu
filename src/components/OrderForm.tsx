@@ -9,11 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Loader2, 
   Utensils, 
-  Share2, 
   Check, 
   MapPin, 
   Phone, 
-  Clock, 
   Truck, 
   Store, 
   CheckCircle2, 
@@ -26,6 +24,7 @@ import {
   Eye,
   UtensilsCrossed,
   Package,
+  Sparkles,
   User as UserIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -40,6 +39,7 @@ import { auth, db } from '@/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from './AuthModal';
 import { SAVED_COMPANIES } from '@/constants/companies';
+import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
@@ -119,9 +119,16 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     const fetchMenu = async () => {
       try {
         const data = await fetchWithCache(getApiUrl('/api/menu'), undefined, 120000); // 2 minutes cache
-        setDynamicMenu(data.menuItems || []);
+        if (data && data.menuItems && data.menuItems.length > 0) {
+          setDynamicMenu(data.menuItems);
+        } else {
+          console.warn('Empty menu items from API, falling back to local list.');
+          setDynamicMenu(DEFAULT_MENU_ITEMS);
+        }
       } catch (err) {
         console.error('Failed to load menu items:', err);
+        // Robust fallback: use local list so the app never fails or stays empty due to 429 or network errors
+        setDynamicMenu(DEFAULT_MENU_ITEMS);
       } finally {
         setMenuLoading(false);
       }
@@ -133,7 +140,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [orderState, setOrderState] = useState<OrderState>({
     eventType: '',
     mealTypes: [],
-    preparationType: 'buffet',
+    preparationType: 'meal_box',
     guests: 50,
     dishes: [],
     veggies: [],
@@ -648,34 +655,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   };
 
-  const handleShareForm = async () => {
-    const url = 'https://restoran-wawasan-bio.onrender.com/';
-    const shareData = {
-      title: tText('Restoran Wawasan Booking', 'Tempahan Restoran Wawasan'),
-      text: tText('Order catering from Restoran Wawasan Pak Usop here:', 'Tempah katering Restoran Wawasan Pak Usop di sini:'),
-      url: url,
-    };
-
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.warn('Share failed:', err);
-        await safeCopyToClipboard(url);
-        toast({ title: t('link_copied'), variant: 'success' });
-      }
-    } else {
-      await safeCopyToClipboard(url);
-      toast({ title: t('link_copied'), variant: 'success' });
-    }
-  };
-
   const handleResetForm = () => {
     idempotencyKeyRef.current = crypto.randomUUID();
     setOrderState({
       eventType: '',
       mealTypes: [],
-      preparationType: 'buffet',
+      preparationType: 'meal_box',
       guests: 50,
       dishes: [],
       veggies: [],
@@ -883,13 +868,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 transition={{ duration: 0.25 }}
                 className="space-y-6 text-left"
               >
-                <div>
-                  <h2 className="text-lg font-bold text-deep-forest font-display">
-                    {tText('Select Event Type', 'Pilih Jenis Majlis')}
-                  </h2>
-                  <p className="text-xs text-stone font-light mt-0.5">
-                    {tText('Choose your catering hosting style.', 'Sila tentukan jenis majlis catering anda.')}
-                  </p>
+                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+                  <div className="relative z-10">
+                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
+                      {tText('Select Event Type', 'Pilih Jenis Majlis')}
+                    </h2>
+                    <p className="text-xs text-stone-300 font-light mt-1">
+                      {tText('Choose your catering hosting style.', 'Sila tentukan jenis majlis catering anda.')}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Event Type option cards */}
@@ -900,20 +897,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     aria-checked={orderState.eventType === 'pejabat'}
                     onClick={() => setOrderState(prev => ({ ...prev, eventType: 'pejabat' }))}
                     className={cn(
-                      "p-4 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-2 cursor-pointer relative",
+                      "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                       orderState.eventType === 'pejabat' 
-                        ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm" 
-                        : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                        ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-md ring-1 ring-crisp-carrot/30" 
+                        : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
                     )}
                   >
+                    {orderState.eventType === 'pejabat' && (
+                      <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-1 shadow-sm">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
                     <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                      orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                      "w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-sm",
+                      orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                     )}>
                       <Briefcase className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-bold block">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-                    <span className="microcopy-12-upper text-stone leading-tight font-light">{tText('Meetings, workshops & corporate.', 'Urusan rasmi menteri, mesyuarat, kursus.')}</span>
+                    <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Office Feast', 'Jamuan Pejabat')}</span>
+                    <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Meetings, workshops & corporate.', 'Urusan rasmi, mesyuarat, kursus.')}</span>
                   </button>
 
                   <button
@@ -922,30 +924,35 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     aria-checked={orderState.eventType === 'lain'}
                     onClick={() => setOrderState(prev => ({ ...prev, eventType: 'lain' }))}
                     className={cn(
-                      "p-4 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-2 cursor-pointer relative",
+                      "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                       orderState.eventType === 'lain' 
-                        ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm" 
-                        : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                        ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-md ring-1 ring-crisp-carrot/30" 
+                        : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
                     )}
                   >
+                    {orderState.eventType === 'lain' && (
+                      <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-1 shadow-sm">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
                     <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                      orderState.eventType === 'lain' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                      "w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-sm",
+                      orderState.eventType === 'lain' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                     )}>
                       <Smile className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-bold block">{tText('Private Events', 'Lain-lain')}</span>
-                    <span className="microcopy-12-upper text-stone leading-tight font-light">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
+                    <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Private Events', 'Lain-lain')}</span>
+                    <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
                   </button>
                 </div>
 
                 {/* Meal Type selection */}
                 <div className="space-y-2 pt-2">
-                  <Label className="text-xs font-bold text-stone uppercase tracking-wider">
+                  <Label className="text-xs font-bold text-stone dark:text-stone-300 uppercase tracking-wider block">
                     {tText('Meals For / Hidangan Untuk', 'Hidangan Untuk *')}
                   </Label>
                   
-                  <div className="grid grid-cols-3 gap-3" role="group" aria-label={tText('Meal type', 'Hidangan')}>
+                  <div className="grid grid-cols-3 gap-2.5" role="group" aria-label={tText('Meal type', 'Hidangan')}>
                     {[
                       { id: 'sarapan', label: () => tText('Breakfast', 'Sarapan'), time: '7AM - 10AM', icon: Coffee },
                       { id: 'tengahari', label: () => tText('Lunch', 'Makan Tengah Hari'), time: '12PM - 3PM', icon: Sun },
@@ -961,20 +968,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                           aria-pressed={isSelected}
                           onClick={() => handleToggleMeal(mealId)}
                           className={cn(
-                            "p-3 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer relative",
+                            "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-1.5 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                             isSelected 
-                              ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm" 
-                              : "bg-muted border-stone/15 text-stone"
+                              ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                              : "bg-muted/70 border-stone/15 text-stone dark:bg-stone-800/50"
                           )}
                         >
                           {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5">
+                            <div className="absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
                               <Check className="w-2.5 h-2.5" />
                             </div>
                           )}
-                          <Icon className={cn("w-4 h-4", isSelected ? "text-crisp-carrot" : "text-stone")} />
-                          <span className="microcopy-12 font-bold block leading-none">{m.label()}</span>
-                          <span className="microcopy-12 text-stone leading-none font-light">{m.time}</span>
+                          <div className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
+                            isSelected ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+                          )}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold block leading-none text-deep-forest dark:text-white mt-0.5">{m.label()}</span>
+                          <span className="microcopy-12 text-stone/80 leading-none font-normal">{m.time}</span>
                         </button>
                       );
                     })}
@@ -983,7 +995,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                 {/* Serving Style / Preparation Type */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-deep-forest block">
+                  <Label className="text-sm font-bold text-deep-forest dark:text-white block">
                     {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan')}
                   </Label>
                   <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
@@ -993,21 +1005,26 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       aria-checked={orderState.preparationType === 'buffet'}
                       onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'buffet' }))}
                       className={cn(
-                        "p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 text-left cursor-pointer",
+                        "p-3.5 rounded-2xl border transition-all duration-200 flex items-center gap-3 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                         orderState.preparationType === 'buffet'
-                          ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                          : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                          ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
+                          : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
                       )}
                     >
+                      {orderState.preparationType === 'buffet' && (
+                        <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                          <Check className="w-2.5 h-2.5" />
+                        </div>
+                      )}
                       <div className={cn(
                         "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                        orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                        orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                       )}>
                         <UtensilsCrossed className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <span className="text-sm font-bold block leading-tight">{tText('Buffet Style', 'Hidangan Bufet')}</span>
-                        <span className="microcopy-12 text-stone font-light block mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
+                        <span className="text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Buffet Style', 'Hidangan Bufet')}</span>
+                        <span className="microcopy-12 text-stone/80 font-normal block mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
                       </div>
                     </button>
 
@@ -1017,44 +1034,49 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       aria-checked={orderState.preparationType === 'meal_box'}
                       onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'meal_box' }))}
                       className={cn(
-                        "p-3.5 rounded-2xl border transition-all duration-300 flex items-center gap-3 text-left cursor-pointer",
+                        "p-3.5 rounded-2xl border transition-all duration-200 flex items-center gap-3 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                         orderState.preparationType === 'meal_box'
-                          ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                          : "bg-muted hover:bg-muted/80 border-stone/15 text-stone"
+                          ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
+                          : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
                       )}
                     >
+                      {orderState.preparationType === 'meal_box' && (
+                        <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                          <Check className="w-2.5 h-2.5" />
+                        </div>
+                      )}
                       <div className={cn(
                         "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                        orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone"
+                        orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                       )}>
                         <Package className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <span className="text-sm font-bold block leading-tight">{tText('Pre-Pack Box', 'Set Box / Bungkus')}</span>
-                        <span className="microcopy-12 text-stone font-light block mt-0.5">{tText('Packed meal boxes', 'Kotak makanan individu')}</span>
+                        <span className="text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Pre-Pack Box', 'Set Box / Bungkus')}</span>
+                        <span className="microcopy-12 text-stone/80 font-normal block mt-0.5">{tText('Packed meal boxes', 'Kotak makanan individu')}</span>
                       </div>
                     </button>
                   </div>
                 </div>
 
                 {/* Quantity Counter */}
-                <div className="bg-muted border border-stone/10 p-5 rounded-2xl space-y-3">
-                  <div className="flex justify-between items-center">
+                <div className="bg-muted/70 border border-stone/15 dark:border-white/10 p-4 rounded-2xl space-y-3 dark:bg-stone-800/40">
+                  <div className="flex justify-between items-center flex-wrap gap-2">
                     <div>
-                      <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest">
+                      <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest dark:text-white">
                         {tText('Quantity', 'Kuantiti')}
                       </Label>
-                      <span className="microcopy-12-upper text-stone font-light block leading-none mt-1">
+                      <span className="microcopy-12 text-stone font-normal block leading-none mt-1">
                         {tText('Minimum order: 1 pax.', 'Minima tempahan katering: 1 orang.')}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
+                    <div className="flex items-center gap-2.5" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
                       <button
                         type="button"
                         aria-label={tText('Decrease quantity', 'Kurangkan kuantiti')}
                         onClick={() => adjustGuests(-1)}
-                        className="w-10 h-10 rounded-xl bg-card border border-stone/15 flex items-center justify-center font-bold text-lg hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none"
+                        className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
                       >
                         –
                       </button>
@@ -1079,13 +1101,13 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                           }));
                         }}
                         aria-label={tText('Number of guests', 'Bilangan tetamu')}
-                        className="text-xl font-bold text-deep-forest w-20 text-center bg-card border border-stone/15 rounded-xl h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-crisp-carrot"
+                        className="text-lg font-bold text-deep-forest dark:text-white w-20 text-center bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 rounded-xl h-11 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-crisp-carrot focus:ring-1 focus:ring-crisp-carrot"
                       />
                       <button
                         type="button"
                         aria-label={tText('Increase quantity', 'Tambah kuantiti')}
                         onClick={() => adjustGuests(1)}
-                        className="w-10 h-10 rounded-xl bg-card border border-stone/15 flex items-center justify-center font-bold text-lg hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none"
+                        className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
                       >
                         +
                       </button>
@@ -1096,7 +1118,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* Next Button */}
                 <Button
                   onClick={() => handleStepNext(1)}
-                  className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp"
+                  className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
                 >
                   {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
                   <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -1114,13 +1136,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 transition={{ duration: 0.25 }}
                 className="space-y-6 text-left"
               >
-                <div>
-                  <h2 className="text-lg font-bold text-deep-forest font-display">
-                    {tText('Select Menu Dishes', 'Pilih Hidangan Lauk-Pauk')}
-                  </h2>
-                  <p className="text-xs text-stone font-light mt-0.5">
-                    {tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}
-                  </p>
+                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+                  <div className="relative z-10">
+                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
+                      {tText('Select Menu Dishes', 'Pilih Hidangan Lauk-Pauk')}
+                    </h2>
+                    <p className="text-xs text-stone-300 font-light mt-1">
+                      {tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}
+                    </p>
+                  </div>
                 </div>
 
                 {menuLoading ? (
@@ -1152,24 +1186,24 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                                 key={item.id}
                                 onClick={() => handleToggleDish(item)}
                                 className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                                   isSelected 
-                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
                                 )}
                               >
                                 <div className={cn(
-                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
                                 )}>
                                   {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
                                     {tText(item.nameEn, item.nameBm)}
                                   </span>
-                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
                                     {tText(item.descEn || '', item.descBm || '')}
                                   </span>
                                 </div>
@@ -1203,24 +1237,24 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                                 key={item.id}
                                 onClick={() => handleToggleDish(item)}
                                 className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                                   isSelected 
-                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
                                 )}
                               >
                                 <div className={cn(
-                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
                                 )}>
                                   {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
                                     {tText(item.nameEn, item.nameBm)}
                                   </span>
-                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
                                     {tText(item.descEn || '', item.descBm || '')}
                                   </span>
                                 </div>
@@ -1254,24 +1288,24 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                                 key={item.id}
                                 onClick={() => handleToggleDish(item)}
                                 className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                                   isSelected 
-                                    ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                                    : "bg-muted border-stone/10 hover:bg-muted/80"
+                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
                                 )}
                               >
                                 <div className={cn(
-                                  "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
                                 )}>
                                   {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest truncate">
+                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
                                     {tText(item.nameEn, item.nameBm)}
                                   </span>
-                                  <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
                                     {tText(item.descEn || '', item.descBm || '')}
                                   </span>
                                 </div>
@@ -1301,7 +1335,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                         {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (
                           <div className="space-y-2">
                             <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block">
-                              {tText('☕ Hot/Warm Drinks (Recommended for Breakfast & Hi-Tea)', '☕ Minuman Panas/Suam (Disyorkan untuk Sarapan & Hi-Tea)')}
+                              {tText('☕ Hot/Warm Drinks', '☕ Minuman Panas/Suam')}
                             </span>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
                               {dynamicMenu
@@ -1313,24 +1347,24 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                                       key={item.id}
                                       onClick={() => handleToggleDish(item)}
                                       className={cn(
-                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                                         isSelected 
-                                          ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                                          : "bg-muted border-stone/10 hover:bg-muted/80"
+                                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                                          : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
                                       )}
                                     >
                                       <div className={cn(
-                                        "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
                                       )}>
                                         {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                       </div>
                                       
                                       <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold block text-deep-forest truncate">
+                                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
                                           {tText(item.nameEn, item.nameBm)}
                                         </span>
-                                        <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                        <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
                                           {tText(item.descEn || '', item.descBm || '')}
                                         </span>
                                       </div>
@@ -1348,7 +1382,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                         {(orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length) && (
                           <div className="space-y-2 pt-2">
                             <span className="text-xs font-bold text-blue-600 dark:text-blue-400 block">
-                              {tText('🥤 Refreshing Box/Cordial/Mineral Drinks (Recommended for Lunch)', '🥤 Minuman Kotak/Kordial/Mineral Segar (Disyorkan untuk Tengah Hari)')}
+                              {tText('🥤 Refreshing Box/Cordial/Mineral Drinks', '🥤 Minuman Kotak/Kordial/Mineral Segar')}
                             </span>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
                               {dynamicMenu
@@ -1360,24 +1394,24 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                                       key={item.id}
                                       onClick={() => handleToggleDish(item)}
                                       className={cn(
-                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200",
+                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                                         isSelected 
-                                          ? "bg-crisp-carrot/15 border-crisp-carrot shadow-sm" 
-                                          : "bg-muted border-stone/10 hover:bg-muted/80"
+                                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+                                          : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
                                       )}
                                     >
                                       <div className={cn(
-                                        "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
-                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card"
+                                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
                                       )}>
                                         {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                       </div>
                                       
                                       <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold block text-deep-forest truncate">
+                                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
                                           {tText(item.nameEn, item.nameBm)}
                                         </span>
-                                        <span className="microcopy-12-upper text-stone leading-tight block truncate font-light">
+                                        <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
                                           {tText(item.descEn || '', item.descBm || '')}
                                         </span>
                                       </div>
@@ -1396,25 +1430,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 )}
 
                 {/* Custom Menu Request */}
-                <div className="space-y-2 pt-2 border-t border-stone/10">
-                  <Label className="text-xs font-black text-[#A8E10C] uppercase tracking-wider block">
-                    {tText('Other / Custom Menu Request (Optional)', 'Permintaan Menu Lain / Khas (Pilihan)')}
-                  </Label>
-                  <p className="microcopy-12 text-stone font-light leading-tight">
-                    {tText(
-                      'Feel free to specify any custom dishes, drinks, or requests. If you skip this menu step completely, the app will auto-setup to our default "Set Box Makanan & Minuman".',
-                      'Sila nyatakan jika ada lauk, minuman atau permintaan khas. Jika anda melangkau bahagian menu ini, tempahan akan ditetapkan secara automatik kepada "Set Box Makanan & Minuman".'
-                    )}
-                  </p>
-                  <Textarea
-                    placeholder={tText(
-                      'e.g. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, vegetarian options...',
-                      'cth. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, menu vegetarian...'
-                    )}
-                    value={orderState.customMenu}
-                    onChange={(e) => setOrderState(prev => ({ ...prev, customMenu: e.target.value }))}
-                    className="w-full min-h-[90px] border-stone/20 rounded-2xl p-3 bg-card text-xs text-deep-forest focus:border-crisp-carrot focus:ring-1 focus:ring-crisp-carrot"
-                  />
+                <div className="pt-2 border-t border-stone/10">
+                  <div className="bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 md:p-5 space-y-3.5 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-400/10 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-crisp-carrot" />
+                      </div>
+                      <Label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block leading-none">
+                        {tText('Other / Custom Menu Request (Optional)', 'Permintaan Menu Lain / Khas (Pilihan)')}
+                      </Label>
+                    </div>
+                    
+                    <p className="text-xs text-stone dark:text-stone-300 leading-relaxed font-normal">
+                      {tText(
+                        'Want custom dishes, signature drinks, or special culinary arrangements? Specify them here. If you skip this menu step completely, the app will auto-setup to our default "Set Box Makanan & Minuman".',
+                        'Sila nyatakan jika ada lauk, minuman, atau permintaan katering khas. Jika anda melangkau bahagian menu ini, tempahan akan ditetapkan secara automatik kepada "Set Box Makanan & Minuman" kami.'
+                      )}
+                    </p>
+                    
+                    <Textarea
+                      placeholder={tText(
+                        'e.g. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, vegetarian options...',
+                        'cth. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, menu vegetarian...'
+                      )}
+                      value={orderState.customMenu}
+                      onChange={(e) => setOrderState(prev => ({ ...prev, customMenu: e.target.value }))}
+                      className="w-full min-h-[140px] border-stone-200 dark:border-stone-700 rounded-xl p-3.5 bg-card dark:bg-stone-900/60 text-sm text-deep-forest dark:text-white placeholder:text-stone-400/80 focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/25 transition-all shadow-inner leading-relaxed"
+                    />
+                  </div>
                 </div>
 
                 {/* REALTIME SELECTION SUMMARY PANEL */}
@@ -1481,16 +1524,28 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 transition={{ duration: 0.25 }}
                 className="space-y-5 text-left"
               >
-                <div>
-                  <h2 className="text-lg font-bold text-deep-forest font-display">
-                    {tText('Enter Booking Details', 'Butiran Tempahan')}
-                  </h2>
-                  <p className="text-xs text-stone font-light mt-0.5">
-                    {tText('Fill in event details, billing and delivery method.', 'Isi maklumat majlis, pembayar, dan kaedah penghantaran.')}
-                  </p>
+                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+                  <div className="relative z-10">
+                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
+                      {tText('Enter Booking Details', 'Butiran Tempahan')}
+                    </h2>
+                    <p className="text-xs text-stone-300 font-light mt-1">
+                      {tText('Fill in event details, billing and delivery method.', 'Isi maklumat majlis, pembayar, dan kaedah penghantaran.')}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+                <div className="space-y-4">
                   
                   {/* Conditionally Render Company/Department selection for Office event */}
                   {orderState.eventType === 'pejabat' && (
@@ -1748,17 +1803,28 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 transition={{ duration: 0.25 }}
                 className="space-y-5 text-left"
               >
-                <div>
-                  <h2 className="text-lg font-bold text-deep-forest font-display">
-                    {tText('Review & Confirm Inquiry', 'Semak & Sahkan')}
-                  </h2>
-                  <p className="text-xs text-stone font-light mt-0.5">
-                    {tText('Double check all information below before submitting.', 'Sila semak butiran tempahan anda sebelum menghantar.')}
-                  </p>
+                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+                  <div className="relative z-10">
+                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
+                      {tText('Review & Confirm Inquiry', 'Semak & Sahkan')}
+                    </h2>
+                    <p className="text-xs text-stone-300 font-light mt-1">
+                      {tText('Double check all information below before submitting.', 'Sila semak butiran tempahan anda sebelum menghantar.')}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Info summary table cards */}
-                <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+                <div className="space-y-4">
                   
                   {/* Event & Serve Summary */}
                   <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
@@ -1950,19 +2016,32 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 transition={{ duration: 0.3 }}
                 className="space-y-6 text-center"
               >
-                <div className="py-4">
-                  <div className="w-16 h-16 rounded-full bg-[#A8E10C]/15 text-[#A8E10C] flex items-center justify-center mx-auto mb-4 scale-110 shadow-sm">
-                    <CheckCircle2 className="w-12 h-12" />
+                <div className="bg-charcoal text-white p-6 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md text-center">
+                  {/* Background Batik Pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+                  
+                  <div className="relative z-10">
+                    <div className="w-14 h-14 rounded-full bg-[#A8E10C]/15 text-[#A8E10C] flex items-center justify-center mx-auto mb-3.5 shadow-sm">
+                      <CheckCircle2 className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-lg font-bold text-white font-display">
+                      {tText('Booking Request Sent!', 'Tempahan Dihantar!')}
+                    </h2>
+                    <p className="text-xs text-stone-300 font-light max-w-sm mx-auto mt-1 leading-relaxed">
+                      {tText(
+                        'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
+                        'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
+                      )}
+                    </p>
                   </div>
-                  <h2 className="text-xl font-bold text-deep-forest font-display">
-                    {tText('Booking Request Sent!', 'Tempahan Dihantar!')}
-                  </h2>
-                  <p className="text-xs text-stone font-light max-w-sm mx-auto mt-1">
-                    {tText(
-                      'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
-                      'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
-                    )}
-                  </p>
                 </div>
 
                 {/* Bill details receipt box */}
@@ -2073,55 +2152,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
           </AnimatePresence>
         </div>
-
-          {/* Bottom Navigation mimics Kimi bottom bar layout inside form panel */}
-          {currentStep <= 4 && (
-            <div className="bg-card border-t border-stone/10 p-3 pb-4 flex justify-around items-center select-none">
-              <button
-                type="button"
-                onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold px-4 py-1.5 rounded-xl transition-all",
-                  currentStep < 5 ? "text-crisp-carrot bg-crisp-carrot/15" : "text-stone"
-                )}
-              >
-                <Utensils className="w-5 h-5 shrink-0" />
-                <span>{tText('Booking', 'Tempahan')}</span>
-              </button>
-
-              <a
-                href="tel:+60178582642"
-                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-              >
-                <Phone className="w-5 h-5 shrink-0" />
-                <span>{tText('Call Now', 'Hubungi')}</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={handleShareForm}
-                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-              >
-                <Share2 className="w-5 h-5 shrink-0 text-crisp-carrot" />
-                <span>{tText('Share', 'Kongsi')}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  toast({
-                    title: tText('Restoran Wawasan', 'Restoran Wawasan'),
-                    description: tText('Putrajaya, Malaysia. Open Mon-Sat 7AM - 4PM.', 'Putrajaya, Malaysia. Buka Isnin-Sabtu 7AM - 4PM.'),
-                    variant: 'success'
-                  });
-                }}
-                className="flex flex-col items-center gap-0.5 cursor-pointer text-xs font-semibold text-stone hover:text-crisp-carrot px-4 py-1.5 rounded-xl transition-all"
-              >
-                <Clock className="w-5 h-5 shrink-0" />
-                <span>{tText('Information', 'Maklumat')}</span>
-              </button>
-            </div>
-          )}
 
         </div>
 
@@ -2264,7 +2294,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {currentStep <= 4 && (
-        <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom,12px))] left-0 right-0 z-40 lg:hidden border-t border-[var(--color-sunshine-cta)]/20 bg-charcoal/98 px-4 py-2.5 shadow-[0_-8px_25px_rgba(0,0,0,0.3)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
+        <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,12px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-charcoal/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
               <span>{orderState.guests} pax</span>

@@ -103,10 +103,10 @@ export default function OrderPage() {
             >
               <BrandMark />
               <div>
-                <span className="font-display font-semibold text-xl page-header-text leading-none tracking-tight">
+                <span className="font-display font-bold text-base sm:text-xl page-header-text leading-none tracking-tight block">
                   Restoran Wawasan
                 </span>
-                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5">
+                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5 font-semibold">
                   Pak Usop
                 </span>
               </div>
@@ -144,8 +144,7 @@ export default function OrderPage() {
               >
                 {currentUser ? (
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] microcopy-12 font-black text-white">
-                    {currentUser.displayName?.slice(0, 2).toUpperCase() ||
-                      currentUser.email?.slice(0, 2).toUpperCase()}
+                    {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                 ) : (
                   <UserIcon className="w-5 h-5" />

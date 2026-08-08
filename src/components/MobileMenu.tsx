@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { Shield, ArrowRight, User as UserIcon } from 'lucide-react';
+import { Shield, ArrowRight, User as UserIcon, Download } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from './TransparentLogo';
@@ -126,7 +126,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               {currentUser ? (
                 <>
                   <div className="flex min-h-[44px] min-w-[44px] h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
-                    {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
+                    {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                   <span>Account / Dashboard</span>
                 </>
@@ -148,6 +148,17 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                 <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-deep-forest/55 dark:text-white/55'}>BM</span>
               </span>
             </button>
+
+            <a
+              href="https://github.com/Nohkeyra/Pu/releases/latest/download/app-release.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="panel-surface flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-deep-forest dark:text-white"
+            >
+              <Download className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
+              <span>Download APK</span>
+            </a>
 
             <Link
               to="/admin"

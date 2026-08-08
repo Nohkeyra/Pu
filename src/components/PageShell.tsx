@@ -192,8 +192,7 @@ export default function PageShell({
             >
               {currentUser ? (
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] microcopy-12 font-black text-white">
-                  {currentUser.displayName?.slice(0, 2).toUpperCase() ||
-                    currentUser.email?.slice(0, 2).toUpperCase()}
+                  {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                 </div>
               ) : (
                 <UserIcon className="h-5 w-5" />

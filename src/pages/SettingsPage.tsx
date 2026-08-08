@@ -19,6 +19,7 @@ import {
   Settings,
   Download,
   Smartphone,
+  Type,
 } from 'lucide-react';
 import { triggerLightImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -47,6 +48,8 @@ export default function SettingsPage() {
     setNotificationsEnabled,
     developerMode,
     setDeveloperMode,
+    fontSize,
+    setFontSize,
   } = useSettings();
   const navigate = useNavigate();
 
@@ -204,6 +207,56 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
+
+            {/* Font Size Selection Row */}
+            <div className="flex flex-col gap-3 py-2 border-b border-border/65 last:border-0">
+              <div className="space-y-0.5">
+                <span className="text-sm font-semibold text-deep-forest dark:text-white block flex items-center gap-2">
+                  <Type className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                  {language === 'bm' ? 'Saiz Tulisan (Selesa Mata)' : 'Text Font Size (Eye Comfort)'}
+                </span>
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
+                  {language === 'bm'
+                    ? 'Laras saiz tulisan mengikut keselesaan membaca anda.'
+                    : 'Adjust the text sizing for a comfortable reading experience.'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+                {(['sm', 'base', 'lg', 'xl'] as const).map((size) => {
+                  const labelEn = size === 'sm' ? 'Small' : size === 'base' ? 'Normal' : size === 'lg' ? 'Large' : 'Huge';
+                  const labelBm = size === 'sm' ? 'Kecil' : size === 'base' ? 'Biasa' : size === 'lg' ? 'Besar' : 'Sangat Besar';
+                  
+                  // Text preview style classes
+                  const sizePreviewClass = size === 'sm' ? 'text-xs' : size === 'base' ? 'text-sm' : size === 'lg' ? 'text-base font-medium' : 'text-lg font-bold';
+                  
+                  return (
+                    <Button
+                      key={size}
+                      type="button"
+                      variant={fontSize === size ? 'default' : 'outline'}
+                      aria-pressed={fontSize === size}
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        setFontSize(size);
+                      }}
+                      className={`rounded-2xl min-h-[48px] p-2 flex flex-col justify-center items-center gap-0.5 transition-all duration-200 ${
+                        fontSize === size
+                          ? 'btn-cta text-white font-extrabold shadow-sm scale-[1.02]'
+                          : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
+                      }`}
+                    >
+                      <span className={`${sizePreviewClass} leading-tight`}>
+                        {language === 'bm' ? labelBm : labelEn}
+                      </span>
+                      <span className="text-[10px] opacity-75 leading-none">
+                        {size === 'sm' ? '14px' : size === 'base' ? '16px' : size === 'lg' ? '18px' : '20px'}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
           </section>
 
           {/* 2. Notification Preferences */}
@@ -257,46 +310,6 @@ export default function SettingsPage() {
               />
             </div>
           </section>
-
-          {/* APK Download - Visible on Web platform so users can download the native app */}
-          {Capacitor.getPlatform() === 'web' && (
-            <section className="bg-gradient-to-br from-[var(--color-sunshine-cta)]/10 to-[var(--color-sunshine)]/10 dark:from-[var(--color-sunshine-cta)]/15 dark:to-[var(--color-sunshine)]/15 border border-[var(--color-sunshine-cta)]/20 rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--color-sunshine-cta)] mb-2 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-                {language === 'bm' ? 'Aplikasi Android Rasmi' : 'Official Android App'}
-              </h3>
-
-              <div className="space-y-3">
-                <p className="text-sm text-deep-forest dark:text-white leading-relaxed">
-                  {language === 'bm'
-                    ? 'Dapatkan aplikasi Restoran Wawasan Pak Usop terus pada skrin utama anda! Nikmati prestasi yang lebih pantas, haptik lancar, dan notifikasi push masa nyata untuk tempahan anda.'
-                    : 'Get the Restoran Wawasan Pak Usop app right on your home screen! Enjoy faster performance, responsive native haptics, and real-time push notifications for your orders.'}
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <a
-                    href="https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk"
-                    download="Wawasan.Hub.apk"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={async () => {
-                      await triggerLightImpact();
-                    }}
-                    className="btn-cta flex-1 rounded-2xl min-h-[44px] font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
-                  >
-                    <Download className="w-5 h-5" />
-                    {language === 'bm' ? 'Muat Turun APK Restoran Wawasan' : 'Download Restoran Wawasan APK'}
-                  </a>
-                </div>
-
-                <p className="text-[14px] leading-5 text-stone dark:text-stone/75">
-                  {language === 'bm'
-                    ? 'Arahan pemasangan: Selepas memuat turun, buka fail APK dan pilih "Pasang". Anda mungkin perlu membenarkan pemasangan daripada sumber tidak dikenali dalam tetapan penyemak imbas anda.'
-                    : 'Installation guidance: After downloading, open the APK file and select "Install". You may need to allow installations from unknown sources in your browser settings.'}
-                </p>
-              </div>
-            </section>
-          )}
 
           {/* 4. System Information */}
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">

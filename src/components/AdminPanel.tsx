@@ -1470,10 +1470,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <Button 
               variant="ghost" 
               onClick={() => navigate('/home', { replace: true })} 
-              className="hidden sm:flex h-11 px-6 rounded-2xl text-deep-forest/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/5 font-bold transition-all"
+              className="flex h-11 px-3 sm:px-6 rounded-2xl text-deep-forest/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/5 font-bold transition-all"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              {t('back')}
+              <span className="hidden xs:inline">{t('back')}</span>
+              <span className="xs:hidden">{t('back')}</span>
             </Button>
             
             <Button 

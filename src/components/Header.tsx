@@ -147,10 +147,10 @@ export default function Header() {
               {currentUser ? (
                 <>
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white shadow-sm">
-                    {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
+                    {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                   <span className="hidden max-w-[140px] truncate lg:inline">
-                    {currentUser.displayName || currentUser.email?.split('@')[0]}
+                    {currentUser.displayName || currentUser.email?.split('@')[0] || (currentUser.uid === 'admin' ? 'Admin' : 'User')}
                   </span>
                 </>
               ) : (
@@ -180,7 +180,7 @@ export default function Header() {
             >
               {currentUser ? (
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
-                  {currentUser.displayName?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
+                  {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                 </div>
               ) : (
                 <UserIcon className="h-5 w-5" />
