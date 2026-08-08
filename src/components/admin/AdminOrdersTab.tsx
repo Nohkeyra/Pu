@@ -306,14 +306,12 @@ export function AdminOrdersTab({
           </div>
         ) : (
           <List
-            height={600}
-            itemCount={filteredOrders.length}
-            itemSize={140}
-            width="100%"
-            itemData={filteredOrders}
-          >
-            {({ index, style, data }) => {
-              const order = data[index];
+            style={{ height: 600, width: '100%' }}
+            rowCount={filteredOrders.length}
+            rowHeight={140}
+            rowProps={{}}
+            rowComponent={(({ index, style }: any) => {
+              const order = filteredOrders[index];
               const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
               const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
               
@@ -588,8 +586,8 @@ export function AdminOrdersTab({
                   </div>
                 </div>
               );
-            }}
-          </List>
+            }) as any}
+          />
         )}
       </div>
 

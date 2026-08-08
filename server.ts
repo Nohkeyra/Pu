@@ -72,7 +72,7 @@ const app = express();
   const PORT = 3000;
 
   // Enable compression for all responses
-  app.use(compression());
+  app.use(compression() as any);
 
   // Render (and most cloud platforms) sit behind a reverse proxy that sets
   // X-Forwarded-For. Without trust proxy=1, express-rate-limit throws

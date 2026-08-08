@@ -25,6 +25,7 @@ import {
   UtensilsCrossed,
   Package,
   Sparkles,
+  Share2,
   User as UserIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -46,28 +47,6 @@ import { buildShareableUrl } from '@/lib/share';
 import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
 import type { SavedLocation, Order } from '@/types';
 
-// TYPES
-interface OrderState {
-  eventType: 'pejabat' | 'lain' | '';
-  mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
-  preparationType: 'buffet' | 'meal_box';
-  guests: number;
-  dishes: typeof LAUK_UTAMA[number][];
-  veggies: typeof SAYURAN[number][];
-  name: string;
-  contact: string;
-  email: string;
-  confirmEmail: string;
-  date: string;
-  time: string;
-  location: string;
-  delivery: 'delivery' | 'pickup';
-  notes: string;
-  companyName: string;
-  customCompany: string;
-  customMenu: string;
-}
-
 // FOOD MENU CONSTANTS FROM KIMI HTML
 const LAUK_UTAMA = [
   { id: 'asam_pedas', nameEn: 'Asam Pedas', nameBm: 'Asam Pedas', descEn: 'Fresh fish cooked in spicy, tangy herbal gravy', descBm: 'Ikan segar dimasak asam pedas berempah', price: 12 },
@@ -85,6 +64,28 @@ const SAYURAN = [
   { id: 'kangkung_belacan', nameEn: 'Kangkung Belacan', nameBm: 'Kangkung Belacan', descEn: 'Stir-fried water spinach with spicy shrimp paste', descBm: 'Kangkung tumis belacan pedas', price: 5 },
   { id: 'pucuk_paku', nameEn: 'Pucuk Paku Lemak', nameBm: 'Pucuk Paku Masak Lemak', descEn: 'Jungle fern shoots cooked in rich yellow coconut gravy', descBm: 'Pucuk paku masak lemak dengan udang kering', price: 6 }
 ];
+
+// TYPES
+interface OrderState {
+  eventType: 'pejabat' | 'lain' | '';
+  mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
+  preparationType: 'buffet' | 'meal_box';
+  guests: number;
+  dishes: (typeof LAUK_UTAMA[number] & { category?: string })[];
+  veggies: typeof SAYURAN[number][];
+  name: string;
+  contact: string;
+  email: string;
+  confirmEmail: string;
+  date: string;
+  time: string;
+  location: string;
+  delivery: 'delivery' | 'pickup';
+  notes: string;
+  companyName: string;
+  customCompany: string;
+  customMenu: string;
+}
 
 interface OrderFormProps {
   initialData?: Record<string, unknown> | null;
