@@ -170,21 +170,26 @@ export function AdminOrdersTab({
           {/* Inline Compact Filter Dropdowns & Mode Toggles */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Date From & Date To */}
-            <div className="flex items-center gap-1 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-2.5 h-9">
+            <div className="flex items-center gap-2 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
+              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                {language === 'bm' ? 'Dari:' : 'From:'}
+              </span>
               <input
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
                 onChange={(e) => setDateFromFilter(e.target.value)}
-                className="bg-transparent microcopy-12 font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer min-w-[110px]"
               />
-              <span className="text-stone-400 microcopy-12-upper">-</span>
+              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                {language === 'bm' ? 'Hingga:' : 'To:'}
+              </span>
               <input
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
                 onChange={(e) => setDateToFilter(e.target.value)}
-                className="bg-transparent microcopy-12 font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer min-w-[110px]"
               />
             </div>
 
@@ -308,21 +313,39 @@ export function AdminOrdersTab({
           <List
             style={{ height: 600, width: '100%' }}
             rowCount={filteredOrders.length}
-            rowHeight={140}
+            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 215 : 145}
             rowProps={{}}
             rowComponent={(({ index, style }: any) => {
               const order = filteredOrders[index];
               const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
               const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
               
-              // Format header date: Jul 31, 2026 9:30 AM
+              // Format header date: Jul 31, 2026 9:30 AM with fallback to eventDate or createdAt
               let formattedHeaderDate = '-';
-              if (order.dateTime) {
+              const rawDate = order.dateTime || order.eventDate || order.createdAt;
+              if (rawDate) {
                 try {
-                  formattedHeaderDate = format(new Date(order.dateTime), 'MMM d, yyyy h:mm a');
+                  let d: Date;
+                  if (typeof rawDate === 'object' && rawDate !== null) {
+                    if ('seconds' in rawDate && typeof (rawDate as any).seconds === 'number') {
+                      d = new Date((rawDate as any).seconds * 1000);
+                    } else if ('_seconds' in rawDate && typeof (rawDate as any)._seconds === 'number') {
+                      d = new Date((rawDate as any)._seconds * 1000);
+                    } else {
+                      d = new Date(rawDate as any);
+                    }
+                  } else {
+                    d = new Date(rawDate);
+                  }
+                  if (!isNaN(d.getTime())) {
+                    formattedHeaderDate = format(d, 'MMM d, yyyy h:mm a');
+                  }
                 } catch {
-                  formattedHeaderDate = String(order.dateTime);
+                  formattedHeaderDate = String(rawDate);
                 }
+              }
+              if (formattedHeaderDate === '-') {
+                formattedHeaderDate = order.orderId ? `#${order.orderId}` : (language === 'bm' ? 'Pesanan Katering' : 'Catering Order');
               }
 
               // Relative age: e.g. "8h", "1d"
@@ -357,13 +380,14 @@ export function AdminOrdersTab({
               };
 
               const relativeTime = getRelativeTime(order);
+              const clientName = order.to || order.name || order.company || '-';
 
               return (
                 <div style={style} className="border-b border-stone/10 dark:border-white/5">
                   <div
                     key={order.id || `order-${index}`}
                     onClick={() => openOrderDetail(order)}
-                    className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative h-full ${
+                    className={`flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 p-3 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative h-full ${
                       order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''
                     } ${isSelected ? 'bg-[var(--color-sunshine-cta)]/5 dark:bg-[var(--color-sunshine-cta)]/5 border-l-4 border-l-sunshine' : ''}`}
                   >
@@ -411,24 +435,24 @@ export function AdminOrdersTab({
                       </div>
 
                       {/* Main Header / Content Details */}
-                      <div className="flex-1 min-w-0 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-stone-900 dark:text-stone-100 text-sm md:text-base leading-snug">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between md:justify-start gap-2">
+                          <span className="font-bold text-stone-900 dark:text-stone-100 text-sm md:text-base leading-snug">
                             {formattedHeaderDate}
                           </span>
-                          <span className="text-xs text-stone-400 dark:text-stone-500 hidden md:inline">
+                          <span className="text-xs text-stone-400 dark:text-stone-500">
                             • {relativeTime} ago
                           </span>
                         </div>
 
                         {/* Beautiful Jotform Fields Layout */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1.5 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
                               {language === 'bm' ? 'Sajian Untuk:' : 'Meal for:'}
                             </span>
-                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.to}>
-                              {order.to || '-'}
+                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={clientName}>
+                              {clientName}
                             </span>
                           </div>
 
@@ -453,7 +477,7 @@ export function AdminOrdersTab({
 
                         {/* Additional Details (Meals) in small footer text */}
                         {order.meals && order.meals.length > 0 && (
-                          <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate">
+                          <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate pt-0.5">
                             <span className="opacity-70">{language === 'bm' ? 'Menu Hidangan: ' : 'Meals: '}</span>
                             {order.meals.map(m => t(m) || m).join(', ')}
                             {order.preparationType && ` (${order.preparationType === 'buffet' ? (language === 'bm' ? 'Bufet' : 'Buffet') : (language === 'bm' ? 'Kotak' : 'Meal Box')})`}
@@ -463,15 +487,12 @@ export function AdminOrdersTab({
                     </div>
 
                     {/* Right Side: Status badge & Compact actions */}
-                    <div className="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch md:self-auto pl-7 md:pl-0">
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2 shrink-0 self-stretch md:self-auto pt-1 md:pt-0 border-t md:border-t-0 border-stone/10 dark:border-white/5">
                       <div className="flex items-center gap-2">
-                        <span className="microcopy-12 text-stone-400 dark:text-stone-500 md:hidden font-medium">
-                          {relativeTime} ago
-                        </span>
                         {getStatusBadge(order.status)}
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1.5">
+                      <div className="flex items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button

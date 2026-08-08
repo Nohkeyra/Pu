@@ -35,8 +35,8 @@ export function AdminHeader({
   getCalendarEnableUrl = () => '/api/auth/google/calendar',
 }: AdminHeaderProps) {
   return (
-    <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/80 dark:bg-card/40 backdrop-blur-md sticky top-0 z-30 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
+    <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/80 dark:bg-card/40 backdrop-blur-md sticky top-0 z-30 transition-colors pt-[env(safe-area-inset-top,0px)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-4 flex items-center justify-between gap-3">
         {/* Brand & Logo */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-charcoal p-1.5 flex items-center justify-center border border-amber-500/30 shadow-md">

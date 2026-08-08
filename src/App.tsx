@@ -1,6 +1,6 @@
 import { useEffect, useState, Suspense, type ReactNode } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig';
@@ -190,7 +190,7 @@ function AppContent() {
         </div>
       )}
 
-      <main className={cn("flex-grow", showNav && "pb-[calc(96px+env(safe-area-inset-bottom,16px))]")}>
+      <main className={cn("flex-grow", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
           <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
             <Skeleton className="w-24 h-24 rounded-full animate-pulse" />
@@ -200,16 +200,8 @@ function AppContent() {
             </div>
           </div>
         }>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12, ease: "linear" }}
-              className="w-full flex-grow"
-            >
-              <Routes location={location}>
+          <div className="w-full flex-grow">
+            <Routes location={location}>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 
@@ -258,8 +250,7 @@ function AppContent() {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="*" element={<LoginPage />} />
               </Routes>
-            </motion.div>
-          </AnimatePresence>
+            </div>
         </Suspense>
       </main>
       {showNav && <BottomNavigation />}

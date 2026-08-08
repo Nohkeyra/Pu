@@ -101,24 +101,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [menuLoading, setMenuLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchMenu = async () => {
       try {
         const data = await fetchWithCache(getApiUrl('/api/menu'), undefined, 120000); // 2 minutes cache
+        if (!isMounted) return;
         if (data && data.menuItems && data.menuItems.length > 0) {
           setDynamicMenu(data.menuItems);
         } else {
-          console.warn('Empty menu items from API, falling back to local list.');
           setDynamicMenu(DEFAULT_MENU_ITEMS);
         }
-      } catch (err) {
-        console.error('Failed to load menu items:', err);
-        // Robust fallback: use local list so the app never fails or stays empty due to 429 or network errors
+      } catch (err: any) {
+        if (!isMounted) return;
+        if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
+          setDynamicMenu(DEFAULT_MENU_ITEMS);
+          return;
+        }
+        console.warn('Could not load menu items from endpoint, using local fallback:', err?.message || err);
         setDynamicMenu(DEFAULT_MENU_ITEMS);
       } finally {
-        setMenuLoading(false);
+        if (isMounted) {
+          setMenuLoading(false);
+        }
       }
     };
     fetchMenu();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Multi-step State

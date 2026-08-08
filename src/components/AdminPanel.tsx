@@ -154,11 +154,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     // If metadata.fromCache is false, the real-time WebSocket connection is verified.
     const q = query(collection(db, 'orders'), limit(1));
     const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-      const isOnline = !snapshot.metadata.fromCache;
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : !snapshot.metadata.fromCache;
       setSyncStatus(isOnline ? 'connected' : 'offline');
     }, (error) => {
       console.warn('Real-time connection monitoring error (possibly offline):', error);
-      setSyncStatus('offline');
+      setSyncStatus(typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'connected');
     });
 
     // 3. Keep in sync with standard navigator offline status
@@ -1413,7 +1413,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       />
 
       {/* Sidebar Navigation */}
-      <nav className="[grid-area:nav] p-6 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
+      <nav className="[grid-area:nav] p-3 sm:p-4 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
         {/* Background Batik Pattern for Tab Navigation Bar */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <Batik3DMotion
@@ -1427,7 +1427,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           <p className="hidden lg:block microcopy-12 font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest mb-4">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
-          <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-none">
+          <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
             <button
               onClick={() => setActiveTab('orders')}
               className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
