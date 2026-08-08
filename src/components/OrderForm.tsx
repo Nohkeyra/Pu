@@ -633,7 +633,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       // Clear draft storage upon successful order
       try {
         localStorage.removeItem('wawasan_order_draft');
-      } catch (e) {
+      } catch {
         // ignore
       }
 

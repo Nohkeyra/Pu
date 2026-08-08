@@ -564,22 +564,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     return match ? match[1] : 'https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=restoran-wawasan';
   };
 
-  const [hasMoreOrders, setHasMoreOrders] = useState(false);
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  const fetchOrders = async (loadMore = false) => {
-    if (loadMore) {
-      setIsLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
+  const fetchOrders = async () => {
+    setLoading(true);
     
     try {
       const payload: any = { action: 'fetch', pageSize: 50 };
-      if (loadMore && lastOrderId) {
-        payload.lastId = lastOrderId;
-      }
       
       const response = await fetch(getApiUrl('/api/admin/orders'), {
         method: 'POST',
@@ -612,20 +601,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             };
           });
           
-          if (loadMore) {
-            setOrders(prev => {
-              const existingIds = new Set(prev.map(o => o.id));
-              const newOrders = formattedOrders.filter((o: Order) => !existingIds.has(o.id));
-              return [...prev, ...newOrders];
-            });
-          } else {
-            setOrders(formattedOrders);
-          }
-          
-          setHasMoreOrders(result.hasMore);
-          if (formattedOrders.length > 0) {
-            setLastOrderId(formattedOrders[formattedOrders.length - 1].id);
-          }
+          setOrders(formattedOrders);
         }
       } else if (response.status === 401) {
         // Session token expired or invalid — force re-login rather than
@@ -639,7 +615,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       console.error('Error fetching orders:', err);
     } finally {
       setLoading(false);
-      setIsLoadingMore(false);
     }
   };
 
