@@ -1425,8 +1425,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     style={{
                       backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
                       backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      referrerPolicy: 'no-referrer'
+                      backgroundPosition: 'center'
                     }}
                   />
                   <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />

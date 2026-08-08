@@ -75,7 +75,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: Sign release APK
+      - name: Sign & Zipalign release APK
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 || secrets.RELEASE_KEYSTORE_BASE64 }}
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.RELEASE_KEYSTORE_PASSWORD }}
@@ -83,9 +83,8 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.RELEASE_KEY_PASSWORD }}
         run: |
           if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
-            echo "⚠️  Signing secrets not configured. Copying unsigned APK for release packaging."
-            cp android/app/build/outputs/apk/release/app-release-unsigned.apk \
-               android/app/build/outputs/apk/release/app-release-signed.apk || true
+            echo "❌ ERROR: Signing secrets not configured. Cannot produce a valid release APK."
+            exit 1
           else
             echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > release.keystore
             
@@ -96,8 +95,11 @@ jobs:
               android/app/build/outputs/apk/release/app-release-unsigned.apk \
               "$RELEASE_KEY_ALIAS"
             
-            mv android/app/build/outputs/apk/release/app-release-unsigned.apk \
-               android/app/build/outputs/apk/release/app-release-signed.apk
+            # Find zipalign tool
+            ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -r | head -n 1)
+            
+            # Align the APK
+            $ZIPALIGN -v 4 android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/app-release-signed.apk
             
             rm -f release.keystore
           fi

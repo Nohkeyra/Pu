@@ -13,6 +13,7 @@ import { generateOrdersWorkbook } from './server/exportService.js';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -67,7 +68,7 @@ function isAllowedOrigin(origin: string): boolean {
 }
 
 async function startServer() {
-  const app = express();
+const app = express();
   const PORT = 3000;
 
   // Enable compression for all responses
@@ -131,7 +132,14 @@ async function startServer() {
       return res.status(503).json({ success: false, error: 'Admin login is not configured on this server.' });
     }
 
-    if (password === adminPassword) {
+    let match = false;
+    if (adminPassword.startsWith('$2a$') || adminPassword.startsWith('$2b$')) {
+      match = await bcrypt.compare(password, adminPassword);
+    } else {
+      match = (password === adminPassword);
+    }
+
+    if (match) {
       const jti = crypto.randomUUID();
       const token = jwt.sign({ role: 'admin', admin: true, jti }, effectiveJwtSecret, { expiresIn: '12h' });
       
@@ -201,7 +209,7 @@ async function startServer() {
     try {
       if (action === 'fetch') {
         const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
-        const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         return res.json({ success: true, orders });
       }
 
@@ -637,7 +645,7 @@ async function startServer() {
     try {
       const db = getFirestore();
       const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
-      const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as OrderData[];
+      const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as OrderData[];
       
       const workbook = await generateOrdersWorkbook(orders);
       
@@ -882,7 +890,7 @@ async function startServer() {
         await batch.commit();
         return res.json({ menuItems: DEFAULT_MENU_ITEMS });
       }
-      const menuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      const menuItems = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as any[];
       
       // Check if any DEFAULT_MENU_ITEMS are missing and merge them
       const existingIds = new Set(menuItems.map(item => item.id));
@@ -896,7 +904,7 @@ async function startServer() {
         });
         await batch.commit();
         missingItems.forEach(item => {
-          menuItems.push({ id: item.id, ...item });
+          menuItems.push({ ...item, id: item.id });
         });
       }
       

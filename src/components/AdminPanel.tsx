@@ -2057,7 +2057,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                           {numberToWords(selectedOrder.meals.reduce((total, meal) => {
                             const price = parseFloat(prices[meal] || '0');
                             return total + (price * selectedOrder.quantity);
-                          }, 0).toFixed(2), selectedOrder.lang)}
+                          }, 0), selectedOrder.lang)}
                         </p>
                       </div>
                     </div>

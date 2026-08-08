@@ -7,7 +7,8 @@ export interface MenuItem {
   priceEn: string;
   priceBm: string;
   image: string;
-  category?: 'mains' | 'beverages' | 'specials';
+  category?: 'breakfast' | 'lunch' | 'hi tea' | 'drinks';
+  suitability?: 'breakfast_hitea' | 'lunch' | string;
   tags?: string[];
 }
 

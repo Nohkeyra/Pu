@@ -109,7 +109,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
       toast({
         title: isBM ? 'Gagal Menyiarkan Kemaskini' : 'Failed to Broadcast Update',
         description: String(err),
-        variant: 'destructive',
+        variant: 'error',
       });
     } finally {
       setPublishing(false);
