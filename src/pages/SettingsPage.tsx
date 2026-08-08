@@ -17,8 +17,6 @@ import {
   Cpu,
   Check,
   Settings,
-  Download,
-  Smartphone,
   Type,
 } from 'lucide-react';
 import { triggerLightImpact } from '@/lib/haptics';
@@ -310,6 +308,8 @@ export default function SettingsPage() {
               />
             </div>
           </section>
+
+
 
           {/* 4. System Information */}
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">
