@@ -785,13 +785,15 @@ async function startServer() {
     }
   });
 
-  app.post('/api/app-version', async (req, res) => {
+  app.post('/api/app-version', verifyAdminToken, async (req, res) => {
     try {
-      // Verify admin token authorization
-      const adminAuth = verifyAdminToken(req);
-      if (!adminAuth.ok) {
-        return res.status(401).json({ error: 'Unauthorized admin access' });
-      }
+      const adminReq = req as typeof req & {
+        adminPayload?: {
+          jti?: string;
+          sub?: string;
+          role?: string;
+        };
+      };
 
       const { latestVersion, minVersion, buildNumber, apkUrl, bundleUrl, releaseNotes, forceUpdate } = req.body;
       if (!latestVersion) {
@@ -807,7 +809,7 @@ async function startServer() {
         releaseNotes: Array.isArray(releaseNotes) ? releaseNotes : [String(releaseNotes)],
         forceUpdate: Boolean(forceUpdate),
         updatedAt: new Date().toISOString(),
-        publishedBy: adminAuth.jti || 'System Admin'
+        publishedBy: adminReq.adminPayload?.sub || adminReq.adminPayload?.jti || 'System Admin'
       };
 
       const db = getFirestore();
