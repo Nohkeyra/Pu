@@ -55,17 +55,32 @@ const fetchCache: Record<string, CacheEntry<any>> = {};
  */
 export async function fetchWithCache<T = any>(
   url: string,
-  options?: RequestInit,
+  options?: RequestInit & { timeoutMs?: number },
   ttlMs: number = 30000 // default 30-seconds cache TTL
 ): Promise<T> {
+  const timeoutMs = options?.timeoutMs || 15000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  const fetchOptions = {
+    ...options,
+    signal: options?.signal || controller.signal,
+  };
+
   // Only cache GET requests or requests without a method (which default to GET)
   const method = options?.method?.toUpperCase() || 'GET';
   if (method !== 'GET') {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    try {
+      const response = await fetch(url, fetchOptions);
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json() as Promise<T>;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
     }
-    return response.json() as Promise<T>;
   }
 
   const cacheKey = `${url}_${JSON.stringify(options || {})}`;
@@ -73,21 +88,28 @@ export async function fetchWithCache<T = any>(
   const cached = fetchCache[cacheKey];
 
   if (cached && now - cached.timestamp < ttlMs) {
+    clearTimeout(timeoutId);
     return cached.data as T;
   }
 
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error(`HTTP error! Status: ${response.status}`);
-  }
-  const data = await response.json();
-  
-  fetchCache[cacheKey] = {
-    data,
-    timestamp: now,
-  };
+  try {
+    const response = await fetch(url, fetchOptions);
+    clearTimeout(timeoutId);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    
+    fetchCache[cacheKey] = {
+      data,
+      timestamp: now,
+    };
 
-  return data as T;
+    return data as T;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
 /**

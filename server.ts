@@ -208,9 +208,19 @@ const app = express();
 
     try {
       if (action === 'fetch') {
-        const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
+        const pageSize = req.body.pageSize || 50;
+        let query: FirebaseFirestore.Query = db.collection('orders').orderBy('createdAt', 'desc').limit(pageSize);
+
+        if (req.body.lastId) {
+          const lastDocSnap = await db.collection('orders').doc(req.body.lastId).get();
+          if (lastDocSnap.exists) {
+            query = query.startAfter(lastDocSnap);
+          }
+        }
+
+        const snapshot = await query.get();
         const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        return res.json({ success: true, orders });
+        return res.json({ success: true, orders, hasMore: orders.length === pageSize });
       }
 
       if (action === 'update' && orderId) {

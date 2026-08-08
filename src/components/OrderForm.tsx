@@ -280,6 +280,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   }, [initialData]);
 
+  // Load draft from localStorage on mount if no initialData
+  useEffect(() => {
+    if (!initialData) {
+      try {
+        const savedDraft = localStorage.getItem('wawasan_order_draft');
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && typeof parsed === 'object') {
+            setOrderState(prev => ({ ...prev, ...parsed }));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load order draft from localStorage:', e);
+      }
+    }
+  }, [initialData]);
+
+  // Save draft to localStorage on change
+  useEffect(() => {
+    if (!initialData) {
+      try {
+        localStorage.setItem('wawasan_order_draft', JSON.stringify(orderState));
+      } catch (e) {
+        console.error('Failed to save order draft to localStorage:', e);
+      }
+    }
+  }, [orderState, initialData]);
+
   // Auto Geolocate Reverse Address lookup
   const handleDetectLocation = async () => {
     try {
@@ -565,11 +593,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       };
 
       // Submit to Backend Server API
-      const response = await fetch(getApiUrl('/api/orders'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: safeJsonStringify(orderData)
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      let response;
+      try {
+        response = await fetch(getApiUrl('/api/orders'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: safeJsonStringify(orderData),
+          signal: controller.signal
+        });
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          throw new Error(tText('Connection timed out. Please try again.', 'Sambungan tamat masa (network slow). Sila cuba lagi.'));
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error(`Submission failed with status: ${response.status}`);
@@ -587,6 +629,13 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const bookingReference = finalInvoiceNo || generatedOrderId;
 
       setReferenceNumber(bookingReference);
+
+      // Clear draft storage upon successful order
+      try {
+        localStorage.removeItem('wawasan_order_draft');
+      } catch (e) {
+        // ignore
+      }
 
       const createdOrder: Order = {
         ...(orderData as Order),
@@ -608,16 +657,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         // Switched to /api/orders/:id/send-preliminary-invoice, a public endpoint
         // that verifies pdfBase64/email against the actual stored order before
         // emailing, so it can't be used to relay mail to arbitrary addresses.
-        const emailResponse = await fetch(getApiUrl(`/api/orders/${generatedOrderId}/send-preliminary-invoice`), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: safeJsonStringify({
-            email: orderData.email,
-            name: orderData.name,
-            pdfBase64: pdfBase64,
-            lang: language
-          })
-        });
+        const emailController = new AbortController();
+        const emailTimeoutId = setTimeout(() => emailController.abort(), 15000);
+        
+        let emailResponse;
+        try {
+          emailResponse = await fetch(getApiUrl(`/api/orders/${generatedOrderId}/send-preliminary-invoice`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: safeJsonStringify({
+              email: orderData.email,
+              name: orderData.name,
+              pdfBase64: pdfBase64,
+              lang: language
+            }),
+            signal: emailController.signal
+          });
+        } finally {
+          clearTimeout(emailTimeoutId);
+        }
 
         if (emailResponse.ok) {
           setEmailStatus('success');

@@ -124,6 +124,11 @@ service cloud.firestore {
       allow read, write: if isSelf(userId);
     }
 
+    match /app_config/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     match /settings/{docId} {
       allow read:  if true;
       allow write: if isAdmin();

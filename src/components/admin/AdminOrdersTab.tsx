@@ -12,6 +12,8 @@ import { format } from 'date-fns';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 
+import { List } from 'react-window';
+
 // Extracted from AdminPanel.tsx (previously the `activeTab === 'orders'`
 // JSX block, lines ~1326-1664). Purely presentational — no local state
 // or fetch logic of its own. All order data, selection state, and action
@@ -294,7 +296,7 @@ export function AdminOrdersTab({
       </div>
 
       {/* Jotform-style Submissions List */}
-      <div className="bg-white dark:bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-sm overflow-hidden divide-y divide-stone/10 dark:divide-white/5">
+      <div className="bg-white dark:bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-sm overflow-hidden divide-y divide-stone/10 dark:divide-white/5 h-[800px] max-h-[70vh]">
         {filteredOrders.length === 0 ? (
           <div className="text-center text-deep-forest/60 dark:text-stone/60 py-20 bg-stone/5 dark:bg-white/5">
             <div className="flex flex-col items-center gap-2">
@@ -303,297 +305,291 @@ export function AdminOrdersTab({
             </div>
           </div>
         ) : (
-          filteredOrders.map((order, idx) => {
-            const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
-            const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
-            
-            // Format header date: Jul 31, 2026 9:30 AM
-            let formattedHeaderDate = '-';
-            if (order.dateTime) {
-              try {
-                formattedHeaderDate = format(new Date(order.dateTime), 'MMM d, yyyy h:mm a');
-              } catch {
-                formattedHeaderDate = String(order.dateTime);
-              }
-            }
-
-            // Relative age: e.g. "8h", "1d"
-            const getRelativeTime = (o: Order) => {
-              let dateVal = new Date();
-              if (o.createdAt) {
-                if (typeof o.createdAt === 'object') {
-                  if ('seconds' in o.createdAt && typeof o.createdAt.seconds === 'number') {
-                    dateVal = new Date(o.createdAt.seconds * 1000);
-                  } else if ('_seconds' in o.createdAt && typeof (o.createdAt as any)._seconds === 'number') {
-                    dateVal = new Date((o.createdAt as any)._seconds * 1000);
-                  } else {
-                    dateVal = new Date(o.createdAt as any);
-                  }
-                } else {
-                  dateVal = new Date(o.createdAt);
-                }
-              } else if (o.dateTime) {
-                dateVal = new Date(o.dateTime);
-              }
+          <List
+            height={600}
+            itemCount={filteredOrders.length}
+            itemSize={140}
+            width="100%"
+            itemData={filteredOrders}
+          >
+            {({ index, style, data }) => {
+              const order = data[index];
+              const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
+              const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
               
-              const timeMs = dateVal.getTime();
-              const diffMs = isNaN(timeMs) ? 0 : Date.now() - timeMs;
-              const diffMins = Math.floor(diffMs / 60000);
-              const diffHrs = Math.floor(diffMins / 60);
-              const diffDays = Math.floor(diffHrs / 24);
+              // Format header date: Jul 31, 2026 9:30 AM
+              let formattedHeaderDate = '-';
+              if (order.dateTime) {
+                try {
+                  formattedHeaderDate = format(new Date(order.dateTime), 'MMM d, yyyy h:mm a');
+                } catch {
+                  formattedHeaderDate = String(order.dateTime);
+                }
+              }
 
-              if (isNaN(diffMins) || diffMs < 0) return '1m';
-              if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
-              if (diffHrs < 24) return `${diffHrs}h`;
-              return `${diffDays}d`;
-            };
+              // Relative age: e.g. "8h", "1d"
+              const getRelativeTime = (o: Order) => {
+                let dateVal = new Date();
+                if (o.createdAt) {
+                  if (typeof o.createdAt === 'object') {
+                    if ('seconds' in o.createdAt && typeof o.createdAt.seconds === 'number') {
+                      dateVal = new Date(o.createdAt.seconds * 1000);
+                    } else if ('_seconds' in o.createdAt && typeof (o.createdAt as any)._seconds === 'number') {
+                      dateVal = new Date((o.createdAt as any)._seconds * 1000);
+                    } else {
+                      dateVal = new Date(o.createdAt as any);
+                    }
+                  } else {
+                    dateVal = new Date(o.createdAt);
+                  }
+                } else if (o.dateTime) {
+                  dateVal = new Date(o.dateTime);
+                }
+                
+                const timeMs = dateVal.getTime();
+                const diffMs = isNaN(timeMs) ? 0 : Date.now() - timeMs;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHrs = Math.floor(diffMins / 60);
+                const diffDays = Math.floor(diffHrs / 24);
 
-            const relativeTime = getRelativeTime(order);
+                if (isNaN(diffMins) || diffMs < 0) return '1m';
+                if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
+                if (diffHrs < 24) return `${diffHrs}h`;
+                return `${diffDays}d`;
+              };
 
-            return (
-              <div
-                key={order.id || `order-${idx}`}
-                onClick={() => openOrderDetail(order)}
-                className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative ${
-                  order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''
-                } ${isSelected ? 'bg-[var(--color-sunshine-cta)]/5 dark:bg-[var(--color-sunshine-cta)]/5 border-l-4 border-l-sunshine' : ''}`}
-              >
-                {/* Left Side: Select or Star & Details */}
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Select or Star Control */}
-                  <div className="flex items-center h-5 shrink-0 pt-0.5 md:pt-0">
-                    {isSelectMode ? (
-                      <input
-                        type="checkbox"
-                        aria-label={t('select_order') || 'Select order'}
-                        checked={isSelected}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={() => handleToggleOrderSelect(order.id)}
-                        className="w-4 h-4 accent-sunshine cursor-pointer rounded border-stone/30"
-                      />
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (order.id) {
-                            setStarredOrderIds(prev => {
-                              const next = new Set(prev);
-                              if (next.has(order.id!)) {
-                                next.delete(order.id!);
-                              } else {
-                                next.add(order.id!);
+              const relativeTime = getRelativeTime(order);
+
+              return (
+                <div style={style} className="border-b border-stone/10 dark:border-white/5">
+                  <div
+                    key={order.id || `order-${index}`}
+                    onClick={() => openOrderDetail(order)}
+                    className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative h-full ${
+                      order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''
+                    } ${isSelected ? 'bg-[var(--color-sunshine-cta)]/5 dark:bg-[var(--color-sunshine-cta)]/5 border-l-4 border-l-sunshine' : ''}`}
+                  >
+                    {/* Left Side: Select or Star & Details */}
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {/* Select or Star Control */}
+                      <div className="flex items-center h-5 shrink-0 pt-0.5 md:pt-0">
+                        {isSelectMode ? (
+                          <input
+                            type="checkbox"
+                            aria-label={t('select_order') || 'Select order'}
+                            checked={isSelected}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => handleToggleOrderSelect(order.id)}
+                            className="w-4 h-4 accent-sunshine cursor-pointer rounded border-stone/30"
+                          />
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (order.id) {
+                                setStarredOrderIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(order.id!)) {
+                                    next.delete(order.id!);
+                                  } else {
+                                    next.add(order.id!);
+                                  }
+                                  return next;
+                                });
                               }
-                              return next;
-                            });
-                          }
-                        }}
-                        className="p-1 hover:bg-stone/10 dark:hover:bg-white/10 rounded-full transition-colors group"
-                        title={isStarred ? "Unstar" : "Star"}
-                      >
-                        <Star
-                          className={`w-4 h-4 transition-all duration-200 ${
-                            isStarred
-                              ? 'fill-amber-400 text-amber-400 scale-110'
-                              : 'text-stone-300 dark:text-stone-600 group-hover:text-amber-400'
-                          }`}
-                        />
-                      </button>
-                    )}
-                  </div>
+                            }}
+                            className="p-1 hover:bg-stone/10 dark:hover:bg-white/10 rounded-full transition-colors group"
+                            title={isStarred ? "Unstar" : "Star"}
+                          >
+                            <Star
+                              className={`w-4 h-4 transition-all duration-200 ${
+                                isStarred
+                                  ? 'fill-amber-400 text-amber-400 scale-110'
+                                  : 'text-stone-300 dark:text-stone-600 group-hover:text-amber-400'
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
 
-                  {/* Main Header / Content Details */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-stone-900 dark:text-stone-100 text-sm md:text-base leading-snug">
-                        {formattedHeaderDate}
-                      </span>
-                      <span className="text-xs text-stone-400 dark:text-stone-500 hidden md:inline">
-                        • {relativeTime} ago
-                      </span>
+                      {/* Main Header / Content Details */}
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-stone-900 dark:text-stone-100 text-sm md:text-base leading-snug">
+                            {formattedHeaderDate}
+                          </span>
+                          <span className="text-xs text-stone-400 dark:text-stone-500 hidden md:inline">
+                            • {relativeTime} ago
+                          </span>
+                        </div>
+
+                        {/* Beautiful Jotform Fields Layout */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1.5 text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
+                              {language === 'bm' ? 'Sajian Untuk:' : 'Meal for:'}
+                            </span>
+                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.to}>
+                              {order.to || '-'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-stone-400 dark:text-stone-500 font-medium">
+                              {language === 'bm' ? 'Kuantiti:' : 'Quantity:'}
+                            </span>
+                            <span className="font-bold text-deep-forest dark:text-white bg-stone/10 dark:bg-white/10 px-1.5 py-0.5 rounded microcopy-12">
+                              {order.quantity} pax
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
+                              {language === 'bm' ? 'Acara:' : 'Event:'}
+                            </span>
+                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.location}>
+                              {order.location || '-'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Additional Details (Meals) in small footer text */}
+                        {order.meals && order.meals.length > 0 && (
+                          <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate">
+                            <span className="opacity-70">{language === 'bm' ? 'Menu Hidangan: ' : 'Meals: '}</span>
+                            {order.meals.map(m => t(m) || m).join(', ')}
+                            {order.preparationType && ` (${order.preparationType === 'buffet' ? (language === 'bm' ? 'Bufet' : 'Buffet') : (language === 'bm' ? 'Kotak' : 'Meal Box')})`}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Beautiful Jotform Fields Layout */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1.5 text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
-                          {language === 'bm' ? 'Sajian Untuk:' : 'Meal for:'}
+                    {/* Right Side: Status badge & Compact actions */}
+                    <div className="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch md:self-auto pl-7 md:pl-0">
+                      <div className="flex items-center gap-2">
+                        <span className="microcopy-12 text-stone-400 dark:text-stone-500 md:hidden font-medium">
+                          {relativeTime} ago
                         </span>
-                        <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.to}>
-                          {order.to || '-'}
-                        </span>
+                        {getStatusBadge(order.status)}
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-stone-400 dark:text-stone-500 font-medium">
-                          {language === 'bm' ? 'Kuantiti:' : 'Quantity:'}
-                        </span>
-                        <span className="font-bold text-deep-forest dark:text-white bg-stone/10 dark:bg-white/10 px-1.5 py-0.5 rounded microcopy-12">
-                          {order.quantity} pax
-                        </span>
-                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('view_edit_details')}
+                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openOrderDetail(order);
+                              }}
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span className="microcopy-12 leading-none">{t('action_view_short')}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('view_edit_details')}</p>
+                          </TooltipContent>
+                        </Tooltip>
 
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
-                          {language === 'bm' ? 'Acara:' : 'Event:'}
-                        </span>
-                        <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.location}>
-                          {order.location || '-'}
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('preview_pdf')}
+                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
+                              }}
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span className="microcopy-12 leading-none">{t('action_preview_short')}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('preview_pdf')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('download_pdf')}
+                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
+                              }}
+                              disabled={generatingInvoice === order.id}
+                            >
+                              {generatingInvoice === order.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FileDown className="w-4 h-4" />
+                              )}
+                              <span className="microcopy-12 leading-none">{t('action_download_short')}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('download_pdf')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('send_pdf')}
+                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openSendDialog(order);
+                              }}
+                            >
+                              <Send className="w-4 h-4" />
+                              <span className="microcopy-12 leading-none">{t('action_send_short')}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('send_pdf')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              aria-label={t('delete_order')}
+                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (order.id) handleDelete(order.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span className="microcopy-12 leading-none">{t('action_delete_short')}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t('delete_order')}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
-
-                    {/* Additional Details (Meals) in small footer text */}
-                    {order.meals && order.meals.length > 0 && (
-                      <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate">
-                        <span className="opacity-70">{language === 'bm' ? 'Menu Hidangan: ' : 'Meals: '}</span>
-                        {order.meals.map(m => t(m) || m).join(', ')}
-                        {order.preparationType && ` (${order.preparationType === 'buffet' ? (language === 'bm' ? 'Bufet' : 'Buffet') : (language === 'bm' ? 'Kotak' : 'Meal Box')})`}
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {/* Right Side: Status badge & Compact actions */}
-                <div className="flex flex-col items-end justify-between gap-3 shrink-0 self-stretch md:self-auto pl-7 md:pl-0">
-                  <div className="flex items-center gap-2">
-                    <span className="microcopy-12 text-stone-400 dark:text-stone-500 md:hidden font-medium">
-                      {relativeTime} ago
-                    </span>
-                    {getStatusBadge(order.status)}
-                  </div>
-
-                  {/* Actions Grid */}
-                  {/* D-01 (2026-08-06): tooltip.tsx deliberately returns null
-                      on touch devices (avoids a layout bug), which meant
-                      these 5 icon-only buttons had NO label at all on the
-                      app's primary platform (phone/Capacitor) — not
-                      degraded, actually absent, for both sighted touch
-                      users and screen readers (no aria-label either).
-                      Fix: aria-label on every button (screen readers, all
-                      platforms) + an always-visible micro-label under each
-                      icon (sighted touch users), using the existing 12px
-                      microcopy-12 class rather than a smaller custom size —
-                      see the "P0 — upgrade to legible mobile sizes" comment
-                      in index.css; this file already fixed illegible small
-                      text once, so a new sub-12px label would undo that.
-                      flex-wrap on the container means if 5 labelled buttons
-                      don't fit on one line on a narrow screen, they wrap to
-                      two lines instead of overflowing. */}
-                  <div className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1.5">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t('view_edit_details')}
-                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openOrderDetail(order);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="microcopy-12 leading-none">{t('action_view_short')}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('view_edit_details')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t('preview_pdf')}
-                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
-                          }}
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span className="microcopy-12 leading-none">{t('action_preview_short')}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('preview_pdf')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t('download_pdf')}
-                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
-                          }}
-                          disabled={generatingInvoice === order.id}
-                        >
-                          {generatingInvoice === order.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <FileDown className="w-4 h-4" />
-                          )}
-                          <span className="microcopy-12 leading-none">{t('action_download_short')}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('download_pdf')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t('send_pdf')}
-                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openSendDialog(order);
-                          }}
-                        >
-                          <Send className="w-4 h-4" />
-                          <span className="microcopy-12 leading-none">{t('action_send_short')}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('send_pdf')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t('delete_order')}
-                          className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (order.id) handleDelete(order.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span className="microcopy-12 leading-none">{t('action_delete_short')}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t('delete_order')}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+              );
+            }}
+          </List>
         )}
       </div>
 
