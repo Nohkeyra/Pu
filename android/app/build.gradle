@@ -45,8 +45,9 @@ android {
     }
     signingConfigs {
         release {
-            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias']) {
-                storeFile file(keyProperties['storeFile'] ?: 'release-key.jks')
+            def keystoreFile = file(keyProperties['storeFile'] ?: 'release-key.jks')
+            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias'] && keystoreFile.exists()) {
+                storeFile keystoreFile
                 storePassword keyProperties['storePassword']
                 keyAlias keyProperties['keyAlias']
                 keyPassword keyProperties['keyPassword']
@@ -55,7 +56,8 @@ android {
     }
     buildTypes {
         release {
-            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias']) {
+            def keystoreFile = file(keyProperties['storeFile'] ?: 'release-key.jks')
+            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias'] && keystoreFile.exists()) {
                 signingConfig signingConfigs.release
             }
             minifyEnabled true

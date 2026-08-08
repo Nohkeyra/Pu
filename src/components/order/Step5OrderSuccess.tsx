@@ -1,0 +1,189 @@
+import React from 'react';
+import { motion } from 'motion/react';
+import { 
+  CheckCircle2, 
+  Eye, 
+  ExternalLink,
+  Share2
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getAssetUrl } from '@/lib/utils';
+
+interface OrderState {
+  name: string;
+  contact: string;
+  date: string;
+  email: string;
+}
+
+interface Step5OrderSuccessProps {
+  orderState: OrderState;
+  referenceNumber: string;
+  getMealTypesLabel: () => string;
+  emailStatus: 'idle' | 'sending' | 'success' | 'failed';
+  setShowPdfPreviewModal: React.Dispatch<React.SetStateAction<boolean>>;
+  handleResetForm: () => void;
+  handleShareReceipt: () => void;
+  tText: (en: string, bm: string) => string;
+}
+
+export function Step5OrderSuccess({
+  orderState,
+  referenceNumber,
+  getMealTypesLabel,
+  emailStatus,
+  setShowPdfPreviewModal,
+  handleResetForm,
+  handleShareReceipt,
+  tText,
+}: Step5OrderSuccessProps) {
+  return (
+    <motion.div
+      key="step5"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6 text-center"
+    >
+      <div className="bg-charcoal text-white p-6 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md text-center">
+        {/* Background Batik Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.22] pointer-events-none"
+          style={{
+            backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="w-14 h-14 rounded-full bg-[#A8E10C]/15 text-[#A8E10C] flex items-center justify-center mx-auto mb-3.5 shadow-sm">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <h2 className="text-lg font-bold text-white font-display">
+            {tText('Booking Request Sent!', 'Tempahan Dihantar!')}
+          </h2>
+          <p className="text-xs text-stone-300 font-light max-w-sm mx-auto mt-1 leading-relaxed">
+            {tText(
+              'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
+              'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Bill details receipt box */}
+      <div className="bg-muted border border-stone/10 p-5 rounded-2xl text-left space-y-2.5">
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-stone">{tText('Reference Number:', 'Nombor Rujukan')}</span>
+          <span className="font-bold text-[#A8E10C] text-sm tracking-wider select-all">{referenceNumber}</span>
+        </div>
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-stone">{tText('PIC Name:', 'Nama')}</span>
+          <span className="font-bold text-deep-forest">{orderState.name}</span>
+        </div>
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-stone">{tText('PIC Contact:', 'Telefon')}</span>
+          <span className="font-bold text-deep-forest">{orderState.contact}</span>
+        </div>
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-stone">{tText('Event Date:', 'Tarikh Majlis')}</span>
+          <span className="font-bold text-deep-forest">{orderState.date}</span>
+        </div>
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-stone">{tText('Meal serving:', 'Hidangan Untuk')}</span>
+          <span className="font-bold text-deep-forest">
+            {getMealTypesLabel()}
+          </span>
+        </div>
+        
+        <div className="border-t border-stone/10 pt-2.5 mt-2 flex justify-between items-center">
+          <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
+            {tText('Catering Price:', 'Harga Katering:')}
+          </span>
+          <span className="text-xs font-bold text-[#A8E10C] bg-[#A8E10C]/10 px-2.5 py-1 rounded-full uppercase tracking-wide">
+            {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+          </span>
+        </div>
+      </div>
+
+      {/* Email Delivery relay receipt check */}
+      <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm" aria-live="polite">
+        <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block">
+          {tText('INVOICE / RECEIPT STATUS', 'STATUS PENGHANTARAN INVOIS')}
+        </span>
+
+        <div className="space-y-1.5 text-xs text-stone">
+          <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
+            <span className="text-[#A8E10C]">✓</span>
+            <span>{tText('Preliminary PDF generated', 'Invois PDF dihasilkan')}</span>
+          </p>
+          
+          {emailStatus === 'sending' && (
+            <p className="flex items-center gap-1.5 animate-pulse text-crisp-carrot">
+              <span className="text-crisp-carrot font-bold">●</span>
+              <span>{tText('Mailing PDF copy...', 'Sedang menghantar salinan emel...')}</span>
+            </p>
+          )}
+
+          {emailStatus === 'success' && (
+            <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
+              <span className="text-[#A8E10C]">✓</span>
+              <span>{tText(`E-mailed copy successfully to ${orderState.email}`, `Salinan invois emel berjaya dihantar ke ${orderState.email}`)}</span>
+            </p>
+          )}
+
+          {emailStatus === 'failed' && (
+            <p className="flex items-center gap-1.5 text-rose-600 font-semibold">
+              <span className="text-rose-600 font-bold">×</span>
+              <span>{tText('SMTP delivery deferred. Admin will send copy manually.', 'Penghantaran emel tertangguh. Invois akan dihantar manual.')}</span>
+            </p>
+          )}
+        </div>
+      </div>
+
+      <p className="microcopy-12-upper text-stone italic">
+        {tText('Please save or share this reference number for future inquiries.', 'Sila simpan nombor rujukan ini untuk rujukan masa hadapan.')}
+      </p>
+
+      {/* Success Screen Action Buttons */}
+      <div className="flex flex-col gap-3 pt-2">
+        <Button
+          onClick={() => setShowPdfPreviewModal(true)}
+          className="w-full bg-[#A8E10C] hover:bg-[#A8E10C]/90 text-stone-950 h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
+        >
+          <Eye className="w-5 h-5 text-stone-950" />
+          <span>{tText('Preview & Download PDF Invoice', 'Pratonton & Muat Turun Invois PDF')}</span>
+        </Button>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleResetForm}
+            variant="outline"
+            className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
+          >
+            {tText('New Order Inquiry', 'Tempahan Baharu')}
+          </Button>
+          
+          <Button
+            onClick={handleShareReceipt}
+            variant="outline"
+            className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-deep-forest cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Share2 className="w-4 h-4 text-crisp-carrot" />
+            <span>{tText('Share Invoice / Receipt', 'Kongsi Resit')}</span>
+          </Button>
+        </div>
+
+        <a
+          href="/history"
+          className="w-full h-12 rounded-2xl border border-stone/15 dark:border-white/10 flex items-center justify-center gap-2 text-deep-forest dark:text-white font-bold text-sm hover:bg-muted/50 transition-colors"
+        >
+          <span>{tText('View Transaction Logs', 'Lihat Log Transaksi')}</span>
+          <ExternalLink className="w-4 h-4 text-stone" />
+        </a>
+      </div>
+    </motion.div>
+  );
+}

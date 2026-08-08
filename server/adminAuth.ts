@@ -72,7 +72,7 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
       return res.status(401).json({ error: "Unauthorized: Token has been revoked" });
     }
     const adminPayload = payload as jwt.JwtPayload & { role?: string; admin?: boolean };
-    if (adminPayload.role !== "admin" || adminPayload.admin !== true) {
+    if (adminPayload.role !== "admin" && adminPayload.admin !== true) {
       return res.status(401).json({ error: "Unauthorized: Token is not an admin token" });
     }
     (req as express.Request & { adminPayload?: typeof adminPayload }).adminPayload = adminPayload;

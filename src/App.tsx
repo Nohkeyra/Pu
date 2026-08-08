@@ -284,14 +284,16 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+
   const handleClearCache = () => {
     try {
       localStorage.clear();
       sessionStorage.clear();
-      alert('Semua cache, preferences, dan session storage telah dikosongkan!');
-      window.location.reload();
+      setStatusMsg('Semua cache, preferences, dan session storage telah dikosongkan!');
+      setTimeout(() => window.location.reload(), 600);
     } catch (err) {
-      alert('Gagal membersihkan cache: ' + String(err));
+      setStatusMsg('Gagal membersihkan cache: ' + String(err));
     }
   };
 
@@ -316,7 +318,7 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
       }
       window.location.reload();
     } catch (err) {
-      alert('Gagal menetapkan session: ' + String(err));
+      setStatusMsg('Gagal menetapkan session: ' + String(err));
     }
   };
 
@@ -333,6 +335,11 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
           <p className="microcopy-14-upper text-stone">
             Diagnostic & Fallback Console
           </p>
+          {statusMsg && (
+            <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-medium text-center">
+              {statusMsg}
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-stone-900 border border-border p-5 rounded-3xl shadow-sm space-y-3">

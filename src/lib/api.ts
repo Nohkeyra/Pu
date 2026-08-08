@@ -83,7 +83,10 @@ export async function fetchWithCache<T = any>(
     }
   }
 
-  const cacheKey = `${url}_${JSON.stringify(options || {})}`;
+  const serializableOptions = { ...options };
+  delete serializableOptions.signal;
+  delete serializableOptions.timeoutMs;
+  const cacheKey = `${url}_${JSON.stringify(serializableOptions)}`;
   const now = Date.now();
   const cached = fetchCache[cacheKey];
 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Home, Utensils, Settings, User, Shield } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
 import { triggerLightImpact } from '@/lib/haptics';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Helper to determine tab ID from pathname
 function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
@@ -22,12 +23,19 @@ export default function BottomNavigation() {
   const location = useLocation();
   const { t } = useLanguage();
 
-  const isAdmin = useMemo(() => {
+  const [isAdmin, setIsAdmin] = useState(() => {
     try {
       return localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
     } catch {
       return false;
     }
+  });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAdmin(user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null);
+    });
+    return () => unsubscribe();
   }, []);
 
   const currentTabId = useMemo(

@@ -5,6 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Wawasan Pak Usop',
   webDir: 'dist',
   exclude: ['server.cjs', 'server.cjs.map'],
+  server: {
+    androidScheme: 'https'
+  },
   plugins: {
     StatusBar: {
       overlaysWebView: true,

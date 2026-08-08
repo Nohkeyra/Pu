@@ -149,9 +149,12 @@ jobs:
             
             echo "✅ Keystore configured for signing"
           else
-            echo "❌ ERROR: ANDROID_KEYSTORE_BASE64 secret is missing!"
-            echo "Please add this secret in GitHub Settings → Secrets"
-            exit 1
+            echo "⚠️ WARNING: ANDROID_KEYSTORE_BASE64 secret is not configured in GitHub Secrets."
+            echo "Release signing will be skipped; debug APK will still be produced."
+            mkdir -p android/app
+            touch android/app/key.properties
+            touch android/key.properties
+            echo "HAS_KEYSTORE=false" >> $GITHUB_ENV
           fi
 
       - name: Setup Gradle permissions

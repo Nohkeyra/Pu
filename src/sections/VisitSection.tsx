@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 export default function VisitSection() {
   const { language } = useLanguage();
@@ -54,11 +55,12 @@ export default function VisitSection() {
                 </p>
               </div>
               
-              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-zinc-200 dark:border-zinc-800">
-                <img 
+              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-card">
+                <ResponsiveImage 
                   src="/assets/restoran-exterior.jpg" 
                   alt="Restoran Wawasan Exterior" 
-                  className="w-full h-full object-cover"
+                  objectFit="cover"
+                  containerClassName="w-full h-full"
                 />
               </div>
             </motion.div>

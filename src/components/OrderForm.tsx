@@ -1,45 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Loader2, 
-  Utensils, 
   Check, 
-  MapPin, 
   Phone, 
-  Truck, 
-  Store, 
-  CheckCircle2, 
   ArrowRight, 
-  ArrowLeft,
-  Briefcase,
-  Smile,
-  Coffee,
-  Sun,
-  Eye,
-  UtensilsCrossed,
-  Package,
-  Sparkles,
-  Share2,
   User as UserIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { PDFPreviewModal } from '@/components/PDFPreviewModal';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from './AuthModal';
-import { SAVED_COMPANIES } from '@/constants/companies';
+import { Step1EventMeal } from './order/Step1EventMeal';
+import { Step2DishSelection } from './order/Step2DishSelection';
+import { Step3ContactDetails } from './order/Step3ContactDetails';
+import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
+import { Step5OrderSuccess } from './order/Step5OrderSuccess';
 import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
@@ -289,7 +273,50 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         if (savedDraft) {
           const parsed = JSON.parse(savedDraft);
           if (parsed && typeof parsed === 'object') {
-            setOrderState(prev => ({ ...prev, ...parsed }));
+            setOrderState(prev => {
+              const safeParsed: Partial<OrderState> = {};
+              
+              if (parsed.eventType === 'pejabat' || parsed.eventType === 'lain' || parsed.eventType === '') {
+                safeParsed.eventType = parsed.eventType;
+              }
+              if (Array.isArray(parsed.mealTypes)) {
+                safeParsed.mealTypes = parsed.mealTypes.filter((m: any) => m === 'sarapan' || m === 'tengahari' || m === 'hitea');
+              } else {
+                safeParsed.mealTypes = prev.mealTypes || [];
+              }
+              if (parsed.preparationType === 'buffet' || parsed.preparationType === 'meal_box') {
+                safeParsed.preparationType = parsed.preparationType;
+              }
+              if (typeof parsed.guests === 'number' && !isNaN(parsed.guests)) {
+                safeParsed.guests = parsed.guests;
+              }
+              if (Array.isArray(parsed.dishes)) {
+                safeParsed.dishes = parsed.dishes.filter((d: any) => d && typeof d === 'object' && d.id);
+              } else {
+                safeParsed.dishes = prev.dishes || [];
+              }
+              if (Array.isArray(parsed.veggies)) {
+                safeParsed.veggies = parsed.veggies.filter((v: any) => v && typeof v === 'object' && v.id);
+              } else {
+                safeParsed.veggies = prev.veggies || [];
+              }
+              
+              // String fields
+              const fields = [
+                'name', 'contact', 'email', 'confirmEmail', 'date', 'time', 
+                'location', 'delivery', 'notes', 'companyName', 'customCompany', 'customMenu'
+              ];
+              fields.forEach(f => {
+                if (typeof parsed[f] === 'string') {
+                  (safeParsed as any)[f] = parsed[f];
+                }
+              });
+              
+              return {
+                ...prev,
+                ...safeParsed
+              };
+            });
           }
         }
       } catch (e) {
@@ -919,1294 +946,75 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             
             {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
             {currentStep === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6 text-left"
-              >
-                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-                  <div className="relative z-10">
-                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-                      {tText('Select Event Type', 'Pilih Jenis Majlis')}
-                    </h2>
-                    <p className="text-xs text-stone-300 font-light mt-1">
-                      {tText('Choose your catering hosting style.', 'Sila tentukan jenis majlis catering anda.')}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Event Type option cards */}
-                <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')}>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={orderState.eventType === 'pejabat'}
-                    onClick={() => setOrderState(prev => ({ ...prev, eventType: 'pejabat' }))}
-                    className={cn(
-                      "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
-                      orderState.eventType === 'pejabat' 
-                        ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-md ring-1 ring-crisp-carrot/30" 
-                        : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-                    )}
-                  >
-                    {orderState.eventType === 'pejabat' && (
-                      <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-1 shadow-sm">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                    <div className={cn(
-                      "w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-sm",
-                      orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-                    )}>
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-                    <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Meetings, workshops & corporate.', 'Urusan rasmi, mesyuarat, kursus.')}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={orderState.eventType === 'lain'}
-                    onClick={() => setOrderState(prev => ({ ...prev, eventType: 'lain' }))}
-                    className={cn(
-                      "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
-                      orderState.eventType === 'lain' 
-                        ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-md ring-1 ring-crisp-carrot/30" 
-                        : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-                    )}
-                  >
-                    {orderState.eventType === 'lain' && (
-                      <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-1 shadow-sm">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                    <div className={cn(
-                      "w-11 h-11 rounded-2xl flex items-center justify-center transition-all shadow-sm",
-                      orderState.eventType === 'lain' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-                    )}>
-                      <Smile className="w-5 h-5" />
-                    </div>
-                    <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Private Events', 'Lain-lain')}</span>
-                    <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
-                  </button>
-                </div>
-
-                {/* Meal Type selection */}
-                <div className="space-y-2 pt-2">
-                  <Label className="text-xs font-bold text-stone dark:text-stone-300 uppercase tracking-wider block">
-                    {tText('Meals For / Hidangan Untuk', 'Hidangan Untuk *')}
-                  </Label>
-                  
-                  <div className="grid grid-cols-3 gap-2.5" role="group" aria-label={tText('Meal type', 'Hidangan')}>
-                    {[
-                      { id: 'sarapan', label: () => tText('Breakfast', 'Sarapan'), time: '7AM - 10AM', icon: Coffee },
-                      { id: 'tengahari', label: () => tText('Lunch', 'Makan Tengah Hari'), time: '12PM - 3PM', icon: Sun },
-                      { id: 'hitea', label: () => tText('Hi-Tea', 'Hi-Tea'), time: '3PM - 6PM', icon: Utensils }
-                    ].map(m => {
-                      const Icon = m.icon;
-                      const mealId = m.id as 'sarapan' | 'tengahari' | 'hitea';
-                      const isSelected = orderState.mealTypes.includes(mealId);
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onClick={() => handleToggleMeal(mealId)}
-                          className={cn(
-                            "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-1.5 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
-                            isSelected 
-                              ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                              : "bg-muted/70 border-stone/15 text-stone dark:bg-stone-800/50"
-                          )}
-                        >
-                          {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
-                              <Check className="w-2.5 h-2.5" />
-                            </div>
-                          )}
-                          <div className={cn(
-                            "w-8 h-8 rounded-xl flex items-center justify-center transition-colors",
-                            isSelected ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-                          )}>
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <span className="text-xs font-bold block leading-none text-deep-forest dark:text-white mt-0.5">{m.label()}</span>
-                          <span className="microcopy-12 text-stone/80 leading-none font-normal">{m.time}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Serving Style / Preparation Type */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-deep-forest dark:text-white block">
-                    {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan')}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={orderState.preparationType === 'buffet'}
-                      onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'buffet' }))}
-                      className={cn(
-                        "p-3.5 rounded-2xl border transition-all duration-200 flex items-center gap-3 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
-                        orderState.preparationType === 'buffet'
-                          ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
-                          : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-                      )}
-                    >
-                      {orderState.preparationType === 'buffet' && (
-                        <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
-                          <Check className="w-2.5 h-2.5" />
-                        </div>
-                      )}
-                      <div className={cn(
-                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                        orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-                      )}>
-                        <UtensilsCrossed className="w-4.5 h-4.5" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Buffet Style', 'Hidangan Bufet')}</span>
-                        <span className="microcopy-12 text-stone/80 font-normal block mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={orderState.preparationType === 'meal_box'}
-                      onClick={() => setOrderState(prev => ({ ...prev, preparationType: 'meal_box' }))}
-                      className={cn(
-                        "p-3.5 rounded-2xl border transition-all duration-200 flex items-center gap-3 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
-                        orderState.preparationType === 'meal_box'
-                          ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
-                          : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-                      )}
-                    >
-                      {orderState.preparationType === 'meal_box' && (
-                        <div className="absolute top-2.5 right-2.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
-                          <Check className="w-2.5 h-2.5" />
-                        </div>
-                      )}
-                      <div className={cn(
-                        "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                        orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-                      )}>
-                        <Package className="w-4.5 h-4.5" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Pre-Pack Box', 'Set Box / Bungkus')}</span>
-                        <span className="microcopy-12 text-stone/80 font-normal block mt-0.5">{tText('Packed meal boxes', 'Kotak makanan individu')}</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quantity Counter */}
-                <div className="bg-muted/70 border border-stone/15 dark:border-white/10 p-4 rounded-2xl space-y-3 dark:bg-stone-800/40">
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <div>
-                      <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest dark:text-white">
-                        {tText('Quantity', 'Kuantiti')}
-                      </Label>
-                      <span className="microcopy-12 text-stone font-normal block leading-none mt-1">
-                        {tText('Minimum order: 1 pax.', 'Minima tempahan katering: 1 orang.')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
-                      <button
-                        type="button"
-                        aria-label={tText('Decrease quantity', 'Kurangkan kuantiti')}
-                        onClick={() => adjustGuests(-1)}
-                        className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
-                      >
-                        –
-                      </button>
-                      <input
-                        id="guests-input"
-                        type="number"
-                        min="1"
-                        max="5000"
-                        inputMode="numeric"
-                        value={orderState.guests || ''}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          setOrderState(prev => ({
-                            ...prev,
-                            guests: isNaN(val) ? 0 : val
-                          }));
-                        }}
-                        onBlur={() => {
-                          setOrderState(prev => ({
-                            ...prev,
-                            guests: prev.guests < 1 ? 1 : prev.guests
-                          }));
-                        }}
-                        aria-label={tText('Number of guests', 'Bilangan tetamu')}
-                        className="text-lg font-bold text-deep-forest dark:text-white w-20 text-center bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 rounded-xl h-11 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-crisp-carrot focus:ring-1 focus:ring-crisp-carrot"
-                      />
-                      <button
-                        type="button"
-                        aria-label={tText('Increase quantity', 'Tambah kuantiti')}
-                        onClick={() => adjustGuests(1)}
-                        className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Next Button */}
-                <Button
-                  onClick={() => handleStepNext(1)}
-                  className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
-                >
-                  {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
-                  <ArrowRight className="w-4 h-4 ml-1.5" />
-                </Button>
-              </motion.div>
+              <Step1EventMeal
+                orderState={orderState}
+                setOrderState={setOrderState}
+                handleToggleMeal={handleToggleMeal}
+                adjustGuests={adjustGuests}
+                handleStepNext={handleStepNext}
+                tText={tText}
+              />
             )}
 
             {/* STEP 2: PILIH LAUK PAUK & CALCULATE PRICE */}
             {currentStep === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6 text-left"
-              >
-                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-                  <div className="relative z-10">
-                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-                      {tText('Select Menu Dishes', 'Pilih Hidangan Lauk-Pauk')}
-                    </h2>
-                    <p className="text-xs text-stone-300 font-light mt-1">
-                      {tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}
-                    </p>
-                  </div>
-                </div>
-
-                {menuLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <Loader2 className="w-6 h-6 animate-spin text-[var(--color-sunshine-cta)]" />
-                    <p className="text-xs text-stone font-light">
-                      {tText('Loading fresh menu items...', 'Memuatkan sajian menu terkini...')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Breakfast Section */}
-                    {orderState.mealTypes.includes('sarapan') && (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                          <Label className="text-xs font-black text-amber-500 uppercase tracking-wider block">
-                            {tText('🍳 Breakfast Selection', '🍳 Pilihan Sarapan')}
-                          </Label>
-                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                            {orderState.dishes.filter(d => d.category === 'breakfast').length} {tText('items', 'sajian')}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                          {dynamicMenu.filter(item => item.category === 'breakfast').map(item => {
-                            const isSelected = orderState.dishes.some(x => x.id === item.id);
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => handleToggleDish(item)}
-                                className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                                  isSelected 
-                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                                )}
-                              >
-                                <div className={cn(
-                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                                )}>
-                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                    {tText(item.nameEn, item.nameBm)}
-                                  </span>
-                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
-                                    {tText(item.descEn || '', item.descBm || '')}
-                                  </span>
-                                </div>
-                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                                  RM {item.price.toFixed(2)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Lunch Section */}
-                    {orderState.mealTypes.includes('tengahari') && (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                          <Label className="text-xs font-black text-orange-500 uppercase tracking-wider block">
-                            {tText('🍛 Lunch Selection', '🍛 Pilihan Tengahari')}
-                          </Label>
-                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                            {orderState.dishes.filter(d => d.category === 'lunch').length} {tText('items', 'sajian')}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                          {dynamicMenu.filter(item => item.category === 'lunch').map(item => {
-                            const isSelected = orderState.dishes.some(x => x.id === item.id);
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => handleToggleDish(item)}
-                                className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                                  isSelected 
-                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                                )}
-                              >
-                                <div className={cn(
-                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                                )}>
-                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                    {tText(item.nameEn, item.nameBm)}
-                                  </span>
-                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
-                                    {tText(item.descEn || '', item.descBm || '')}
-                                  </span>
-                                </div>
-                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                                  RM {item.price.toFixed(2)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Hi Tea Section */}
-                    {orderState.mealTypes.includes('hitea') && (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                          <Label className="text-xs font-black text-pink-500 uppercase tracking-wider block">
-                            {tText('🍰 Hi-Tea Selection', '🍰 Pilihan Hi-Tea')}
-                          </Label>
-                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                            {orderState.dishes.filter(d => d.category === 'hi tea').length} {tText('items', 'sajian')}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                          {dynamicMenu.filter(item => item.category === 'hi tea').map(item => {
-                            const isSelected = orderState.dishes.some(x => x.id === item.id);
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => handleToggleDish(item)}
-                                className={cn(
-                                  "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                                  isSelected 
-                                    ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                    : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                                )}
-                              >
-                                <div className={cn(
-                                  "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                  isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                                )}>
-                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                    {tText(item.nameEn, item.nameBm)}
-                                  </span>
-                                  <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
-                                    {tText(item.descEn || '', item.descBm || '')}
-                                  </span>
-                                </div>
-                                <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                                  RM {item.price.toFixed(2)}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Drinks Section */}
-                    {dynamicMenu.some(item => item.category === 'drinks') && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
-                          <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block">
-                            {tText('🥤 Drinks Selection', '🥤 Pilihan Minuman')}
-                          </Label>
-                          <span className="microcopy-12-upper font-bold text-crisp-carrot bg-crisp-carrot/10 px-2 py-0.5 rounded-full">
-                            {orderState.dishes.filter(d => d.category === 'drinks').length} {tText('items', 'sajian')}
-                          </span>
-                        </div>
-
-                        {/* Breakfast & Hi-Tea Drinks */}
-                        {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (
-                          <div className="space-y-2">
-                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block">
-                              {tText('☕ Hot/Warm Drinks', '☕ Minuman Panas/Suam')}
-                            </span>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                              {dynamicMenu
-                                .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
-                                .map(item => {
-                                  const isSelected = orderState.dishes.some(x => x.id === item.id);
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      onClick={() => handleToggleDish(item)}
-                                      className={cn(
-                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                                        isSelected 
-                                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                          : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                                      )}
-                                    >
-                                      <div className={cn(
-                                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                                      )}>
-                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                      </div>
-                                      
-                                      <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                          {tText(item.nameEn, item.nameBm)}
-                                        </span>
-                                        <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
-                                          {tText(item.descEn || '', item.descBm || '')}
-                                        </span>
-                                      </div>
-                                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                                        RM {item.price.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Lunch Drinks */}
-                        {(orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length) && (
-                          <div className="space-y-2 pt-2">
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 block">
-                              {tText('🥤 Refreshing Box/Cordial/Mineral Drinks', '🥤 Minuman Kotak/Kordial/Mineral Segar')}
-                            </span>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                              {dynamicMenu
-                                .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
-                                .map(item => {
-                                  const isSelected = orderState.dishes.some(x => x.id === item.id);
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      onClick={() => handleToggleDish(item)}
-                                      className={cn(
-                                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                                        isSelected 
-                                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                          : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                                      )}
-                                    >
-                                      <div className={cn(
-                                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                                      )}>
-                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                      </div>
-                                      
-                                      <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                          {tText(item.nameEn, item.nameBm)}
-                                        </span>
-                                        <span className="hidden text-xs text-stone dark:text-stone-300 block truncate font-normal mt-0.5 leading-normal">
-                                          {tText(item.descEn || '', item.descBm || '')}
-                                        </span>
-                                      </div>
-                                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                                        RM {item.price.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Custom Menu Request */}
-                <div className="pt-2 border-t border-stone/10">
-                  <div className="bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 md:p-5 space-y-3.5 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-400/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-4 h-4 text-crisp-carrot" />
-                      </div>
-                      <Label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block leading-none">
-                        {tText('Other / Custom Menu Request (Optional)', 'Permintaan Menu Lain / Khas (Pilihan)')}
-                      </Label>
-                    </div>
-                    
-                    <p className="text-xs text-stone dark:text-stone-300 leading-relaxed font-normal">
-                      {tText(
-                        'Want custom dishes, signature drinks, or special culinary arrangements? Specify them here. If you skip this menu step completely, the app will auto-setup to our default "Set Box Makanan & Minuman".',
-                        'Sila nyatakan jika ada lauk, minuman, atau permintaan katering khas. Jika anda melangkau bahagian menu ini, tempahan akan ditetapkan secara automatik kepada "Set Box Makanan & Minuman" kami.'
-                      )}
-                    </p>
-                    
-                    <Textarea
-                      placeholder={tText(
-                        'e.g. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, vegetarian options...',
-                        'cth. Nasi Minyak dengan Ayam Masak Merah, Air Sirap Bandung, menu vegetarian...'
-                      )}
-                      value={orderState.customMenu}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, customMenu: e.target.value }))}
-                      className="w-full min-h-[140px] border-stone-200 dark:border-stone-700 rounded-xl p-3.5 bg-card dark:bg-stone-900/60 text-sm text-deep-forest dark:text-white placeholder:text-stone-400/80 focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/25 transition-all shadow-inner leading-relaxed"
-                    />
-                  </div>
-                </div>
-
-                {/* REALTIME SELECTION SUMMARY PANEL */}
-                <div className="bg-charcoal text-white p-5 rounded-2xl shadow-lg border border-charcoal/85 relative overflow-hidden space-y-2.5">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.25] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
-                  
-                  <div className="relative z-10 flex justify-between items-center text-xs">
-                    <span className="text-stone-300 font-medium">{tText('Quantity:', 'Kuantiti:')}</span>
-                    <span className="font-bold text-white">{orderState.guests} {tText('pax', 'orang')}</span>
-                  </div>
-                  <div className="relative z-10 flex justify-between items-center text-xs">
-                    <span className="text-stone-300 font-medium">{tText('Dishes Selected:', 'Hidangan Dipilih:')}</span>
-                    <span className="font-bold text-white">
-                      {orderState.dishes.length + orderState.veggies.length} {tText('dishes', 'lauk')}
-                    </span>
-                  </div>
-                  <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
-                    <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-                      {tText('Pricing Status:', 'Status Harga:')}
-                    </span>
-                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-[var(--color-sunshine-cta)]/30">
-                      {tText('To Be Quoted by Admin', 'Ditentukan oleh Admin')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Buttons Navigation */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
-                    variant="outline"
-                    className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1.5" />
-                    {t('back')}
-                  </Button>
-                  <Button
-                    onClick={() => handleStepNext(2)}
-                    className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
-                  >
-                    {tText('Next: Details', 'Seterusnya: Butiran')}
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </Button>
-                </div>
-              </motion.div>
+              <Step2DishSelection
+                orderState={orderState}
+                setOrderState={setOrderState}
+                menuLoading={menuLoading}
+                dynamicMenu={dynamicMenu}
+                handleToggleDish={handleToggleDish}
+                handleStepNext={handleStepNext}
+                setCurrentStep={setCurrentStep}
+                triggerLightImpact={triggerLightImpact}
+                tText={tText}
+                t={t}
+              />
             )}
 
             {/* STEP 3: BUTIRAN TEMPAHAN */}
             {currentStep === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-5 text-left"
-              >
-                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-                  <div className="relative z-10">
-                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-                      {tText('Enter Booking Details', 'Butiran Tempahan')}
-                    </h2>
-                    <p className="text-xs text-stone-300 font-light mt-1">
-                      {tText('Fill in event details, billing and delivery method.', 'Isi maklumat majlis, pembayar, dan kaedah penghantaran.')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  
-                  {/* Conditionally Render Company/Department selection for Office event */}
-                  {orderState.eventType === 'pejabat' && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">
-                        {tText('Syarikat / Kementerian / Jabatan', 'Syarikat / Kementerian / Jabatan *')}
-                      </Label>
-                      {isProfileLoading ? (
-                        <Skeleton className="h-11 w-full rounded-2xl" />
-                      ) : (
-                        <>
-                          <Select
-                            value={orderState.companyName}
-                            onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
-                            required
-                          >
-                            <SelectTrigger className="w-full h-11 rounded-2xl border-stone/20 bg-muted focus:ring-crisp-carrot/20">
-                              <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
-                            </SelectTrigger>
-                            <SelectContent className="bg-card border-stone/10">
-                              {SAVED_COMPANIES.map((company, idx) => (
-                                <SelectItem key={idx} value={company} className="text-deep-forest focus:bg-crisp-carrot/10">
-                                  {company}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="other" className="text-crisp-carrot font-bold">
-                                {tText('Other Organization / Syarikat Lain', 'Syarikat Lain (Taip Manual)')}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {orderState.companyName === 'other' && (
-                            <Input
-                              value={orderState.customCompany}
-                              onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
-                              placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
-                              required
-                              className="mt-2 h-11 rounded-2xl font-sans"
-                            />
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Name Input */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
-                    <Input
-                      value={orderState.name}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
-                      className="h-11 rounded-2xl font-sans"
-                    />
-                  </div>
-
-                  {/* Phone Input */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
-                    <Input
-                      type="tel"
-                      value={orderState.contact}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
-                      placeholder={tText('e.g. 012-345 6789', 'Contoh: 012-345 6789')}
-                      className="h-11 rounded-2xl font-sans"
-                    />
-                  </div>
-
-                  {/* Email & Confirm Email Inputs */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
-                      <Input
-                        type="email"
-                        value={orderState.email}
-                        onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder={tText('e.g. ahmad@gmail.com', 'Contoh: ahmad@gmail.com')}
-                        className="h-11 rounded-2xl font-sans"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
-                      <Input
-                        type="email"
-                        value={orderState.confirmEmail}
-                        onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
-                        placeholder={tText('Re-type email address', 'Ulang alamat e-mel')}
-                        className="h-11 rounded-2xl font-sans"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Date & Time Inputs */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="event-date" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
-                      <input
-                        id="event-date"
-                        type="date"
-                        value={orderState.date}
-                        min={format(new Date(), 'yyyy-MM-dd')}
-                        onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
-                        className="w-full h-11 px-4 border border-stone/10 bg-card text-deep-forest rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="event-time" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
-                      <input
-                        id="event-time"
-                        type="time"
-                        value={orderState.time}
-                        onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
-                        className="w-full h-11 px-4 border border-stone/10 bg-card text-deep-forest rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Geolocation Autocomplete Venue Location */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs font-bold text-stone uppercase tracking-wider">
-                        {tText('Event Venue Address', 'Lokasi / Alamat Majlis *')}
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={handleDetectLocation}
-                        disabled={isDetectingLocation}
-                        className="inline-flex items-center gap-1 microcopy-12 font-bold text-crisp-carrot hover:text-crisp-carrot/80 transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {isDetectingLocation ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>{tText('Detecting...', 'Mengesan...')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span>{tText('Autofill Location', 'Kesan Lokasi')}</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {savedLocations.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1 pb-1">
-                        <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block w-full">
-                          {tText('Choose from Saved Locations:', 'Pilih dari Lokasi Disimpan:')}
-                        </span>
-                        {savedLocations.map((loc) => (
-                          <button
-                            key={loc.id}
-                            type="button"
-                            onClick={() => setOrderState(prev => ({ ...prev, location: loc.address }))}
-                            className={cn(
-                              "px-3 py-1.5 bg-cream/30 dark:bg-card border border-stone/10 hover:border-[var(--color-sunshine-cta)] microcopy-12 font-medium rounded-xl text-deep-forest  transition-all cursor-pointer",
-                              orderState.location === loc.address && "border-[var(--color-sunshine-cta)] bg-[var(--color-sunshine-cta)]/5 ring-1 ring-[var(--color-sunshine-cta)]"
-                            )}
-                          >
-                            {loc.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <Textarea
-                      value={orderState.location}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
-                      className="rounded-2xl min-h-[70px] font-sans"
-                    />
-                  </div>
-
-                  {/* Delivery vs Pickup Method Cards */}
-                  <div className="space-y-2 pt-1">
-                    <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Delivery Method', 'Kaedah Penghantaran')}</Label>
-
-                    <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={orderState.delivery === 'delivery'}
-                        onClick={() => setOrderState(prev => ({ ...prev, delivery: 'delivery' }))}
-                        className={cn(
-                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
-                          orderState.delivery === 'delivery'
-                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                            : "bg-muted border-stone/15 text-stone"
-                        )}
-                      >
-                        <Truck className="w-5 h-5 text-crisp-carrot" />
-                        <span className="text-xs font-bold block">{tText('Delivery to Location', 'Hantar ke Lokasi')}</span>
-                        <span className="microcopy-12 text-stone leading-tight font-light">{tText('Delivered to your event address.', 'Dihantar terus ke tapak majlis.')}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={orderState.delivery === 'pickup'}
-                        onClick={() => setOrderState(prev => ({ ...prev, delivery: 'pickup' }))}
-                        className={cn(
-                          "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
-                          orderState.delivery === 'pickup'
-                            ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                            : "bg-muted border-stone/15 text-stone"
-                        )}
-                      >
-                        <Store className="w-5 h-5 text-crisp-carrot" />
-                        <span className="text-xs font-bold block">{tText('Pickup at Restaurant', 'Ambil di Restoran')}</span>
-                        <span className="microcopy-12 text-stone leading-tight font-light">{tText('Collect directly from Pak Usop.', 'Ambil sendiri di Restoran Wawasan.')}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Notes input */}
-                  <div className="space-y-1.5 pt-1">
-                    <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Additional Notes (Optional)', 'Nota Tambahan (pilihan)')}</Label>
-                    <Textarea
-                      value={orderState.notes}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder={tText('e.g. Vegetarian attendees, buffer tables needed, etc.', 'Contoh: Ada tetamu yang vegetarian, perlu meja buffet, dll.')}
-                      className="rounded-2xl min-h-[70px] font-sans"
-                    />
-                  </div>
-
-                </div>
-
-                {/* Buttons Navigation */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={async () => { await triggerLightImpact(); setCurrentStep(2); }}
-                    variant="outline"
-                    className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1.5" />
-                    {t('back')}
-                  </Button>
-                  <Button
-                    onClick={() => handleStepNext(3)}
-                    className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
-                  >
-                    {tText('Next: Review', 'Seterusnya: Semak')}
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </Button>
-                </div>
-              </motion.div>
+              <Step3ContactDetails
+                orderState={orderState}
+                setOrderState={setOrderState}
+                isProfileLoading={isProfileLoading}
+                savedLocations={savedLocations}
+                isDetectingLocation={isDetectingLocation}
+                handleDetectLocation={handleDetectLocation}
+                handleStepNext={handleStepNext}
+                setCurrentStep={setCurrentStep}
+                triggerLightImpact={triggerLightImpact}
+                tText={tText}
+                t={t}
+              />
             )}
 
             {/* STEP 4: REVIEW & CONFIRMATION */}
             {currentStep === 4 && (
-              <motion.div
-                key="step4"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-5 text-left"
-              >
-                <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-                  <div className="relative z-10">
-                    <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-                      {tText('Review & Confirm Inquiry', 'Semak & Sahkan')}
-                    </h2>
-                    <p className="text-xs text-stone-300 font-light mt-1">
-                      {tText('Double check all information below before submitting.', 'Sila semak butiran tempahan anda sebelum menghantar.')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  
-                  {/* Event & Serve Summary */}
-                  <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-                    <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
-                      {tText('Event Summary', 'Maklumat Majlis')}
-                    </span>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Event Type', 'Jenis Majlis')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.eventType === 'pejabat' ? tText('Corporate Feast', 'Jamuan Pejabat') : tText('Private Event', 'Lain-lain')}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Catering Block', 'Hidangan Untuk')}</span>
-                      <span className="font-bold text-deep-forest">
-                        {getMealTypesLabel()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Serving Style', 'Gaya Hidangan')}</span>
-                      <span className="font-bold text-deep-forest">
-                        {orderState.preparationType === 'meal_box' ? tText('Pre-Pack Box', 'Set Box / Bungkus') : tText('Buffet Style', 'Hidangan Bufet')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Quantity', 'Kuantiti')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.guests} {tText('pax', 'orang')}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Date & Time', 'Tarikh & Masa')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.date} @ {orderState.time}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('Method', 'Kaedah')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.delivery === 'delivery' ? tText('Delivery to Location', 'Hantar ke Lokasi') : tText('Collect at Restaurant', 'Ambil di Restoran')}</span>
-                    </div>
-                  </div>
-
-                  {/* Customer Billing Summary */}
-                  <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-                    <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
-                      {tText('Customer & Billing Info', 'Maklumat Pembayar')}
-                    </span>
-                    {orderState.eventType === 'pejabat' && (
-                      <div className="flex justify-between items-start text-xs gap-4">
-                        <span className="text-stone shrink-0">{tText('Organization', 'Syarikat/Jabatan')}</span>
-                        <span className="font-bold text-deep-forest text-right">
-                          {orderState.companyName === 'other' ? orderState.customCompany : orderState.companyName}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('PIC Name', 'Nama')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.name}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('PIC Phone', 'Telefon')}</span>
-                      <span className="font-bold text-deep-forest">{orderState.contact}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone">{tText('PIC Email', 'E-mel')}</span>
-                      <span className="font-bold text-deep-forest break-all text-right">{orderState.email}</span>
-                    </div>
-                    <div className="flex justify-between items-start text-xs gap-4">
-                      <span className="text-stone shrink-0">{tText('Venue Location', 'Lokasi')}</span>
-                      <span className="font-bold text-deep-forest text-right">{orderState.location}</span>
-                    </div>
-                  </div>
-
-                    {/* Selected Menu Dishes Summary */}
-                    <div className="bg-charcoal text-white p-5 rounded-2xl shadow-lg border border-charcoal/85 relative overflow-hidden space-y-3">
-                      {/* Background Batik Pattern */}
-                      <div 
-                        className="absolute inset-0 opacity-[0.25] pointer-events-none"
-                        style={{
-                          backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      />
-                      <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
-
-                      <span className="relative z-10 microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider block mb-1">
-                        {tText('Selected Dishes Menu', 'Senarai Hidangan')}
-                      </span>
-                      <div className="relative z-10 text-xs text-white space-y-1.5 font-semibold">
-                        {orderState.dishes.length > 0 && (
-                          <>
-                            <p className="text-stone-300 microcopy-12 uppercase">{tText('Main Lauk:', 'Lauk Utama:')}</p>
-                            <div className="pl-2 flex flex-wrap gap-1">
-                              {orderState.dishes.map(d => (
-                                <span key={d.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded microcopy-12-upper text-white">
-                                  {tText(d.nameEn, d.nameBm)}
-                                </span>
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {orderState.veggies.length > 0 && (
-                          <>
-                            <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Vegetables:', 'Sayur-sayuran:')}</p>
-                            <div className="pl-2 flex flex-wrap gap-1">
-                              {orderState.veggies.map(v => (
-                                <span key={v.id} className="inline-block bg-white/10 border border-white/5 px-2 py-0.5 rounded microcopy-12-upper text-white">
-                                  {tText(v.nameEn, v.nameBm)}
-                                </span>
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {orderState.customMenu && (
-                          <>
-                            <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
-                            <p className="pl-2 microcopy-12 font-normal text-white italic whitespace-pre-wrap bg-white/10 p-2 rounded-lg border border-white/5 mt-0.5">
-                              "{orderState.customMenu}"
-                            </p>
-                          </>
-                        )}
-
-                        {orderState.dishes.length === 0 && orderState.veggies.length === 0 && !orderState.customMenu && (
-                          <div className="bg-[var(--color-sunshine-cta)]/15 border border-[var(--color-sunshine-cta)]/30 p-2.5 rounded-lg text-center mt-2 relative z-10">
-                            <p className="text-xs font-bold text-[var(--color-sunshine-cta)]">
-                              {tText('Set Box Makanan & Minuman (Default)', 'Set Box Makanan & Minuman (Lalai)')}
-                            </p>
-                            <p className="microcopy-12-upper text-stone-300 font-light mt-0.5 leading-tight">
-                              {tText('You have skipped individual dish selection. Standard boxed meal set will be served.', 'Anda melangkau pilihan lauk. Set hidangan kotak standard akan disediakan.')}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 flex justify-between items-center">
-                        <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-                          {tText('Catering Price:', 'Harga Katering:')}
-                        </span>
-                        <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
-                          {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                        </span>
-                      </div>
-                    </div>
-
-                  <p className="microcopy-12-upper text-stone leading-tight italic text-center px-4">
-                    {tText(
-                      '* Note: The restaurant admin will review your booking details and provide a finalized quote via WhatsApp or Email within 24 hours.',
-                      '* Nota: Admin restoran akan menyemak butiran tempahan dan memberikan sebut harga muktamad melalui WhatsApp atau E-mel dalam masa 24 jam.'
-                    )}
-                  </p>
-
-                </div>
-
-                {/* Submitting Actions */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={async () => { await triggerLightImpact(); setCurrentStep(3); }}
-                    disabled={isSubmitting}
-                    variant="outline"
-                    className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1.5" />
-                    {t('back')}
-                  </Button>
-                  <Button
-                    onClick={handleOrderSubmission}
-                    disabled={isSubmitting}
-                    className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                        <span>{t('loading')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{tText('Submit Order', 'Hantar Tempahan')}</span>
-                        <Check className="w-4 h-4 ml-1.5" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.div>
+              <Step4ReviewSubmit
+                orderState={orderState}
+                getMealTypesLabel={getMealTypesLabel}
+                isSubmitting={isSubmitting}
+                handleOrderSubmission={handleOrderSubmission}
+                setCurrentStep={setCurrentStep}
+                triggerLightImpact={triggerLightImpact}
+                tText={tText}
+                t={t}
+              />
             )}
 
             {/* STEP 5: KEJAYAAN / SUCCESS */}
             {currentStep === 5 && (
-              <motion.div
-                key="step5"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6 text-center"
-              >
-                <div className="bg-charcoal text-white p-6 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md text-center">
-                  {/* Background Batik Pattern */}
-                  <div 
-                    className="absolute inset-0 opacity-[0.22] pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-                  
-                  <div className="relative z-10">
-                    <div className="w-14 h-14 rounded-full bg-[#A8E10C]/15 text-[#A8E10C] flex items-center justify-center mx-auto mb-3.5 shadow-sm">
-                      <CheckCircle2 className="w-10 h-10" />
-                    </div>
-                    <h2 className="text-lg font-bold text-white font-display">
-                      {tText('Booking Request Sent!', 'Tempahan Dihantar!')}
-                    </h2>
-                    <p className="text-xs text-stone-300 font-light max-w-sm mx-auto mt-1 leading-relaxed">
-                      {tText(
-                        'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
-                        'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Bill details receipt box */}
-                <div className="bg-muted border border-stone/10 p-5 rounded-2xl text-left space-y-2.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('Reference Number:', 'Nombor Rujukan')}</span>
-                    <span className="font-bold text-[#A8E10C] text-sm tracking-wider select-all">{referenceNumber}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('PIC Name:', 'Nama')}</span>
-                    <span className="font-bold text-deep-forest">{orderState.name}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('PIC Contact:', 'Telefon')}</span>
-                    <span className="font-bold text-deep-forest">{orderState.contact}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('Event Date:', 'Tarikh Majlis')}</span>
-                    <span className="font-bold text-deep-forest">{orderState.date}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-stone">{tText('Meal serving:', 'Hidangan Untuk')}</span>
-                    <span className="font-bold text-deep-forest">
-                      {getMealTypesLabel()}
-                    </span>
-                  </div>
-                  
-                  <div className="border-t border-stone/10 pt-2.5 mt-2 flex justify-between items-center">
-                    <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
-                      {tText('Catering Price:', 'Harga Katering:')}
-                    </span>
-                    <span className="text-xs font-bold text-[#A8E10C] bg-[#A8E10C]/10 px-2.5 py-1 rounded-full uppercase tracking-wide">
-                      {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Email Delivery relay receipt check */}
-                <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm" aria-live="polite">
-                  <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block">
-                    {tText('INVOICE / RECEIPT STATUS', 'STATUS PENGHANTARAN INVOIS')}
-                  </span>
-
-                  <div className="space-y-1.5 text-xs text-stone">
-                    <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
-                      <span className="text-[#A8E10C]">✓</span>
-                      <span>{tText('Preliminary PDF generated', 'Invois PDF dihasilkan')}</span>
-                    </p>
-                    
-                    {emailStatus === 'sending' && (
-                      <p className="flex items-center gap-1.5 animate-pulse text-crisp-carrot">
-                        <span className="text-crisp-carrot font-bold">●</span>
-                        <span>{tText('Mailing PDF copy...', 'Sedang menghantar salinan emel...')}</span>
-                      </p>
-                    )}
-
-                    {emailStatus === 'success' && (
-                      <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
-                        <span className="text-[#A8E10C]">✓</span>
-                        <span>{tText(`E-mailed copy successfully to ${orderState.email}`, `Salinan invois emel berjaya dihantar ke ${orderState.email}`)}</span>
-                      </p>
-                    )}
-
-                    {emailStatus === 'failed' && (
-                      <p className="flex items-center gap-1.5 text-rose-600 font-semibold">
-                        <span className="text-rose-600 font-bold">×</span>
-                        <span>{tText('SMTP delivery deferred. Admin will send copy manually.', 'Penghantaran emel tertangguh. Invois akan dihantar manual.')}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <p className="microcopy-12-upper text-stone italic">
-                  {tText('Please save or share this reference number for future inquiries.', 'Sila simpan nombor rujukan ini untuk rujukan masa hadapan.')}
-                </p>
-
-                {/* Success Screen Action Buttons */}
-                <div className="flex flex-col gap-3 pt-2">
-                  <Button
-                    onClick={() => setShowPdfPreviewModal(true)}
-                    className="w-full bg-[#A8E10C] hover:bg-[#A8E10C]/90 text-stone-950 h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
-                  >
-                    <Eye className="w-5 h-5 text-stone-950" />
-                    <span>{tText('Preview & Download PDF Invoice', 'Pratonton & Muat Turun Invois PDF')}</span>
-                  </Button>
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      onClick={handleResetForm}
-                      variant="outline"
-                      className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
-                    >
-                      {tText('New Order Inquiry', 'Tempahan Baharu')}
-                    </Button>
-                    
-                    <Button
-                      onClick={handleShareReceipt}
-                      variant="outline"
-                      className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-deep-forest cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <Share2 className="w-4 h-4 text-crisp-carrot" />
-                      <span>{tText('Share Invoice / Receipt', 'Kongsi Resit')}</span>
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
+              <Step5OrderSuccess
+                orderState={orderState}
+                referenceNumber={referenceNumber}
+                getMealTypesLabel={getMealTypesLabel}
+                emailStatus={emailStatus}
+                setShowPdfPreviewModal={setShowPdfPreviewModal}
+                handleResetForm={handleResetForm}
+                handleShareReceipt={handleShareReceipt}
+                tText={tText}
+              />
             )}
 
           </AnimatePresence>

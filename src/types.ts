@@ -8,6 +8,7 @@ export interface SavedLocation {
   id: string;
   label: string;
   address: string;
+  isDefault?: boolean;
 }
 
 export interface UserProfile {
@@ -18,6 +19,9 @@ export interface UserProfile {
   attn: string;
   updatedAt?: string;
   notificationSettings?: NotificationSettings;
+  notifyOrderStatus?: boolean;
+  notifyBilledUpdates?: boolean;
+  notifyCancelApproval?: boolean;
   savedLocations?: SavedLocation[];
 }
 
@@ -96,6 +100,10 @@ export interface Order {
   billedAt?: string;
   cancelledAt?: string;
   rejectedAt?: string;
+  eventDate?: string | Date;
+  eventType?: string;
+  guests?: number;
+  dishes?: string[];
 }
 
 export interface CombinedInvoicePayload {

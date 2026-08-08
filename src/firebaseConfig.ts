@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
 import {
+  initializeFirestore,
   getFirestore,
-  enableIndexedDbPersistence,
-  enableMultiTabIndexedDbPersistence,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   type Firestore
 } from "firebase/firestore";
 import {
@@ -73,33 +74,30 @@ const firebaseConfig = (isWorkspace && !isNative) ? sandboxConfig : prodConfig;
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore DB
+// Initialize Firestore DB with modern persistent cache configuration
 const dbId = firebaseConfig.firestoreDatabaseId;
 let dbInstance: Firestore;
-if (dbId && dbId !== "(default)") {
-  try {
-    dbInstance = getFirestore(app, dbId);
-  } catch {
+
+try {
+  const localCacheConfig = typeof window !== 'undefined'
+    ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    : undefined;
+
+  if (dbId && dbId !== "(default)") {
+    dbInstance = initializeFirestore(app, { localCache: localCacheConfig }, dbId);
+  } else {
+    dbInstance = initializeFirestore(app, { localCache: localCacheConfig });
+  }
+} catch {
+  if (dbId && dbId !== "(default)") {
+    try {
+      dbInstance = getFirestore(app, dbId);
+    } catch {
+      dbInstance = getFirestore(app);
+    }
+  } else {
     dbInstance = getFirestore(app);
   }
-} else {
-  dbInstance = getFirestore(app);
-}
-
-// Enable Firestore offline persistence
-if (typeof window !== 'undefined') {
-  enableMultiTabIndexedDbPersistence(dbInstance).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Multiple tabs open, fallback to single tab persistence
-      enableIndexedDbPersistence(dbInstance).catch((e) => {
-        console.warn("Firestore offline persistence error:", e);
-      });
-    } else if (err.code === 'unimplemented') {
-      console.warn("Firestore offline persistence is not supported in this environment:", err);
-    } else {
-      console.warn("Firestore offline persistence initialization failed:", err);
-    }
-  });
 }
 
 export const db = dbInstance;
