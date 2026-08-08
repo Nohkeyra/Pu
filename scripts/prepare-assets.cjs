@@ -28,7 +28,7 @@ async function run() {
         }
       })
       .composite([{ input: logoBuffer, gravity: 'center' }])
-      .png()
+      .toColorspace('srgb').png()
       .toFile(path.join(assetsDir, 'icon-only.png'));
     });
 
@@ -46,7 +46,7 @@ async function run() {
         }
       })
       .composite([{ input: logoBuffer, gravity: 'center' }])
-      .png()
+      .toColorspace('srgb').png()
       .toFile(path.join(assetsDir, 'icon-foreground.png'));
     });
 
@@ -59,27 +59,39 @@ async function run() {
       background: { r: 255, g: 255, b: 255, alpha: 1 }
     }
   })
-  .png()
+  .toColorspace('srgb').png()
   .toFile(path.join(assetsDir, 'icon-background.png'));
 
-  // 4. splash.png (2732x2732, batik pattern background with centered logo)
+  // 4. splash.png (2048x2048, batik pattern background with centered logo)
   await sharp(batikPath)
-    .resize(2732, 2732, { fit: 'cover' })
+    .resize(2048, 2048, { fit: 'cover' })
     .toBuffer()
     .then(async (bgBuffer) => {
       const logoBuffer = await sharp(logoPath)
-        .resize(800, 800, { fit: 'inside' })
+        .resize(700, 700, { fit: 'inside' })
         .toBuffer();
 
       await sharp(bgBuffer)
         .composite([{ input: logoBuffer, gravity: 'center' }])
-        .png()
+        .toColorspace('srgb').png()
         .toFile(path.join(assetsDir, 'splash.png'));
 
-      // 5. splash-dark.png (2732x2732, copy of the splash background)
+      // 5. splash-dark.png (2048x2048, dark background overlay with centered logo)
+      const darkOverlay = await sharp({
+        create: {
+          width: 2048,
+          height: 2048,
+          channels: 4,
+          background: { r: 11, g: 8, b: 7, alpha: 0.85 } // #0B0807 with 85% opacity overlay over batik
+        }
+      }).png().toBuffer();
+
       await sharp(bgBuffer)
-        .composite([{ input: logoBuffer, gravity: 'center' }])
-        .png()
+        .composite([
+          { input: darkOverlay, gravity: 'center' },
+          { input: logoBuffer, gravity: 'center' }
+        ])
+        .toColorspace('srgb').png()
         .toFile(path.join(assetsDir, 'splash-dark.png'));
     });
 
