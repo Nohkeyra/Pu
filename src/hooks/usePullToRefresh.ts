@@ -13,12 +13,23 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
 
   // Use refs for touch tracking so callbacks don't need to re-register on every render
   const startYRef = useRef<number | null>(null);
+  const pullDistanceRef = useRef(0);
   const isRefreshingRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
+
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
 
   // Keep ref in sync with state
   useEffect(() => {
     isRefreshingRef.current = isRefreshing;
   }, [isRefreshing]);
+
+  const updatePullDistance = (val: number) => {
+    pullDistanceRef.current = val;
+    setPullDistance(val);
+  };
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (isRefreshingRef.current) return;
@@ -62,7 +73,7 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
     const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
     if (scrollTop > 2) {
       startYRef.current = null;
-      setPullDistance(0);
+      updatePullDistance(0);
       return;
     }
 
@@ -73,13 +84,13 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
     if (diff <= 0) {
       // User swiped up — disarm to avoid accidental triggers
       startYRef.current = null;
-      setPullDistance(0);
+      updatePullDistance(0);
       return;
     }
 
     // Damping effect so it feels natural and doesn't race to threshold too fast
     const dampedDiff = Math.pow(diff, 0.8);
-    setPullDistance(dampedDiff);
+    updatePullDistance(dampedDiff);
 
     // Block native browser scroll/pull-to-refresh while we're handling it
     if (dampedDiff > 5 && e.cancelable) {
@@ -90,22 +101,22 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
   const handleTouchEnd = useCallback(async () => {
     if (startYRef.current === null) return;
 
-    const currentPull = pullDistance;
+    const currentPull = pullDistanceRef.current;
     startYRef.current = null;
 
     if (currentPull > threshold && !isRefreshingRef.current) {
       setIsRefreshing(true);
-      setPullDistance(threshold); // Hold indicator at threshold during refresh
+      updatePullDistance(threshold); // Hold indicator at threshold during refresh
       try {
-        await onRefresh();
+        await onRefreshRef.current();
       } finally {
         setIsRefreshing(false);
-        setPullDistance(0);
+        updatePullDistance(0);
       }
     } else {
-      setPullDistance(0);
+      updatePullDistance(0);
     }
-  }, [pullDistance, threshold, onRefresh]);
+  }, [threshold]);
 
   useEffect(() => {
     window.addEventListener('touchstart', handleTouchStart, { passive: true });

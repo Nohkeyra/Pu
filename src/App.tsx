@@ -20,7 +20,7 @@ import NativeAppListeners from './components/NativeAppListeners';
 import InAppUpdateModal from './components/InAppUpdateModal';
 import { useInAppUpdates } from './hooks/useInAppUpdates';
 import ScrollToTopButton from './components/ScrollToTopButton';
-import AppSplashScreen from './components/AppSplashScreen';
+import CateringSplashScreen from './components/SplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 
 import LandingPage from './pages/LandingPage';
@@ -554,7 +554,7 @@ function App() {
 
   return (
     <>
-      <AppSplashScreen isLoading={isAppLoading} />
+      <CateringSplashScreen isLoading={isAppLoading} />
       {isAppLoading && showTroubleshoot && (
         <div className="fixed bottom-24 left-0 right-0 z-[110] flex flex-col items-center justify-center px-6">
           <button
@@ -586,9 +586,9 @@ function App() {
             <NativeAppListeners />
             <GlobalInAppUpdateHandler />
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={!isAppLoading ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-              transition={{ duration: 0.4, ease: "easeOut", delay: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               className="flex-grow flex flex-col w-full h-full"
             >
               <AppContent />
