@@ -27,7 +27,7 @@ export interface SplashScreenProps {
   isLoading: boolean;
 }
 
-type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'exit';
+type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'logoZoom' | 'exit';
 
 export default function SplashScreen({ isLoading }: SplashScreenProps) {
   const { theme } = useTheme();
@@ -40,6 +40,10 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
   // `tsc --noEmit`. ReturnType<typeof setTimeout> is the correct browser type.
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
+  // Reduced-motion sessions skip the decorative logoZoom stage entirely
+  // (straight hold -> exit), so the gating effect needs to know which
+  // path it's on.
+  const isReducedRef = useRef(false);
 
   const clearAllTimeouts = () => {
     timeoutsRef.current.forEach(clearTimeout);
@@ -64,17 +68,21 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (isReduced) {
+      isReducedRef.current = true;
       setStage('hold');
       reachedHoldRef.current = true;
       return;
     }
+    isReducedRef.current = false;
 
     // Standard Animation Timeline:
-    // 0.00 - 1.10s : ride   (enter from right to center)
-    // 1.10 - 1.35s : settle (gentle braking bounce)
-    // 1.35 - 1.50s : lift   (box lifts slightly and tilts)
-    // 1.50 - 1.70s : flip   (3D rotateY 180deg to reveal signage)
-    // 1.70s+       : hold   (brand title & underline reveal, waits for isLoading)
+    // 0.00 - 1.10s : ride     (enter from right to center)
+    // 1.10 - 1.35s : settle   (gentle braking bounce)
+    // 1.35 - 1.50s : lift     (box lifts slightly and tilts)
+    // 1.50 - 1.70s : flip     (3D rotateY 180deg to reveal signage)
+    // 1.70s+       : hold     (brand title & underline reveal, waits for isLoading)
+    // once ready   : logoZoom (full-screen logo zoom-in, fixed ~450ms)
+    // then         : exit     (fade out, handled by AnimatePresence)
     setStage('ride');
     addTimeout(() => setStage('settle'), 1100);
     addTimeout(() => setStage('lift'), 1350);
@@ -98,13 +106,25 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
   // cutting the animation short.
   useEffect(() => {
     if (!isLoading && reachedHoldRef.current && stage === 'hold') {
-      addTimeout(() => setStage('exit'), 300);
+      if (isReducedRef.current) {
+        addTimeout(() => setStage('exit'), 300);
+      } else {
+        addTimeout(() => setStage('logoZoom'), 300);
+      }
     }
   }, [isLoading, stage]);
 
-  const isLiftOrLater = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'exit';
-  const isFlipped = stage === 'flip' || stage === 'hold' || stage === 'exit';
-  const isHoldOrLater = stage === 'hold' || stage === 'exit';
+  // logoZoom is a fixed-duration decorative beat, not gated on anything —
+  // once entered it always advances to exit on its own after 450ms.
+  useEffect(() => {
+    if (stage === 'logoZoom') {
+      addTimeout(() => setStage('exit'), 450);
+    }
+  }, [stage]);
+
+  const isLiftOrLater = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isFlipped = stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isHoldOrLater = stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
   // Wheels spin only during the active 'ride' stage; animate={false} (rather
   // than animating rotate back to a literal 0) lets Framer Motion hold the
   // wheel at whatever angle it stopped at instead of snapping backwards.
@@ -392,6 +412,49 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
               </p>
             </motion.div>
           </div>
+        </motion.div>
+      )}
+
+      {/*
+        Full-screen logo zoom climax (2026-08-09).
+        Deliberately a SIBLING of the scene above, not nested inside it —
+        nesting it inside the `stage !== 'exit'` block previously caused a
+        TypeScript "this comparison is unintentional" error on
+        `stage === 'exit'` (TS had already narrowed `stage` to exclude
+        'exit' inside that block), and even after working around the
+        type error, that structure meant this overlay would stay mounted
+        forever once `stage` reached 'exit' (its own condition would have
+        included 'exit', which never changes again). As a sibling with its
+        own `stage === 'logoZoom'`-only guard, AnimatePresence plays this
+        element's `exit` animation and then removes it the moment `stage`
+        advances to 'exit' — it does not linger over the app afterward.
+      */}
+      {stage === 'logoZoom' && (
+        <motion.div
+          key="logo-zoom-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className={`fixed inset-0 z-[10000] flex items-center justify-center select-none ${
+            isDark ? 'bg-[#151714]' : 'bg-[#FAF8F5]'
+          }`}
+        >
+          {logoError ? (
+            <span className="text-2xl font-black tracking-tighter uppercase">
+              WAWASAN
+            </span>
+          ) : (
+            <motion.img
+              src={getAssetUrl('/assets/wawasan_badge.png')}
+              alt="Restoran Wawasan Est. 1986"
+              className="w-56 h-auto max-w-[80vw] object-contain"
+              initial={{ scale: 0.55 }}
+              animate={{ scale: 1.1 }}
+              transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+              onError={() => setLogoError(true)}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>
