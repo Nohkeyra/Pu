@@ -335,7 +335,7 @@ export function AdminOrdersTab({
                       d = new Date(rawDate as any);
                     }
                   } else {
-                    d = new Date(rawDate);
+                    d = new Date(rawDate as any);
                   }
                   if (!isNaN(d.getTime())) {
                     formattedHeaderDate = format(d, 'MMM d, yyyy h:mm a');
@@ -380,7 +380,7 @@ export function AdminOrdersTab({
               };
 
               const relativeTime = getRelativeTime(order);
-              const clientName = order.to || order.name || order.company || '-';
+              const clientName = order.to || order.name || (order as any).company || '-';
 
               return (
                 <div style={style} className="border-b border-stone/10 dark:border-white/5">
