@@ -146,6 +146,18 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
     addTimer(() => setStage('exit'), 800);
   };
 
+  // Safety backup timer: if stuck on logoZoom for any reason (e.g., image loading fails,
+  // onAnimationComplete doesn't fire, or framer-motion gets stuck in this environment),
+  // transition to exit after 1.5 seconds to guarantee the main app starts.
+  useEffect(() => {
+    if (stage === 'logoZoom') {
+      const timerId = setTimeout(() => {
+        setStage('exit');
+      }, 1500);
+      return () => clearTimeout(timerId);
+    }
+  }, [stage]);
+
   // Derived booleans used across JSX
   const isRiding    = stage === 'ride';
   const showOverlay = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
@@ -227,6 +239,7 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
                 aria-hidden="true"
                 className="w-full h-full object-contain"
                 draggable={false}
+                referrerPolicy="no-referrer"
               />
 
               {/*
@@ -361,12 +374,10 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
       {/* ── LOGO ZOOM FRAME (closing beat) ──────────────────────────────────
           Sibling — NOT nested inside the splash-bg block — so TypeScript's
           narrowing on `stage !== 'exit'` above doesn't make `stage === 'exit'`
-          unreachable here. Both 'logoZoom' and 'exit' need to show this frame:
-          'logoZoom' = zoom-in playing; 'exit' = zoom done, fade-out in progress.
-          The parent AnimatePresence handles the fade-out (exit prop) when this
-          node unmounts (when stage moves past 'exit' and component is torn down
-          by App.tsx). ───────────────────────────────────────────────────── */}
-      {(stage === 'logoZoom' || stage === 'exit') && (
+          unreachable here. 'logoZoom' shows this frame, and once we transition
+          to 'exit' it will unmount, allowing AnimatePresence to trigger the
+          fade-out transition. ───────────────────────────────────────────── */}
+      {stage === 'logoZoom' && (
         <motion.div
           key="logo-zoom"
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#151714]"
@@ -380,6 +391,7 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
             alt="Restoran Wawasan"
             className="w-60 h-60 object-contain drop-shadow-2xl"
             draggable={false}
+            referrerPolicy="no-referrer"
             initial={{ scale: 0.2, opacity: 0 }}
             animate={
               logoPhase === 'enter'
