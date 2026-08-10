@@ -124,7 +124,7 @@ export function OrderDetailModal({
                     { label: language === 'bm' ? "Lokasi Acara :" : "Event Location :", value: selectedOrder.location || '-' },
                     { label: language === 'bm' ? "Jenis Sajian :" : "Preparation Type :", value: selectedOrder.preparationType === 'meal_box' ? (language === 'bm' ? 'Pek Makanan (Meal Box)' : 'Meal Box') : selectedOrder.preparationType === 'buffet' ? 'Buffet' : '-' },
                     { label: language === 'bm' ? "Bilangan Pax :" : "Quantity :", value: selectedOrder.quantity != null ? `${selectedOrder.quantity} pax` : '-' },
-                    { label: language === 'bm' ? "Hidangan Untuk :" : "Meal For :", value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
+                    { label: language === 'bm' ? "Sajian :" : "Meals :", value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
                     { label: language === 'bm' ? "Butiran Menu :" : "Menu Details :", value: selectedOrder.menu || '-' },
                     { label: language === 'bm' ? "Nota :" : "Notes :", value: selectedOrder.notes || '-' },
                   ].filter(Boolean).map((field, idx) => (

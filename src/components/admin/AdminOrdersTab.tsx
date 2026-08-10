@@ -449,7 +449,7 @@ export function AdminOrdersTab({
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
-                              {language === 'bm' ? 'Sajian Untuk:' : 'Meal for:'}
+                              {language === 'bm' ? 'Klien:' : 'Client:'}
                             </span>
                             <span className="font-semibold text-deep-forest dark:text-white truncate" title={clientName}>
                               {clientName}

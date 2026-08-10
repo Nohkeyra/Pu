@@ -129,7 +129,7 @@ export function Step1EventMeal({
       {/* Meal Type selection */}
       <div className="space-y-2 pt-2">
         <Label className="text-xs font-bold text-stone dark:text-stone-300 uppercase tracking-wider block">
-          {tText('Meals For / Hidangan Untuk', 'Hidangan Untuk *')}
+          {tText('Meals / Sajian', 'Sajian *')}
         </Label>
         
         <div className="grid grid-cols-3 gap-2.5" role="group" aria-label={tText('Meal type', 'Hidangan')}>

@@ -44,6 +44,13 @@ export interface SplashScreenProps {
 
 type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'logoZoom' | 'exit';
 
+let isLowEndDevice = false;
+if (typeof window !== 'undefined') {
+  const lowEnd = (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) ||
+                 ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 4);
+  isLowEndDevice = Boolean(lowEnd);
+}
+
 export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const [badgeError, setBadgeError] = useState(false);
@@ -51,6 +58,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
   const isReducedRef = useRef(false);
+  const [isLowEnd] = useState(isLowEndDevice);
 
   const addTimer = (fn: () => void, delay: number) => {
     const id = setTimeout(fn, delay);
@@ -78,14 +86,25 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     }
 
     setStage('ride');
-    addTimer(() => setStage('settle'),  1400); // rider arrives, spring lands
-    addTimer(() => setStage('lift'),    1900); // bag starts lifting after motor settles
-    addTimer(() => setStage('flip'),    2200); // bag flips to reveal signage
-    addTimer(() => {
-      setStage('hold');
-      reachedHoldRef.current = true;
-    }, 2800); // hold — title reveals, breathing room before waiting for isLoading
-  }, []);
+    
+    if (isLowEnd) {
+      addTimer(() => setStage('settle'),  1100);
+      addTimer(() => setStage('lift'),    1350);
+      addTimer(() => setStage('flip'),    1600);
+      addTimer(() => {
+        setStage('hold');
+        reachedHoldRef.current = true;
+      }, 2000);
+    } else {
+      addTimer(() => setStage('settle'),  1400); // rider arrives, spring lands
+      addTimer(() => setStage('lift'),    1900); // bag starts lifting after motor settles
+      addTimer(() => setStage('flip'),    2200); // bag flips to reveal signage
+      addTimer(() => {
+        setStage('hold');
+        reachedHoldRef.current = true;
+      }, 2800); // hold — title reveals, breathing room before waiting for isLoading
+    }
+  }, [isLowEnd]);
 
   useEffect(() => {
     runSequence();
@@ -199,16 +218,20 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               x: 0,
               // Heavy motor stop: drops down (compression), springs up (rebound),
               // smaller secondary bounce, rest. 3-point keyframe for realism.
-              y: isSettling ? [0, 14, -6, 2, 0] : 0,
+              y: isSettling ? (isLowEnd ? [0, -8, 0] : [0, 14, -6, 2, 0]) : 0,
             }}
             transition={{
               // Spring entry: starts slow (anticipation), accelerates hard into
               // center, spring overshoots slightly then settles — feels like
               // a real vehicle with weight and momentum, not a CSS slide
-              x: { type: 'spring', stiffness: 60, damping: 14, mass: 1.2 },
+              x: isLowEnd 
+                ? { duration: 1.1, ease: [0.22, 1, 0.36, 1] }
+                : { type: 'spring', stiffness: 60, damping: 14, mass: 1.2 },
               // Settle bounce: heavy motor stops — drops down, bounces up,
               // smaller bounce, rest. Feels weighted, not floaty.
-              y: { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
+              y: isLowEnd 
+                ? { duration: 0.25, ease: 'easeOut' }
+                : { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
             }}
           >
             <div className="relative w-72 h-72" style={{ transform: 'scaleX(-1)' }}>
@@ -259,11 +282,17 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                     }}
                     transition={{
                       // Snappy lift — quick and decisive
-                      y:       { type: 'spring', stiffness: 280, damping: 18 },
-                      rotate:  { type: 'spring', stiffness: 280, damping: 18 },
+                      y: isLowEnd 
+                        ? { duration: 0.3, ease: 'easeOut' }
+                        : { type: 'spring', stiffness: 280, damping: 18 },
+                      rotate: isLowEnd 
+                        ? { duration: 0.3, ease: 'easeOut' }
+                        : { type: 'spring', stiffness: 280, damping: 18 },
                       // Spring flip: overshoots past 180° slightly then settles —
                       // feels like a physical card/board being flipped, not a CSS rotate
-                      rotateY: { type: 'spring', stiffness: 120, damping: 14, delay: 0.08 },
+                      rotateY: isLowEnd 
+                        ? { duration: 0.45, ease: [0.4, 0, 0.2, 1], delay: 0.1 }
+                        : { type: 'spring', stiffness: 120, damping: 14, delay: 0.08 },
                     }}
                   >
                     {/* Face A — plain bag (matches SVG bag appearance) */}
@@ -324,7 +353,10 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             className="absolute bottom-[14%] left-0 right-0 text-center px-6"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: showTitle ? 1 : 0, y: showTitle ? 0 : 10 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.1 }}
+            transition={isLowEnd 
+              ? { duration: 0.4, ease: 'easeOut' }
+              : { type: 'spring', stiffness: 200, damping: 20, delay: 0.1 }
+            }
           >
             <div className="flex items-center justify-center gap-1.5 text-sm font-semibold tracking-widest text-white/90 uppercase">
               <span>Restoran</span>
@@ -377,7 +409,9 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             // settles at 1.0 — the "stamp" feel. stiffness high for punch,
             // damping low enough for visible overshoot without being bouncy.
             transition={{
-              scale:   { type: 'spring', stiffness: 260, damping: 18 },
+              scale: isLowEnd 
+                ? { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
+                : { type: 'spring', stiffness: 260, damping: 18 },
               opacity: { duration: 0.2, ease: 'easeOut' },
             }}
             onError={() => setBadgeError(true)}
