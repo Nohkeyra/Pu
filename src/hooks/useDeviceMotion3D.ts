@@ -20,7 +20,7 @@ export function useDeviceMotion3D(maxRotation = 15) {
       try {
         if (Capacitor.isNativePlatform()) {
           // Native Capacitor platform accelerometer / motion
-          listenerHandle = await Motion.addListener('accel', (event) => {
+          const handle = await Motion.addListener('accel', (event) => {
             if (!isActive) return;
             const accel = event.accelerationIncludingGravity;
             if (!accel) return;
@@ -31,6 +31,14 @@ export function useDeviceMotion3D(maxRotation = 15) {
             x.set(rx);
             y.set(ry);
           });
+          
+          if (!isActive) {
+            if (handle && typeof handle.remove === 'function') {
+              handle.remove();
+            }
+          } else {
+            listenerHandle = handle;
+          }
         } else {
           // Web / Browser environment
           // 1. Check for DeviceOrientation API (Mobile Web Gyroscope)

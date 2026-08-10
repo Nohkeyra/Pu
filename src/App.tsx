@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense, type ReactNode } from 'react';
+import { useEffect, useState, Suspense, lazy, type ReactNode } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
@@ -23,12 +23,16 @@ import ScrollToTopButton from './components/ScrollToTopButton';
 import CateringSplashScreen from './components/SplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 
-import LandingPage from './pages/LandingPage';
-import OrderPage from './pages/OrderPage';
-import AdminPage from './pages/AdminPage';
-import LoginPage from './pages/LoginPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
+// Lazy imports for heavy page chunks — defers JS parsing until route is visited.
+// NOTE: AI Studio reverted these to static imports due to its sandboxed preview
+// environment blocking dynamic chunk fetching. In a Capacitor APK, all chunks
+// are bundled as local file:// assets and load reliably without network.
+const LandingPage  = lazy(() => import('./pages/LandingPage'));
+const OrderPage    = lazy(() => import('./pages/OrderPage'));
+const AdminPage    = lazy(() => import('./pages/AdminPage'));
+const LoginPage    = lazy(() => import('./pages/LoginPage'));
+const ProfilePage  = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change
@@ -192,11 +196,11 @@ function AppContent() {
 
       <main className={cn("flex-grow", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
-          <div className="min-h-screen bg-cream flex flex-col items-center justify-center p-6 space-y-6">
-            <Skeleton className="w-24 h-24 rounded-full animate-pulse" />
+          <div className="min-h-screen bg-[#151714] flex flex-col items-center justify-center p-6 space-y-6">
+            <Skeleton className="w-24 h-24 rounded-full animate-pulse opacity-30" />
             <div className="w-full max-w-sm space-y-3">
-              <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse" />
-              <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse" />
+              <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse opacity-20" />
+              <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse opacity-20" />
             </div>
           </div>
         }>
@@ -415,6 +419,7 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isSplashFinished, setIsSplashFinished] = useState(false);
   const [useFallbackUi, setUseFallbackUi] = useState(() => {
     try {
       return localStorage.getItem('wawasan_fallback_ui') === 'true' || 
@@ -554,8 +559,13 @@ function App() {
 
   return (
     <>
-      <CateringSplashScreen isLoading={isAppLoading} />
-      {isAppLoading && showTroubleshoot && (
+      {!isSplashFinished && (
+        <CateringSplashScreen 
+          isLoading={isAppLoading} 
+          onComplete={() => setIsSplashFinished(true)} 
+        />
+      )}
+      {!isSplashFinished && showTroubleshoot && (
         <div className="fixed bottom-24 left-0 right-0 z-[110] flex flex-col items-center justify-center px-6">
           <button
             onClick={() => {
@@ -566,6 +576,7 @@ function App() {
               }
               setUseFallbackUi(true);
               setIsAppLoading(false);
+              setIsSplashFinished(true);
             }}
             className="btn-cta touch-target-row min-h-[44px] px-6 py-3.5 font-bold rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-2 text-sm"
           >
@@ -586,9 +597,9 @@ function App() {
             <NativeAppListeners />
             <GlobalInAppUpdateHandler />
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 0.3 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               className="flex-grow flex flex-col w-full h-full"
             >
               <AppContent />

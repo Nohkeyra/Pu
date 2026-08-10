@@ -21,40 +21,15 @@ import { getAssetUrl } from '@/lib/utils';
 //   wobbly/off-center rotation). Corrected to 478.5px 630.0px (actual wheel
 //   center from bounding box analysis). Rear wheel (573.5px 840px) was correct.
 //
-// ANIMATION TIMELINE (2026-08-09 retime — spring physics pass):
-//   0.00 – 1.40s  ride      : Rider enters from right, spring momentum (slight
-//                             overshoot on arrival rather than a hard stop)
-//   1.40 – 1.80s  settle    : Brake dip — spring dips down (~-10px) then the
-//                             'lift' stage below springs it back up, giving a
-//                             heavier, weighted-motorcycle feel vs a linear bounce
-//   1.80 – 2.10s  lift      : Bag overlay mounts, snappy high-stiffness spring lift
-//   2.10 – 2.60s  flip      : Bag face rotateY 0→180, spring (slight swing-past
-//                             and settle, not a linear/eased sweep)
-//   2.60 – 3.20s  hold      : Signage + title reveal finishes settling (spring on
-//                             the physical y/scale motion, plain fade on opacity)
-//   3.20s+        hold      : Scene holds as-is, waits for isLoading === false
-//   +0.3s         logoZoom  : Full-screen badge spring-scales in from 0.2, natural
-//                             spring overshoot (~1.05 peak) settling to 1.0 — the
-//                             exact peak/settle time is whatever the spring
-//                             physics produce, not a hand-timed keyframe
-//   +0.8s         logoZoom  : "Breathe" — one soft scale pulse (1 → 1.035 → 1)
-//                             once the entrance spring reports settled via
-//                             onAnimationComplete, THEN the 0.8s breathe timer
-//                             starts (so this is chained off real settle time,
-//                             not guessed)
-//   +0.5s         exit      : Parent fades to transparent (tween, not spring —
-//                             see EASING PHILOSOPHY below), app content shows
-//
-// EASING PHILOSOPHY:
-//   Physical-motion properties (x, y, rotate, rotateY, scale) use
-//   `type: 'spring'` throughout this component, per request, for a more
-//   "alive" feel with natural momentum/overshoot.
-//   Opacity fades (scene exit, logoZoom frame exit, title fade-in) are
-//   deliberately LEFT as tween/duration-based easing, not spring — a
-//   spring on opacity has no physical analogue (transparency doesn't have
-//   momentum) and in practice just looks like a glitchy flicker rather than
-//   a bounce. This is a judgment call, not an oversight — flag if you want
-//   opacity springed too and I'll wire it in, but it'll look worse.
+// ANIMATION TIMELINE (spring-physics, not fixed-duration):
+//   0.00 – 1.40s  ride      : Rider enters — slow start, burst, spring overshoot+settle
+//   1.40 – 1.90s  settle    : Heavy motor landing, spring bounce (feels weighted)
+//   1.90 – 2.20s  lift      : Bag lifts snappy
+//   2.20 – 2.80s  flip      : rotateY spring flip, slight overshoot past 180°
+//   2.80 – 3.30s  hold      : Title + underline reveal with breathing room
+//   3.30s+        hold wait : Waits for isLoading === false
+//   hold+0.3s     logoZoom  : Logo spring-zooms in (scale 0.2→1.08→1.0 overshoot)
+//   logoZoom+0.8s exit      : Hold beat then fade to black 0.5s
 //
 // isLoading CONTRACT (preserved from AppSplashScreen.tsx):
 //   Animation plays in full on its fixed timeline. At the 'hold' stage it waits
@@ -64,18 +39,14 @@ import { getAssetUrl } from '@/lib/utils';
 
 export interface SplashScreenProps {
   isLoading: boolean;
+  onComplete?: () => void;
 }
 
 type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'logoZoom' | 'exit';
 
-export default function SplashScreen({ isLoading }: SplashScreenProps) {
+export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const [badgeError, setBadgeError] = useState(false);
-  // 'enter' = initial spring scale-in playing; 'breathe' = the single soft
-  // pulse that plays once the entrance spring reports settled. Chained via
-  // onAnimationComplete rather than a hand-guessed timeout, since spring
-  // settle time isn't a fixed duration we control.
-  const [logoPhase, setLogoPhase] = useState<'enter' | 'breathe'>('enter');
   // ReturnType<typeof setTimeout> — not NodeJS.Timeout (@types/node absent in this project)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
@@ -94,7 +65,6 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
   const runSequence = useCallback(() => {
     clearTimers();
     reachedHoldRef.current = false;
-    setLogoPhase('enter');
 
     const reduced =
       typeof window !== 'undefined' &&
@@ -108,13 +78,13 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
     }
 
     setStage('ride');
-    addTimer(() => setStage('settle'),  1400);
-    addTimer(() => setStage('lift'),    1800);
-    addTimer(() => setStage('flip'),    2100);
+    addTimer(() => setStage('settle'),  1400); // rider arrives, spring lands
+    addTimer(() => setStage('lift'),    1900); // bag starts lifting after motor settles
+    addTimer(() => setStage('flip'),    2200); // bag flips to reveal signage
     addTimer(() => {
       setStage('hold');
       reachedHoldRef.current = true;
-    }, 2600);
+    }, 2800); // hold — title reveals, breathing room before waiting for isLoading
   }, []);
 
   useEffect(() => {
@@ -135,19 +105,34 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
     }
   }, [isLoading, stage]);
 
-  // Fires when the logoZoom badge's entrance spring reports it has actually
-  // settled (real settle time, not a guessed ms value) — plays the 0.8s
-  // breathe pulse, then advances to exit. Guarded to 'enter' phase only so
-  // the breathe pulse's own onAnimationComplete (which also fires once,
-  // ~0.8s later) doesn't re-trigger this.
-  const handleLogoEnterSettled = () => {
-    if (logoPhase !== 'enter') return;
-    setLogoPhase('breathe');
-    addTimer(() => setStage('exit'), 800);
+  // logoZoom: spring zoom plays (~0.5s), then hold 0.3s breathing room, then exit
+  useEffect(() => {
+    if (stage === 'logoZoom') {
+      addTimer(() => setStage('exit'), 800);
+    }
+  }, [stage]);
+
+  // When stage becomes 'exit', wait for the 500ms fade-out transition, then call onComplete
+  useEffect(() => {
+    if (stage === 'exit') {
+      addTimer(() => {
+        if (onComplete) {
+          onComplete();
+        }
+      }, 500);
+    }
+  }, [stage, onComplete]);
+
+  const handleSkip = () => {
+    clearTimers();
+    if (onComplete) {
+      onComplete();
+    }
   };
 
   // Derived booleans used across JSX
   const isRiding    = stage === 'ride';
+  const isSettling  = stage === 'settle';
   const showOverlay = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
   const doFlip      = stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
   const showTitle   = stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
@@ -179,6 +164,16 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
             </svg>
           </div>
 
+          {/* Elegant Skip Button (Safely aligned under device notch / safe areas) */}
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-white/5 active:scale-95 border border-white/10 text-[10px] font-bold tracking-widest text-white/70 uppercase transition-all duration-150 hover:bg-white/10 hover:text-white pointer-events-auto"
+            style={{ top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))' }}
+          >
+            Langkau
+          </button>
+
           {/* Ground line */}
           <div className="absolute bottom-[30%] left-8 right-8 h-px bg-white/10" />
 
@@ -202,18 +197,18 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
             initial={{ x: '110vw' }}
             animate={{
               x: 0,
-              // Dips down on the brake ('settle'), springs back up once
-              // weight has settled ('lift' onward) — the dip+recover pair
-              // across these two real stage transitions is what sells the
-              // "heavier motorcycle" feel, rather than a single 3-point
-              // keyframe tween.
-              y: stage === 'settle' ? -10 : 0,
+              // Heavy motor stop: drops down (compression), springs up (rebound),
+              // smaller secondary bounce, rest. 3-point keyframe for realism.
+              y: isSettling ? [0, 14, -6, 2, 0] : 0,
             }}
             transition={{
-              // Slightly underdamped: gives the arrival a touch of momentum
-              // overshoot instead of a hard stop.
-              x: { type: 'spring', stiffness: 95, damping: 14, mass: 1 },
-              y: { type: 'spring', stiffness: 260, damping: 20, mass: 0.9 },
+              // Spring entry: starts slow (anticipation), accelerates hard into
+              // center, spring overshoots slightly then settles — feels like
+              // a real vehicle with weight and momentum, not a CSS slide
+              x: { type: 'spring', stiffness: 60, damping: 14, mass: 1.2 },
+              // Settle bounce: heavy motor stops — drops down, bounces up,
+              // smaller bounce, rest. Feels weighted, not floaty.
+              y: { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
             }}
           >
             <div className="relative w-72 h-72" style={{ transform: 'scaleX(-1)' }}>
@@ -263,13 +258,12 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
                       rotateY: doFlip ? 180 : 0,
                     }}
                     transition={{
-                      // Snappy: high stiffness, low damping mass — pops up fast
-                      // with minimal settle wobble.
-                      y:       { type: 'spring', stiffness: 480, damping: 24 },
-                      rotate:  { type: 'spring', stiffness: 480, damping: 24 },
-                      // Springier: lower stiffness lets it swing slightly past
-                      // 180deg before settling, like a lid with real hinge weight.
-                      rotateY: { type: 'spring', stiffness: 170, damping: 15, delay: 0.1 },
+                      // Snappy lift — quick and decisive
+                      y:       { type: 'spring', stiffness: 280, damping: 18 },
+                      rotate:  { type: 'spring', stiffness: 280, damping: 18 },
+                      // Spring flip: overshoots past 180° slightly then settles —
+                      // feels like a physical card/board being flipped, not a CSS rotate
+                      rotateY: { type: 'spring', stiffness: 120, damping: 14, delay: 0.08 },
                     }}
                   >
                     {/* Face A — plain bag (matches SVG bag appearance) */}
@@ -330,10 +324,7 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
             className="absolute bottom-[14%] left-0 right-0 text-center px-6"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: showTitle ? 1 : 0, y: showTitle ? 0 : 10 }}
-            transition={{
-              y: { type: 'spring', stiffness: 260, damping: 20 },
-              opacity: { duration: 0.4, ease: 'easeOut' },
-            }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.1 }}
           >
             <div className="flex items-center justify-center gap-1.5 text-sm font-semibold tracking-widest text-white/90 uppercase">
               <span>Restoran</span>
@@ -347,7 +338,7 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
                 style={{ background: 'linear-gradient(90deg,#FF6A1A,#B4FF39)', transformOrigin: 'left' }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: showTitle ? 1 : 0 }}
-                transition={{ type: 'spring', stiffness: 220, damping: 16, delay: 0.15 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
               />
             </div>
 
@@ -381,23 +372,14 @@ export default function SplashScreen({ isLoading }: SplashScreenProps) {
             className="w-60 h-60 object-contain drop-shadow-2xl"
             draggable={false}
             initial={{ scale: 0.2, opacity: 0 }}
-            animate={
-              logoPhase === 'enter'
-                ? { scale: 1, opacity: 1 }
-                : { scale: [1, 1.035, 1], opacity: 1 }
-            }
-            transition={
-              logoPhase === 'enter'
-                ? {
-                    // Underdamped spring: naturally overshoots to roughly
-                    // ~1.05 before settling at 1.0 — the exact peak is
-                    // whatever these physics produce, not a hand-set keyframe.
-                    scale: { type: 'spring', stiffness: 260, damping: 15, mass: 0.9 },
-                    opacity: { duration: 0.25, ease: 'easeOut' },
-                  }
-                : { duration: 0.8, ease: 'easeInOut' }
-            }
-            onAnimationComplete={handleLogoEnterSettled}
+            animate={{ scale: 1, opacity: 1 }}
+            // Spring zoom: fast acceleration, overshoots to ~1.08 then
+            // settles at 1.0 — the "stamp" feel. stiffness high for punch,
+            // damping low enough for visible overshoot without being bouncy.
+            transition={{
+              scale:   { type: 'spring', stiffness: 260, damping: 18 },
+              opacity: { duration: 0.2, ease: 'easeOut' },
+            }}
             onError={() => setBadgeError(true)}
             style={badgeError ? { display: 'none' } : {}}
           />
