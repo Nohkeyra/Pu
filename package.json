@@ -52,7 +52,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "eruda": "^3.4.3",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "exceljs": "^3.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
