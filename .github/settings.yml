@@ -1,0 +1,130 @@
+# .github/settings.yml
+# Branch protection and repository settings for Restoran Wawasan Pak Usop
+# Synced to GitHub via https://probot.github.io/apps/settings/
+
+repository:
+  # Repository settings
+  name: Pu
+  description: "Restoran Wawasan Pak Usop — Full-stack POS, Order Management & Customer Invoicing System"
+  homepage: https://github.com/Nohkeyra/Pu
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: true
+  default_branch: main
+
+  # Merge settings
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+  allow_auto_merge: false
+
+  # Security features
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+# Labels for Issues and Pull Requests
+labels:
+  - name: bug
+    color: CC0000
+    description: Something is broken 🐛
+
+  - name: feature
+    color: 336699
+    description: New feature or enhancement ✨
+
+  - name: documentation
+    color: 0075CA
+    description: Documentation updates 📚
+
+  - name: security
+    color: EE0701
+    description: Security vulnerability 🔒
+
+  - name: performance
+    color: 1D76DB
+    description: Performance improvement ⚡
+
+  - name: dependencies
+    color: 0366D6
+    description: Dependency updates 📦
+
+  - name: question
+    color: D876E3
+    description: Question or discussion ❓
+
+  - name: wontfix
+    color: FFFFFF
+    description: Won't fix this issue 🙅
+
+  - name: duplicate
+    color: CFD3D7
+    description: Duplicate issue 🔁
+
+  - name: good-first-issue
+    color: 7057FF
+    description: Good for first-time contributors 🎯
+
+  - name: help-wanted
+    color: 008672
+    description: Help wanted from the community 🙋
+
+  - name: breaking-change
+    color: B60205
+    description: Breaking change ⚠️
+
+# Milestones (optional)
+milestones:
+  - title: v1.0.0
+    description: "Initial production release"
+    state: open
+  - title: v1.1.0
+    description: "Feature update"
+    state: open
+  - title: v2.0.0
+    description: "Major version update"
+    state: closed
+
+# Collaborators (optional)
+# Add team members who should have access
+collaborators:
+  # - username: your-collaborator
+  #   permission: push
+  # - username: another-collaborator
+  #   permission: pull
+
+# Branch Protection Rules
+branches:
+  - name: main
+    protection:
+      # ✅ Require pull request before merging
+      required_pull_request_reviews:
+        # Require at least 1 approval
+        required_approving_review_count: 1
+        # Dismiss stale reviews when new commits are pushed
+        dismiss_stale_reviews: true
+        # Require code owner review (if code owners are set)
+        require_code_owner_reviews: false
+        # No restrictions on who can dismiss reviews
+        dismissal_restrictions:
+          users: []
+          teams: []
+
+      # ✅ Require status checks to pass before merging
+      required_status_checks:
+        # Require branch to be up-to-date with main
+        strict: true
+        # Require the "build" workflow to pass (your build-apk.yml)
+        contexts:
+          - "build"  # ← Your GitHub Actions workflow job name
+
+      # ✅ Enforce rules for administrators too
+      enforce_admins: true
+
+      # ✅ Prevent merge commits (clean linear history)
+      required_linear_history: true
+
+      # ✅ Restrict who can push to main (null = only via PR)
+      restrictions: null
