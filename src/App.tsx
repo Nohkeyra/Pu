@@ -18,6 +18,7 @@ import PushNotificationHandler from './components/PushNotificationHandler';
 import NativeBackButtonHandler from './components/NativeBackButtonHandler';
 import NativeAppListeners from './components/NativeAppListeners';
 import InAppUpdateModal from './components/InAppUpdateModal';
+import InAppUpdateBanner from './components/InAppUpdateBanner';
 import { useInAppUpdates } from './hooks/useInAppUpdates';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import CateringSplashScreen from './components/SplashScreen';
@@ -57,15 +58,31 @@ function VercelSpeedInsights() {
 }
 
 function GlobalInAppUpdateHandler() {
-  const { updateAvailable, latestConfig, isForceUpdate, dismissUpdate } = useInAppUpdates();
+  const { 
+    updateAvailable, 
+    showNotificationBanner, 
+    latestConfig, 
+    isForceUpdate, 
+    dismissUpdate, 
+    dismissNotificationBanner, 
+    showUpdateModalManually 
+  } = useInAppUpdates();
 
   return (
-    <InAppUpdateModal
-      isOpen={updateAvailable}
-      config={latestConfig}
-      isForceUpdate={isForceUpdate}
-      onDismiss={dismissUpdate}
-    />
+    <>
+      <InAppUpdateBanner
+        visible={showNotificationBanner && !updateAvailable}
+        config={latestConfig}
+        onOpenModal={showUpdateModalManually}
+        onDismiss={dismissNotificationBanner}
+      />
+      <InAppUpdateModal
+        isOpen={updateAvailable}
+        config={latestConfig}
+        isForceUpdate={isForceUpdate}
+        onDismiss={dismissUpdate}
+      />
+    </>
   );
 }
 

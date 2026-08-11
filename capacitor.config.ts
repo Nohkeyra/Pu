@@ -9,6 +9,12 @@ const config: CapacitorConfig = {
     androidScheme: 'https'
   },
   plugins: {
+    CapacitorUpdater: {
+      autoUpdate: false,
+      statsUrl: '',
+      autoDeleteFailed: true,
+      resetWhenUpdate: false
+    },
     StatusBar: {
       overlaysWebView: true,
       style: 'DARK',
