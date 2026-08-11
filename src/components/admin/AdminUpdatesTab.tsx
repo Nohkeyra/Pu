@@ -13,7 +13,8 @@ import {
   AlertTriangle, 
   ShieldCheck, 
   Eye,
-  Radio
+  Radio,
+  GitBranch
 } from 'lucide-react';
 import { 
   fetchLatestAppVersion, 
@@ -49,6 +50,69 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
   );
   const [forceUpdate, setForceUpdate] = useState(false);
 
+  // GitHub sync states
+  const [githubVersion, setGithubVersion] = useState('');
+  const [githubApkUrl, setGithubApkUrl] = useState('');
+  const [githubReleaseNotes, setGithubReleaseNotes] = useState<string[]>([]);
+  const [fetchingGithub, setFetchingGithub] = useState(false);
+  const [githubBuildNumber, setGithubBuildNumber] = useState('');
+
+  const fetchGithubDetails = async () => {
+    setFetchingGithub(true);
+    try {
+      const res = await fetch('https://api.github.com/repos/Nohkeyra/Pu/releases/latest');
+      if (res.ok) {
+        const data = await res.json();
+        const tagName = data.tag_name || ''; // e.g. "v1.2.6"
+        const cleanVer = tagName.replace(/^v/, ''); // "1.2.6"
+        if (cleanVer) {
+          setGithubVersion(cleanVer);
+          
+          // Generate an intelligent build code based on version numbers (e.g., 1.2.6 => 126)
+          const cleanDigits = cleanVer.replace(/\./g, '');
+          const buildNum = parseInt(cleanDigits, 10) || 126;
+          setGithubBuildNumber(String(buildNum));
+
+          // Look for APK in assets
+          let foundApk = '';
+          if (data.assets && Array.isArray(data.assets)) {
+            // Prefer signed-release if available, or any apk
+            const apkAsset = data.assets.find((a: any) => a.name && (a.name.endsWith('.apk') || a.name.includes('signed')));
+            if (apkAsset) {
+              foundApk = apkAsset.browser_download_url;
+            }
+          }
+          
+          if (!foundApk) {
+            // Fallback construct
+            foundApk = `https://github.com/Nohkeyra/Pu/releases/download/${tagName}/app-release-signed.apk`;
+          }
+          setGithubApkUrl(foundApk);
+
+          // Get release body notes if available
+          if (data.body) {
+            const lines = data.body
+              .split('\n')
+              .map((l: string) => l.trim())
+              .filter((l: string) => l.length > 0 && (l.startsWith('-') || l.startsWith('*') || /^[0-9]/.test(l)))
+              .map((l: string) => l.replace(/^[-*\s0-9.]+\s*/, '').trim());
+            if (lines.length > 0) {
+              setGithubReleaseNotes(lines);
+            } else {
+              setGithubReleaseNotes([]);
+            }
+          } else {
+            setGithubReleaseNotes([]);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[AdminUpdatesTab] GitHub fetch error:', err);
+    } finally {
+      setFetchingGithub(false);
+    }
+  };
+
   const loadVersion = async () => {
     setLoading(true);
     try {
@@ -72,6 +136,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
 
   useEffect(() => {
     loadVersion();
+    fetchGithubDetails();
   }, []);
 
   const handlePublish = async (e: React.FormEvent) => {
@@ -231,12 +296,75 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
 
       {/* Broadcast Form */}
       <form onSubmit={handlePublish} className="p-6 rounded-3xl bg-white dark:bg-card border border-border shadow-sm space-y-6">
-        <div className="flex items-center gap-2 border-b border-border/60 pb-3">
-          <Sparkles className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
-          <h4 className="font-bold text-deep-forest dark:text-white">
-            {isBM ? 'Bina & Siarkan Kemaskini Baru' : 'Publish New Live Release'}
-          </h4>
+        <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
+            <h4 className="font-bold text-deep-forest dark:text-white">
+              {isBM ? 'Bina & Siarkan Kemaskini Baru' : 'Publish New Live Release'}
+            </h4>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={fetchGithubDetails}
+            disabled={fetchingGithub}
+            className="p-1 h-8 w-8 hover:bg-stone/10 rounded-lg"
+            title={isBM ? 'Semak semula GitHub' : 'Check GitHub release'}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-stone ${fetchingGithub ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
+
+        {/* GitHub Auto-Sync Alert / Suggestion Box */}
+        {(githubVersion || fetchingGithub) && (
+          <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
+                <GitBranch className={`w-4 h-4 ${fetchingGithub ? 'animate-spin' : ''}`} />
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-bold text-indigo-900 dark:text-indigo-200 block">
+                  {isBM ? 'Integrasi Pelepasan GitHub' : 'GitHub Release Auto-Fill'}
+                </span>
+                {fetchingGithub ? (
+                  <span className="text-stone block">{isBM ? 'Menyemak pelepasan GitHub terkini...' : 'Checking latest GitHub release...'}</span>
+                ) : (
+                  <span className="text-stone block">
+                    {isBM 
+                      ? `Versi dikesan di GitHub: v${githubVersion}` 
+                      : `Version detected on GitHub: v${githubVersion}`}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {!fetchingGithub && githubVersion && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  await triggerLightImpact();
+                  setVersion(githubVersion);
+                  setBuildNumber(githubBuildNumber);
+                  setApkUrl(githubApkUrl);
+                  if (githubReleaseNotes.length > 0) {
+                    setReleaseNotesRaw(githubReleaseNotes.map((n, i) => `${i + 1}. ${n}`).join('\n'));
+                  }
+                  toast({
+                    title: isBM ? 'Butiran Diisi!' : 'Form Pre-filled!',
+                    description: isBM 
+                      ? `Versi ${githubVersion} & pautan APK diletakkan secara automatik.` 
+                      : `Version ${githubVersion} & APK URL populated automatically.`,
+                    variant: 'success',
+                  });
+                }}
+                className="rounded-xl min-h-[38px] border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10 font-bold text-[11px] w-full sm:w-auto"
+              >
+                {isBM ? 'Gunakan Butiran GitHub' : 'Use GitHub Details'}
+              </Button>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
