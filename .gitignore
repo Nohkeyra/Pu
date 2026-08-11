@@ -18,7 +18,7 @@ lerna-debug.log*
 *.session
 
 # Build output & temporary files
-# dist/
+dist/
 build/
 core
 core.*
