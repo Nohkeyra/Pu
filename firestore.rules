@@ -123,6 +123,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isSelf(userId);
     }
+    
+    match /calendar_notes/{noteId} {
+      allow read: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update: if request.auth != null && (isAdmin() || (resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid));
+      allow delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
 
     match /app_config/{docId} {
       allow read:  if true;

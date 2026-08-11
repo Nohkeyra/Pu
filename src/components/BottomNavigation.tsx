@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Home, Utensils, Settings, User, Shield } from 'lucide-react';
+import { Home, Utensils, Settings, User, Shield, Calendar } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
@@ -12,6 +12,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
   if (pathname === '/' || pathname === '/home' || pathname === '/main') return 'home';
   if (pathname.startsWith('/order')) return 'order';
+  if (pathname.startsWith('/calendar')) return 'calendar';
   if (pathname.startsWith('/admin') && adminFlag) return 'admin';
   if (pathname.startsWith('/profile')) return adminFlag ? 'admin' : 'profile';
   if (pathname.startsWith('/settings')) return 'settings';
@@ -46,6 +47,7 @@ export default function BottomNavigation() {
   const tabs = [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
+    { id: 'calendar', icon: Calendar, label: t('nav_calendar'), path: '/calendar' },
     {
       id: isAdmin ? 'admin' : 'profile',
       icon: isAdmin ? Shield : User,
@@ -55,7 +57,7 @@ export default function BottomNavigation() {
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
   ];
 
-  const showNav = ['/', '/home', '/main', '/order', '/profile', '/settings', ...(isAdmin ? ['/admin'] : [])].some(
+  const showNav = ['/', '/home', '/main', '/order', '/calendar', '/profile', '/settings', ...(isAdmin ? ['/admin'] : [])].some(
     (p) => p === '/' ? location.pathname === '/' : location.pathname.startsWith(p)
   );
 

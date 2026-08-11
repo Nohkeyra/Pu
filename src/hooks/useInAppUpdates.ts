@@ -68,15 +68,6 @@ export function useInAppUpdates() {
     }
   }, []);
 
-  // 1. Setup real-time listener
-  useEffect(() => {
-    const unsubscribe = subscribeToAppUpdates((config) => {
-      evaluateVersion(config, true);
-    });
-
-    return () => unsubscribe();
-  }, [evaluateVersion]);
-
   // 2. Manual check trigger
   const checkNow = useCallback(async (): Promise<{ hasUpdate: boolean; config: AppVersionConfig }> => {
     setChecking(true);
@@ -94,6 +85,35 @@ export function useInAppUpdates() {
       setChecking(false);
     }
   }, [evaluateVersion]);
+
+  // 1. Setup real-time listener & manual event trigger
+  useEffect(() => {
+    const unsubscribe = subscribeToAppUpdates((config) => {
+      evaluateVersion(config, true);
+    });
+
+    const handleManualTrigger = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const callback = customEvent.detail?.onResult;
+      try {
+        const result = await checkNow();
+        if (callback) {
+          callback(result);
+        }
+      } catch (err) {
+        if (callback) {
+          callback({ hasUpdate: false, error: err });
+        }
+      }
+    };
+
+    window.addEventListener('app:check-updates-manually', handleManualTrigger);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('app:check-updates-manually', handleManualTrigger);
+    };
+  }, [evaluateVersion, checkNow]);
 
   const dismissUpdate = useCallback(() => {
     if (latestConfig && !isForceUpdate) {

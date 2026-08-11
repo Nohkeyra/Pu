@@ -59,6 +59,7 @@ const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'));
 const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage'));
 const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'));
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
+const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'));
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change & log Analytics screen view
@@ -299,6 +300,14 @@ function AppContent() {
                   element={
                     <SessionGuard>
                       <SettingsPage />
+                    </SessionGuard>
+                  } 
+                />
+                <Route 
+                  path="/calendar" 
+                  element={
+                    <SessionGuard>
+                      <CalendarPage />
                     </SessionGuard>
                   } 
                 />

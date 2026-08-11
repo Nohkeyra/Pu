@@ -802,7 +802,7 @@ export function AdminTablesTab({
 
                       {/* Pax */}
                       {visibleColumns.has('quantity') && (
-                        <td className={`${densityCellPadding} font-bold text-right text-deep-forest dark:text-white whitespace-nowrap`}>
+                        <td className={`${densityCellPadding} text-right font-bold text-deep-forest dark:text-white whitespace-nowrap`}>
                           {order.quantity || 0}
                         </td>
                       )}

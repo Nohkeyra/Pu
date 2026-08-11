@@ -18,9 +18,13 @@ import {
   Check,
   Settings,
   Type,
+  RefreshCw,
 } from 'lucide-react';
-import { triggerLightImpact } from '@/lib/haptics';
+import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/components/ui/Toast';
+import { useState } from 'react';
+import { CURRENT_APP_VERSION } from '@/services/updateService';
 
 function BrandMark() {
   return (
@@ -50,6 +54,50 @@ export default function SettingsPage() {
     setFontSize,
   } = useSettings();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  // Handle manual update check
+  const handleCheckForUpdates = async () => {
+    await triggerMediumImpact();
+    setCheckingUpdates(true);
+
+    const onResult = ({ hasUpdate, error, config }: any) => {
+      setCheckingUpdates(false);
+      if (error) {
+        toast({
+          title: language === 'bm' ? 'Ralat Semakan' : 'Check Failed',
+          description: language === 'bm' 
+            ? 'Gagal menyemak kemaskini terkini. Cuba lagi kemudian.' 
+            : 'Could not check for updates. Try again later.',
+          variant: 'error',
+        });
+        return;
+      }
+
+      if (hasUpdate && config) {
+        toast({
+          title: language === 'bm' ? 'Kemaskini Tersedia!' : 'Update Available!',
+          description: language === 'bm' 
+            ? `Versi baru v${config.latestVersion} sedia untuk dimuat turun.` 
+            : `New version v${config.latestVersion} is available to download.`,
+          variant: 'success',
+        });
+      } else {
+        toast({
+          title: language === 'bm' ? 'Aplikasi Terkini' : 'Up to Date',
+          description: language === 'bm' 
+            ? `Anda sedang menggunakan versi terbaru Wawasan Hub (v${CURRENT_APP_VERSION}).` 
+            : `You are running the latest version of Wawasan Hub (v${CURRENT_APP_VERSION}).`,
+          variant: 'success',
+        });
+      }
+    };
+
+    window.dispatchEvent(new CustomEvent('app:check-updates-manually', {
+      detail: { onResult }
+    }));
+  };
 
   // Handle action triggers with haptics
   const handleToggleTheme = async () => {
@@ -313,15 +361,30 @@ export default function SettingsPage() {
 
           {/* 4. System Information */}
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">
-            <div className="text-xs text-stone dark:text-stone/60 space-y-1 font-mono">
+            <div className="text-xs text-stone dark:text-stone/60 space-y-1.5 font-mono">
               <p className="font-semibold text-deep-forest dark:text-white font-sans text-sm mb-1">
                 Wawasan Hub
               </p>
-              <p>Version: 1.2.4 (Production Stable)</p>
+              <p>Version: v{CURRENT_APP_VERSION} (Production Stable)</p>
               <p>Platform: {Capacitor.getPlatform().toUpperCase()} Runtime</p>
               <p>Backend: Render Remote Host</p>
               <p>Database: restoran-wawasan (Google Firebase)</p>
-              <p className="mt-2 text-[12px] leading-4 text-stone/70 dark:text-stone/60">
+              
+              <div className="pt-3 max-w-[200px] mx-auto">
+                <Button
+                  type="button"
+                  onClick={handleCheckForUpdates}
+                  disabled={checkingUpdates}
+                  className="w-full rounded-xl min-h-[38px] text-xs font-semibold btn-cta flex items-center justify-center gap-1.5 shadow-sm text-white"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdates ? 'animate-spin' : ''}`} />
+                  {checkingUpdates 
+                    ? (language === 'bm' ? 'Menyemak...' : 'Checking...') 
+                    : (language === 'bm' ? 'Semak Kemaskini' : 'Check for Updates')}
+                </Button>
+              </div>
+
+              <p className="pt-2 text-[11px] leading-4 text-stone/70 dark:text-stone/60 font-sans">
                 &copy; {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.
               </p>
             </div>

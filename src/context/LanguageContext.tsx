@@ -338,6 +338,7 @@ const translations: Translation = {
   nav_order: { en: 'Order', bm: 'Tempah' },
   nav_bookings: { en: 'Bookings', bm: 'Rekod' },
   nav_admin: { en: 'Admin', bm: 'Admin' },
+  nav_calendar: { en: 'Calendar', bm: 'Kalendar' },
   nav_contact: { en: 'Contact', bm: 'Hubungi' },
   nav_profile: { en: 'Profile', bm: 'Profil' },
   nav_settings: { en: 'Settings', bm: 'Tetapan' },

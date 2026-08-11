@@ -390,4 +390,73 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   }
 });
 
+// F-CALENDAR (audit 2026-08-11): Public calendar-sessions aggregation endpoint.
+// Since public guests and corporate customers are restricted from performing collection-wide reads
+// on '/orders' for security/privacy rules, this server-side endpoint compiles and aggregates
+// daily workload sessions anonymously and securely.
+router.get('/calendar-sessions', async (_req, res) => {
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection('orders').get();
+    
+    const dailySessions: Record<string, {
+      breakfast: { count: number; pax: number };
+      lunch: { count: number; pax: number };
+      hi_tea: { count: number; pax: number };
+    }> = {};
+
+    const parseOrderDateStr = (order: any): string | null => {
+      try {
+        let dateVal = order.eventDate || order.date || order.dateTime || order.createdAt;
+        if (!dateVal) return null;
+        if (typeof dateVal === 'object' && dateVal !== null && 'seconds' in dateVal) {
+          dateVal = new Date((dateVal as any).seconds * 1000);
+        }
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return null;
+        return d.toISOString().split('T')[0];
+      } catch {
+        return null;
+      }
+    };
+
+    snapshot.docs.forEach(doc => {
+      const order = doc.data();
+      if (order.status === 'cancelled' || order.status === 'rejected') return;
+
+      const dateStr = parseOrderDateStr(order);
+      if (!dateStr) return;
+
+      if (!dailySessions[dateStr]) {
+        dailySessions[dateStr] = {
+          breakfast: { count: 0, pax: 0 },
+          lunch: { count: 0, pax: 0 },
+          hi_tea: { count: 0, pax: 0 }
+        };
+      }
+
+      const pax = Number(order.guests || order.quantity || 0);
+      const meals = Array.isArray(order.meals) ? order.meals : [];
+
+      if (meals.includes('breakfast')) {
+        dailySessions[dateStr].breakfast.count += 1;
+        dailySessions[dateStr].breakfast.pax += pax;
+      }
+      if (meals.includes('lunch')) {
+        dailySessions[dateStr].lunch.count += 1;
+        dailySessions[dateStr].lunch.pax += pax;
+      }
+      if (meals.includes('hi_tea') || meals.includes('hi-tea') || meals.includes('tea_break')) {
+        dailySessions[dateStr].hi_tea.count += 1;
+        dailySessions[dateStr].hi_tea.pax += pax;
+      }
+    });
+
+    return res.json({ success: true, sessions: dailySessions });
+  } catch (err) {
+    console.error('[Calendar Sessions API Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
 export default router;

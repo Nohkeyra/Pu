@@ -1,13 +1,12 @@
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
-  AlertTriangle, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, X, Star,
+  AlertTriangle, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, X, Star, Edit2, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
@@ -98,6 +97,103 @@ export function AdminOrdersTab({
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
+
+  // Inline editing states for Pax and Pricing
+  const [editingCell, setEditingCell] = useState<{ orderId: string; field: 'quantity' | 'pricePerPax'; mealKey?: string } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [savingCell, setSavingCell] = useState<boolean>(false);
+  const [activeMenu, setActiveMenu] = useState<{ orderId: string; x: number; y: number } | null>(null);
+
+  const isBm = language === 'bm';
+
+  const handleInlineSave = async (order: Order) => {
+    if (!editingCell) return;
+    setSavingCell(true);
+    try {
+      const updates: any = {};
+      
+      if (editingCell.field === 'quantity') {
+        const newQty = parseInt(editValue, 10);
+        if (isNaN(newQty) || newQty < 1) {
+          toast({
+            title: isBm ? 'Ralat' : 'Error',
+            description: isBm ? 'Kuantiti pax tidak sah.' : 'Invalid quantity/pax count.',
+            variant: 'error',
+          });
+          return;
+        }
+        updates.quantity = newQty;
+        
+        // Recalculate total amount if prices are set
+        if (order.prices) {
+          let total = 0;
+          Object.values(order.prices).forEach((price) => {
+            total += (price as number) * newQty;
+          });
+          updates.totalAmount = Math.round(total * 100) / 100;
+        } else {
+          // If no custom prices exist yet, use fallback calculation
+          updates.totalAmount = newQty * 15;
+        }
+      } else if (editingCell.field === 'pricePerPax' && editingCell.mealKey) {
+        const newPrice = parseFloat(editValue);
+        if (isNaN(newPrice) || newPrice < 0) {
+          toast({
+            title: isBm ? 'Ralat' : 'Error',
+            description: isBm ? 'Harga tidak sah.' : 'Invalid price per pax.',
+            variant: 'error',
+          });
+          return;
+        }
+        
+        const updatedPrices = { ...(order.prices || {}) };
+        updatedPrices[editingCell.mealKey] = Math.round(newPrice * 100) / 100;
+        updates.prices = updatedPrices;
+
+        // Recalculate total amount using updated prices and current quantity
+        let total = 0;
+        Object.values(updatedPrices).forEach((price) => {
+          total += (price as number) * (order.quantity || 1);
+        });
+        updates.totalAmount = Math.round(total * 100) / 100;
+      }
+
+      // Hit standard admin order POST endpoint
+      const res = await fetch(getApiUrl('/api/admin/orders'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          action: 'update',
+          orderId: order.id,
+          data: updates,
+        }),
+      });
+
+      if (res.ok) {
+        toast({
+          title: isBm ? 'Berjaya' : 'Success',
+          description: isBm ? 'Perubahan disimpan!' : 'Changes saved successfully!',
+          variant: 'success',
+        });
+        setEditingCell(null);
+        fetchOrders();
+      } else {
+        throw new Error('Failed to update field');
+      }
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: isBm ? 'Ralat' : 'Error',
+        description: isBm ? 'Gagal menyimpan perubahan.' : 'Failed to save changes.',
+        variant: 'error',
+      });
+    } finally {
+      setSavingCell(false);
+    }
+  };
 
   return (
     <>
@@ -311,9 +407,9 @@ export function AdminOrdersTab({
           </div>
         ) : (
           <List
-            style={{ height: 600, width: '100%' }}
+            style={{ height: 650, width: '100%' }}
             rowCount={filteredOrders.length}
-            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 215 : 145}
+            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 260 : 175}
             rowProps={{}}
             rowComponent={(({ index, style }: any) => {
               const order = filteredOrders[index];
@@ -446,43 +542,176 @@ export function AdminOrdersTab({
                         </div>
 
                         {/* Beautiful Jotform Fields Layout */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
-                              {language === 'bm' ? 'Klien:' : 'Client:'}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3.5 text-xs bg-cream/10 dark:bg-white/5 p-3 rounded-xl border border-stone/10 dark:border-white/5 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Client column */}
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                              {language === 'bm' ? 'Klien' : 'Client'}
                             </span>
                             <span className="font-semibold text-deep-forest dark:text-white truncate" title={clientName}>
                               {clientName}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-stone-400 dark:text-stone-500 font-medium">
-                              {language === 'bm' ? 'Kuantiti:' : 'Quantity:'}
+                          {/* Pax / Quantity column */}
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                              {language === 'bm' ? 'Pax / Kuantiti' : 'Pax / Quantity'}
                             </span>
-                            <span className="font-bold text-deep-forest dark:text-white bg-stone/10 dark:bg-white/10 px-1.5 py-0.5 rounded microcopy-12">
-                              {order.quantity} pax
-                            </span>
+                            {editingCell?.orderId === order.id && editingCell?.field === 'quantity' ? (
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="number"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  className="w-16 h-7 px-1.5 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                                  disabled={savingCell}
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleInlineSave(order);
+                                    else if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleInlineSave(order)}
+                                  disabled={savingCell}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCell(null)}
+                                  disabled={savingCell}
+                                  className="p-1 text-stone hover:bg-stone/10 rounded-md transition-colors"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="group flex items-center gap-1.5 cursor-pointer select-none font-bold text-deep-forest dark:text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingCell({ orderId: order.id, field: 'quantity' });
+                                  setEditValue(String(order.quantity || 0));
+                                }}
+                                title={language === 'bm' ? 'Klik untuk edit Pax' : 'Click to edit Pax'}
+                              >
+                                <span>{order.quantity || 0} pax</span>
+                                <Edit2 className="w-3 h-3 text-stone/50 group-hover:text-[var(--color-sunshine-cta)] opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                              </div>
+                            )}
                           </div>
 
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-stone-400 dark:text-stone-500 shrink-0 font-medium">
-                              {language === 'bm' ? 'Acara:' : 'Event:'}
+                          {/* Price per Pax column */}
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                              {language === 'bm' ? 'Harga per Pax' : 'Price per Pax'}
                             </span>
-                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={order.location}>
-                              {order.location || '-'}
+                            {order.prices ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                {Object.entries(order.prices).map(([meal, price]) => {
+                                  const isCurrentEditing = editingCell?.orderId === order.id && 
+                                                           editingCell?.field === 'pricePerPax' && 
+                                                           editingCell?.mealKey === meal;
+                                  return isCurrentEditing ? (
+                                    <div className="flex items-center gap-1" key={meal} onClick={(e) => e.stopPropagation()}>
+                                      <span className="text-[9px] text-stone dark:text-stone/75 font-sans capitalize">{meal}:</span>
+                                      <span className="text-[9px] text-stone font-mono">RM</span>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(e.target.value)}
+                                        className="w-14 h-6 px-1 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-right text-[11px] font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                                        disabled={savingCell}
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleInlineSave(order);
+                                          else if (e.key === 'Escape') setEditingCell(null);
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleInlineSave(order)}
+                                        disabled={savingCell}
+                                        className="p-0.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors"
+                                      >
+                                        <Check className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingCell(null)}
+                                        disabled={savingCell}
+                                        className="p-0.5 text-stone hover:bg-stone/10 rounded-md transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div 
+                                      key={meal}
+                                      className="group flex items-center gap-1 cursor-pointer select-none leading-none"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingCell({ orderId: order.id, field: 'pricePerPax', mealKey: meal });
+                                        setEditValue(String(price));
+                                      }}
+                                      title={language === 'bm' ? 'Klik untuk edit Harga/Pax' : 'Click to edit Price/Pax'}
+                                    >
+                                      <span className="text-[10px] text-stone dark:text-stone/75 font-sans capitalize">{meal}:</span>
+                                      <span className="font-mono text-xs font-semibold text-deep-forest dark:text-stone-100">RM {price.toFixed(2)}</span>
+                                      <Edit2 className="w-2.5 h-2.5 text-stone/40 group-hover:text-[var(--color-sunshine-cta)] opacity-0 group-hover:opacity-100 transition-all duration-150" />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div 
+                                className="group flex items-center gap-1 cursor-pointer text-stone/50 hover:text-[var(--color-sunshine-cta)] select-none text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const firstMeal = (order.meals && order.meals[0]) || 'catering';
+                                  setEditingCell({ orderId: order.id, field: 'pricePerPax', mealKey: firstMeal });
+                                  setEditValue('15.00');
+                                }}
+                                title={language === 'bm' ? 'Klik untuk menetapkan harga' : 'Click to set pricing'}
+                              >
+                                <span className="text-xs font-normal italic group-hover:not-italic group-hover:font-semibold">
+                                  {language === 'bm' ? '+ Set Harga' : '+ Set Price'}
+                                </span>
+                                <Edit2 className="w-3 h-3 text-stone/40 opacity-0 group-hover:opacity-100 transition-all duration-150" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Total Amount column */}
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                              {language === 'bm' ? 'Jumlah Keseluruhan' : 'Total Amount'}
                             </span>
+                            {order.totalAmount ? (
+                              <span className="font-bold font-mono text-sm text-emerald-600 dark:text-emerald-400">
+                                RM {order.totalAmount.toFixed(2)}
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 italic">Pending</span>
+                            )}
                           </div>
                         </div>
 
                         {/* Additional Details (Meals) in small footer text */}
-                        {order.meals && order.meals.length > 0 && (
-                          <div className="microcopy-12 text-stone-500 dark:text-stone-400 truncate pt-0.5">
-                            <span className="opacity-70">{language === 'bm' ? 'Menu Hidangan: ' : 'Meals: '}</span>
-                            {order.meals.map(m => t(m) || m).join(', ')}
+                        <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 pt-2 border-t border-stone/5 dark:border-white/5 mt-2">
+                          <div className="truncate flex-1">
+                            <span className="opacity-70 font-medium">{language === 'bm' ? 'Acara & Menu: ' : 'Event & Menu: '}</span>
+                            <span className="font-semibold text-deep-forest dark:text-stone-200">{order.location || '-'}</span>
+                            <span className="opacity-50"> • </span>
+                            {(order.meals || []).map(m => t(m) || m).join(', ')}
                             {order.preparationType && ` (${order.preparationType === 'buffet' ? (language === 'bm' ? 'Bufet' : 'Buffet') : (language === 'bm' ? 'Kotak' : 'Meal Box')})`}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
 
@@ -492,116 +721,113 @@ export function AdminOrdersTab({
                         {getStatusBadge(order.status)}
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('view_edit_details')}
-                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openOrderDetail(order);
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span className="microcopy-12 leading-none">{t('action_view_short')}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t('view_edit_details')}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <div className="flex items-center gap-2">
+                        {/* Primary View Action */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 border-stone/20 text-deep-forest dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold px-3 rounded-lg flex items-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openOrderDetail(order);
+                          }}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{language === 'bm' ? 'Lihat' : 'View'}</span>
+                        </Button>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('preview_pdf')}
-                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
-                              }}
-                            >
-                              <FileText className="w-4 h-4" />
-                              <span className="microcopy-12 leading-none">{t('action_preview_short')}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t('preview_pdf')}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {/* More Actions Dropdown Trigger */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg flex items-center justify-center shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setActiveMenu({
+                              orderId: order.id!,
+                              x: rect.left + window.scrollX,
+                              y: rect.bottom + window.scrollY
+                            });
+                          }}
+                          title={language === 'bm' ? 'Tindakan Lain' : 'More Actions'}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('download_pdf')}
-                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-green-400 hover:bg-green-500/10 rounded-lg"
+                        {/* Portaled Floating Actions Dropdown */}
+                        {activeMenu && activeMenu.orderId === order.id && createPortal(
+                          <>
+                            {/* Backdrop overlay */}
+                            <div 
+                              className="fixed inset-0 z-[999] cursor-default" 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
+                                setActiveMenu(null);
+                              }} 
+                            />
+                            <div 
+                              className="fixed z-[1000] bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-xl py-1 w-44 font-sans text-xs text-stone-700 dark:text-stone-300 animate-in fade-in slide-in-from-top-1 duration-150"
+                              style={{ 
+                                top: `${activeMenu.y + 4}px`, 
+                                left: `${Math.max(16, activeMenu.x - 144)}px`
                               }}
-                              disabled={generatingInvoice === order.id}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {generatingInvoice === order.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <FileDown className="w-4 h-4" />
-                              )}
-                              <span className="microcopy-12 leading-none">{t('action_download_short')}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t('download_pdf')}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                              <button
+                                onClick={() => {
+                                  setActiveMenu(null);
+                                  handlePreviewPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-2"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-blue-500" />
+                                <span>{t('preview_pdf') || 'Preview PDF'}</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => {
+                                  setActiveMenu(null);
+                                  handleDownloadPDF(order, ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || ''));
+                                }}
+                                disabled={generatingInvoice === order.id}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-2 disabled:opacity-50"
+                              >
+                                {generatingInvoice === order.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <FileDown className="w-3.5 h-3.5 text-green-500" />
+                                )}
+                                <span>{t('download_pdf') || 'Download PDF'}</span>
+                              </button>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('send_pdf')}
-                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openSendDialog(order);
-                              }}
-                            >
-                              <Send className="w-4 h-4" />
-                              <span className="microcopy-12 leading-none">{t('action_send_short')}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t('send_pdf')}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                              <button
+                                onClick={() => {
+                                  setActiveMenu(null);
+                                  openSendDialog(order);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-2"
+                              >
+                                <Send className="w-3.5 h-3.5 text-amber-500" />
+                                <span>{t('send_pdf') || 'Send PDF'}</span>
+                              </button>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('delete_order')}
-                              className="h-auto w-auto min-w-[44px] flex-col gap-0.5 px-1.5 py-1 text-deep-forest/60 dark:text-stone/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (order.id) handleDelete(order.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span className="microcopy-12 leading-none">{t('action_delete_short')}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t('delete_order')}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                              <div className="border-t border-stone-100 dark:border-stone-800 my-1" />
+
+                              <button
+                                onClick={() => {
+                                  setActiveMenu(null);
+                                  if (order.id) handleDelete(order.id);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-400 transition-colors flex items-center gap-2 font-semibold"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>{t('delete_order') || 'Delete Order'}</span>
+                              </button>
+                            </div>
+                          </>,
+                          document.body
+                        )}
                       </div>
                     </div>
                   </div>

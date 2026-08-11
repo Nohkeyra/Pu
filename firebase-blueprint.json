@@ -104,6 +104,19 @@
         }
       },
       "required": ["name", "email", "contact"]
+    },
+    "CalendarNote": {
+      "title": "CalendarNote",
+      "description": "Custom scheduling calendar notes written by admin or customers",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "description": "Date of note (YYYY-MM-DD)" },
+        "userId": { "type": "string", "description": "User ID who wrote the note, or 'admin'" },
+        "userName": { "type": "string", "description": "Author display name" },
+        "note": { "type": "string", "description": "The text content of the note" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of modification" }
+      },
+      "required": ["date", "userId", "note"]
     }
   },
   "firestore": {
@@ -122,6 +135,10 @@
     "audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "Collection storing system audit trail"
+    },
+    "calendar_notes/{noteId}": {
+      "schema": "CalendarNote",
+      "description": "Collection storing custom schedule notes per date"
     }
   }
 }

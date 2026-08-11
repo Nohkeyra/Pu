@@ -68,14 +68,14 @@ export function ProfileOrdersTab({
   };
 
   return (
-    <div className="bg-card dark:bg-card/40 border border-stone/15 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone/15 dark:border-white/10">
+    <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans">
         <div>
-          <h3 className="text-base sm:text-lg font-bold font-display text-deep-forest dark:text-white flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
             <History className="w-5 h-5 text-crisp-carrot" />
             <span>{t('Catering Order History', 'Sejarah Tempahan Katering')}</span>
           </h3>
-          <p className="microcopy-12 text-stone/80 dark:text-stone-400 font-normal">
+          <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('View past catering orders, request invoice PDFs, or reorder favorite menus.', 'Semak tempahan lalu, muat turun invois, atau hantar semula tempahan.')}
           </p>
         </div>
@@ -87,7 +87,7 @@ export function ProfileOrdersTab({
                 onClick={() => setIsSelectMode(true)}
                 variant="outline"
                 size="sm"
-                className="rounded-xl border-stone/20 text-deep-forest dark:text-white hover:bg-stone/10 font-bold text-xs gap-1.5"
+                className="rounded-lg border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
               >
                 <FileDown className="w-3.5 h-3.5" />
                 <span>{t('Combine Invoices', 'Gabung Invois')}</span>
@@ -98,7 +98,7 @@ export function ProfileOrdersTab({
                   onClick={handleSelectAllForCombine}
                   variant="ghost"
                   size="sm"
-                  className="rounded-xl text-stone hover:bg-stone/10 font-bold text-xs"
+                  className="rounded-lg text-stone hover:bg-stone-100 font-bold text-xs"
                 >
                   {selectedOrders.size === orders.length ? t('Deselect All', 'Batal Semua') : t('Select All', 'Pilih Semua')}
                 </Button>
@@ -106,7 +106,7 @@ export function ProfileOrdersTab({
                   onClick={() => setIsSelectMode(false)}
                   variant="ghost"
                   size="sm"
-                  className="rounded-xl text-stone hover:bg-stone/10 font-bold text-xs"
+                  className="rounded-lg text-stone hover:bg-stone-100 font-bold text-xs"
                 >
                   {t('Done', 'Selesai')}
                 </Button>
@@ -114,7 +114,7 @@ export function ProfileOrdersTab({
                   <Button
                     onClick={() => setShowCombineModal(true)}
                     size="sm"
-                    className="rounded-xl bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs"
+                    className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs"
                   >
                     {t(`Export ${selectedOrders.size} Invoices`, `Eksport ${selectedOrders.size} Invois`)}
                   </Button>
@@ -130,12 +130,12 @@ export function ProfileOrdersTab({
           <Loader2 className="w-8 h-8 text-crisp-carrot animate-spin" />
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-12 bg-muted/20 rounded-2xl border border-dashed border-stone/20">
-          <Utensils className="w-10 h-10 text-stone/40 mx-auto mb-3" />
+        <div className="text-center py-12 bg-stone-50/50 dark:bg-stone-900/10 rounded-xl border border-dashed border-stone-200 dark:border-stone-800">
+          <Utensils className="w-10 h-10 text-stone-450 mx-auto mb-3" />
           <p className="text-base font-bold text-deep-forest dark:text-white">
             {t('No Past Orders Found', 'Tiada Rekod Tempahan')}
           </p>
-          <p className="microcopy-12 text-stone/80 mt-1 max-w-sm mx-auto">
+          <p className="microcopy-12 text-stone-500 mt-1 max-w-sm mx-auto">
             {t('Your submitted catering bookings will automatically appear here once ordered.', 'Tempahan katering yang dihantar akan dipaparkan di sini secara automatik.')}
           </p>
         </div>
@@ -146,10 +146,10 @@ export function ProfileOrdersTab({
             return (
               <div
                 key={order.id || `order-${idx}`}
-                className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                className={`p-4 sm:p-5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                   isSelected
-                    ? 'bg-crisp-carrot/5 border-crisp-carrot/40 shadow-sm'
-                    : 'bg-muted/30 border-stone/15 dark:border-white/10 hover:border-stone/30'
+                    ? 'bg-stone-50/50 dark:bg-stone-900/30 border-stone-300 shadow-sm'
+                    : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300'
                 }`}
               >
                 <div className="space-y-2 flex-1">
@@ -158,18 +158,18 @@ export function ProfileOrdersTab({
                       <button
                         type="button"
                         onClick={() => handleToggleOrderSelect(order.id!)}
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-crisp-carrot border-crisp-carrot text-white' : 'border-stone/30 bg-card'
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                          isSelected ? 'bg-crisp-carrot border-crisp-carrot text-white' : 'border-stone-300 bg-white'
                         }`}
                       >
                         {isSelected && <Check className="w-3.5 h-3.5" />}
                       </button>
                     )}
-                    <span className="font-mono text-xs font-bold text-deep-forest dark:text-white bg-card dark:bg-stone-800 px-2.5 py-1 rounded-lg border border-stone/15">
+                    <span className="font-mono text-xs font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900 px-2.5 py-1 rounded border border-stone-200/80 dark:border-white/5">
                       {order.invoiceNo || order.id || 'ORDER'}
                     </span>
                     {getStatusBadge(order.status)}
-                    <span className="microcopy-12 text-stone/80 font-normal ml-auto md:ml-0">
+                    <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto md:ml-0">
                       {order.eventDate
                         ? format(new Date(order.eventDate), 'dd MMM yyyy')
                         : order.createdAt
@@ -182,18 +182,18 @@ export function ProfileOrdersTab({
                     <h4 className="text-sm sm:text-base font-bold text-deep-forest dark:text-white">
                       {order.eventType === 'pejabat' ? t('Office Feast', 'Jamuan Pejabat') : t('Private Event', 'Majlis Katering')} ({order.guests} pax)
                     </h4>
-                    <p className="text-xs text-stone/80 dark:text-stone-300 font-normal line-clamp-1 mt-0.5">
+                    <p className="text-xs text-stone-550 dark:text-stone-300 font-normal line-clamp-1 mt-0.5">
                       {order.dishes && order.dishes.length > 0 ? order.dishes.join(', ') : t('Standard Catering Package', 'Pakej Katering Standard')}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap justify-end pt-2 md:pt-0 border-t md:border-t-0 border-stone/10">
+                <div className="flex items-center gap-2 flex-wrap justify-end pt-2 md:pt-0 border-t md:border-t-0 border-stone-100 dark:border-white/5">
                   <Button
                     onClick={() => onReorder(order)}
                     variant="outline"
                     size="sm"
-                    className="rounded-xl border-stone/20 text-deep-forest dark:text-white hover:bg-stone/10 font-bold text-xs gap-1.5"
+                    className="rounded-lg border-stone-200 text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-crisp-carrot" />
                     <span>{t('Reorder', 'Pesan Semula')}</span>
@@ -203,7 +203,7 @@ export function ProfileOrdersTab({
                     onClick={() => setPreviewOrder(order)}
                     variant="ghost"
                     size="sm"
-                    className="rounded-xl text-deep-forest dark:text-white hover:bg-stone/10 font-bold text-xs gap-1.5"
+                    className="rounded-lg text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
                   >
                     <FileDown className="w-3.5 h-3.5" />
                     <span>{t('View Invoice', 'Lihat Invois')}</span>
@@ -215,7 +215,7 @@ export function ProfileOrdersTab({
                       disabled={pokingOrderId === order.id || order.invoiceEmailRequested}
                       variant="outline"
                       size="sm"
-                      className="rounded-xl border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-xs gap-1.5"
+                      className="rounded-lg border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-xs gap-1.5"
                     >
                       {pokingOrderId === order.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -236,7 +236,7 @@ export function ProfileOrdersTab({
                       disabled={cancellingOrderId === order.id}
                       variant="ghost"
                       size="sm"
-                      className="rounded-xl text-red-500 hover:text-red-600 hover:bg-red-500/10 font-bold text-xs gap-1.5"
+                      className="rounded-lg text-red-500 hover:text-red-600 hover:bg-red-500/10 font-bold text-xs gap-1.5"
                     >
                       {cancellingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
                       <span>{t('Cancel Order', 'Batal Tempahan')}</span>
@@ -249,7 +249,7 @@ export function ProfileOrdersTab({
                       disabled={deletingOrderId === order.id}
                       variant="ghost"
                       size="sm"
-                      className="rounded-xl text-stone hover:text-red-500 hover:bg-stone/10 font-bold text-xs gap-1.5"
+                      className="rounded-lg text-stone hover:text-red-500 hover:bg-stone/10 font-bold text-xs gap-1.5"
                     >
                       {deletingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                       <span>{t('Remove', 'Padam')}</span>

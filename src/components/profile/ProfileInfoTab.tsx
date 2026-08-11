@@ -46,13 +46,13 @@ export function ProfileInfoTab({
   t,
 }: ProfileInfoTabProps) {
   return (
-    <div className="bg-card dark:bg-card/40 border border-stone/15 dark:border-white/10 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
-      <div className="flex items-center justify-between pb-4 border-b border-stone/15 dark:border-white/10">
+    <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="flex items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10">
         <div>
-          <h3 className="text-base sm:text-lg font-bold font-display text-deep-forest dark:text-white">
+          <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
             {t('Personal & Organization Profile', 'Profil Peribadi & Organisasi')}
           </h3>
-          <p className="microcopy-12 text-stone/80 dark:text-stone-400 font-normal">
+          <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('Default contact details used for quick catering invoice generation.', 'Maklumat perhubungan utama untuk penjanaan invois katering.')}
           </p>
         </div>
@@ -61,7 +61,7 @@ export function ProfileInfoTab({
             onClick={() => setIsEditing(true)}
             variant="outline"
             size="sm"
-            className="rounded-xl border-stone/20 text-deep-forest dark:text-white hover:bg-stone/10 font-bold text-xs gap-1.5"
+            className="rounded-lg border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 font-bold text-xs gap-1.5"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>{t('Edit Profile', 'Kemaskini')}</span>
@@ -72,7 +72,7 @@ export function ProfileInfoTab({
               onClick={() => setIsEditing(false)}
               variant="ghost"
               size="sm"
-              className="rounded-xl text-stone hover:bg-stone/10 font-bold text-xs"
+              className="rounded-lg text-stone hover:bg-stone-105 dark:hover:bg-stone-800 font-bold text-xs"
             >
               {t('Cancel', 'Batal')}
             </Button>
@@ -80,7 +80,7 @@ export function ProfileInfoTab({
               onClick={handleSaveProfile}
               disabled={isSaving}
               size="sm"
-              className="rounded-xl bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs gap-1.5"
+              className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs gap-1.5"
             >
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               <span>{t('Save', 'Simpan')}</span>
@@ -89,7 +89,7 @@ export function ProfileInfoTab({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 font-sans">
         {/* Full Name */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
@@ -101,10 +101,10 @@ export function ProfileInfoTab({
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder={t('Enter your full name', 'Masukkan nama penuh')}
-              className="rounded-xl bg-muted/50 border-stone/20 text-sm font-semibold"
+              className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-muted/30 p-3 rounded-xl border border-stone/10">
+            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.name || '—'}
             </p>
           )}
@@ -121,10 +121,10 @@ export function ProfileInfoTab({
               value={editContact}
               onChange={(e) => setEditContact(e.target.value)}
               placeholder="e.g. 012-3456789"
-              className="rounded-xl bg-muted/50 border-stone/20 text-sm font-semibold"
+              className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-muted/30 p-3 rounded-xl border border-stone/10">
+            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.contact || '—'}
             </p>
           )}
@@ -146,7 +146,7 @@ export function ProfileInfoTab({
                   else setEditTo('');
                 }}
               >
-                <SelectTrigger className="rounded-xl bg-muted/50 border-stone/20 text-sm font-semibold">
+                <SelectTrigger className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]">
                   <SelectValue placeholder={t('Select organization', 'Pilih organisasi')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,12 +164,12 @@ export function ProfileInfoTab({
                   value={editTo}
                   onChange={(e) => setEditTo(e.target.value)}
                   placeholder={t('Type company or agency name', 'Taip nama syarikat/agensi')}
-                  className="rounded-xl bg-muted/50 border-stone/20 text-sm font-semibold mt-2"
+                  className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold mt-2 h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 />
               )}
             </div>
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-muted/30 p-3 rounded-xl border border-stone/10">
+            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.to || '—'}
             </p>
           )}
@@ -186,10 +186,10 @@ export function ProfileInfoTab({
               value={editAttn}
               onChange={(e) => setEditAttn(e.target.value)}
               placeholder={t('e.g. Unit Latihan, Tingkat 4', 'Cth: Jabatan Sumber Manusia')}
-              className="rounded-xl bg-muted/50 border-stone/20 text-sm font-semibold"
+              className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-muted/30 p-3 rounded-xl border border-stone/10">
+            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.attn || '—'}
             </p>
           )}

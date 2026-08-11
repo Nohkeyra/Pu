@@ -78,6 +78,21 @@ interface OrderFormProps {
   initialData?: Record<string, unknown> | null;
 }
 
+function generateUUID(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch {
+    // Fallback to standard RFC4122 compliant manual generation
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export default function OrderForm({ initialData }: OrderFormProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
@@ -88,7 +103,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   // (network timeout + retry, offline-queue replay) can't create a second
   // order — the server dedupes on this. Regenerated in handleResetForm()
   // below whenever the user actually starts a fresh order.
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  const idempotencyKeyRef = useRef<string>(generateUUID());
   const [referenceNumber, setReferenceNumber] = useState('');
   const [submittedOrder, setSubmittedOrder] = useState<Order | null>(null);
   const [showPdfPreviewModal, setShowPdfPreviewModal] = useState<boolean>(false);
@@ -803,7 +818,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleResetForm = () => {
-    idempotencyKeyRef.current = crypto.randomUUID();
+    idempotencyKeyRef.current = generateUUID();
     setOrderState({
       eventType: '',
       mealTypes: [],
