@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.RemoteViews;
 
+import com.wawasanpakusop.app.BuildConfig;
 import com.wawasanpakusop.app.MainActivity;
 import com.wawasanpakusop.app.R;
 
@@ -52,6 +53,7 @@ public class WidgetUpdateService {
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(TIMEOUT_MS);
                 conn.setReadTimeout(TIMEOUT_MS);
+                conn.setRequestProperty("X-Widget-Key", BuildConfig.WIDGET_API_KEY);
 
                 if (conn.getResponseCode() == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
