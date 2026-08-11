@@ -43,7 +43,7 @@ const prodConfig = {
   storageBucket:    requireEnv("VITE_FIREBASE_STORAGE_BUCKET", "storageBucket"),
   messagingSenderId: requireEnv("VITE_FIREBASE_MESSAGING_SENDER_ID", "messagingSenderId"),
   appId:            requireEnv("VITE_FIREBASE_APP_ID", "appId"),
-  measurementId:    requireEnv("VITE_FIREBASE_MEASUREMENT_ID"),
+  measurementId:    requireEnv("VITE_FIREBASE_MEASUREMENT_ID", "measurementId"),
   firestoreDatabaseId: undefined as string | undefined,
 };
 
@@ -55,6 +55,7 @@ const sandboxConfig = {
   storageBucket: firebaseAppletConfig.storageBucket || prodConfig.storageBucket,
   messagingSenderId: firebaseAppletConfig.messagingSenderId || prodConfig.messagingSenderId,
   appId: firebaseAppletConfig.appId || prodConfig.appId,
+  measurementId: (firebaseAppletConfig as Record<string, string | undefined>).measurementId || prodConfig.measurementId,
   firestoreDatabaseId: (firebaseAppletConfig as Record<string, string | undefined>).firestoreDatabaseId
 };
 

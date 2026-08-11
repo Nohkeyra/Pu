@@ -94,6 +94,7 @@ dependencies {
 
     // Add the dependencies for Firebase products you want to use
     implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-crashlytics'
 
     // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0,
     // which requires compileSdk 36+ / AGP 8.9.1+. We have upgraded these
@@ -110,6 +111,7 @@ android {
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
 
 tasks.register("printFingerprint") {
     doLast {

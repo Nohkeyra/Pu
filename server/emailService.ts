@@ -264,6 +264,18 @@ export async function sendOrderStatusPush(
     const response = await getMessaging(app).send({
       token,
       notification: { title: copy.pushTitle, body: copy.pushBody },
+      // F-CHAN (audit 2026-08-11): must match the channel id created
+      // client-side in useNativeNotifications.ts (PushNotifications.createChannel).
+      // Without this, Android silently routes the notification to the
+      // manifest default channel (com.google.firebase.messaging.default_notification_channel_id)
+      // instead of the dedicated order_status channel, meaning the customer
+      // has no way to control sound/vibration/importance for order updates
+      // separately from any other notification type the app may add later.
+      android: {
+        notification: {
+          channelId: 'order_status',
+        },
+      },
       data: {
         type: "order_status",
         status: String(newStatus || ""),

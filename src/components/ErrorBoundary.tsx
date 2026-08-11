@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { recordException } from '../services/crashlyticsService';
 
 interface Props {
   children?: ReactNode;
@@ -22,6 +23,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    recordException(error, {
+      type: 'react_component_crash',
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   public render() {

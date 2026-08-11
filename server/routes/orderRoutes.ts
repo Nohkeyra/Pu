@@ -11,8 +11,37 @@ const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
 
+// F-RATE (audit 2026-08-11): POST /api/orders is public (no verifyAdminToken)
+// and writes to Firestore + fires calendar sync on every call. It previously
+// had no rate limiter at all, unlike /send-preliminary-invoice which already
+// used this same express-rate-limit pattern. A spam bot could hit this
+// unthrottled and flood the orders collection / calendar / email pipeline.
+// idempotencyKey (see IDEMPOTENCY_KEY_RE above) already prevents duplicate
+// orders from a legit retry, but does nothing to stop a high-volume spammer
+// sending fresh keys each time — that's what this limiter is for.
+const createOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many order submissions. Please try again later.' },
+});
+
+// F-RATE (audit 2026-08-11): /cancel, /delete, /poke are also public routes
+// (ownership is checked inside the handler via verifyCustomerIdToken, but
+// there's no rate limiter guarding the endpoint itself). Looser than the
+// create-order limiter since a legitimate customer may legitimately poke or
+// retry a cancel a few times, but still bounded.
+const customerOrderActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+});
+
 // Public Order Submission
-router.post('/', async (req, res) => {
+router.post('/', createOrderLimiter, async (req, res) => {
   try {
     const { idempotencyKey, ...orderData } = req.body || {};
     const db = getFirestore();
@@ -175,7 +204,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 });
 
 // Customer Cancel Request
-router.post('/cancel', async (req, res) => {
+router.post('/cancel', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();
@@ -225,7 +254,7 @@ router.post('/cancel', async (req, res) => {
 });
 
 // Customer Order Delete
-router.post('/delete', async (req, res) => {
+router.post('/delete', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();
@@ -251,7 +280,7 @@ router.post('/delete', async (req, res) => {
 });
 
 // Customer Poke Admin
-router.post('/poke', async (req, res) => {
+router.post('/poke', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();

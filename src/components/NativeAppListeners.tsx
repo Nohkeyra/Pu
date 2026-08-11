@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNativeAppState } from '@/hooks/useNativeAppState';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useDeepLinks } from '@/hooks/useDeepLinks';
 import { Motion } from '@capacitor/motion';
+import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
+import { getPendingOrdersCount } from '@/lib/pendingOrdersQueue';
+import { PendingOrdersDialog } from '@/components/PendingOrdersDialog';
 
 /**
  * An invisible component that wraps native listeners 
@@ -15,9 +18,72 @@ function NativeAppListeners() {
   useNetworkStatus();
   useDeepLinks();
 
+  const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
+
   useEffect(() => {
     // Confirm Capgo OTA bundle ready to prevent automatic rollback
     notifyCapgoAppReady();
+  }, []);
+
+  // F-OFFLINE (audit 2026-08-11): a second, dedicated networkStatusChange
+  // listener — deliberately NOT reusing useNetworkStatus's listener, since
+  // that hook calls Network.removeAllListeners() on unmount, which would
+  // tear down this one too if they shared a single addListener call. This
+  // one only cares about "just came back online AND queue has items" — it
+  // does not show its own toast (useNetworkStatus already covers that), it
+  // only opens the confirm-before-send dialog. Auto-flush was explicitly
+  // rejected (Noh, 2026-08-11): a queued order's event date may have passed
+  // while offline, so the customer reviews and confirms per PendingOrdersDialog.
+  useEffect(() => {
+    let isActive = true;
+    let wasOnline: boolean | null = null;
+
+    const setupPendingOrdersListener = async () => {
+      try {
+        const initial = await Network.getStatus();
+        wasOnline = initial.connected;
+      } catch {
+        wasOnline = null;
+      }
+
+      await Network.addListener('networkStatusChange', (status) => {
+        if (!isActive) return;
+        const isNowOnline = status.connected;
+        const justCameOnline = wasOnline === false && isNowOnline === true;
+        wasOnline = isNowOnline;
+
+        if (justCameOnline && getPendingOrdersCount() > 0) {
+          setPendingOrdersDialogOpen(true);
+        }
+      });
+    };
+
+    setupPendingOrdersListener();
+
+    return () => {
+      isActive = false;
+      // Intentionally not calling Network.removeAllListeners() here —
+      // useNetworkStatus's own cleanup already does that globally, and
+      // calling it twice on unmount is harmless but redundant. Guarding
+      // with isActive above is what actually prevents this listener's
+      // callback from running after unmount.
+    };
+  }, []);
+
+  // Also check once on mount, in case the app was killed while offline
+  // with items already queued and is now reopened already connected.
+  useEffect(() => {
+    const checkOnMount = async () => {
+      try {
+        const status = await Network.getStatus();
+        if (status.connected && getPendingOrdersCount() > 0) {
+          setPendingOrdersDialogOpen(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    checkOnMount();
   }, []);
 
   useEffect(() => {
@@ -72,7 +138,9 @@ function NativeAppListeners() {
     };
   }, []);
   
-  return null;
+  return (
+    <PendingOrdersDialog open={pendingOrdersDialogOpen} onOpenChange={setPendingOrdersDialogOpen} />
+  );
 }
 
 export default NativeAppListeners;

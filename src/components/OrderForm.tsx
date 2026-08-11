@@ -29,6 +29,9 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
 import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
+import { addPendingOrder } from '@/lib/pendingOrdersQueue';
+import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
+import { recordException } from '@/services/crashlyticsService';
 import type { SavedLocation, Order } from '@/types';
 
 // FOOD MENU CONSTANTS FROM KIMI HTML
@@ -478,10 +481,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         return;
       }
       setCurrentStep(2);
+      logOrderStep(2, 'dish_selection');
     }
 
     if (step === 2) {
       setCurrentStep(3);
+      logOrderStep(3, 'contact_details');
     }
 
     if (step === 3) {
@@ -550,12 +555,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       }
 
       setCurrentStep(4);
+      logOrderStep(4, 'review_submit');
     }
   };
 
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
     setIsSubmitting(true);
+    // F-OFFLINE (audit 2026-08-11): orderData itself is built inside the try
+    // block below and is out of scope in catch. This holds a reference to
+    // the same object once it's built, purely so a network-failure catch
+    // can queue it — it does not change orderData's own declaration/scope.
+    let orderDataForQueue: Record<string, unknown> | null = null;
 
     try {
       const mappedMeals = orderState.mealTypes.map(m => {
@@ -629,6 +640,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         delivery: orderState.delivery,
         idempotencyKey: idempotencyKeyRef.current
       };
+      orderDataForQueue = orderData;
 
       // Submit to Backend Server API
       const controller = new AbortController();
@@ -643,10 +655,20 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           signal: controller.signal
         });
       } catch (err: any) {
-        if (err.name === 'AbortError') {
-          throw new Error(tText('Connection timed out. Please try again.', 'Sambungan tamat masa (network slow). Sila cuba lagi.'));
-        }
-        throw err;
+        // F-OFFLINE (audit 2026-08-11): both branches here mean the request
+        // never reached the server at all (abort/timeout or a raw network
+        // failure like DNS/offline) — as opposed to the `!response.ok`
+        // branch below, where the server *did* receive and reject the
+        // request. Tagging with a distinct error name lets the outer catch
+        // decide whether this order is safe to queue for retry, without
+        // guessing from the error message text.
+        const networkErr = new Error(
+          err?.name === 'AbortError'
+            ? tText('Connection timed out. Please try again.', 'Sambungan tamat masa (network slow). Sila cuba lagi.')
+            : (err instanceof Error ? err.message : String(err))
+        );
+        networkErr.name = 'OrderNetworkError';
+        throw networkErr;
       } finally {
         clearTimeout(timeoutId);
       }
@@ -737,15 +759,44 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         description: tText('Your catering inquiry has been processed.', 'Permohonan tempahan katering anda telah berjaya dihantar.'),
         variant: 'success'
       });
+      logOrderSubmitted(
+        bookingReference,
+        orderData.totalAmount,
+        orderState.dishes.length + orderState.veggies.length,
+        orderState.eventType
+      );
       setCurrentStep(5);
     } catch (err) {
       console.error('Catering submission error:', err);
-      triggerNotification(NotificationType.Error);
-      toast({
-        title: t('error'),
-        description: err instanceof Error ? err.message : String(err),
-        variant: 'error'
+      recordException(err instanceof Error ? err : new Error(String(err)), {
+        type: 'order_submission_error',
+        eventType: orderState.eventType,
       });
+      triggerNotification(NotificationType.Error);
+
+      // F-OFFLINE (audit 2026-08-11): only queue when the request never
+      // reached the server (see OrderNetworkError tagging above). A
+      // server-rejected request (validation, 500, etc.) would just fail the
+      // same way again on retry, so those are NOT queued — only genuine
+      // "couldn't send it at all" failures are.
+      if (err instanceof Error && err.name === 'OrderNetworkError' && orderDataForQueue) {
+        addPendingOrder(orderDataForQueue, idempotencyKeyRef.current);
+        toast({
+          title: tText('Order Saved for Later', 'Tempahan Disimpan'),
+          description: tText(
+            'No connection right now. Your order is saved on this device and you\'ll be asked to send it once you\'re back online.',
+            'Tiada sambungan sekarang. Tempahan anda disimpan dalam peranti ini dan anda akan diminta menghantarnya semula bila online.'
+          ),
+          variant: 'warning',
+          duration: 8000
+        });
+      } else {
+        toast({
+          title: t('error'),
+          description: err instanceof Error ? err.message : String(err),
+          variant: 'error'
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

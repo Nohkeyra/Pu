@@ -22,6 +22,8 @@ import { useInAppUpdates } from './hooks/useInAppUpdates';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import CateringSplashScreen from './components/SplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
+import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
+import { setCrashlyticsUserId } from './services/crashlyticsService';
 
 // Lazy imports for heavy page chunks — defers JS parsing until route is visited.
 // NOTE: AI Studio reverted these to static imports due to its sandboxed preview
@@ -35,12 +37,13 @@ const ProfilePage  = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 import BottomNavigation from './components/BottomNavigation';
 
-// Scroll to top on route change
+// Scroll to top on route change & log Analytics screen view
 function ScrollToTop() {
   const { pathname } = useLocation();
   
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    logScreenView(pathname || '/', 'AppPage');
   }, [pathname]);
   
   return null;
@@ -153,7 +156,16 @@ function AppContent() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAdmin(user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null);
+      const isUserAdmin = user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
+      setIsAdmin(isUserAdmin);
+      
+      if (user) {
+        setAnalyticsUserId(user.uid);
+        setCrashlyticsUserId(user.uid);
+        setAnalyticsUserProperty('user_role', isUserAdmin ? 'admin' : 'customer');
+      } else {
+        setAnalyticsUserId(null);
+      }
     });
 
     try {

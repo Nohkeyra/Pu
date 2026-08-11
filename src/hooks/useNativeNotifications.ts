@@ -37,6 +37,34 @@ export function useNativeNotifications() {
           return;
         }
 
+        // F-CHAN (audit 2026-08-11): Android 8+ (API 26+, which is all of
+        // our minSdk 24 install base running a modern OS) requires every
+        // notification to belong to a channel, or it silently falls back to
+        // whatever channel ID is in the manifest meta-data (currently
+        // "default" — see AndroidManifest.xml). That fallback means every
+        // push looked the same to the OS regardless of type, so the
+        // customer couldn't set a different sound/vibration/importance for
+        // order-status updates specifically. This channel id ('order_status')
+        // must match the channelId the server sends in sendOrderStatusPush
+        // (server/emailService.ts) — if either side is wrong, notifications
+        // silently fall back to the manifest default channel again, so keep
+        // them in sync if either side ever changes.
+        // createChannel() is a no-op on iOS/web; only takes effect on Android.
+        try {
+          await PushNotifications.createChannel({
+            id: 'order_status',
+            name: 'Kemas Kini Tempahan / Order Updates',
+            description: 'Pemberitahuan status tempahan (diluluskan, invois, dibatalkan). / Order status notifications (approved, invoiced, cancelled).',
+            importance: 4, // HIGH — heads-up notification, matches prior default behaviour
+            visibility: 1, // PUBLIC — full content on lockscreen
+            vibration: true,
+          });
+        } catch (channelErr) {
+          // Never let channel setup block registration — worst case the
+          // notification falls back to the manifest default channel.
+          console.warn('Error creating order_status notification channel:', channelErr);
+        }
+
         await PushNotifications.addListener('registration', async (token) => {
           console.log('Push registration successful, token:', token.value);
           
