@@ -6,11 +6,13 @@ import {
   Loader2, 
   CheckCircle, 
   XCircle, 
-  Send 
+  Send,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/Toast';
 import { format } from 'date-fns';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
@@ -56,6 +58,8 @@ export function OrderDetailModal({
   handleRejectOrder,
   openSendDialog,
 }: OrderDetailModalProps) {
+  const { toast } = useToast();
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -84,9 +88,41 @@ export function OrderDetailModal({
               {t('order_details')}
             </h2>
             {selectedOrder && (
-              <p className="text-xs md:text-sm text-deep-forest/60 dark:text-stone/40 mt-0.5 font-medium">
-                {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs md:text-sm text-deep-forest/60 dark:text-stone/40 font-medium">
+                  {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
+                </p>
+                {(selectedOrder.invoiceNo || selectedOrder.id) && (
+                  <button 
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const text = selectedOrder.invoiceNo || selectedOrder.id;
+                      if (!text) return;
+                      
+                      try {
+                        const { Clipboard } = await import('@capacitor/clipboard');
+                        await Clipboard.write({ string: text });
+                        
+                        // We could use toast here, but we need it from props or hooks.
+                        // I'll dynamically import useToast or just use alert as a fallback, 
+                        // wait, let's see if we have toast in this component.
+                        toast({
+                          title: "Copied!",
+                          description: "Order ID copied to clipboard",
+                          variant: "success",
+                          duration: 2000
+                        });
+                      } catch (err) {
+                        console.error('Clipboard failed', err);
+                      }
+                    }}
+                    className="p-1 rounded hover:bg-stone/10 text-deep-forest/50 transition-colors"
+                    title="Copy ID"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
           <button

@@ -1665,14 +1665,25 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   <AlertTriangle className="w-4 h-4" />
                   <span className="text-sm font-medium">Calendar API Disabled</span>
                 </div>
-                <a 
-                  href={getCalendarEnableUrl()} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-amber-400 hover:text-amber-300 underline transition-colors"
+                <button 
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    const url = getCalendarEnableUrl();
+                    if (Capacitor.isNativePlatform()) {
+                      try {
+                        const { Browser } = await import('@capacitor/browser');
+                        await Browser.open({ url });
+                      } catch {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }
+                    } else {
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                  className="text-xs text-amber-400 hover:text-amber-300 underline transition-colors cursor-pointer text-right"
                 >
                   Click here to enable Google Calendar API
-                </a>
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md" title={calendarState.error || "Calendar is not fully synced."}>
