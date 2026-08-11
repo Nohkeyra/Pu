@@ -68,6 +68,7 @@ jobs:
 
       - name: Build web assets
         env:
+          VITE_CONFIG_NATIVE_IGNORE_WARNING: "true"
           VITE_API_URL_ANDROID: https://restoran-wawasan-bio.onrender.com
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -243,54 +244,3 @@ jobs:
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      # =============================================
-      # 💬 PR COMMENT
-      # =============================================
-      - name: Comment PR with artifacts
-        if: github.event_name == 'pull_request' && success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runId = context.runId;
-            const repo = context.repo;
-            const issueNumber = context.issue && context.issue.number;
-            if (issueNumber) {
-              await github.rest.issues.createComment({
-                issue_number: issueNumber,
-                owner: repo.owner,
-                repo: repo.repo,
-                body: `✅ **APK Build Successful!** (Build #${runId})
-                
-                📦 **Available Artifacts:**
-                - **Debug APK:** \`app-debug.apk\`
-                - **Signed Release APK:** \`app-release-signed.apk\`
-                - **Bundle (AAB):** \`app-release.aab\`
-                
-                🔗 **Download:** Go to **Actions** → Select this workflow run → Scroll down to **Artifacts** section
-                
-                📌 **Version:** ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})
-                
-                ⏱️ **Build Time:** ${{ github.run_started_at }}`
-              });
-            }
-
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issueNumber = context.issue && context.issue.number;
-            if (issueNumber) {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `❌ **Build Failed!** 
-                
-                Check the workflow logs for details: 
-                https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
-              });
-            } else {
-              core.info('Workflow failed, but context does not contain a PR/issue number to comment on.');
-            }
