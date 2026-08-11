@@ -90,6 +90,7 @@ async function startServer() {
   app.use('/api/orders', orderRoutes);
   app.use('/api', orderRoutes);
   app.use('/api/menu', menuRoutes);
+  app.use('/api/admin/menu', menuRoutes);
   app.use('/api', updateRoutes);
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);

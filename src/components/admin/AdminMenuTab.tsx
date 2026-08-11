@@ -12,7 +12,9 @@ import {
   Utensils, 
   RefreshCw,
   Info,
-  CupSoda
+  CupSoda,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
 import { invalidateFetchCache } from '@/lib/api';
@@ -25,6 +27,7 @@ export interface MenuItem {
   descBm: string;
   price: number;
   category: 'breakfast' | 'lunch' | 'hi tea' | 'drinks';
+  available?: boolean;
 }
 
 interface AdminMenuTabProps {
@@ -44,6 +47,7 @@ export default function AdminMenuTab({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'breakfast' | 'lunch' | 'hi tea' | 'drinks'>('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   
   // Form modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,7 +58,8 @@ export default function AdminMenuTab({
     descEn: '',
     descBm: '',
     price: 0,
-    category: 'lunch'
+    category: 'lunch',
+    available: true
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -66,7 +71,12 @@ export default function AdminMenuTab({
       const response = await fetch(getApiUrl('/api/menu'));
       if (!response.ok) throw new Error('Failed to fetch menu items');
       const data = await response.json();
-      setMenuItems(data.menuItems || []);
+      const rawList: MenuItem[] = data.menuItems || data.items || [];
+      const listWithDefaults = rawList.map(item => ({
+        ...item,
+        available: item.available !== undefined ? Boolean(item.available) : true
+      }));
+      setMenuItems(listWithDefaults);
     } catch (err) {
       console.error(err);
       toast({
@@ -92,7 +102,8 @@ export default function AdminMenuTab({
       descEn: '',
       descBm: '',
       price: 0,
-      category: 'lunch'
+      category: 'lunch',
+      available: true
     });
     setIsModalOpen(true);
   };
@@ -105,9 +116,61 @@ export default function AdminMenuTab({
       descEn: item.descEn,
       descBm: item.descBm,
       price: item.price,
-      category: item.category
+      category: item.category,
+      available: item.available !== false
     });
     setIsModalOpen(true);
+  };
+
+  const handleToggleAvailable = async (item: MenuItem) => {
+    const newStatus = item.available === false ? true : false;
+    
+    // Optimistic update
+    setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, available: newStatus } : i));
+
+    try {
+      const response = await fetch(getApiUrl(`/api/admin/menu/${item.id}/toggle`), {
+        method: 'PATCH',
+        headers: {
+          ...authHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ available: newStatus })
+      });
+
+      if (!response.ok) {
+        // Fallback PUT if PATCH isn't available
+        await fetch(getApiUrl(`/api/admin/menu/${item.id}`), {
+          method: 'PUT',
+          headers: {
+            ...authHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ...item, available: newStatus })
+        });
+      }
+
+      toast({
+        title: newStatus 
+          ? tText('Menu Item Visible', 'Menu Ditayangkan') 
+          : tText('Menu Item Hidden', 'Menu Disembunyikan'),
+        description: newStatus 
+          ? tText(`"${tText(item.nameEn, item.nameBm)}" is now shown in the order form.`, `"${tText(item.nameEn, item.nameBm)}" kini dipaparkan dalam borang tempahan.`)
+          : tText(`"${tText(item.nameEn, item.nameBm)}" is hidden from the order form.`, `"${tText(item.nameEn, item.nameBm)}" telah disembunyikan daripada borang tempahan.`),
+        variant: 'success'
+      });
+
+      invalidateFetchCache('/api/menu');
+    } catch (err) {
+      console.error(err);
+      // Revert optimistic update
+      setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, available: item.available !== false } : i));
+      toast({
+        title: tText('Toggle Failed', 'Gagal Menukar Status'),
+        description: String(err),
+        variant: 'error'
+      });
+    }
   };
 
   const handleSaveItem = async (e: React.FormEvent) => {
@@ -204,6 +267,11 @@ export default function AdminMenuTab({
     }
   };
 
+  // Counts
+  const totalCount = menuItems.length;
+  const visibleCount = useMemo(() => menuItems.filter(i => i.available !== false).length, [menuItems]);
+  const hiddenCount = totalCount - visibleCount;
+
   // Filtered list
   const filteredMenuItems = useMemo(() => {
     return menuItems.filter(item => {
@@ -214,13 +282,20 @@ export default function AdminMenuTab({
         item.descBm.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+
+      const isVisible = item.available !== false;
+      const matchesVisibility = 
+        visibilityFilter === 'all' ||
+        (visibilityFilter === 'visible' && isVisible) ||
+        (visibilityFilter === 'hidden' && !isVisible);
       
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesCategory && matchesVisibility;
     });
-  }, [menuItems, searchTerm, selectedCategory]);
+  }, [menuItems, searchTerm, selectedCategory, visibilityFilter]);
 
   return (
     <div className="space-y-6">
+      {/* Header Banner */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-card p-4 rounded-2xl border border-stone/10 shadow-sm">
         <div>
           <h2 className="text-lg font-bold text-deep-forest font-display flex items-center gap-2">
@@ -228,16 +303,31 @@ export default function AdminMenuTab({
             {tText('Catering Menu Manager', 'Pengurus Menu Katering')}
           </h2>
           <p className="text-xs text-stone font-light mt-0.5">
-            {tText('Customize food packages and prices dynamically for clients.', 'Sesuaikan hidangan pakej makanan dan harga secara dinamik untuk klien.')}
+            {tText('Manage, add, delete, and toggle show/hide items for customer order form.', 'Urus, tambah, padam, dan tetapkan paparan menu untuk borang tempahan pelanggan.')}
           </p>
         </div>
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 bg-[#A8E10C] hover:bg-[#96cc0a] text-deep-forest px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          {tText('Add Menu Item', 'Tambah Hidangan')}
-        </button>
+
+        {/* Stats Badges + Add Button */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5" />
+              {visibleCount} {tText('Shown', 'Dipapar')}
+            </span>
+            <span className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+              <EyeOff className="w-3.5 h-3.5" />
+              {hiddenCount} {tText('Hidden', 'Disorot')}
+            </span>
+          </div>
+
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 bg-[#A8E10C] hover:bg-[#96cc0a] text-deep-forest px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-200 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            {tText('Add Menu Item', 'Tambah Hidangan')}
+          </button>
+        </div>
       </div>
 
       {/* Filters and Search */}
@@ -262,21 +352,57 @@ export default function AdminMenuTab({
           )}
         </div>
 
+        {/* Show/Hide Filter Tabs */}
+        <div className="flex bg-muted/60 p-1 rounded-xl border border-stone/5 w-full md:w-auto overflow-x-auto max-w-full shrink-0 scrollbar-none">
+          <button
+            onClick={() => setVisibilityFilter('all')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+              visibilityFilter === 'all'
+                ? 'bg-white dark:bg-card shadow text-deep-forest'
+                : 'text-stone hover:text-deep-forest'
+            }`}
+          >
+            {tText('All Status', 'Semua Status')} ({totalCount})
+          </button>
+          <button
+            onClick={() => setVisibilityFilter('visible')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1 transition-all whitespace-nowrap ${
+              visibilityFilter === 'visible'
+                ? 'bg-white dark:bg-card shadow text-emerald-600 dark:text-emerald-400'
+                : 'text-stone hover:text-deep-forest'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            {tText('Shown', 'Papar')} ({visibleCount})
+          </button>
+          <button
+            onClick={() => setVisibilityFilter('hidden')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1 transition-all whitespace-nowrap ${
+              visibilityFilter === 'hidden'
+                ? 'bg-white dark:bg-card shadow text-amber-600 dark:text-amber-400'
+                : 'text-stone hover:text-deep-forest'
+            }`}
+          >
+            <EyeOff className="w-3.5 h-3.5" />
+            {tText('Hidden', 'Sorot')} ({hiddenCount})
+          </button>
+        </div>
+
         {/* Category Filters */}
-        <div className="flex bg-muted/60 p-1 rounded-xl border border-stone/5 w-full md:w-auto overflow-x-auto">
+        <div className="flex bg-muted/60 p-1 rounded-xl border border-stone/5 w-full md:w-auto overflow-x-auto max-w-full shrink-0 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
               selectedCategory === 'all' 
                 ? 'bg-white dark:bg-card shadow text-deep-forest' 
                 : 'text-stone hover:text-deep-forest'
             }`}
           >
-            {tText('All', 'Semua')}
+            {tText('All Categories', 'Semua Kategori')}
           </button>
           <button
             onClick={() => setSelectedCategory('breakfast')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               selectedCategory === 'breakfast' 
                 ? 'bg-white dark:bg-card shadow text-deep-forest' 
                 : 'text-stone hover:text-deep-forest'
@@ -287,7 +413,7 @@ export default function AdminMenuTab({
           </button>
           <button
             onClick={() => setSelectedCategory('lunch')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               selectedCategory === 'lunch' 
                 ? 'bg-white dark:bg-card shadow text-deep-forest' 
                 : 'text-stone hover:text-deep-forest'
@@ -298,7 +424,7 @@ export default function AdminMenuTab({
           </button>
           <button
             onClick={() => setSelectedCategory('hi tea')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               selectedCategory === 'hi tea' 
                 ? 'bg-white dark:bg-card shadow text-deep-forest' 
                 : 'text-stone hover:text-deep-forest'
@@ -309,7 +435,7 @@ export default function AdminMenuTab({
           </button>
           <button
             onClick={() => setSelectedCategory('drinks')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
               selectedCategory === 'drinks' 
                 ? 'bg-white dark:bg-card shadow text-deep-forest' 
                 : 'text-stone hover:text-deep-forest'
@@ -336,91 +462,149 @@ export default function AdminMenuTab({
             {tText('No Menu Items Found', 'Tiada Hidangan Menu Ditemui')}
           </h3>
           <p className="text-xs text-stone font-light max-w-sm mx-auto mt-1">
-            {tText('You can add custom breakfast, lunch or hi tea dishes and prices directly using the Add button.', 'Anda boleh menambah hidangan sarapan, makan tengah hari atau hi tea serta harganya terus menggunakan butang Tambah.')}
+            {tText('Try clearing search terms or changing your filters to see items.', 'Cuba padamkan carian atau ubah penapis untuk melihat hidangan.')}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMenuItems.map(item => (
-            <div 
-              key={item.id}
-              className="bg-white dark:bg-card border border-stone/10 p-4 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-200"
-            >
-              <div>
-                {/* Header with Category Badge */}
-                <div className="flex justify-between items-start mb-2.5">
-                  <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full ${
-                    item.category === 'breakfast'
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                      : item.category === 'lunch'
-                      ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
-                      : item.category === 'hi tea'
-                      ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20'
-                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                  }`}>
-                    {item.category === 'breakfast' 
-                      ? tText('🍳 Breakfast', '🍳 Sarapan') 
-                      : item.category === 'lunch' 
-                      ? tText('🍛 Lunch', '🍛 Tengahari') 
-                      : item.category === 'hi tea'
-                      ? tText('🍰 Hi-Tea', '🍰 Hi-Tea')
-                      : tText('🥤 Drinks', '🥤 Minuman')}
-                  </span>
-                  <span className="text-sm font-black text-crisp-carrot">
-                    RM {item.price.toFixed(2)}
-                  </span>
+          {filteredMenuItems.map(item => {
+            const isVisible = item.available !== false;
+            return (
+              <div 
+                key={item.id}
+                className={`bg-white dark:bg-card border p-4 rounded-2xl flex flex-col justify-between shadow-sm transition-all duration-200 relative overflow-hidden ${
+                  isVisible 
+                    ? 'border-stone/10 hover:shadow-md' 
+                    : 'border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/10 opacity-80'
+                }`}
+              >
+                <div>
+                  {/* Header with Category Badge & Price */}
+                  <div className="flex justify-between items-start mb-2.5">
+                    <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full ${
+                      item.category === 'breakfast'
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                        : item.category === 'lunch'
+                        ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
+                        : item.category === 'hi tea'
+                        ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                    }`}>
+                      {item.category === 'breakfast' 
+                        ? tText('🍳 Breakfast', '🍳 Sarapan') 
+                        : item.category === 'lunch' 
+                        ? tText('🍛 Lunch', '🍛 Tengahari') 
+                        : item.category === 'hi tea'
+                        ? tText('🍰 Hi-Tea', '🍰 Hi-Tea')
+                        : tText('🥤 Drinks', '🥤 Minuman')}
+                    </span>
+                    
+                    <span className="text-sm font-black text-crisp-carrot">
+                      RM {item.price.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Name */}
+                  <h4 className="text-sm font-bold text-deep-forest dark:text-white block">
+                    {tText(item.nameEn, item.nameBm)}
+                  </h4>
+
+                  {/* Subtitle / Description */}
+                  <p className="text-xs text-stone dark:text-stone-300 font-light mt-1 line-clamp-2">
+                    {tText(item.descEn || '-', item.descBm || '-')}
+                  </p>
                 </div>
 
-                {/* Name */}
-                <h4 className="text-sm font-bold text-deep-forest block">
-                  {tText(item.nameEn, item.nameBm)}
-                </h4>
+                {/* Visibility Toggle & Actions Bar */}
+                <div className="flex items-center justify-between border-t border-stone/10 pt-3 mt-4">
+                  {/* Visibility Quick Toggle Button */}
+                  <button
+                    onClick={() => handleToggleAvailable(item)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      isVisible
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/40 hover:bg-amber-500/25'
+                    }`}
+                    title={isVisible ? tText('Click to hide from order form', 'Klik untuk sembunyikan daripada borang tempahan') : tText('Click to show in order form', 'Klik untuk paparkan dalam borang tempahan')}
+                  >
+                    {isVisible ? (
+                      <>
+                        <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{tText('Shown', 'Dipapar')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>{tText('Hidden', 'Disorot')}</span>
+                      </>
+                    )}
+                  </button>
 
-                {/* Subtitle / Description */}
-                <p className="text-xs text-stone font-light mt-1 line-clamp-2">
-                  {tText(item.descEn || '-', item.descBm || '-')}
-                </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(item)}
+                      className="p-2 bg-muted hover:bg-muted/80 text-stone hover:text-deep-forest border border-stone/10 rounded-lg transition-colors cursor-pointer"
+                      title={tText('Edit Item', 'Kemas kini Hidangan')}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(item.id, tText(item.nameEn, item.nameBm))}
+                      className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg border border-red-500/10 transition-colors cursor-pointer"
+                      title={tText('Delete Item', 'Padam Hidangan')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 border-t border-stone/5 pt-3 mt-4">
-                <button
-                  onClick={() => handleOpenEditModal(item)}
-                  className="p-2 bg-muted hover:bg-muted/80 text-stone hover:text-deep-forest border border-stone/10 rounded-lg transition-colors"
-                  title={tText('Edit Item', 'Kemas kini Hidangan')}
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDeleteItem(item.id, tText(item.nameEn, item.nameBm))}
-                  className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg border border-red-500/10 transition-colors"
-                  title={tText('Delete Item', 'Padam Hidangan')}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Form Dialog/Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]">
           <div className="bg-white dark:bg-card border border-stone/10 max-w-md w-full rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-5 py-4 border-b border-stone/10 flex justify-between items-center bg-muted/35">
-              <h3 className="text-sm font-black uppercase tracking-wider text-deep-forest">
+              <h3 className="text-sm font-black uppercase tracking-wider text-deep-forest dark:text-white">
                 {editingItem ? tText('Update Menu Item', 'Kemas kini Sajian Menu') : tText('Add New Menu Item', 'Tambah Sajian Menu Baru')}
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-stone/70 hover:text-deep-forest"
+                className="text-stone/70 hover:text-deep-forest dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="p-5 space-y-4">
+            <form onSubmit={handleSaveItem} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Show / Hide Toggle Control */}
+              <div className="bg-muted/50 p-3.5 rounded-xl border border-stone/10 flex items-center justify-between">
+                <div>
+                  <label className="text-xs font-bold text-deep-forest dark:text-white block">
+                    {tText('Show in Order Form', 'Papar dalam Borang Tempahan')}
+                  </label>
+                  <p className="text-[11px] text-stone font-light">
+                    {tText('Controls if customers can select this dish.', 'Mengawal sama ada pelanggan boleh memilih hidangan ini.')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormState(prev => ({ ...prev, available: !prev.available }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                    formState.available ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formState.available ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Category */}
               <div>
                 <label className="text-[10px] font-black uppercase tracking-wider text-stone block mb-1">
@@ -429,7 +613,7 @@ export default function AdminMenuTab({
                 <select
                   value={formState.category}
                   onChange={(e) => setFormState(prev => ({ ...prev, category: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 >
                   <option value="breakfast">{tText('Breakfast (Sarapan)', 'Sarapan (Breakfast)')}</option>
                   <option value="lunch">{tText('Lunch (Tengahari)', 'Tengahari (Lunch)')}</option>
@@ -449,7 +633,7 @@ export default function AdminMenuTab({
                   value={formState.nameEn}
                   onChange={(e) => setFormState(prev => ({ ...prev, nameEn: e.target.value }))}
                   placeholder="e.g. Classic Beef Lasagna"
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 />
               </div>
 
@@ -464,7 +648,7 @@ export default function AdminMenuTab({
                   value={formState.nameBm}
                   onChange={(e) => setFormState(prev => ({ ...prev, nameBm: e.target.value }))}
                   placeholder="Contoh: Lasagna Daging Klasik"
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 />
               </div>
 
@@ -481,7 +665,7 @@ export default function AdminMenuTab({
                   value={formState.price || ''}
                   onChange={(e) => setFormState(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                   placeholder="12.00"
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 />
               </div>
 
@@ -494,7 +678,7 @@ export default function AdminMenuTab({
                   value={formState.descEn}
                   onChange={(e) => setFormState(prev => ({ ...prev, descEn: e.target.value }))}
                   placeholder="Briefly describe the dish options..."
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)] min-h-[60px]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)] min-h-[60px]"
                 />
               </div>
 
@@ -507,7 +691,7 @@ export default function AdminMenuTab({
                   value={formState.descBm}
                   onChange={(e) => setFormState(prev => ({ ...prev, descBm: e.target.value }))}
                   placeholder="Terangkan secara ringkas bahan atau butiran hidangan..."
-                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)] min-h-[60px]"
+                  className="w-full px-3 py-2 border border-stone/15 rounded-xl text-xs bg-white dark:bg-card text-deep-forest dark:text-white focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)] min-h-[60px]"
                 />
               </div>
 
@@ -516,14 +700,14 @@ export default function AdminMenuTab({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-stone/15 hover:bg-muted text-stone font-bold text-xs rounded-xl transition-all"
+                  className="px-4 py-2 border border-stone/15 hover:bg-muted text-stone font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
                   {tText('Cancel', 'Batal')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 bg-[#A8E10C] hover:bg-[#96cc0a] disabled:bg-muted text-deep-forest px-5 py-2 font-black uppercase tracking-wider text-xs rounded-xl shadow-sm transition-all"
+                  className="flex items-center gap-1.5 bg-[#A8E10C] hover:bg-[#96cc0a] disabled:bg-muted text-deep-forest px-5 py-2 font-black uppercase tracking-wider text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                 >
                   {isSaving ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />

@@ -45,6 +45,9 @@ export function Step2DishSelection({
   tText,
   t,
 }: Step2DishSelectionProps) {
+  const visibleMenu = React.useMemo(() => {
+    return dynamicMenu.filter(item => item.available !== false);
+  }, [dynamicMenu]);
   return (
     <motion.div
       key="step2"
@@ -97,7 +100,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {dynamicMenu.filter(item => item.category === 'breakfast').map(item => {
+                {visibleMenu.filter(item => item.category === 'breakfast').map(item => {
                   const isSelected = orderState.dishes.some(x => x.id === item.id);
                   return (
                     <div
@@ -145,7 +148,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {dynamicMenu.filter(item => item.category === 'lunch').map(item => {
+                {visibleMenu.filter(item => item.category === 'lunch').map(item => {
                   const isSelected = orderState.dishes.some(x => x.id === item.id);
                   return (
                     <div
@@ -193,7 +196,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {dynamicMenu.filter(item => item.category === 'hi tea').map(item => {
+                {visibleMenu.filter(item => item.category === 'hi tea').map(item => {
                   const isSelected = orderState.dishes.some(x => x.id === item.id);
                   return (
                     <div
@@ -229,7 +232,7 @@ export function Step2DishSelection({
           )}
 
           {/* Drinks Section */}
-          {dynamicMenu.some(item => item.category === 'drinks') && (
+          {visibleMenu.some(item => item.category === 'drinks') && (
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-stone/10 pb-1.5">
                 <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block">
@@ -247,7 +250,7 @@ export function Step2DishSelection({
                     {tText('☕ Hot/Warm Drinks', '☕ Minuman Panas/Suam')}
                   </span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                    {dynamicMenu
+                    {visibleMenu
                       .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
                       .map(item => {
                         const isSelected = orderState.dishes.some(x => x.id === item.id);
@@ -291,7 +294,7 @@ export function Step2DishSelection({
                     {tText('🥤 Refreshing Box/Cordial/Mineral Drinks', '🥤 Minuman Kotak/Kordial/Mineral Segar')}
                   </span>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                    {dynamicMenu
+                    {visibleMenu
                       .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
                       .map(item => {
                         const isSelected = orderState.dishes.some(x => x.id === item.id);

@@ -7,6 +7,7 @@ export interface MenuItem {
   price: number;
   category: string;
   suitability?: string;
+  available?: boolean;
 }
 
 export const DEFAULT_MENU_ITEMS: MenuItem[] = [
