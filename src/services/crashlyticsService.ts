@@ -64,7 +64,7 @@ export async function recordException(
       // Record exception to Firebase Crashlytics native SDK
       await FirebaseCrashlytics.recordException({
         message,
-        stackTrace: parseStackTrace(stack),
+        stacktrace: parseStackTrace(stack),
       }).catch(() => {});
     }
 
