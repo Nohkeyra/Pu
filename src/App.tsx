@@ -26,16 +26,39 @@ import { Skeleton } from './components/ui/Skeleton';
 import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
 import { setCrashlyticsUserId } from './services/crashlyticsService';
 
-// Lazy imports for heavy page chunks — defers JS parsing until route is visited.
-// NOTE: AI Studio reverted these to static imports due to its sandboxed preview
-// environment blocking dynamic chunk fetching. In a Capacitor APK, all chunks
-// are bundled as local file:// assets and load reliably without network.
-const LandingPage  = lazy(() => import('./pages/LandingPage'));
-const OrderPage    = lazy(() => import('./pages/OrderPage'));
-const AdminPage    = lazy(() => import('./pages/AdminPage'));
-const LoginPage    = lazy(() => import('./pages/LoginPage'));
-const ProfilePage  = lazy(() => import('./pages/ProfilePage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+// Helper to retry dynamic imports if dynamic chunk fetching fails (e.g. during Vite dev server reloads or network hiccups)
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(async () => {
+    try {
+      return await factory();
+    } catch (error) {
+      console.warn('Dynamic chunk load failed, retrying once...', error);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      try {
+        return await factory();
+      } catch (retryError) {
+        console.error('Dynamic chunk retry failed, reloading page...', retryError);
+        const reloaded = sessionStorage.getItem('chunk_retry_reload');
+        if (!reloaded) {
+          sessionStorage.setItem('chunk_retry_reload', 'true');
+          window.location.reload();
+          return new Promise<{ default: T }>(() => {});
+        }
+        sessionStorage.removeItem('chunk_retry_reload');
+        throw retryError;
+      }
+    }
+  });
+}
+
+const LandingPage  = lazyWithRetry(() => import('./pages/LandingPage'));
+const OrderPage    = lazyWithRetry(() => import('./pages/OrderPage'));
+const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'));
+const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage'));
+const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'));
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change & log Analytics screen view

@@ -52,7 +52,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "eruda": "^3.4.3",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.28.0",
     "exceljs": "^3.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
@@ -100,5 +100,8 @@
     "sharp": "^0.35.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "tar": "^7.4.3"
   }
 }
