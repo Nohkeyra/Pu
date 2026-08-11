@@ -33,7 +33,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "bg-forest-green group/calendar p-3 rounded-xl border border-deep-forest/10 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        "bg-forest-green group/calendar p-3 rounded-xl border border-deep-forest/10 [--cell-size:2rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -57,20 +57,20 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none text-deep-forest/60 hover:text-deep-forest hover:bg-deep-forest/5",
+          "size-[--cell-size] aria-disabled:opacity-50 p-0 select-none text-deep-forest/60 hover:text-deep-forest hover:bg-deep-forest/5",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none text-deep-forest/60 hover:text-deep-forest hover:bg-deep-forest/5",
+          "size-[--cell-size] aria-disabled:opacity-50 p-0 select-none text-deep-forest/60 hover:text-deep-forest hover:bg-deep-forest/5",
           defaultClassNames.button_next
         ),
         month_caption: cn(
-          "flex items-center justify-center h-(--cell-size) w-full px-(--cell-size)",
+          "flex items-center justify-center h-[--cell-size] w-full px-[--cell-size]",
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
-          "w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5",
+          "w-full flex items-center text-sm font-medium justify-center h-[--cell-size] gap-1.5",
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
@@ -97,7 +97,7 @@ function Calendar({
         ),
         week: cn("flex w-full mt-2", defaultClassNames.week),
         week_number_header: cn(
-          "select-none w-(--cell-size)",
+          "select-none w-[--cell-size]",
           defaultClassNames.week_number_header
         ),
         week_number: cn(
@@ -167,7 +167,7 @@ function Calendar({
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
-              <div className="flex size-(--cell-size) items-center justify-center text-center">
+              <div className="flex size-[--cell-size] items-center justify-center text-center">
                 {children}
               </div>
             </td>
@@ -209,7 +209,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "data-[selected-single=true]:bg-kiwi data-[selected-single=true]:text-deep-forest data-[range-middle=true]:bg-kiwi/15 data-[range-middle=true]:text-deep-forest data-[range-start=true]:bg-kiwi data-[range-start=true]:text-deep-forest data-[range-end=true]:bg-kiwi data-[range-end=true]:text-deep-forest group-data-[focused=true]/day:border-kiwi/50 group-data-[focused=true]/day:ring-kiwi/20 group-data-[focused=true]/day:ring-[3px] hover:text-deep-forest hover:bg-deep-forest/5 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
+        "data-[selected-single=true]:bg-kiwi data-[selected-single=true]:text-deep-forest data-[range-middle=true]:bg-kiwi/15 data-[range-middle=true]:text-deep-forest data-[range-start=true]:bg-kiwi data-[range-start=true]:text-deep-forest data-[range-end=true]:bg-kiwi data-[range-end=true]:text-deep-forest group-data-[focused=true]/day:border-kiwi/50 group-data-[focused=true]/day:ring-kiwi/20 group-data-[focused=true]/day:ring-[3px] hover:text-deep-forest hover:bg-deep-forest/5 flex aspect-square size-auto w-full min-w-[--cell-size] flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className
       )}

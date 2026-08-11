@@ -54,11 +54,22 @@ if (typeof window !== 'undefined') {
 export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const [badgeError, setBadgeError] = useState(false);
+  const [riderSvgError, setRiderSvgError] = useState(false);
   // ReturnType<typeof setTimeout> — not NodeJS.Timeout (@types/node absent in this project)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
   const isReducedRef = useRef(false);
   const [isLowEnd] = useState(isLowEndDevice);
+  const [skipFaded, setSkipFaded] = useState(false);
+
+  // Auto-fade the Skip button once the rider has entered 'settle', so it stops
+  // competing with the bag-flip / title reveal. Fades from opacity 1 → 0.25.
+  // Focus-visible restores full opacity for keyboard users.
+  useEffect(() => {
+    if (isReducedRef.current) return;
+    const id = setTimeout(() => setSkipFaded(true), 1500);
+    return () => clearTimeout(id);
+  }, []);
 
   const addTimer = (fn: () => void, delay: number) => {
     const id = setTimeout(fn, delay);
@@ -119,15 +130,16 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       if (isReducedRef.current) {
         addTimer(() => setStage('exit'), 150);
       } else {
-        addTimer(() => setStage('logoZoom'), 300);
+        addTimer(() => setStage('logoZoom'), 400);
       }
     }
   }, [isLoading, stage]);
 
-  // logoZoom: spring zoom plays (~0.5s), then hold 0.3s breathing room, then exit
+  // logoZoom: spring zoom plays (~0.5s), then hold breathing room, then exit.
+  // Bumped 800 → 950ms so the logo pulse feels like a deliberate beat.
   useEffect(() => {
     if (stage === 'logoZoom') {
-      addTimer(() => setStage('exit'), 800);
+      addTimer(() => setStage('exit'), 950);
     }
   }, [stage]);
 
@@ -163,10 +175,10 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         <motion.div
           key="splash-bg"
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#151714] overflow-hidden select-none"
-          initial={{ opacity: 1 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
         >
           {/* Subtle batik-style dot background */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.1]">
@@ -183,15 +195,44 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             </svg>
           </div>
 
-          {/* Elegant Skip Button (Safely aligned under device notch / safe areas) */}
+          {/* Elegant Skip Button (Safely aligned under device notch / safe areas).
+              Auto-fades after the rider has settled so it doesn't compete with the
+              bag-flip / title reveal. Still fully interactive while faded — opacity
+              0 buttons retain their hit-zone on touch screens. */}
           <button
             type="button"
             onClick={handleSkip}
-            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-white/5 active:scale-95 border border-white/10 text-[10px] font-bold tracking-widest text-white/70 uppercase transition-all duration-150 hover:bg-white/10 hover:text-white pointer-events-auto"
-            style={{ top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))' }}
+            aria-label="Langkau skrin percikan"
+            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-white/5 active:scale-95 border border-white/10 text-[10px] font-bold tracking-widest text-white/70 uppercase transition-all duration-500 hover:bg-white/10 hover:text-white pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B4FF39]"
+            style={{
+              top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))',
+              opacity: skipFaded ? 0.25 : 1,
+            }}
           >
             Langkau
           </button>
+
+          {/* LOADING AFFORDANCE — only visible during 'hold' so the user has
+              feedback that the app is still preparing (Capacitor plugins, auth
+              listeners, etc.) before the closing beat fires. Pure CSS pulse, no
+              extra image weight. */}
+          {showTitle && (
+            <div
+              className="absolute left-0 right-0 flex justify-center pointer-events-none"
+              style={{ bottom: 'calc(5% + var(--safe-area-inset-bottom, 0px))' }}
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B4FF39] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#B4FF39]" />
+                </span>
+                <span className="text-[10px] font-bold tracking-widest text-white/70 uppercase">
+                  {isLoading ? 'Menyediakan' : 'Sedia'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Ground line */}
           <div className="absolute bottom-[30%] left-8 right-8 h-px bg-white/10" />
@@ -234,18 +275,35 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 : { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
             }}
           >
-            <div className="relative w-72 h-72" style={{ transform: 'scaleX(-1)' }}>
+            <div className="relative w-72 h-72" style={{ transform: riderSvgError ? 'none' : 'scaleX(-1)' }}>
               {/* Rider illustration — CSS @keyframes inside SVG handle wheel
                   spin, head nod, arm reach, bag bounce during 'ride'/'settle'.
                   We don't need to suppress them; the bag overlay simply mounts
                   on top when the flip moment arrives. */}
-              <img
-                src={getAssetUrl('/assets/rider-grouped.svg')}
-                alt=""
-                aria-hidden="true"
-                className="w-full h-full object-contain"
-                draggable={false}
-              />
+              {!riderSvgError ? (
+                <img
+                  src={getAssetUrl('/assets/rider-grouped.svg')}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                  onError={() => setRiderSvgError(true)}
+                />
+              ) : (
+                // CSS-only fallback so a missing /assets/rider-grouped.svg never
+                // produces a blank splash. Simple, on-brand, fully animated.
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="relative w-40 h-40 rounded-2xl bg-[#2d3436] border-2 border-[#B4FF39]/60 shadow-xl flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-[10px] font-black text-white tracking-tight uppercase">Restoran</p>
+                      <p className="text-base font-black text-[#FF6A1A] tracking-tight uppercase mt-0.5">WAWASAN</p>
+                      <div className="w-10 h-[2px] bg-[#B4FF39] mx-auto mt-1 rounded-full" />
+                      <p className="text-[9px] font-bold text-white/70 tracking-widest uppercase mt-1">Pak Usop</p>
+                    </div>
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-[#B4FF39]/60" />
+                  </div>
+                </div>
+              )}
 
               {/*
                 DELIVERY BAG FLIP OVERLAY
@@ -260,8 +318,13 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
                 The overlay is only mounted from 'lift' onward — before that the
                 SVG's own bounceBag CSS animation plays naturally on the bag.
+
+                Skipped entirely when riderSvgError: these coordinates and the
+                counter-mirror on the signage text are both calculated against
+                the real SVG's bag position and the parent rig's scaleX(-1).
+                Neither is true when the CSS fallback box is showing instead.
               */}
-              {showOverlay && (
+              {showOverlay && !riderSvgError && (
                 <div
                   className="absolute"
                   style={{
@@ -403,16 +466,17 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             alt="Restoran Wawasan"
             className="w-60 h-60 object-contain drop-shadow-2xl"
             draggable={false}
+            // add 60ms delay so the badge doesn't pop the moment hold→logoZoom fires
             initial={{ scale: 0.2, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             // Spring zoom: fast acceleration, overshoots to ~1.08 then
             // settles at 1.0 — the "stamp" feel. stiffness high for punch,
             // damping low enough for visible overshoot without being bouncy.
             transition={{
-              scale: isLowEnd 
-                ? { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
-                : { type: 'spring', stiffness: 260, damping: 18 },
-              opacity: { duration: 0.2, ease: 'easeOut' },
+              scale: isLowEnd
+                ? { duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.06 }
+                : { type: 'spring', stiffness: 260, damping: 18, delay: 0.06 },
+              opacity: { duration: 0.22, ease: 'easeOut', delay: 0.06 },
             }}
             onError={() => setBadgeError(true)}
             style={badgeError ? { display: 'none' } : {}}
