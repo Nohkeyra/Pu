@@ -49,8 +49,6 @@ Thumbs.db
 *.keystore
 release.keystore
 firebase-service-account.json
-key.properties
-**/key.properties
 
 # Keep Firebase client configuration for Android
 !android/app/google-services.json

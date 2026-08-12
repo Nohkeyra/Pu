@@ -168,8 +168,6 @@ jobs:
 
       - name: Build debug APK
         working-directory: ./android
-        env:
-          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleDebug --stacktrace || {
             echo "❌ Debug build failed. Check logs above."
@@ -178,8 +176,6 @@ jobs:
 
       - name: Build release APK (signed)
         working-directory: ./android
-        env:
-          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleRelease --stacktrace || {
             echo "❌ Release build failed. Check logs above."
@@ -188,8 +184,6 @@ jobs:
 
       - name: Build Bundle (AAB for Play Store)
         working-directory: ./android
-        env:
-          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew bundleRelease --stacktrace || {
             echo "⚠️ Bundle build failed (continuing)"
