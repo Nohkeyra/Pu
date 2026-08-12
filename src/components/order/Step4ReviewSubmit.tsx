@@ -238,6 +238,15 @@ export function Step4ReviewSubmit({
 
       </div>
 
+      {isSubmitting && (
+        <p className="text-center text-sm font-semibold text-stone-600 dark:text-stone-300" role="status" aria-live="polite">
+          {tText(
+            'Please wait — do not close this screen while your order is being sent.',
+            'Sila tunggu — jangan tutup skrin ini semasa tempahan dihantar.'
+          )}
+        </p>
+      )}
+
       {/* Submitting Actions */}
       <div className="flex gap-3">
         <Button
@@ -256,13 +265,13 @@ export function Step4ReviewSubmit({
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              <span>{t('loading')}</span>
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden />
+              <span>{tText('Sending order…', 'Menghantar tempahan…')}</span>
             </>
           ) : (
             <>
               <span>{tText('Submit Order', 'Hantar Tempahan')}</span>
-              <Check className="w-4 h-4 ml-1.5" />
+              <Check className="w-4 h-4 ml-1.5" aria-hidden />
             </>
           )}
         </Button>

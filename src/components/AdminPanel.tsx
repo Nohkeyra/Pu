@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -40,9 +40,11 @@ import AdminMenuTab from './admin/AdminMenuTab';
 import { AdminUpdatesTab } from './admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import type { AppVersionConfig } from '@/services/updateService';
-import { OrderDetailModal } from './admin/OrderDetailModal';
-import { SendInvoiceModal } from './admin/SendInvoiceModal';
-import { PdfPreviewModal } from './admin/PdfPreviewModal';
+import { filterAdminOrders } from '@/lib/adminOrderFilters';
+
+const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
+const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
+const PdfPreviewModal = lazy(() => import('./admin/PdfPreviewModal').then(m => ({ default: m.PdfPreviewModal })));
 import { Utensils as UtensilsIcon, Radio } from 'lucide-react';
 
 interface SerializedOrder extends Omit<Order, 'createdAt'> {
@@ -79,15 +81,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [searchTerm] = useState('');
-  // Table filters (Orders tab): status/client narrow down filteredOrders in
-  // addition to the free-text searchTerm above. Both permanently sit at
-  // 'all' (no-op) now — the UI to change them was removed from the Orders
-  // tab as a duplicate of Tables View's own independent filter controls.
-  // Kept as read-only state (not full useState) because filteredOrders'
-  // memo below still reads them; AdminTablesTab.tsx has its own separate
-  // statusFilter/clientFilter local state and is unaffected by this.
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [clientFilter, setClientFilter] = useState<string>('all');
+  const clientFilter = 'all';
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
   const [dateToFilter, setDateToFilter] = useState<string>('');
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
@@ -1275,80 +1270,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     }
   };
 
-  // Status filter groups map UI selections to the underlying bm/en status
-  // strings stored on the order (see getStatusBadge above for the same
-  // pairs). 'all' intentionally still excludes cancelled orders below,
-  // matching the pre-existing default behavior of this list.
-  const STATUS_FILTER_GROUPS: Record<string, string[]> = {
-    pending: ['pending', 'menunggu'],
-    approved: ['approved', 'diluluskan'],
-    billed: ['billed', 'dibilkan'],
-    rejected: ['rejected', 'ditolak'],
-    cancelled: ['cancelled', 'dibatalkan'],
-    cancel_requested: ['cancel_requested'],
-  };
-
-  const filteredOrders = orders.filter(order => {
-    const sLower = searchTerm.toLowerCase();
-    const dateMatch = (() => {
-      if (!order.dateTime) return false;
-      try {
-        const d = new Date(order.dateTime);
-        const formattedPP = format(d, 'PP').toLowerCase();
-        const formattedSlash = format(d, 'dd/MM/yyyy').toLowerCase();
-        const formattedMonth = format(d, 'MMMM').toLowerCase();
-        const formattedDay = format(d, 'EEEE').toLowerCase();
-        const formattedYear = d.getFullYear().toString();
-        return formattedPP.includes(sLower) || 
-               formattedSlash.includes(sLower) || 
-               formattedMonth.includes(sLower) ||
-               formattedDay.includes(sLower) ||
-               formattedYear.includes(sLower);
-      } catch {
-        return false;
-      }
-    })();
-
-    const status = order.status ? String(order.status).toLowerCase() : '';
-    const isCancelled = status === 'cancelled' || status === 'dibatalkan';
-
-    const matchesSearch = (
-      (order.to || '').toLowerCase().includes(sLower) ||
-      (order.name || '').toLowerCase().includes(sLower) ||
-      (order.email || '').toLowerCase().includes(sLower) ||
-      (order.orderId || '').toLowerCase().includes(sLower) ||
-      (order.officialInvoiceNo || order.invoiceNo || '').toLowerCase().includes(sLower) ||
-      dateMatch
-    );
-
-    // Status filter: 'all' keeps the original default (exclude cancelled).
-    // Any explicit selection (including 'cancelled') overrides that default
-    // so the admin can still look up cancelled orders on purpose.
-    const matchesStatus = statusFilter === 'all'
-      ? !isCancelled
-      : (STATUS_FILTER_GROUPS[statusFilter] || []).includes(status);
-
-    const matchesClient = clientFilter === 'all' || order.to === clientFilter;
-
-    const matchesDateRange = (() => {
-      if (!dateFromFilter && !dateToFilter) return true;
-      if (!order.dateTime) return false;
-      try {
-        const orderDate = new Date(order.dateTime);
-        if (dateFromFilter && orderDate < new Date(dateFromFilter)) return false;
-        if (dateToFilter) {
-          // Include the entire "to" day, not just midnight of that day.
-          const endOfDay = new Date(dateToFilter);
-          endOfDay.setHours(23, 59, 59, 999);
-          if (orderDate > endOfDay) return false;
-        }
-        return true;
-      } catch {
-        return false;
-      }
-    })();
-
-    return matchesSearch && matchesStatus && matchesClient && matchesDateRange;
+  // Apply centralized filter logic from filterAdminOrders utility
+  const filteredOrders = filterAdminOrders({
+    orders,
+    searchTerm,
+    statusFilter,
+    clientFilter,
+    dateFromFilter,
+    dateToFilter,
   });
 
   const cancelRequests = orders.filter(o => o.status === 'cancel_requested');
@@ -1696,6 +1625,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       />
 
       {/* Order Detail Modal */}
+      <Suspense fallback={null}>
       <OrderDetailModal
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
@@ -1743,6 +1673,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         language={language}
         toast={toast}
       />
+      </Suspense>
     </div>
   );
 }

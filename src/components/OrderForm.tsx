@@ -19,6 +19,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from './AuthModal';
+import { OrderFormTip } from '@/components/order/OrderFormTip';
 import { Step1EventMeal } from './order/Step1EventMeal';
 import { Step2DishSelection } from './order/Step2DishSelection';
 import { Step3ContactDetails } from './order/Step3ContactDetails';
@@ -1062,6 +1063,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           {/* Left Column: Stepper Wizard & Inputs Panel */}
           <div className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl overflow-hidden">
             
+            <OrderFormTip language={language} />
             {/* Progress Bar Indicator */}
             {currentStep <= 4 && (
               <div className="px-6 pt-6 pb-4 bg-muted/40 border-b border-stone/10" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>

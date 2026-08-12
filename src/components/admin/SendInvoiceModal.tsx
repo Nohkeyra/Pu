@@ -148,10 +148,16 @@ export function SendInvoiceModal({
                       placeholder="customer@email.com"
                     />
                   </div>
+                  {sendingEmail && (
+                    <p className="text-xs font-semibold text-[var(--color-sunshine-cta)]" role="status" aria-live="polite">
+                      {t('sending_invoice') || 'Sending invoice email…'}
+                    </p>
+                  )}
                   <Button
                     id="btn-send-email-confirm"
                     onClick={handleSendEmail}
                     disabled={sendingEmail || !recipientEmail}
+                    aria-busy={sendingEmail}
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl h-14 text-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest"
                   >
                     {sendingEmail ? (

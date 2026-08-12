@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -8,6 +8,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn, getAssetUrl } from '@/lib/utils';
@@ -45,9 +46,27 @@ export function Step2DishSelection({
   tText,
   t,
 }: Step2DishSelectionProps) {
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const visibleMenu = React.useMemo(() => {
     return dynamicMenu.filter(item => item.available !== false);
   }, [dynamicMenu]);
+
+  const validateAndNext = async () => {
+    const dishCount = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
+    const hasCustom = Boolean(orderState.customMenu?.trim());
+    if (dishCount === 0 && !hasCustom) {
+      setFieldError(
+        tText(
+          'Select at least one dish, or add a custom menu note.',
+          'Pilih sekurang-kurangnya satu hidangan, atau isi nota menu khas.'
+        )
+      );
+      return;
+    }
+    setFieldError(null);
+    await handleStepNext(2);
+  };
+
   return (
     <motion.div
       key="step2"
@@ -105,7 +124,7 @@ export function Step2DishSelection({
                   return (
                     <div
                       key={item.id}
-                      onClick={() => handleToggleDish(item)}
+                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
                       className={cn(
                         "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                         isSelected 
@@ -153,7 +172,7 @@ export function Step2DishSelection({
                   return (
                     <div
                       key={item.id}
-                      onClick={() => handleToggleDish(item)}
+                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
                       className={cn(
                         "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                         isSelected 
@@ -201,7 +220,7 @@ export function Step2DishSelection({
                   return (
                     <div
                       key={item.id}
-                      onClick={() => handleToggleDish(item)}
+                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
                       className={cn(
                         "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                         isSelected 
@@ -257,7 +276,7 @@ export function Step2DishSelection({
                         return (
                           <div
                             key={item.id}
-                            onClick={() => handleToggleDish(item)}
+                            onClick={() => { setFieldError(null); void handleToggleDish(item); }}
                             className={cn(
                               "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                               isSelected 
@@ -301,7 +320,7 @@ export function Step2DishSelection({
                         return (
                           <div
                             key={item.id}
-                            onClick={() => handleToggleDish(item)}
+                            onClick={() => { setFieldError(null); void handleToggleDish(item); }}
                             className={cn(
                               "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
                               isSelected 
@@ -399,6 +418,8 @@ export function Step2DishSelection({
         </div>
       </div>
 
+      {fieldError && <FormError message={fieldError} />}
+
       {/* Buttons Navigation */}
       <div className="flex gap-3">
         <Button
@@ -410,7 +431,7 @@ export function Step2DishSelection({
           {t('back')}
         </Button>
         <Button
-          onClick={() => handleStepNext(2)}
+          onClick={validateAndNext}
           className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
         >
           {tText('Next: Details', 'Seterusnya: Butiran')}
