@@ -358,15 +358,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                         : { type: 'spring', stiffness: 120, damping: 14, delay: 0.08 },
                     }}
                   >
-                    {/* Face A — plain bag (matches SVG bag appearance) */}
-                    <div
-                      className="absolute inset-0 rounded-lg bg-[#2d3436] border-2 border-[#B4FF39]/60 flex items-center justify-center"
-                      style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-                    >
-                      <div className="w-4/5 h-0.5 bg-[#B4FF39]/50 rounded-full" />
-                    </div>
-
-                    {/* Face B — full logo only (no panel background) */}
+                    {/* Face A removed — real SVG bag shows until flip.
+                        Face B: full logo only (no panel background) */}
                     <div
                       className="absolute inset-0 flex items-center justify-center overflow-visible"
                       style={{
