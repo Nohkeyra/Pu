@@ -1,7 +1,7 @@
 {
   "name": "restoran-wawasan",
   "private": true,
-  "version": "1.2.6",
+  "version": "1.2.5",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,7 +12,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "sync:android": "npx cap sync android",
-    "postinstall": "node scripts/patch-capacitor.cjs"
+    "postinstall": "node scripts/patch-capacitor.cjs",
+    "version:show": "node scripts/bump-version.cjs show",
+    "version:patch": "node scripts/bump-version.cjs patch",
+    "version:minor": "node scripts/bump-version.cjs minor",
+    "version:major": "node scripts/bump-version.cjs major"
   },
   "dependencies": {
     "@capacitor-community/fcm": "^8.1.0",
