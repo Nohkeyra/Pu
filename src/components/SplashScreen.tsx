@@ -243,39 +243,29 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             illustration only occupies ~x:45–1056, y:99–997 of that space.
             We size the img at w-72 (288px) which gives a comfortable scale.
 
-            Entry: x starts at 110vw (fully off-screen right). On desktop the
-            rider is wider so we use a generous starting offset. On mobile
-            110vw is sufficient. Landing x is -50% (centering via translateX).
-
-            scaleX(-1) mirrors the whole rig so the motorcycle faces LEFT
-            (its natural drawn direction is right-facing). The bag overlay
-            below compensates for this mirror with its own scaleX(-1).
+            Entry: from LEFT of screen → stop at CENTER.
+            left-1/2 + x:-50% = true center. initial x is off the left edge.
+            Bike faces RIGHT (natural SVG = direction of travel).
           */}
           <motion.div
-            className="absolute bottom-[28%]"
-            style={{ translateX: '-50%', left: '50%' }}
-            initial={{ x: '110vw' }}
+            className="absolute bottom-[28%] left-1/2"
+            initial={{ x: 'calc(-50% - 100vw)' }}
             animate={{
-              x: 0,
-              // Heavy motor stop: drops down (compression), springs up (rebound),
-              // smaller secondary bounce, rest. 3-point keyframe for realism.
+              // -50% centers the element on left-1/2; starts fully off LEFT edge
+              x: '-50%',
+              // Heavy motor stop bounce
               y: isSettling ? (isLowEnd ? [0, -8, 0] : [0, 14, -6, 2, 0]) : 0,
             }}
             transition={{
-              // Spring entry: starts slow (anticipation), accelerates hard into
-              // center, spring overshoots slightly then settles — feels like
-              // a real vehicle with weight and momentum, not a CSS slide
-              x: isLowEnd 
+              x: isLowEnd
                 ? { duration: 1.1, ease: [0.22, 1, 0.36, 1] }
                 : { type: 'spring', stiffness: 60, damping: 14, mass: 1.2 },
-              // Settle bounce: heavy motor stops — drops down, bounces up,
-              // smaller bounce, rest. Feels weighted, not floaty.
-              y: isLowEnd 
+              y: isLowEnd
                 ? { duration: 0.25, ease: 'easeOut' }
                 : { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
             }}
           >
-            <div className="relative w-72 h-72" style={{ transform: riderSvgError ? 'none' : 'scaleX(-1)' }}>
+            <div className="relative w-72 h-72">
               {/* Rider illustration — CSS @keyframes inside SVG handle wheel
                   spin, head nod, arm reach, bag bounce during 'ride'/'settle'.
                   We don't need to suppress them; the bag overlay simply mounts
@@ -286,6 +276,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                   alt=""
                   aria-hidden="true"
                   className="w-full h-full object-contain"
+                  style={{ transform: 'scaleX(-1)' }}
                   draggable={false}
                   onError={() => setRiderSvgError(true)}
                 />
@@ -328,7 +319,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 <div
                   className="absolute"
                   style={{
-                    left: '66.3%',
+                    // Bag is on the RIGHT after scaleX(-1) on the img
+                    left: '15.4%',
                     top: '25.6%',
                     width: '18.3%',
                     height: '37.5%',
@@ -373,7 +365,6 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                         src={getAssetUrl('/assets/wawasan_logo_badge.png')}
                         alt="Restoran Wawasan"
                         className="w-[120%] h-[120%] object-contain drop-shadow-lg"
-                        style={{ transform: 'scaleX(-1)' }}
                         draggable={false}
                       />
                     </div>
@@ -387,7 +378,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           {isRiding && (
             <motion.div
               className="absolute bottom-[38%] flex flex-col gap-1.5"
-              style={{ left: '55%' }}
+              style={{ right: '55%' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 0.7, 0.7, 0] }}
               transition={{ duration: 1.1, times: [0, 0.15, 0.75, 1] }}
