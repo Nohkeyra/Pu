@@ -98,7 +98,7 @@ export default function LoginPage() {
                     sessionStorage.setItem('wawasan_guest_allowed', 'true');
                     navigate('/order');
                   }}
-                  className="flex w-full min-h-[52px] items-center justify-center gap-3 rounded-2xl border border-deep-forest/10 bg-white/80 px-5 py-4 text-base font-semibold text-deep-forest shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-sunshine-cta)]/35 hover:bg-white active:scale-[0.99] dark:border-white/10 dark:bg-white/6 dark:text-white dark:hover:bg-white/10"
+                  className="btn-secondary flex w-full min-h-[52px] items-center justify-center gap-3 rounded-2xl px-5 py-4 text-base font-semibold"
                 >
                   <ShoppingBag className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
                   {tLocal('Order as Guest', 'Pesan Sebagai Tetamu')}
@@ -110,7 +110,7 @@ export default function LoginPage() {
                     sessionStorage.setItem('wawasan_guest_allowed', 'true');
                     navigate('/home', { replace: true });
                   }}
-                  className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-deep-forest/75 transition-all duration-300 hover:bg-deep-forest/[0.04] hover:text-deep-forest active:scale-[0.99] dark:text-white/75 dark:hover:bg-white/6 dark:hover:text-white"
+                  className="btn-ghost flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm"
                 >
                   <Compass className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
                   {tLocal('Explore menu & story', 'Teroka menu & cerita')}
