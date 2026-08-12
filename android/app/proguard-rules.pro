@@ -14,19 +14,44 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# F-34 (audit, confirmed by Noh 2026-07-27): minifyEnabled is now true in
-# app/build.gradle. These widget/activity classes are referenced only by
-# fully-qualified name in AndroidManifest.xml / RemoteViewsService intents,
-# not by direct Java/Kotlin references R8 can trace — without these -keep
-# rules, R8 could strip or rename them, breaking the home-screen widget in
-# a release build with no build-time error (ClassNotFoundException only
-# shows up at runtime on-device). Test an actual signed release APK's
-# widget after this before shipping it.
 -keep class com.wawasanpakusop.app.widget.** { *; }
 -keep class com.wawasanpakusop.app.MainActivity { *; }
+
+# Capacitor Core & Android Runtime
+-keep class com.getcapacitor.** { *; }
+-keep public class com.getcapacitor.* { *; }
+-dontwarn com.getcapacitor.**
+
+# Capacitor Plugins (including Capacitor Updater & Firebase plugins)
+-keep class ee.forgr.capacitor_updater.** { *; }
+-dontwarn ee.forgr.capacitor_updater.**
+-keep class com.capacitorjs.** { *; }
+-keep class capacitor.android.** { *; }
+-keep class com.capacitor_community.** { *; }
+-keep class @capacitor-firebase.** { *; }
+
+# Firebase
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# OkHttp, Okio, Gson, and Networking
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keep class com.google.gson.** { *; }
+-keep class sun.misc.Unsafe { *; }
+
