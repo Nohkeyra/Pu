@@ -14,9 +14,9 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check if Java 17+ is installed
+# Check if Java 21+ is installed
 if ! command -v java &> /dev/null; then
-    echo "❌ Java is not installed. Please install JDK 17+"
+    echo "❌ Java is not installed. Please install JDK 21+"
     exit 1
 fi
 

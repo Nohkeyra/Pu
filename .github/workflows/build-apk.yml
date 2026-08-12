@@ -120,7 +120,14 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
         run: |
+          STORE_PASS="${KEYSTORE_PASSWORD:-${RELEASE_STORE_PASSWORD:-wawasan86}}"
+          KEY_PASS="${KEY_PASSWORD:-${RELEASE_KEY_PASSWORD:-wawasan86}}"
+          ALIAS="${KEY_ALIAS:-${RELEASE_KEY_ALIAS:-wawasan-key-alias}}"
+
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "✅ Decoding provided keystore..."
             mkdir -p android/app
@@ -128,17 +135,15 @@ jobs:
             chmod 600 android/app/release-key.jks
             echo "✅ Keystore saved to android/app/release-key.jks"
             
-            # Create keystore properties
-            echo "storePassword=$KEYSTORE_PASSWORD" > android/app/keystore.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/app/keystore.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/app/keystore.properties
-            echo "storeFile=release-key.jks" >> android/app/keystore.properties
-
-            # Create key.properties (read by android/app/build.gradle)
-            echo "storePassword=$KEYSTORE_PASSWORD" > android/app/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/app/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/app/key.properties
-            echo "storeFile=release-key.jks" >> android/app/key.properties
+            # Use existing key.properties if present and valid, otherwise generate from variables
+            if [ -f "android/app/key.properties" ] && grep -q "storePassword=[^$]" android/app/key.properties && [ -z "$KEYSTORE_PASSWORD" ] && [ -z "$RELEASE_STORE_PASSWORD" ]; then
+              echo "ℹ️  Using existing android/app/key.properties from repository..."
+            else
+              echo "storePassword=$STORE_PASS" > android/app/key.properties
+              echo "keyPassword=$KEY_PASS" >> android/app/key.properties
+              echo "keyAlias=$ALIAS" >> android/app/key.properties
+              echo "storeFile=release-key.jks" >> android/app/key.properties
+            fi
             cp android/app/key.properties android/key.properties
             
             echo "✅ Keystore configured for signing"
