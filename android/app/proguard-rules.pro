@@ -35,7 +35,8 @@
 -keep class com.capacitorjs.** { *; }
 -keep class capacitor.android.** { *; }
 -keep class com.capacitor_community.** { *; }
--keep class @capacitor-firebase.** { *; }
+-keep class capacitor.firebase.** { *; }
+-dontwarn capacitor.firebase.**
 
 # Firebase
 -keep class com.google.firebase.** { *; }
