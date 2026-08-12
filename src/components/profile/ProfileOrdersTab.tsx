@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { 
   History, 
@@ -130,15 +131,14 @@ export function ProfileOrdersTab({
           <Loader2 className="w-8 h-8 text-crisp-carrot animate-spin" />
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-12 bg-stone-50/50 dark:bg-stone-900/10 rounded-xl border border-dashed border-stone-200 dark:border-stone-800">
-          <Utensils className="w-10 h-10 text-stone-450 mx-auto mb-3" />
-          <p className="text-base font-bold text-deep-forest dark:text-white">
-            {t('No Past Orders Found', 'Tiada Rekod Tempahan')}
-          </p>
-          <p className="microcopy-12 text-stone-500 mt-1 max-w-sm mx-auto">
-            {t('Your submitted catering bookings will automatically appear here once ordered.', 'Tempahan katering yang dihantar akan dipaparkan di sini secara automatik.')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<Utensils className="w-10 h-10 opacity-70" aria-hidden />}
+          title={t('No Past Orders Found', 'Tiada Rekod Tempahan')}
+          description={t(
+            'Your submitted catering bookings will automatically appear here once ordered.',
+            'Tempahan katering yang dihantar akan dipaparkan di sini secara automatik.'
+          )}
+        />
       ) : (
         <div className="space-y-4">
           {orders.map((order, idx) => {

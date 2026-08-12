@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -12,6 +12,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
 import { cn, getAssetUrl } from '@/lib/utils';
 
@@ -39,6 +40,24 @@ export function Step1EventMeal({
   handleStepNext,
   tText,
 }: Step1EventMealProps) {
+  const [fieldErrors, setFieldErrors] = useState<{ eventType?: string; mealTypes?: string; guests?: string }>({});
+
+  const validateAndNext = async () => {
+    const next: typeof fieldErrors = {};
+    if (!orderState.eventType) {
+      next.eventType = tText('Please select an event type.', 'Sila pilih jenis majlis.');
+    }
+    if (orderState.mealTypes.length === 0) {
+      next.mealTypes = tText('Please select at least one meal.', 'Sila pilih sekurang-kurangnya satu hidangan.');
+    }
+    if (!orderState.guests || orderState.guests < 1) {
+      next.guests = tText('Minimum order is 1 guest.', 'Minimum tempahan ialah 1 orang.');
+    }
+    setFieldErrors(next);
+    if (Object.keys(next).length > 0) return;
+    await handleStepNext(1);
+  };
+
   return (
     <motion.div
       key="step1"
@@ -75,7 +94,7 @@ export function Step1EventMeal({
           type="button"
           role="radio"
           aria-checked={orderState.eventType === 'pejabat'}
-          onClick={() => setOrderState((prev: any) => ({ ...prev, eventType: 'pejabat' }))}
+          onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'pejabat' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
           className={cn(
             "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
             orderState.eventType === 'pejabat' 
@@ -102,7 +121,7 @@ export function Step1EventMeal({
           type="button"
           role="radio"
           aria-checked={orderState.eventType === 'lain'}
-          onClick={() => setOrderState((prev: any) => ({ ...prev, eventType: 'lain' }))}
+          onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'lain' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
           className={cn(
             "p-4 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-2 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
             orderState.eventType === 'lain' 
@@ -125,6 +144,7 @@ export function Step1EventMeal({
           <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
         </button>
       </div>
+      {fieldErrors.eventType && <FormError message={fieldErrors.eventType} />}
 
       {/* Meal Type selection */}
       <div className="space-y-2 pt-2">
@@ -146,7 +166,7 @@ export function Step1EventMeal({
                 key={m.id}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => handleToggleMeal(mealId)}
+                onClick={() => { handleToggleMeal(mealId); setFieldErrors((e) => ({ ...e, mealTypes: undefined })); }}
                 className={cn(
                   "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center gap-1.5 cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                   isSelected 
@@ -273,7 +293,10 @@ export function Step1EventMeal({
                   ...prev,
                   guests: isNaN(val) ? 0 : val
                 }));
+                setFieldErrors((err) => ({ ...err, guests: undefined }));
               }}
+              aria-invalid={Boolean(fieldErrors.guests)}
+              aria-describedby={fieldErrors.guests ? 'guests-error' : undefined}
               onBlur={() => {
                 setOrderState((prev: any) => ({
                   ...prev,
@@ -293,11 +316,13 @@ export function Step1EventMeal({
             </button>
           </div>
         </div>
+        {fieldErrors.guests && <FormError id="guests-error" message={fieldErrors.guests} />}
+        {fieldErrors.mealTypes && <FormError message={fieldErrors.mealTypes} />}
       </div>
 
       {/* Next Button */}
       <Button
-        onClick={() => handleStepNext(1)}
+        onClick={validateAndNext}
         className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
       >
         {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}

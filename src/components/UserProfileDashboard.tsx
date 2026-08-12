@@ -589,10 +589,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-stone/15 dark:border-white/10 bg-card px-4 gap-1 overflow-x-auto">
+      <div className="flex border-b border-stone/15 dark:border-white/10 bg-card px-4 gap-1.5 overflow-x-auto">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
             activeTab === 'orders'
               ? 'border-crisp-carrot text-crisp-carrot'
               : 'border-transparent text-stone hover:text-deep-forest'
@@ -609,7 +609,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
         <button
           onClick={() => setActiveTab('profile')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
             activeTab === 'profile'
               ? 'border-crisp-carrot text-crisp-carrot'
               : 'border-transparent text-stone hover:text-deep-forest'
@@ -621,7 +621,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
         <button
           onClick={() => setActiveTab('locations')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
             activeTab === 'locations'
               ? 'border-crisp-carrot text-crisp-carrot'
               : 'border-transparent text-stone hover:text-deep-forest'
@@ -638,7 +638,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
         <button
           onClick={() => setActiveTab('preferences')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
             activeTab === 'preferences'
               ? 'border-crisp-carrot text-crisp-carrot'
               : 'border-transparent text-stone hover:text-deep-forest'

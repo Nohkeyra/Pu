@@ -198,6 +198,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   }, []);
 
   // Multi-step State with localStorage draft support
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [orderState, setOrderState] = useState<OrderState>(() => {
     if (initialData) return initialData;
     try {
@@ -258,6 +259,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       try {
         localStorage.setItem('wawasan_order_draft_step', String(currentStep));
         localStorage.setItem('wawasan_order_draft_state', JSON.stringify(orderState));
+        setDraftSavedAt(Date.now());
       } catch (err) {
         console.warn('Failed to save draft state:', err);
       }
@@ -1063,6 +1065,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             {/* Progress Bar Indicator */}
             {currentStep <= 4 && (
               <div className="px-6 pt-6 pb-4 bg-muted/40 border-b border-stone/10" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+                {draftSavedAt && !initialData && (
+                  <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-3 flex items-center gap-1.5" role="status">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
+                    {tText('Draft saved on this device', 'Draf disimpan pada peranti ini')}
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   {[
                     { s: 1, label: tText('Event', 'Jenis') },

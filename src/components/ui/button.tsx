@@ -39,9 +39,12 @@ const buttonVariants = cva(
       size: {
         default: "h-11 min-h-[44px] px-5 rounded-2xl",
         sm:      "h-9  min-h-[44px] px-4 rounded-xl",
+        // Compact for dense toolbars / tables — still ≥36px for usability, use sparingly on touch devices
+        compact: "h-9 min-h-[36px] px-3 rounded-xl text-xs",
         lg:      "h-12 min-h-[48px] px-7 rounded-2xl",
         cta:     "h-12 min-h-[48px] px-6 rounded-2xl text-base font-bold",
         icon:    "h-11 w-11 min-h-[44px] min-w-[44px] rounded-xl",
+        "icon-sm": "h-8 w-8 min-h-[32px] min-w-[32px] rounded-lg",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

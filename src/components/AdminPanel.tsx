@@ -86,8 +86,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   // Kept as read-only state (not full useState) because filteredOrders'
   // memo below still reads them; AdminTablesTab.tsx has its own separate
   // statusFilter/clientFilter local state and is unaffected by this.
-  const [statusFilter] = useState<string>('all');
-  const [clientFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [clientFilter, setClientFilter] = useState<string>('all');
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
   const [dateToFilter, setDateToFilter] = useState<string>('');
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
@@ -1427,190 +1427,93 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           <p className="hidden lg:block microcopy-12 font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest mb-4">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
-          <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'orders'
-                  ? 'text-[var(--color-sunshine-cta)]'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              {activeTab === 'orders' && (
-                <motion.div
-                  layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
-                  animate={{
-                    boxShadow: [
-                      '0 0 2px rgba(251, 191, 36, 0.15)',
-                      '0 0 10px rgba(251, 191, 36, 0.55)',
-                      '0 0 2px rgba(251, 191, 36, 0.15)'
-                    ],
-                    borderColor: [
-                      'rgba(251, 191, 36, 0.4)',
-                      'rgba(251, 191, 36, 0.85)',
-                      'rgba(251, 191, 36, 0.4)'
-                    ]
-                  }}
-                  transition={{
-                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
-                  }}
-                />
-              )}
-              <FileText className="w-4 h-4 z-10" />
-              <span className="z-10">{t('orders') || 'Orders'}</span>
-              {cancelRequests.length > 0 && (
-                <motion.div
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="ml-auto flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
+          <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
+            {[
+              {
+                id: 'orders' as const,
+                label: t('orders') || 'Orders',
+                icon: FileText,
+                onClick: () => setActiveTab('orders'),
+                badge: cancelRequests.length > 0 ? (
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="ml-auto flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
+                  >
+                    <Bell className="w-3 h-3" />
+                    <span>{cancelRequests.length}</span>
+                  </motion.div>
+                ) : null,
+              },
+              {
+                id: 'diagnostics' as const,
+                label: 'Diagnostics',
+                icon: Activity,
+                onClick: () => {
+                  setActiveTab('diagnostics');
+                  runAllDiagnostics();
+                },
+              },
+              {
+                id: 'tables' as const,
+                label: 'Tables View',
+                icon: Table,
+                onClick: () => setActiveTab('tables'),
+              },
+              {
+                id: 'menu' as const,
+                label: language === 'en' ? 'Menu Manager' : 'Pengurus Menu',
+                icon: UtensilsIcon,
+                onClick: () => setActiveTab('menu'),
+              },
+              {
+                id: 'updates' as const,
+                label: language === 'en' ? 'Live Updates' : 'Kemaskini In-App',
+                icon: Radio,
+                onClick: () => setActiveTab('updates'),
+              },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={tab.onClick}
+                  className={`px-5 py-3.5 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start min-h-[48px] ${
+                    isActive
+                      ? 'text-[var(--color-sunshine-cta)]'
+                      : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
+                  }`}
                 >
-                  <Bell className="w-3 h-3" />
-                  <span>{cancelRequests.length}</span>
-                </motion.div>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('diagnostics');
-                runAllDiagnostics();
-              }}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'diagnostics'
-                  ? 'text-[var(--color-sunshine-cta)]'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              {activeTab === 'diagnostics' && (
-                <motion.div
-                  layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
-                  animate={{
-                    boxShadow: [
-                      '0 0 2px rgba(251, 191, 36, 0.15)',
-                      '0 0 10px rgba(251, 191, 36, 0.55)',
-                      '0 0 2px rgba(251, 191, 36, 0.15)'
-                    ],
-                    borderColor: [
-                      'rgba(251, 191, 36, 0.4)',
-                      'rgba(251, 191, 36, 0.85)',
-                      'rgba(251, 191, 36, 0.4)'
-                    ]
-                  }}
-                  transition={{
-                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
-                  }}
-                />
-              )}
-              <Activity className="w-4 h-4 z-10" />
-              <span className="z-10">Diagnostics</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('tables')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'tables'
-                  ? 'text-[var(--color-sunshine-cta)]'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              {activeTab === 'tables' && (
-                <motion.div
-                  layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
-                  animate={{
-                    boxShadow: [
-                      '0 0 2px rgba(251, 191, 36, 0.15)',
-                      '0 0 10px rgba(251, 191, 36, 0.55)',
-                      '0 0 2px rgba(251, 191, 36, 0.15)'
-                    ],
-                    borderColor: [
-                      'rgba(251, 191, 36, 0.4)',
-                      'rgba(251, 191, 36, 0.85)',
-                      'rgba(251, 191, 36, 0.4)'
-                    ]
-                  }}
-                  transition={{
-                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
-                  }}
-                />
-              )}
-              <Table className="w-4 h-4 z-10" />
-              <span className="z-10">Tables View</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('menu')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'menu'
-                  ? 'text-[var(--color-sunshine-cta)]'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              {activeTab === 'menu' && (
-                <motion.div
-                  layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
-                  animate={{
-                    boxShadow: [
-                      '0 0 2px rgba(251, 191, 36, 0.15)',
-                      '0 0 10px rgba(251, 191, 36, 0.55)',
-                      '0 0 2px rgba(251, 191, 36, 0.15)'
-                    ],
-                    borderColor: [
-                      'rgba(251, 191, 36, 0.4)',
-                      'rgba(251, 191, 36, 0.85)',
-                      'rgba(251, 191, 36, 0.4)'
-                    ]
-                  }}
-                  transition={{
-                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
-                  }}
-                />
-              )}
-              <UtensilsIcon className="w-4 h-4 z-10" />
-              <span className="z-10">{language === 'en' ? 'Menu Manager' : 'Pengurus Menu'}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('updates')}
-              className={`px-6 py-3 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap flex-shrink-0 lg:w-full lg:justify-start ${
-                activeTab === 'updates'
-                  ? 'text-[var(--color-sunshine-cta)]'
-                  : 'text-deep-forest/70 dark:text-stone/70 hover:text-deep-forest dark:hover:text-white hover:bg-stone/10'
-              }`}
-            >
-              {activeTab === 'updates' && (
-                <motion.div
-                  layoutId="adminActiveTab"
-                  className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
-                  animate={{
-                    boxShadow: [
-                      '0 0 2px rgba(251, 191, 36, 0.15)',
-                      '0 0 10px rgba(251, 191, 36, 0.55)',
-                      '0 0 2px rgba(251, 191, 36, 0.15)'
-                    ],
-                    borderColor: [
-                      'rgba(251, 191, 36, 0.4)',
-                      'rgba(251, 191, 36, 0.85)',
-                      'rgba(251, 191, 36, 0.4)'
-                    ]
-                  }}
-                  transition={{
-                    boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
-                    default: { type: 'spring', bounce: 0.15, duration: 0.5 }
-                  }}
-                />
-              )}
-              <Radio className="w-4 h-4 z-10" />
-              <span className="z-10">{language === 'en' ? 'Live Updates' : 'Kemaskini In-App'}</span>
-            </button>
+                  {isActive && (
+                    <motion.div
+                      layoutId="adminActiveTab"
+                      className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
+                      animate={{
+                        boxShadow: [
+                          '0 0 2px rgba(251, 191, 36, 0.15)',
+                          '0 0 10px rgba(251, 191, 36, 0.55)',
+                          '0 0 2px rgba(251, 191, 36, 0.15)'
+                        ],
+                        borderColor: [
+                          'rgba(251, 191, 36, 0.4)',
+                          'rgba(251, 191, 36, 0.85)',
+                          'rgba(251, 191, 36, 0.4)'
+                        ]
+                      }}
+                      transition={{
+                        boxShadow: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        borderColor: { repeat: Infinity, duration: 2, ease: "easeInOut" },
+                        default: { type: 'spring', bounce: 0.15, duration: 0.5 }
+                      }}
+                    />
+                  )}
+                  <Icon className="w-4 h-4 z-10 shrink-0" />
+                  <span className="z-10">{tab.label}</span>
+                  {tab.badge}
+                </button>
+              );
+            })}
           </div>
         </div>
       </nav>
@@ -1703,6 +1606,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               setDateFromFilter={setDateFromFilter}
               dateToFilter={dateToFilter}
               setDateToFilter={setDateToFilter}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
               isSelectMode={isSelectMode}
               setIsSelectMode={setIsSelectMode}
               filterBySameEmail={filterBySameEmail}

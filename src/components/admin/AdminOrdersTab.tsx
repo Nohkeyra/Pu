@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
-  AlertTriangle, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, X, Star, Edit2, MoreHorizontal
+  AlertTriangle, Check, Eye, FileText, FileDown, Send, Trash2, Loader2, FileSpreadsheet, X, Star, Edit2, MoreHorizontal, Search, Inbox
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 import { List } from 'react-window';
 
@@ -31,6 +32,8 @@ export function AdminOrdersTab({
   setDateFromFilter,
   dateToFilter,
   setDateToFilter,
+  statusFilter = 'all',
+  setStatusFilter,
   isSelectMode,
   setIsSelectMode,
   filterBySameEmail = true,
@@ -67,6 +70,8 @@ export function AdminOrdersTab({
   setDateFromFilter: (v: string) => void;
   dateToFilter: string;
   setDateToFilter: (v: string) => void;
+  statusFilter?: string;
+  setStatusFilter?: (v: string) => void;
   isSelectMode: boolean;
   setIsSelectMode: (v: boolean) => void;
   filterBySameEmail?: boolean;
@@ -97,6 +102,26 @@ export function AdminOrdersTab({
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Local search over already-filtered orders (name, email, phone, invoice, client)
+  const searchedOrders = searchQuery.trim()
+    ? filteredOrders.filter((o) => {
+        const q = searchQuery.trim().toLowerCase();
+        const hay = [
+          o.name,
+          o.email,
+          o.phone,
+          o.invoiceNo,
+          o.to,
+          o.id,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      })
+    : filteredOrders;
 
   // Inline editing states for Pax and Pricing
   const [editingCell, setEditingCell] = useState<{ orderId: string; field: 'quantity' | 'pricePerPax'; mealKey?: string } | null>(null);
@@ -206,16 +231,16 @@ export function AdminOrdersTab({
           </h2>
           <div className="space-y-2.5">
             {cancelRequests.map((order, idx) => (
-              <div key={order.id || `cancel-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white dark:bg-card border border-amber-500/20 rounded-xl shadow-sm">
+              <div key={order.id || `cancel-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 bg-white dark:bg-card border border-amber-500/20 rounded-xl shadow-sm">
                 <div>
                   <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{order.name} ({order.quantity} pax)</p>
                   <p className="text-xs text-stone-500 dark:text-stone-400">{order.dateTime ? format(new Date(order.dateTime), 'PP p') : '-'}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
-                    className="h-8 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 border-emerald-500/30 font-bold text-xs"
+                    className="h-10 min-h-[40px] bg-emerald-600 hover:bg-emerald-700 text-white border-0 font-bold text-sm shadow-sm px-4"
                     onClick={async () => {
                       setIsApproving(true);
                       try {
@@ -248,7 +273,7 @@ export function AdminOrdersTab({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 border-rose-500/30 font-bold text-xs"
+                    className="h-10 min-h-[40px] bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 border-rose-500/30 font-bold text-sm px-4"
                     onClick={() => order.id && handleRejectCancellation(order.id)}
                   >
                     {t('reject')}
@@ -260,92 +285,143 @@ export function AdminOrdersTab({
         </div>
       )}
 
-      {/* Streamlined Compact Toolbar */}
-      <div className="mb-4 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-3.5 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-end gap-3">
-          {/* Inline Compact Filter Dropdowns & Mode Toggles */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Date From & Date To */}
-            <div className="flex items-center gap-2 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
+      {/* Balanced toolbar — open on phone, compact & professional on desktop */}
+      <div className="mb-5 bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-4 md:p-4 shadow-sm space-y-3">
+        {/* Primary controls */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+          {/* Date range */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex-1 md:flex-none flex items-center gap-2 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3.5 h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                {language === 'bm' ? 'Dari:' : 'From:'}
+                {language === 'bm' ? 'Dari' : 'From'}
               </span>
               <input
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
                 onChange={(e) => setDateFromFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer min-w-[110px]"
+                className="w-full md:w-[8.5rem] min-w-0 bg-transparent text-sm font-semibold text-deep-forest dark:text-white focus:outline-none"
               />
+              <span className="text-stone-300 dark:text-stone-600 shrink-0">–</span>
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                {language === 'bm' ? 'Hingga:' : 'To:'}
+                {language === 'bm' ? 'Hingga' : 'To'}
               </span>
               <input
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
                 onChange={(e) => setDateToFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer min-w-[110px]"
+                className="w-full md:w-[8.5rem] min-w-0 bg-transparent text-sm font-semibold text-deep-forest dark:text-white focus:outline-none"
               />
             </div>
-
-            {/* Clear Filter Button */}
             {(dateFromFilter || dateToFilter) && (
               <button
-                onClick={() => {
-                  setDateFromFilter('');
-                  setDateToFilter('');
-                }}
-                className="h-9 w-9 flex items-center justify-center text-rose-500 hover:bg-rose-500/10 rounded-xl text-xs font-bold transition-all border border-rose-500/20"
-                title={language === 'bm' ? 'Reset Tapisan' : 'Reset Filters'}
+                onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
+                className="h-11 w-11 md:h-10 md:w-10 flex items-center justify-center text-rose-500 hover:bg-rose-500/10 rounded-xl border border-rose-500/20 shrink-0"
+                title={language === 'bm' ? 'Reset' : 'Reset'}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
+          </div>
 
-            {/* Select Mode Switch */}
-            <div className="flex items-center gap-2 px-3 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-9">
+          {/* Search */}
+          <div className="relative w-full md:w-56 lg:w-64 order-first md:order-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" aria-hidden />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
+              aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
+              className="w-full h-11 md:h-10 min-h-[44px] md:min-h-[40px] pl-9 pr-3 rounded-xl border border-stone/15 dark:border-white/10 bg-cream/50 dark:bg-background/40 text-sm font-medium text-deep-forest dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-sunshine-cta)]/40"
+            />
+          </div>
+
+          {/* Primary actions — stay in one line on desktop */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2.5 px-3.5 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
               <Switch
                 id="select-mode-toggle"
                 checked={isSelectMode}
                 onCheckedChange={(checked) => {
                   setIsSelectMode(checked);
-                  if (!checked) {
-                    setSelectedOrderIds(new Set());
-                  }
+                  if (!checked) setSelectedOrderIds(new Set());
                 }}
               />
-              <label htmlFor="select-mode-toggle" className="text-xs font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none">
+              <label htmlFor="select-mode-toggle" className="text-sm font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none whitespace-nowrap">
                 {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
               </label>
             </div>
 
-            {isSelectMode && (
-              <div className="flex items-center gap-2 px-3 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-9">
-                <Switch
-                  id="email-filter-toggle"
-                  checked={filterBySameEmail}
-                  onCheckedChange={(checked) => {
-                    if (setFilterBySameEmail) setFilterBySameEmail(checked);
-                  }}
-                />
-                <label htmlFor="email-filter-toggle" className="text-xs font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none">
-                  {language === 'bm' ? 'Emel Sama' : 'Same Email'}
-                </label>
-              </div>
-            )}
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => setIsExportOpen(true)}
+              className="h-11 md:h-10 min-h-[44px] md:min-h-[40px] font-bold flex items-center gap-2 px-5 shadow-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
+            </Button>
+          </div>
+        </div>
 
-            {isSelectMode && filteredOrders.length > 0 && (
+        {/* Status filter chips */}
+        {setStatusFilter && (
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label={language === 'bm' ? 'Penapis status' : 'Status filter'}>
+            {[
+              { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
+              { id: 'pending', label: language === 'bm' ? 'Menunggu' : 'Pending' },
+              { id: 'approved', label: language === 'bm' ? 'Diluluskan' : 'Approved' },
+              { id: 'billed', label: language === 'bm' ? 'Dibilkan' : 'Billed' },
+              { id: 'cancel_requested', label: language === 'bm' ? 'Minta Batal' : 'Cancel req.' },
+              { id: 'cancelled', label: language === 'bm' ? 'Dibatalkan' : 'Cancelled' },
+            ].map((chip) => {
+              const active = statusFilter === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setStatusFilter(chip.id)}
+                  aria-pressed={active}
+                  className={`h-9 min-h-[36px] px-3 rounded-full text-xs font-bold border transition-colors ${
+                    active
+                      ? 'bg-[var(--color-sunshine-cta)] text-white border-[var(--color-sunshine-cta)] shadow-sm'
+                      : 'bg-cream/50 dark:bg-background/40 text-deep-forest/70 dark:text-stone/70 border-stone/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/40'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Selection tools — only when Select Mode is on */}
+        {isSelectMode && (
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-stone/10 dark:border-white/5">
+            <div className="flex items-center gap-2.5 px-3.5 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
+              <Switch
+                id="email-filter-toggle"
+                checked={filterBySameEmail}
+                onCheckedChange={(checked) => setFilterBySameEmail?.(checked)}
+              />
+              <label htmlFor="email-filter-toggle" className="text-sm font-semibold text-deep-forest/80 dark:text-stone/80 cursor-pointer select-none whitespace-nowrap">
+                {language === 'bm' ? 'Emel Sama' : 'Same Email'}
+              </label>
+            </div>
+
+            {searchedOrders.length > 0 && (
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => {
-                  const allSelected = filteredOrders.length > 0 && filteredOrders.every(o => o.id && selectedOrderIds.has(o.id));
+                  const allSelected = searchedOrders.every(o => o.id && selectedOrderIds.has(o.id));
                   if (allSelected) {
                     setSelectedOrderIds(new Set());
                     return;
                   }
-                  const distinctClients = new Set(filteredOrders.map(o => o.to));
+                  const distinctClients = new Set(searchedOrders.map(o => o.to));
                   if (distinctClients.size > 1) {
                     toast({
                       title: t('error') || 'Error',
@@ -356,63 +432,54 @@ export function AdminOrdersTab({
                     });
                     return;
                   }
-                  let toSelect = filteredOrders.filter(o => Boolean(o.id));
+                  let toSelect = searchedOrders.filter(o => Boolean(o.id));
                   if (filterBySameEmail) {
-                    const firstWithEmail = toSelect.find(o => Boolean(o.email));
-                    if (firstWithEmail && firstWithEmail.email) {
-                      const targetEmail = String(firstWithEmail.email).trim().toLowerCase();
-                      toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === targetEmail);
+                    const first = toSelect.find(o => o.email);
+                    if (first?.email) {
+                      const target = String(first.email).trim().toLowerCase();
+                      toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === target);
                     }
                   }
                   setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                 }}
-                className="border-stone/15 dark:border-white/10 bg-cream/60 dark:bg-background/40 text-deep-forest dark:text-white hover:bg-[var(--color-sunshine-cta)]/10 text-xs font-semibold h-9 px-3 rounded-xl flex items-center gap-1.5 !min-h-0"
+                className="h-11 md:h-10 min-h-[44px] md:min-h-[40px] border-stone/20 font-semibold"
               >
-                {filteredOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
-                    {t('deselect_all') || 'Deselect'}
-                  </>
+                {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
+                  <><Check className="w-4 h-4 mr-1.5 text-[var(--color-sunshine-cta)]" />{t('deselect_all') || 'Deselect'}</>
                 ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-deep-forest/40" />
-                    {t('select_all_orders') || 'Select All'}
-                  </>
+                  <><Check className="w-4 h-4 mr-1.5 opacity-40" />{t('select_all_orders') || 'Select All'}</>
                 )}
               </Button>
             )}
-
-            {/* Export CSV Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsExportOpen(true)}
-              className="border-[var(--color-sunshine-cta)]/30 bg-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/20 text-xs font-bold h-9 px-3.5 rounded-xl flex items-center gap-1.5 !min-h-0"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
-              <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
-            </Button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Jotform-style Submissions List */}
       <div className="bg-white dark:bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-sm overflow-hidden divide-y divide-stone/10 dark:divide-white/5 h-[800px] max-h-[70vh]">
-        {filteredOrders.length === 0 ? (
-          <div className="text-center text-deep-forest/60 dark:text-stone/60 py-20 bg-stone/5 dark:bg-white/5">
-            <div className="flex flex-col items-center gap-2">
-              <p className="text-lg font-display font-bold opacity-80 text-deep-forest dark:text-white">{t('no_orders')}</p>
-              <p className="text-xs opacity-50 dark:text-stone/60">Try adjusting your filters or search term</p>
-            </div>
-          </div>
+        {searchedOrders.length === 0 ? (
+          <EmptyState
+            className="m-4"
+            icon={<Inbox className="w-10 h-10 opacity-70" aria-hidden />}
+            title={searchQuery.trim()
+              ? (language === 'bm' ? 'Tiada hasil carian' : 'No matching orders')
+              : (t('no_orders') || 'No orders')}
+            description={searchQuery.trim()
+              ? (language === 'bm'
+                  ? 'Cuba tukar kata kunci atau kosongkan carian.'
+                  : 'Try a different keyword or clear the search.')
+              : (language === 'bm'
+                  ? 'Laraskan penapis tarikh atau tunggu pesanan baharu.'
+                  : 'Adjust date filters or wait for new orders.')}
+          />
         ) : (
           <List
             style={{ height: 650, width: '100%' }}
-            rowCount={filteredOrders.length}
+            rowCount={searchedOrders.length}
             rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 260 : 175}
             rowProps={{}}
             rowComponent={(({ index, style }: any) => {
-              const order = filteredOrders[index];
+              const order = searchedOrders[index];
               const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
               const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
               
@@ -483,7 +550,7 @@ export function AdminOrdersTab({
                   <div
                     key={order.id || `order-${index}`}
                     onClick={() => openOrderDetail(order)}
-                    className={`flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 p-3 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative h-full ${
+                    className={`flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 p-4 md:px-6 hover:bg-cream/15 dark:hover:bg-white/5 transition-colors cursor-pointer relative h-full ${
                       order.status === 'cancel_requested' ? 'bg-amber-500/5 border-l-4 border-l-amber-500' : ''
                     } ${isSelected ? 'bg-[var(--color-sunshine-cta)]/5 dark:bg-[var(--color-sunshine-cta)]/5 border-l-4 border-l-sunshine' : ''}`}
                   >
@@ -726,7 +793,7 @@ export function AdminOrdersTab({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 border-stone/20 text-deep-forest dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold px-3 rounded-lg flex items-center gap-1.5"
+                          className="h-10 md:h-9 min-h-[40px] md:min-h-[36px] border-stone/25 text-deep-forest dark:text-stone-200 hover:bg-[var(--color-sunshine-cta)]/10 hover:border-[var(--color-sunshine-cta)]/40 text-sm font-semibold px-4 rounded-xl flex items-center gap-1.5"
                           onClick={(e) => {
                             e.stopPropagation();
                             openOrderDetail(order);
@@ -740,7 +807,7 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-lg flex items-center justify-center shrink-0"
+                          className="h-10 w-10 md:h-9 md:w-9 min-h-[40px] md:min-h-[36px] min-w-[40px] md:min-w-[36px] p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-xl flex items-center justify-center shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             const rect = e.currentTarget.getBoundingClientRect();

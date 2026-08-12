@@ -21,6 +21,7 @@ import InAppUpdateModal from './components/InAppUpdateModal';
 import InAppUpdateBanner from './components/InAppUpdateBanner';
 import { useInAppUpdates } from './hooks/useInAppUpdates';
 import ScrollToTopButton from './components/ScrollToTopButton';
+import { OfflineBanner } from './components/OfflineBanner';
 import CateringSplashScreen from './components/SplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
@@ -223,6 +224,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+      <OfflineBanner />
       <ScrollToTop />
       <SmoothScrollHandler />
       <ScrollToTopButton />

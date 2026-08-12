@@ -480,6 +480,27 @@ export default function CalendarPage() {
             </button>
           </div>
 
+
+          {/* Status legend — clearer colour meaning */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 text-xs font-semibold text-stone-600 dark:text-stone-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden />
+              {tl('Pending', 'Menunggu')}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" aria-hidden />
+              {tl('Approved', 'Diluluskan')}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" aria-hidden />
+              {tl('Billed', 'Dibilkan')}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-stone-400" aria-hidden />
+              {tl('Notes', 'Nota')}
+            </span>
+          </div>
+
           {/* Loading Indicator */}
           {loading ? (
             <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-12 text-center shadow-sm">

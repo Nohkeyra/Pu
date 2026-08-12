@@ -511,11 +511,11 @@ export default function AdminMenuTab({
                 </div>
 
                 {/* Visibility Toggle & Actions Bar */}
-                <div className="flex items-center justify-between border-t border-stone-100 dark:border-white/5 pt-3 mt-4">
+                <div className="flex items-center justify-between border-t border-stone-100 dark:border-white/5 pt-3.5 mt-4 gap-3">
                   {/* Visibility Quick Toggle Button */}
                   <button
                     onClick={() => handleToggleAvailable(item)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors min-h-[32px] ${
                       isVisible
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                         : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400 border-stone-200 dark:border-stone-700 hover:bg-stone-200/50'
@@ -536,20 +536,20 @@ export default function AdminMenuTab({
                   </button>
 
                   {/* Card Controls */}
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleOpenEditModal(item)}
-                      className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 hover:text-deep-forest dark:text-stone-400 dark:hover:text-stone-200 rounded transition-colors"
+                      className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 hover:text-deep-forest dark:text-stone-400 dark:hover:text-stone-200 rounded-lg transition-colors"
                       title={tText('Edit Item', 'Kemas kini Hidangan')}
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteItem(item.id, tText(item.nameEn, item.nameBm))}
-                      className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 hover:text-rose-600 rounded transition-colors"
+                      className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 hover:text-rose-600 rounded-lg transition-colors"
                       title={tText('Delete Item', 'Padam Hidangan')}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -586,19 +586,11 @@ export default function AdminMenuTab({
                     {tText('Controls if customers can select this dish.', 'Mengawal sama ada pelanggan boleh memilih hidangan ini.')}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setFormState(prev => ({ ...prev, available: !prev.available }))}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    formState.available ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-700'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                      formState.available ? 'translate-x-4.5' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+                <Switch
+                  checked={formState.available}
+                  onCheckedChange={(checked) => setFormState(prev => ({ ...prev, available: checked }))}
+                  aria-label={tText('Show in Order Form', 'Papar dalam Borang Tempahan')}
+                />
               </div>
 
               {/* Category */}

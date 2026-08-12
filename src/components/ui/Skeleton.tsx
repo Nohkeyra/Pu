@@ -1,15 +1,18 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-export type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
+export type SkeletonProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Neutral skeleton that works in both light and dark themes.
+ */
 export function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-white/[0.06] border border-white/[0.02]",
+        "animate-pulse rounded-md bg-stone/15 dark:bg-white/10 border border-stone/10 dark:border-white/5",
         className
       )}
       {...props}
     />
-  );
+  )
 }

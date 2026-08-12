@@ -1,4 +1,6 @@
-import React from 'react';
+import { useState } from 'react';
+import React from 'react'
+// useState added below;
 import { motion } from 'motion/react';
 import { format } from 'date-fns';
 import { 
@@ -10,6 +12,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -72,6 +75,45 @@ export function Step3ContactDetails({
   tText,
   t,
 }: Step3ContactDetailsProps) {
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateAndNext = async () => {
+    const next: Record<string, string> = {};
+    if (orderState.eventType === 'pejabat') {
+      if (!orderState.companyName) {
+        next.companyName = tText('Please select or enter a company/department.', 'Sila pilih atau masukkan syarikat/jabatan.');
+      } else if (orderState.companyName === 'other' && !orderState.customCompany?.trim()) {
+        next.customCompany = tText('Please enter the company/department name.', 'Sila masukkan nama syarikat/jabatan.');
+      }
+    }
+    if (!orderState.name?.trim()) {
+      next.name = tText('Please enter your full name.', 'Sila masukkan nama penuh anda.');
+    }
+    if (!orderState.contact?.trim() || orderState.contact.trim().length < 8) {
+      next.contact = tText('Please enter a valid phone number.', 'Sila masukkan nombor telefon yang sah.');
+    }
+    if (!orderState.email?.trim()) {
+      next.email = tText('Please enter your email for invoices.', 'Sila masukkan emel untuk invois.');
+    } else if ((orderState.email || '').trim().toLowerCase() !== (orderState.confirmEmail || '').trim().toLowerCase()) {
+      next.confirmEmail = tText('Email confirmation does not match.', 'Pengesahan emel tidak sepadan.');
+    }
+    if (!orderState.date) {
+      next.date = tText('Please select the event date.', 'Sila pilih tarikh majlis.');
+    }
+    if (!orderState.time) {
+      next.time = tText('Please select the event time.', 'Sila pilih masa majlis.');
+    }
+    if (!orderState.location?.trim()) {
+      next.location = tText('Please enter the delivery/pickup location.', 'Sila masukkan lokasi.');
+    }
+    if (!orderState.delivery) {
+      next.delivery = tText('Please choose delivery or pickup.', 'Sila pilih hantar atau ambil sendiri.');
+    }
+    setFieldErrors(next);
+    if (Object.keys(next).length > 0) return;
+    await handleStepNext(3);
+  };
+
   return (
     <motion.div
       key="step3"
@@ -329,6 +371,15 @@ export function Step3ContactDetails({
 
       </div>
 
+      {Object.keys(fieldErrors).length > 0 && (
+        <FormError
+          message={tText(
+            'Please fix the highlighted fields before continuing.',
+            'Sila lengkapkan medan yang diperlukan sebelum teruskan.'
+          )}
+        />
+      )}
+
       {/* Buttons Navigation */}
       <div className="flex gap-3">
         <Button
@@ -340,7 +391,7 @@ export function Step3ContactDetails({
           {t('back')}
         </Button>
         <Button
-          onClick={() => handleStepNext(3)}
+          onClick={validateAndNext}
           className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
         >
           {tText('Next: Review', 'Seterusnya: Semak')}

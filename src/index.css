@@ -36,6 +36,21 @@
     --color-sunshine-cta-hover: #8F3200;
     --color-sunshine-cta-press: #6F2600;
 
+    /* Spacing scale (use consistently: tight groups / sections / cards) */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --radius-2xl: 1.5rem;
+
+
     --color-cream: #FCF5E3;             /* Warm Cream Bg */
     --color-cream-dark: #F5E8D0;        /* Slightly Darker Cream */
     --color-charcoal: #023341;          /* Re-mapped to Deep Navy for legacy classes */
