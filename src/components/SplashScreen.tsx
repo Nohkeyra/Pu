@@ -366,25 +366,23 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       <div className="w-4/5 h-0.5 bg-[#B4FF39]/50 rounded-full" />
                     </div>
 
-                    {/* Face B — Wawasan signage revealed after flip */}
+                    {/* Face B — full logo only (no panel background) */}
                     <div
-                      className="absolute inset-0 rounded-lg bg-[#FF6A1A] border-2 border-[#B4FF39] flex flex-col items-center justify-center gap-0.5 px-1 shadow-xl"
+                      className="absolute inset-0 flex items-center justify-center overflow-visible"
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
                         transform: 'rotateY(180deg)',
                       }}
                     >
-                      {/* Counter-mirror: parent rig is scaleX(-1), so text
-                          needs another scaleX(-1) to read normally */}
-                      <div style={{ transform: 'scaleX(-1)', textAlign: 'center' }}>
-                        <span className="block text-[7px] font-black text-white leading-none tracking-tight uppercase">
-                          WAWASAN
-                        </span>
-                        <span className="block text-[5px] font-bold text-[#151714] leading-none uppercase mt-0.5">
-                          Est. 1986
-                        </span>
-                      </div>
+                      {/* Counter-mirror: parent rig is scaleX(-1) */}
+                      <img
+                        src={getAssetUrl('/assets/wawasan_logo_badge.png')}
+                        alt="Restoran Wawasan"
+                        className="w-[120%] h-[120%] object-contain drop-shadow-lg"
+                        style={{ transform: 'scaleX(-1)' }}
+                        draggable={false}
+                      />
                     </div>
                   </motion.div>
                 </div>

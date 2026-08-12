@@ -3,9 +3,7 @@
 
   <defs>
     <style>
-      @keyframes spinWheel {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(-360deg); }
+      /* spinWheel REMOVED — autotrace grouped coverset into wheel groups */
       }
       @keyframes nodHead {
         0%, 100% { transform: rotate(0deg); }
@@ -33,13 +31,18 @@
       }
 
       #front-wheel {
-        transform-origin: 478.5px 630.0px;
-        animation: spinWheel 0.5s linear infinite;
+        animation: none !important;
+        transform: none !important;
       }
       #rear-wheel {
-        transform-origin: 573.5px 840px;
-        animation: spinWheel 0.5s linear infinite;
+        animation: none !important;
+        transform: none !important;
       }
+      .front-wheel, .rear-wheel {
+        animation: none !important;
+        transform: none !important;
+      }
+
       #rider-head {
         transform-origin: 715px 266px;
         animation: nodHead 1.8s ease-in-out infinite;

@@ -97,7 +97,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (initialData) return 1;
+    try {
+      const saved = localStorage.getItem('wawasan_order_draft_step');
+      if (saved) {
+        const parsedStep = parseInt(saved, 10);
+        if (parsedStep > 1 && parsedStep < 5) return parsedStep;
+      }
+    } catch (err) {
+      console.warn('Failed to load draft step:', err);
+    }
+    return 1;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   // C-03 (2026-08-06): stable per-attempt key so a retried/duplicate submit
   // (network timeout + retry, offline-queue replay) can't create a second
@@ -117,6 +129,42 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
   const [dynamicMenu, setDynamicMenu] = useState<any[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+
+  // Helper to clear saved draft
+  const clearOrderDraft = () => {
+    try {
+      localStorage.removeItem('wawasan_order_draft_step');
+      localStorage.removeItem('wawasan_order_draft_state');
+    } catch (err) {
+      console.warn('Failed to clear draft:', err);
+    }
+  };
+
+  // Handle mobile / hardware back button step navigation in form
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    let handle: any = null;
+    const setupBackButton = async () => {
+      try {
+        handle = await Capacitor.Plugins.App.addListener('backButton', () => {
+          if (currentStep > 1 && currentStep < 5) {
+            triggerLightImpact();
+            setCurrentStep(s => s - 1);
+          }
+        });
+      } catch (err) {
+        console.warn('Failed to add backButton listener:', err);
+      }
+    };
+    setupBackButton();
+
+    return () => {
+      if (handle && typeof handle.remove === 'function') {
+        handle.remove();
+      }
+    };
+  }, [currentStep]);
 
   useEffect(() => {
     let isMounted = true;
@@ -149,27 +197,72 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     };
   }, []);
 
-  // Multi-step State
-  const [orderState, setOrderState] = useState<OrderState>({
-    eventType: '',
-    mealTypes: [],
-    preparationType: 'meal_box',
-    guests: 50,
-    dishes: [],
-    veggies: [],
-    name: '',
-    contact: '',
-    email: '',
-    confirmEmail: '',
-    date: '',
-    time: '12:00',
-    location: '',
-    delivery: 'delivery',
-    notes: '',
-    companyName: '',
-    customCompany: '',
-    customMenu: ''
+  // Multi-step State with localStorage draft support
+  const [orderState, setOrderState] = useState<OrderState>(() => {
+    if (initialData) return initialData;
+    try {
+      const saved = localStorage.getItem('wawasan_order_draft_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            eventType: parsed.eventType || '',
+            mealTypes: parsed.mealTypes || [],
+            preparationType: parsed.preparationType || 'meal_box',
+            guests: parsed.guests || 50,
+            dishes: parsed.dishes || [],
+            veggies: parsed.veggies || [],
+            name: parsed.name || '',
+            contact: parsed.contact || '',
+            email: parsed.email || '',
+            confirmEmail: parsed.confirmEmail || '',
+            date: parsed.date || '',
+            time: parsed.time || '12:00',
+            location: parsed.location || '',
+            delivery: parsed.delivery || 'delivery',
+            notes: parsed.notes || '',
+            companyName: parsed.companyName || '',
+            customCompany: parsed.customCompany || '',
+            customMenu: parsed.customMenu || ''
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to parse draft state:', err);
+    }
+    return {
+      eventType: '',
+      mealTypes: [],
+      preparationType: 'meal_box',
+      guests: 50,
+      dishes: [],
+      veggies: [],
+      name: '',
+      contact: '',
+      email: '',
+      confirmEmail: '',
+      date: '',
+      time: '12:00',
+      location: '',
+      delivery: 'delivery',
+      notes: '',
+      companyName: '',
+      customCompany: '',
+      customMenu: ''
+    };
   });
+
+  // Save draft on every state or step change
+  useEffect(() => {
+    if (currentStep < 5 && !initialData) {
+      try {
+        localStorage.setItem('wawasan_order_draft_step', String(currentStep));
+        localStorage.setItem('wawasan_order_draft_state', JSON.stringify(orderState));
+      } catch (err) {
+        console.warn('Failed to save draft state:', err);
+      }
+    }
+  }, [currentStep, orderState, initialData]);
 
   const tText = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -780,6 +873,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         orderState.dishes.length + orderState.veggies.length,
         orderState.eventType
       );
+      clearOrderDraft();
       setCurrentStep(5);
     } catch (err) {
       console.error('Catering submission error:', err);
@@ -818,6 +912,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleResetForm = () => {
+    clearOrderDraft();
     idempotencyKeyRef.current = generateUUID();
     setOrderState({
       eventType: '',
