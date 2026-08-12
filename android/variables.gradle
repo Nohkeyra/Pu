@@ -4,8 +4,8 @@ ext {
     // API 24+ enforces TLS 1.2 network-wide and is required for Capacitor
     // 8.x cookies-with-SameSite=None behaviour to work correctly.
     minSdkVersion = 24
-    compileSdkVersion = 35
-    targetSdkVersion = 35
+    compileSdkVersion = 36
+    targetSdkVersion = 36
     androidxActivityVersion = '1.9.2'
     androidxAppCompatVersion = '1.7.0'
     androidxCoordinatorLayoutVersion = '1.2.0'

@@ -99,8 +99,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics'
 
-    // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0,
-    // which requires compileSdk 35+ / AGP 8.9.1+.
+    // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0 and okhttp-android:5.4.0,
+    // which requires compileSdk 36+ / AGP 8.9.1+.
 }
 
 apply from: 'capacitor.build.gradle'
