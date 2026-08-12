@@ -55,19 +55,9 @@ jobs:
           npm ci || npm install
           npm install -g @capacitor/cli
 
-      - name: Patch capacitor-updater enum switch cases (Java 17 fix)
+      - name: Patch capacitor-updater enum switch cases (Java 21 fix)
         run: |
-          UPDATER_PATH="node_modules/@capgo/capacitor-updater/android/src/main/java/ee/forgr/capacitor_updater/DelayUpdateUtils.java"
-          if [ -f "$UPDATER_PATH" ]; then
-            echo "🔧 Patching capacitor-updater enum switch cases for Java 17 compatibility..."
-            sed -i 's/case DelayUntilNext\.background:/case background:/g' "$UPDATER_PATH"
-            sed -i 's/case DelayUntilNext\.kill:/case kill:/g' "$UPDATER_PATH"
-            sed -i 's/case DelayUntilNext\.date:/case date:/g' "$UPDATER_PATH"
-            sed -i 's/case DelayUntilNext\.nativeVersion:/case nativeVersion:/g' "$UPDATER_PATH"
-            echo "✅ Successfully patched all 4 enum switch cases"
-          else
-            echo "⚠️ capacitor-updater file not found at expected path, skipping patch"
-          fi
+          node scripts/patch-capacitor.cjs
 
       - name: Build web assets
         env:
@@ -169,7 +159,7 @@ jobs:
       - name: Build debug APK
         working-directory: ./android
         run: |
-          ./gradlew assembleDebug --stacktrace || {
+          ./gradlew assembleDebug --no-daemon --stacktrace || {
             echo "❌ Debug build failed. Check logs above."
             exit 1
           }
@@ -177,7 +167,7 @@ jobs:
       - name: Build release APK (signed)
         working-directory: ./android
         run: |
-          ./gradlew assembleRelease --stacktrace || {
+          ./gradlew assembleRelease --no-daemon --stacktrace || {
             echo "❌ Release build failed. Check logs above."
             exit 1
           }
@@ -185,7 +175,7 @@ jobs:
       - name: Build Bundle (AAB for Play Store)
         working-directory: ./android
         run: |
-          ./gradlew bundleRelease --stacktrace || {
+          ./gradlew bundleRelease --no-daemon --stacktrace || {
             echo "⚠️ Bundle build failed (continuing)"
           }
 

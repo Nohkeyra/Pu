@@ -46,7 +46,7 @@ android {
     signingConfigs {
         release {
             def keystoreFile = file(keyProperties['storeFile'] ?: 'release-key.jks')
-            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias'] && keystoreFile.exists()) {
+            if (keystoreFile.exists()) {
                 storeFile keystoreFile
                 storePassword keyProperties['storePassword']
                 keyAlias keyProperties['keyAlias']
@@ -56,10 +56,7 @@ android {
     }
     buildTypes {
         release {
-            def keystoreFile = file(keyProperties['storeFile'] ?: 'release-key.jks')
-            if (keyProperties['storePassword'] && keyProperties['keyPassword'] && keyProperties['keyAlias'] && keystoreFile.exists()) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -97,8 +94,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics'
 
     // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0,
-    // which requires compileSdk 36+ / AGP 8.9.1+. We have upgraded these
-    // in variables.gradle and build.gradle to maintain compatibility.
+    // which requires compileSdk 35+ / AGP 8.9.1+.
 }
 
 apply from: 'capacitor.build.gradle'
