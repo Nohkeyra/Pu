@@ -39,14 +39,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
       try {
         return await factory();
       } catch (retryError) {
-        console.error('Dynamic chunk retry failed, reloading page...', retryError);
-        const reloaded = sessionStorage.getItem('chunk_retry_reload');
-        if (!reloaded) {
-          sessionStorage.setItem('chunk_retry_reload', 'true');
-          window.location.reload();
-          return new Promise<{ default: T }>(() => {});
-        }
-        sessionStorage.removeItem('chunk_retry_reload');
+        console.error('Dynamic chunk retry failed:', retryError);
         throw retryError;
       }
     }
