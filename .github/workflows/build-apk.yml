@@ -10,6 +10,17 @@ on:
       - main
       - develop
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (only applied on main / manual runs that publish)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
 
 permissions:
   contents: write
@@ -103,16 +114,42 @@ jobs:
             exit 1
           fi
 
+      # Logical semver from android/version.properties (NOT date timestamps).
+      # - PR / develop: read current version only (no bump)
+      # - main push or manual run: bump patch/minor/major then build + tag
       - name: Set app version
         id: version
         run: |
-          VERSION_CODE=$(date +'%Y%m%d%H%M')
-          VERSION_NAME=$(date +'%Y.%m.%d-%H%M')
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "✅ Version set to: $VERSION_NAME ($VERSION_CODE)"
+          BUMP="${{ github.event.inputs.bump || 'patch' }}"
+
+          # Don't burn version numbers on PRs or develop CI
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "ℹ️ Non-release build — using current version.properties (no bump)"
+            node scripts/bump-version.cjs show --ci
+          elif [ "$BUMP" = "none" ]; then
+            echo "ℹ️ Bump disabled — using current version.properties"
+            node scripts/bump-version.cjs show --ci
+          else
+            echo "⬆️ Bumping version ($BUMP)"
+            node scripts/bump-version.cjs "$BUMP" --ci
+          fi
+
+          echo "✅ Version ready: $VERSION_NAME ($VERSION_CODE)"
+          echo "---- android/version.properties ----"
+          cat android/version.properties || true
+
+      - name: Commit bumped version (main only)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event.inputs.bump || 'patch') != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add android/version.properties android/app/version.properties package.json || true
+          if git diff --staged --quiet; then
+            echo "No version file changes to commit"
+          else
+            git commit -m "chore(release): bump version to ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})"
+            git push
+          fi
 
       - name: Setup signing keystore
         env:
@@ -206,8 +243,8 @@ jobs:
             ## 📱 APK Release v${{ env.VERSION_NAME }}
             
             ### 🎯 Build Information
+            - **Version Name:** ${{ env.VERSION_NAME }}
             - **Version Code:** ${{ env.VERSION_CODE }}
-            - **Build Date:** ${{ env.VERSION_NAME }}
             - **Commit:** ${{ github.sha }}
             - **Branch:** ${{ github.ref_name }}
             
