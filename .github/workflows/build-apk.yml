@@ -150,7 +150,25 @@ jobs:
             echo "No version file changes to commit"
           else
             git commit -m "chore(release): bump version to ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})"
-            git push
+            # BUGFIX (2026-08-13): when multiple pushes land close together,
+            # their workflow runs can overlap. Each run checks out the same
+            # starting commit, bumps the version, and tries to push — but a
+            # plain `git push` only succeeds for whichever run gets there
+            # first (fast-forward-only); every other run's push is rejected
+            # and its version bump is lost. That's why repeated releases
+            # kept reusing the same version tag (e.g. v1.2.6) even after
+            # many commits landed on main. `git pull --rebase` re-bases this
+            # run's version-bump commit onto whatever is now on main before
+            # pushing, so it can still land instead of being silently
+            # dropped. Retry a few times since another run could still win
+            # the race in between the pull and this push.
+            for attempt in 1 2 3; do
+              if git push; then
+                break
+              fi
+              echo "⚠️ Push rejected (attempt $attempt/3) — pulling and retrying..."
+              git pull --rebase origin "${{ github.ref_name }}"
+            done
           fi
 
       - name: Setup signing keystore
