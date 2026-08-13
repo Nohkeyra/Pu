@@ -26,7 +26,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: 'dist/client',
     emptyOutDir: true,
     copyPublicDir: true,
     chunkSizeWarningLimit: 1200,

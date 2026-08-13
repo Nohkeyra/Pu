@@ -105,7 +105,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), 'dist', 'client');
     app.use(express.static(distPath, {
       maxAge: '1y',
       immutable: true,

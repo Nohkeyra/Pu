@@ -116,9 +116,33 @@ jobs:
             exit 1
           fi
 
-      # Logical semver from android/version.properties (NOT date timestamps).
-      # - PR / develop: read current version only (no bump)
-      # - master/main push or manual run: bump patch/minor/major then build + tag
+      - name: Sync latest version before bump (master and main)
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+        run: |
+          # BUGFIX (2026-08-13, part 2): the earlier fix (rebase-before-push
+          # in "Commit bumped version") only solved conflicts at PUSH time.
+          # The actual root cause is earlier: this job checks out main once
+          # at job start, then spends several minutes building web assets,
+          # syncing Capacitor, etc. before it reads version.properties to
+          # decide the bump. If another workflow run's version-bump commit
+          # landed on main during that window, this run still bumps from
+          # the STALE version it checked out — e.g. both runs bump
+          # 1.2.5->1.2.6 instead of the second one bumping 1.2.6->1.2.7 —
+          # even though the later push itself succeeds via rebase.
+          #
+          # Scoped on purpose: only fetch + fast-forward the three version
+          # files from origin, not a full `git pull --rebase` of everything.
+          # A full rebase here could also pull in unrelated source changes
+          # pushed by another commit in the same window — but web assets and
+          # the Capacitor sync already ran against this run's original
+          # (now-stale) checkout above, so silently swapping in newer source
+          # at this point would build an APK from a source/version.properties
+          # mismatch. Only the version bookkeeping needs to be current; the
+          # app code being built should stay pinned to what this run started with.
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "origin/${{ github.ref_name }}" -- android/version.properties android/app/version.properties package.json 2>/dev/null || \
+            echo "ℹ️ No newer version files on origin — using current checkout"
+
       - name: Set app version
         id: version
         run: |
@@ -150,7 +174,25 @@ jobs:
             echo "No version file changes to commit"
           else
             git commit -m "chore(release): bump version to ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})"
-            git push
+            # BUGFIX (2026-08-13): when multiple pushes land close together,
+            # their workflow runs can overlap. Each run checks out the same
+            # starting commit, bumps the version, and tries to push — but a
+            # plain `git push` only succeeds for whichever run gets there
+            # first (fast-forward-only); every other run's push is rejected
+            # and its version bump is lost. That's why repeated releases
+            # kept reusing the same version tag (e.g. v1.2.6) even after
+            # many commits landed on main. `git pull --rebase` re-bases this
+            # run's version-bump commit onto whatever is now on main before
+            # pushing, so it can still land instead of being silently
+            # dropped. Retry a few times since another run could still win
+            # the race in between the pull and this push.
+            for attempt in 1 2 3; do
+              if git push; then
+                break
+              fi
+              echo "⚠️ Push rejected (attempt $attempt/3) — pulling and retrying..."
+              git pull --rebase origin "${{ github.ref_name }}"
+            done
           fi
 
       - name: Setup signing keystore
