@@ -880,10 +880,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       setCurrentStep(5);
     } catch (err) {
       console.error('Catering submission error:', err);
-      recordException(err instanceof Error ? err : new Error(String(err)), {
-        type: 'order_submission_error',
-        eventType: orderState.eventType,
-      });
       triggerNotification(NotificationType.Error);
 
       // F-OFFLINE (audit 2026-08-11): only queue when the request never
@@ -891,6 +887,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       // server-rejected request (validation, 500, etc.) would just fail the
       // same way again on retry, so those are NOT queued — only genuine
       // "couldn't send it at all" failures are.
+      //
+      // BUGFIX (2026-08-13): recordException used to fire unconditionally
+      // right here, before this check — so every offline order (an expected,
+      // handled path with its own "saved for later" UX below) was also
+      // reported to Crashlytics as a crash. That's a false positive: nothing
+      // crashed, the app did exactly what it's supposed to do when offline.
+      // Left unfixed, it drowns out real crash signal in noise every time a
+      // customer orders from a weak-signal spot. Only the else branch below
+      // (a genuine, unhandled submission error) is now reported.
       if (err instanceof Error && err.name === 'OrderNetworkError' && orderDataForQueue) {
         addPendingOrder(orderDataForQueue, idempotencyKeyRef.current);
         toast({
@@ -903,6 +908,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           duration: 8000
         });
       } else {
+        recordException(err instanceof Error ? err : new Error(String(err)), {
+          type: 'order_submission_error',
+          eventType: orderState.eventType,
+        });
         toast({
           title: t('error'),
           description: err instanceof Error ? err.message : String(err),

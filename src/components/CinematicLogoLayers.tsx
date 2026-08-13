@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'motion/react';
 import { getAssetUrl } from '@/lib/utils';
 import { useDeviceMotion3D } from '@/hooks/useDeviceMotion3D';
+import { useScreenOrientationCounter } from '@/hooks/useScreenOrientationCounter';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 
 // Helper for performance timing
@@ -20,6 +21,12 @@ export const CinematicLogoLayers: React.FC<CinematicLogoLayersProps> = ({ sizeCl
 
   // Get smooth gyro motion values from the custom hook
   const { rotateX: gyroRotateX, rotateY: gyroRotateY } = useDeviceMotion3D(15);
+
+  // FEATURE (2026-08-13): "logo sentiasa pandang saya" — Z-axis counter-
+  // rotation so the logo stays visually upright when the physical screen
+  // rotates (portrait <-> landscape), independent of the X/Y tilt-toward-you
+  // effect above.
+  const counterRotate = useScreenOrientationCounter();
 
   // Combine gyro/device rotation with the user's manual drag rotation
   const combinedRotateX = useTransform([spinX, gyroRotateX], ([sx, rx]) => (sx as number) + (rx as number));
@@ -208,6 +215,7 @@ export const CinematicLogoLayers: React.FC<CinematicLogoLayersProps> = ({ sizeCl
         style={{
           rotateX: combinedRotateX,
           rotateY: combinedRotateY,
+          rotate: counterRotate,
           transformStyle: 'preserve-3d',
         }}
         className={`relative flex items-center justify-center ${sizeClassName} z-10 cursor-grab active:cursor-grabbing touch-none select-none`}

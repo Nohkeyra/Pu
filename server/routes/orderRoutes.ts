@@ -394,8 +394,37 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
 // Since public guests and corporate customers are restricted from performing collection-wide reads
 // on '/orders' for security/privacy rules, this server-side endpoint compiles and aggregates
 // daily workload sessions anonymously and securely.
-router.get('/calendar-sessions', async (_req, res) => {
+//
+// SECURITY FIX (2026-08-13): this endpoint had no rate limiter and no auth,
+// and does a full `orders` collection scan on every call (it can't use
+// .limit() — the aggregation needs every order across all dates, not a
+// recent slice). Unlike the widget endpoint (which is bounded by
+// .limit(20)), an unbounded full-collection read repeated rapidly is a
+// real cost/DoS vector: each hit is a full Firestore read of the entire
+// orders collection, and the orders collection only grows over time.
+// Two changes: (1) a rate limiter matching the other public order routes
+// in this file, (2) a short in-memory cache so repeated calls within the
+// TTL reuse the last computed result instead of re-scanning Firestore.
+// Cache is intentionally short (2 min) — Calendar page data doesn't need
+// to be second-fresh, and this is the same in-memory (no Redis) tradeoff
+// already accepted for adminLoginLimiter on this single-instance deployment.
+const calendarSessionsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+});
+
+let calendarSessionsCache: { data: Record<string, unknown>; expiresAt: number } | null = null;
+const CALENDAR_SESSIONS_CACHE_TTL_MS = 2 * 60 * 1000;
+
+router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
   try {
+    if (calendarSessionsCache && calendarSessionsCache.expiresAt > Date.now()) {
+      return res.json({ success: true, sessions: calendarSessionsCache.data });
+    }
+
     const db = getFirestore();
     const snapshot = await db.collection('orders').get();
     
@@ -451,6 +480,8 @@ router.get('/calendar-sessions', async (_req, res) => {
         dailySessions[dateStr].hi_tea.pax += pax;
       }
     });
+
+    calendarSessionsCache = { data: dailySessions, expiresAt: Date.now() + CALENDAR_SESSIONS_CACHE_TTL_MS };
 
     return res.json({ success: true, sessions: dailySessions });
   } catch (err) {

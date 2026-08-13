@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
@@ -66,10 +67,15 @@ export default function AdminPage() {
       const response = await fetch(getApiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password }),
       });
 
-      let data: { success?: boolean; token?: string; firebaseCustomToken?: string; error?: string } = {};
+      let data: {
+        success?: boolean;
+        token?: string;
+        firebaseCustomToken?: string;
+        error?: string;
+      } = {};
       try {
         data = await response.json();
       } catch (parseErr) {
@@ -89,13 +95,17 @@ export default function AdminPage() {
           try {
             await signInWithCustomToken(auth, data.firebaseCustomToken);
           } catch (fbErr) {
-            console.warn('[Admin Auth] Firebase custom-token sign-in failed (admin session still valid):', fbErr);
+            console.warn(
+              '[Admin Auth] Firebase custom-token sign-in failed (admin session still valid):',
+              fbErr
+            );
           }
         }
 
         setIsAuthenticated(true);
       } else {
-        const serverError = data?.error || (response.status ? `Server HTTP ${response.status}` : null);
+        const serverError =
+          data?.error || (response.status ? `Server HTTP ${response.status}` : null);
         setError(serverError || t('wrong_password') || 'Invalid password');
       }
     } catch (err) {
@@ -130,7 +140,7 @@ export default function AdminPage() {
                   Malaysian heritage graphic must remain 100% intact.
                 */}
                 <TransparentLogo
-                  src={getAssetUrl("/assets/wawasan_logo.svg")}
+                  src={getAssetUrl('/assets/wawasan_logo.svg')}
                   alt="Restoran Wawasan Logo"
                   className="w-full h-full object-contain"
                 />
@@ -144,10 +154,10 @@ export default function AdminPage() {
                 </span>
               </div>
             </button>
-            
+
             <div className="flex items-center gap-2">
-              <button 
-                onClick={toggleTheme} 
+              <button
+                onClick={toggleTheme}
                 className="p-2 md:p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                 aria-label="Toggle theme"
               >
@@ -157,7 +167,11 @@ export default function AdminPage() {
                   <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
                 )}
               </button>
-              <Button variant="ghost" onClick={() => navigate('/login')} className="text-stone hover:text-crisp-carrot hover:bg-[var(--color-sunshine-cta)]/10 rounded-full">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/login')}
+                className="text-stone hover:text-crisp-carrot hover:bg-[var(--color-sunshine-cta)]/10 rounded-full"
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('back')}
               </Button>
@@ -176,9 +190,9 @@ export default function AdminPage() {
                   mode="background"
                 />
               </div>
-              
+
               <div className="h-2 bg-gradient-to-r from-sunshine to-crisp-carrot relative z-10" />
-              
+
               <div className="p-8 md:p-10 relative z-10">
                 <div className="flex justify-center mb-6">
                   <div className="w-16 h-16 rounded-full bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center border border-[var(--color-sunshine-cta)]/20">
@@ -245,44 +259,54 @@ export default function AdminPage() {
     );
   }
 
+  // STABILITY FIX (2026-08-13): AdminPanel.tsx is the largest, most complex
+  // component in the app (1600+ lines) and previously had no ErrorBoundary
+  // of its own — unlike CalendarPage, SettingsPage, and OrderPage, which
+  // each already have one. Without it, a React error thrown anywhere inside
+  // Admin Panel would propagate all the way up to the root ErrorBoundary in
+  // main.tsx, taking down the entire app (including navigation) instead of
+  // being contained to the Admin screen. This is Noh's primary daily-use
+  // screen, so an isolated failure here mattering most.
   // Admin Dashboard
   return (
-    <AdminPanel
-      adminToken={token}
-      onLogout={async () => {
-        if (token) {
-          try {
-            await fetch(getApiUrl('/api/admin/logout'), {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-          } catch (err) {
-            console.warn('[Admin Auth] Server logout token revocation failed (non-fatal):', err);
+    <ErrorBoundary>
+      <AdminPanel
+        adminToken={token}
+        onLogout={async () => {
+          if (token) {
+            try {
+              await fetch(getApiUrl('/api/admin/logout'), {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+            } catch (err) {
+              console.warn('[Admin Auth] Server logout token revocation failed (non-fatal):', err);
+            }
           }
-        }
-        await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
-        // Ensure all possible admin flags are flushed to prevent UI state leakage
-        try {
-          localStorage.removeItem('wawasan_admin_token');
-          localStorage.removeItem('wawasan_admin_authenticated');
-          sessionStorage.removeItem('wawasan_admin_token');
-        } catch (e) {
-          console.warn('Manual storage cleanup warning:', e);
-        }
+          await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+          // Ensure all possible admin flags are flushed to prevent UI state leakage
+          try {
+            localStorage.removeItem('wawasan_admin_token');
+            localStorage.removeItem('wawasan_admin_authenticated');
+            sessionStorage.removeItem('wawasan_admin_token');
+          } catch (e) {
+            console.warn('Manual storage cleanup warning:', e);
+          }
 
-        // F-31 (audit): also end the Firebase Auth session started at
-        // login, so a stale request.auth doesn't outlive the admin JWT.
-        signOut(auth).catch((err) => {
-          console.warn('[Admin Auth] Firebase sign-out failed (non-fatal):', err);
-        });
-        setIsAuthenticated(false);
-        setToken('');
-        // Ensure a full clean slate of UI states/blurs by reloading
-        window.location.reload();
-      }}
-    />
+          // F-31 (audit): also end the Firebase Auth session started at
+          // login, so a stale request.auth doesn't outlive the admin JWT.
+          signOut(auth).catch((err) => {
+            console.warn('[Admin Auth] Firebase sign-out failed (non-fatal):', err);
+          });
+          setIsAuthenticated(false);
+          setToken('');
+          // Ensure a full clean slate of UI states/blurs by reloading
+          window.location.reload();
+        }}
+      />
+    </ErrorBoundary>
   );
 }

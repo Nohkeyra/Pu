@@ -538,8 +538,19 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     return match ? match[1] : 'https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=restoran-wawasan';
   };
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  // BUGFIX (2026-08-13): fetchOrders used to call setLoading(true) on every
+  // invocation, including the 30s background poll below. Since `loading`
+  // gates the ENTIRE panel render (see the `if (loading)` full-screen
+  // skeleton further down), every 30s the whole Admin Panel — header, stat
+  // cards, table, everything — was replaced by a skeleton and then swapped
+  // back once the fetch resolved. That flash is what read as "the app
+  // refreshes every ~30 seconds". The `silent` param lets the background
+  // poll refresh `orders` data without touching `loading`, so only the
+  // initial page load (and any explicit manual refresh) shows the skeleton.
+  const fetchOrders = async (silent: boolean = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     
     try {
       const payload: any = { action: 'fetch', pageSize: 50 };
@@ -588,7 +599,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     } catch (err) {
       console.error('Error fetching orders:', err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -597,7 +610,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     fetchOrders();
     fetchCalendarState();
     
-    const interval = setInterval(fetchOrders, 30000); // Poll every 30 seconds
+    // silent=true: background poll must not trigger the full-panel loading skeleton
+    const interval = setInterval(() => fetchOrders(true), 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
