@@ -18,12 +18,8 @@ export const CinematicLogoLayers: React.FC<CinematicLogoLayersProps> = ({ sizeCl
   const spinX = useMotionValue(0);
   const spinY = useMotionValue(0);
 
-  // FEATURE (2026-08-13): 'full-rotation' mode — logo follows the phone's
-  // actual physical roll angle (0-360deg via atan2), not just a subtle
-  // ±15deg tilt. Only this component uses this mode; CinematicLogo.tsx and
-  // Batik3DMotion.tsx still call useDeviceMotion3D with the default 'tilt'
-  // mode and are unaffected.
-  const { rotateX: gyroRotateX, rotateY: gyroRotateY, rotateZ: gyroRotateZ } = useDeviceMotion3D(15, 'full-rotation');
+  // Get smooth gyro motion values from the custom hook
+  const { rotateX: gyroRotateX, rotateY: gyroRotateY } = useDeviceMotion3D(15);
 
   // Combine gyro/device rotation with the user's manual drag rotation
   const combinedRotateX = useTransform([spinX, gyroRotateX], ([sx, rx]) => (sx as number) + (rx as number));
@@ -212,7 +208,6 @@ export const CinematicLogoLayers: React.FC<CinematicLogoLayersProps> = ({ sizeCl
         style={{
           rotateX: combinedRotateX,
           rotateY: combinedRotateY,
-          rotate: gyroRotateZ,
           transformStyle: 'preserve-3d',
         }}
         className={`relative flex items-center justify-center ${sizeClassName} z-10 cursor-grab active:cursor-grabbing touch-none select-none`}

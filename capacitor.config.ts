@@ -3,46 +3,40 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.wawasanpakusop.app',
   appName: 'Wawasan Pak Usop',
-  webDir: 'dist/client',
+  webDir: 'dist',
+  exclude: ['server.cjs', 'server.cjs.map'],
   server: {
-    androidScheme: 'https',
-    cleartext: false,
-  },
-  android: {
-    allowMixedContent: false,
-    webContentsDebuggingEnabled: false,
+    androidScheme: 'https'
   },
   plugins: {
     CapacitorUpdater: {
       autoUpdate: false,
-      statsUrl: "",
+      statsUrl: '',
       autoDeleteFailed: true,
-      autoDeletePrevious: true,
-      resetWhenUpdate: false,
+      resetWhenUpdate: false
     },
     StatusBar: {
       overlaysWebView: true,
       style: 'DARK',
-      backgroundColor: '#00000000',
+      backgroundColor: '#00000000'
     },
     SplashScreen: {
-      launchShowDuration: 0,
-      launchAutoHide: false,
+      launchShowDuration: 2000,
+      launchAutoHide: true,
       backgroundColor: '#0B0807',
-      showSpinner: false,
-      launchFadeOutDuration: 300,
-      splashFullScreen: true,
-      splashImmersive: true,
+      androidSpinnerStyle: 'large',
+      showSpinner: true,
+      spinnerColor: '#D4A853'
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
+      presentationOptions: ["badge", "sound", "alert"]
     },
     Keyboard: {
-      resize: 'native',
-      style: 'DARK',
-      resizeOnFullScreen: true,
-    },
-  },
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true
+    }
+  }
 };
 
 export default config;

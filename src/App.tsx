@@ -1,4 +1,3 @@
-import { nativeReady } from "./boot/nativeReady";
 import { useEffect, useState, Suspense, lazy, type ReactNode } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion } from "motion/react";
@@ -400,21 +399,21 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
           </h2>
           <div className="grid grid-cols-2 gap-3 text-xs font-mono">
             <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
-              <span className="block microcopy-12-upper text-stone font-bold font-mono uppercase">Status Internet</span>
+              <span className="block microcopy-12-upper text-stone font-bold">Status Internet</span>
               <span className={stats.online ? "text-emerald-600 font-bold" : "text-tomato-burst font-bold"}>
                 {stats.online ? 'ONLINE' : 'OFFLINE'}
               </span>
             </div>
             <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
-              <span className="block microcopy-12-upper text-stone font-bold font-mono uppercase">Platform</span>
+              <span className="block microcopy-12-upper text-stone font-bold">Platform</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold uppercase">{stats.platform}</span>
             </div>
             <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
-              <span className="block microcopy-12-upper text-stone font-bold font-mono uppercase">Capacitor Native</span>
+              <span className="block microcopy-12-upper text-stone font-bold">Capacitor Native</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold">{stats.native ? 'YES' : 'NO'}</span>
             </div>
             <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
-              <span className="block microcopy-12-upper text-stone font-bold font-mono uppercase">Dimensi Skrin</span>
+              <span className="block microcopy-12-upper text-stone font-bold">Dimensi Skrin</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold">{stats.width}x{stats.height}</span>
             </div>
           </div>
@@ -487,12 +486,6 @@ function App() {
     }
   });
   const [showTroubleshoot, setShowTroubleshoot] = useState(false);
-
-  useEffect(() => {
-    if (!isAppLoading) {
-      nativeReady().catch(err => console.warn('nativeReady failed:', err));
-    }
-  }, [isAppLoading]);
 
   useEffect(() => {
     // Show troubleshooting fallback option if splash screen loading state remains active for more than 3 seconds
