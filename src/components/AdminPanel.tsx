@@ -1,3 +1,4 @@
+if (import.meta.env.DEV) { import("eruda").then(m => m.default.init()); }
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -211,17 +212,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   
   const [testEmailAddress, setTestEmailAddress] = useState('');
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
-
-  const [erudaEnabled, setErudaEnabled] = useState(
-    () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
-  );
+  const [erudaEnabled, setErudaEnabled] = useState(false);
 
   const toggleEruda = async () => {
     const nextState = !erudaEnabled;
     setErudaEnabled(nextState);
-    localStorage.setItem('wawasan_eruda_enabled', nextState ? 'true' : 'false');
-    
-    const erudaWin = window as unknown as { eruda?: { destroy: () => void } };
     
     if (nextState) {
       toast({
@@ -230,14 +225,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       });
       try {
         const erudaModule = await import('eruda');
-        if (!document.getElementById('eruda') && !erudaWin.eruda) {
-          erudaModule.default.init();
-        }
+        erudaModule.default.init();
       } catch (err) {
         console.error('Failed to load Eruda dynamically:', err);
         toast({
           title: "Toolkit Load Failed",
-          description: "Could not load eruda module.",
           variant: "error"
         });
       }
@@ -246,13 +238,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         title: "Developer Toolkit Disabled",
         description: "The inspector console has been deactivated. Refresh to fully unload.",
       });
-      if (erudaWin.eruda) {
-        try {
-          erudaWin.eruda.destroy();
-          erudaWin.eruda = undefined;
-        } catch (e) {
-          console.warn('Eruda destroy error:', e);
-        }
+      try {
+        const erudaModule = await import('eruda');
+        erudaModule.default.destroy();
+      } catch (e) {
+        console.warn('Eruda destroy error:', e);
       }
     }
   };
@@ -1589,7 +1579,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               diagTests={diagTests}
               testEmailAddress={testEmailAddress}
               isSendingTestEmail={isSendingTestEmail}
-              erudaEnabled={erudaEnabled}
               runAllDiagnostics={runAllDiagnostics}
               runFirebaseDiag={runFirebaseDiag}
               runCalendarDiag={runCalendarDiag}

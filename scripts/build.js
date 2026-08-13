@@ -2,50 +2,38 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-async function build() {
-  const root = process.cwd();
-  const dist = path.join(root, 'dist');
+const root = process.cwd();
+const dist = path.join(root, 'dist');
+const client = path.join(dist, 'client');
 
-  console.log('🚀 Starting build process...');
+console.log('🧹 Cleaning dist...');
+fs.rmSync(dist, { recursive: true, force: true });
+fs.mkdirSync(client, { recursive: true });
 
-  try {
-    // 1. Clean dist
-    if (fs.existsSync(dist)) {
-      console.log('🧹 Cleaning existing dist directory...');
-      fs.rmSync(dist, { recursive: true, force: true });
-    }
-    fs.mkdirSync(dist);
+console.log('📦 Building Vite client → dist/client');
+execSync('npx vite build', { stdio: 'inherit' });
 
-    // 2. Run Vite build
-    console.log('📦 Running Vite build (client)...');
-    execSync('npx vite build', { stdio: 'inherit' });
+console.log('⚙️  Bundling server → dist/server.cjs');
+execSync(
+  'npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs',
+  { stdio: 'inherit' }
+);
 
-    // 3. Run esbuild for server
-    console.log('🖥️ Bundling server with esbuild...');
-    execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', { stdio: 'inherit' });
-
-    // 4. Verification
-    console.log('🔍 Verifying build artifacts...');
-    const requiredFiles = ['index.html', 'server.cjs', 'assets'];
-    const missingFiles = [];
-
-    for (const file of requiredFiles) {
-      if (!fs.existsSync(path.join(dist, file))) {
-        missingFiles.push(file);
-      }
-    }
-
-    if (missingFiles.length > 0) {
-      throw new Error(`Build artifacts missing: ${missingFiles.join(', ')}`);
-    }
-
-    const stats = fs.readdirSync(dist);
-    console.log(`✅ Build successful! Produced ${stats.length} items in dist/.`);
-    
-  } catch (error) {
-    console.error('❌ Build failed:', error.message);
-    process.exit(1);
-  }
+const leaked = fs.readdirSync(client).filter(f => f.endsWith('.cjs'));
+if (leaked.length) {
+  console.error('❌ Server artifacts leaked into webDir:', leaked);
+  process.exit(1);
 }
 
-build();
+const required = [
+  path.join(client, 'index.html'),
+  path.join(client, 'assets'),
+  path.join(dist, 'server.cjs'),
+];
+const missing = required.filter(p => !fs.existsSync(p));
+if (missing.length) {
+  console.error('❌ Missing artifacts:', missing.join(', '));
+  process.exit(1);
+}
+
+console.log('✅ Build successful!');
