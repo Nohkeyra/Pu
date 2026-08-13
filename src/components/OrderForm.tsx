@@ -27,6 +27,7 @@ import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
 import { Step5OrderSuccess } from './order/Step5OrderSuccess';
 import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
 import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
@@ -76,7 +77,7 @@ interface OrderState {
 }
 
 interface OrderFormProps {
-  initialData?: Record<string, unknown> | null;
+  initialData?: Record<string, any> | null;
 }
 
 function generateUUID(): string {
@@ -148,7 +149,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     let handle: any = null;
     const setupBackButton = async () => {
       try {
-        handle = await Capacitor.Plugins.App.addListener('backButton', () => {
+        handle = await App.addListener('backButton', () => {
           if (currentStep > 1 && currentStep < 5) {
             triggerLightImpact();
             setCurrentStep(s => s - 1);
@@ -200,39 +201,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   // Multi-step State with localStorage draft support
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [orderState, setOrderState] = useState<OrderState>(() => {
-    if (initialData) return initialData;
-    try {
-      const saved = localStorage.getItem('wawasan_order_draft_state');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            eventType: parsed.eventType || '',
-            mealTypes: parsed.mealTypes || [],
-            preparationType: parsed.preparationType || 'meal_box',
-            guests: parsed.guests || 50,
-            dishes: parsed.dishes || [],
-            veggies: parsed.veggies || [],
-            name: parsed.name || '',
-            contact: parsed.contact || '',
-            email: parsed.email || '',
-            confirmEmail: parsed.confirmEmail || '',
-            date: parsed.date || '',
-            time: parsed.time || '12:00',
-            location: parsed.location || '',
-            delivery: parsed.delivery || 'delivery',
-            notes: parsed.notes || '',
-            companyName: parsed.companyName || '',
-            customCompany: parsed.customCompany || '',
-            customMenu: parsed.customMenu || ''
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to parse draft state:', err);
-    }
-    return {
+  const [orderState, setOrderState] = useState<OrderState>((): OrderState => {
+    const defaultState: OrderState = {
       eventType: '',
       mealTypes: [],
       preparationType: 'meal_box',
@@ -252,6 +222,26 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       customCompany: '',
       customMenu: ''
     };
+
+    if (initialData) {
+      return { ...defaultState, ...(initialData as Partial<OrderState>) };
+    }
+
+    try {
+      const saved = localStorage.getItem('wawasan_order_draft_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...defaultState,
+            ...parsed,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to parse draft state:', err);
+    }
+    return defaultState;
   });
 
   // Save draft on every state or step change

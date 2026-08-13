@@ -74,6 +74,7 @@ export interface Order {
   attn?: string;
   name: string;
   contact: string;
+  phone?: string;
   email: string;
   date?: string | Date;
   dateTime: string;

@@ -111,7 +111,7 @@ export function AdminOrdersTab({
         const hay = [
           o.name,
           o.email,
-          o.phone,
+          o.contact || o.phone,
           o.invoiceNo,
           o.to,
           o.id,

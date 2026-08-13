@@ -17,6 +17,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
+import { Switch } from '@/components/ui/switch';
 import { invalidateFetchCache } from '@/lib/api';
 
 export interface MenuItem {
