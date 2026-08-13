@@ -118,14 +118,14 @@ jobs:
 
       # Logical semver from android/version.properties (NOT date timestamps).
       # - PR / develop: read current version only (no bump)
-      # - main push or manual run: bump patch/minor/major then build + tag
+      # - master/main push or manual run: bump patch/minor/major then build + tag
       - name: Set app version
         id: version
         run: |
           BUMP="${{ github.event.inputs.bump || 'patch' }}"
 
           # Don't burn version numbers on PRs or develop CI
-          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" != "refs/heads/main" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ] || { [ "${{ github.ref }}" != "refs/heads/main" ] && [ "${{ github.ref }}" != "refs/heads/master" ]; }; then
             echo "ℹ️ Non-release build — using current version.properties (no bump)"
             node scripts/bump-version.cjs show --ci
           elif [ "$BUMP" = "none" ]; then
@@ -140,8 +140,8 @@ jobs:
           echo "---- android/version.properties ----"
           cat android/version.properties || true
 
-      - name: Commit bumped version (main only)
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event.inputs.bump || 'patch') != 'none'
+      - name: Commit bumped version (master and main)
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event.inputs.bump || 'patch') != 'none'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -240,6 +240,7 @@ jobs:
           tag: v${{ env.VERSION_NAME }}
           name: Release v${{ env.VERSION_NAME }}
           allowUpdates: true
+          makeLatest: true
           artifactErrorsFailBuild: false
           body: |
             ## 📱 APK Release v${{ env.VERSION_NAME }}
