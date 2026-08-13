@@ -52,5 +52,35 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
   { id: 'air_kordial', nameEn: 'Cordial Drink', nameBm: 'Air Kordial', descEn: 'Chilled sweet rose/orange cordial', descBm: 'Minuman kordial buah manis sejuk segar', price: 1.5, category: 'drinks', suitability: 'lunch' },
   { id: 'air_mineral_botol', nameEn: 'Bottled Mineral Water', nameBm: 'Air Mineral Botol', descEn: 'Clean bottled drinking mineral water', descBm: 'Air mineral botol bersih menyegarkan', price: 1.5, category: 'drinks', suitability: 'lunch' },
   { id: 'peel_fresh_kecik', nameEn: 'Peel Fresh Small Tetra Pak', nameBm: 'Tetra Pak Peel Fresh Kecil', descEn: 'Small pasteurized fruit juice box', descBm: 'Kotak Peel Fresh kecil jus buah segar', price: 2.8, category: 'drinks', suitability: 'lunch' },
-  { id: 'tetra_pak_mineral_water', nameEn: 'Tetra Pak Mineral Water', nameBm: 'Tetra Pak Mineral Water', descEn: 'Eco-friendly boxed mineral water', descBm: 'Air mineral kotak Tetra Pak mesra alam', price: 2, category: 'drinks', suitability: 'lunch' }
+  { id: 'tetra_pak_mineral_water', nameEn: 'Tetra Pak Mineral Water', nameBm: 'Tetra Pak Mineral Water', descEn: 'Eco-friendly boxed mineral water', descBm: 'Air mineral kotak Tetra Pak mesra alam', price: 2, category: 'drinks', suitability: 'lunch' },
+
+  // —— Expanded common Halal Malay items (market-guided prices) ——
+  { id: 'nasi_goreng_kampung', nameEn: 'Nasi Goreng Kampung', nameBm: 'Nasi Goreng Kampung', descEn: 'Village-style fried rice with bilis and chilli', descBm: 'Nasi goreng kampung dengan bilis dan cili', price: 8, category: 'lunch' },
+  { id: 'nasi_briyani', nameEn: 'Nasi Briyani', nameBm: 'Nasi Briyani', descEn: 'Fragrant spiced rice with chicken or mutton', descBm: 'Nasi berempah wangi bersama ayam atau kambing', price: 14, category: 'lunch' },
+  { id: 'lontong_singapore', nameEn: 'Lontong Singapore', nameBm: 'Lontong Singapore', descEn: 'Compressed rice in coconut vegetable gravy', descBm: 'Nasi himpit dalam kuah lodeh bersantan', price: 8, category: 'breakfast' },
+  { id: 'mee_rebus', nameEn: 'Mee Rebus', nameBm: 'Mee Rebus', descEn: 'Yellow noodles in thick sweet-spicy gravy', descBm: 'Mee dalam kuah pekat manis-pedas', price: 7.5, category: 'lunch' },
+  { id: 'mee_siam', nameEn: 'Mee Siam', nameBm: 'Mee Siam', descEn: 'Rice vermicelli in tangy spicy gravy', descBm: 'Bihun dalam kuah masam-pedas', price: 7.5, category: 'lunch' },
+  { id: 'mee_kari', nameEn: 'Mee Kari', nameBm: 'Mee Kari', descEn: 'Noodles in coconut curry broth', descBm: 'Mee dalam kuah kari bersantan', price: 9, category: 'lunch' },
+  { id: 'soto_ayam', nameEn: 'Soto Ayam', nameBm: 'Soto Ayam', descEn: 'Spiced chicken soup with rice cakes', descBm: 'Sup ayam berempah dengan nasi himpit', price: 8, category: 'lunch' },
+  { id: 'bubur_ayam', nameEn: 'Bubur Ayam', nameBm: 'Bubur Ayam', descEn: 'Chicken rice porridge', descBm: 'Bubur nasi ayam', price: 6, category: 'breakfast' },
+  { id: 'ayam_masak_merah', nameEn: 'Ayam Masak Merah', nameBm: 'Ayam Masak Merah', descEn: 'Chicken in sweet tomato gravy', descBm: 'Ayam dalam kuah tomato manis', price: 9, category: 'lunch' },
+  { id: 'ayam_kurma', nameEn: 'Ayam Kurma', nameBm: 'Ayam Kurma', descEn: 'Mild creamy kurma chicken', descBm: 'Ayam kurma lembut', price: 10, category: 'lunch' },
+  { id: 'daging_masak_hitam', nameEn: 'Daging Masak Hitam', nameBm: 'Daging Masak Hitam', descEn: 'Dark soy braised beef', descBm: 'Daging masak kicap hitam', price: 12, category: 'lunch' },
+  { id: 'kangkung_belacan', nameEn: 'Kangkung Belacan', nameBm: 'Kangkung Goreng Belacan', descEn: 'Water spinach with shrimp paste', descBm: 'Kangkung tumis belacan', price: 5, category: 'lunch' },
+  { id: 'rojak_singapore', nameEn: 'Rojak Singapore', nameBm: 'Rojak Singapore', descEn: 'Mixed fritters with thick sweet-spicy sauce', descBm: 'Goreng campur dengan kuah manis-pedas', price: 7, category: 'hi tea' },
+  { id: 'roti_telur', nameEn: 'Roti Telur', nameBm: 'Roti Telur', descEn: 'Roti canai with egg', descBm: 'Roti canai bergaul telur', price: 3, category: 'breakfast' },
+  { id: 'teh_tarik', nameEn: 'Teh Tarik', nameBm: 'Teh Tarik', descEn: 'Pulled milk tea', descBm: 'Teh susu ditarik', price: 2.5, category: 'drinks', suitability: 'breakfast_hitea' },
+  { id: 'teh_o_ais', nameEn: 'Teh O Ais', nameBm: 'Teh O Ais', descEn: 'Iced black tea', descBm: 'Teh o sejuk', price: 2.2, category: 'drinks', suitability: 'breakfast_hitea' },
+  { id: 'sirap_bandung', nameEn: 'Sirap Bandung', nameBm: 'Sirap Bandung', descEn: 'Rose syrup milk drink', descBm: 'Sirap ros bersusu', price: 2.5, category: 'drinks', suitability: 'lunch' },
 ];
+
+
+// Full market reference catalog (not auto-pushed to live Firebase menu)
+export {
+  MALAYSIAN_HALAL_CATALOG,
+  CATERING_PACKAGE_BANDS,
+  catalogToMenuItem,
+  getCatalogByGroup,
+  getCatalogByCategory,
+} from "@/data/malaysianHalalCatalog";
+export type { HalalCatalogItem, CatalogMealSlot } from "@/data/malaysianHalalCatalog";
