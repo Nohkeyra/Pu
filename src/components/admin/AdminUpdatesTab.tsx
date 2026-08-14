@@ -21,6 +21,7 @@ import {
   publishAppUpdate, 
   DEFAULT_APK_URL,
   CURRENT_APP_VERSION,
+  CURRENT_BUILD_NUMBER,
   type AppVersionConfig 
 } from '@/services/updateService';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
@@ -40,9 +41,9 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
   const [publishing, setPublishing] = useState(false);
 
   // Form states
-  const [version, setVersion] = useState('1.2.5');
+  const [version, setVersion] = useState(CURRENT_APP_VERSION);
   const [minVersion, setMinVersion] = useState('1.2.0');
-  const [buildNumber, setBuildNumber] = useState('125');
+  const [buildNumber, setBuildNumber] = useState(String(CURRENT_BUILD_NUMBER));
   const [apkUrl, setApkUrl] = useState(DEFAULT_APK_URL);
   const [bundleUrl, setBundleUrl] = useState('');
   const [releaseNotesRaw, setReleaseNotesRaw] = useState(
@@ -118,9 +119,9 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
     try {
       const cfg = await fetchLatestAppVersion();
       setCurrentConfig(cfg);
-      setVersion(cfg.latestVersion || '1.2.5');
+      setVersion(cfg.latestVersion || CURRENT_APP_VERSION);
       setMinVersion(cfg.minVersion || '1.2.0');
-      setBuildNumber(String(cfg.buildNumber || 125));
+      setBuildNumber(String(cfg.buildNumber || CURRENT_BUILD_NUMBER));
       setApkUrl(cfg.apkUrl || DEFAULT_APK_URL);
       setBundleUrl(cfg.bundleUrl || '');
       setForceUpdate(cfg.forceUpdate || false);

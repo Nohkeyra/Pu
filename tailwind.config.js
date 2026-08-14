@@ -10,6 +10,7 @@ module.exports = {
         // (see :root and .dark blocks there for the actual hex values).
         
         'deep-forest':   'var(--color-deep-forest)',
+        'deep-forest-accent': 'var(--color-deep-forest-accent)',
         'forest-green':  'var(--color-forest)',
         'light-forest':  'var(--color-light-forest)',
         
@@ -18,6 +19,12 @@ module.exports = {
         'honey':         'var(--color-honey)',
         'crisp-carrot':  'var(--color-crisp-carrot)',
         'tomato-burst':  'var(--color-tomato-burst)',
+        // kiwi/fern (2026-08-14): remapped from neon lime (#39FF14) to
+        // crisp-carrot per the new 4-color light-mode palette — see
+        // src/index.css :root for the full rationale. Token names kept
+        // as-is since 15+ components reference bg-kiwi/text-kiwi/etc.
+        // directly; renaming the Tailwind key would require touching every
+        // one of those call sites for a purely cosmetic rename.
         'kiwi':          'var(--color-kiwi)',
         'fern':          'var(--color-kiwi)',
         
@@ -43,9 +50,16 @@ module.exports = {
           foreground: "hsl(var(--popover-foreground))",
         },
         
+        // primary (2026-08-14): was pointing at raw --color-sunshine
+        // (mustard #f69913) with --color-cream foreground — mustard fails
+        // AA contrast even against white (2.21:1), let alone cream, which
+        // is darker than white. Repointed to --color-sunshine-cta (tomato
+        // #e03f14, the same AA-compliant CTA token used elsewhere) with a
+        // white foreground, matching how the app already treats its
+        // primary action color everywhere else.
         primary: {
-          DEFAULT: 'var(--color-sunshine)',
-          foreground: 'var(--color-cream)',
+          DEFAULT: 'var(--color-sunshine-cta)',
+          foreground: '#FFFFFF',
         },
         secondary: {
           DEFAULT: 'var(--color-cream-dark)',

@@ -21,6 +21,8 @@ const propsPaths = [
   path.join(root, 'android', 'app', 'version.properties'),
 ];
 const packageJsonPath = path.join(root, 'package.json');
+const updateServicePath = path.join(root, 'src', 'services', 'updateService.ts');
+const serverPath = path.join(root, 'server.ts');
 
 function readProps(filePath) {
   if (!fs.existsSync(filePath)) return { versionCode: 125, versionName: '1.2.5' };
@@ -113,6 +115,38 @@ function main() {
     }
   } catch (e) {
     console.warn('Could not update package.json version:', e.message);
+  }
+
+  // Keep src/services/updateService.ts in sync (CURRENT_APP_VERSION and CURRENT_BUILD_NUMBER)
+  try {
+    if (fs.existsSync(updateServicePath)) {
+      let content = fs.readFileSync(updateServicePath, 'utf8');
+      content = content.replace(
+        /export const CURRENT_APP_VERSION = '[^']+';/,
+        `export const CURRENT_APP_VERSION = '${nextName}';`
+      );
+      content = content.replace(
+        /export const CURRENT_BUILD_NUMBER = \d+;/,
+        `export const CURRENT_BUILD_NUMBER = ${nextCode};`
+      );
+      fs.writeFileSync(updateServicePath, content, 'utf8');
+    }
+  } catch (e) {
+    console.warn('Could not update updateService.ts version:', e.message);
+  }
+
+  // Keep server.ts version in sync
+  try {
+    if (fs.existsSync(serverPath)) {
+      let content = fs.readFileSync(serverPath, 'utf8');
+      content = content.replace(
+        /version:\s*"[^"]*"/,
+        `version: "${nextName}"`
+      );
+      fs.writeFileSync(serverPath, content, 'utf8');
+    }
+  } catch (e) {
+    console.warn('Could not update server.ts version:', e.message);
   }
 
   console.log(`✅ ${current.versionName} (${current.versionCode}) → ${nextName} (${nextCode})`);

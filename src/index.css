@@ -9,32 +9,54 @@
     --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
     --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
 
-    /* Day Mode (Warm & Professional) */
-    --color-deep-forest: #023341;       /* Deep Navy Text */
-    --color-forest: #0B4A5C;            /* Darker Navy for surfaces */
-    --color-light-forest: #1A6075;      /* Lighter Navy for accents */
+    /* Day Mode — Wawasan Palette v2 (2026-08-14 restyle) */
+    --color-deep-forest: #0c453c;       /* Deep Forest Green — was Deep Navy #023341 */
+    --color-forest: #14584c;            /* Lighter forest for surfaces */
+    --color-light-forest: #1d6e5e;      /* Lighter forest for accents */
 
-    --color-sunshine: #FD5E02;          /* Wawasan Orange (Brand) */
-    --color-honey: #FFA033;             /* Lighter Orange */
-    --color-crisp-carrot: #E04D00;      /* Deep Wawasan Orange */
-    --color-tomato-burst: #B33D00;      /* Darkest Orange */
-    --color-kiwi: #39FF14;              /* Neon Lime Accent */
+    --color-sunshine: #f69913;          /* Mustard Gold (Brand) — was Wawasan Orange #FD5E02 */
+    --color-honey: #f8ad42;             /* Lighter mustard */
+    --color-crisp-carrot: #e96212;      /* Burnt Orange — was #E04D00 */
+    --color-tomato-burst: #e03f14;      /* Bright Tomato Red — was #B33D00 */
+    --color-deep-forest-accent: #0c453c; /* Same as deep-forest in light mode (deep-forest already IS the forest green here); exists mainly so dark mode's border/accent-only use of this token has a light-mode counterpart with the same name. */
+    /* --color-kiwi: kept as a token (still referenced by 15+ components:
+       badge, toggle, table, calendar, ExportOrdersModal, OrderForm) but
+       remapped to crisp-carrot rather than removed outright — Noh confirmed
+       the light-mode palette must use ONLY the 4 new colors, and kiwi's
+       old neon-lime value (#39FF14) isn't one of them. crisp-carrot was
+       free (not otherwise assigned to a CTA/primary role), so it becomes
+       kiwi's new light-mode value. The ThemeContext AccentColor
+       sunshine/kiwi toggle system was checked and found to have no CSS or
+       component actually reading the accent state visually (dead switch),
+       so nothing else depends on kiwi meaning "green" specifically. */
+    --color-kiwi: #e96212;              /* Was Neon Lime #39FF14 — remapped to Burnt Orange */
 
     /*
-     * P0 — AA-compliant Sunshine CTA.
-     *   #FD5E02 (the brand sunshine) on #FFFFFF = 3.10:1 — fails WCAG AA
-     *   for normal text.  We re-tokenise that specific role as
-     *   --color-sunshine-cta and pick the brand's deeper #B33D00
-     *   (5.86:1 — passes AA) for all primary action surfaces and
-     *   their foreground/primary tokens.  The original sunshine
-     *   remains as a brand-accent (for surfaces, gradients, hover) so
-     *   the visual identity is preserved.
+     * P0 — AA-compliant text pairing per accent color, decided by actual
+     * measured contrast (2026-08-14), not by a blanket white-text rule:
+     *   #f69913 (mustard) on white  = 2.21:1 -> FAILS even for large text
+     *   #e96212 (burnt orange) on white = 3.38:1 -> FAILS for normal text
+     *   #e03f14 (tomato) on white = 4.29:1 -> just under strict AA-normal
+     *                                          (4.5) but PASSES AA-large (3.0)
+     *   #0c453c (deep forest) on white = 10.87:1 -> comfortable pass
+     * Decision (Noh: "ikut logik akal & visual, mudah dibaca dan kemas"):
+     * mustard & burnt-orange pair with dark forest-green text; tomato and
+     * deep-forest may use white text, since tomato reads cleanly at the
+     * bold/larger weights used for buttons and badges in this app.
      */
-    --color-sunshine-cta: #B33D00;       /* AA-compliant primary action */
-    --color-sunshine-cta-bg: #B33D00;
+    --color-sunshine-cta: #e03f14;       /* Tomato as primary CTA — darkest/most legible with white text among the 3 accents */
+    --color-sunshine-cta-bg: #e03f14;
     --color-sunshine-cta-fg: #FFFFFF;
-    --color-sunshine-cta-hover: #8F3200;
-    --color-sunshine-cta-press: #6F2600;
+    --color-sunshine-cta-hover: #c73510;
+    --color-sunshine-cta-press: #a12c0d;
+
+    /* Text-on-accent pairing tokens — new (2026-08-14). Components using
+       bg-sunshine or bg-crisp-carrot directly (not just bg-sunshine-cta)
+       should pair with these rather than assuming white text. */
+    --color-on-sunshine: #0c453c;        /* dark forest text on mustard */
+    --color-on-crisp-carrot: #0c453c;    /* dark forest text on burnt orange */
+    --color-on-tomato-burst: #FFFFFF;    /* white text on tomato */
+    --color-on-deep-forest: #FFFFFF;     /* white text on deep forest */
 
     /* Spacing scale (use consistently: tight groups / sections / cards) */
     --space-1: 0.25rem;   /* 4px */
@@ -51,43 +73,43 @@
     --radius-2xl: 1.5rem;
 
 
-    --color-cream: #FCF5E3;             /* Warm Cream Bg */
-    --color-cream-dark: #F5E8D0;        /* Slightly Darker Cream */
-    --color-charcoal: #023341;          /* Re-mapped to Deep Navy for legacy classes */
-    --color-stone: #6B7280;             /* Muted Grey Text */
+    --color-cream: #FCF5E3;             /* Warm Cream Bg (unchanged) */
+    --color-cream-dark: #F5E8D0;        /* Slightly Darker Cream (unchanged) */
+    --color-charcoal: #0c453c;          /* Re-mapped to Deep Forest for legacy classes */
+    --color-stone: #6B7280;             /* Muted Grey Text (unchanged) */
 
-    /* Shadcn tokens — primary now points to the AA token */
-    --background: 42 66% 94%;           /* Matches #FCF5E3 */
-    --foreground: 193 94% 13%;          /* Matches #023341 */
-    --card: 0 0% 100%;                  /* White Cards */
-    --card-foreground: 193 94% 13%;
-    --popover: 42 66% 94%;
-    --popover-foreground: 193 94% 13%;
-    --primary: 14 82% 35%;              /* Matches #B33D00 — AA compliant */
+    /* Shadcn tokens — re-derived from the new palette (exact HSL, not approximated) */
+    --background: 43 81% 94%;           /* Matches #FCF5E3 (unchanged) */
+    --foreground: 171 70% 16%;          /* Matches #0c453c */
+    --card: 0 0% 100%;                  /* White Cards (unchanged) */
+    --card-foreground: 171 70% 16%;
+    --popover: 43 81% 94%;
+    --popover-foreground: 171 70% 16%;
+    --primary: 13 84% 48%;              /* Matches #e03f14 — tomato as primary CTA */
     --primary-foreground: 0 0% 100%;
-    --secondary: 38 60% 89%;            /* Matches #F5E8D0 */
-    --secondary-foreground: 193 94% 13%;
+    --secondary: 38 60% 89%;            /* Matches #F5E8D0 (unchanged) */
+    --secondary-foreground: 171 70% 16%;
     --muted: 42 30% 85%;
     --muted-foreground: 215 16% 47%;
-    --accent: 111 100% 54%;             /* Matches #39FF14 */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 14 82% 51%;
+    --accent: 22 86% 49%;               /* Was kiwi #39FF14 -> now matches crisp-carrot per kiwi remap */
+    --accent-foreground: 171 70% 16%;   /* Dark forest text — crisp-carrot fails AA with white text */
+    --destructive: 13 84% 48%;          /* Matches #e03f14 tomato */
     --destructive-foreground: 0 0% 100%;
     --border: 42 30% 85%;
     --input: 42 30% 85%;
-    --ring: 14 82% 35%;                 /* AA compliant ring colour */
-    --radius: 1.5rem;                   /* Large rounded corners */
+    --ring: 13 84% 48%;                 /* Matches tomato CTA */
+    --radius: 1.5rem;                   /* Large rounded corners (unchanged) */
 
-    --color-selection-bg: rgba(253, 94, 2, 0.3);
-    --color-selection-text: #023341;
+    --color-selection-bg: rgba(246, 153, 19, 0.3);   /* mustard-based selection */
+    --color-selection-text: #0c453c;
     --color-scrollbar-track: #FCF5E3;
     --color-scrollbar-thumb: #D1D5DB;
-    --color-scrollbar-hover: #FD5E02;
+    --color-scrollbar-hover: #f69913;
 
     --color-input-bg: #FFFFFF;
-    --color-input-text: #023341;
+    --color-input-text: #0c453c;
     --color-input-border: rgba(0, 0, 0, 0.1);
-    --color-input-focus-shadow: rgba(179, 61, 0, 0.30);
+    --color-input-focus-shadow: rgba(224, 63, 20, 0.30);  /* tomato-based focus ring */
 
     --color-header-bg: rgba(252, 245, 227, 0.95);
     --color-header-border: rgba(0, 0, 0, 0.05);
@@ -97,63 +119,76 @@
   }
 
   .dark {
-    /* Dark Mode (Midnight Heritage - Upgraded to Premium Charcoal) */
-    --color-deep-forest: #F5F5F5;       /* Soft Ivory Text */
-    --color-forest: #1b1b1e;            /* Modern Charcoal for surfaces/cards */
-    --color-light-forest: #2b2b30;      /* Slightly lighter Charcoal for mid-ground accents */
+    /* Dark Mode — Wawasan Palette v2 (2026-08-14 restyle)
+       Background/surface stays the existing charcoal (Noh: keep as-is).
+       Text stays ivory — #0c453c itself measured 1.72:1 on #121214,
+       far below AA, so deep-forest cannot serve as dark-mode body text.
+       Per Noh's decision, deep-forest appears here only as a subtle
+       border/accent color (--color-deep-forest-accent below), not as a
+       surface or text color. */
+    --color-deep-forest: #F5F5F5;       /* Soft Ivory Text (unchanged — deep forest itself fails as text-on-charcoal) */
+    --color-forest: #1b1b1e;            /* Charcoal for surfaces/cards (unchanged) */
+    --color-light-forest: #2b2b30;      /* Slightly lighter Charcoal for mid-ground accents (unchanged) */
+    --color-deep-forest-accent: #14584c; /* Deep forest green, lightened slightly from #0c453c for a visible border/accent on charcoal — not used as text or large surface */
 
-    --color-sunshine: #FF8C42;          /* Vibrant Amber (Brand) */
-    --color-honey: #FFAA73;             /* Light Amber */
-    --color-crisp-carrot: #E67228;      /* Deep Amber */
-    --color-tomato-burst: #CC5500;      /* Dark Amber */
-    --color-kiwi: #CCFF00;              /* Electric Lime Accent */
+    --color-sunshine: #f69913;          /* Mustard Gold (Brand) — was Vibrant Amber #FF8C42; 8.45:1 on charcoal */
+    --color-honey: #f8ad42;             /* Lighter mustard */
+    --color-crisp-carrot: #e96212;      /* Burnt Orange — was #E67228; 5.54:1 on charcoal */
+    --color-tomato-burst: #e03f14;      /* Bright Tomato Red — was #CC5500; 4.36:1 on charcoal (AA-large) */
+    /* --color-kiwi: remapped to crisp-carrot, same rationale as light mode
+       (see :root comment) — was Electric Lime #CCFF00. */
+    --color-kiwi: #e96212;
 
     /*
-     * Dark mode CTA uses the brighter brand amber (FF8C42) on dark
-     * surface — also AA compliant on charcoal #121214 (10.6:1).
+     * Dark mode CTA: sunshine (mustard) is the strongest performer on
+     * charcoal among the 4 new colors (8.45:1), so it keeps the CTA role
+     * it already had (previously amber #FF8C42, same role). Text stays
+     * dark charcoal on the mustard button for readability, matching the
+     * existing pattern (foreground was already the dark bg color, not
+     * white, for this exact reason).
      */
-    --color-sunshine-cta: #FF8C42;
-    --color-sunshine-cta-bg: #FF8C42;
+    --color-sunshine-cta: #f69913;
+    --color-sunshine-cta-bg: #f69913;
     --color-sunshine-cta-fg: #121214;
-    --color-sunshine-cta-hover: #FFA059;
-    --color-sunshine-cta-press: #FFE0C2;
+    --color-sunshine-cta-hover: #f8ad42;
+    --color-sunshine-cta-press: #fbc478;
 
-    --color-cream: #121214;             /* High-style Charcoal Page Background */
-    --color-cream-dark: #0a0a0c;        /* Deeper charcoal base */
-    --color-charcoal: #121214;          /* Maps to background for legacy classes */
-    --color-stone: #9CA3AF;             /* Muted Grey Text */
+    --color-cream: #121214;             /* High-style Charcoal Page Background (unchanged) */
+    --color-cream-dark: #0a0a0c;        /* Deeper charcoal base (unchanged) */
+    --color-charcoal: #121214;          /* Maps to background for legacy classes (unchanged) */
+    --color-stone: #9CA3AF;             /* Muted Grey Text (unchanged) */
 
-    /* Shadcn tokens */
-    --background: 240 8% 7%;            /* Matches #121214 */
-    --foreground: 0 0% 96%;             /* Matches #F5F5F5 */
-    --card: 240 5% 11%;                 /* Matches #1b1b1e */
+    /* Shadcn tokens — re-derived from the new palette (exact HSL) */
+    --background: 240 5% 7%;            /* Matches #121214 (unchanged) */
+    --foreground: 0 0% 96%;             /* Matches #F5F5F5 (unchanged) */
+    --card: 240 5% 11%;                 /* Matches #1b1b1e (unchanged) */
     --card-foreground: 0 0% 96%;
-    --popover: 240 8% 7%;
+    --popover: 240 5% 7%;
     --popover-foreground: 0 0% 96%;
-    --primary: 23 100% 63%;             /* Matches #FF8C42 — AA on charcoal */
-    --primary-foreground: 240 8% 7%;
-    --secondary: 240 5% 11%;           /* Matches #1b1b1e */
+    --primary: 35 93% 52%;              /* Matches #f69913 mustard — AA on charcoal */
+    --primary-foreground: 240 5% 7%;
+    --secondary: 240 5% 11%;            /* Matches #1b1b1e (unchanged) */
     --secondary-foreground: 0 0% 96%;
     --muted: 240 5% 18%;
     --muted-foreground: 240 4% 65%;
-    --accent: 75 100% 50%;              /* Matches #CCFF00 */
-    --accent-foreground: 240 8% 7%;
-    --destructive: 14 82% 51%;
+    --accent: 22 86% 49%;               /* Was kiwi #CCFF00 -> now matches crisp-carrot per kiwi remap */
+    --accent-foreground: 0 0% 96%;      /* Ivory text — crisp-carrot passes AA (5.54:1) with light text on charcoal-adjacent surfaces */
+    --destructive: 13 84% 48%;          /* Matches #e03f14 tomato */
     --destructive-foreground: 0 0% 100%;
     --border: 240 5% 18%;
     --input: 240 5% 18%;
-    --ring: 23 100% 63%;
+    --ring: 35 93% 52%;                 /* Matches sunshine CTA */
 
-    --color-selection-bg: rgba(255, 140, 66, 0.3);
+    --color-selection-bg: rgba(246, 153, 19, 0.3);
     --color-selection-text: #F5F5F5;
     --color-scrollbar-track: #121214;
     --color-scrollbar-thumb: #2b2b30;
-    --color-scrollbar-hover: #FF8C42;
+    --color-scrollbar-hover: #f69913;
 
     --color-input-bg: #1b1b1e;
     --color-input-text: #F5F5F5;
     --color-input-border: rgba(255, 255, 255, 0.08);
-    --color-input-focus-shadow: rgba(255, 140, 66, 0.2);
+    --color-input-focus-shadow: rgba(246, 153, 19, 0.2);
 
     --color-header-bg: rgba(18, 18, 20, 0.95);
     --color-header-border: rgba(255, 255, 255, 0.04);

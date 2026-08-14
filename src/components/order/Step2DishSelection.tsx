@@ -67,8 +67,50 @@ export function Step2DishSelection({
     await handleStepNext(2);
   };
 
+  const resolveDishImage = (item: any): string => {
+    if (item?.image && typeof item.image === 'string' && item.image.trim()) {
+      return item.image;
+    }
+    const id = (item?.id || '').toLowerCase();
+    const name = `${item?.nameEn || ''} ${item?.nameBm || ''}`.toLowerCase();
+
+    if (id.includes('nasi_lemak') || name.includes('nasi lemak')) {
+      return '/assets/images/nasi_lemak_drawn_1786678078469.jpg';
+    }
+    if (id.includes('asam_pedas') || name.includes('asam pedas') || name.includes('pari')) {
+      return '/assets/images/asam_pedas_drawn_1786678089136.jpg';
+    }
+    if (id.includes('mee_goreng') || id.includes('soto') || name.includes('mee goreng') || name.includes('soto')) {
+      return '/assets/images/soto_ayam_drawn_1786678098460.jpg';
+    }
+    if (id.includes('lontong') || name.includes('lontong')) {
+      return '/assets/images/lontong_drawn_1786678109750.jpg';
+    }
+    if (id.includes('ayam') || id.includes('percik') || name.includes('ayam')) {
+      return '/assets/images/ayam_berempah_drawn_1786678122149.jpg';
+    }
+    if (id.includes('rendang') || id.includes('daging') || id.includes('minyak') || id.includes('kambing') || name.includes('rendang') || name.includes('daging') || name.includes('kambing')) {
+      return '/assets/images/rendang_daging_drawn_1786678134956.jpg';
+    }
+    if (id.includes('kuih') || id.includes('roti') || id.includes('currypuff') || id.includes('karipap') || id.includes('pisang') || id.includes('samosa') || name.includes('kuih') || name.includes('roti') || name.includes('karipap')) {
+      return '/assets/images/kuih_muih_drawn_1786678145689.jpg';
+    }
+    if (id.includes('teh') || name.includes('teh')) {
+      return '/assets/images/teh_tarik_drawn_1786678155597.jpg';
+    }
+    if (id.includes('kopi') || id.includes('nescafe') || id.includes('milo') || name.includes('kopi') || name.includes('nescafe') || name.includes('milo')) {
+      return '/assets/images/kopi_kampung_drawn_1786678168694.jpg';
+    }
+    if (id.includes('sirap') || id.includes('drink') || id.includes('kordial') || id.includes('mineral') || item?.category === 'drink' || item?.category === 'drinks') {
+      return '/assets/images/sirap_bandung_drawn_1786678177483.jpg';
+    }
+    return '/assets/nasi-campur.jpg';
+  };
+
   const renderMenuItemCard = (item: any) => {
     const isSelected = orderState.dishes.some(x => x.id === item.id);
+    const dishImg = resolveDishImage(item);
+
     return (
       <div
         key={item.id}
@@ -87,30 +129,33 @@ export function Step2DishSelection({
           {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
         </div>
         
-        {item.image && (
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 shrink-0 border border-stone-200/80 dark:border-white/10 shadow-2xs">
+        {dishImg && (
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 shrink-0 border border-amber-500/20 dark:border-white/10 shadow-sm relative">
             <img
-              src={getAssetUrl(item.image)}
+              src={getAssetUrl(dishImg)}
               alt={tText(item.nameEn, item.nameBm)}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = getAssetUrl('/assets/nasi-campur.jpg');
+              }}
             />
           </div>
         )}
 
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
+          <span className="text-xs sm:text-sm font-bold block text-deep-forest dark:text-white truncate uppercase">
             {tText(item.nameEn, item.nameBm)}
           </span>
           {(item.descBm || item.descEn) && (
-            <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate font-normal leading-tight">
+            <span className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 block truncate font-normal leading-tight mt-0.5">
               {tText(item.descEn, item.descBm)}
             </span>
           )}
         </div>
-        <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-          RM {item.price.toFixed(2)}
+        <span className="text-xs sm:text-sm font-bold text-crisp-carrot shrink-0 pl-1">
+          RM {Number(item.price || 0).toFixed(2)}
         </span>
       </div>
     );
