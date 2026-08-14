@@ -44,23 +44,22 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Reset states when source changes
+  // Initialize and reset currentSrc when src prop changes
   useEffect(() => {
     setLoaded(false);
     setError(false);
+    setCurrentSrc(getAssetUrl(src));
   }, [src]);
 
-  // Resolve path for Capacitor Android WebView and standard Web compatibility
-  const resolvedSrc = getAssetUrl(src);
-
-  // Handle cached image instant loads (e.g. browser cache or fast re-render)
+  // Handle cached image instant loads
   useEffect(() => {
     if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
       setLoaded(true);
     }
-  }, [resolvedSrc]);
+  }, [currentSrc]);
 
   const fitClass =
     objectFit === 'contain'
@@ -71,7 +70,25 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       ? 'object-none'
       : 'object-cover';
 
-  if (error || !src) {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (currentSrc.includes('/src/assets/')) {
+      // Stage 1 retry: replace /src/assets/ with /assets/
+      setCurrentSrc(currentSrc.replace('/src/assets/', '/assets/'));
+      return;
+    }
+    
+    if (!currentSrc.includes('/assets/nasi-campur.jpg')) {
+      // Stage 2 retry: fallback to standard bundled asset
+      setCurrentSrc(getAssetUrl('/assets/nasi-campur.jpg'));
+      return;
+    }
+
+    // Final Stage: show graceful placeholder
+    setError(true);
+    onError?.(e);
+  };
+
+  if (error || !currentSrc) {
     return (
       <div
         className={cn(
@@ -111,7 +128,7 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       {/* Main image */}
       <img
         ref={imgRef}
-        src={resolvedSrc}
+        src={currentSrc}
         alt={alt}
         loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
@@ -119,10 +136,7 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
           setLoaded(true);
           onLoad?.(e);
         }}
-        onError={(e) => {
-          setError(true);
-          onError?.(e);
-        }}
+        onError={handleImageError}
         className={cn(
           'w-full h-full transition-all duration-300 ease-out opacity-100',
           fitClass,

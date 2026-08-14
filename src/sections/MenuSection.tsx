@@ -15,26 +15,34 @@ export default function MenuSection() {
   const [menuItems, setMenuItems] = useState(MENU_ITEMS);
 
   useEffect(() => {
-    // Basic localStorage caching strategy for menu items
+    // Basic localStorage caching strategy for menu items with path validation
     const cachedItems = localStorage.getItem('menu_items');
     if (cachedItems) {
       try {
         const parsed = JSON.parse(cachedItems);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const validated = parsed.map((item: any) => {
-            const defaultItem = MENU_ITEMS.find((m) => m.id === item.id);
-            if (defaultItem) {
-              return { ...item, image: defaultItem.image };
-            }
-            return item;
+            const cleanItemId = item.id?.replace(/_/g, '-');
+            const defaultItem = MENU_ITEMS.find(
+              (m) => m.id === item.id || m.id === cleanItemId || m.id?.replace(/_/g, '-') === cleanItemId
+            );
+            const safeImage = defaultItem
+              ? defaultItem.image
+              : item.image?.replace('/src/assets/', '/assets/') || '/assets/nasi-campur.jpg';
+            return {
+              ...item,
+              image: safeImage,
+            };
           });
           setMenuItems(validated);
           localStorage.setItem('menu_items', JSON.stringify(validated));
         } else {
           setMenuItems(MENU_ITEMS);
+          localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
         }
       } catch {
         setMenuItems(MENU_ITEMS);
+        localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
       }
     } else {
       localStorage.setItem('menu_items', JSON.stringify(MENU_ITEMS));
