@@ -23,10 +23,27 @@ export const adminLoginLimiter = rateLimit({
   skipSuccessfulRequests: true,
 });
 
+// F-SEC (audit 2026-08-14): previously, a missing ADMIN_JWT_SECRET silently
+// fell back to a random in-process secret (console.warn only, server kept
+// running). Combined with the ADMIN_PASSWORD fallback in authRoutes.ts, a
+// misconfigured deploy (env var missing on Render) could leave the app
+// serving admin traffic on a weak/implicit trust boundary with no hard
+// failure signal. In production this must fail closed: refuse to boot
+// rather than run with a secret nobody chose. Local/dev workflows (Termux,
+// no .env yet) are intentionally exempted via NODE_ENV so `npm run dev`
+// still works without ceremony — Render sets NODE_ENV=production by
+// default, so the real deployment target is covered.
 let ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.trim() === "") {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "[Admin Auth] ADMIN_JWT_SECRET is not set. Refusing to start in production — " +
+      "set ADMIN_JWT_SECRET on Render before deploying."
+    );
+  }
   console.warn(
-    "[Admin Auth] ADMIN_JWT_SECRET is not set. Generating a secure, temporary random secret for this session."
+    "[Admin Auth] ADMIN_JWT_SECRET is not set. Generating a temporary random secret for this dev/local session only. " +
+    "This will NOT work in production (NODE_ENV=production) — the server will refuse to start instead."
   );
   ADMIN_JWT_SECRET = crypto.randomBytes(32).toString("hex");
 }

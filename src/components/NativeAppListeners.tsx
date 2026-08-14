@@ -6,10 +6,8 @@ import { Motion } from '@capacitor/motion';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
-import { getPendingOrdersCount, autoSyncPendingOrders, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
+import { getPendingOrdersCount, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
 import { PendingOrdersDialog } from '@/components/PendingOrdersDialog';
-import { useToast } from '@/components/ui/Toast';
-import { triggerNotification, NotificationType } from '@/lib/haptics';
 
 /**
  * An invisible component that wraps native listeners 
@@ -19,7 +17,6 @@ function NativeAppListeners() {
   useNativeAppState();
   useNetworkStatus();
   useDeepLinks();
-  const { toast } = useToast();
 
   const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
 
@@ -28,31 +25,25 @@ function NativeAppListeners() {
     notifyCapgoAppReady();
   }, []);
 
-  const triggerAutoSync = useCallback(async () => {
+  // F-OFFLINE (audit 2026-08-14): this used to call autoSyncPendingOrders(),
+  // which POSTed every queued order to the server the moment connectivity
+  // returned — no review, no stale-date check. That directly contradicted
+  // the confirm-before-send design documented in PendingOrdersDialog.tsx
+  // ("Deliberately NOT auto-flushed — an order queued while offline may now
+  // be for a date/time that has already passed"). Now this only rehydrates
+  // the queue (in case the app was killed while offline with items already
+  // saved) and opens the dialog if anything is pending — sending or
+  // discarding each order is left entirely to the customer via the dialog.
+  const triggerPendingOrdersCheck = useCallback(async () => {
     try {
       await rehydrateQueueFromNative();
-      if (getPendingOrdersCount() === 0) return;
-
-      const result = await autoSyncPendingOrders((syncedCount) => {
-        triggerNotification(NotificationType.Success);
-        toast({
-          title: 'Pesanan Diselaraskan / Orders Auto-Synced',
-          description: `${syncedCount} tempahan luar talian berjaya dihantar ke pangkalan data Firestore.`,
-          variant: 'success',
-          duration: 6000,
-        });
-      });
-
-      if (result.remainingCount > 0) {
-        setPendingOrdersDialogOpen(true);
-      }
-    } catch (err) {
-      console.warn('[NativeAppListeners] Auto-sync attempt error:', err);
       if (getPendingOrdersCount() > 0) {
         setPendingOrdersDialogOpen(true);
       }
+    } catch (err) {
+      console.warn('[NativeAppListeners] Pending orders check failed:', err);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -73,7 +64,7 @@ function NativeAppListeners() {
         wasOnline = isNowOnline;
 
         if (justCameOnline) {
-          triggerAutoSync();
+          triggerPendingOrdersCheck();
         }
       });
     };
@@ -83,7 +74,7 @@ function NativeAppListeners() {
     return () => {
       isActive = false;
     };
-  }, [triggerAutoSync]);
+  }, [triggerPendingOrdersCheck]);
 
   // Also check once on mount, in case the app was killed while offline
   // with items already queued and is now reopened already connected.
@@ -92,14 +83,14 @@ function NativeAppListeners() {
       try {
         const status = await Network.getStatus();
         if (status.connected) {
-          await triggerAutoSync();
+          await triggerPendingOrdersCheck();
         }
       } catch {
         /* ignore */
       }
     };
     checkOnMount();
-  }, [triggerAutoSync]);
+  }, [triggerPendingOrdersCheck]);
 
   useEffect(() => {
     let active = true;

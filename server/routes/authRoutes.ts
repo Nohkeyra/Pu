@@ -8,11 +8,40 @@ import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } fr
 
 const router = Router();
 
-// Admin Login Endpoint
+// F-SEC (audit 2026-08-14): this endpoint used to fall back to a hardcoded
+// literal password ('wawasan123') whenever ADMIN_PASSWORD_HASH and
+// ADMIN_PASSWORD were both unset — a value visible to anyone reading the
+// public GitHub source. Combined with the previous ADMIN_JWT_SECRET
+// auto-generate fallback, a Render deploy missing both env vars would let
+// anyone log in as admin with a password known from the repo itself.
+// Both production and dev now fail closed: no configured credential means
+// no logins are accepted at all (503), rather than silently accepting a
+// known password. This applies in dev too — on Termux, set ADMIN_PASSWORD
+// in your local .env before `npm run dev` if you need to log in as admin.
 router.post('/login', adminLoginLimiter, async (req, res) => {
   const { password } = req.body;
   const adminHash = process.env.ADMIN_PASSWORD_HASH;
-  const rawAdminPass = process.env.ADMIN_PASSWORD || 'wawasan123';
+  const rawAdminPass = process.env.ADMIN_PASSWORD;
+
+  if (!adminHash && !rawAdminPass) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(
+        '[Admin Auth] Login rejected: neither ADMIN_PASSWORD_HASH nor ADMIN_PASSWORD is set in production.'
+      );
+      return res.status(503).json({
+        success: false,
+        error: 'Admin login is not configured on this server.',
+      });
+    }
+    console.warn(
+      '[Admin Auth] Neither ADMIN_PASSWORD_HASH nor ADMIN_PASSWORD is set. ' +
+      'Dev/local admin login is disabled until one is configured — set ADMIN_PASSWORD in your local .env.'
+    );
+    return res.status(503).json({
+      success: false,
+      error: 'Admin login is not configured. Set ADMIN_PASSWORD in your local .env.',
+    });
+  }
 
   let isValid = false;
   if (adminHash) {

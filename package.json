@@ -53,7 +53,7 @@
     "dotenv": "^16.4.5",
     "eruda": "^3.4.3",
     "esbuild": "^0.28.0",
-    "exceljs": "^3.4.0",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "firebase": "^12.17.0",
