@@ -8,4 +8,5 @@
   - **Server**: Express is located in `server.ts` with modular routes in `/server/routes`. It binds to `0.0.0.0:3000` and uses Vite as middleware in development mode.
   - **Firebase**: Firebase is configured in `src/firebaseConfig.ts`, dynamically reading from `VITE_FIREBASE_*` environment variables or falling back to `firebase-applet-config.json` for the sandbox.
 - **Golden Rule**: Look before leaping. Before adding any new tool, workflow, or configuration, run `view_file` on existing configurations (like `package.json`, `vite.config.ts`, `.github/workflows/`) to understand how this project specifically handles it.
+- **Communication & Tone**: Reply directly as a clear, polite, professional AI coding assistant. Avoid displaying internal tool output descriptions or verbose meta-explanations. Keep responses concise, scannable, and focused on user-facing functional outcomes.
 

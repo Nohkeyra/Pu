@@ -608,30 +608,35 @@ export function AdminOrdersTab({
                           </span>
                         </div>
 
-                        {/* Beautiful Jotform Fields Layout */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3.5 text-xs bg-cream/10 dark:bg-white/5 p-3 rounded-xl border border-stone/10 dark:border-white/5 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                        {/* Mobile & Desktop Jotform Card Fields Layout */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs bg-cream/20 dark:bg-white/5 p-3.5 sm:p-4 rounded-2xl border border-stone-200/80 dark:border-white/10 mt-2 shadow-2xs" onClick={(e) => e.stopPropagation()}>
                           {/* Client column */}
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                          <div className="flex flex-col gap-0.5 min-w-0 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl border border-stone-100 dark:border-white/5">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-400 tracking-wider flex items-center gap-1">
                               {language === 'bm' ? 'Klien' : 'Client'}
                             </span>
-                            <span className="font-semibold text-deep-forest dark:text-white truncate" title={clientName}>
+                            <span className="font-bold text-deep-forest dark:text-white truncate text-xs sm:text-sm" title={clientName}>
                               {clientName}
                             </span>
+                            {order.email && (
+                              <span className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
+                                {order.email}
+                              </span>
+                            )}
                           </div>
 
                           {/* Pax / Quantity column */}
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                          <div className="flex flex-col gap-0.5 min-w-0 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl border border-stone-100 dark:border-white/5">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-400 tracking-wider">
                               {language === 'bm' ? 'Pax / Kuantiti' : 'Pax / Quantity'}
                             </span>
                             {editingCell?.orderId === order.id && editingCell?.field === 'quantity' ? (
-                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="number"
                                   value={editValue}
                                   onChange={(e) => setEditValue(e.target.value)}
-                                  className="w-16 h-7 px-1.5 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                                  className="w-20 h-8 px-2 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-[var(--color-sunshine-cta)] min-h-[32px]"
                                   disabled={savingCell}
                                   autoFocus
                                   onKeyDown={(e) => {
@@ -643,22 +648,22 @@ export function AdminOrdersTab({
                                   type="button"
                                   onClick={() => handleInlineSave(order)}
                                   disabled={savingCell}
-                                  className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors"
+                                  className="p-1.5 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg hover:bg-emerald-100 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
                                 >
-                                  <Check className="w-3.5 h-3.5" />
+                                  <Check className="w-4 h-4" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setEditingCell(null)}
                                   disabled={savingCell}
-                                  className="p-1 text-stone hover:bg-stone/10 rounded-md transition-colors"
+                                  className="p-1.5 text-stone bg-stone-100 dark:bg-stone-800 rounded-lg hover:bg-stone-200 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <X className="w-4 h-4" />
                                 </button>
                               </div>
                             ) : (
                               <div 
-                                className="group flex items-center gap-1.5 cursor-pointer select-none font-bold text-deep-forest dark:text-white"
+                                className="group flex items-center gap-1.5 cursor-pointer select-none font-bold text-deep-forest dark:text-white pt-0.5"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setEditingCell({ orderId: order.id, field: 'quantity' });
@@ -666,19 +671,19 @@ export function AdminOrdersTab({
                                 }}
                                 title={language === 'bm' ? 'Klik untuk edit Pax' : 'Click to edit Pax'}
                               >
-                                <span>{order.quantity || 0} pax</span>
-                                <Edit2 className="w-3 h-3 text-stone/50 group-hover:text-[var(--color-sunshine-cta)] opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                                <span className="text-sm">{order.quantity || 0} pax</span>
+                                <Edit2 className="w-3.5 h-3.5 text-stone-400 group-hover:text-[var(--color-sunshine-cta)] opacity-60 group-hover:opacity-100 transition-all duration-200" />
                               </div>
                             )}
                           </div>
 
                           {/* Price per Pax column */}
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                          <div className="flex flex-col gap-0.5 min-w-0 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl border border-stone-100 dark:border-white/5">
+                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-400 tracking-wider">
                               {language === 'bm' ? 'Harga per Pax' : 'Price per Pax'}
                             </span>
                             {order.prices ? (
-                              <div className="flex flex-col gap-1 items-start">
+                              <div className="flex flex-col gap-1 items-start pt-0.5">
                                 {Object.entries(order.prices).map(([meal, price]) => {
                                   const isCurrentEditing = editingCell?.orderId === order.id && 
                                                            editingCell?.field === 'pricePerPax' && 
@@ -692,7 +697,7 @@ export function AdminOrdersTab({
                                         step="0.01"
                                         value={editValue}
                                         onChange={(e) => setEditValue(e.target.value)}
-                                        className="w-14 h-6 px-1 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-right text-[11px] font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+                                        className="w-16 h-7 px-1.5 border border-border bg-white dark:bg-card text-deep-forest dark:text-white rounded-lg text-right text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)] min-h-[28px]"
                                         disabled={savingCell}
                                         autoFocus
                                         onKeyDown={(e) => {
@@ -704,23 +709,23 @@ export function AdminOrdersTab({
                                         type="button"
                                         onClick={() => handleInlineSave(order)}
                                         disabled={savingCell}
-                                        className="p-0.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-md transition-colors"
+                                        className="p-1 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 rounded-md transition-colors"
                                       >
-                                        <Check className="w-3 h-3" />
+                                        <Check className="w-3.5 h-3.5" />
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setEditingCell(null)}
                                         disabled={savingCell}
-                                        className="p-0.5 text-stone hover:bg-stone/10 rounded-md transition-colors"
+                                        className="p-1 text-stone bg-stone-100 dark:bg-stone-800 rounded-md transition-colors"
                                       >
-                                        <X className="w-3 h-3" />
+                                        <X className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   ) : (
                                     <div 
                                       key={meal}
-                                      className="group flex items-center gap-1 cursor-pointer select-none leading-none"
+                                      className="group flex items-center gap-1 cursor-pointer select-none leading-none pt-0.5"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setEditingCell({ orderId: order.id, field: 'pricePerPax', mealKey: meal });
@@ -729,15 +734,15 @@ export function AdminOrdersTab({
                                       title={language === 'bm' ? 'Klik untuk edit Harga/Pax' : 'Click to edit Price/Pax'}
                                     >
                                       <span className="text-[10px] text-stone dark:text-stone/75 font-sans capitalize">{meal}:</span>
-                                      <span className="font-mono text-xs font-semibold text-deep-forest dark:text-stone-100">RM {price.toFixed(2)}</span>
-                                      <Edit2 className="w-2.5 h-2.5 text-stone/40 group-hover:text-[var(--color-sunshine-cta)] opacity-0 group-hover:opacity-100 transition-all duration-150" />
+                                      <span className="font-mono text-xs font-bold text-deep-forest dark:text-stone-100">RM {price.toFixed(2)}</span>
+                                      <Edit2 className="w-3 h-3 text-stone-400 group-hover:text-[var(--color-sunshine-cta)] opacity-60 group-hover:opacity-100 transition-all duration-150" />
                                     </div>
                                   );
                                 })}
                               </div>
                             ) : (
                               <div 
-                                className="group flex items-center gap-1 cursor-pointer text-stone/50 hover:text-[var(--color-sunshine-cta)] select-none text-xs"
+                                className="group flex items-center gap-1 cursor-pointer text-stone/60 hover:text-[var(--color-sunshine-cta)] select-none text-xs pt-1"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const firstMeal = (order.meals && order.meals[0]) || 'catering';
@@ -746,25 +751,25 @@ export function AdminOrdersTab({
                                 }}
                                 title={language === 'bm' ? 'Klik untuk menetapkan harga' : 'Click to set pricing'}
                               >
-                                <span className="text-xs font-normal italic group-hover:not-italic group-hover:font-semibold">
+                                <span className="text-xs font-semibold text-[var(--color-sunshine-cta)] underline decoration-dotted">
                                   {language === 'bm' ? '+ Set Harga' : '+ Set Price'}
                                 </span>
-                                <Edit2 className="w-3 h-3 text-stone/40 opacity-0 group-hover:opacity-100 transition-all duration-150" />
+                                <Edit2 className="w-3 h-3 text-[var(--color-sunshine-cta)] opacity-80" />
                               </div>
                             )}
                           </div>
 
                           {/* Total Amount column */}
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">
+                          <div className="flex flex-col gap-0.5 min-w-0 bg-emerald-500/5 dark:bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
+                            <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">
                               {language === 'bm' ? 'Jumlah Keseluruhan' : 'Total Amount'}
                             </span>
                             {order.totalAmount ? (
-                              <span className="font-bold font-mono text-sm text-emerald-600 dark:text-emerald-400">
+                              <span className="font-bold font-mono text-base text-emerald-600 dark:text-emerald-400 pt-0.5">
                                 RM {order.totalAmount.toFixed(2)}
                               </span>
                             ) : (
-                              <span className="text-stone-400 italic">Pending</span>
+                              <span className="text-stone-400 italic text-xs pt-0.5">Pending</span>
                             )}
                           </div>
                         </div>
@@ -783,7 +788,7 @@ export function AdminOrdersTab({
                     </div>
 
                     {/* Right Side: Status badge & Compact actions */}
-                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2 shrink-0 self-stretch md:self-auto pt-1 md:pt-0 border-t md:border-t-0 border-stone/10 dark:border-white/5">
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2.5 shrink-0 self-stretch md:self-auto pt-2 md:pt-0 border-t md:border-t-0 border-stone/10 dark:border-white/5">
                       <div className="flex items-center gap-2">
                         {getStatusBadge(order.status)}
                       </div>
@@ -793,13 +798,13 @@ export function AdminOrdersTab({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-10 md:h-9 min-h-[40px] md:min-h-[36px] border-stone/25 text-deep-forest dark:text-stone-200 hover:bg-[var(--color-sunshine-cta)]/10 hover:border-[var(--color-sunshine-cta)]/40 text-sm font-semibold px-4 rounded-xl flex items-center gap-1.5"
+                          className="h-9 min-h-[36px] border-stone/25 hover:border-[var(--color-sunshine-cta)] text-deep-forest dark:text-stone-200 hover:bg-[var(--color-sunshine-cta)]/10 text-xs font-bold px-3.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
                           onClick={(e) => {
                             e.stopPropagation();
                             openOrderDetail(order);
                           }}
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 group-hover:text-[var(--color-sunshine-cta)]" />
                           <span>{language === 'bm' ? 'Lihat' : 'View'}</span>
                         </Button>
 
@@ -807,7 +812,7 @@ export function AdminOrdersTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-10 w-10 md:h-9 md:w-9 min-h-[40px] md:min-h-[36px] min-w-[40px] md:min-w-[36px] p-0 text-deep-forest/60 dark:text-stone/60 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-xl flex items-center justify-center shrink-0"
+                          className="h-9 w-9 min-h-[36px] min-w-[36px] p-0 text-deep-forest/70 dark:text-stone/70 hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-xl flex items-center justify-center shrink-0 border border-stone/15 dark:border-white/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             const rect = e.currentTarget.getBoundingClientRect();

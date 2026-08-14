@@ -67,6 +67,55 @@ export function Step2DishSelection({
     await handleStepNext(2);
   };
 
+  const renderMenuItemCard = (item: any) => {
+    const isSelected = orderState.dishes.some(x => x.id === item.id);
+    return (
+      <div
+        key={item.id}
+        onClick={() => { setFieldError(null); void handleToggleDish(item); }}
+        className={cn(
+          "p-2.5 sm:p-3 rounded-2xl border flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
+          isSelected 
+            ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
+            : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
+        )}
+      >
+        <div className={cn(
+          "w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
+          isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
+        )}>
+          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+        </div>
+        
+        {item.image && (
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 shrink-0 border border-stone-200/80 dark:border-white/10 shadow-2xs">
+            <img
+              src={getAssetUrl(item.image)}
+              alt={tText(item.nameEn, item.nameBm)}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
+            {tText(item.nameEn, item.nameBm)}
+          </span>
+          {(item.descBm || item.descEn) && (
+            <span className="text-[10px] text-stone-500 dark:text-stone-400 block truncate font-normal leading-tight">
+              {tText(item.descEn, item.descBm)}
+            </span>
+          )}
+        </div>
+        <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
+          RM {item.price.toFixed(2)}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <motion.div
       key="step2"
@@ -119,37 +168,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {visibleMenu.filter(item => item.category === 'breakfast').map(item => {
-                  const isSelected = orderState.dishes.some(x => x.id === item.id);
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
-                      className={cn(
-                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                        isSelected 
-                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                          : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                      )}>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                          {tText(item.nameEn, item.nameBm)}
-                        </span>
-                      </div>
-                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                        RM {item.price.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
+                {visibleMenu.filter(item => item.category === 'breakfast').map(renderMenuItemCard)}
               </div>
             </div>
           )}
@@ -167,37 +186,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {visibleMenu.filter(item => item.category === 'lunch').map(item => {
-                  const isSelected = orderState.dishes.some(x => x.id === item.id);
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
-                      className={cn(
-                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                        isSelected 
-                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                          : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                      )}>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                          {tText(item.nameEn, item.nameBm)}
-                        </span>
-                      </div>
-                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                        RM {item.price.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
+                {visibleMenu.filter(item => item.category === 'lunch').map(renderMenuItemCard)}
               </div>
             </div>
           )}
@@ -215,37 +204,7 @@ export function Step2DishSelection({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[250px] overflow-y-auto pr-1">
-                {visibleMenu.filter(item => item.category === 'hi tea').map(item => {
-                  const isSelected = orderState.dishes.some(x => x.id === item.id);
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => { setFieldError(null); void handleToggleDish(item); }}
-                      className={cn(
-                        "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                        isSelected 
-                          ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                          : "bg-muted/60 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                        isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                      )}>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                          {tText(item.nameEn, item.nameBm)}
-                        </span>
-                      </div>
-                      <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                        RM {item.price.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
+                {visibleMenu.filter(item => item.category === 'hi tea').map(renderMenuItemCard)}
               </div>
             </div>
           )}
@@ -271,37 +230,7 @@ export function Step2DishSelection({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
                     {visibleMenu
                       .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
-                      .map(item => {
-                        const isSelected = orderState.dishes.some(x => x.id === item.id);
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => { setFieldError(null); void handleToggleDish(item); }}
-                            className={cn(
-                              "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                              isSelected 
-                                ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                            )}
-                          >
-                            <div className={cn(
-                              "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                              isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                            )}>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                {tText(item.nameEn, item.nameBm)}
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                              RM {item.price.toFixed(2)}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      .map(renderMenuItemCard)}
                   </div>
                 </div>
               )}
@@ -315,37 +244,7 @@ export function Step2DishSelection({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
                     {visibleMenu
                       .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
-                      .map(item => {
-                        const isSelected = orderState.dishes.some(x => x.id === item.id);
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => { setFieldError(null); void handleToggleDish(item); }}
-                            className={cn(
-                              "p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none hover:scale-[1.01] active:scale-[0.99]",
-                              isSelected 
-                                ? "bg-crisp-carrot/10 dark:bg-crisp-carrot/15 border-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
-                                : "bg-muted/60 hover:bg-muted border-stone-200/80 dark:border-white/10 text-stone dark:bg-stone-800/40 dark:hover:bg-stone-800/70"
-                            )}
-                          >
-                            <div className={cn(
-                              "w-5.5 h-5.5 rounded-lg border flex items-center justify-center shrink-0 transition-colors shadow-sm",
-                              isSelected ? "bg-crisp-carrot border-crisp-carrot text-white" : "border-stone/20 bg-card dark:bg-stone-800"
-                            )}>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <span className="text-xs font-bold block text-deep-forest dark:text-white truncate uppercase">
-                                {tText(item.nameEn, item.nameBm)}
-                              </span>
-                            </div>
-                            <span className="text-xs font-bold text-crisp-carrot shrink-0 pl-1">
-                              RM {item.price.toFixed(2)}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      .map(renderMenuItemCard)}
                   </div>
                 </div>
               )}

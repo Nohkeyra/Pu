@@ -750,6 +750,16 @@
   100% { clip-path: inset(25% 0 58% 0); transform: skew(0deg); }
 }
 
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-shimmer {
+  animation: shimmer 6s linear infinite;
+}
+
 .animate-glitch-cyan {
   animation: glitch-anim-1 0.75s infinite linear alternate-reverse;
 }
