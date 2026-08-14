@@ -110,13 +110,13 @@ export default function StorySection() {
               </motion.p>
             </div>
             
-            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-8 border-t border-deep-forest/10 dark:border-white/10 pt-10">
+            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 md:gap-6 border-t border-deep-forest/10 dark:border-white/10 pt-10">
               {STATS.map((stat) => (
-                <div key={stat.label}>
-                  <span className="font-display font-bold text-4xl text-[var(--color-sunshine-cta)]">
+                <div key={stat.label} className="p-4 rounded-2xl bg-white/60 dark:bg-card/80 border border-amber-500/15 dark:border-white/10 shadow-sm text-center">
+                  <span className="font-display font-black text-3xl md:text-4xl bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 bg-clip-text text-transparent">
                     {stat.number}
                   </span>
-                  <span className="block font-sans font-medium microcopy-12 uppercase tracking-[0.1em] text-deep-forest/50 mt-3">
+                  <span className="block font-sans font-bold text-[11px] uppercase tracking-wider text-deep-forest/70 dark:text-stone/70 mt-2">
                     {stat.label}
                   </span>
                 </div>

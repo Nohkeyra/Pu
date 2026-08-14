@@ -46,21 +46,21 @@ export default function HighlightsSection() {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-cream relative z-20">
+    <section className="py-12 md:py-16 bg-cream dark:bg-charcoal/95 relative z-20">
       <div className="content-container">
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {highlights.map((item, index) => {
             const Icon = item.icon;
             const accentColors = [
-              'border-[var(--color-sunshine-cta)]/20 bg-[var(--color-sunshine-cta)]/[0.03] text-[var(--color-sunshine-cta)]',
-              'border-kiwi/20 bg-kiwi/[0.03] text-kiwi',
-              'border-stone/20 bg-stone/[0.03] text-stone'
+              'border-amber-500/20 bg-amber-500/5 text-amber-600 dark:text-amber-400',
+              'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400',
+              'border-orange-500/20 bg-orange-500/5 text-orange-600 dark:text-orange-400'
             ];
             const currentAccent = accentColors[index % accentColors.length];
             
@@ -68,22 +68,22 @@ export default function HighlightsSection() {
               <motion.div
                 key={item.title}
                 variants={cardVariants}
-                className={`group relative p-5 rounded-2xl border ${currentAccent.split(' ')[0]} ${currentAccent.split(' ')[1]} transition-all duration-500 hover:scale-[1.02] flex items-start gap-4 overflow-hidden shadow-sm hover:shadow-md`}
+                className="group relative p-6 rounded-3xl bg-white/80 dark:bg-card/90 backdrop-blur-md border border-amber-500/15 dark:border-white/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5 flex items-start gap-4 overflow-hidden"
               >
                 {/* Decorative Background Icon */}
-                <div className="absolute -right-4 -bottom-4 w-20 h-20 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 rotate-12">
+                <div className="absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.04] group-hover:opacity-[0.09] transition-opacity duration-500 rotate-12">
                   <Icon className="w-full h-full" />
                 </div>
 
-                <div className={`w-12 h-12 shrink-0 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] flex items-center justify-center border ${currentAccent.split(' ')[0]} bg-white dark:bg-card shadow-sm transition-transform duration-500 group-hover:rotate-6`}>
-                  <Icon className={`w-6 h-6 ${currentAccent.split(' ')[2]}`} />
+                <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center border ${currentAccent} shadow-sm transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105`}>
+                  <Icon className="w-7 h-7" />
                 </div>
                 
                 <div className="relative z-10">
-                  <h3 className="font-display font-black text-base text-deep-forest  leading-tight mb-1">
+                  <h3 className="font-display font-black text-lg text-deep-forest dark:text-amber-100 leading-tight mb-1.5">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-stone dark:text-stone/60 leading-relaxed font-medium">
+                  <p className="text-xs sm:text-sm text-stone dark:text-stone/70 leading-relaxed font-medium">
                     {item.subtitle}
                   </p>
                 </div>

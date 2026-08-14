@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNativeAppState } from '@/hooks/useNativeAppState';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useDeepLinks } from '@/hooks/useDeepLinks';
@@ -6,8 +6,10 @@ import { Motion } from '@capacitor/motion';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
-import { getPendingOrdersCount } from '@/lib/pendingOrdersQueue';
+import { getPendingOrdersCount, autoSyncPendingOrders, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
 import { PendingOrdersDialog } from '@/components/PendingOrdersDialog';
+import { useToast } from '@/components/ui/Toast';
+import { triggerNotification, NotificationType } from '@/lib/haptics';
 
 /**
  * An invisible component that wraps native listeners 
@@ -17,6 +19,7 @@ function NativeAppListeners() {
   useNativeAppState();
   useNetworkStatus();
   useDeepLinks();
+  const { toast } = useToast();
 
   const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
 
@@ -25,15 +28,32 @@ function NativeAppListeners() {
     notifyCapgoAppReady();
   }, []);
 
-  // F-OFFLINE (audit 2026-08-11): a second, dedicated networkStatusChange
-  // listener — deliberately NOT reusing useNetworkStatus's listener, since
-  // that hook calls Network.removeAllListeners() on unmount, which would
-  // tear down this one too if they shared a single addListener call. This
-  // one only cares about "just came back online AND queue has items" — it
-  // does not show its own toast (useNetworkStatus already covers that), it
-  // only opens the confirm-before-send dialog. Auto-flush was explicitly
-  // rejected (Noh, 2026-08-11): a queued order's event date may have passed
-  // while offline, so the customer reviews and confirms per PendingOrdersDialog.
+  const triggerAutoSync = useCallback(async () => {
+    try {
+      await rehydrateQueueFromNative();
+      if (getPendingOrdersCount() === 0) return;
+
+      const result = await autoSyncPendingOrders((syncedCount) => {
+        triggerNotification(NotificationType.Success);
+        toast({
+          title: 'Pesanan Diselaraskan / Orders Auto-Synced',
+          description: `${syncedCount} tempahan luar talian berjaya dihantar ke pangkalan data Firestore.`,
+          variant: 'success',
+          duration: 6000,
+        });
+      });
+
+      if (result.remainingCount > 0) {
+        setPendingOrdersDialogOpen(true);
+      }
+    } catch (err) {
+      console.warn('[NativeAppListeners] Auto-sync attempt error:', err);
+      if (getPendingOrdersCount() > 0) {
+        setPendingOrdersDialogOpen(true);
+      }
+    }
+  }, [toast]);
+
   useEffect(() => {
     let isActive = true;
     let wasOnline: boolean | null = null;
@@ -52,8 +72,8 @@ function NativeAppListeners() {
         const justCameOnline = wasOnline === false && isNowOnline === true;
         wasOnline = isNowOnline;
 
-        if (justCameOnline && getPendingOrdersCount() > 0) {
-          setPendingOrdersDialogOpen(true);
+        if (justCameOnline) {
+          triggerAutoSync();
         }
       });
     };
@@ -62,13 +82,8 @@ function NativeAppListeners() {
 
     return () => {
       isActive = false;
-      // Intentionally not calling Network.removeAllListeners() here —
-      // useNetworkStatus's own cleanup already does that globally, and
-      // calling it twice on unmount is harmless but redundant. Guarding
-      // with isActive above is what actually prevents this listener's
-      // callback from running after unmount.
     };
-  }, []);
+  }, [triggerAutoSync]);
 
   // Also check once on mount, in case the app was killed while offline
   // with items already queued and is now reopened already connected.
@@ -76,15 +91,15 @@ function NativeAppListeners() {
     const checkOnMount = async () => {
       try {
         const status = await Network.getStatus();
-        if (status.connected && getPendingOrdersCount() > 0) {
-          setPendingOrdersDialogOpen(true);
+        if (status.connected) {
+          await triggerAutoSync();
         }
       } catch {
         /* ignore */
       }
     };
     checkOnMount();
-  }, []);
+  }, [triggerAutoSync]);
 
   useEffect(() => {
     let active = true;

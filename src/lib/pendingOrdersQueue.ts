@@ -1,22 +1,6 @@
-// F-OFFLINE (audit 2026-08-11): OrderForm's existing draft-save
-// (wawasan_order_draft) protects the *unsubmitted form* from app/process
-// kill — but if a customer taps Submit and the network fails at that exact
-// moment (fetch itself throws/aborts, not an HTTP error response), the
-// fully-assembled order payload was lost with no recovery: the draft was
-// already cleared on submit attempt in some paths, and even where it
-// wasn't, there was no automatic path back to actually sending the order.
-//
-// This queue stores the exact payload OrderForm already builds (orderData,
-// including its idempotencyKey) so a later retry is safe — the server
-// dedupes on idempotencyKey, so re-POSTing a queued item can't create a
-// duplicate order even if the original request actually landed before the
-// client saw the failure.
-//
-// Design decision (explicit, per Noh 2026-08-11): auto-flush is NOT used.
-// A queued order may go stale (event date/time already passed by the time
-// connectivity returns), so the customer is always shown a confirmation
-// list and picks what to send/discard — see PendingOrdersDialog.tsx.
+import { Preferences } from '@capacitor/preferences';
 import { safeJsonStringify } from '@/lib/utils';
+import { getApiUrl } from '@/lib/api';
 
 const PENDING_ORDERS_STORAGE_KEY = 'wawasan_pending_orders';
 
@@ -47,11 +31,50 @@ function readQueue(): PendingOrder[] {
 
 function writeQueue(queue: PendingOrder[]): void {
   try {
-    localStorage.setItem(PENDING_ORDERS_STORAGE_KEY, safeJsonStringify(queue));
+    const jsonStr = safeJsonStringify(queue);
+    localStorage.setItem(PENDING_ORDERS_STORAGE_KEY, jsonStr);
+    // Persist asynchronously to Capacitor Preferences for Android native storage resilience
+    Preferences.set({ key: PENDING_ORDERS_STORAGE_KEY, value: jsonStr }).catch(() => {});
   } catch {
     // Storage full/unavailable — queueing is a best-effort convenience,
     // never let it throw into the submit flow that called it.
   }
+}
+
+/** Rehydrates queue from native Capacitor Preferences into localStorage if needed. */
+export async function rehydrateQueueFromNative(): Promise<PendingOrder[]> {
+  try {
+    const { value } = await Preferences.get({ key: PENDING_ORDERS_STORAGE_KEY });
+    if (value) {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const currentLocal = readQueue();
+        const existingKeys = new Set(currentLocal.map((item) => item.idempotencyKey));
+        let updated = false;
+
+        for (const item of parsed) {
+          if (
+            item &&
+            typeof item === 'object' &&
+            typeof item.idempotencyKey === 'string' &&
+            !existingKeys.has(item.idempotencyKey)
+          ) {
+            currentLocal.push(item);
+            existingKeys.add(item.idempotencyKey);
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          writeQueue(currentLocal);
+        }
+        return currentLocal;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return readQueue();
 }
 
 export function getPendingOrders(): PendingOrder[] {
@@ -79,7 +102,65 @@ export function removePendingOrder(idempotencyKey: string): void {
 export function clearPendingOrders(): void {
   try {
     localStorage.removeItem(PENDING_ORDERS_STORAGE_KEY);
+    Preferences.remove({ key: PENDING_ORDERS_STORAGE_KEY }).catch(() => {});
   } catch {
     /* ignore */
+  }
+}
+
+let isSyncing = false;
+
+/**
+ * Automatically synchronizes cached local order data to the Firestore database backend
+ * when network connection is restored on mobile device / browser.
+ */
+export async function autoSyncPendingOrders(
+  onSuccess?: (syncedCount: number) => void
+): Promise<{ syncedCount: number; remainingCount: number }> {
+  if (isSyncing) return { syncedCount: 0, remainingCount: getPendingOrdersCount() };
+  isSyncing = true;
+
+  try {
+    await rehydrateQueueFromNative();
+    const queue = getPendingOrders();
+    if (queue.length === 0) {
+      return { syncedCount: 0, remainingCount: 0 };
+    }
+
+    let syncedCount = 0;
+
+    for (const item of queue) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(getApiUrl('/api/orders'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: safeJsonStringify(item.orderPayload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          syncedCount++;
+          removePendingOrder(item.idempotencyKey);
+        }
+      } catch (err) {
+        console.warn('[AutoSync] Order submit failed during sync retry:', err);
+      }
+    }
+
+    if (syncedCount > 0 && onSuccess) {
+      onSuccess(syncedCount);
+    }
+
+    return {
+      syncedCount,
+      remainingCount: getPendingOrdersCount(),
+    };
+  } finally {
+    isSyncing = false;
   }
 }

@@ -4,7 +4,9 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import helmet from 'helmet';
+import fs from 'fs';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
+import { getFirestore } from './server/firebaseAdmin.js';
 
 // Import modular API routers
 import authRoutes from './server/routes/authRoutes.js';
@@ -76,14 +78,83 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
 
-  // API Health Check
-  app.get('/api/health', (req, res) => {
-    res.json({
+  // API & Cloud Run Health Check Endpoint (/health and /api/health)
+  const healthCheckHandler = async (req: express.Request, res: express.Response) => {
+    const uptime = process.uptime();
+    const timestamp = new Date().toISOString();
+    const detectedPlatform = (req as any).detectedPlatform || detectServerPlatform(req);
+
+    // 1. Database Connection Status Check (Firestore)
+    let dbStatus: 'connected' | 'disconnected' = 'disconnected';
+    let dbError: string | undefined;
+    try {
+      const db = getFirestore();
+      await Promise.race([
+        db.collection('meta').limit(1).get(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database response timeout')), 3000))
+      ]);
+      dbStatus = 'connected';
+    } catch (err: any) {
+      dbStatus = 'disconnected';
+      dbError = err?.message || String(err);
+    }
+
+    // 2. Disk Usage Status Check
+    let diskStatus = {
       status: 'ok',
-      platform: (req as any).detectedPlatform || detectServerPlatform(req),
-      timestamp: new Date().toISOString()
+      totalBytes: 0,
+      freeBytes: 0,
+      usedBytes: 0,
+      usedPercentage: 0,
+      error: undefined as string | undefined
+    };
+    try {
+      const stats = fs.statfsSync('/');
+      const totalBytes = stats.blocks * stats.bsize;
+      const freeBytes = stats.bavail * stats.bsize;
+      const usedBytes = totalBytes - freeBytes;
+      const usedPercentage = totalBytes > 0 ? Number(((usedBytes / totalBytes) * 100).toFixed(2)) : 0;
+      diskStatus = {
+        status: usedPercentage > 95 ? 'critical' : usedPercentage > 85 ? 'warning' : 'ok',
+        totalBytes,
+        freeBytes,
+        usedBytes,
+        usedPercentage,
+        error: undefined
+      };
+    } catch (err: any) {
+      diskStatus = {
+        status: 'unknown',
+        totalBytes: 0,
+        freeBytes: 0,
+        usedBytes: 0,
+        usedPercentage: 0,
+        error: err?.message || String(err)
+      };
+    }
+
+    const isHealthy = dbStatus === 'connected' && diskStatus.status !== 'critical';
+    const statusCode = isHealthy ? 200 : 503;
+
+    res.status(statusCode).json({
+      status: isHealthy ? 'ok' : 'unhealthy',
+      platform: detectedPlatform,
+      service: {
+        name: 'restoran-wawasan-backend',
+        status: 'running',
+        uptime,
+        timestamp
+      },
+      database: {
+        status: dbStatus,
+        ...(dbError ? { error: dbError } : {})
+      },
+      disk: diskStatus
     });
-  });
+  };
+
+  app.get('/health', healthCheckHandler);
+  app.get('/api/health', healthCheckHandler);
 
   // Mount Modular API Routers
   app.use('/api/admin', authRoutes);
