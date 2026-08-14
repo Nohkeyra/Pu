@@ -17,6 +17,10 @@ export function getAssetUrl(path: string): string {
   if (!cleanPath.startsWith('/')) {
     cleanPath = `/${cleanPath}`;
   }
+  // Convert legacy internal source path /src/assets/ to public asset path /assets/
+  if (cleanPath.startsWith('/src/assets/')) {
+    cleanPath = cleanPath.replace('/src/assets/', '/assets/');
+  }
   // If running under local file:// protocol (rare legacy WebView local file access)
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
     return `.${cleanPath}`;
