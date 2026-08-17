@@ -31,6 +31,7 @@ interface OrderDetailModalProps {
   handleRejectCancellation: (id: string) => Promise<void> | void;
   handleApprove: (id: string) => Promise<void> | void;
   handleRejectOrder: (id: string) => Promise<void> | void;
+  handleUpdateStatus?: (id: string, status: string) => Promise<void> | void;
   openSendDialog: (order: Order) => void;
 }
 
@@ -56,6 +57,7 @@ export function OrderDetailModal({
   handleRejectCancellation,
   handleApprove,
   handleRejectOrder,
+  handleUpdateStatus,
   openSendDialog,
 }: OrderDetailModalProps) {
   const { toast } = useToast();
@@ -180,11 +182,36 @@ export function OrderDetailModal({
               <div className="lg:col-span-1 space-y-6">
                 
                 {/* Status Banner */}
-                <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-3">
+                <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
                   <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">Status</span>
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
                   </div>
+                  {handleUpdateStatus && selectedOrder.id && ['approved', 'billed', 'in_transit', 'delivered'].includes(selectedOrder.status?.toLowerCase() || '') && (
+                    <div className="pt-3 border-t border-[var(--color-sunshine-cta)]/10 space-y-2">
+                      <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">
+                        {language === 'bm' ? 'Kemaskini Penghantaran :' : 'Update Delivery :'}
+                      </span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          size="sm"
+                          disabled={isApproving || selectedOrder.status?.toLowerCase() === 'in_transit'}
+                          onClick={() => handleUpdateStatus(selectedOrder.id!, 'in_transit')}
+                          className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9"
+                        >
+                          🚚 {language === 'bm' ? 'Transit' : 'In Transit'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={isApproving || selectedOrder.status?.toLowerCase() === 'delivered'}
+                          onClick={() => handleUpdateStatus(selectedOrder.id!, 'delivered')}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-9"
+                        >
+                          ✅ {language === 'bm' ? 'Hantar' : 'Delivered'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Pricing and Grand Total */}

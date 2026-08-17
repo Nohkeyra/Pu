@@ -5,6 +5,9 @@ import { defineConfig } from "vite"
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
+  define: {
+    'process.env.GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || '')
+  },
   plugins: [
     react({
       jsxRuntime: 'automatic'

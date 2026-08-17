@@ -33,6 +33,7 @@ import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
 import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTab';
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
+import { DeliveryMap } from '@/components/delivery/DeliveryMap';
 
 interface UserProfileDashboardProps {
   isOpen: boolean;
@@ -81,6 +82,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ type: 'cancel' | 'delete'; orderId: string } | null>(null);
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -675,6 +677,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             setConfirmDialog={setConfirmDialog}
             cancellingOrderId={cancellingOrderId}
             deletingOrderId={deletingOrderId}
+            setTrackingOrder={setTrackingOrder}
             t={t}
           />
         )}
@@ -859,6 +862,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             language={language}
           />
         )}
+        {trackingOrder && (
+          <DeliveryMap
+            order={trackingOrder}
+            onClose={() => setTrackingOrder(null)}
+          />
+        )}
       </div>
     );
   }
@@ -896,6 +905,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           order={previewOrder}
           onDownload={() => handleDownloadPDF(previewOrder)}
           language={language}
+        />
+      )}
+      {trackingOrder && (
+        <DeliveryMap
+          order={trackingOrder}
+          onClose={() => setTrackingOrder(null)}
         />
       )}
     </>

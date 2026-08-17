@@ -886,6 +886,45 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     }
   };
 
+  const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
+    setIsApproving(true);
+    try {
+      const response = await fetch(getApiUrl('/api/admin/orders'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: 'update',
+          orderId,
+          data: {
+            status: nextStatus
+          }
+        })
+      });
+      if (response.ok) {
+        toast({
+          title: t('success') || 'Success',
+          description: language === 'bm' 
+            ? `Status pesanan telah dikemaskini kepada ${nextStatus === 'in_transit' ? 'Dalam Perjalanan' : 'Dihantar'}`
+            : `Order status successfully updated to ${nextStatus === 'in_transit' ? 'In Transit' : 'Delivered'}.`,
+          variant: 'success'
+        });
+        setIsDetailOpen(false);
+        fetchOrders();
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: t('error') || 'Error',
+        description: 'Failed to update order status.',
+        variant: 'error'
+      });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   const handlePreviewPDF = async (order: Order, isFinal: boolean) => {
     try {
       if (!order.id) {
@@ -1285,6 +1324,20 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             {t('rejected') || 'Rejected'}
           </Badge>
         );
+      case 'in_transit':
+      case 'dalam_perjalanan':
+        return (
+          <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-bold animate-pulse shadow-sm">
+            {language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}
+          </Badge>
+        );
+      case 'delivered':
+      case 'dihantar':
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold shadow-sm">
+            {language === 'bm' ? 'Dihantar' : 'Delivered'}
+          </Badge>
+        );
       case 'menunggu':
       case 'pending':
       default:
@@ -1666,6 +1719,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         handleRejectCancellation={handleRejectCancellation}
         handleApprove={handleApprove}
         handleRejectOrder={handleRejectOrder}
+        handleUpdateStatus={handleUpdateStatus}
         openSendDialog={openSendDialog}
       />
 

@@ -98,6 +98,20 @@ export function getStatusCopy(
       pushTitle: "Order cancelled 🚫",
       pushBody: `Your order${invoiceSuffix} has been cancelled.`,
     },
+    in_transit: {
+      subject: `Your catering order is on the way! 🚚${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Order In Transit 🚚",
+      message: `Hi ${who}, exciting news! Your catering order${invoiceSuffix} is cooked, loaded, and currently on the way to your delivery location. Get ready to feast!`,
+      pushTitle: "Order is on the way! 🚚",
+      pushBody: `Your order${invoiceSuffix} is in transit.`,
+    },
+    delivered: {
+      subject: `Your order has been delivered! Enjoy! 🍽️${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Order Delivered 🎉",
+      message: `Hi ${who}, your catering order${invoiceSuffix} has been successfully delivered and set up. We hope you and your guests enjoy the feast! Thank you for choosing Restoran Wawasan.`,
+      pushTitle: "Order delivered! 🎉",
+      pushBody: `Your order${invoiceSuffix} has been delivered. Enjoy!`,
+    },
   };
 
   const bm: Record<string, StatusCopy> = {
@@ -142,6 +156,20 @@ export function getStatusCopy(
       message: `Salam ${who}, tempahan katering anda${invoiceSuffix} telah berjaya dibatalkan.`,
       pushTitle: "Pesanan dibatalkan 🚫",
       pushBody: `Pesanan anda${invoiceSuffix} telah dibatalkan.`,
+    },
+    in_transit: {
+      subject: `Tempahan katering anda dalam perjalanan! 🚚${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Pesanan Dalam Perjalanan 🚚",
+      message: `Salam ${who}, berita gembira! Tempahan katering anda${invoiceSuffix} telah dimasak, dimuatkan, dan kini dalam perjalanan ke lokasi penghantaran anda. Sedia untuk dinikmati!`,
+      pushTitle: "Pesanan dalam perjalanan! 🚚",
+      pushBody: `Pesanan anda${invoiceSuffix} sedang dalam perjalanan.`,
+    },
+    delivered: {
+      subject: `Tempahan anda telah dihantar! Selamat menjamu selera! 🍽️${invoiceNo ? ` — ${invoiceNo}` : ""}`,
+      heading: "Pesanan Dihantar 🎉",
+      message: `Salam ${who}, tempahan katering anda${invoiceSuffix} telah berjaya dihantar dan disediakan. Kami berharap anda dan para tetamu menikmati hidangan ini! Terima kasih kerana memilih Restoran Wawasan.`,
+      pushTitle: "Pesanan dihantar! 🎉",
+      pushBody: `Pesanan anda${invoiceSuffix} telah selamat dihantar. Selamat menjamu selera!`,
     },
   };
 

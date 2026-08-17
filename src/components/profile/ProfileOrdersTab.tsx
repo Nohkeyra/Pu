@@ -32,6 +32,7 @@ interface ProfileOrdersTabProps {
   setConfirmDialog: (val: { type: 'cancel' | 'delete'; orderId: string } | null) => void;
   cancellingOrderId: string | null;
   deletingOrderId: string | null;
+  setTrackingOrder?: (order: Order | null) => void;
   t: (en: string, bm: string) => string;
 }
 
@@ -51,6 +52,7 @@ export function ProfileOrdersTab({
   setConfirmDialog,
   cancellingOrderId,
   deletingOrderId,
+  setTrackingOrder,
   t,
 }: ProfileOrdersTabProps) {
   const getStatusBadge = (status: Order['status']) => {
@@ -58,6 +60,10 @@ export function ProfileOrdersTab({
       case 'approved':
       case 'billed':
         return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Approved', 'Diluluskan')}</Badge>;
+      case 'in_transit':
+        return <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold animate-pulse">{t('In Transit 🚚', 'Dalam Perjalanan 🚚')}</Badge>;
+      case 'delivered':
+        return <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Delivered ✅', 'Selesai Dihantar ✅')}</Badge>;
       case 'cancelled':
         return <Badge variant="outline" className="border-stone-400 text-stone-500 text-xs font-bold">{t('Cancelled', 'Dibatalkan')}</Badge>;
       case 'rejected':
@@ -227,6 +233,16 @@ export function ProfileOrdersTab({
                           ? t('Invoice Requested', 'Permintaan Invois Dihantar')
                           : t('Request Email', 'Mohon Emel Invois')}
                       </span>
+                    </Button>
+                  )}
+
+                  {order.id && (order.status === 'in_transit' || order.status === 'delivered') && setTrackingOrder && (
+                    <Button
+                      onClick={() => setTrackingOrder(order)}
+                      size="sm"
+                      className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5"
+                    >
+                      <span>🚚 {t('Track Delivery', 'Jejak Penghantaran')}</span>
                     </Button>
                   )}
 
