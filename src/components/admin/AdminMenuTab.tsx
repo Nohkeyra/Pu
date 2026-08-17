@@ -19,6 +19,7 @@ import {
 import type { ToastMessage } from '../ui/Toast';
 import { Switch } from '@/components/ui/switch';
 import { invalidateFetchCache } from '@/lib/api';
+import { showConfirm } from '@/lib/nativeService';
 
 export interface MenuItem {
   id: string;
@@ -238,7 +239,13 @@ export default function AdminMenuTab({
   };
 
   const handleDeleteItem = async (id: string, name: string) => {
-    if (!window.confirm(tText(`Are you sure you want to delete ${name}?`, `Adakah anda pasti mahu memadam hidangan ${name}?`))) {
+    const isConfirmed = await showConfirm({
+      title: tText('Confirm Deletion', 'Sahkan Pemadaman'),
+      message: tText(`Are you sure you want to delete ${name}?`, `Adakah anda pasti mahu memadam hidangan ${name}?`),
+      okButtonTitle: tText('Delete', 'Padam'),
+      cancelButtonTitle: tText('Cancel', 'Batal')
+    });
+    if (!isConfirmed) {
       return;
     }
 

@@ -63,6 +63,12 @@ export default function HeroSection() {
         animate="visible"
         className="content-container flex flex-col items-center text-center relative z-20 w-full py-12 md:py-16"
       >
+        <motion.div variants={itemVariants} className="mb-4">
+          <span className="typography-accent-pill border-amber-400/40 bg-amber-500/20 text-amber-200 backdrop-blur-md">
+            ✦ Restoran Wawasan Pak Usop • Est. 1986
+          </span>
+        </motion.div>
+
         <motion.h1 
           variants={itemVariants}
           className="font-display font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-6 drop-shadow-2xl leading-tight"

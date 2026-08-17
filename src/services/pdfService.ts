@@ -397,17 +397,26 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
     const hasPrice = isFinal && order.prices && order.prices[meal] !== undefined;
     const priceValRaw = hasPrice ? order.prices![meal] : 0;
     const priceVal = typeof priceValRaw === 'number' ? priceValRaw : parseFloat(priceValRaw as unknown as string) || 0;
-    const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 0;
+    const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 1;
     const subtotal = priceVal * quantityNum;
+
+    const mealMinPrice = 12;
+    const mealMaxPrice = 22;
+    const mealMinSubtotal = quantityNum * mealMinPrice;
+    const mealMaxSubtotal = quantityNum * mealMaxPrice;
+    const mealPriceRangeStr = `RM ${mealMinPrice.toFixed(2)} - RM ${mealMaxPrice.toFixed(2)}`;
+    const mealSubtotalRangeStr = `RM ${mealMinSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} - RM ${mealMaxSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
     if (isFinal) {
       doc.text(priceVal.toFixed(2), 137.5, currentY + 4.8, { align: 'center' });
       doc.text(subtotal.toFixed(2), 192, currentY + 4.8, { align: 'right' });
     } else {
-      doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
-      doc.setFont('helvetica', 'italic');
-      doc.text('-', 137.5, currentY + 4.8, { align: 'center' });
-      doc.text('-', 192, currentY + 4.8, { align: 'right' });
+      doc.setFont('helvetica', 'bolditalic');
+      doc.setFontSize(7.5);
+      doc.text(mealPriceRangeStr, 137.5, currentY + 4.8, { align: 'center' });
+      doc.text(mealSubtotalRangeStr, 192, currentY + 4.8, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
     }
 
     currentY += rowHeight;
@@ -423,10 +432,18 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
 
   const totalAmountNum = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount as unknown as string) || 0;
 
+  const mealCount = order?.meals?.length || 1;
+  const minPricePerPaxTotal = 12 * mealCount;
+  const maxPricePerPaxTotal = 22 * mealCount;
+  const minTotal = quantityNum * minPricePerPaxTotal;
+  const maxTotal = quantityNum * maxPricePerPaxTotal;
+  const totalRangeStr = `RM ${minTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} - RM ${maxTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
   if (isFinal && totalAmountNum > 0) {
     doc.text(`RM ${totalAmountNum.toFixed(2)}`, 192, currentY + 4.8, { align: 'right' });
   } else {
-    doc.text('RM —', 192, currentY + 4.8, { align: 'right' });
+    doc.setFont('helvetica', 'bolditalic');
+    doc.text(totalRangeStr, 192, currentY + 4.8, { align: 'right' });
   }
   currentY += 7;
 

@@ -42,6 +42,8 @@ import InAppUpdateModal from '@/components/InAppUpdateModal';
 import type { AppVersionConfig } from '@/services/updateService';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 
+import { showConfirm } from '@/lib/nativeService';
+
 const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
 const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
 const PdfPreviewModal = lazy(() => import('./admin/PdfPreviewModal').then(m => ({ default: m.PdfPreviewModal })));
@@ -728,7 +730,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   };
 
   const handleDelete = async (orderId: string) => {
-    if (!confirm(t('delete_order_confirm'))) return;
+    const isConfirmed = await showConfirm({
+      title: t('confirm_action') || 'Confirm Action',
+      message: t('delete_order_confirm') || 'Are you sure you want to delete this order?'
+    });
+    if (!isConfirmed) return;
     
     try {
       const response = await fetch(getApiUrl('/api/admin/orders'), {
@@ -803,7 +809,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   };
 
   const handleCancelOrderAdmin = async (orderId: string) => {
-    const confirmCancel = confirm(t('confirm_cancel_order') || 'Are you sure you want to cancel this order?');
+    const confirmCancel = await showConfirm({
+      title: t('confirm_action') || 'Confirm Action',
+      message: t('confirm_cancel_order') || 'Are you sure you want to cancel this order?'
+    });
     if (!confirmCancel) return;
 
     setIsApproving(true);
@@ -845,7 +854,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   };
 
   const handleRejectCancellation = async (orderId: string) => {
-    const confirmReject = confirm("Are you sure you want to REJECT this cancellation request? This will restore the order status to Approved.");
+    const confirmReject = await showConfirm({
+      title: t('confirm_action') || 'Confirm Action',
+      message: 'Are you sure you want to REJECT this cancellation request? This will restore the order status to Approved.'
+    });
     if (!confirmReject) return;
 
     setIsApproving(true);

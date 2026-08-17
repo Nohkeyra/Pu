@@ -549,6 +549,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
+  const handleDiscardDraft = async () => {
+    await triggerLightImpact();
+    localStorage.removeItem('wawasan_order_draft_step');
+    localStorage.removeItem('wawasan_order_draft_state');
+    setDraftSavedAt(null);
+    setCurrentStep(1);
+    setOrderState({
+      eventType: '',
+      mealTypes: [],
+      preparationType: 'meal_box',
+      guests: 50,
+      dishes: [],
+      veggies: [],
+      name: currentUser?.displayName || '',
+      contact: currentUser?.phoneNumber || '',
+      email: currentUser?.email || '',
+      confirmEmail: currentUser?.email || '',
+      date: '',
+      time: '12:00',
+      location: '',
+      delivery: 'delivery',
+      notes: '',
+      companyName: '',
+      customCompany: '',
+      customMenu: ''
+    });
+  };
+
   const handleStepNext = async (step: number) => {
     await triggerLightImpact();
     const triggerWarning = () => triggerNotification(NotificationType.Warning);
@@ -737,6 +765,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         status: 'pending', // Pending status inside database
         prices: pricesRecord,
         totalAmount: getGrandTotal(),
+        dishes: orderState.dishes,
+        veggies: orderState.veggies,
+        customMenu: orderState.customMenu,
         userId: currentUser?.uid || null,
         delivery: orderState.delivery,
         idempotencyKey: idempotencyKeyRef.current
@@ -802,6 +833,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         ...(orderData as Order),
         id: generatedOrderId,
         invoiceNo: finalInvoiceNo,
+        prices: resData.prices || orderData.prices || {},
+        totalAmount: resData.totalAmount !== undefined ? resData.totalAmount : orderData.totalAmount,
       };
       setSubmittedOrder(createdOrder);
 
@@ -1067,10 +1100,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             {currentStep <= 4 && (
               <div className="px-6 pt-6 pb-4 bg-muted/40 border-b border-stone/10" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
                 {draftSavedAt && !initialData && (
-                  <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-3 flex items-center gap-1.5" role="status">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
-                    {tText('Draft saved on this device', 'Draf disimpan pada peranti ini')}
-                  </p>
+                  <div className="flex items-center justify-between mb-3 bg-stone-100/50 dark:bg-stone-800/40 p-2 rounded-lg border border-stone/10" role="status">
+                    <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {tText('Draft loaded from this device', 'Draf dimuatkan dari peranti ini')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDiscardDraft}
+                      className="text-[10.5px] font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform select-none px-1.5 py-0.5 rounded"
+                    >
+                      {tText('Clear Draft & Start Fresh', 'Padam Draf & Mula Baru')}
+                    </button>
+                  </div>
                 )}
                 <div className="flex items-center justify-between">
                   {[
@@ -1292,19 +1334,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 />
                 <div className="relative z-10 flex justify-between items-center">
                   <span className="text-stone-300 microcopy-12 font-medium uppercase tracking-wider">
-                    {tText('Rate / Pax:', 'Kadar / Orang:')}
+                    {tText('Pricing Basis:', 'Asas Harga:')}
                   </span>
-                  <span className="font-bold text-[var(--color-sunshine-cta)] text-xs">
-                    {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}` : tText('Quote Pending', 'Ganti Sebut Harga')}
+                  <span className="font-bold text-[var(--color-sunshine-cta)] text-xs uppercase tracking-wider">
+                    {tText('Inquiry / Custom Quote', 'Pertanyaan / Sebut Harga')}
                   </span>
                 </div>
 
                 <div className="relative z-10 flex justify-between items-baseline pt-1 border-t border-white/10">
                   <span className="text-xs font-extrabold text-white uppercase tracking-wider">
-                    {tText('Est. Total:', 'Anggaran Jumlah:')}
+                    {tText('Catering Price:', 'Harga Katering:')}
                   </span>
-                  <span className="text-xl font-black text-[var(--color-sunshine-cta)] font-display">
-                    {getGrandTotal() > 0 ? `RM ${getGrandTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : tText('Admin Quote', 'Sebut Harga')}
+                  <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider font-display">
+                    {tText('Quotation Pending', 'Menunggu Sebut Harga')}
                   </span>
                 </div>
               </div>
@@ -1349,11 +1391,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="microcopy-12 text-[var(--color-sunshine-cta)] font-bold shrink-0">
-                {getPricePerPax() > 0 ? `RM ${getPricePerPax().toFixed(2)}/pax` : tText('Quote', 'Sebut Harga')}
-              </span>
-              <span className="text-base font-extrabold text-white font-display shrink-0">
-                {getGrandTotal() > 0 ? `RM ${getGrandTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'RM 0.00'}
+              <span className="text-sm font-extrabold text-[var(--color-sunshine-cta)] uppercase tracking-wider shrink-0">
+                {tText('Quotation Pending', 'Menunggu Sebut Harga')}
               </span>
             </div>
           </div>

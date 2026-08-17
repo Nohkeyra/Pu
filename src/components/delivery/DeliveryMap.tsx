@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import type { Order } from '@/types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { launchMaps } from '@/lib/nativeService';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
 
@@ -21,12 +22,14 @@ function LeafletMapContainer({
   setEta,
   setDistance,
   setRouteLoaded,
+  onCoordinatesLoaded,
 }: {
   locationString: string;
   orderStatus: string;
   setEta: (val: string) => void;
   setDistance: (val: string) => void;
   setRouteLoaded: (val: boolean) => void;
+  onCoordinatesLoaded?: (coords: { lat: number; lng: number }) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -55,10 +58,12 @@ function LeafletMapContainer({
 
         if (active) {
           if (data && data.length > 0) {
-            setDestLatLng({
+            const coords = {
               lat: parseFloat(data[0].lat),
               lng: parseFloat(data[0].lon),
-            });
+            };
+            setDestLatLng(coords);
+            onCoordinatesLoaded?.(coords);
           } else {
             throw new Error('Not found');
           }
@@ -69,10 +74,12 @@ function LeafletMapContainer({
           // Putrajaya offset fallback
           const randomOffsetLat = (Math.random() - 0.5) * 0.02 + 0.01;
           const randomOffsetLng = (Math.random() - 0.5) * 0.02 + 0.01;
-          setDestLatLng({
+          const coords = {
             lat: RESTORAN_WAWASAN_COORDS.lat + randomOffsetLat,
             lng: RESTORAN_WAWASAN_COORDS.lng + randomOffsetLng,
-          });
+          };
+          setDestLatLng(coords);
+          onCoordinatesLoaded?.(coords);
         }
       }
     };
@@ -81,7 +88,7 @@ function LeafletMapContainer({
     return () => {
       active = false;
     };
-  }, [locationString]);
+  }, [locationString, onCoordinatesLoaded]);
 
   // 2. Initialize Leaflet Map
   useEffect(() => {
@@ -234,6 +241,7 @@ export function DeliveryMap({ order, onClose }: DeliveryMapProps) {
   const [eta, setEta] = useState<string>('-- mins');
   const [distance, setDistance] = useState<string>('-- km');
   const [routeLoaded, setRouteLoaded] = useState<boolean>(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -276,7 +284,7 @@ export function DeliveryMap({ order, onClose }: DeliveryMapProps) {
         {/* Content Body */}
         <div className="flex-1 min-h-0 relative flex flex-col md:flex-row">
           {/* Status Metrics Panel */}
-          <div className="w-full md:w-[320px] p-5 bg-white/60 dark:bg-background/60 border-b md:border-b-0 md:border-r border-[var(--color-sunshine-cta)]/10 flex flex-col justify-between space-y-6 z-10">
+          <div className="w-full md:w-[320px] p-5 bg-white/60 dark:bg-background/60 border-b md:border-b-0 md:border-r border-[var(--color-sunshine-cta)]/10 flex flex-col justify-between space-y-6 z-10 overflow-y-auto">
             <div className="space-y-6">
               {/* Delivery Target */}
               <div className="space-y-4">
@@ -332,6 +340,31 @@ export function DeliveryMap({ order, onClose }: DeliveryMapProps) {
                   </div>
                 </div>
               )}
+
+              {/* Native Navigation Shortcuts */}
+              {coords && (
+                <div className="space-y-3 pt-2">
+                  <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block opacity-90">
+                    {t('External Navigation', 'Navigasi Luaran')}
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'google' })}
+                      className="touch-target-row text-xs font-bold bg-white dark:bg-card border border-stone-200 dark:border-stone-700 rounded-xl py-2.5 px-3 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-center gap-1 text-deep-forest dark:text-white transition-all shadow-sm"
+                    >
+                      🗺️ Google Maps
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'waze' })}
+                      className="touch-target-row text-xs font-bold bg-white dark:bg-card border border-stone-200 dark:border-stone-700 rounded-xl py-2.5 px-3 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-center gap-1 text-deep-forest dark:text-white transition-all shadow-sm"
+                    >
+                      🚙 Waze Navigation
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Map Engine Indicator */}
@@ -351,6 +384,7 @@ export function DeliveryMap({ order, onClose }: DeliveryMapProps) {
               setEta={setEta}
               setDistance={setDistance}
               setRouteLoaded={setRouteLoaded}
+              onCoordinatesLoaded={setCoords}
             />
           </div>
         </div>

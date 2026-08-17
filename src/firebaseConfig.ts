@@ -85,9 +85,15 @@ try {
     : undefined;
 
   if (dbId && dbId !== "(default)") {
-    dbInstance = initializeFirestore(app, { localCache: localCacheConfig }, dbId);
+    dbInstance = initializeFirestore(app, {
+      localCache: localCacheConfig,
+      experimentalForceLongPolling: isWorkspace
+    }, dbId);
   } else {
-    dbInstance = initializeFirestore(app, { localCache: localCacheConfig });
+    dbInstance = initializeFirestore(app, {
+      localCache: localCacheConfig,
+      experimentalForceLongPolling: isWorkspace
+    });
   }
 } catch {
   if (dbId && dbId !== "(default)") {

@@ -867,12 +867,6 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
 ];
 
 // Full market reference catalog (not auto-pushed to live Firebase menu)
-export {
-  MALAYSIAN_HALAL_CATALOG,
-  CATERING_PACKAGE_BANDS,
-  catalogToMenuItem,
-  getCatalogByGroup,
-  getCatalogByCategory,
-} from "@/data/malaysianHalalCatalog";
-export type { HalalCatalogItem, CatalogMealSlot } from "@/data/malaysianHalalCatalog";
+// Re-exports removed from client-side bundles to optimize performance.
+
 

@@ -27,8 +27,8 @@ import { Skeleton } from './components/ui/Skeleton';
 import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
 import { setCrashlyticsUserId } from './services/crashlyticsService';
 
-// Primary LandingPage is loaded eagerly as the core root experience
-import LandingPage from './pages/LandingPage';
+// Primary LoginPage is loaded eagerly as the core root experience
+import LoginPage from './pages/LoginPage';
 
 // Secondary routes are lazy-loaded with robust automatic cache-bust reload recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -64,9 +64,9 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   });
 }
 
+const LandingPage  = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage');
 const OrderPage    = lazyWithRetry(() => import('./pages/OrderPage'), 'OrderPage');
 const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'), 'AdminPage');
-const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage'), 'LoginPage');
 const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'), 'ProfilePage');
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'), 'SettingsPage');
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage');

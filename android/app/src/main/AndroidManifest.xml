@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Declarations for @capacitor/app-launcher to query other apps -->
+    <queries>
+        <!-- WhatsApp -->
+        <package android:name="com.whatsapp" />
+        <!-- Google Maps -->
+        <package android:name="com.google.android.apps.maps" />
+        <!-- Waze -->
+        <package android:name="com.waze" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"

@@ -19,9 +19,6 @@ export default defineConfig({
     hmr: {
       overlay: false,
     },
-    watch: {
-      usePolling: true,
-    },
   },
   resolve: {
     alias: {

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAssetUrl } from '@/lib/utils';
+import { scheduleLocalNotification } from '@/lib/nativeService';
 
 interface OrderState {
   name: string;
@@ -37,6 +38,18 @@ export function Step5OrderSuccess({
   handleShareReceipt,
   tText,
 }: Step5OrderSuccessProps) {
+  React.useEffect(() => {
+    scheduleLocalNotification({
+      id: Math.floor(Math.random() * 100000),
+      title: tText('Catering Request Received! 🍲', 'Tempahan Katering Diterima! 🍲'),
+      body: tText(
+        `Thank you ${orderState.name}! Reference No: ${referenceNumber}. We will verify your menu shortly.`,
+        `Terima kasih ${orderState.name}! No Rujukan: ${referenceNumber}. Kami akan mengesahkan menu anda segera.`
+      ),
+      delaySeconds: 1
+    });
+  }, [orderState.name, referenceNumber, tText]);
+
   return (
     <motion.div
       key="step5"
@@ -98,13 +111,31 @@ export function Step5OrderSuccess({
           </span>
         </div>
         
-        <div className="border-t border-stone/10 pt-2.5 mt-2 flex justify-between items-center">
-          <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
-            {tText('Catering Price:', 'Harga Katering:')}
-          </span>
-          <span className="text-xs font-bold text-[#A8E10C] bg-[#A8E10C]/10 px-2.5 py-1 rounded-full uppercase tracking-wide">
-            {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-          </span>
+        <div className="border-t border-stone/10 pt-2.5 mt-2 space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
+              {tText('Est. Price per Pax:', 'Anggaran Harga per Pax:')}
+            </span>
+            <span className="text-xs font-bold text-deep-forest select-all">
+              RM {(12 * (orderState.mealTypes.length || 1)).toFixed(2)} - RM {(22 * (orderState.mealTypes.length || 1)).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-deep-forest uppercase tracking-wider">
+              {tText('Estimated Total:', 'Anggaran Jumlah Kasar:')}
+            </span>
+            <span className="text-sm font-black text-orange-600 dark:text-orange-400 select-all">
+              RM {((orderState.guests || 1) * 12 * (orderState.mealTypes.length || 1)).toLocaleString('en-US', { minimumFractionDigits: 2 })} - RM {((orderState.guests || 1) * 22 * (orderState.mealTypes.length || 1)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="flex justify-between items-center pt-1.5 border-t border-dashed border-stone/10">
+            <span className="text-[10px] text-stone-500 font-medium">
+              {tText('Official Invoice:', 'Invois Rasmi:')}
+            </span>
+            <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-wide">
+              {tText('Quotation Pending (Awaiting Admin Billing)', 'Menunggu Sebut Harga (Menunggu Admin)')}
+            </span>
+          </div>
         </div>
       </div>
 

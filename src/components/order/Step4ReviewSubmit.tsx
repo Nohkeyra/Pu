@@ -179,11 +179,6 @@ export function Step4ReviewSubmit({
                   {orderState.dishes.map((d: any) => (
                     <div key={d.id} className="flex justify-between items-center bg-white/10 border border-white/5 px-2.5 py-1 rounded text-xs">
                       <span className="text-white font-medium">{tText(d.nameEn, d.nameBm)}</span>
-                      {d.price !== undefined && (
-                        <span className="text-[var(--color-sunshine-cta)] font-bold shrink-0 pl-2">
-                          RM {Number(d.price).toFixed(2)}
-                        </span>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -197,11 +192,6 @@ export function Step4ReviewSubmit({
                   {orderState.veggies.map((v: any) => (
                     <div key={v.id} className="flex justify-between items-center bg-white/10 border border-white/5 px-2.5 py-1 rounded text-xs">
                       <span className="text-white font-medium">{tText(v.nameEn, v.nameBm)}</span>
-                      {v.price !== undefined && (
-                        <span className="text-[var(--color-sunshine-cta)] font-bold shrink-0 pl-2">
-                          RM {Number(v.price).toFixed(2)}
-                        </span>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -229,47 +219,14 @@ export function Step4ReviewSubmit({
             )}
           </div>
 
-          {(() => {
-            const allItems = [...orderState.dishes, ...orderState.veggies];
-            const sumPerPax = allItems.reduce((acc, curr: any) => acc + (Number(curr.price) || 0), 0);
-            const totalEst = sumPerPax * (orderState.guests || 1);
-
-            return (
-              <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 space-y-1.5">
-                {sumPerPax > 0 ? (
-                  <>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-stone-300">{tText('Price per Pax:', 'Harga setiap Orang:')}</span>
-                      <span className="font-bold text-[var(--color-sunshine-cta)]">
-                        RM {sumPerPax.toFixed(2)} / {tText('pax', 'orang')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-white/10">
-                      <span className="text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-                        {tText('Estimated Total:', 'Anggaran Jumlah:')}
-                      </span>
-                      <span className="text-base font-black text-white">
-                        RM {totalEst.toFixed(2)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
-                      <span>🌱</span>
-                      <span>{tText('Includes 1 pax portion + Eco-Friendly Packaging', 'Termasuk porsi 1 orang makan + Packaging Eco-Friendly')}</span>
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-                      {tText('Catering Price:', 'Harga Katering:')}
-                    </span>
-                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
-                      {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 flex justify-between items-center">
+            <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
+              {tText('Catering Price:', 'Harga Katering:')}
+            </span>
+            <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
+              {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+            </span>
+          </div>
         </div>
 
         <p className="microcopy-12-upper text-stone leading-tight italic text-center px-4">

@@ -52,6 +52,8 @@ export default function SettingsPage() {
     setDeveloperMode,
     fontSize,
     setFontSize,
+    keepAwakeEnabled,
+    setKeepAwakeEnabled,
   } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -118,6 +120,18 @@ export default function SettingsPage() {
   const handleToggleDeveloper = async (checked: boolean) => {
     await triggerLightImpact();
     setDeveloperMode(checked);
+  };
+
+  const handleToggleKeepAwake = async (checked: boolean) => {
+    await triggerLightImpact();
+    setKeepAwakeEnabled(checked);
+    toast({
+      title: language === 'bm' ? 'Skrin Sentiasa Aktif' : 'Keep Screen Awake',
+      description: checked
+        ? (language === 'bm' ? 'Skrin peranti tidak akan dimalapkan atau dikunci.' : 'Device screen will stay active and won\'t turn off.')
+        : (language === 'bm' ? 'Tetapan tidur skrin biasa telah dipulihkan.' : 'Normal screen sleep settings restored.'),
+      variant: 'success',
+    });
   };
 
   return (
@@ -335,10 +349,30 @@ export default function SettingsPage() {
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
             <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-              {language === 'bm' ? 'Pilihan Pembangun' : 'Developer & Advanced'}
+              {language === 'bm' ? 'Tetapan Peranti & Lanjutan' : 'Device & Advanced Settings'}
             </h3>
 
-            <div className="flex items-center justify-between gap-3 py-2">
+            {/* Keep Awake Toggle */}
+            <div className="flex items-center justify-between gap-3 py-2 border-b border-border/65 last:border-0 pb-4">
+              <div className="space-y-0.5">
+                <span className="text-sm font-semibold text-deep-forest dark:text-white block">
+                  {language === 'bm' ? 'Kekalkan Skrin Aktif' : 'Keep Screen Awake'}
+                </span>
+                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
+                  {language === 'bm'
+                    ? 'Pastikan skrin peranti sentiasa menyala untuk kegunaan dapur, pemandu, atau pemantauan berterusan.'
+                    : 'Prevent screen from sleeping/dimming. Ideal for kitchen tablet displays, tracking riders, or continuous monitoring.'}
+                </span>
+              </div>
+              <Switch
+                checked={keepAwakeEnabled}
+                onCheckedChange={handleToggleKeepAwake}
+                aria-label="Toggle keep screen awake"
+              />
+            </div>
+
+            {/* Developer Mode */}
+            <div className="flex items-center justify-between gap-3 py-2 last:border-0">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}

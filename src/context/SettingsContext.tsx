@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSecureItem } from '@/lib/preferences';
+import { setKeepAwake } from '@/lib/nativeService';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -10,6 +11,8 @@ interface SettingsContextType {
   setDeveloperMode: (enabled: boolean) => void;
   fontSize: FontSizeOption;
   setFontSize: (size: FontSizeOption) => void;
+  keepAwakeEnabled: boolean;
+  setKeepAwakeEnabled: (enabled: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -36,6 +39,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       return 'base';
     }
   });
+  const [keepAwakeEnabled, setKeepAwakeEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('keepAwakeEnabled') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     setSecureItem('notificationsEnabled', String(notificationsEnabled));
@@ -44,6 +54,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setSecureItem('developerMode', String(developerMode));
   }, [developerMode]);
+
+  useEffect(() => {
+    setSecureItem('keepAwakeEnabled', String(keepAwakeEnabled));
+    // Trigger native Keep Awake call
+    setKeepAwake(keepAwakeEnabled);
+  }, [keepAwakeEnabled]);
 
   useEffect(() => {
     setSecureItem('fontSize', fontSize);
@@ -67,7 +83,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         developerMode, 
         setDeveloperMode,
         fontSize,
-        setFontSize
+        setFontSize,
+        keepAwakeEnabled,
+        setKeepAwakeEnabled
       }}
     >
       {children}

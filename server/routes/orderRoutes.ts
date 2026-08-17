@@ -6,10 +6,208 @@ import { verifyAdminToken } from '../adminAuth.js';
 import { notifyCustomerOfStatusChange, createBrevoTransporter } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
+import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
+import { MALAYSIAN_HALAL_CATALOG } from '../../src/data/malaysianHalalCatalog.js';
 
 const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
+
+interface ReferenceDish {
+  nameEn: string;
+  nameBm: string;
+  price: number;
+}
+
+let cachedReferenceDishes: ReferenceDish[] = [];
+
+function getReferenceDishes(): ReferenceDish[] {
+  if (cachedReferenceDishes.length > 0) {
+    return cachedReferenceDishes;
+  }
+
+  const list: ReferenceDish[] = [];
+
+  // Add from DEFAULT_MENU_ITEMS
+  if (Array.isArray(DEFAULT_MENU_ITEMS)) {
+    for (const item of DEFAULT_MENU_ITEMS) {
+      if (item && item.price) {
+        list.push({
+          nameEn: item.nameEn || '',
+          nameBm: item.nameBm || '',
+          price: Number(item.price),
+        });
+      }
+    }
+  }
+
+  // Add from MALAYSIAN_HALAL_CATALOG
+  if (Array.isArray(MALAYSIAN_HALAL_CATALOG)) {
+    for (const item of MALAYSIAN_HALAL_CATALOG) {
+      if (item && item.suggestedPrice) {
+        const alreadyExists = list.some(d => 
+          d.nameEn.toLowerCase() === item.nameEn.toLowerCase() || 
+          d.nameBm.toLowerCase() === item.nameBm.toLowerCase()
+        );
+        if (!alreadyExists) {
+          list.push({
+            nameEn: item.nameEn || '',
+            nameBm: item.nameBm || '',
+            price: Number(item.suggestedPrice),
+          });
+        }
+      }
+    }
+  }
+
+  cachedReferenceDishes = list;
+  return list;
+}
+
+function splitCustomMenu(menuStr: string): string[] {
+  if (!menuStr) return [];
+  const normalized = menuStr
+    .replace(/\s+dan\s+/gi, ',')
+    .replace(/\s+and\s+/gi, ',')
+    .replace(/\s+dengan\s+/gi, ',')
+    .replace(/\s+with\s+/gi, ',')
+    .replace(/\s+&\s+/gi, ',')
+    .replace(/\s*\+\s*/g, ',')
+    .replace(/\n+/g, ',');
+  
+  return normalized
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
+function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceDish | null {
+  const cleanFragment = fragment.toLowerCase().trim();
+  if (!cleanFragment) return null;
+
+  let bestMatch: ReferenceDish | null = null;
+  let bestScore = 0;
+
+  // Tokenize the fragment
+  const fragmentWords = cleanFragment
+    .split(/\s+/)
+    .map(w => w.replace(/[^\w\s]/g, ""))
+    .filter(w => w.length > 1);
+
+  for (const dish of refDishes) {
+    const nameEnClean = dish.nameEn.toLowerCase();
+    const nameBmClean = dish.nameBm.toLowerCase();
+
+    let score = 0;
+
+    // 1. Exact string match
+    if (nameEnClean === cleanFragment || nameBmClean === cleanFragment) {
+      score += 100;
+    }
+
+    // 2. Substring match
+    if (cleanFragment.includes(nameEnClean) || cleanFragment.includes(nameBmClean)) {
+      score += 50;
+    }
+    if (nameEnClean.includes(cleanFragment) || nameBmClean.includes(cleanFragment)) {
+      score += 40;
+    }
+
+    // 3. Word token matching
+    const dishEnWords = nameEnClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
+    const dishBmWords = nameBmClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
+
+    let enWordMatches = 0;
+    for (const fw of fragmentWords) {
+      if (dishEnWords.includes(fw)) enWordMatches++;
+    }
+
+    let bmWordMatches = 0;
+    for (const fw of fragmentWords) {
+      if (dishBmWords.includes(fw)) bmWordMatches++;
+    }
+
+    const wordMatchScore = Math.max(enWordMatches, bmWordMatches) * 10;
+    score += wordMatchScore;
+
+    if (score > bestScore && score >= 15) {
+      bestScore = score;
+      bestMatch = dish;
+    }
+  }
+
+  return bestMatch;
+}
+
+function calculateOrderPricing(
+  dishes: any[] | undefined,
+  veggies: any[] | undefined,
+  customMenu: string | undefined,
+  quantity: number,
+  meals: string[]
+): { prices: Record<string, number>; totalAmount: number } {
+  const refDishes = getReferenceDishes();
+  let pricePerPax = 0;
+
+  // 1. Sum up picked dishes
+  if (Array.isArray(dishes)) {
+    for (const dish of dishes) {
+      const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (dish.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (dish.nameBm || '').toLowerCase());
+      if (matchInRef) {
+        pricePerPax += matchInRef.price;
+      } else {
+        pricePerPax += Number(dish.price) || 0;
+      }
+    }
+  }
+
+  // 2. Sum up picked veggies
+  if (Array.isArray(veggies)) {
+    for (const veg of veggies) {
+      const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (veg.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (veg.nameBm || '').toLowerCase());
+      if (matchInRef) {
+        pricePerPax += matchInRef.price;
+      } else {
+        pricePerPax += Number(veg.price) || 0;
+      }
+    }
+  }
+
+  // 3. Handle custom order strings
+  if (customMenu && typeof customMenu === 'string' && customMenu.trim()) {
+    const fragments = splitCustomMenu(customMenu);
+    for (const fragment of fragments) {
+      const bestMatch = findBestMatch(fragment, refDishes);
+      if (bestMatch) {
+        pricePerPax += bestMatch.price;
+      }
+    }
+  }
+
+  // 4. Fallback if price is still 0 (Default Boxed Meal)
+  if (pricePerPax === 0) {
+    pricePerPax = 11.50;
+  }
+
+  // 5. Construct prices map and total amount
+  const prices: Record<string, number> = {};
+  const mealCount = Array.isArray(meals) && meals.length > 0 ? meals.length : 1;
+  
+  if (Array.isArray(meals)) {
+    meals.forEach(meal => {
+      prices[meal] = pricePerPax;
+    });
+  } else {
+    prices['default'] = pricePerPax;
+  }
+
+  const totalAmount = pricePerPax * (Number(quantity) || 1) * mealCount;
+
+  return {
+    prices,
+    totalAmount
+  };
+}
 
 // F-RATE (audit 2026-08-11): POST /api/orders is public (no verifyAdminToken)
 // and writes to Firestore + fires calendar sync on every call. It previously
@@ -45,6 +243,18 @@ router.post('/', createOrderLimiter, async (req, res) => {
   try {
     const { idempotencyKey, ...orderData } = req.body || {};
     const db = getFirestore();
+
+    // SERVER-SIDE PRICING OVERWRITE & ESTIMATE
+    const { prices, totalAmount } = calculateOrderPricing(
+      orderData.dishes,
+      orderData.veggies,
+      orderData.customMenu,
+      orderData.quantity || orderData.guests,
+      orderData.meals || []
+    );
+
+    orderData.prices = prices;
+    orderData.totalAmount = totalAmount;
 
     let orderId: string;
     let isDuplicate = false;
@@ -85,7 +295,7 @@ router.post('/', createOrderLimiter, async (req, res) => {
       });
     }
 
-    return res.json({ id: orderId, duplicate: isDuplicate });
+    return res.json({ id: orderId, duplicate: isDuplicate, prices: orderData.prices, totalAmount: orderData.totalAmount });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }

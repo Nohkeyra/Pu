@@ -29,6 +29,18 @@ export function PDFPreviewModal({
 
   const totalAmount = order?.totalAmount || (order?.quantity ? order.quantity * 15 : 150);
 
+  const isOrderFinal = isFinal || ['approved', 'billed', 'in_transit', 'delivered'].includes(order?.status?.toLowerCase() || '');
+  
+  const mealCount = order?.meals?.length || 1;
+  const qty = order?.quantity || order?.guests || 1;
+  const minPricePerPax = 12;
+  const maxPricePerPax = 22;
+  const minTotal = qty * minPricePerPax * mealCount;
+  const maxTotal = qty * maxPricePerPax * mealCount;
+  
+  const priceRangeStr = `RM ${minPricePerPax.toFixed(2)} - RM ${maxPricePerPax.toFixed(2)}`;
+  const totalRangeStr = `RM ${minTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} - RM ${maxTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
   return (
     <div
       role="dialog"
@@ -42,7 +54,7 @@ export function PDFPreviewModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300">
-              {isFinal ? (
+              {isOrderFinal ? (
                 <>
                   <CheckCircle className="w-3.5 h-3.5 mr-1 text-orange-600 dark:text-orange-400" />
                   {language === 'bm' ? 'Invois Rasmi' : 'Official Invoice'}
@@ -171,11 +183,11 @@ export function PDFPreviewModal({
                           {idx === 0 && order?.menu && <div className="text-xs text-stone-500 font-normal">{order.menu}</div>}
                         </td>
                         <td className="py-3 px-4 text-center text-xs font-mono font-medium text-stone-700 dark:text-stone-300">
-                          RM {pricePerPax.toFixed(2)}
+                          {isOrderFinal ? `RM ${pricePerPax.toFixed(2)}` : (language === 'bm' ? `Anggaran ${priceRangeStr}` : `Est. ${priceRangeStr}`)}
                         </td>
                         <td className="py-3 px-4 text-center">{qty} pax</td>
                         <td className="py-3 px-4 text-right font-mono font-medium">
-                          RM {mealSubtotal.toFixed(2)}
+                          {isOrderFinal ? `RM ${mealSubtotal.toFixed(2)}` : totalRangeStr}
                         </td>
                       </tr>
                     );
@@ -186,11 +198,11 @@ export function PDFPreviewModal({
                       {order?.menu || (language === 'bm' ? 'Katering Makanan Tradisional & Melayu' : 'Traditional & Malay Catering Services')}
                     </td>
                     <td className="py-3 px-4 text-center text-xs font-mono font-medium text-stone-700 dark:text-stone-300">
-                      RM {((order?.quantity || 1) > 0 ? totalAmount / (order?.quantity || 1) : totalAmount).toFixed(2)}
+                      {isOrderFinal ? `RM ${((order?.quantity || 1) > 0 ? totalAmount / (order?.quantity || 1) : totalAmount).toFixed(2)}` : (language === 'bm' ? `Anggaran ${priceRangeStr}` : `Est. ${priceRangeStr}`)}
                     </td>
                     <td className="py-3 px-4 text-center">{order?.quantity || 1} pax</td>
                     <td className="py-3 px-4 text-right font-mono font-medium">
-                      RM {totalAmount.toFixed(2)}
+                      {isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}
                     </td>
                   </tr>
                 )}
@@ -218,15 +230,17 @@ export function PDFPreviewModal({
             <div className="flex flex-col justify-end space-y-2 text-right">
               <div className="flex justify-between text-sm text-stone-600 dark:text-stone-400 px-2">
                 <span>{language === 'bm' ? 'Subjumlah:' : 'Subtotal:'}</span>
-                <span className="font-mono">RM {totalAmount.toFixed(2)}</span>
+                <span className="font-mono">{isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}</span>
               </div>
               <div className="flex justify-between text-sm text-stone-600 dark:text-stone-400 px-2 pb-2 border-b border-stone-200 dark:border-stone-700">
                 <span>{language === 'bm' ? 'Cukai / SST (0%):' : 'Tax / SST (0%):'}</span>
-                <span className="font-mono">RM 0.00</span>
+                <span className="font-mono">{isOrderFinal ? 'RM 0.00' : '-'}</span>
               </div>
               <div className="flex justify-between text-base sm:text-lg font-bold text-stone-900 dark:text-white px-2 pt-1 bg-stone-100 dark:bg-stone-800 p-2 rounded-lg">
                 <span>{language === 'bm' ? 'Jumlah Keseluruhan:' : 'Grand Total:'}</span>
-                <span className="font-mono text-orange-600 dark:text-orange-400">RM {totalAmount.toFixed(2)}</span>
+                <span className="font-mono text-orange-600 dark:text-orange-400">
+                  {isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}
+                </span>
               </div>
             </div>
           </div>

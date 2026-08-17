@@ -261,6 +261,22 @@
   .section-padding    { @apply py-20 md:py-[120px]; }
   .content-container  { @apply max-w-[1200px] mx-auto px-4 sm:px-6 md:px-12; }
 
+  /* Typography Accents */
+  .font-heritage {
+    font-family: 'Playfair Display', serif;
+  }
+  .editorial-heading {
+    font-family: 'Playfair Display', serif;
+    @apply tracking-tight font-serif italic font-semibold;
+  }
+  .heritage-stamp {
+    font-family: 'Playfair Display', serif;
+    @apply text-xs uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-semibold;
+  }
+  .typography-accent-pill {
+    @apply inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/20 shadow-sm;
+  }
+
   .nature-card {
     background-color: var(--color-card-bg);
     border: 1px solid var(--color-card-border);
@@ -551,7 +567,7 @@
     background-color: var(--color-header-bg);
     border-bottom: 1px solid var(--color-header-border);
     backdrop-filter: blur(14px);
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: var(--sat);
   }
 
   /* ----------------------------------------------------------------

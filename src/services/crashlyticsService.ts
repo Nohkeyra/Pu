@@ -35,6 +35,19 @@ export async function initCrashlytics(): Promise<void> {
 
     window.addEventListener("unhandledrejection", (event) => {
       const reason = event.reason;
+      const message = reason?.message || String(reason);
+      // Ignore AbortError / cancelled requests or transient fetch failures which are normal web/telemetry behavior
+      if (
+        reason?.name === "AbortError" ||
+        message.includes("aborted") ||
+        message.includes("Failed to fetch") ||
+        message.includes("NetworkError") ||
+        message.includes("Load failed") ||
+        String(reason).includes("AbortError") ||
+        String(reason).includes("Failed to fetch")
+      ) {
+        return;
+      }
       const error = reason instanceof Error ? reason : new Error(String(reason));
       recordException(error, {
         type: "unhandled_promise_rejection",
@@ -55,6 +68,18 @@ export async function recordException(
 ): Promise<void> {
   const errObj = typeof error === "string" ? new Error(error) : error;
   const message = errObj.message || "Unknown Application Exception";
+  
+  if (
+    errObj.name === "AbortError" ||
+    message.includes("aborted") ||
+    message.includes("Failed to fetch") ||
+    message.includes("NetworkError") ||
+    message.includes("Load failed") ||
+    String(error).includes("AbortError") ||
+    String(error).includes("Failed to fetch")
+  ) {
+    return;
+  }
   const stack = errObj.stack || "No stack trace available";
 
   console.error("[Crashlytics Exception Captured]:", message, context, errObj);
