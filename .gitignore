@@ -18,6 +18,7 @@ lerna-debug.log*
 *.session
 
 # Build output & temporary files
+dist/
 build/
 core
 core.*
@@ -48,6 +49,8 @@ Thumbs.db
 *.jks
 *.keystore
 release.keystore
+key.properties
+android/app/key.properties
 firebase-service-account.json
 
 # Keep Firebase client configuration for Android

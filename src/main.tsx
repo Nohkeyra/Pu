@@ -16,19 +16,23 @@ if (typeof window !== 'undefined' && (
   window.location.hostname.includes('aistudio') ||
   localStorage.getItem('wawasan_eruda_enabled') === 'true'
 )) {
-  import('eruda').then((eruda) => {
-    if (!(window as any).eruda) {
-      try {
-        eruda.default.init();
-      } catch (err) {
-        // Some sandboxed preview environments (e.g. AI Studio iframe) expose
-        // window.fetch as a read-only getter. Eruda's network monitor tries
-        // to overwrite it, which throws synchronously here rather than
-        // rejecting the import() promise above. Non-fatal either way.
-        console.warn('Eruda init failed (sandbox likely locks window.fetch):', err);
+  // Check if window.fetch descriptor allows write/configuration before loading eruda to prevent TypeError in sandboxed iframes
+  const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+  const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
+
+  if (isFetchWritable) {
+    import('eruda').then((eruda) => {
+      if (!(window as any).eruda) {
+        try {
+          eruda.default.init();
+        } catch {
+          // In sandboxed environments where window properties cannot be modified, silently fall back
+        }
       }
-    }
-  }).catch((err) => console.warn('Failed to load Eruda module:', err));
+    }).catch(() => {
+      // Ignore in restricted sandbox environments
+    });
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

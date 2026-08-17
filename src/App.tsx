@@ -27,33 +27,49 @@ import { Skeleton } from './components/ui/Skeleton';
 import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
 import { setCrashlyticsUserId } from './services/crashlyticsService';
 
-// Helper to retry dynamic imports if dynamic chunk fetching fails (e.g. during Vite dev server reloads or network hiccups)
+// Primary LandingPage is loaded eagerly as the core root experience
+import LandingPage from './pages/LandingPage';
+
+// Secondary routes are lazy-loaded with robust automatic cache-bust reload recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
-  factory: () => Promise<{ default: T }>
+  factory: () => Promise<{ default: T }>,
+  chunkName?: string
 ) {
   return lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem(`retry-lazy-refreshed-${chunkName || 'page'}`) || 'false'
+    );
+
     try {
       return await factory();
     } catch (error) {
-      console.warn('Dynamic chunk load failed, retrying once...', error);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.warn(`Dynamic chunk load failed for ${chunkName || 'module'}, retrying...`, error);
+      
+      // If we haven't refreshed the page yet, trigger a hard reload to fetch new bundles after deployment/rebuild
+      if (!pageHasAlreadyBeenForceRefreshed && typeof window !== 'undefined') {
+        window.sessionStorage.setItem(`retry-lazy-refreshed-${chunkName || 'page'}`, 'true');
+        window.location.reload();
+        return new Promise(() => {}); // Halt execution while reload occurs
+      }
+
+      // Retry in memory once if reload already occurred
+      await new Promise((resolve) => setTimeout(resolve, 800));
       try {
         return await factory();
       } catch (retryError) {
-        console.error('Dynamic chunk retry failed:', retryError);
+        console.error('Dynamic chunk retry failed after reload:', retryError);
         throw retryError;
       }
     }
   });
 }
 
-const LandingPage  = lazyWithRetry(() => import('./pages/LandingPage'));
-const OrderPage    = lazyWithRetry(() => import('./pages/OrderPage'));
-const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'));
-const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage'));
-const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'));
-const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
-const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'));
+const OrderPage    = lazyWithRetry(() => import('./pages/OrderPage'), 'OrderPage');
+const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'), 'AdminPage');
+const LoginPage    = lazyWithRetry(() => import('./pages/LoginPage'), 'LoginPage');
+const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'), 'ProfilePage');
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'), 'SettingsPage');
+const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage');
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change & log Analytics screen view
@@ -646,7 +662,12 @@ function App() {
       )}
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
-          <Router>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <VercelSpeedInsights />
             <PushNotificationHandler />
             <NativeBackButtonHandler />

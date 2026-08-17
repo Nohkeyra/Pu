@@ -229,6 +229,18 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         description: "Loading inspector console... Look for the gear icon in the bottom-right corner of your screen.",
       });
       try {
+        const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+        const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
+
+        if (!isFetchWritable) {
+          toast({
+            title: "Toolkit Unavailable in Preview iFrame",
+            description: "The browser container protects window.fetch. Open in a new window or native app to inspect.",
+            variant: "error"
+          });
+          return;
+        }
+
         const erudaModule = await import('eruda');
         if (!document.getElementById('eruda') && !erudaWin.eruda) {
           erudaModule.default.init();

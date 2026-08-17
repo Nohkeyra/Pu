@@ -1,11 +1,11 @@
 {
   "name": "restoran-wawasan",
   "private": true,
-  "version": "1.2.11",
+  "version": "1.2.10",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "node scripts/build.js",
     "start": "node dist/server.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",

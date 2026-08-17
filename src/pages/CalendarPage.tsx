@@ -5,7 +5,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
-import cateringBanner from '@/assets/images/catering_banner_1786465796537.jpg';
+const cateringBanner = '/assets/images/catering_banner_1786465796537.jpg';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 

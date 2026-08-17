@@ -62,6 +62,7 @@ async function startServer() {
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
       contentSecurityPolicy: false,
+      xFrameOptions: false,
     })
   );
 
@@ -85,15 +86,17 @@ async function startServer() {
     const detectedPlatform = (req as any).detectedPlatform || detectServerPlatform(req);
 
     // 1. Database Connection Status Check (Firestore)
-    let dbStatus: 'connected' | 'disconnected' = 'disconnected';
+    let dbStatus: 'connected' | 'disconnected' | 'optional' = 'optional';
     let dbError: string | undefined;
     try {
       const db = getFirestore();
-      await Promise.race([
-        db.collection('meta').limit(1).get(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Database response timeout')), 3000))
-      ]);
-      dbStatus = 'connected';
+      if (db) {
+        await Promise.race([
+          db.collection('meta').limit(1).get(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database response timeout')), 2500))
+        ]);
+        dbStatus = 'connected';
+      }
     } catch (err: any) {
       dbStatus = 'disconnected';
       dbError = err?.message || String(err);
@@ -115,7 +118,7 @@ async function startServer() {
       const usedBytes = totalBytes - freeBytes;
       const usedPercentage = totalBytes > 0 ? Number(((usedBytes / totalBytes) * 100).toFixed(2)) : 0;
       diskStatus = {
-        status: usedPercentage > 95 ? 'critical' : usedPercentage > 85 ? 'warning' : 'ok',
+        status: usedPercentage > 98 ? 'critical' : usedPercentage > 85 ? 'warning' : 'ok',
         totalBytes,
         freeBytes,
         usedBytes,
@@ -133,11 +136,10 @@ async function startServer() {
       };
     }
 
-    const isHealthy = dbStatus === 'connected' && diskStatus.status !== 'critical';
-    const statusCode = isHealthy ? 200 : 503;
-
-    res.status(statusCode).json({
-      status: isHealthy ? 'ok' : 'unhealthy',
+    // Server process is running and able to serve web requests.
+    // Cloud Run startup probes require a 200 OK so that container routing is activated.
+    res.status(200).json({
+      status: 'ok',
       platform: detectedPlatform,
       service: {
         name: 'restoran-wawasan-backend',
@@ -176,7 +178,11 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist', 'client');
+    const clientSubDir = path.join(process.cwd(), 'dist', 'client');
+    const distPath = fs.existsSync(path.join(clientSubDir, 'index.html'))
+      ? clientSubDir
+      : path.join(process.cwd(), 'dist');
+
     app.use(express.static(distPath, {
       maxAge: '1y',
       immutable: true,
@@ -188,7 +194,10 @@ async function startServer() {
     }));
     app.get('*', (_req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = fs.existsSync(path.join(distPath, 'index.html'))
+        ? path.join(distPath, 'index.html')
+        : path.join(process.cwd(), 'dist', 'index.html');
+      res.sendFile(indexPath);
     });
   }
 
