@@ -349,17 +349,47 @@ export function Step2DishSelection({
         <div className="relative z-10 flex justify-between items-center text-xs">
           <span className="text-stone-300 font-medium">{tText('Dishes Selected:', 'Hidangan Dipilih:')}</span>
           <span className="font-bold text-white">
-            {orderState.dishes.length + orderState.veggies.length} {tText('dishes', 'lauk')}
+            {orderState.dishes.length + orderState.veggies.length} {tText('items', 'sajian')}
           </span>
         </div>
-        <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
-          <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-            {tText('Pricing Status:', 'Status Harga:')}
-          </span>
-          <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-[var(--color-sunshine-cta)]/30">
-            {tText('To Be Quoted by Admin', 'Ditentukan oleh Admin')}
-          </span>
-        </div>
+
+        {(() => {
+          const selectedTotalPerPax = orderState.dishes.reduce((sum, d) => sum + (Number(d.price) || 0), 0);
+          const estimatedTotal = selectedTotalPerPax * (orderState.guests || 1);
+
+          return (
+            <>
+              {selectedTotalPerPax > 0 && (
+                <div className="relative z-10 flex justify-between items-center text-xs border-t border-white/10 pt-2">
+                  <span className="text-stone-300 font-medium">{tText('Estimated per Pax:', 'Anggaran Setiap Orang:')}</span>
+                  <span className="font-bold text-[var(--color-sunshine-cta)]">
+                    RM {selectedTotalPerPax.toFixed(2)} / {tText('pax', 'orang')}
+                  </span>
+                </div>
+              )}
+              <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
+                <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
+                  {tText('Estimated Total:', 'Anggaran Jumlah:')}
+                </span>
+                <div className="text-right">
+                  {selectedTotalPerPax > 0 ? (
+                    <span className="text-base font-black text-white">
+                      RM {estimatedTotal.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-[var(--color-sunshine-cta)]/30">
+                      {tText('To Be Quoted by Admin', 'Ditentukan oleh Admin')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="relative z-10 text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                <span>🌱</span>
+                <span>{tText('Includes 1 pax portion + Eco-Friendly Packaging', 'Termasuk porsi 1 orang makan + Packaging Eco-Friendly')}</span>
+              </p>
+            </>
+          );
+        })()}
       </div>
 
       {fieldError && <FormError message={fieldError} />}
