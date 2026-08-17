@@ -35,7 +35,7 @@ function Switch({
       <SwitchPrimitives.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "pointer-events-none block rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+          "pointer-events-none block rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ease-out",
           thumbClasses[size]
         )}
       />

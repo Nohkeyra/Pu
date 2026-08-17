@@ -585,18 +585,20 @@ export default function CalendarPage() {
                       <div className="space-y-1.5 mt-2 flex-grow flex flex-col justify-end w-full">
                         {hasBreakfast && (
                           <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm",
+                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
                             sessions.breakfast.pax >= 80 
                               ? "bg-rose-600 text-white" 
                               : sessions.breakfast.pax >= 50 
                               ? "bg-amber-500 text-black font-extrabold" 
                               : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                           )}>
-                            <span className="truncate flex items-center gap-1">
+                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
                               <Coffee className="w-2.5 h-2.5 shrink-0" />
-                              {tl(`Bf - ${sessions.breakfast.count}`, `Sar - ${sessions.breakfast.count}`)}
+                              <span className="truncate">
+                                {tl(`B${sessions.breakfast.count}`, `S${sessions.breakfast.count}`)}
+                              </span>
                             </span>
-                            <span className="ml-1 text-[9px] shrink-0 font-extrabold">
+                            <span className="text-[9px] shrink-0 font-extrabold">
                               {sessions.breakfast.pax}p
                             </span>
                           </div>
@@ -604,18 +606,20 @@ export default function CalendarPage() {
 
                         {hasLunch && (
                           <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm",
+                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
                             sessions.lunch.pax >= 80 
                               ? "bg-rose-600 text-white" 
                               : sessions.lunch.pax >= 50 
                               ? "bg-amber-500 text-black font-extrabold" 
                               : "bg-blue-500/10 text-blue-700 dark:text-blue-400"
                           )}>
-                            <span className="truncate flex items-center gap-1">
+                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
                               <Sun className="w-2.5 h-2.5 shrink-0" />
-                              {tl(`Lh - ${sessions.lunch.count}`, `Tgh - ${sessions.lunch.count}`)}
+                              <span className="truncate">
+                                {tl(`L${sessions.lunch.count}`, `T${sessions.lunch.count}`)}
+                              </span>
                             </span>
-                            <span className="ml-1 text-[9px] shrink-0 font-extrabold">
+                            <span className="text-[9px] shrink-0 font-extrabold">
                               {sessions.lunch.pax}p
                             </span>
                           </div>
@@ -623,31 +627,33 @@ export default function CalendarPage() {
 
                         {hasHiTea && (
                           <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm",
+                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
                             sessions.hi_tea.pax >= 80 
                               ? "bg-rose-600 text-white" 
                               : sessions.hi_tea.pax >= 50 
                               ? "bg-amber-500 text-black font-extrabold" 
                               : "bg-purple-500/10 text-purple-700 dark:text-purple-400"
                           )}>
-                            <span className="truncate flex items-center gap-1">
+                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
                               <Cookie className="w-2.5 h-2.5 shrink-0" />
-                              {tl(`Tea - ${sessions.hi_tea.count}`, `Ptg - ${sessions.hi_tea.count}`)}
+                              <span className="truncate">
+                                {tl(`T${sessions.hi_tea.count}`, `P${sessions.hi_tea.count}`)}
+                              </span>
                             </span>
-                            <span className="ml-1 text-[9px] shrink-0 font-extrabold">
+                            <span className="text-[9px] shrink-0 font-extrabold">
                               {sessions.hi_tea.pax}p
                             </span>
                           </div>
                         )}
 
                         {maxSessionPax >= 50 && (
-                          <div className="pt-0.5 text-center leading-none">
+                          <div className="pt-0.5 text-center leading-none truncate min-w-0 w-full">
                             { isExtremeVolume ? (
-                              <span className="text-[8px] uppercase tracking-wider font-extrabold text-rose-600 dark:text-rose-400 block">
+                              <span className="text-[7.5px] uppercase tracking-wider font-extrabold text-rose-600 dark:text-rose-400 block truncate w-full">
                                 ⚠️ {tl('Delay Warning', 'Awas Lewat')}
                               </span>
                             ) : (
-                              <span className="text-[8px] uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-500 block">
+                              <span className="text-[7.5px] uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-500 block truncate w-full">
                                 ⚠️ {tl('Heavy Load', 'Padat')}
                               </span>
                             )}
