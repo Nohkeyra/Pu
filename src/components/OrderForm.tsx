@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
-import { generateInvoicePDF } from '@/services/pdfService';
 import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 import { AnimatePresence } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
@@ -830,7 +829,20 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       }
 
       const createdOrder: Order = {
-        ...(orderData as Order),
+        // F-DISHES-TYPE (2026-08-18): orderData.dishes holds rich client-side
+        // dish objects ({id, nameEn, nameBm, price, category}) — needed for the
+        // POST body to the server (server normalizes it to string[] before
+        // persisting, see server/routes/orderRoutes.ts). Order.dishes (types.ts)
+        // is typed as string[], so casting orderData straight to Order failed
+        // tsc on the dishes field. Excluding dishes from the cast (via the
+        // destructure below) and setting a normalized string[] version
+        // (mirroring the server's own normalization) fixes the type error
+        // without touching orderData itself.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- dishes is intentionally omitted, not used
+        ...((({ dishes, ...rest }) => rest)(orderData) as Order),
+        dishes: orderState.dishes.map(d =>
+          (language === 'bm' ? d.nameBm : d.nameEn) || d.nameBm || d.nameEn || ''
+        ),
         id: generatedOrderId,
         invoiceNo: finalInvoiceNo,
         prices: resData.prices || orderData.prices || {},
@@ -841,6 +853,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       // Generate Invoice PDF & Mail to customer
       try {
         setEmailStatus('sending');
+        // F-BUNDLE (2026-08-18): pdfService.ts (jsPDF + jspdf-autotable) was
+        // previously a static top-level import, so it shipped inside every
+        // customer's OrderForm bundle even if they never reached this point.
+        // Loading it here, only once an order is actually submitted, keeps
+        // that weight out of the initial order-form chunk for everyone else.
+        const { generateInvoicePDF } = await import('@/services/pdfService');
         const pdfDoc = generateInvoicePDF(createdOrder, false, language);
         const pdfBase64 = (pdfDoc as any).output('datauristring').split(',')[1];
 

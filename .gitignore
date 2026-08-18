@@ -54,4 +54,4 @@ android/app/key.properties
 firebase-service-account.json
 
 # Keep Firebase client configuration for Android
-!android/app/google-services.json
+

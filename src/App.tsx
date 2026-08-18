@@ -9,7 +9,6 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
 import { syncPreferencesToLocalStorage } from './lib/preferences';
-import { preloadLogoForPDF, preloadBatikHeaderForPDF } from './services/pdfService';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
 import { RefreshCw, AlertTriangle, Shield, User, Trash2, Home } from 'lucide-react';
@@ -530,11 +529,19 @@ function App() {
     // Sync Capacitor Preferences to localStorage for synchronous access fallback
     syncPreferencesToLocalStorage();
 
-    // Preload & scale the Restoran Wawasan logo and Batik header for the invoice PDF on idle
+    // Preload & scale the Restoran Wawasan logo and Batik header for the invoice PDF on idle.
+    // F-BUNDLE (2026-08-18): pdfService.ts (jsPDF + jspdf-autotable) was previously a
+    // static top-level import here in App.tsx — the root component every visitor loads
+    // on every route — so it was forced into the main entry bundle regardless of the
+    // requestIdleCallback deferral below (static ESM imports are resolved at build time,
+    // not at call time). Loading it dynamically here keeps it out of the main bundle for
+    // visitors who never place an order.
     const runWhenIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000));
     runWhenIdle(() => {
-      preloadLogoForPDF().catch(err => console.warn('Logo preloading failed:', err));
-      preloadBatikHeaderForPDF().catch(err => console.warn('Batik header preloading failed:', err));
+      import('./services/pdfService').then(({ preloadLogoForPDF, preloadBatikHeaderForPDF }) => {
+        preloadLogoForPDF().catch(err => console.warn('Logo preloading failed:', err));
+        preloadBatikHeaderForPDF().catch(err => console.warn('Batik header preloading failed:', err));
+      }).catch(err => console.warn('pdfService preload import failed:', err));
     });
 
     const hideSplash = async () => {

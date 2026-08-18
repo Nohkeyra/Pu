@@ -256,6 +256,29 @@ router.post('/', createOrderLimiter, async (req, res) => {
     orderData.prices = prices;
     orderData.totalAmount = totalAmount;
 
+    // F-DISHES (2026-08-18): calculateOrderPricing() above needs the rich
+    // client-side dish objects ({id, nameEn, nameBm, price, category}) to
+    // recompute pricing server-side. But `Order.dishes` (src/types.ts) is
+    // typed as string[] and is read as plain strings downstream —
+    // ProfileOrdersTab.tsx does `order.dishes.join(', ')` and
+    // CalendarPage.tsx does `.map((dish, i) => ...)` rendering `dish`
+    // directly as text. Persisting the rich objects as-is under `dishes`
+    // made those screens render "[object Object]" for any order with
+    // selected dishes. Normalize to string[] here, after pricing is done
+    // with the rich objects and before anything is written to Firestore.
+    if (Array.isArray(orderData.dishes)) {
+      const isBm = orderData.lang === 'bm';
+      orderData.dishes = orderData.dishes
+        .map((d: any) => {
+          if (typeof d === 'string') return d;
+          if (d && typeof d === 'object') {
+            return (isBm ? d.nameBm : d.nameEn) || d.nameBm || d.nameEn || '';
+          }
+          return '';
+        })
+        .filter((name: string) => typeof name === 'string' && name.length > 0);
+    }
+
     let orderId: string;
     let isDuplicate = false;
 
