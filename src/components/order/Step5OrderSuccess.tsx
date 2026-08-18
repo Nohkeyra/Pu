@@ -15,6 +15,8 @@ interface OrderState {
   contact: string;
   date: string;
   email: string;
+  mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
+  guests: number;
 }
 
 interface Step5OrderSuccessProps {
@@ -71,7 +73,7 @@ export function Step5OrderSuccess({
         <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
         
         <div className="relative z-10">
-          <div className="w-14 h-14 rounded-full bg-[#A8E10C]/15 text-[#A8E10C] flex items-center justify-center mx-auto mb-3.5 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-deep-forest/15 text-deep-forest flex items-center justify-center mx-auto mb-3.5 shadow-sm">
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <h2 className="text-lg font-bold text-white font-display">
@@ -90,7 +92,7 @@ export function Step5OrderSuccess({
       <div className="bg-muted border border-stone/10 p-5 rounded-2xl text-left space-y-2.5">
         <div className="flex justify-between items-center text-xs">
           <span className="text-stone">{tText('Reference Number:', 'Nombor Rujukan')}</span>
-          <span className="font-bold text-[#A8E10C] text-sm tracking-wider select-all">{referenceNumber}</span>
+          <span className="font-bold text-deep-forest text-sm tracking-wider select-all">{referenceNumber}</span>
         </div>
         <div className="flex justify-between items-center text-xs">
           <span className="text-stone">{tText('PIC Name:', 'Nama')}</span>
@@ -147,7 +149,7 @@ export function Step5OrderSuccess({
 
         <div className="space-y-1.5 text-xs text-stone">
           <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
-            <span className="text-[#A8E10C]">✓</span>
+            <span className="text-deep-forest">✓</span>
             <span>{tText('Preliminary PDF generated', 'Invois PDF dihasilkan')}</span>
           </p>
           
@@ -160,7 +162,7 @@ export function Step5OrderSuccess({
 
           {emailStatus === 'success' && (
             <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
-              <span className="text-[#A8E10C]">✓</span>
+              <span className="text-deep-forest">✓</span>
               <span>{tText(`E-mailed copy successfully to ${orderState.email}`, `Salinan invois emel berjaya dihantar ke ${orderState.email}`)}</span>
             </p>
           )}
@@ -182,9 +184,9 @@ export function Step5OrderSuccess({
       <div className="flex flex-col gap-3 pt-2">
         <Button
           onClick={() => setShowPdfPreviewModal(true)}
-          className="w-full bg-[#A8E10C] hover:bg-[#A8E10C]/90 text-stone-950 h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
+          className="w-full bg-deep-forest hover:bg-deep-forest/90 text-white h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
         >
-          <Eye className="w-5 h-5 text-stone-950" />
+          <Eye className="w-5 h-5 text-white" />
           <span>{tText('Preview & Download PDF Invoice', 'Pratonton & Muat Turun Invois PDF')}</span>
         </Button>
 

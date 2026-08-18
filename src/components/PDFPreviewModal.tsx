@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Order } from '@/types';
 import { getAssetUrl } from '@/lib/utils';
 import { Download, X, CheckCircle, Clock } from 'lucide-react';

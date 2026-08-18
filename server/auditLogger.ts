@@ -11,6 +11,7 @@ export interface LogAuditOptions {
 }
 
 export async function logAuditEvent(options: LogAuditOptions): Promise<void> {
+  const timestamp = new Date().toISOString();
   try {
     const db = getFirestore();
     const ref = db.collection("audit_logs").doc();
@@ -22,12 +23,41 @@ export async function logAuditEvent(options: LogAuditOptions): Promise<void> {
       targetType: options.targetType,
       targetId: options.targetId || "",
       details: options.details || "",
-      timestamp: new Date().toISOString(),
+      timestamp,
       createdAt: FieldValue.serverTimestamp(),
     };
     await runWithRetry(() => ref.set(logDoc));
-    console.log(`[AuditLog] ${options.action} logged for ${options.targetType} (${options.targetId || 'N/A'})`);
+
+    if (process.env.NODE_ENV === "production") {
+      console.log(
+        JSON.stringify({
+          severity: "INFO",
+          component: "AuditLog",
+          action: options.action,
+          targetType: options.targetType,
+          targetId: options.targetId || null,
+          performedBy: options.performedBy,
+          timestamp,
+        })
+      );
+    } else {
+      console.log(`[AuditLog] ${options.action} logged for ${options.targetType} (${options.targetId || 'N/A'})`);
+    }
   } catch (err) {
-    console.warn("[AuditLog] Failed to record audit log:", err);
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        JSON.stringify({
+          severity: "WARNING",
+          component: "AuditLog",
+          action: options.action,
+          targetType: options.targetType,
+          error: errorMsg,
+          timestamp,
+        })
+      );
+    } else {
+      console.warn("[AuditLog] Failed to record audit log:", err);
+    }
   }
 }

@@ -37,6 +37,16 @@ import { getAssetUrl } from '@/lib/utils';
 //   disappearing mid-load (blank screen flash) even on slow networks.
 //   prefers-reduced-motion: skips to hold instantly, exits directly (no logoZoom).
 
+// COLOR PALETTE (2026-08-14 restyle): charcoal (#121214/#1b1b1e), sunshine
+// mustard (#f69913), and crisp-carrot burnt-orange (#e96212) — same 4-color
+// system as the rest of the app. Colors are hardcoded here rather than using
+// Tailwind's bg-charcoal/etc. tokens deliberately: the splash renders before
+// theme context is guaranteed to be initialized (it's the very first thing
+// shown on app launch), so a token that reacts to the .dark class could be
+// unpredictable at that point in the boot sequence. The splash is always
+// dark/branded regardless of the user's light/dark preference, matching the
+// original design intent — only the specific hex values changed.
+//
 export interface SplashScreenProps {
   isLoading: boolean;
   onComplete?: () => void;
@@ -174,7 +184,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       {stage !== 'exit' && stage !== 'logoZoom' && (
         <motion.div
           key="splash-bg"
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#151714] overflow-hidden select-none"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#121214] overflow-hidden select-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -185,8 +195,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="sp-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                  <circle cx="2"  cy="2"  r="1.2" fill="#B4FF39" />
-                  <circle cx="14" cy="14" r="1.2" fill="#FF6A1A" />
+                  <circle cx="2"  cy="2"  r="1.2" fill="#f69913" />
+                  <circle cx="14" cy="14" r="1.2" fill="#e96212" />
                   <circle cx="14" cy="2"  r="0.7" fill="#ffffff" />
                   <circle cx="2"  cy="14" r="0.7" fill="#ffffff" />
                 </pattern>
@@ -203,7 +213,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             type="button"
             onClick={handleSkip}
             aria-label="Langkau skrin percikan"
-            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-white/5 active:scale-95 border border-white/10 text-[10px] font-bold tracking-widest text-white/70 uppercase transition-all duration-500 hover:bg-white/10 hover:text-white pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B4FF39]"
+            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-white/5 active:scale-95 border border-white/10 text-[10px] font-bold tracking-widest text-white/70 uppercase transition-all duration-500 hover:bg-white/10 hover:text-white pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f69913]"
             style={{
               top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))',
               opacity: skipFaded ? 0.25 : 1,
@@ -224,8 +234,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             >
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-sm">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B4FF39] opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#B4FF39]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f69913] opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f69913]" />
                 </span>
                 <span className="text-[10px] font-bold tracking-widest text-white/70 uppercase">
                   {isLoading ? 'Menyediakan' : 'Sedia'}
@@ -284,14 +294,14 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 // CSS-only fallback so a missing /assets/rider-grouped.svg never
                 // produces a blank splash. Simple, on-brand, fully animated.
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative w-40 h-40 rounded-2xl bg-[#2d3436] border-2 border-[#B4FF39]/60 shadow-xl flex items-center justify-center">
+                  <div className="relative w-40 h-40 rounded-2xl bg-[#1b1b1e] border-2 border-[#f69913]/60 shadow-xl flex items-center justify-center">
                     <div className="text-center">
                       <p className="text-[10px] font-black text-white tracking-tight uppercase">Restoran</p>
-                      <p className="text-base font-black text-[#FF6A1A] tracking-tight uppercase mt-0.5">WAWASAN</p>
-                      <div className="w-10 h-[2px] bg-[#B4FF39] mx-auto mt-1 rounded-full" />
+                      <p className="text-base font-black text-[#e96212] tracking-tight uppercase mt-0.5">WAWASAN</p>
+                      <div className="w-10 h-[2px] bg-[#f69913] mx-auto mt-1 rounded-full" />
                       <p className="text-[9px] font-bold text-white/70 tracking-widest uppercase mt-1">Pak Usop</p>
                     </div>
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-[#B4FF39]/60" />
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-2 rounded-full bg-[#f69913]/60" />
                   </div>
                 </div>
               )}
@@ -405,14 +415,14 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           >
             <div className="flex items-center justify-center gap-1.5 text-sm font-semibold tracking-widest text-white/90 uppercase">
               <span>Restoran</span>
-              <span className="text-[#FF6A1A] font-black text-base">WAWASAN</span>
-              <span className="text-[#B4FF39] font-bold">Pak Usop</span>
+              <span className="text-[#e96212] font-black text-base">WAWASAN</span>
+              <span className="text-[#f69913] font-bold">Pak Usop</span>
             </div>
 
-            <div className="w-44 h-[2.5px] bg-[#1F2320] rounded-full mx-auto mt-2 overflow-hidden">
+            <div className="w-44 h-[2.5px] bg-[#1b1b1e] rounded-full mx-auto mt-2 overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: 'linear-gradient(90deg,#FF6A1A,#B4FF39)', transformOrigin: 'left' }}
+                style={{ background: 'linear-gradient(90deg,#e96212,#f69913)', transformOrigin: 'left' }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: showTitle ? 1 : 0 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
@@ -437,7 +447,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       {(stage === 'logoZoom' || stage === 'exit') && (
         <motion.div
           key="logo-zoom"
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#151714]"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#121214]"
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -465,9 +475,9 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           />
           {badgeError && (
             <div className="text-center">
-              <p className="text-2xl font-black text-[#FF6A1A] tracking-tight">RESTORAN</p>
+              <p className="text-2xl font-black text-[#e96212] tracking-tight">RESTORAN</p>
               <p className="text-3xl font-black text-white tracking-tight">WAWASAN</p>
-              <p className="text-sm text-[#B4FF39] font-semibold tracking-widest uppercase mt-1">Est. 1986</p>
+              <p className="text-sm text-[#f69913] font-semibold tracking-widest uppercase mt-1">Est. 1986</p>
             </div>
           )}
         </motion.div>

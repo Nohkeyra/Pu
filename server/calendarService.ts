@@ -38,11 +38,18 @@ export function getGoogleCalendarClient() {
   }
 }
 
-export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?: OrderData) {
+export interface CalendarSyncResult {
+  success: boolean;
+  eventId?: string;
+  error?: string;
+  skipped?: boolean;
+}
+
+export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?: OrderData): Promise<CalendarSyncResult> {
   try {
     const calendar = getGoogleCalendarClient();
     if (!calendar) {
-      return;
+      return { success: false, skipped: true, error: "Calendar client unconfigured" };
     }
 
     let orderData: OrderData | undefined = passedOrderData;
@@ -56,13 +63,11 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       } catch (dbErr) {
         console.warn(`Firestore sync load failed for order ${orderId}:`, dbErr);
       }
-
-
     }
 
     if (!orderData) {
       console.warn(`Sync Google Calendar Event: Order ${orderId} not found.`);
-      return;
+      return { success: false, error: `Order ${orderId} not found` };
     }
 
     let startDateTime: Date;
@@ -120,7 +125,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
           },
         });
         console.log(`Google Calendar event ${existingEventId} updated successfully for status ${statusLabel}.`);
-        return;
+        return { success: true, eventId: existingEventId };
       } catch (updateErr) {
         const errObj = updateErr as { status?: number; message?: string };
         if (errObj && (errObj.status === 404 || (errObj.message && errObj.message.includes('Not Found')))) {
@@ -163,7 +168,10 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       try {
         const adminDb = getFirestore();
         await adminDb.collection("orders").doc(orderId).update({
-          calendarEventIds: updatedCalendarEventIds
+          calendarEventIds: updatedCalendarEventIds,
+          calendarSyncStatus: "synced",
+          calendarSyncError: null,
+          calendarSyncedAt: new Date().toISOString(),
         });
         console.log(`Firestore updated with calendarEventIds for order ${orderId}`);
       } catch (dbErr) {
@@ -184,11 +192,26 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       } catch (localErr) {
         console.error("Failed to update local orders with calendarEventIds:", localErr);
       }
+
+      return { success: true, eventId };
     }
+
+    return { success: false, error: "No event ID returned from Calendar API" };
   } catch (err: any) {
-    console.error(`[Calendar Error] Sync failed for order ${orderId}:`, err.message || err);
-    if (err.response && err.response.data) {
+    const errorMsg = err?.message || String(err);
+    console.error(`[Calendar Error] Sync failed for order ${orderId}:`, errorMsg);
+    if (err?.response && err?.response.data) {
       console.error('Calendar API Error Details:', JSON.stringify(err.response.data, null, 2));
     }
+    try {
+      const adminDb = getFirestore();
+      await adminDb.collection("orders").doc(orderId).update({
+        calendarSyncStatus: "failed",
+        calendarSyncError: errorMsg,
+      });
+    } catch {
+      // ignore
+    }
+    return { success: false, error: errorMsg };
   }
 }

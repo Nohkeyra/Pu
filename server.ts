@@ -27,25 +27,32 @@ const ALLOWED_ORIGINS = [
   'capacitor://localhost',
   'http://localhost',
   'https://localhost',
+  ...(process.env.ADDITIONAL_ALLOWED_ORIGINS
+    ? process.env.ADDITIONAL_ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+    : []),
 ];
 
-const TRUSTED_ORIGIN_SUFFIXES = ['.run.app', '.ai.studio', '.google.com'];
-const TRUSTED_ORIGIN_HOSTS = ['run.app', 'ai.studio', 'google.com'];
-
 function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return true;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
 
-  let hostname: string;
+  let parsed: URL;
   try {
-    hostname = new URL(origin).hostname.toLowerCase();
+    parsed = new URL(origin);
   } catch {
     return false;
   }
 
-  if (TRUSTED_ORIGIN_HOSTS.includes(hostname)) return true;
-  if (TRUSTED_ORIGIN_SUFFIXES.some(suffix => hostname.endsWith(suffix))) return true;
+  const hostname = parsed.hostname.toLowerCase();
 
-  if (/^https:\/\/ais-(dev|pre)-[a-z0-9-]+\.asia-southeast1\.run\.app$/.test(origin)) return true;
+  // All AI Studio sandboxes, preview environments & Cloud Run instances
+  if (hostname.endsWith('.run.app')) return true;
+  if (hostname === 'aistudio.google.com' || hostname.endsWith('.aistudio.google.com') || hostname === 'ai.studio' || hostname.endsWith('.ai.studio')) return true;
+  if (hostname.endsWith('.google.com') || hostname.endsWith('.web.app') || hostname.endsWith('.firebaseapp.com')) return true;
+
+  // Local development / Capacitor / testing
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+
   return false;
 }
 
@@ -69,9 +76,10 @@ async function startServer() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (isAllowedOrigin(origin)) return callback(null, true);
-        callback(new Error(`CORS: origin '${origin}' not allowed`));
+        if (!origin || isAllowedOrigin(origin)) {
+          return callback(null, true);
+        }
+        return callback(null, false);
       },
       credentials: true,
     })

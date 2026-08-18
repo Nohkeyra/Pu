@@ -27,7 +27,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { getApiUrl } from '@/lib/api';
-import { InvoicePreviewModal } from '@/components/InvoicePreviewModal';
+import { PDFPreviewModal } from '@/components/PDFPreviewModal';
 
 import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
@@ -202,8 +202,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     }
   };
 
-  const handleAddLocation = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddLocation = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!currentUser || !newLocationLabel.trim() || !newLocationAddress.trim()) return;
 
     let updatedList: SavedLocation[];
@@ -854,7 +854,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {combineModal}
         {confirmModal}
         {previewOrder && (
-          <InvoicePreviewModal
+          <PDFPreviewModal
             isOpen={!!previewOrder}
             onClose={() => setPreviewOrder(null)}
             order={previewOrder}
@@ -899,7 +899,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       {combineModal}
       {confirmModal}
       {previewOrder && (
-        <InvoicePreviewModal
+        <PDFPreviewModal
           isOpen={!!previewOrder}
           onClose={() => setPreviewOrder(null)}
           order={previewOrder}

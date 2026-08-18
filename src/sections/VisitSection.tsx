@@ -141,7 +141,7 @@ export default function VisitSection() {
           {/* Right Column: Map */}
           <motion.div 
             variants={itemVariants}
-            className="relative aspect-square md:aspect-video lg:aspect-auto lg:h-[600px] rounded-[32px] overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl"
+            className="relative w-full h-[280px] sm:h-[340px] md:h-[380px] lg:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-xl"
           >
             <iframe 
               src="https://maps.google.com/maps?q=Unit%203,%20Level%20B3,%20Restoran%20Wawasan%20Pak%20Usop,%20Menara%20PjH,%20Jalan%20P2a,%20Presint%202,%2062100%20Putrajaya&t=&z=16&ie=UTF8&iwloc=&output=embed" 
@@ -156,14 +156,18 @@ export default function VisitSection() {
             />
             
             {/* Map Overlay Card */}
-            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl hidden sm:block">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-[var(--color-sunshine-cta)] rounded-xl">
-                  <MapPin className="w-5 h-5 text-deep-forest" />
+            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3 sm:p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/20 shadow-md hidden sm:block">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[var(--color-sunshine-cta)] rounded-lg sm:rounded-xl shrink-0">
+                  <MapPin className="w-4 h-4 text-deep-forest" />
                 </div>
-                <div>
-                  <p className="microcopy-12-upper uppercase tracking-widest font-bold text-[var(--color-sunshine-cta)] mb-0.5">Found us at</p>
-                  <p className="text-sm font-bold text-deep-forest dark:text-white">Unit 3, Level B3, Menara PjH, Putrajaya</p>
+                <div className="min-w-0">
+                  <p className="microcopy-12-upper uppercase tracking-widest font-bold text-[var(--color-sunshine-cta)] mb-0.5">
+                    {isBm ? 'Lokasi Kami' : 'Find Us At'}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold text-deep-forest dark:text-white truncate">
+                    Unit 3, Level B3, Menara PjH, Putrajaya
+                  </p>
                 </div>
               </div>
             </div>

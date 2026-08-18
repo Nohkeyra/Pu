@@ -431,6 +431,7 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.text('JUMLAH KESELURUHAN / GRAND TOTAL', 18, currentY + 4.8);
 
   const totalAmountNum = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount as unknown as string) || 0;
+  const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 1;
 
   const mealCount = order?.meals?.length || 1;
   const minPricePerPaxTotal = 12 * mealCount;

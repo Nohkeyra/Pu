@@ -147,7 +147,7 @@ function LeafletMapContainer({
       .bindPopup(`<b>Catering Delivery Point</b><br>${locationString}`);
 
     let active = true;
-    let animationInterval: NodeJS.Timeout | null = null;
+    let animationInterval: ReturnType<typeof setInterval> | null = null;
 
     const computeOSRMRoute = async () => {
       try {

@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.wawasanpakusop.app',
   appName: 'Wawasan Pak Usop',
-  webDir: 'dist/client',
+  webDir: 'dist',
   server: {
     androidScheme: 'https'
   },

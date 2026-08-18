@@ -93,7 +93,7 @@ export interface Order {
   orderId?: string;
   officialInvoiceNo?: string;
   lang?: 'en' | 'bm';
-  status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected';
+  status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected' | 'in_transit' | 'delivered';
   rejectionReason?: string;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
   updatedAt?: { seconds: number; nanoseconds: number } | string | Date;

@@ -1025,7 +1025,7 @@ export function AdminTablesTab({
                             </AnimatePresence>
 
                             <button
-                              onClick={() => setOpenActionRowId(openActionRowId === order.id ? null : order.id)}
+                              onClick={() => setOpenActionRowId(openActionRowId === order.id ? null : (order.id || null))}
                               className={`p-2 rounded-full transition-all duration-300 ${
                                 openActionRowId === order.id 
                                   ? 'bg-stone/10 text-deep-forest dark:text-white' 

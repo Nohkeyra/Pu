@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import React from 'react'
-// useState added below;
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'motion/react';
 import { format } from 'date-fns';
 import { 
@@ -26,21 +24,7 @@ import {
 } from '@/components/ui/select';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { cn, getAssetUrl } from '@/lib/utils';
-
-interface OrderState {
-  eventType: 'pejabat' | 'lain' | '';
-  companyName: string;
-  customCompany: string;
-  name: string;
-  contact: string;
-  email: string;
-  confirmEmail: string;
-  date: string;
-  time: string;
-  location: string;
-  delivery: 'delivery' | 'pickup' | '';
-  notes: string;
-}
+import type { OrderState } from '@/hooks/useOrderWizard';
 
 interface SavedLocation {
   id: string;
@@ -50,13 +34,13 @@ interface SavedLocation {
 
 interface Step3ContactDetailsProps {
   orderState: OrderState;
-  setOrderState: React.Dispatch<React.SetStateAction<any>>;
+  setOrderState: Dispatch<SetStateAction<OrderState>>;
   isProfileLoading: boolean;
   savedLocations: SavedLocation[];
   isDetectingLocation: boolean;
   handleDetectLocation: () => Promise<void> | void;
   handleStepNext: (step: number) => Promise<void> | void;
-  setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
+  setCurrentStep: Dispatch<SetStateAction<number>>;
   triggerLightImpact: () => Promise<void> | void;
   tText: (en: string, bm: string) => string;
   t: (key: string) => string;

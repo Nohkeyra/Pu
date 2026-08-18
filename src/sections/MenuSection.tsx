@@ -97,7 +97,7 @@ export default function MenuSection() {
               >
                 <div className="aspect-[4/3] overflow-hidden relative">
                   <ResponsiveImage
-                    src={item.image}
+                    src={item.image || ''}
                     alt={isBm ? item.nameBm : item.nameEn}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     containerClassName="w-full h-full"

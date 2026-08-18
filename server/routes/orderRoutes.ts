@@ -290,6 +290,7 @@ router.post('/', createOrderLimiter, async (req, res) => {
     };
 
     if (!isDuplicate) {
+      invalidateCalendarSessionsCache();
       syncGoogleCalendarEvent(orderId, initialOrderData).catch(err => {
         console.error('[Calendar] Auto-sync initial pending status failed:', err);
       });
@@ -351,6 +352,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       }
 
       const updatedOrderForCalendar = { ...oldData, ...updates, id: orderId };
+      invalidateCalendarSessionsCache();
       syncGoogleCalendarEvent(orderId, updatedOrderForCalendar).catch(err => {
         console.error('[Calendar] Auto-sync on order update failed:', err);
       });
@@ -360,6 +362,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
     if (action === 'delete' && orderId) {
       await db.collection('orders').doc(orderId).delete();
+      invalidateCalendarSessionsCache();
       return res.json({ success: true });
     }
 
@@ -403,6 +406,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
     }
 
     const mergedOrderData = { ...oldData, ...updates, id: orderId, status };
+    invalidateCalendarSessionsCache();
     syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
       console.error('[Calendar] Failed to auto-sync calendar event on PATCH status:', err);
     });
@@ -441,6 +445,8 @@ router.post('/cancel', customerOrderActionLimiter, async (req, res) => {
 
     await orderRef.update(updates);
     const mergedOrderData = { ...oldData, ...updates, id: orderId, status: 'cancel_requested' };
+
+    invalidateCalendarSessionsCache();
 
     const transporter = createBrevoTransporter();
     const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
@@ -483,6 +489,7 @@ router.post('/delete', customerOrderActionLimiter, async (req, res) => {
     }
 
     await orderRef.delete();
+    invalidateCalendarSessionsCache();
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
@@ -627,7 +634,11 @@ const calendarSessionsLimiter = rateLimit({
 });
 
 let calendarSessionsCache: { data: Record<string, unknown>; expiresAt: number } | null = null;
-const CALENDAR_SESSIONS_CACHE_TTL_MS = 2 * 60 * 1000;
+const CALENDAR_SESSIONS_CACHE_TTL_MS = 3 * 60 * 1000;
+
+export function invalidateCalendarSessionsCache(): void {
+  calendarSessionsCache = null;
+}
 
 router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
   try {

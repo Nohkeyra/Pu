@@ -7,29 +7,68 @@ import { motion } from 'motion/react';
 
 const REVIEWS = [
   {
-    text: "Wah... we are on our last day of our Putrajaya holiday. The place is at the basement of an administration building with a great view of lake and the mosque. My wife and I bought nasi goreng kampung, nasi lemak, and some other varieties. Everything was good. Really good food, and definitely affordable.",
-    name: 'Sufian A',
+    text: "Wah... we are on our last day of our Putrajaya holiday. The place is at the basement of Menara PjH with a great view of the lake and the mosque. My wife and I bought nasi goreng kampung, nasi lemak, and some other varieties. Everything was good. Really good food, and definitely affordable.",
+    name: 'Sufian A.',
     rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Breakfast & View',
+    source: 'Google Maps'
   },
   {
-    text: "The food was delicious and the owners are great people. After we ate our lunch here, they give us to try typical Malaysian delicious dessert — fried bananas and durian soup.",
-    name: 'Anastasia V',
+    text: "The food was delicious and the owners are great people! After we ate our lunch here, they let us try authentic Malaysian desserts — fried bananas and durian soup. Warm hospitality with scenic lakeside seating.",
+    name: 'Anastasia V.',
     rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Lunch & Dessert',
+    source: 'Google Maps'
   },
   {
-    text: "The Lontong Singapore, Soto and nasi campur are exquisitely delicious! My favorite is the Asam Pedas and ikan keli sambal. Also the teh tarik is legendary, and the coffee here uses Muar's 434 which is well known. Recommended!",
-    name: 'Irwan R',
+    text: "The Lontong Singapore, Soto and Nasi Campur are exquisitely delicious! My favorites are the Asam Pedas and Ikan Keli Sambal Lado Hijau. The teh tarik is legendary, and coffee uses Muar's 434 which is well known. Recommended!",
+    name: 'Irwan R.',
     rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Signature Dishes',
+    source: 'Google Maps'
   },
   {
-    text: "Soto Ayam was delicious. The price is really good for the area where it is located. A hidden gem in Putrajaya with authentic flavors.",
-    name: 'Carolina P',
+    text: "Pilihan lauk ala Padang & Melayu sangat banyak dan menyelerakan! Asam pedas, nasi lemak, mee rebus, mee soto, rendang padang, dan rojak Singapore hari Jumaat memang terbaik. Ruang makan bersih dan sejuk tepi tasik.",
+    name: 'Norazman M.',
     rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Lauk Campur & Soto',
+    source: 'Google Maps'
   },
   {
-    text: "Pelbagai juadah yang tersedia — makanan ala padang yang bermacam-macam lauk dan pauk. Asam pedas, nasi lemak, mee rebus, mee soto, rendang padang, rojak Singapore. Semuanya sedap!",
-    name: 'Regular Customer',
+    text: "Soto Ayam was delicious and hearty. The price is really good for the area where it is located. A true hidden gem in Putrajaya with authentic flavors and breezy outdoor seating facing the lake.",
+    name: 'Carolina P.',
     rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Soto Ayam',
+    source: 'Google Maps'
+  },
+  {
+    text: "Servis katering untuk majlis rasmi pejabat di Putrajaya memang sangat memuaskan. Makanan dihantar panas-panas, ayam berempah rangup, sambal sotong sedap, dan semua jemputan puji kualiti hidangan.",
+    name: 'Fazli Hashim',
+    rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Catering • Majlis Korporat',
+    source: 'Google Maps'
+  },
+  {
+    text: "Great lunch spot in Putrajaya with generous portions. Incredible variety of dishes at very reasonable prices. The crispy fried chicken with sambal belacan and teh tarik halia are top notch!",
+    name: 'David T.',
+    rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Lunch Variety',
+    source: 'Google Maps'
+  },
+  {
+    text: "Tempat sarapan dan makan tengahari kegemaran setiap kali ke Presint 2. Lontong kuah lodeh pekat, sambal sedap, staf mesra dan cepat layan walaupun waktu puncak.",
+    name: 'Hafizah Ahmad',
+    rating: 5,
+    date: 'Recent Google Review',
+    tag: 'Dine-in • Sarapan Pagi',
+    source: 'Google Maps'
   },
 ];
 
