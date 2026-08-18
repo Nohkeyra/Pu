@@ -64,7 +64,10 @@ export default function BottomNavigation() {
   if (!showNav) return null;
 
   return (
-    <div
+    <motion.div
+      initial={{ y: 24, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 28 }}
       className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/10 bg-white/95 shadow-[0_-12px_30px_rgba(2,51,65,0.08)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
       style={{
         paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 6px)',
@@ -79,8 +82,9 @@ export default function BottomNavigation() {
           const Icon = tab.icon;
 
           return (
-            <button
+            <motion.button
               key={tab.id}
+              whileTap={{ scale: 0.93 }}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
               onClick={() => {
@@ -95,7 +99,7 @@ export default function BottomNavigation() {
                 navigate(tab.path);
               }}
               className={cn(
-                'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-2 select-none',
+                'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-2 select-none cursor-pointer',
                 isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-white'
               )}
             >
@@ -103,28 +107,38 @@ export default function BottomNavigation() {
                 {isActive && (
                   <motion.div
                     layoutId="activeTabPill"
-                    className="absolute inset-0 rounded-full border border-[var(--color-sunshine-cta)]/25 bg-[var(--color-sunshine-cta)]/12 dark:bg-[var(--color-sunshine-cta)]/18"
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    className="absolute inset-0 rounded-full border border-[var(--color-sunshine-cta)]/25 bg-[var(--color-sunshine-cta)]/12 dark:bg-[var(--color-sunshine-cta)]/18 shadow-[0_2px_12px_rgba(246,153,19,0.15)]"
+                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                   />
                 )}
-                <Icon className={cn('relative z-10 h-5 w-5 transition-transform duration-200', isActive ? 'scale-110' : 'group-hover:scale-105')} />
+                <motion.div
+                  initial={false}
+                  animate={isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 480, damping: 26 }}
+                  className="relative z-10 flex items-center justify-center"
+                >
+                  <Icon className="h-5 w-5" />
+                </motion.div>
               </div>
 
-              <span
+              <motion.span
+                initial={false}
+                animate={isActive ? { y: 0, opacity: 1 } : { y: 1, opacity: 0.85 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
                 className={cn(
-                  'nav-label relative z-10 transition-colors duration-200',
+                  'nav-label relative z-10 transition-colors duration-200 text-[11px] leading-none',
                   isActive
-                    ? 'nav-label-active text-[var(--color-sunshine-cta)] font-semibold'
-                    : 'nav-label-inactive text-deep-forest/85 dark:text-white/85'
+                    ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
+                    : 'nav-label-inactive text-deep-forest/80 dark:text-white/80 font-medium'
                 )}
               >
                 {tab.label}
-              </span>
-            </button>
+              </motion.span>
+            </motion.button>
           );
         })}
       </nav>
-    </div>
+    </motion.div>
   );
 }
 

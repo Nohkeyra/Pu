@@ -10,6 +10,7 @@ import {
   Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
@@ -275,7 +276,7 @@ export function OrderDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-5 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-sm flex flex-wrap gap-3 items-center justify-end flex-shrink-0" id="order-detail-footer">
+        <ResponsiveButtonGroup stackOnMobile={true} className="px-6 py-5 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-sm justify-end" id="order-detail-footer">
           {selectedOrder && (
             <div className="flex flex-wrap gap-2 flex-1">
               {selectedOrder?.status === 'cancel_requested' ? (
@@ -363,7 +364,7 @@ export function OrderDetailModal({
           >
             {t('close')}
           </Button>
-        </div>
+        </ResponsiveButtonGroup>
       </motion.div>
     </div>,
     document.body

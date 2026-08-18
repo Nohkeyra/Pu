@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -365,7 +366,7 @@ export function Step3ContactDetails({
       )}
 
       {/* Buttons Navigation */}
-      <div className="flex gap-3">
+      <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button
           onClick={async () => { await triggerLightImpact(); setCurrentStep(2); }}
           variant="outline"
@@ -381,7 +382,7 @@ export function Step3ContactDetails({
           {tText('Next: Review', 'Seterusnya: Semak')}
           <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
-      </div>
+      </ResponsiveButtonGroup>
     </motion.div>
   );
 }

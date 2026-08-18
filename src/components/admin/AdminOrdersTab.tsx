@@ -185,12 +185,25 @@ export function AdminOrdersTab({
       )}
 
       {/* Balanced toolbar */}
-      <div className="mb-5 bg-white dark:bg-card border border-[#EDE4D7] dark:border-stone-800 rounded-[24px] p-4 shadow-sm space-y-3">
-        {/* Primary controls */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
-          {/* Date range */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex-1 md:flex-none flex items-center gap-2 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl px-3.5 h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
+      <div className="mb-5 bg-white dark:bg-card border border-[#EDE4D7] dark:border-stone-800 rounded-[24px] p-4 sm:p-5 shadow-sm space-y-4">
+        {/* Row 1: Search, Date range, and Primary action buttons */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" aria-hidden />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
+              aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
+              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-2xl border border-[#EDE4D7] dark:border-stone-800 bg-[#F7F2EA]/60 dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
+            />
+          </div>
+
+          {/* Date range picker group */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl px-3.5 h-11 min-h-[44px]">
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
                 {language === 'bm' ? 'Dari' : 'From'}
               </span>
@@ -199,7 +212,7 @@ export function AdminOrdersTab({
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
                 onChange={(e) => setDateFromFilter(e.target.value)}
-                className="w-full md:w-[8.5rem] min-w-0 bg-transparent text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                className="w-full sm:w-[8.2rem] min-w-0 bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
               />
               <span className="text-stone-300 dark:text-stone-600 shrink-0">–</span>
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
@@ -210,13 +223,13 @@ export function AdminOrdersTab({
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
                 onChange={(e) => setDateToFilter(e.target.value)}
-                className="w-full md:w-[8.5rem] min-w-0 bg-transparent text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                className="w-full sm:w-[8.2rem] min-w-0 bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
               />
             </div>
             {(dateFromFilter || dateToFilter) && (
               <button
                 onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
-                className="h-11 w-11 md:h-10 md:w-10 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-2xl border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0"
+                className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-2xl border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
                 title={language === 'bm' ? 'Reset' : 'Reset'}
               >
                 <X className="w-4 h-4" />
@@ -224,22 +237,9 @@ export function AdminOrdersTab({
             )}
           </div>
 
-          {/* Search */}
-          <div className="relative w-full md:w-56 lg:w-64 order-first md:order-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" aria-hidden />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
-              aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
-              className="w-full h-11 md:h-10 min-h-[44px] md:min-h-[40px] pl-9 pr-3 rounded-2xl border border-[#EDE4D7] dark:border-stone-800 bg-[#F7F2EA]/60 dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40"
-            />
-          </div>
-
-          {/* Primary actions */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2.5 px-3.5 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
+          {/* Primary actions toolbar */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-11 min-h-[44px]">
               <Switch
                 id="select-mode-toggle"
                 checked={isSelectMode}
@@ -248,7 +248,7 @@ export function AdminOrdersTab({
                   if (!checked) setSelectedOrderIds(new Set());
                 }}
               />
-              <label htmlFor="select-mode-toggle" className="text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+              <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
                 {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
               </label>
             </div>
@@ -257,17 +257,17 @@ export function AdminOrdersTab({
               variant="default"
               size="default"
               onClick={() => setIsExportOpen(true)}
-              className="h-11 md:h-10 min-h-[44px] md:min-h-[40px] font-bold flex items-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-2xl"
+              className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-2xl cursor-pointer transition-all active:scale-[0.98]"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              {language === 'bm' ? 'Eksport' : 'Export'}
+              <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
             </Button>
           </div>
         </div>
 
-        {/* Status filter chips */}
+        {/* Row 2: Status filter chips (Clean horizontal scroll on mobile, wrap on tablet/desktop) */}
         {setStatusFilter && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-1 border-t border-[#EDE4D7]/70 dark:border-stone-800/70">
             {[
               { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
               { id: 'pending', label: language === 'bm' ? 'Menunggu' : 'Pending' },
@@ -283,10 +283,10 @@ export function AdminOrdersTab({
                   type="button"
                   onClick={() => setStatusFilter(chip.id)}
                   aria-pressed={active}
-                  className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all ${
+                  className={`h-9 min-h-[36px] px-4 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center justify-center cursor-pointer select-none ${
                     active
-                      ? 'bg-[#f69913] text-white border-[#f69913] shadow-[0_4px_14px_rgba(246,153,19,0.35)]'
-                      : 'bg-[#F7F2EA]/60 dark:bg-background/50 text-[#0c453c]/70 dark:text-stone-300 border-[#EDE4D7] dark:border-stone-800 hover:border-[#f69913]/50'
+                      ? 'bg-[#f69913] text-white border-[#f69913] shadow-[0_3px_10px_rgba(246,153,19,0.3)]'
+                      : 'bg-[#F7F2EA]/60 dark:bg-background/50 text-[#0c453c]/70 dark:text-stone-300 border-[#EDE4D7] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
                   }`}
                 >
                   {chip.label}
@@ -296,16 +296,16 @@ export function AdminOrdersTab({
           </div>
         )}
 
-        {/* Selection tools — only when Select Mode is on */}
+        {/* Row 3: Selection tools — only when Select Mode is on */}
         {isSelectMode && (
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#EDE4D7] dark:border-stone-800">
-            <div className="flex items-center gap-2.5 px-3.5 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-11 md:h-10 min-h-[44px] md:min-h-[40px]">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#EDE4D7] dark:border-stone-800">
+            <div className="flex items-center gap-2.5 px-3.5 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-10 min-h-[40px]">
               <Switch
                 id="email-filter-toggle"
                 checked={filterBySameEmail}
                 onCheckedChange={(checked) => setFilterBySameEmail?.(checked)}
               />
-              <label htmlFor="email-filter-toggle" className="text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+              <label htmlFor="email-filter-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
                 {language === 'bm' ? 'Emel Sama' : 'Same Email'}
               </label>
             </div>
@@ -341,7 +341,7 @@ export function AdminOrdersTab({
                   }
                   setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                 }}
-                className="h-11 md:h-10 min-h-[44px] md:min-h-[40px] border-[#EDE4D7] dark:border-stone-800 font-semibold rounded-2xl text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
+                className="h-10 min-h-[40px] border-[#EDE4D7] dark:border-stone-800 font-semibold rounded-2xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
               >
                 {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
                   <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>

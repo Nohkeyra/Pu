@@ -6,6 +6,7 @@ import {
   ArrowLeft 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { getAssetUrl } from '@/lib/utils';
 
 interface Dish {
@@ -248,7 +249,7 @@ export function Step4ReviewSubmit({
       )}
 
       {/* Submitting Actions */}
-      <div className="flex gap-3">
+      <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button
           onClick={async () => { await triggerLightImpact(); setCurrentStep(3); }}
           disabled={isSubmitting}
@@ -275,7 +276,7 @@ export function Step4ReviewSubmit({
             </>
           )}
         </Button>
-      </div>
+      </ResponsiveButtonGroup>
     </motion.div>
   );
 }

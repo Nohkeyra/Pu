@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PageShell from '@/components/PageShell';
 import AuthModal from '@/components/AuthModal';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import type { Order } from '@/types';
 
 interface CalendarNote {
@@ -456,47 +457,64 @@ export default function CalendarPage() {
         backHref="/home"
         actions={todayAction}
       >
-        <div className="w-full space-y-6 pb-20">
-          {/* Month Controller */}
-          <div className="flex items-center justify-between bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-3 sm:p-4 rounded-xl shadow-sm">
-            <button
-              onClick={handlePrevMonth}
-              className="p-2 rounded-lg border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors"
-              title={tl('Previous Month', 'Bulan Sebelumnya')}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+        <div className="w-full space-y-5 pb-20">
+          {/* Month Controller & Quick Action Toolbar */}
+          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 p-3 sm:p-4 rounded-2xl shadow-sm">
+            <ResponsiveButtonGroup align="between">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors cursor-pointer select-none active:scale-95"
+                    title={tl('Previous Month', 'Bulan Sebelumnya')}
+                    aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
 
-            <h3 className="font-display font-extrabold text-base sm:text-lg text-deep-forest dark:text-white capitalize">
-              {format(currentDate, 'MMMM yyyy')}
-            </h3>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors cursor-pointer select-none active:scale-95"
+                    title={tl('Next Month', 'Bulan Seterusnya')}
+                    aria-label={tl('Next Month', 'Bulan Seterusnya')}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
 
-            <button
-              onClick={handleNextMonth}
-              className="p-2 rounded-lg border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors"
-              title={tl('Next Month', 'Bulan Seterusnya')}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+                <h3 className="font-display font-extrabold text-base sm:text-lg text-deep-forest dark:text-white capitalize tracking-tight">
+                  {format(currentDate, 'MMMM yyyy')}
+                </h3>
+              </div>
+
+              {/* Quick Actions (Today Button & Sync Indicator) */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  onClick={handleToday}
+                  className="w-full sm:w-auto text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-850/60 text-deep-forest dark:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer select-none active:scale-95 shadow-sm min-h-[44px]"
+                >
+                  {tl('Today', 'Hari Ini')}
+                </button>
+              </div>
+            </ResponsiveButtonGroup>
           </div>
 
-
-          {/* Status legend — clearer colour meaning */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 text-xs font-semibold text-stone-600 dark:text-stone-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden />
+          {/* Status legend — clearer colour meaning & balanced pill alignment */}
+          <div className="flex items-center justify-start gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap text-xs font-semibold text-stone-600 dark:text-stone-300 scrollbar-none px-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-amber-500" aria-hidden />
               {tl('Pending', 'Menunggu')}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" aria-hidden />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden />
               {tl('Approved', 'Diluluskan')}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" aria-hidden />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-blue-500" aria-hidden />
               {tl('Billed', 'Dibilkan')}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-stone-400" aria-hidden />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-500/10 text-stone-700 dark:text-stone-300 border border-stone-500/20 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-stone-400" aria-hidden />
               {tl('Notes', 'Nota')}
             </span>
           </div>

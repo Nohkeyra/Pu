@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn, getAssetUrl } from '@/lib/utils';
@@ -403,7 +404,7 @@ export function Step2DishSelection({
       {fieldError && <FormError message={fieldError} />}
 
       {/* Buttons Navigation */}
-      <div className="flex gap-3">
+      <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button
           onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
           variant="outline"
@@ -419,7 +420,7 @@ export function Step2DishSelection({
           {tText('Next: Details', 'Seterusnya: Butiran')}
           <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
-      </div>
+      </ResponsiveButtonGroup>
     </motion.div>
   );
 }

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
 import { Switch } from '@/components/ui/switch';
+import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { invalidateFetchCache } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 
@@ -692,18 +693,18 @@ export default function AdminMenuTab({
               </div>
 
               {/* Footer Buttons */}
-              <div className="flex justify-end gap-2 pt-3 border-t border-stone-200 dark:border-stone-800">
+              <ResponsiveButtonGroup stackOnMobile={false} className="justify-end pt-3 border-t border-stone-200 dark:border-stone-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 h-9 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 font-semibold text-xs rounded-lg transition-colors"
+                  className="px-3.5 h-9 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                 >
                   {tText('Cancel', 'Batal')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot disabled:opacity-50 text-deep-forest px-4 h-9 font-bold text-xs rounded-lg shadow-sm transition-all"
+                  className="flex items-center justify-center gap-1.5 bg-sunshine hover:bg-crisp-carrot disabled:opacity-50 text-deep-forest px-4 h-9 font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
                 >
                   {isSaving ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -712,7 +713,7 @@ export default function AdminMenuTab({
                   )}
                   <span>{tText('Save', 'Simpan')}</span>
                 </button>
-              </div>
+              </ResponsiveButtonGroup>
             </form>
           </div>
         </div>

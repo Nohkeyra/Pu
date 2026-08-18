@@ -590,65 +590,71 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b border-stone/15 dark:border-white/10 bg-card px-4 gap-1.5 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('orders')}
-          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
-            activeTab === 'orders'
-              ? 'border-crisp-carrot text-crisp-carrot'
-              : 'border-transparent text-stone hover:text-deep-forest'
-          }`}
-        >
-          <History className="w-4 h-4" />
-          <span>{t('Orders', 'Tempahan')}</span>
-          {orders.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-crisp-carrot/10 text-crisp-carrot font-mono">
-              {orders.length}
-            </span>
-          )}
-        </button>
+      {/* Tab Navigation Segmented Bar */}
+      <div className="px-4 pt-2 pb-1 bg-card">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-stone-100/90 dark:bg-stone-850/80 rounded-2xl border border-stone-200/70 dark:border-stone-800/70">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={cn(
+              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              activeTab === 'orders'
+                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+            )}
+          >
+            <History className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('Orders', 'Tempahan')}</span>
+            {orders.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-crisp-carrot/15 text-crisp-carrot font-mono shrink-0 font-bold">
+                {orders.length}
+              </span>
+            )}
+          </button>
 
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
-            activeTab === 'profile'
-              ? 'border-crisp-carrot text-crisp-carrot'
-              : 'border-transparent text-stone hover:text-deep-forest'
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          <span>{t('Billing Profile', 'Profil Pengebilan')}</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={cn(
+              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              activeTab === 'profile'
+                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+            )}
+          >
+            <Sliders className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('Billing Profile', 'Profil Bil')}</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('locations')}
-          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
-            activeTab === 'locations'
-              ? 'border-crisp-carrot text-crisp-carrot'
-              : 'border-transparent text-stone hover:text-deep-forest'
-          }`}
-        >
-          <MapPin className="w-4 h-4" />
-          <span>{t('Locations', 'Lokasi')}</span>
-          {savedLocations.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-stone/10 text-stone font-mono">
-              {savedLocations.length}
-            </span>
-          )}
-        </button>
+          <button
+            onClick={() => setActiveTab('locations')}
+            className={cn(
+              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              activeTab === 'locations'
+                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+            )}
+          >
+            <MapPin className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('Locations', 'Lokasi')}</span>
+            {savedLocations.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-stone/15 text-stone-600 dark:text-stone-300 font-mono shrink-0 font-bold">
+                {savedLocations.length}
+              </span>
+            )}
+          </button>
 
-        <button
-          onClick={() => setActiveTab('preferences')}
-          className={`px-4 py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap min-h-[44px] ${
-            activeTab === 'preferences'
-              ? 'border-crisp-carrot text-crisp-carrot'
-              : 'border-transparent text-stone hover:text-deep-forest'
-          }`}
-        >
-          <Bell className="w-4 h-4" />
-          <span>{t('Preferences', 'Tetapan')}</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('preferences')}
+            className={cn(
+              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              activeTab === 'preferences'
+                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+            )}
+          >
+            <Bell className="w-4 h-4 shrink-0" />
+            <span className="truncate">{t('Preferences', 'Tetapan')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Content Scrollable Area */}

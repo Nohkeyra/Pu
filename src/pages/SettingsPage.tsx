@@ -4,6 +4,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { ResponsiveToggleRow, ResponsiveGridGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
@@ -197,18 +198,18 @@ export default function SettingsPage() {
             </h3>
 
             {/* Theme Toggle Row */}
-            <div className="flex items-center justify-between py-2 border-b border-border/65 last:border-0 gap-3">
-              <div className="space-y-0.5">
+            <ResponsiveToggleRow>
+              <div className="space-y-0.5 pr-2">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Gelap' : 'Dark Mode'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
                   {language === 'bm'
                     ? 'Tukar tema antara paparan cerah dan gelap.'
                     : 'Switch theme between light and dark display modes.'}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {theme === 'dark' ? (
                   <Moon className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                 ) : (
@@ -220,69 +221,69 @@ export default function SettingsPage() {
                   aria-label="Toggle dark mode"
                 />
               </div>
-            </div>
+            </ResponsiveToggleRow>
 
             {/* Language Selection Row */}
-            <div className="flex flex-col gap-3 py-2 border-b border-border/65 last:border-0">
+            <div className="flex flex-col gap-3 py-2">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Bahasa Aplikasi' : 'Application Language'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75">
                   {language === 'bm'
                     ? 'Pilih bahasa pilihan anda untuk sistem.'
                     : 'Select your preferred language for the interface.'}
                 </span>
               </div>
-              <div className="flex gap-2 mt-1">
+              <ResponsiveGridGroup columns={2} className="mt-1">
                 <Button
                   type="button"
                   variant={language === 'en' ? 'default' : 'outline'}
                   aria-pressed={language === 'en'}
                   onClick={() => handleLanguageChange('en')}
-                  className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
+                  className={`w-full rounded-2xl min-h-[44px] font-semibold ${
                     language === 'en'
                       ? 'btn-cta text-white font-extrabold'
                       : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
                   }`}
                 >
-                  <Globe className="w-4 h-4 mr-2" />
-                  English
-                  {language === 'en' && <Check className="w-4 h-4 ml-auto" />}
+                  <Globe className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>English</span>
+                  {language === 'en' && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
                 </Button>
                 <Button
                   type="button"
                   variant={language === 'bm' ? 'default' : 'outline'}
                   aria-pressed={language === 'bm'}
                   onClick={() => handleLanguageChange('bm')}
-                  className={`flex-1 rounded-2xl min-h-[44px] font-semibold ${
+                  className={`w-full rounded-2xl min-h-[44px] font-semibold ${
                     language === 'bm'
                       ? 'btn-cta text-white font-extrabold'
                       : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
                   }`}
                 >
-                  <Globe className="w-4 h-4 mr-2" />
-                  Bahasa Melayu
-                  {language === 'bm' && <Check className="w-4 h-4 ml-auto" />}
+                  <Globe className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Bahasa Melayu</span>
+                  {language === 'bm' && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
                 </Button>
-              </div>
+              </ResponsiveGridGroup>
             </div>
 
             {/* Font Size Selection Row */}
-            <div className="flex flex-col gap-3 py-2 border-b border-border/65 last:border-0">
+            <div className="flex flex-col gap-3 py-2">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block flex items-center gap-2">
                   <Type className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                   {language === 'bm' ? 'Saiz Tulisan (Selesa Mata)' : 'Text Font Size (Eye Comfort)'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75">
                   {language === 'bm'
                     ? 'Laras saiz tulisan mengikut keselesaan membaca anda.'
                     : 'Adjust the text sizing for a comfortable reading experience.'}
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+              <ResponsiveGridGroup columns={4} className="mt-1">
                 {(['sm', 'base', 'lg', 'xl'] as const).map((size) => {
                   const labelEn = size === 'sm' ? 'Small' : size === 'base' ? 'Normal' : size === 'lg' ? 'Large' : 'Huge';
                   const labelBm = size === 'sm' ? 'Kecil' : size === 'base' ? 'Biasa' : size === 'lg' ? 'Besar' : 'Sangat Besar';
@@ -300,7 +301,7 @@ export default function SettingsPage() {
                         await triggerLightImpact();
                         setFontSize(size);
                       }}
-                      className={`rounded-2xl min-h-[48px] p-2 flex flex-col justify-center items-center gap-0.5 transition-all duration-200 ${
+                      className={`w-full rounded-2xl min-h-[48px] p-2 flex flex-col justify-center items-center gap-0.5 transition-all duration-200 ${
                         fontSize === size
                           ? 'btn-cta text-white font-extrabold shadow-sm scale-[1.02]'
                           : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
@@ -315,7 +316,7 @@ export default function SettingsPage() {
                     </Button>
                   );
                 })}
-              </div>
+              </ResponsiveGridGroup>
             </div>
           </section>
 
@@ -326,12 +327,12 @@ export default function SettingsPage() {
               {language === 'bm' ? 'Pilihan Notifikasi' : 'Notification Preferences'}
             </h3>
 
-            <div className="flex items-center justify-between gap-3 py-2">
-              <div className="space-y-0.5">
+            <ResponsiveToggleRow>
+              <div className="space-y-0.5 pr-2">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Notifikasi Push Aplikasi' : 'App Push Notifications'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
                   {language === 'bm'
                     ? 'Benarkan pemberitahuan untuk maklum balas tempahan, status kelulusan, dan invois rasmi.'
                     : 'Receive notifications for order feedback, approval status updates, and official invoice generation.'}
@@ -341,24 +342,25 @@ export default function SettingsPage() {
                 checked={notificationsEnabled}
                 onCheckedChange={handleToggleNotifications}
                 aria-label="Toggle notifications"
+                className="flex-shrink-0"
               />
-            </div>
+            </ResponsiveToggleRow>
           </section>
 
           {/* 3. Advanced Settings */}
-          <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
+          <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-4">
             <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
               {language === 'bm' ? 'Tetapan Peranti & Lanjutan' : 'Device & Advanced Settings'}
             </h3>
 
             {/* Keep Awake Toggle */}
-            <div className="flex items-center justify-between gap-3 py-2 border-b border-border/65 last:border-0 pb-4">
-              <div className="space-y-0.5">
+            <ResponsiveToggleRow>
+              <div className="space-y-0.5 pr-2">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Kekalkan Skrin Aktif' : 'Keep Screen Awake'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
                   {language === 'bm'
                     ? 'Pastikan skrin peranti sentiasa menyala untuk kegunaan dapur, pemandu, atau pemantauan berterusan.'
                     : 'Prevent screen from sleeping/dimming. Ideal for kitchen tablet displays, tracking riders, or continuous monitoring.'}
@@ -368,16 +370,17 @@ export default function SettingsPage() {
                 checked={keepAwakeEnabled}
                 onCheckedChange={handleToggleKeepAwake}
                 aria-label="Toggle keep screen awake"
+                className="flex-shrink-0"
               />
-            </div>
+            </ResponsiveToggleRow>
 
             {/* Developer Mode */}
-            <div className="flex items-center justify-between gap-3 py-2 last:border-0">
-              <div className="space-y-0.5">
+            <ResponsiveToggleRow>
+              <div className="space-y-0.5 pr-2">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
                   {language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
                 </span>
-                <span className="text-[14px] leading-5 text-stone dark:text-stone/75 block max-w-sm">
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
                   {language === 'bm'
                     ? 'Papar data diagnosis tambahan, log status sambungan API, dan kebenaran fail.'
                     : 'Display extra diagnostic details, connection logs, and filesystem parameters.'}
@@ -387,8 +390,9 @@ export default function SettingsPage() {
                 checked={developerMode}
                 onCheckedChange={handleToggleDeveloper}
                 aria-label="Toggle developer mode"
+                className="flex-shrink-0"
               />
-            </div>
+            </ResponsiveToggleRow>
           </section>
 
 
