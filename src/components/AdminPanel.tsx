@@ -3,8 +3,6 @@ import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Badge } from '@/components/ui/badge';
-import { collection, onSnapshot, query, limit } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
 import { 
   FileText, 
   CheckCircle, 
@@ -19,8 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { generateInvoicePDF, generateCombinedInvoicePDF, preloadLogoForPDF } from '@/services/pdfService';
+import { generateInvoicePDF, preloadLogoForPDF } from '@/services/pdfService';
 import { generateConsolidatedInvoicePDF } from '@/services/consolidatedInvoiceService';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -112,7 +109,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [activeTab, setActiveTab] = useState<'orders' | 'tables' | 'menu'>('orders');
 
   // Real-time synchronization and Firestore WebSocket monitoring status
-  const [syncStatus, setSyncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
+  const [syncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
 
   const fetchCalendarState = async () => {
     try {

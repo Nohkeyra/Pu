@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import helmet from 'helmet';
 import fs from 'fs';
+import { randomUUID } from 'crypto';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import { getFirestore } from './server/firebaseAdmin.js';
 
@@ -59,6 +60,14 @@ function isAllowedOrigin(origin: string): boolean {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Request ID tracing middleware (X-Request-Id header)
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const requestId = (req.headers['x-request-id'] as string) || randomUUID();
+    (req as any).requestId = requestId;
+    res.setHeader('X-Request-Id', requestId);
+    next();
+  });
 
   app.use(compression() as any);
   app.set('trust proxy', 1);
@@ -177,6 +186,16 @@ async function startServer() {
   app.use('/api', diagnosticRoutes);
   app.use('/api/widget', widgetRoutes);
 
+  // API 404 handler to ensure /api/* calls return JSON instead of HTML
+  app.use('/api/*', (req: express.Request, res: express.Response) => {
+    const requestId = (req as any).requestId || req.headers['x-request-id'];
+    return res.status(404).json({
+      success: false,
+      error: `API endpoint not found: ${req.method} ${req.originalUrl}`,
+      requestId
+    });
+  });
+
   // Vite development middleware or static production serving
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
@@ -208,6 +227,19 @@ async function startServer() {
       res.sendFile(indexPath);
     });
   }
+
+  // Global Express error handler returning JSON with request ID
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const requestId = (req as any).requestId || req.headers['x-request-id'];
+    console.error(`[GlobalError] [ReqID: ${requestId}]`, err);
+    const statusCode = typeof err?.status === 'number' && err.status >= 400 ? err.status : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: err?.message || 'Internal Server Error',
+      requestId
+    });
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);

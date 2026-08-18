@@ -3,13 +3,16 @@ import { getApiUrl } from '@/lib/api';
 export const measureDbLatency = async () => {
   const start = performance.now();
   try {
-    const response = await fetch(getApiUrl('/api/admin/next-invoice-number'), {
+    const response = await fetch(getApiUrl('/api/health'), {
       headers: {
         'Cache-Control': 'no-cache'
       }
     });
     if (!response.ok) throw new Error('Failed to fetch');
-    await response.json();
+    const data = await response.json();
+    if (data?.database?.status !== 'connected') {
+      throw new Error('Database disconnected or offline');
+    }
     return Math.round(performance.now() - start);
   } catch (err) {
     console.error('Latency measurement failed:', err);

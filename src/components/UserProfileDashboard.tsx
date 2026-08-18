@@ -598,14 +598,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'orders'
-                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
             )}
           >
             <History className="w-4 h-4 shrink-0" />
             <span className="truncate">{t('Orders', 'Tempahan')}</span>
             {orders.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-crisp-carrot/15 text-crisp-carrot font-mono shrink-0 font-bold">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-mono shrink-0 font-bold">
                 {orders.length}
               </span>
             )}
@@ -616,7 +616,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'profile'
-                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
             )}
           >
@@ -629,7 +629,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'locations'
-                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
             )}
           >
@@ -647,7 +647,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'preferences'
-                ? "bg-white dark:bg-stone-800 text-crisp-carrot shadow-sm scale-[1.01]"
+                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
             )}
           >

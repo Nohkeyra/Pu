@@ -8,6 +8,7 @@ const ENABLE_LOCAL_FALLBACK = (process.env.ENABLE_LOCAL_FALLBACK || "false").toL
 const LOCAL_ORDERS_FILE = path.join(process.cwd(), "orders.local.json");
 
 let memoryCache: LocalOrder[] | null = null;
+let writeChain: Promise<void> = Promise.resolve();
 
 export function getLocalOrders(): LocalOrder[] {
   if (!ENABLE_LOCAL_FALLBACK) {
@@ -41,8 +42,13 @@ export function saveLocalOrders(orders: LocalOrder[]): void {
     return;
   }
   memoryCache = orders;
-  // Non-blocking write to prevent stalling the event loop
-  fs.writeFile(LOCAL_ORDERS_FILE, JSON.stringify(orders, null, 2), "utf-8", (err) => {
-    if (err) console.error("[localOrdersStore] Failed to write local orders backup:", err);
+
+  // Non-blocking serialized writes to prevent concurrent file corruption (race conditions)
+  writeChain = writeChain.then(async () => {
+    try {
+      await fs.promises.writeFile(LOCAL_ORDERS_FILE, JSON.stringify(orders, null, 2), "utf-8");
+    } catch (err) {
+      console.error("[localOrdersStore] Failed to write local orders backup:", err);
+    }
   });
 }

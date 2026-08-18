@@ -103,7 +103,7 @@ router.post('/branding', verifyAdminToken, async (req, res) => {
 });
 
 // Next Invoice Number Helper
-router.get('/next-invoice-number', async (_req, res) => {
+router.get('/next-invoice-number', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
     const counterSnap = await db.collection('meta').doc('invoiceCounter').get();

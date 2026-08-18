@@ -108,10 +108,36 @@ export async function fetchWithCache<T = any>(
       timestamp: now,
     };
 
+    sweepFetchCache();
+
     return data as T;
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
+  }
+}
+
+const MAX_CACHE_ENTRIES = 50;
+const DEFAULT_CACHE_SWEEP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Sweeps the cache of entries older than TTL (default 5 minutes)
+ * and trims the cache to a max capacity of 50 entries (LRU-ish based on timestamp).
+ */
+export function sweepFetchCache(maxAgeMs: number = DEFAULT_CACHE_SWEEP_TTL_MS) {
+  const now = Date.now();
+  for (const key in fetchCache) {
+    if (now - fetchCache[key].timestamp > maxAgeMs) {
+      delete fetchCache[key];
+    }
+  }
+  const keys = Object.keys(fetchCache);
+  if (keys.length > MAX_CACHE_ENTRIES) {
+    keys.sort((a, b) => fetchCache[a].timestamp - fetchCache[b].timestamp);
+    const toDelete = keys.slice(0, keys.length - MAX_CACHE_ENTRIES);
+    for (const k of toDelete) {
+      delete fetchCache[k];
+    }
   }
 }
 

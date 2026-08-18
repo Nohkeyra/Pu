@@ -115,15 +115,6 @@ export default function LoginPage() {
                   <Compass className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
                   {tLocal('Explore menu & story', 'Teroka menu & cerita')}
                 </button>
-
-                <button
-                  onClick={() => {
-                    navigate('/neon');
-                  }}
-                  className="w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl px-5 py-3 text-xs font-mono font-bold bg-[#030A09] text-[#F69913] border border-[#E03F14]/50 shadow-[0_0_10px_rgba(224,63,20,0.3)] flex transition-all hover:scale-[1.02]"
-                >
-                  ⚡ Neon Night Market Bento Dashboard
-                </button>
               </div>
             </div>
           </div>

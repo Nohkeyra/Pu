@@ -36,6 +36,7 @@ export function ProfileLocationsTab({
   editingLocationId,
   setEditingLocationId,
   handleSaveLocation,
+  handleAddLocation,
   handleDeleteLocation,
   handleSetDefaultLocation,
   t,
@@ -60,7 +61,7 @@ export function ProfileLocationsTab({
               setNewLocationAddress('');
             }}
             size="sm"
-            className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs gap-1.5"
+            className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('Add Location', 'Tambah Lokasi')}</span>
@@ -108,9 +109,9 @@ export function ProfileLocationsTab({
               {t('Cancel', 'Batal')}
             </Button>
             <Button
-              onClick={handleSaveLocation}
+              onClick={handleAddLocation || handleSaveLocation}
               size="sm"
-              className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs"
+              className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs"
             >
               {t('Save Location', 'Simpan Lokasi')}
             </Button>

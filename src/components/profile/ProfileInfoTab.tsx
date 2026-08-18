@@ -79,7 +79,7 @@ export function ProfileInfoTab({
               onClick={handleSaveProfile}
               disabled={isSaving}
               size="sm"
-              className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs gap-1.5"
+              className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5"
             >
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               <span>{t('Save', 'Simpan')}</span>
@@ -92,7 +92,7 @@ export function ProfileInfoTab({
         {/* Full Name */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
-            <UserIcon className="w-3.5 h-3.5 text-crisp-carrot" />
+            <UserIcon className="w-3.5 h-3.5 text-primary" />
             <span>{t('Full Name / Nama Penuh', 'Nama Penuh *')}</span>
           </Label>
           {isEditing ? (
@@ -112,7 +112,7 @@ export function ProfileInfoTab({
         {/* Contact Phone */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-crisp-carrot" />
+            <Phone className="w-3.5 h-3.5 text-primary" />
             <span>{t('Phone Number / Nombor Telefon', 'Nombor Telefon *')}</span>
           </Label>
           {isEditing ? (
@@ -132,7 +132,7 @@ export function ProfileInfoTab({
         {/* Company / Ministry */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
-            <Building className="w-3.5 h-3.5 text-crisp-carrot" />
+            <Building className="w-3.5 h-3.5 text-primary" />
             <span>{t('Company / Ministry / Organisasi', 'Syarikat / Kementerian')}</span>
           </Label>
           {isEditing ? (
@@ -177,7 +177,7 @@ export function ProfileInfoTab({
         {/* Attn / Department */}
         <div className="space-y-1.5">
           <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
-            <Briefcase className="w-3.5 h-3.5 text-crisp-carrot" />
+            <Briefcase className="w-3.5 h-3.5 text-primary" />
             <span>{t('Attention / Unit / Jabatan', 'Untuk Perhatian (Attn) / Unit')}</span>
           </Label>
           {isEditing ? (

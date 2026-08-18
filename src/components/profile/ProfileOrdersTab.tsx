@@ -78,7 +78,7 @@ export function ProfileOrdersTab({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans">
         <div>
           <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
-            <History className="w-5 h-5 text-crisp-carrot" />
+            <History className="w-5 h-5 text-primary" />
             <span>{t('Catering Order History', 'Sejarah Tempahan Katering')}</span>
           </h3>
           <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
@@ -120,7 +120,7 @@ export function ProfileOrdersTab({
                   <Button
                     onClick={() => setShowCombineModal(true)}
                     size="sm"
-                    className="rounded-lg bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs"
+                    className="rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs"
                   >
                     {t(`Export ${selectedOrders.size} Invoices`, `Eksport ${selectedOrders.size} Invois`)}
                   </Button>
@@ -133,7 +133,7 @@ export function ProfileOrdersTab({
 
       {isLoadingOrders ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-crisp-carrot animate-spin" />
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : orders.length === 0 ? (
         <EmptyState
@@ -164,7 +164,7 @@ export function ProfileOrdersTab({
                         type="button"
                         onClick={() => handleToggleOrderSelect(order.id!)}
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-crisp-carrot border-crisp-carrot text-white' : 'border-stone-300 bg-white'
+                          isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-stone-300 bg-white'
                         }`}
                       >
                         {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -200,7 +200,7 @@ export function ProfileOrdersTab({
                     size="sm"
                     className="rounded-lg border-stone-200 text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-crisp-carrot" />
+                    <RotateCcw className="w-3.5 h-3.5 text-primary" />
                     <span>{t('Reorder', 'Pesan Semula')}</span>
                   </Button>
 

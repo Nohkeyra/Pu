@@ -29,8 +29,13 @@ function readQueue(): PendingOrder[] {
   }
 }
 
+export const MAX_PENDING_ORDERS = 20;
+
 function writeQueue(queue: PendingOrder[]): void {
   try {
+    if (queue.length > MAX_PENDING_ORDERS) {
+      queue = queue.slice(queue.length - MAX_PENDING_ORDERS);
+    }
     const jsonStr = safeJsonStringify(queue);
     localStorage.setItem(PENDING_ORDERS_STORAGE_KEY, jsonStr);
     // Persist asynchronously to Capacitor Preferences for Android native storage resilience
@@ -88,9 +93,12 @@ export function getPendingOrdersCount(): number {
 /** Adds an order to the queue, skipping if the same idempotencyKey is already present. */
 export function addPendingOrder(orderPayload: Record<string, unknown>, idempotencyKey: string): void {
   if (!idempotencyKey) return;
-  const queue = readQueue();
+  let queue = readQueue();
   if (queue.some((item) => item.idempotencyKey === idempotencyKey)) return;
   queue.push({ idempotencyKey, orderPayload, queuedAt: Date.now() });
+  if (queue.length > MAX_PENDING_ORDERS) {
+    queue = queue.slice(queue.length - MAX_PENDING_ORDERS);
+  }
   writeQueue(queue);
 }
 

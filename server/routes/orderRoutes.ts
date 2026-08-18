@@ -139,6 +139,12 @@ function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceD
   return bestMatch;
 }
 
+/**
+ * Default fallback price per pax (in MYR) used when custom dish selections
+ * produce a total price of 0 (e.g. for default boxed meals or custom orders).
+ */
+export const DEFAULT_FALLBACK_PRICE_PER_PAX = 11.50;
+
 function calculateOrderPricing(
   dishes: any[] | undefined,
   veggies: any[] | undefined,
@@ -186,7 +192,7 @@ function calculateOrderPricing(
 
   // 4. Fallback if price is still 0 (Default Boxed Meal)
   if (pricePerPax === 0) {
-    pricePerPax = 11.50;
+    pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
   }
 
   // 5. Construct prices map and total amount
@@ -238,8 +244,52 @@ const customerOrderActionLimiter = rateLimit({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
+// Validation middleware for incoming order submissions
+export function validateOrderSubmission(req: any, res: any, next: any) {
+  const body = req.body || {};
+
+  // 1. Cap string fields (max 5000 chars) and array fields (max 100 items)
+  for (const key of Object.keys(body)) {
+    const val = body[key];
+    if (typeof val === 'string' && val.length > 5000) {
+      return res.status(400).json({ success: false, error: `Field '${key}' exceeds maximum length of 5000 characters.` });
+    }
+    if (Array.isArray(val) && val.length > 100) {
+      return res.status(400).json({ success: false, error: `Array field '${key}' exceeds maximum limit of 100 items.` });
+    }
+  }
+
+  // 2. Validate customer name
+  const name = typeof body.name === 'string' ? body.name.trim() : typeof body.customerName === 'string' ? body.customerName.trim() : '';
+  if (!name) {
+    return res.status(400).json({ success: false, error: 'Customer name (name) is required.' });
+  }
+
+  // 3. Validate contact info (contact, email, or phone)
+  const contact = typeof body.contact === 'string' ? body.contact.trim() : '';
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+  if (!contact && !email && !phone) {
+    return res.status(400).json({ success: false, error: 'At least one contact method (contact, phone, or email) is required.' });
+  }
+
+  // 4. Validate event date
+  const eventDate = typeof body.eventDate === 'string' ? body.eventDate.trim() : typeof body.date === 'string' ? body.date.trim() : '';
+  if (!eventDate) {
+    return res.status(400).json({ success: false, error: 'Event date (eventDate or date) is required.' });
+  }
+
+  // 5. Validate guests / quantity
+  const guestsNum = Number(body.guests || body.quantity);
+  if (isNaN(guestsNum) || guestsNum < 1) {
+    return res.status(400).json({ success: false, error: 'Number of guests or quantity must be a positive number.' });
+  }
+
+  next();
+}
+
 // Public Order Submission
-router.post('/', createOrderLimiter, async (req, res) => {
+router.post('/', createOrderLimiter, validateOrderSubmission, async (req, res) => {
   try {
     const { idempotencyKey, ...orderData } = req.body || {};
     const db = getFirestore();

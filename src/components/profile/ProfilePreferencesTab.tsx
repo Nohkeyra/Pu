@@ -40,7 +40,7 @@ export function ProfilePreferencesTab({
         <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
-              <Bell className="w-4 h-4 text-crisp-carrot shrink-0" />
+              <Bell className="w-4 h-4 text-primary shrink-0" />
               <span>{t('Order Status Alerts', 'Notifikasi Status Tempahan')}</span>
             </Label>
             <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5 leading-relaxed">
@@ -60,7 +60,7 @@ export function ProfilePreferencesTab({
         <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
-              <Mail className="w-4 h-4 text-crisp-carrot shrink-0" />
+              <Mail className="w-4 h-4 text-primary shrink-0" />
               <span>{t('Automated Invoice Email Dispatch', 'Pemberitahuan Emel Invois')}</span>
             </Label>
             <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5 leading-relaxed">
@@ -80,7 +80,7 @@ export function ProfilePreferencesTab({
         <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
-              <Ban className="w-4 h-4 text-crisp-carrot shrink-0" />
+              <Ban className="w-4 h-4 text-primary shrink-0" />
               <span>{t('Cancellation Request Outcome Alerts', 'Notifikasi Keputusan Pembatalan')}</span>
             </Label>
             <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5 leading-relaxed">
