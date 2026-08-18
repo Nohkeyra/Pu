@@ -87,7 +87,7 @@ export function Step4ReviewSubmit({
         
         {/* Event & Serve Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
+          <span className="microcopy-12-upper font-black text-deep-forest uppercase tracking-wider block mb-1">
             {tText('Event Summary', 'Maklumat Majlis')}
           </span>
           <div className="flex justify-between items-center text-xs">
@@ -126,7 +126,7 @@ export function Step4ReviewSubmit({
 
         {/* Customer Billing Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-[#A8E10C] uppercase tracking-wider block mb-1">
+          <span className="microcopy-12-upper font-black text-deep-forest uppercase tracking-wider block mb-1">
             {tText('Customer & Billing Info', 'Maklumat Pembayar')}
           </span>
           {orderState.eventType === 'pejabat' && (

@@ -147,6 +147,8 @@ function LeafletMapContainer({
       .bindPopup(`<b>Catering Delivery Point</b><br>${locationString}`);
 
     let active = true;
+    // ReturnType<typeof setInterval> — not NodeJS.Timeout (@types/node
+    // intentionally absent in this project, same convention as SplashScreen.tsx)
     let animationInterval: ReturnType<typeof setInterval> | null = null;
 
     const computeOSRMRoute = async () => {

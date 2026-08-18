@@ -53,13 +53,17 @@ module.exports = {
         // primary (2026-08-14): was pointing at raw --color-sunshine
         // (mustard #f69913) with --color-cream foreground — mustard fails
         // AA contrast even against white (2.21:1), let alone cream, which
-        // is darker than white. Repointed to --color-sunshine-cta (tomato
-        // #e03f14, the same AA-compliant CTA token used elsewhere) with a
-        // white foreground, matching how the app already treats its
-        // primary action color everywhere else.
+        // is darker than white. Repointed to --color-sunshine-cta, whose
+        // -fg token already varies correctly per mode (white in light mode,
+        // since light's sunshine-cta = tomato; dark charcoal in dark mode,
+        // since dark's sunshine-cta = mustard, which needs dark text — see
+        // .dark block in index.css). Previously this was hardcoded to
+        // '#FFFFFF' always, which broke contrast in dark mode specifically
+        // (white text on mustard = 2.21:1, fails badly) — found and fixed
+        // while wiring AuthModal.tsx to these tokens.
         primary: {
           DEFAULT: 'var(--color-sunshine-cta)',
-          foreground: '#FFFFFF',
+          foreground: 'var(--color-sunshine-cta-fg)',
         },
         secondary: {
           DEFAULT: 'var(--color-cream-dark)',

@@ -330,7 +330,7 @@ export default function AdminMenuTab({
 
           <button
             onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 bg-[#A8E10C] hover:bg-[#96cc0a] text-deep-forest px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+            className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot text-deep-forest px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{tText('Add Menu Item', 'Tambah Hidangan')}</span>
@@ -703,7 +703,7 @@ export default function AdminMenuTab({
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 bg-[#A8E10C] hover:bg-[#96cc0a] disabled:opacity-50 text-deep-forest px-4 h-9 font-bold text-xs rounded-lg shadow-sm transition-all"
+                  className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot disabled:opacity-50 text-deep-forest px-4 h-9 font-bold text-xs rounded-lg shadow-sm transition-all"
                 >
                   {isSaving ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />

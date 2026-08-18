@@ -372,6 +372,14 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   let currentY = tableStartY + 7;
   const rowHeight = 7.5;
 
+  // F-PDF (audit 2026-08-15): hoisted out of the forEach below. order.quantity
+  // doesn't vary per meal, so recomputing it every iteration was wasteful —
+  // and more importantly, the Grand Total Row section further down (after
+  // the loop closes) also needs this value but couldn't see it, since it
+  // was declared inside the forEach callback's block scope. That caused a
+  // "Cannot find name 'quantityNum'" compile error at the grand total lines.
+  const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 1;
+
   order.meals.forEach((meal) => {
     // Fill Cream background
     doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
@@ -397,7 +405,6 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
     const hasPrice = isFinal && order.prices && order.prices[meal] !== undefined;
     const priceValRaw = hasPrice ? order.prices![meal] : 0;
     const priceVal = typeof priceValRaw === 'number' ? priceValRaw : parseFloat(priceValRaw as unknown as string) || 0;
-    const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 1;
     const subtotal = priceVal * quantityNum;
 
     const mealMinPrice = 12;
@@ -431,7 +438,6 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.text('JUMLAH KESELURUHAN / GRAND TOTAL', 18, currentY + 4.8);
 
   const totalAmountNum = typeof order.totalAmount === 'number' ? order.totalAmount : parseFloat(order.totalAmount as unknown as string) || 0;
-  const quantityNum = typeof order.quantity === 'number' ? order.quantity : parseInt(order.quantity as unknown as string, 10) || 1;
 
   const mealCount = order?.meals?.length || 1;
   const minPricePerPaxTotal = 12 * mealCount;

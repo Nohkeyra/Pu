@@ -185,7 +185,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-[#161618]/80 backdrop-blur-md"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md"
         />
 
         {/* Modal Panel */}
@@ -196,7 +196,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           role="dialog"
           aria-modal="true"
           aria-label={mode === 'signin' ? t('Sign In', 'Log Masuk') : mode === 'signup' ? t('Register Account', 'Daftar Akaun Baru') : t('Reset Password', 'Set Semula Kata Laluan')}
-          className="relative w-full max-w-lg bg-[#1C1C1E] border border-[#2E2E32] rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden"
+          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden"
         >
           {/* Batik Pattern Overlay */}
           <Batik3DMotion
@@ -208,13 +208,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           />
 
           {/* Accent Gold Line */}
-          <div className="relative h-[3px] bg-gradient-to-r from-[#FF7A1A] via-[#FFA35C] to-[#FF7A1A] z-10" />
+          <div className="relative h-[3px] bg-gradient-to-r from-sunshine-cta via-honey to-sunshine-cta z-10" />
 
           {/* Close button */}
           <button
             onClick={onClose}
             aria-label={t('Close dialog', 'Tutup tetingkap')}
-            className="absolute top-4 right-4 p-2 text-[#8E8E93] hover:text-[#F4F4F6] hover:bg-[#2E2E32] rounded-lg transition-colors duration-200 z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40"
+            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors duration-200 z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine-cta/40"
           >
             <X className="w-5 h-5" />
           </button>
@@ -222,12 +222,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           <div className="relative p-6 sm:p-8 z-10">
             {/* Header */}
             <div className="text-center mb-6">
-              <h2 className="font-display text-2xl font-bold text-[#F4F4F6] tracking-wide">
+              <h2 className="font-display text-2xl font-bold text-foreground tracking-wide">
                 {mode === 'signin' && t('Sign In', 'Log Masuk')}
                 {mode === 'signup' && t('Register Account', 'Daftar Akaun Baru')}
                 {mode === 'forgot' && t('Reset Password', 'Set Semula Kata Laluan')}
               </h2>
-              <p className="text-xs text-[#8E8E93] mt-1 font-sans">
+              <p className="text-xs text-muted-foreground mt-1 font-sans">
                 {mode === 'signin' && t('Access your saved profile & catering invoice history', 'Akses profil & sejarah invois katering anda')}
                 {mode === 'signup' && t('Create a profile for instant billing auto-population', 'Daftar profil untuk automasi maklumat bil tempahan')}
                 {mode === 'forgot' && t('Enter your registered email to receive reset instructions', 'Masukkan e-mel anda untuk menerima arahan set semula')}
@@ -235,50 +235,50 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
             </div>
 
             {/* Auth Form */}
-            <form onSubmit={handleSubmit} className="space-y-4 font-sans text-[#F4F4F6]">
+            <form onSubmit={handleSubmit} className="space-y-4 font-sans text-foreground">
               {/* Registration Fields */}
               {mode === 'signup' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Full Name *', 'Nama Penuh *')}
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Dato' Ahmad"
-                        className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                        className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Contact Number *', 'No. Telefon *')}
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         type="tel"
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
                         placeholder="e.g. +60123456789"
-                        className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                        className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Organization / Company', 'Syarikat / Organisasi')}
                     </label>
                     <div className="relative">
-                      <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93] pointer-events-none" />
+                      <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <select
                         value={selectedCompany}
                         onChange={(e) => {
@@ -290,44 +290,44 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                             setTo(val);
                           }
                         }}
-                        className="w-full h-11 pl-10 pr-10 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200 appearance-none"
+                        className="w-full h-11 pl-10 pr-10 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200 appearance-none"
                       >
-                        <option value="" className="text-[#8E8E93] bg-[#161618]">-- {t('Select Company / Organization', 'Pilih Syarikat / Organisasi')} --</option>
+                        <option value="" className="text-muted-foreground bg-background">-- {t('Select Company / Organization', 'Pilih Syarikat / Organisasi')} --</option>
                         {SAVED_COMPANIES.map((company, idx) => (
-                          <option key={idx} value={company} className="text-[#F4F4F6] bg-[#161618]">
+                          <option key={idx} value={company} className="text-foreground bg-background">
                             {company}
                           </option>
                         ))}
-                        <option value="other" className="text-[#FF7A1A] bg-[#161618] font-semibold">{t('Other (Specify)', 'Lain-lain (Nyatakan)')}</option>
+                        <option value="other" className="text-sunshine-cta bg-background font-semibold">{t('Other (Specify)', 'Lain-lain (Nyatakan)')}</option>
                       </select>
-                      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93] pointer-events-none" />
+                      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                     {selectedCompany === 'other' && (
                       <div className="relative mt-2">
-                        <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                        <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                           type="text"
                           value={to}
                           onChange={(e) => setTo(e.target.value)}
                           placeholder={t('e.g. PMO Putrajaya', 'cth. PMO Putrajaya')}
-                          className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                          className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         />
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Department / Attention (Attn)', 'Bahagian / Untuk Perhatian')}
                     </label>
                     <div className="relative">
-                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         type="text"
                         value={attn}
                         onChange={(e) => setAttn(e.target.value)}
                         placeholder="e.g. Unit Kewangan"
-                        className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                        className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                       />
                     </div>
                   </div>
@@ -336,17 +336,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
               {/* Core Email Field */}
               <div className="space-y-1">
-                <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                   {t('Email Address', 'Alamat E-mel')}
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g. nama@organisasi.gov.my"
-                    className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                    className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                     required
                   />
                 </div>
@@ -356,27 +356,27 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               {mode !== 'forgot' && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-[#8E8E93]">
+                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Password', 'Kata Laluan')}
                     </label>
                     {mode === 'signin' && (
                       <button
                         type="button"
                         onClick={() => handleModeChange('forgot')}
-                        className="microcopy-12-upper text-[#FF7A1A] hover:underline"
+                        className="microcopy-12-upper text-sunshine-cta hover:underline"
                       >
                         {t('Forgot Password?', 'Lupa Kata Laluan?')}
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8E8E93]" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full h-11 pl-10 pr-4 bg-[#161618] border border-[#2E2E32] rounded-lg text-sm text-[#F4F4F6] placeholder-[#8E8E93]/40 focus:border-[#A8E10C]/60 focus:ring-1 focus:ring-[#A8E10C]/40 outline-none transition-all duration-200"
+                      className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                       required
                     />
                   </div>
@@ -387,7 +387,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-[#FF7A1A] text-[#161618] font-semibold rounded-lg hover:bg-[#FFA35C] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-6 shadow-lg shadow-[#FF7A1A]/10 disabled:opacity-50"
+                className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-6 shadow-lg shadow-primary/10 disabled:opacity-50"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -402,26 +402,26 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               </button>
 
               {/* Toggle modes */}
-              <div className="text-center mt-6 pt-4 border-t border-[#2E2E32] text-xs">
+              <div className="text-center mt-6 pt-4 border-t border-border text-xs">
                 {mode === 'signin' && (
-                  <p className="text-[#8E8E93]">
+                  <p className="text-muted-foreground">
                     {t("First time booking?", "Pertama kali menempah?")}{' '}
                     <button
                       type="button"
                       onClick={() => handleModeChange('signup')}
-                      className="text-[#FF7A1A] font-semibold hover:underline"
+                      className="text-sunshine-cta font-semibold hover:underline"
                     >
                       {t('Register account', 'Daftar akaun')}
                     </button>
                   </p>
                 )}
                 {mode === 'signup' && (
-                  <p className="text-[#8E8E93]">
+                  <p className="text-muted-foreground">
                     {t('Already registered?', 'Sudah mendaftar?')}{' '}
                     <button
                       type="button"
                       onClick={() => handleModeChange('signin')}
-                      className="text-[#FF7A1A] font-semibold hover:underline"
+                      className="text-sunshine-cta font-semibold hover:underline"
                     >
                       {t('Sign in here', 'Log masuk di sini')}
                     </button>
@@ -431,7 +431,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   <button
                     type="button"
                     onClick={() => handleModeChange('signin')}
-                    className="text-[#FF7A1A] font-semibold hover:underline"
+                    className="text-sunshine-cta font-semibold hover:underline"
                   >
                     {t('Back to sign in', 'Kembali ke log masuk')}
                   </button>

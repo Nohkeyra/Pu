@@ -25,7 +25,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import CateringSplashScreen from './components/SplashScreen';
 import { Skeleton } from './components/ui/Skeleton';
 import { logScreenView, setAnalyticsUserId, setAnalyticsUserProperty } from './services/analyticsService';
-import { setCrashlyticsUserId } from './services/crashlyticsService';
+import { setCrashlyticsUserId, setCrashlyticsCustomKey } from './services/crashlyticsService';
 
 // Primary LoginPage is loaded eagerly as the core root experience
 import LoginPage from './pages/LoginPage';
@@ -214,8 +214,12 @@ function AppContent() {
         setAnalyticsUserId(user.uid);
         setCrashlyticsUserId(user.uid);
         setAnalyticsUserProperty('user_role', isUserAdmin ? 'admin' : 'customer');
+        setCrashlyticsCustomKey('user_role', isUserAdmin ? 'admin' : 'customer');
       } else {
         setAnalyticsUserId(null);
+        setCrashlyticsUserId('');
+        setAnalyticsUserProperty('user_role', 'anonymous');
+        setCrashlyticsCustomKey('user_role', 'anonymous');
       }
     });
 
@@ -260,7 +264,7 @@ function AppContent() {
 
       <main className={cn("flex-grow", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
-          <div className="min-h-screen bg-[#151714] flex flex-col items-center justify-center p-6 space-y-6">
+          <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center p-6 space-y-6">
             <Skeleton className="w-24 h-24 rounded-full animate-pulse opacity-30" />
             <div className="w-full max-w-sm space-y-3">
               <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse opacity-20" />
