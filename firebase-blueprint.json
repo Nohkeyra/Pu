@@ -117,6 +117,19 @@
         "updatedAt": { "type": "string", "description": "ISO timestamp of modification" }
       },
       "required": ["date", "userId", "note"]
+    },
+    "RestaurantMetadata": {
+      "title": "RestaurantMetadata",
+      "description": "Live metadata status parameters for restaurant dashboard",
+      "type": "object",
+      "properties": {
+        "isOpen": { "type": "boolean", "description": "Whether restaurant is currently open" },
+        "whatsappNumber": { "type": "string", "description": "WhatsApp contact number" },
+        "whatsappMessage": { "type": "string", "description": "Default WhatsApp message template" },
+        "cateringTitle": { "type": "string", "description": "Catering header banner title" },
+        "businessHours": { "type": "string", "description": "Business hours subtitle" },
+        "footerAnnouncement": { "type": "string", "description": "Footer tagline or announcement text" }
+      }
     }
   },
   "firestore": {
@@ -139,6 +152,10 @@
     "calendar_notes/{noteId}": {
       "schema": "CalendarNote",
       "description": "Collection storing custom schedule notes per date"
+    },
+    "restaurant_metadata/{metadataId}": {
+      "schema": "RestaurantMetadata",
+      "description": "Collection storing live restaurant metadata status parameters"
     }
   }
 }

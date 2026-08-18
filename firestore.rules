@@ -141,6 +141,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /restaurant_metadata/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     match /meta/{docId} {
       allow read, write: if false; // Admin SDK only
     }

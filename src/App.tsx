@@ -69,6 +69,7 @@ const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'), 'AdminPage
 const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'), 'ProfilePage');
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'), 'SettingsPage');
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage');
+const WawasanNeonDashboard = lazyWithRetry(() => import('./components/WawasanNeonDashboard'), 'WawasanNeonDashboard');
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change & log Analytics screen view
@@ -327,6 +328,8 @@ function AppContent() {
                 />
                 
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/neon" element={<WawasanNeonDashboard />} />
+                <Route path="/bento" element={<WawasanNeonDashboard />} />
                 <Route path="*" element={<LoginPage />} />
               </Routes>
             </div>

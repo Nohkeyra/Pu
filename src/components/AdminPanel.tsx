@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   XCircle,
   Loader2,
-  Activity,
   RefreshCw,
   Table,
   Bell
@@ -26,20 +25,13 @@ import { generateConsolidatedInvoicePDF } from '@/services/consolidatedInvoiceSe
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { Device } from '@capacitor/device';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
-import { getDummyCombinedOrders, getDummyConsolidatedOrders } from '@/utils/testData';
-import { measureDbLatency } from '@/utils/diagnostics';
 import type { Order } from '@/types';
 import { AdminHeader } from './admin/AdminHeader';
 import { AdminOrdersTab } from './admin/AdminOrdersTab';
-import { AdminDiagnosticsTab } from './admin/AdminDiagnosticsTab';
 import { AdminTablesTab } from './admin/AdminTablesTab';
 import AdminMenuTab from './admin/AdminMenuTab';
-import { AdminUpdatesTab } from './admin/AdminUpdatesTab';
-import InAppUpdateModal from '@/components/InAppUpdateModal';
-import type { AppVersionConfig } from '@/services/updateService';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 
 import { showConfirm } from '@/lib/nativeService';
@@ -47,7 +39,7 @@ import { showConfirm } from '@/lib/nativeService';
 const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
 const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
 const PdfPreviewModal = lazy(() => import('./admin/PdfPreviewModal').then(m => ({ default: m.PdfPreviewModal })));
-import { Utensils as UtensilsIcon, Radio } from 'lucide-react';
+import { Utensils as UtensilsIcon } from 'lucide-react';
 
 interface SerializedOrder extends Omit<Order, 'createdAt'> {
   createdAt: { seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number } | null;
@@ -117,406 +109,10 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     loading: boolean;
   }>({ ok: false, loading: true });
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'diagnostics' | 'tables' | 'menu' | 'updates'>('orders');
-  const [previewUpdateConfig, setPreviewUpdateConfig] = useState<AppVersionConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<'orders' | 'tables' | 'menu'>('orders');
 
   // Real-time synchronization and Firestore WebSocket monitoring status
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
-
-  useEffect(() => {
-    // 1. Listen for background sync messages from the registered Service Worker
-    const handleServiceWorkerMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'BACKGROUND_SYNC_IN_PROGRESS') {
-        setSyncStatus('syncing');
-      } else if (event.data?.type === 'BACKGROUND_SYNC_COMPLETE') {
-        if (event.data.status === 'success') {
-          setSyncStatus('connected');
-          toast({
-            title: language === 'en' ? 'Background Sync Succeeded' : 'Penyelarasan Latar Belakang Berjaya',
-            description: language === 'en' ? 'Orders have been synced with the cloud.' : 'Pesanan telah diselaraskan dengan awan.',
-            variant: 'success',
-          });
-        } else {
-          setSyncStatus('offline');
-        }
-      }
-    };
-    
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    }
-
-    // 2. Setup a real-time Firestore WebSocket monitoring listener on the orders collection.
-    // If the snapshot metadata is from cache, the socket is offline/caching.
-    // If metadata.fromCache is false, the real-time WebSocket connection is verified.
-    const q = query(collection(db, 'orders'), limit(1));
-    const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : !snapshot.metadata.fromCache;
-      setSyncStatus(isOnline ? 'connected' : 'offline');
-    }, (error) => {
-      console.warn('Real-time connection monitoring error (possibly offline):', error);
-      setSyncStatus(typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'connected');
-    });
-
-    // 3. Keep in sync with standard navigator offline status
-    const handleOnline = () => setSyncStatus('connecting');
-    const handleOffline = () => setSyncStatus('offline');
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      unsubscribe();
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
-      }
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [language, toast]);
-
-  const { pullDistance, isRefreshing } = usePullToRefresh({
-    onRefresh: async () => {
-      await Promise.all([
-        fetchOrders(),
-        fetchCalendarState()
-      ]);
-    }
-  });
-
-  // Diagnostics states
-  const [diagFirebase, setDiagFirebase] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; projectId?: string }>({ status: 'idle' });
-  const [diagCalendar, setDiagCalendar] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; calendarsReturned?: number }>({ status: 'idle' });
-  const [diagEmail, setDiagEmail] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
-  const [diagPdf, setDiagPdf] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
-  const [diagNative, setDiagNative] = useState<{
-    status: 'idle' | 'running' | 'pass' | 'fail';
-    details?: {
-      isNative: boolean;
-      platform: string;
-      hasFilesystem: boolean;
-      hasShare: boolean;
-      userAgent?: string;
-      deviceInfo?: Record<string, unknown>;
-      deviceId?: Record<string, unknown>;
-      batteryInfo?: Record<string, unknown>;
-      error?: string;
-    };
-  }>({ status: 'idle' });
-  
-  const [diagTests, setDiagTests] = useState<{ id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[]>([
-    { id: 'combined_invoice', name: 'Combined Invoice Service (Multi-Order)', status: 'idle' },
-    { id: 'consolidated_invoice', name: 'Consolidated Invoice Service (Multi-Client)', status: 'idle' },
-    { id: 'db_latency', name: 'Cloud Firestore Latency (Live Ping)', status: 'idle' },
-    { id: 'auth_session', name: 'Admin Session Integrity', status: 'idle' }
-  ]);
-  
-  const [testEmailAddress, setTestEmailAddress] = useState('');
-  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
-
-  const [erudaEnabled, setErudaEnabled] = useState(
-    () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
-  );
-
-  const toggleEruda = async () => {
-    const nextState = !erudaEnabled;
-    setErudaEnabled(nextState);
-    localStorage.setItem('wawasan_eruda_enabled', nextState ? 'true' : 'false');
-    
-    const erudaWin = window as unknown as { eruda?: { destroy: () => void } };
-    
-    if (nextState) {
-      toast({
-        title: "Developer Toolkit Enabled",
-        description: "Loading inspector console... Look for the gear icon in the bottom-right corner of your screen.",
-      });
-      try {
-        const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
-        const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
-
-        if (!isFetchWritable) {
-          toast({
-            title: "Toolkit Unavailable in Preview iFrame",
-            description: "The browser container protects window.fetch. Open in a new window or native app to inspect.",
-            variant: "error"
-          });
-          return;
-        }
-
-        const erudaModule = await import('eruda');
-        if (!document.getElementById('eruda') && !erudaWin.eruda) {
-          erudaModule.default.init();
-        }
-      } catch (err) {
-        console.error('Failed to load Eruda dynamically:', err);
-        toast({
-          title: "Toolkit Load Failed",
-          description: "Could not load eruda module.",
-          variant: "error"
-        });
-      }
-    } else {
-      toast({
-        title: "Developer Toolkit Disabled",
-        description: "The inspector console has been deactivated. Refresh to fully unload.",
-      });
-      if (erudaWin.eruda) {
-        try {
-          erudaWin.eruda.destroy();
-          erudaWin.eruda = undefined;
-        } catch (e) {
-          console.warn('Eruda destroy error:', e);
-        }
-      }
-    }
-  };
-
-  const runFirebaseDiag = async () => {
-    setDiagFirebase({ status: 'running' });
-    try {
-      const response = await fetch(getApiUrl('/api/diagnostics/firebase'), { headers: authHeaders() });
-      const data = await response.json();
-      if (response.ok) {
-        setDiagFirebase({ 
-          status: 'pass', 
-          projectId: data.projectId,
-          message: data.message || `Connected from ${Capacitor.isNativePlatform() ? 'Android APK' : 'Web Browser'}` 
-        });
-      } else {
-        setDiagFirebase({ 
-          status: 'fail', 
-          message: data.message || data.error || 'Failed to authenticate/write to Firestore' 
-        });
-      }
-    } catch (err: unknown) {
-      setDiagFirebase({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });
-    }
-  };
-
-  const runCalendarDiag = async () => {
-    setDiagCalendar({ status: 'running' });
-    try {
-      const response = await fetch(getApiUrl('/api/diagnostics/calendar'), { headers: authHeaders() });
-      const data = await response.json();
-      if (response.ok && data.status === 'healthy') {
-        setDiagCalendar({ 
-          status: 'pass', 
-          calendarsReturned: data.calendarsReturned,
-          message: data.message 
-        });
-      } else {
-        setDiagCalendar({ 
-          status: 'fail', 
-          message: data.message || data.error || `Status: ${data.status || response.status}` 
-        });
-      }
-    } catch (err: unknown) {
-      setDiagCalendar({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });
-    }
-  };
-
-  const runNativeDiag = async () => {
-    setDiagNative({ status: 'running' });
-    try {
-      const isNative = Capacitor.isNativePlatform();
-      const platform = Capacitor.getPlatform();
-      const hasFilesystem = typeof Filesystem !== 'undefined';
-      const hasShare = typeof Share !== 'undefined';
-
-      let deviceInfo: Record<string, unknown> | undefined;
-      let deviceId: Record<string, unknown> | undefined;
-      let batteryInfo: Record<string, unknown> | undefined;
-
-      try {
-        deviceInfo = (await Device.getInfo()) as unknown as Record<string, unknown>;
-        deviceId = (await Device.getId()) as unknown as Record<string, unknown>;
-      } catch (e) {
-        console.warn('Device info or ID not available:', e);
-      }
-
-      try {
-        batteryInfo = (await Device.getBatteryInfo()) as unknown as Record<string, unknown>;
-      } catch (e) {
-        console.warn('Battery info not available:', e);
-      }
-      
-      setDiagNative({
-        status: 'pass',
-        details: {
-          isNative,
-          platform,
-          hasFilesystem,
-          hasShare,
-          userAgent: navigator.userAgent,
-          deviceInfo,
-          deviceId,
-          batteryInfo,
-        }
-      });
-    } catch (err: unknown) {
-      setDiagNative({
-        status: 'fail',
-        details: {
-          isNative: false,
-          platform: 'unknown',
-          hasFilesystem: false,
-          hasShare: false,
-          error: err instanceof Error ? err.message : String(err),
-        }
-      });
-    }
-  };
-
-  const runPdfDiag = async () => {
-    setDiagPdf({ status: 'running' });
-    try {
-      const pdfData = {
-        id: 'diag_' + Math.random().toString(36).substring(2, 8),
-        to: 'Pejabat Pentadbiran Diagnostik',
-        attn: 'Bahagian Teknologi Maklumat',
-        name: 'Sistem Diagnostik Wawasan',
-        contact: '03-88880000',
-        email: 'diagnostic-test@wawasan.com',
-        dateTime: new Date().toISOString(),
-        location: 'Blok B, Kompleks Kerajaan, Putrajaya',
-        quantity: 50,
-        meals: ['breakfast', 'lunch'],
-        menu: 'Nasi Lemak Ayam Goreng, Teh Tarik, Buah-buahan',
-        notes: 'Ujian diagnostik in-memory PDF generator.',
-        status: 'approved' as const,
-        prices: { breakfast: 7.50, lunch: 12.50 },
-        totalAmount: 1000.00,
-        lang: 'bm' as const,
-        invoiceNo: 'DIAG-2026-0001'
-      };
-
-      const pdfDoc = generateInvoicePDF(pdfData as unknown as Parameters<typeof generateInvoicePDF>[0], true, 'bm');
-      const dataUri = pdfDoc.output('datauristring');
-      if (dataUri && dataUri.startsWith('data:application/pdf')) {
-        setDiagPdf({ status: 'pass', message: 'PDF generated successfully (Size: ' + Math.round(dataUri.length / 1024) + ' KB)' });
-      } else {
-        setDiagPdf({ status: 'fail', message: 'PDF output is invalid' });
-      }
-    } catch (err: unknown) {
-      setDiagPdf({ status: 'fail', message: err instanceof Error ? err.message : 'PDF Generation threw an unexpected exception' });
-    }
-  };
-
-  const runSendTestEmail = async () => {
-    if (!testEmailAddress) {
-      toast({
-        title: 'Error',
-        description: 'Please enter a test recipient email address',
-        variant: 'error'
-      });
-      return;
-    }
-
-    setIsSendingTestEmail(true);
-    setDiagEmail({ status: 'running' });
-    try {
-      const response = await fetch(getApiUrl('/api/diagnostics/email'), {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          testEmail: testEmailAddress
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDiagEmail({ status: 'pass', message: `Test email sent! Message ID: ${data.messageId}` });
-        toast({
-          title: 'Email Sent',
-          description: 'Diagnostics test email dispatched successfully',
-          variant: 'success'
-        });
-      } else {
-        const data = await response.json();
-        setDiagEmail({ status: 'fail', message: data.error || 'SMTP failed' });
-        toast({
-          title: 'Email Failed',
-          description: data.error || 'Failed to send test email',
-          variant: 'error'
-        });
-      }
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Network error';
-      setDiagEmail({ status: 'fail', message: errorMsg });
-      toast({
-        title: 'Network Error',
-        description: errorMsg,
-        variant: 'error'
-      });
-    } finally {
-      setIsSendingTestEmail(false);
-    }
-  };
-
-  const runFeatureTest = async (testId: string) => {
-    setDiagTests(prev => prev.map(t => t.id === testId ? { ...t, status: 'running' } : t));
-    
-    // Simulate slight delay for "professional designer" feel
-    await new Promise(r => setTimeout(r, 1200));
-
-    try {
-      if (testId === 'combined_invoice') {
-        const dummyOrders = getDummyCombinedOrders();
-
-        await preloadLogoForPDF();
-        const doc = generateCombinedInvoicePDF({
-          orders: dummyOrders,
-          includeNotes: true,
-          lang: 'bm'
-        });
-
-        const dataUri = doc.output('datauristring');
-        setPreviewPdfUrl(dataUri);
-        setPreviewFileName(`TEST_COMBINED_INVOICE_${format(new Date(), 'yyyyMMdd')}.pdf`);
-        setIsPreviewOpen(true);
-      } else if (testId === 'consolidated_invoice') {
-        const dummyOrders = getDummyConsolidatedOrders();
-
-        await preloadLogoForPDF();
-        const doc = generateConsolidatedInvoicePDF({
-          orders: dummyOrders,
-          includeNotes: false,
-          lang: 'en'
-        });
-
-        const dataUri = doc.output('datauristring');
-        setPreviewPdfUrl(dataUri);
-        setPreviewFileName(`TEST_CONSOLIDATED_INVOICE_${format(new Date(), 'yyyyMMdd')}.pdf`);
-        setIsPreviewOpen(true);
-      } else if (testId === 'db_latency') {
-        const latency = await measureDbLatency();
-        const ok = latency > 0;
-        if (!ok) throw new Error('Database ping failed');
-      } else if (testId === 'auth_session') {
-        if (!adminToken) throw new Error('Token missing');
-        setDiagTests(prev => prev.map(t => t.id === 'auth_session' ? { ...t, status: 'pass' } : t));
-        toast({ title: 'Auth Verified', description: 'Your current session token is valid and active.' });
-        return;
-      }
-      
-      setDiagTests(prev => prev.map(t => t.id === testId ? { ...t, status: 'pass' } : t));
-    } catch (err) {
-      console.error('Test failed:', err);
-      setDiagTests(prev => prev.map(t => t.id === testId ? { ...t, status: 'fail' } : t));
-      toast({ 
-        title: 'Feature Test Failed', 
-        description: err instanceof Error ? err.message : 'Unknown error during PDF generation', 
-        variant: 'error' 
-      });
-    }
-  };
-
-  const runAllDiagnostics = () => {
-    runFirebaseDiag();
-    runCalendarDiag();
-    runNativeDiag();
-    runPdfDiag();
-  };
 
   const fetchCalendarState = async () => {
     try {
@@ -1466,15 +1062,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 ) : null,
               },
               {
-                id: 'diagnostics' as const,
-                label: 'Diagnostics',
-                icon: Activity,
-                onClick: () => {
-                  setActiveTab('diagnostics');
-                  runAllDiagnostics();
-                },
-              },
-              {
                 id: 'tables' as const,
                 label: 'Tables View',
                 icon: Table,
@@ -1485,12 +1072,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 label: language === 'en' ? 'Menu Manager' : 'Pengurus Menu',
                 icon: UtensilsIcon,
                 onClick: () => setActiveTab('menu'),
-              },
-              {
-                id: 'updates' as const,
-                label: language === 'en' ? 'Live Updates' : 'Kemaskini In-App',
-                icon: Radio,
-                onClick: () => setActiveTab('updates'),
               },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
@@ -1551,23 +1132,15 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               <h1 className="text-3xl font-display font-bold text-deep-forest mb-2">
                 {activeTab === 'orders' 
                   ? t('orders') 
-                  : activeTab === 'diagnostics' 
-                  ? 'Diagnostics' 
                   : activeTab === 'menu'
                   ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu')
-                  : activeTab === 'updates'
-                  ? (language === 'en' ? 'In-App Live Updates' : 'Kemaskini In-App')
                   : 'Submissions Table'}
               </h1>
               <p className="text-deep-forest/50 text-sm">
                 {activeTab === 'orders' 
                   ? t('orders_subtitle') 
-                  : activeTab === 'diagnostics' 
-                  ? 'Run system diagnostics, API connection probes, and trace telemetry.' 
                   : activeTab === 'menu'
                   ? 'Pengurusan item menu dan senarai harga restoran.'
-                  : activeTab === 'updates'
-                  ? 'Siarkan kemaskini versi aplikasi, pautan APK terkini, dan nota pelepasan secara real-time.'
                   : 'Jotform-style submission grid with customizable columns, inline status editing, and CSV exports.'}
               </p>
             </div>
@@ -1656,39 +1229,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               toast={toast}
               setIsApproving={setIsApproving}
             />
-          ) : activeTab === 'diagnostics' ? (
-            <AdminDiagnosticsTab
-              diagFirebase={diagFirebase}
-              diagCalendar={diagCalendar}
-              diagPdf={diagPdf}
-              diagNative={diagNative}
-              diagEmail={diagEmail}
-              diagTests={diagTests}
-              testEmailAddress={testEmailAddress}
-              isSendingTestEmail={isSendingTestEmail}
-              erudaEnabled={erudaEnabled}
-              runAllDiagnostics={runAllDiagnostics}
-              runFirebaseDiag={runFirebaseDiag}
-              runCalendarDiag={runCalendarDiag}
-              runPdfDiag={runPdfDiag}
-              runNativeDiag={runNativeDiag}
-              runSendTestEmail={runSendTestEmail}
-              runFeatureTest={runFeatureTest}
-              toggleEruda={toggleEruda}
-              setTestEmailAddress={setTestEmailAddress}
-              setDiagTests={setDiagTests}
-            />
           ) : activeTab === 'menu' ? (
             <AdminMenuTab
               language={language}
               authHeaders={authHeaders}
               getApiUrl={getApiUrl}
               toast={toast}
-            />
-          ) : activeTab === 'updates' ? (
-            <AdminUpdatesTab
-              adminToken={adminToken}
-              onPreviewModal={(config) => setPreviewUpdateConfig(config)}
             />
           ) : (
             <AdminTablesTab
@@ -1706,14 +1252,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           )}
         </div>
       </motion.main>
-
-      {/* Admin Update Preview Modal */}
-      <InAppUpdateModal
-        isOpen={Boolean(previewUpdateConfig)}
-        config={previewUpdateConfig}
-        isForceUpdate={previewUpdateConfig?.forceUpdate || false}
-        onDismiss={() => setPreviewUpdateConfig(null)}
-      />
 
       {/* Order Detail Modal */}
       <Suspense fallback={null}>

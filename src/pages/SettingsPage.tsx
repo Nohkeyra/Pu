@@ -77,6 +77,8 @@ export default function SettingsPage() {
     setCustomFontSizePx,
     customCardSizeScale,
     setCustomCardSizeScale,
+    currentStyleProfile,
+    setCurrentStyleProfile,
     resetUiToDefault,
   } = useSettings();
   const navigate = useNavigate();
@@ -585,6 +587,83 @@ export default function SettingsPage() {
               {/* Sub-tab 1: Theme & Appearance */}
               {adminSubTab === 'appearance' && (
                 <div className="space-y-6 pt-2">
+                  {/* Global Design Profile Override Card */}
+                  <div className="p-4 rounded-2xl bg-white dark:bg-card border border-border shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
+                      <span className="font-bold text-base text-deep-forest dark:text-white">
+                        Select Design Profile (Global Override)
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {/* 1. OPTION BLOCK: STREET NEO-BRUTALIST PROFILE */}
+                      <div
+                        onClick={async () => {
+                          await triggerLightImpact();
+                          setCurrentStyleProfile('NEO_BRUTALIST');
+                          setCustomMainColor('#E03F14'); // Hard reset to Tomato Burst
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          currentStyleProfile === 'NEO_BRUTALIST'
+                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
+                            : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 hover:border-stone-300'
+                        }`}
+                      >
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <p className="font-extrabold text-sm text-deep-forest dark:text-white flex items-center gap-1.5">
+                            🔥 Street Neo-Brutalist
+                          </p>
+                          <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
+                            Asymmetric bento boxes, thick black borders, high-impact high-contrast blocks.
+                          </p>
+                        </div>
+                        <input
+                          type="radio"
+                          name="style_profile"
+                          checked={currentStyleProfile === 'NEO_BRUTALIST'}
+                          onChange={() => {
+                            setCurrentStyleProfile('NEO_BRUTALIST');
+                            setCustomMainColor('#E03F14');
+                          }}
+                          className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
+                        />
+                      </div>
+
+                      {/* 2. OPTION BLOCK: NEON NIGHT MARKET PROFILE */}
+                      <div
+                        onClick={async () => {
+                          await triggerLightImpact();
+                          setCurrentStyleProfile('NEON_NIGHT');
+                          setCustomMainColor('#F69913'); // Hard reset to Neon Gold
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          currentStyleProfile === 'NEON_NIGHT'
+                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
+                            : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 hover:border-stone-300'
+                        }`}
+                      >
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <p className="font-extrabold text-sm text-deep-forest dark:text-white flex items-center gap-1.5">
+                            🌌 Neon Night Market
+                          </p>
+                          <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
+                            Authentic night market vibe, pitch-black cyberpunk backdrop, layered glowing neon tube outlines.
+                          </p>
+                        </div>
+                        <input
+                          type="radio"
+                          name="style_profile"
+                          checked={currentStyleProfile === 'NEON_NIGHT'}
+                          onChange={() => {
+                            setCurrentStyleProfile('NEON_NIGHT');
+                            setCustomMainColor('#F69913');
+                          }}
+                          className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   {/* Feature 1: Main Color Picker */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -597,21 +676,60 @@ export default function SettingsPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex-shrink-0">
-                        <input
-                          type="color"
-                          value={customMainColor}
-                          onChange={async (e) => {
-                            await triggerLightImpact();
-                            setCustomMainColor(e.target.value);
-                          }}
-                          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-border p-1 bg-white dark:bg-stone/20 shadow-sm transition-transform active:scale-95"
-                          aria-label="Pick main theme color"
-                        />
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex-shrink-0">
+                          <input
+                            type="color"
+                            value={customMainColor}
+                            onChange={async (e) => {
+                              await triggerLightImpact();
+                              setCustomMainColor(e.target.value);
+                            }}
+                            className="w-12 h-12 rounded-xl cursor-pointer border-2 border-border p-1 bg-white dark:bg-stone/20 shadow-sm transition-transform active:scale-95"
+                            aria-label="Pick main theme color"
+                          />
+                        </div>
+
+                        {/* Direct Hex Code Text Input & Set Button */}
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/50 font-mono text-xs font-bold">#</span>
+                            <input
+                              type="text"
+                              value={customMainColor.replace(/^#/, '')}
+                              onChange={async (e) => {
+                                const raw = e.target.value.trim().replace(/[^0-9a-fA-F]/g, '');
+                                if (raw.length <= 6) {
+                                  const formatted = `#${raw}`;
+                                  setCustomMainColor(formatted);
+                                  if (raw.length === 6 || raw.length === 3) {
+                                    await triggerLightImpact();
+                                  }
+                                }
+                              }}
+                              placeholder="E03F14"
+                              maxLength={6}
+                              className="w-full pl-7 pr-3 py-2 text-xs font-mono font-bold uppercase rounded-xl border border-border bg-white dark:bg-stone/20 text-deep-forest dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await triggerLightImpact();
+                              if (!customMainColor.startsWith('#')) {
+                                setCustomMainColor(`#${customMainColor}`);
+                              }
+                            }}
+                            className="px-3 py-2 text-xs font-bold rounded-xl bg-[var(--color-sunshine-cta)] text-white shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                          >
+                            {language === 'bm' ? 'Tetapkan' : 'Set'}
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
+                      {/* Color Presets */}
+                      <div className="flex items-center gap-2 flex-wrap pt-1">
                         {[
                           { name: 'Tomato Burst', hex: '#e03f14' },
                           { name: 'Royal Gold', hex: '#f69913' },

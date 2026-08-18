@@ -4,6 +4,7 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
+export type StyleProfile = 'DEFAULT' | 'NEO_BRUTALIST' | 'NEON_NIGHT';
 
 export const DEFAULT_MAIN_COLOR = '#e03f14'; // Wawasan Tomato Burst
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
@@ -28,6 +29,8 @@ interface SettingsContextType {
   setCustomFontSizePx: (size: number) => void;
   customCardSizeScale: number; // 0.8 to 1.3 (80% to 130%)
   setCustomCardSizeScale: (scale: number) => void;
+  currentStyleProfile: StyleProfile;
+  setCurrentStyleProfile: (profile: StyleProfile) => void;
   resetUiToDefault: () => Promise<void>;
 }
 
@@ -76,9 +79,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Admin Customize UI States
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [customMainColor, setCustomMainColorState] = useState<string>(DEFAULT_MAIN_COLOR);
   const [customFontSizePx, setCustomFontSizePxState] = useState<number>(DEFAULT_FONT_SIZE_PX);
   const [customCardSizeScale, setCustomCardSizeScaleState] = useState<number>(DEFAULT_CARD_SCALE);
+  const [currentStyleProfile, setCurrentStyleProfileState] = useState<StyleProfile>('DEFAULT');
 
   // Check if admin session token exists in Capacitor Preferences / SharedPreferences
   const checkAdminStatus = useCallback(async (): Promise<boolean> => {
@@ -121,8 +126,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             setCustomCardSizeScaleState(parsed);
           }
         }
+
+        const savedStyleProfile = await getSecureItem('app_style_profile');
+        if (savedStyleProfile === 'NEO_BRUTALIST' || savedStyleProfile === 'NEON_NIGHT') {
+          setCurrentStyleProfileState(savedStyleProfile as StyleProfile);
+        }
       } catch (err) {
         console.warn('Failed to load custom UI parameters from preferences:', err);
+      } finally {
+        setIsLoaded(true);
       }
     };
 
@@ -151,25 +163,45 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--color-sunshine-cta-hover', customMainColor);
       root.style.setProperty('--primary', customMainColor);
       root.style.setProperty('--ring', customMainColor);
-      setSecureItem('app_custom_main_color', customMainColor);
+      if (isLoaded) {
+        setSecureItem('app_custom_main_color', customMainColor);
+      }
     }
-  }, [customMainColor]);
+  }, [customMainColor, isLoaded]);
 
   // Apply custom font size live across root rem/px scale
   useEffect(() => {
     const root = document.documentElement;
     root.style.fontSize = `${customFontSizePx}px`;
     root.style.setProperty('--app-font-size', `${customFontSizePx}px`);
-    setSecureItem('app_custom_font_size_px', String(customFontSizePx));
-  }, [customFontSizePx]);
+    if (isLoaded) {
+      setSecureItem('app_custom_font_size_px', String(customFontSizePx));
+    }
+  }, [customFontSizePx, isLoaded]);
 
   // Apply custom card scale live across cards & grids
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--app-card-scale', String(customCardSizeScale));
     root.style.setProperty('--menu-card-scale', String(customCardSizeScale));
-    setSecureItem('app_custom_card_scale', String(customCardSizeScale));
-  }, [customCardSizeScale]);
+    if (isLoaded) {
+      setSecureItem('app_custom_card_scale', String(customCardSizeScale));
+    }
+  }, [customCardSizeScale, isLoaded]);
+
+  // Apply style profile classes to documentElement
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('profile-neo-brutalist', 'profile-neon-night');
+    if (currentStyleProfile === 'NEO_BRUTALIST') {
+      root.classList.add('profile-neo-brutalist');
+    } else if (currentStyleProfile === 'NEON_NIGHT') {
+      root.classList.add('profile-neon-night');
+    }
+    if (isLoaded) {
+      setSecureItem('app_style_profile', currentStyleProfile);
+    }
+  }, [currentStyleProfile, isLoaded]);
 
   // Handlers for live updates
   const setCustomMainColor = (color: string) => {
@@ -184,11 +216,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setCustomCardSizeScaleState(scale);
   };
 
+  const setCurrentStyleProfile = (profile: StyleProfile) => {
+    setCurrentStyleProfileState(profile);
+  };
+
   // Reset to Default button logic
   const resetUiToDefault = async () => {
     setCustomMainColorState(DEFAULT_MAIN_COLOR);
     setCustomFontSizePxState(DEFAULT_FONT_SIZE_PX);
     setCustomCardSizeScaleState(DEFAULT_CARD_SCALE);
+    setCurrentStyleProfileState('DEFAULT');
     setFontSizeState('base');
 
     const root = document.documentElement;
@@ -200,10 +237,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     root.style.fontSize = `${DEFAULT_FONT_SIZE_PX}px`;
     root.style.setProperty('--app-card-scale', '1');
     root.style.setProperty('--menu-card-scale', '1');
+    root.classList.remove('profile-neo-brutalist', 'profile-neon-night');
 
     await removeSecureItem('app_custom_main_color');
     await removeSecureItem('app_custom_font_size_px');
     await removeSecureItem('app_custom_card_scale');
+    await removeSecureItem('app_style_profile');
   };
 
   useEffect(() => {
@@ -249,6 +288,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setCustomFontSizePx,
         customCardSizeScale,
         setCustomCardSizeScale,
+        currentStyleProfile,
+        setCurrentStyleProfile,
         resetUiToDefault,
       }}
     >
