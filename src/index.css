@@ -50,6 +50,11 @@
     --color-sunshine-cta-hover: #c73510;
     --color-sunshine-cta-press: #a12c0d;
 
+    /* Custom UI dynamic scaling tokens (Admin Customizer) */
+    --app-card-scale: 1;
+    --menu-card-scale: 1;
+    --app-font-size: 16px;
+
     /* Text-on-accent pairing tokens — new (2026-08-14). Components using
        bg-sunshine or bg-crisp-carrot directly (not just bg-sunshine-cta)
        should pair with these rather than assuming white text. */
@@ -814,6 +819,15 @@
 
 .animate-glitch-cyan {
   animation: glitch-anim-1 0.75s infinite linear alternate-reverse;
+}
+
+/* Scalable Card Utility for Admin UI Customizer */
+.scalable-card,
+.menu-card,
+.dish-card {
+  transform: scale(var(--app-card-scale, 1));
+  transform-origin: center top;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-glitch-magenta {

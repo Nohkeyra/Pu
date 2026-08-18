@@ -20,12 +20,27 @@ import {
   Settings,
   Type,
   RefreshCw,
+  Palette,
+  Shield,
+  RotateCcw,
+  Paintbrush,
+  LayoutGrid,
+  Radio,
+  Terminal,
 } from 'lucide-react';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
+import { Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Device } from '@capacitor/device';
 import { useToast } from '@/components/ui/Toast';
 import { useState } from 'react';
-import { CURRENT_APP_VERSION } from '@/services/updateService';
+import { CURRENT_APP_VERSION, type AppVersionConfig } from '@/services/updateService';
+import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
+import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
+import InAppUpdateModal from '@/components/InAppUpdateModal';
+import { generateInvoicePDF } from '@/services/pdfService';
+import { getApiUrl } from '@/lib/api';
 
 function BrandMark() {
   return (
@@ -55,10 +70,311 @@ export default function SettingsPage() {
     setFontSize,
     keepAwakeEnabled,
     setKeepAwakeEnabled,
+    isAdmin,
+    customMainColor,
+    setCustomMainColor,
+    customFontSizePx,
+    setCustomFontSizePx,
+    customCardSizeScale,
+    setCustomCardSizeScale,
+    resetUiToDefault,
   } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  // Admin sub-menu active tab state ('appearance' | 'updates' | 'diagnostics')
+  const [adminSubTab, setAdminSubTab] = useState<'appearance' | 'updates' | 'diagnostics'>('appearance');
+  const [previewUpdateConfig, setPreviewUpdateConfig] = useState<AppVersionConfig | null>(null);
+
+  // Diagnostics states
+  const [diagFirebase, setDiagFirebase] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; projectId?: string }>({ status: 'idle' });
+  const [diagCalendar, setDiagCalendar] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; calendarsReturned?: number }>({ status: 'idle' });
+  const [diagEmail, setDiagEmail] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
+  const [diagPdf, setDiagPdf] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
+  const [diagNative, setDiagNative] = useState<{
+    status: 'idle' | 'running' | 'pass' | 'fail';
+    details?: {
+      isNative: boolean;
+      platform: string;
+      hasFilesystem: boolean;
+      hasShare: boolean;
+      userAgent?: string;
+      deviceInfo?: Record<string, unknown>;
+      deviceId?: Record<string, unknown>;
+      batteryInfo?: Record<string, unknown>;
+      error?: string;
+    };
+  }>({ status: 'idle' });
+
+  const [diagTests, setDiagTests] = useState<{ id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[]>([
+    { id: 'combined_invoice', name: 'Combined Invoice Service (Multi-Order)', status: 'idle' },
+    { id: 'consolidated_invoice', name: 'Consolidated Invoice Service (Multi-Client)', status: 'idle' },
+    { id: 'db_latency', name: 'Cloud Firestore Latency (Live Ping)', status: 'idle' },
+    { id: 'auth_session', name: 'Admin Session Integrity', status: 'idle' }
+  ]);
+
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+
+  const [erudaEnabled, setErudaEnabled] = useState(
+    () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
+  );
+
+  const adminToken = typeof localStorage !== 'undefined' ? localStorage.getItem('wawasan_admin_token') || '' : '';
+
+  const authHeaders = (): HeadersInit => ({
+    'Content-Type': 'application/json',
+    ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+  });
+
+  const toggleEruda = async () => {
+    const nextState = !erudaEnabled;
+    setErudaEnabled(nextState);
+    localStorage.setItem('wawasan_eruda_enabled', nextState ? 'true' : 'false');
+    
+    const erudaWin = window as unknown as { eruda?: { destroy: () => void } };
+    
+    if (nextState) {
+      toast({
+        title: "Developer Toolkit Enabled",
+        description: "Loading inspector console... Look for gear icon in bottom-right corner.",
+      });
+      try {
+        const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+        const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
+
+        if (!isFetchWritable) {
+          toast({
+            title: "Toolkit Unavailable in Preview iFrame",
+            description: "Browser protects window.fetch. Open in new window to inspect.",
+            variant: "error"
+          });
+          return;
+        }
+
+        const erudaModule = await import('eruda');
+        if (!document.getElementById('eruda') && !erudaWin.eruda) {
+          erudaModule.default.init();
+        }
+      } catch (err) {
+        console.error('Failed to load Eruda dynamically:', err);
+        toast({
+          title: "Toolkit Load Failed",
+          description: "Could not load eruda module.",
+          variant: "error"
+        });
+      }
+    } else {
+      toast({
+        title: "Developer Toolkit Disabled",
+        description: "The inspector console has been deactivated.",
+      });
+      if (erudaWin.eruda) {
+        try {
+          erudaWin.eruda.destroy();
+          erudaWin.eruda = undefined;
+        } catch (e) {
+          console.warn('Eruda destroy error:', e);
+        }
+      }
+    }
+  };
+
+  const runFirebaseDiag = async () => {
+    setDiagFirebase({ status: 'running' });
+    try {
+      const response = await fetch(getApiUrl('/api/diagnostics/firebase'), { headers: authHeaders() });
+      const data = await response.json();
+      if (response.ok) {
+        setDiagFirebase({ 
+          status: 'pass', 
+          projectId: data.projectId,
+          message: data.message || `Connected from ${Capacitor.isNativePlatform() ? 'Android APK' : 'Web Browser'}` 
+        });
+      } else {
+        setDiagFirebase({ 
+          status: 'fail', 
+          message: data.message || data.error || 'Failed to authenticate/write to Firestore' 
+        });
+      }
+    } catch (err: unknown) {
+      setDiagFirebase({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });
+    }
+  };
+
+  const runCalendarDiag = async () => {
+    setDiagCalendar({ status: 'running' });
+    try {
+      const response = await fetch(getApiUrl('/api/diagnostics/calendar'), { headers: authHeaders() });
+      const data = await response.json();
+      if (response.ok && data.status === 'healthy') {
+        setDiagCalendar({ 
+          status: 'pass', 
+          calendarsReturned: data.calendarsReturned,
+          message: data.message 
+        });
+      } else {
+        setDiagCalendar({ 
+          status: 'fail', 
+          message: data.message || data.error || `Status: ${data.status || response.status}` 
+        });
+      }
+    } catch (err: unknown) {
+      setDiagCalendar({ status: 'fail', message: err instanceof Error ? err.message : 'Network connection failed' });
+    }
+  };
+
+  const runNativeDiag = async () => {
+    setDiagNative({ status: 'running' });
+    try {
+      const isNative = Capacitor.isNativePlatform();
+      const platform = Capacitor.getPlatform();
+      const hasFilesystem = typeof Filesystem !== 'undefined';
+      const hasShare = typeof Share !== 'undefined';
+
+      let deviceInfo: Record<string, unknown> | undefined;
+      let deviceId: Record<string, unknown> | undefined;
+      let batteryInfo: Record<string, unknown> | undefined;
+
+      try {
+        deviceInfo = (await Device.getInfo()) as unknown as Record<string, unknown>;
+        deviceId = (await Device.getId()) as unknown as Record<string, unknown>;
+      } catch (e) {
+        console.warn('Device info not available:', e);
+      }
+
+      try {
+        batteryInfo = (await Device.getBatteryInfo()) as unknown as Record<string, unknown>;
+      } catch (e) {
+        console.warn('Battery info not available:', e);
+      }
+
+      setDiagNative({
+        status: 'pass',
+        details: {
+          isNative,
+          platform,
+          hasFilesystem,
+          hasShare,
+          userAgent: navigator.userAgent,
+          deviceInfo,
+          deviceId,
+          batteryInfo,
+        }
+      });
+    } catch (err: unknown) {
+      setDiagNative({
+        status: 'fail',
+        details: {
+          isNative: false,
+          platform: 'unknown',
+          hasFilesystem: false,
+          hasShare: false,
+          error: err instanceof Error ? err.message : String(err),
+        }
+      });
+    }
+  };
+
+  const runPdfDiag = async () => {
+    setDiagPdf({ status: 'running' });
+    try {
+      const pdfData = {
+        id: 'diag_' + Math.random().toString(36).substring(2, 8),
+        to: 'Pejabat Pentadbiran Diagnostik',
+        attn: 'Bahagian Teknologi Maklumat',
+        name: 'Sistem Diagnostik Wawasan',
+        contact: '03-88880000',
+        email: 'diagnostic-test@wawasan.com',
+        dateTime: new Date().toISOString(),
+        location: 'Blok B, Kompleks Kerajaan, Putrajaya',
+        quantity: 50,
+        meals: ['breakfast', 'lunch'],
+        menu: 'Nasi Lemak Ayam Goreng, Teh Tarik, Buah-buahan',
+        notes: 'Ujian diagnostik in-memory PDF generator.',
+        status: 'approved' as const,
+        prices: { breakfast: 7.50, lunch: 12.50 },
+        totalAmount: 1000.00,
+        lang: 'bm' as const,
+        invoiceNo: 'DIAG-2026-0001'
+      };
+
+      const pdfDoc = generateInvoicePDF(pdfData as unknown as Parameters<typeof generateInvoicePDF>[0], true, 'bm');
+      const dataUri = pdfDoc.output('datauristring');
+      if (dataUri && dataUri.startsWith('data:application/pdf')) {
+        setDiagPdf({ status: 'pass', message: 'PDF generated successfully (Size: ' + Math.round(dataUri.length / 1024) + ' KB)' });
+      } else {
+        setDiagPdf({ status: 'fail', message: 'PDF output is invalid' });
+      }
+    } catch (err: unknown) {
+      setDiagPdf({ status: 'fail', message: err instanceof Error ? err.message : 'PDF Generation threw an unexpected exception' });
+    }
+  };
+
+  const runSendTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testEmailAddress) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a test recipient email address',
+        variant: 'error'
+      });
+      return;
+    }
+
+    setIsSendingTestEmail(true);
+    setDiagEmail({ status: 'running' });
+    try {
+      const response = await fetch(getApiUrl('/api/diagnostics/email'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ testEmail: testEmailAddress })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDiagEmail({ status: 'pass', message: `Test email sent! Message ID: ${data.messageId}` });
+        toast({
+          title: 'Email Sent',
+          description: 'Diagnostics test email dispatched successfully',
+          variant: 'success'
+        });
+      } else {
+        const data = await response.json();
+        setDiagEmail({ status: 'fail', message: data.error || 'SMTP failed' });
+        toast({
+          title: 'Email Failed',
+          description: data.error || 'Failed to send test email',
+          variant: 'error'
+        });
+      }
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Network error';
+      setDiagEmail({ status: 'fail', message: errorMsg });
+      toast({
+        title: 'Network Error',
+        description: errorMsg,
+        variant: 'error'
+      });
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
+
+  const runAllDiagnostics = () => {
+    runFirebaseDiag();
+    runCalendarDiag();
+    runNativeDiag();
+    runPdfDiag();
+  };
+
+  const runFeatureTest = (feature: string) => {
+    toast({
+      title: 'Running Feature Test',
+      description: `Initiated test runner for ${feature}`,
+    });
+  };
 
   // Handle manual update check
   const handleCheckForUpdates = async () => {
@@ -173,7 +489,7 @@ export default function SettingsPage() {
         </header>
 
         {/* Main Settings Content */}
-        <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-2xl mx-auto space-y-6">
+        <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-4xl mx-auto space-y-6 px-4">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
               <Settings className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
@@ -189,6 +505,290 @@ export default function SettingsPage() {
               </p>
             </div>
           </div>
+
+          {/* ADMIN ONLY SUB-MENU: Theme & Appearance, Live Updates, Diagnostics */}
+          {isAdmin && (
+            <section className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white dark:from-amber-950/30 dark:via-orange-950/15 dark:to-card border-2 border-amber-500/40 dark:border-amber-500/30 rounded-3xl p-6 shadow-md space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-amber-500/20 pb-4 gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 dark:bg-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
+                      {language === 'bm' ? 'Kawalan Pentadbir (Admin Only)' : 'Admin Control Panel (Admin Only)'}
+                    </h2>
+                    <p className="text-xs text-stone dark:text-stone/75">
+                      {language === 'bm'
+                        ? 'Pengubahsuaian UI, siaran kemaskini langsung, dan diagnostik sistem.'
+                        : 'UI customization, live update broadcasts, and system health diagnostics.'}
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex-shrink-0">
+                  <Shield className="w-3.5 h-3.5" />
+                  {language === 'bm' ? 'KHAS ADMIN' : 'ADMIN EXCLUSIVE'}
+                </span>
+              </div>
+
+              {/* Sub-menu Tabs Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1.5 rounded-2xl bg-stone-200/50 dark:bg-stone-900/50 border border-amber-500/20">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setAdminSubTab('appearance');
+                  }}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                    adminSubTab === 'appearance'
+                      ? 'bg-amber-500 text-stone-950 font-extrabold shadow-md scale-[1.02]'
+                      : 'text-stone-700 dark:text-stone-300 hover:bg-stone-300/30 dark:hover:bg-stone-800/50'
+                  }`}
+                >
+                  <Palette className="w-4 h-4" />
+                  <span>{language === 'bm' ? 'Tema & Penampilan' : 'Theme & Appearance'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setAdminSubTab('updates');
+                  }}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                    adminSubTab === 'updates'
+                      ? 'bg-amber-500 text-stone-950 font-extrabold shadow-md scale-[1.02]'
+                      : 'text-stone-700 dark:text-stone-300 hover:bg-stone-300/30 dark:hover:bg-stone-800/50'
+                  }`}
+                >
+                  <Radio className="w-4 h-4" />
+                  <span>{language === 'bm' ? 'In-App Live Updates' : 'In-App Live Updates'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setAdminSubTab('diagnostics');
+                  }}
+                  className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                    adminSubTab === 'diagnostics'
+                      ? 'bg-amber-500 text-stone-950 font-extrabold shadow-md scale-[1.02]'
+                      : 'text-stone-700 dark:text-stone-300 hover:bg-stone-300/30 dark:hover:bg-stone-800/50'
+                  }`}
+                >
+                  <Terminal className="w-4 h-4" />
+                  <span>{language === 'bm' ? 'Diagnostik Sistem' : 'System Diagnostics'}</span>
+                </button>
+              </div>
+
+              {/* Sub-tab 1: Theme & Appearance */}
+              {adminSubTab === 'appearance' && (
+                <div className="space-y-6 pt-2">
+                  {/* Feature 1: Main Color Picker */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                        <Paintbrush className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                        {language === 'bm' ? 'Warna Utama Aplikasi (Main Accent Color)' : 'App Main Theme Color'}
+                      </label>
+                      <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-stone/10 dark:bg-stone/20 text-deep-forest dark:text-white uppercase">
+                        {customMainColor}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        <input
+                          type="color"
+                          value={customMainColor}
+                          onChange={async (e) => {
+                            await triggerLightImpact();
+                            setCustomMainColor(e.target.value);
+                          }}
+                          className="w-12 h-12 rounded-xl cursor-pointer border-2 border-border p-1 bg-white dark:bg-stone/20 shadow-sm transition-transform active:scale-95"
+                          aria-label="Pick main theme color"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {[
+                          { name: 'Tomato Burst', hex: '#e03f14' },
+                          { name: 'Royal Gold', hex: '#f69913' },
+                          { name: 'Deep Forest', hex: '#0c453c' },
+                          { name: 'Sapphire Blue', hex: '#2563eb' },
+                          { name: 'Emerald Green', hex: '#059669' },
+                          { name: 'Royal Purple', hex: '#7c3aed' },
+                          { name: 'Crimson Red', hex: '#dc2626' },
+                        ].map((preset) => (
+                          <button
+                            key={preset.hex}
+                            type="button"
+                            onClick={async () => {
+                              await triggerLightImpact();
+                              setCustomMainColor(preset.hex);
+                            }}
+                            title={preset.name}
+                            style={{ backgroundColor: preset.hex }}
+                            className={`w-8 h-8 rounded-xl border-2 transition-all duration-200 ${
+                              customMainColor.toLowerCase() === preset.hex.toLowerCase()
+                                ? 'border-white dark:border-white ring-2 ring-amber-500 scale-110 shadow-md'
+                                : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 2: Font Size Slider */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                        <Type className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                        {language === 'bm' ? 'Saiz Tulisan (Menu & Harga)' : 'Font Size Slider (Menu & Price)'}
+                      </label>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-stone/10 dark:bg-stone/20 text-deep-forest dark:text-white">
+                        {customFontSizePx}px ({Math.round((customFontSizePx / 16) * 100)}%)
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={12}
+                      max={22}
+                      step={1}
+                      value={customFontSizePx}
+                      onChange={async (e) => {
+                        await triggerLightImpact();
+                        setCustomFontSizePx(Number(e.target.value));
+                      }}
+                      className="w-full h-2 bg-stone/20 dark:bg-stone/30 rounded-lg appearance-none cursor-pointer accent-[var(--color-sunshine-cta)]"
+                    />
+
+                    {/* Live Font Size Text Preview */}
+                    <div className="p-3 bg-white/80 dark:bg-stone/20 border border-border/80 rounded-2xl shadow-inner">
+                      <div className="text-[11px] text-stone dark:text-stone/75 font-semibold mb-1 uppercase tracking-wider">
+                        {language === 'bm' ? 'Pratonton Tulisan Langsung:' : 'Live Font Preview:'}
+                      </div>
+                      <p className="font-display font-bold text-deep-forest dark:text-white" style={{ fontSize: `${customFontSizePx}px` }}>
+                        Nasi Briyani Ayam Rempah
+                      </p>
+                      <p className="font-semibold text-[var(--color-sunshine-cta)] mt-0.5" style={{ fontSize: `${Math.max(12, customFontSizePx - 1)}px` }}>
+                        RM 15.00 / pax • Katering Lengkap Pak Usop
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Feature 3: Card / Item Size Slider (RecyclerView Scale) */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                        {language === 'bm' ? 'Saiz Kad / Item (RecyclerView Grid)' : 'Card / Item Size Slider (Grid)'}
+                      </label>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-stone/10 dark:bg-stone/20 text-deep-forest dark:text-white">
+                        {Math.round(customCardSizeScale * 100)}% ({customCardSizeScale < 0.95 ? (language === 'bm' ? 'Mampat' : 'Compact') : customCardSizeScale > 1.05 ? (language === 'bm' ? 'Besar' : 'Spacious') : (language === 'bm' ? 'Biasa' : 'Standard')})
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={80}
+                      max={130}
+                      step={5}
+                      value={Math.round(customCardSizeScale * 100)}
+                      onChange={async (e) => {
+                        await triggerLightImpact();
+                        setCustomCardSizeScale(Number(e.target.value) / 100);
+                      }}
+                      className="w-full h-2 bg-stone/20 dark:bg-stone/30 rounded-lg appearance-none cursor-pointer accent-[var(--color-sunshine-cta)]"
+                    />
+
+                    {/* Live Card Size Scale Preview */}
+                    <div className="p-4 bg-white/80 dark:bg-stone/20 border border-border/80 rounded-2xl flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="w-full max-w-[280px] p-3 rounded-2xl bg-white dark:bg-card border border-border shadow-sm flex items-center gap-3 transition-transform duration-150"
+                        style={{ transform: `scale(${customCardSizeScale})`, transformOrigin: 'center center' }}
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center text-[var(--color-sunshine-cta)] font-bold text-lg flex-shrink-0">
+                          🍲
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-deep-forest dark:text-white truncate">
+                            Asam Laksa Johore
+                          </p>
+                          <p className="text-xs font-semibold text-[var(--color-sunshine-cta)]">
+                            RM 12.50
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 4: Reset to Default Button */}
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        await triggerMediumImpact();
+                        await resetUiToDefault();
+                        toast({
+                          title: language === 'bm' ? 'Seta Semula Tetapan UI' : 'UI Reset to Default',
+                          description: language === 'bm' 
+                            ? 'Warna utama, saiz tulisan dan saiz kad telah dipulihkan ke asal.' 
+                            : 'Main color, font size, and card sizes have been restored to default.',
+                          variant: 'success',
+                        });
+                      }}
+                      className="rounded-2xl border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 min-h-[44px] px-5 font-semibold flex items-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      {language === 'bm' ? 'Seta Semula ke Asal (Reset Default)' : 'Reset to Default'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-tab 2: In-App Live Updates */}
+              {adminSubTab === 'updates' && (
+                <div className="pt-2">
+                  <AdminUpdatesTab
+                    adminToken={adminToken}
+                    onPreviewModal={(config) => setPreviewUpdateConfig(config)}
+                  />
+                </div>
+              )}
+
+              {/* Sub-tab 3: System Diagnostics */}
+              {adminSubTab === 'diagnostics' && (
+                <div className="pt-2">
+                  <AdminDiagnosticsTab
+                    diagFirebase={diagFirebase}
+                    diagCalendar={diagCalendar}
+                    diagPdf={diagPdf}
+                    diagNative={diagNative}
+                    diagEmail={diagEmail}
+                    diagTests={diagTests}
+                    testEmailAddress={testEmailAddress}
+                    isSendingTestEmail={isSendingTestEmail}
+                    erudaEnabled={erudaEnabled}
+                    runAllDiagnostics={runAllDiagnostics}
+                    runFirebaseDiag={runFirebaseDiag}
+                    runCalendarDiag={runCalendarDiag}
+                    runPdfDiag={runPdfDiag}
+                    runNativeDiag={runNativeDiag}
+                    runSendTestEmail={runSendTestEmail}
+                    runFeatureTest={runFeatureTest}
+                    toggleEruda={toggleEruda}
+                    setTestEmailAddress={setTestEmailAddress}
+                    setDiagTests={setDiagTests}
+                  />
+                </div>
+              )}
+            </section>
+          )}
 
           {/* 1. App Display (Language & Theme) */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
@@ -395,8 +995,6 @@ export default function SettingsPage() {
             </ResponsiveToggleRow>
           </section>
 
-
-
           {/* 4. System Information */}
           <section className="bg-white/50 dark:bg-card/50 border border-border/80 rounded-3xl p-6 shadow-sm space-y-4 text-center">
             <div className="text-xs text-stone dark:text-stone/60 space-y-1.5 font-mono">
@@ -428,6 +1026,16 @@ export default function SettingsPage() {
             </div>
           </section>
         </main>
+
+        {/* Live Update Preview Modal */}
+        {previewUpdateConfig && (
+          <InAppUpdateModal
+            isOpen={Boolean(previewUpdateConfig)}
+            config={previewUpdateConfig}
+            isForceUpdate={previewUpdateConfig.forceUpdate}
+            onDismiss={() => setPreviewUpdateConfig(null)}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );
