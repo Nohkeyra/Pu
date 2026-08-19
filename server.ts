@@ -17,6 +17,7 @@ import updateRoutes from './server/routes/updateRoutes.js';
 import invoiceRoutes from './server/routes/invoiceRoutes.js';
 import diagnosticRoutes from './server/routes/diagnosticRoutes.js';
 import widgetRoutes from './server/routes/widgetRoutes.js';
+import mcpRoutes from './server/routes/mcpRoutes.js';
 
 dotenv.config();
 
@@ -185,6 +186,8 @@ async function startServer() {
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);
   app.use('/api/widget', widgetRoutes);
+  app.use('/api/mcp', mcpRoutes);
+  app.use('/api/docs', mcpRoutes);
 
   // API 404 handler to ensure /api/* calls return JSON instead of HTML
   app.use('/api/*', (req: express.Request, res: express.Response) => {
