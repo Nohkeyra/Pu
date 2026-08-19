@@ -185,7 +185,7 @@ export function AdminOrdersTab({
       )}
 
       {/* Balanced toolbar */}
-      <div className="mb-5 bg-white dark:bg-card border border-[#EDE4D7] dark:border-stone-800 rounded-[24px] p-4 sm:p-5 shadow-sm space-y-4">
+      <div className="mb-5 bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 rounded-[24px] p-4 sm:p-5 shadow-sm space-y-4">
         {/* Row 1: Search, Date range, and Primary action buttons */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
           {/* Search Input */}
@@ -197,13 +197,13 @@ export function AdminOrdersTab({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
               aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
-              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-2xl border border-[#EDE4D7] dark:border-stone-800 bg-[#F7F2EA]/60 dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
+              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-2xl border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
             />
           </div>
 
           {/* Date range picker group */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl px-3.5 h-11 min-h-[44px]">
+            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl px-3.5 h-11 min-h-[44px]">
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
                 {language === 'bm' ? 'Dari' : 'From'}
               </span>
@@ -239,7 +239,7 @@ export function AdminOrdersTab({
 
           {/* Primary actions toolbar */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-11 min-h-[44px]">
+            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl h-11 min-h-[44px]">
               <Switch
                 id="select-mode-toggle"
                 checked={isSelectMode}
@@ -267,7 +267,7 @@ export function AdminOrdersTab({
 
         {/* Row 2: Status filter chips (Clean horizontal scroll on mobile, wrap on tablet/desktop) */}
         {setStatusFilter && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-1 border-t border-[#EDE4D7]/70 dark:border-stone-800/70">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-1 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
             {[
               { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
               { id: 'pending', label: language === 'bm' ? 'Menunggu' : 'Pending' },
@@ -285,8 +285,8 @@ export function AdminOrdersTab({
                   aria-pressed={active}
                   className={`h-9 min-h-[36px] px-4 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center justify-center cursor-pointer select-none ${
                     active
-                      ? 'bg-[#f69913] text-white border-[#f69913] shadow-[0_3px_10px_rgba(246,153,19,0.3)]'
-                      : 'bg-[#F7F2EA]/60 dark:bg-background/50 text-[#0c453c]/70 dark:text-stone-300 border-[#EDE4D7] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
+                      ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
+                      : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/70 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
                   }`}
                 >
                   {chip.label}
@@ -298,8 +298,8 @@ export function AdminOrdersTab({
 
         {/* Row 3: Selection tools — only when Select Mode is on */}
         {isSelectMode && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#EDE4D7] dark:border-stone-800">
-            <div className="flex items-center gap-2.5 px-3.5 bg-[#F7F2EA]/60 dark:bg-background/50 border border-[#EDE4D7] dark:border-stone-800 rounded-2xl h-10 min-h-[40px]">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--color-light-forest)] dark:border-stone-800">
+            <div className="flex items-center gap-2.5 px-3.5 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl h-10 min-h-[40px]">
               <Switch
                 id="email-filter-toggle"
                 checked={filterBySameEmail}
@@ -341,7 +341,7 @@ export function AdminOrdersTab({
                   }
                   setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                 }}
-                className="h-10 min-h-[40px] border-[#EDE4D7] dark:border-stone-800 font-semibold rounded-2xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
+                className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-2xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
               >
                 {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
                   <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>
@@ -355,7 +355,7 @@ export function AdminOrdersTab({
       </div>
 
       {/* Jotform-style Submissions List */}
-      <div className="rounded-[24px] border border-[#EDE4D7] dark:border-stone-800 bg-white dark:bg-card overflow-hidden shadow-sm">
+      <div className="rounded-[24px] border border-[var(--color-light-forest)] dark:border-stone-800 bg-white dark:bg-card overflow-hidden shadow-sm">
         {searchedOrders.length === 0 ? (
           <EmptyState
             className="m-4"
@@ -455,10 +455,10 @@ export function AdminOrdersTab({
                   <div
                     onClick={() => openOrderDetail(order)}
                     className={`
-                      relative flex flex-col gap-3 p-4 rounded-[22px] bg-white dark:bg-card border border-[#EDE4D7] dark:border-stone-800
+                      relative flex flex-col gap-3 p-4 rounded-[22px] bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
                       cursor-pointer transition-all duration-200
-                      hover:shadow-[0_8px_28px_rgba(246,153,19,0.18)] hover:-translate-y-0.5
-                      ${isSelected ? 'ring-2 ring-[#f69913] shadow-[0_8px_28px_rgba(246,153,19,0.22)]' : ''}
+                      hover:shadow-[0_8px_28px_rgba(224,63,20,0.20)] hover:-translate-y-0.5
+                      ${isSelected ? 'ring-2 ring-sunshine-cta shadow-[0_8px_28px_rgba(224,63,20,0.25)]' : ''}
                       ${order.status === 'cancel_requested' ? 'ring-2 ring-amber-400/60' : ''}
                     `}
                   >

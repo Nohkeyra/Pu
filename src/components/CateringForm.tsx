@@ -14,8 +14,8 @@ export const CateringForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-cream dark:bg-[#030A09] text-deep-forest dark:text-stone-100 transition-colors duration-300">
-      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 bg-white dark:bg-[#121214] border border-border/80 dark:border-stone-800 shadow-xl transition-all">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-cream dark:bg-deep-forest text-deep-forest dark:text-stone-100 transition-colors duration-300">
+      <div className="w-full max-w-md rounded-3xl p-6 sm:p-8 bg-white dark:bg-deep-forest border border-border/80 dark:border-stone-800 shadow-xl transition-all">
         
         {/* Header Branding & Theme Toggle */}
         <div className="flex items-center justify-between pb-6 border-b border-border/40 dark:border-stone-800">

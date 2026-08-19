@@ -11,7 +11,7 @@ interface ReviewCardProps {
 
 export default function ReviewCard({ text, name, rating, date, tag, source = 'Google Review' }: ReviewCardProps) {
   return (
-    <div className="group relative bg-cream-dark/60 dark:bg-card/60 backdrop-blur-md rounded-2xl p-7 min-h-[340px] flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(232,144,37,0.12)] border border-stone/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/40 hover:bg-[var(--color-sunshine-cta)]/5">
+    <div className="group relative bg-cream-dark/60 dark:bg-card/60 backdrop-blur-md rounded-2xl p-7 min-h-[340px] flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(233,98,18,0.14)] border border-stone/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/40 hover:bg-[var(--color-sunshine-cta)]/5">
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 text-[11px] font-semibold text-deep-forest/70 dark:text-white/70">

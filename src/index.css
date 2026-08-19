@@ -4,202 +4,148 @@
 
 @layer base {
   :root {
-    --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-    --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-    --sal: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
-    --sar: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+    /* Safe Area Insets for Mobile/Capacitor & Web Views */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
 
-    /* Day Mode — Wawasan Palette v2 (2026-08-14 restyle) */
-    --color-deep-forest: #0c453c;       /* Deep Forest Green — was Deep Navy #023341 */
-    --color-forest: #14584c;            /* Lighter forest for surfaces */
-    --color-light-forest: #1d6e5e;      /* Lighter forest for accents */
-
-    --color-sunshine: #f69913;          /* Mustard Gold (Brand) — was Wawasan Orange #FD5E02 */
-    --color-honey: #f8ad42;             /* Lighter mustard */
-    --color-crisp-carrot: #e96212;      /* Burnt Orange — was #E04D00 */
-    --color-tomato-burst: #e03f14;      /* Bright Tomato Red — was #B33D00 */
-    --color-deep-forest-accent: #0c453c; /* Same as deep-forest in light mode (deep-forest already IS the forest green here); exists mainly so dark mode's border/accent-only use of this token has a light-mode counterpart with the same name. */
-    /* --color-kiwi: kept as a token (still referenced by 15+ components:
-       badge, toggle, table, calendar, ExportOrdersModal, OrderForm) but
-       remapped to crisp-carrot rather than removed outright — Noh confirmed
-       the light-mode palette must use ONLY the 4 new colors, and kiwi's
-       old neon-lime value (#39FF14) isn't one of them. crisp-carrot was
-       free (not otherwise assigned to a CTA/primary role), so it becomes
-       kiwi's new light-mode value. The ThemeContext AccentColor
-       sunshine/kiwi toggle system was checked and found to have no CSS or
-       component actually reading the accent state visually (dead switch),
-       so nothing else depends on kiwi meaning "green" specifically. */
-    --color-kiwi: #e96212;              /* Was Neon Lime #39FF14 — remapped to Burnt Orange */
-
-    /*
-     * P0 — AA-compliant text pairing per accent color, decided by actual
-     * measured contrast (2026-08-14), not by a blanket white-text rule:
-     *   #f69913 (mustard) on white  = 2.21:1 -> FAILS even for large text
-     *   #e96212 (burnt orange) on white = 3.38:1 -> FAILS for normal text
-     *   #e03f14 (tomato) on white = 4.29:1 -> just under strict AA-normal
-     *                                          (4.5) but PASSES AA-large (3.0)
-     *   #0c453c (deep forest) on white = 10.87:1 -> comfortable pass
-     * Decision (Noh: "ikut logik akal & visual, mudah dibaca dan kemas"):
-     * mustard & burnt-orange pair with dark forest-green text; tomato and
-     * deep-forest may use white text, since tomato reads cleanly at the
-     * bold/larger weights used for buttons and badges in this app.
-     */
-    --color-sunshine-cta: #e03f14;       /* Tomato as primary CTA — darkest/most legible with white text among the 3 accents */
-    --color-sunshine-cta-bg: #e03f14;
-    --color-sunshine-cta-fg: #FFFFFF;
-    --color-sunshine-cta-hover: #c73510;
-    --color-sunshine-cta-press: #a12c0d;
-
-    /* Custom UI dynamic scaling tokens (Admin Customizer) */
+    /* Logo-Derived Brand Tokens (light) */
+    --color-deep-forest: #0c453c;
+    --color-forest: #0c453c;
+    --color-light-forest: rgba(12, 69, 60, 0.12);
+    --color-deep-forest-accent: #0c453c;
+    --color-sunshine: #e99508;
+    --color-honey: #d1830e;
+    --color-crisp-carrot: #c85903;
+    --color-tomato-burst: #bf4a03;
+    --color-kiwi: #c85903;
+    --color-fern: #c85903;
+    --color-sunshine-cta: #bf4a03;
+    --color-sunshine-cta-bg: #bf4a03;
+    --color-sunshine-cta-fg: #ffffff;
+    --color-sunshine-cta-hover: #d1830e;
+    --color-sunshine-cta-press: #0c453c;
+    --color-on-sunshine: #0c453c;
+    --color-on-crisp-carrot: #ffffff;
+    --color-on-tomato-burst: #ffffff;
+    --color-on-deep-forest: #ffffff;
     --app-card-scale: 1;
     --menu-card-scale: 1;
     --app-font-size: 16px;
-
-    /* Text-on-accent pairing tokens — new (2026-08-14). Components using
-       bg-sunshine or bg-crisp-carrot directly (not just bg-sunshine-cta)
-       should pair with these rather than assuming white text. */
-    --color-on-sunshine: #0c453c;        /* dark forest text on mustard */
-    --color-on-crisp-carrot: #0c453c;    /* dark forest text on burnt orange */
-    --color-on-tomato-burst: #FFFFFF;    /* white text on tomato */
-    --color-on-deep-forest: #FFFFFF;     /* white text on deep forest */
-
-    /* Spacing scale (use consistently: tight groups / sections / cards) */
-    --space-1: 0.25rem;   /* 4px */
-    --space-2: 0.5rem;    /* 8px */
-    --space-3: 0.75rem;   /* 12px */
-    --space-4: 1rem;      /* 16px */
-    --space-5: 1.25rem;   /* 20px */
-    --space-6: 1.5rem;    /* 24px */
-    --space-8: 2rem;      /* 32px */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
     --radius-sm: 0.5rem;
     --radius-md: 0.75rem;
     --radius-lg: 1rem;
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
-
-
-    --color-cream: #FCF5E3;             /* Warm Cream Bg (unchanged) */
-    --color-cream-dark: #F5E8D0;        /* Slightly Darker Cream (unchanged) */
-    --color-charcoal: #0c453c;          /* Re-mapped to Deep Forest for legacy classes */
-    --color-stone: #6B7280;             /* Muted Grey Text (unchanged) */
-
-    /* Shadcn tokens — re-derived from the new palette (exact HSL, not approximated) */
-    --background: 43 81% 94%;           /* Matches #FCF5E3 (unchanged) */
-    --foreground: 171 70% 16%;          /* Matches #0c453c */
-    --card: 0 0% 100%;                  /* White Cards (unchanged) */
-    --card-foreground: 171 70% 16%;
-    --popover: 43 81% 94%;
-    --popover-foreground: 171 70% 16%;
-    --primary: 13 84% 48%;              /* Matches #e03f14 — tomato as primary CTA */
+    --color-cream: #fdfbf7;
+    --color-cream-dark: rgba(233, 149, 8, 0.08);
+    --color-charcoal: #0c453c;
+    --color-stone: rgba(12, 69, 60, 0.65);
+    --background: 40 33% 98%;
+    --foreground: 171 70% 17%;
+    --card: 40 33% 99%;
+    --card-foreground: 171 70% 17%;
+    --popover: 40 33% 99%;
+    --popover-foreground: 171 70% 17%;
+    --primary: 22 95% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 38 60% 89%;            /* Matches #F5E8D0 (unchanged) */
-    --secondary-foreground: 171 70% 16%;
-    --muted: 42 30% 85%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 22 86% 49%;               /* Was kiwi #39FF14 -> now matches crisp-carrot per kiwi remap */
-    --accent-foreground: 171 70% 16%;   /* Dark forest text — crisp-carrot fails AA with white text */
-    --destructive: 13 84% 48%;          /* Matches #e03f14 tomato */
+    --secondary: 38 93% 47%;
+    --secondary-foreground: 171 70% 17%;
+    --muted: 38 80% 95%;
+    --muted-foreground: 171 30% 30%;
+    --accent: 22 86% 49%;
+    --accent-foreground: 171 70% 17%;
+    --destructive: 22 95% 38%;
     --destructive-foreground: 0 0% 100%;
-    --border: 42 30% 85%;
-    --input: 42 30% 85%;
-    --ring: 13 84% 48%;                 /* Matches tomato CTA */
-    --radius: 1.5rem;                   /* Large rounded corners (unchanged) */
-
-    --color-selection-bg: rgba(246, 153, 19, 0.3);   /* mustard-based selection */
+    --border: 171 25% 88%;
+    --input: 171 25% 88%;
+    --ring: 38 93% 47%;
+    --radius: 1.5rem;
+    --color-selection-bg: rgba(233, 149, 8, 0.28);
     --color-selection-text: #0c453c;
-    --color-scrollbar-track: #FCF5E3;
-    --color-scrollbar-thumb: #D1D5DB;
-    --color-scrollbar-hover: #f69913;
-
-    --color-input-bg: #FFFFFF;
+    --color-scrollbar-track: rgba(12, 69, 60, 0.06);
+    --color-scrollbar-thumb: rgba(12, 69, 60, 0.30);
+    --color-scrollbar-hover: #e99508;
+    --color-input-bg: #ffffff;
     --color-input-text: #0c453c;
-    --color-input-border: rgba(0, 0, 0, 0.1);
-    --color-input-focus-shadow: rgba(224, 63, 20, 0.30);  /* tomato-based focus ring */
-
-    --color-header-bg: rgba(252, 245, 227, 0.95);
-    --color-header-border: rgba(0, 0, 0, 0.05);
-
-    --color-card-bg: #FFFFFF;
-    --color-card-border: rgba(0, 0, 0, 0.05);
+    --color-input-border: rgba(12, 69, 60, 0.16);
+    --color-input-focus-shadow: rgba(191, 74, 3, 0.25);
+    --color-header-bg: rgba(253, 251, 247, 0.94);
+    --color-header-border: rgba(12, 69, 60, 0.10);
+    --color-card-bg: #ffffff;
+    --color-card-border: rgba(12, 69, 60, 0.10);
   }
 
   .dark {
-    /* Dark Mode — Wawasan Palette v2 (2026-08-14 restyle)
-       Background/surface stays the existing charcoal (Noh: keep as-is).
-       Text stays ivory — #0c453c itself measured 1.72:1 on #121214,
-       far below AA, so deep-forest cannot serve as dark-mode body text.
-       Per Noh's decision, deep-forest appears here only as a subtle
-       border/accent color (--color-deep-forest-accent below), not as a
-       surface or text color. */
-    --color-deep-forest: #F5F5F5;       /* Soft Ivory Text (unchanged — deep forest itself fails as text-on-charcoal) */
-    --color-forest: #1b1b1e;            /* Charcoal for surfaces/cards (unchanged) */
-    --color-light-forest: #2b2b30;      /* Slightly lighter Charcoal for mid-ground accents (unchanged) */
-    --color-deep-forest-accent: #14584c; /* Deep forest green, lightened slightly from #0c453c for a visible border/accent on charcoal — not used as text or large surface */
+    /* Refined 4-Color Dark Mode: Obsidian Canvas, Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
+    --color-deep-forest: #ede5d8;
+    --color-forest: #1c2622;
+    --color-light-forest: rgba(233, 149, 8, 0.12);
+    --color-deep-forest-accent: #e99508;
+    --color-sunshine: #e99508;
+    --color-honey: #e99508;
+    --color-crisp-carrot: #bf4a03;
+    --color-tomato-burst: #bf4a03;
+    --color-kiwi: #bf4a03;
+    --color-fern: #bf4a03;
+    --color-sunshine-cta: #bf4a03;
+    --color-sunshine-cta-bg: #bf4a03;
+    --color-sunshine-cta-fg: #ede5d8;
+    --color-sunshine-cta-hover: #d15605;
+    --color-sunshine-cta-press: #9e3d02;
+    --color-on-sunshine: #0c100e;
+    --color-on-crisp-carrot: #ede5d8;
+    --color-on-tomato-burst: #ede5d8;
+    --color-on-deep-forest: #0c100e;
 
-    --color-sunshine: #f69913;          /* Mustard Gold (Brand) — was Vibrant Amber #FF8C42; 8.45:1 on charcoal */
-    --color-honey: #f8ad42;             /* Lighter mustard */
-    --color-crisp-carrot: #e96212;      /* Burnt Orange — was #E67228; 5.54:1 on charcoal */
-    --color-tomato-burst: #e03f14;      /* Bright Tomato Red — was #CC5500; 4.36:1 on charcoal (AA-large) */
-    /* --color-kiwi: remapped to crisp-carrot, same rationale as light mode
-       (see :root comment) — was Electric Lime #CCFF00. */
-    --color-kiwi: #e96212;
+    /* Background and surfaces */
+    --color-cream: #0c100e;
+    --color-cream-dark: #151d1a;
+    --color-charcoal: #0c100e;
+    --color-stone: #9d988f;
 
-    /*
-     * Dark mode CTA: sunshine (mustard) is the strongest performer on
-     * charcoal among the 4 new colors (8.45:1), so it keeps the CTA role
-     * it already had (previously amber #FF8C42, same role). Text stays
-     * dark charcoal on the mustard button for readability, matching the
-     * existing pattern (foreground was already the dark bg color, not
-     * white, for this exact reason).
-     */
-    --color-sunshine-cta: #f69913;
-    --color-sunshine-cta-bg: #f69913;
-    --color-sunshine-cta-fg: #121214;
-    --color-sunshine-cta-hover: #f8ad42;
-    --color-sunshine-cta-press: #fbc478;
+    /* Tailwind / Radix HSL tokens for .dark */
+    --background: 156 18% 6%;     /* #0C100E */
+    --foreground: 38 30% 89%;     /* #EDE5D8 */
+    --card: 160 15% 13%;          /* #1C2622 */
+    --card-foreground: 38 30% 89%;/* #EDE5D8 */
+    --popover: 160 15% 13%;       /* #1C2622 */
+    --popover-foreground: 38 30% 89%;
+    --primary: 22 95% 38%;        /* #BF4A03 */
+    --primary-foreground: 38 30% 89%;
+    --secondary: 160 12% 18%;     /* #26312D */
+    --secondary-foreground: 38 30% 89%;
+    --muted: 160 10% 15%;
+    --muted-foreground: 38 10% 60%; /* #9D988F */
+    --accent: 38 93% 47%;         /* #E99508 */
+    --accent-foreground: 156 18% 6%;
+    --destructive: 22 95% 38%;
+    --destructive-foreground: 38 30% 89%;
+    --border: 160 10% 20%;
+    --input: 160 10% 20%;
+    --ring: 38 93% 47%;
 
-    --color-cream: #121214;             /* High-style Charcoal Page Background (unchanged) */
-    --color-cream-dark: #0a0a0c;        /* Deeper charcoal base (unchanged) */
-    --color-charcoal: #121214;          /* Maps to background for legacy classes (unchanged) */
-    --color-stone: #9CA3AF;             /* Muted Grey Text (unchanged) */
-
-    /* Shadcn tokens — re-derived from the new palette (exact HSL) */
-    --background: 240 5% 7%;            /* Matches #121214 (unchanged) */
-    --foreground: 0 0% 96%;             /* Matches #F5F5F5 (unchanged) */
-    --card: 240 5% 11%;                 /* Matches #1b1b1e (unchanged) */
-    --card-foreground: 0 0% 96%;
-    --popover: 240 5% 7%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 35 93% 52%;              /* Matches #f69913 mustard — AA on charcoal */
-    --primary-foreground: 240 5% 7%;
-    --secondary: 240 5% 11%;            /* Matches #1b1b1e (unchanged) */
-    --secondary-foreground: 0 0% 96%;
-    --muted: 240 5% 18%;
-    --muted-foreground: 240 4% 65%;
-    --accent: 22 86% 49%;               /* Was kiwi #CCFF00 -> now matches crisp-carrot per kiwi remap */
-    --accent-foreground: 0 0% 96%;      /* Ivory text — crisp-carrot passes AA (5.54:1) with light text on charcoal-adjacent surfaces */
-    --destructive: 13 84% 48%;          /* Matches #e03f14 tomato */
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 5% 18%;
-    --input: 240 5% 18%;
-    --ring: 35 93% 52%;                 /* Matches sunshine CTA */
-
-    --color-selection-bg: rgba(246, 153, 19, 0.3);
-    --color-selection-text: #F5F5F5;
-    --color-scrollbar-track: #121214;
-    --color-scrollbar-thumb: #2b2b30;
-    --color-scrollbar-hover: #f69913;
-
-    --color-input-bg: #1b1b1e;
-    --color-input-text: #F5F5F5;
-    --color-input-border: rgba(255, 255, 255, 0.08);
-    --color-input-focus-shadow: rgba(246, 153, 19, 0.2);
-
-    --color-header-bg: rgba(18, 18, 20, 0.95);
-    --color-header-border: rgba(255, 255, 255, 0.04);
-
-    --color-card-bg: #1b1b1e;
-    --color-card-border: rgba(255, 255, 255, 0.04);
+    --color-selection-bg: rgba(233, 149, 8, 0.40);
+    --color-selection-text: #ede5d8;
+    --color-scrollbar-track: #0c100e;
+    --color-scrollbar-thumb: rgba(233, 149, 8, 0.35);
+    --color-scrollbar-hover: #e99508;
+    --color-input-bg: #151d1a;
+    --color-input-text: #ede5d8;
+    --color-input-border: rgba(233, 149, 8, 0.25);
+    --color-input-focus-shadow: rgba(233, 149, 8, 0.35);
+    --color-header-bg: rgba(12, 16, 14, 0.92);
+    --color-header-border: rgba(237, 229, 216, 0.08);
+    --color-card-bg: #1c2622;
+    --color-card-border: rgba(237, 229, 216, 0.08);
   }
 
   * {
@@ -210,10 +156,14 @@
     @apply bg-cream text-deep-forest antialiased;
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-image: radial-gradient(circle at top, rgba(253, 94, 2, 0.08), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.28), transparent 18%);
+    background-image: radial-gradient(circle at top, rgba(233, 149, 8, 0.08), transparent 32%), linear-gradient(180deg, rgba(12, 69, 60, 0.03), transparent 18%);
     background-attachment: fixed;
     line-height: 1.5;
     overscroll-behavior-y: none;
+  }
+
+  .dark body {
+    background-image: radial-gradient(circle at top, rgba(233, 149, 8, 0.06), transparent 36%), linear-gradient(180deg, rgba(233, 149, 8, 0.02), transparent 20%);
   }
 
   #root {
@@ -296,38 +246,38 @@
   }
 
   .kiwi-accent {
-    @apply text-kiwi drop-shadow-[0_0_8px_rgba(56,142,60,0.3)];
+    @apply text-crisp-carrot drop-shadow-[0_0_8px_rgba(233,98,18,0.30)];
   }
   .carrot-accent {
     @apply text-crisp-carrot font-bold;
   }
   .sunshine-accent {
-    @apply text-sunshine drop-shadow-[0_0_8px_rgba(232,122,0,0.4)];
+    @apply text-sunshine drop-shadow-[0_0_8px_rgba(246,153,19,0.50)];
   }
 
   .shadow-sunshine-glow {
     box-shadow:
-      0 12px 36px -6px rgba(179, 61, 0, 0.30),
-      0 4px 12px -2px rgba(179, 61, 0, 0.16),
+      0 12px 36px -6px rgba(233, 98, 18, 0.30),
+      0 4px 12px -2px rgba(233, 98, 18, 0.16),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
   }
   .dark .shadow-sunshine-glow {
     box-shadow:
       0 12px 36px -6px rgba(255, 140, 66, 0.30),
       0 4px 12px -2px rgba(255, 140, 66, 0.16),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+      inset 0 1px 0 0 rgba(246, 153, 19, 0.08);
   }
   .shadow-premium {
     box-shadow:
-      0 30px 60px -15px rgba(2, 51, 65, 0.08),
-      0 10px 24px -5px rgba(2, 51, 65, 0.03),
+      0 30px 60px -15px rgba(12, 69, 60, 0.10),
+      0 10px 24px -5px rgba(12, 69, 60, 0.05),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
   }
   .dark .shadow-premium {
     box-shadow:
       0 30px 60px -15px rgba(0, 0, 0, 0.45),
       0 10px 24px -5px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+      inset 0 1px 0 0 rgba(246, 153, 19, 0.08);
   }
   .shadow-inner-soft {
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03);
@@ -338,13 +288,13 @@
     border-bottom: 1px solid var(--color-header-border);
     box-shadow:
       0 4px 30px rgba(0, 0, 0, 0.01),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.20);
+      inset 0 1px 0 0 rgba(246, 153, 19, 0.18);
     @apply backdrop-blur-2xl shadow-sm;
   }
   .dark .glass-header {
     box-shadow:
       0 4px 30px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+      inset 0 1px 0 0 rgba(246, 153, 19, 0.10);
   }
 
   /* Batik Pattern Overlays — image assets preserved verbatim */
@@ -435,7 +385,7 @@
   }
 
   .pattern-dots {
-    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l2.5 12.5L35 15l-10 7.5L28 35 20 25l-8 10 3-12.5-10-7.5 12.5-2.5L20 0z' fill='%23E87A00' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l2.5 12.5L35 15l-10 7.5L28 35 20 25l-8 10 3-12.5-10-7.5 12.5-2.5L20 0z' fill='%23e96212' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
     background-size: 40px 40px;
   }
 
@@ -460,7 +410,7 @@
     background-color: var(--color-sunshine-cta-bg);
     color: var(--color-sunshine-cta-fg);
     border: 1px solid transparent;
-    box-shadow: 0 6px 14px -2px rgba(179, 61, 0, 0.30);
+    box-shadow: 0 6px 14px -2px rgba(224, 63, 20, 0.30);
     transition: background-color 0.18s ease, transform 0.18s ease;
   }
   .btn-cta:hover {
@@ -473,7 +423,7 @@
   .dark .btn-cta {
     background-color: var(--color-sunshine-cta-bg);
     color: var(--color-sunshine-cta-fg);
-    box-shadow: 0 6px 14px -2px rgba(255, 140, 66, 0.32);
+    box-shadow: 0 6px 14px -2px rgba(246, 153, 19, 0.35);
   }
 
   /* ----------------------------------------------------------------
@@ -485,24 +435,24 @@
   .btn-secondary {
     background-color: transparent;
     color: var(--color-deep-forest);
-    border: 1.5px solid rgba(2, 51, 65, 0.16);
+    border: 1.5px solid rgba(12, 69, 60, 0.25);
     box-shadow: none;
     transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
   }
   .btn-secondary:hover {
-    background-color: rgba(179, 61, 0, 0.08);
-    border-color: rgba(179, 61, 0, 0.35);
+    background-color: rgba(224, 63, 20, 0.08);
+    border-color: rgba(224, 63, 20, 0.35);
   }
   .btn-secondary:active {
     transform: translateY(1px);
   }
   .dark .btn-secondary {
-    color: #f5f5f5;
-    border-color: rgba(255, 255, 255, 0.12);
+    color: #ede5d8;
+    border-color: rgba(237, 229, 216, 0.15);
   }
   .dark .btn-secondary:hover {
-    background-color: rgba(255, 140, 66, 0.12);
-    border-color: rgba(255, 140, 66, 0.35);
+    background-color: rgba(233, 149, 8, 0.12);
+    border-color: rgba(233, 149, 8, 0.35);
   }
 
   .btn-ghost {
@@ -514,11 +464,11 @@
   }
   .btn-ghost:hover {
     color: var(--color-deep-forest);
-    background: rgba(2, 51, 65, 0.06);
+    background: rgba(12, 69, 60, 0.06);
   }
   .dark .btn-ghost:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+    color: #ede5d8;
+    background: rgba(237, 229, 216, 0.06);
   }
 
   .btn-cta:focus-visible,
@@ -541,9 +491,9 @@
    * header renders on `"Order"` / `"Settings"`
    * ---------------------------------------------------------------- */
   .page-header-text          { color: var(--color-deep-forest); }
-  .dark .page-header-text    { color: #F5F5F5; }
+  .dark .page-header-text    { color: #ede5d8; }
   .page-header-text-muted    { color: var(--color-stone); }
-  .dark .page-header-text-muted { color: #c3c7cf; }
+  .dark .page-header-text-muted { color: #9d988f; }
 
   /* ----------------------------------------------------------------
    * P0 — Unified page shell helpers used by <PageShell />
@@ -605,7 +555,7 @@
     background-color: var(--color-card-bg);
     border-radius: 24px;
     padding: 1.25rem 1.25rem 1.5rem;
-    box-shadow: 0 1px 0 rgba(2,51,65,0.04);
+    box-shadow: 0 1px 0 rgba(12, 69, 60, 0.06);
   }
   .dark .order-section {
     border-color: rgba(255,255,255,0.06);
@@ -636,27 +586,28 @@
    *  the pulsing animations for users that opt out).
    * ---------------------------------------------------------------- */
   .topbar-shell {
-    background-color: rgba(252, 245, 227, 0.98);
-    border-bottom: 1px solid rgba(2, 51, 65, 0.12);
+    background-color: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid rgba(12, 69, 60, 0.12);
     backdrop-filter: blur(20px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 20px rgba(12, 69, 60, 0.06);
   }
   .dark .topbar-shell {
-    background-color: rgba(18, 18, 20, 0.98);
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background-color: rgba(18, 24, 21, 0.96);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.40);
   }
 
   .panel-surface {
-    background-color: rgba(255, 255, 255, 0.88);
-    border: 1px solid rgba(2, 51, 65, 0.08);
+    background-color: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(12, 69, 60, 0.12);
     border-radius: 28px;
     backdrop-filter: blur(20px);
-    box-shadow: 0 18px 40px rgba(2, 51, 65, 0.08);
+    box-shadow: 0 18px 40px rgba(12, 69, 60, 0.08);
   }
   .dark .panel-surface {
-    background-color: rgba(27, 27, 30, 0.92);
-    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(26, 34, 31, 0.92);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   }
 
   .subtle-chip {
@@ -664,22 +615,23 @@
     align-items: center;
     gap: 0.5rem;
     border-radius: 999px;
-    border: 1px solid rgba(253, 94, 2, 0.15);
-    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(246, 153, 19, 0.30);
+    background: rgba(255, 255, 255, 0.85);
     padding: 0.4rem 0.8rem;
-    font-size: 12px;                 /* was 11 px — P0 legibility */
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(2, 51, 65, 0.85);
+    color: rgba(12, 69, 60, 0.85);
   }
   .dark .subtle-chip {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(237, 229, 216, 0.05);
+    color: rgba(237, 229, 216, 0.85);
+    border-color: rgba(233, 149, 8, 0.30);
   }
 
   .brand-title {
-    @apply font-display font-semibold tracking-tight text-deep-forest dark:text-white;
+    @apply font-display font-semibold tracking-tight text-deep-forest dark:text-[#ede5d8];
   }
 
   .brand-subtitle {
@@ -693,22 +645,22 @@
     width: 44px;
     height: 44px;
     border-radius: 1rem;
-    border: 1px solid rgba(2, 51, 65, 0.1);
-    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(12, 69, 60, 0.14);
+    background: rgba(255, 255, 255, 0.85);
     color: var(--color-deep-forest);
-    box-shadow: 0 2px 10px rgba(2, 51, 65, 0.06);
+    box-shadow: 0 2px 10px rgba(12, 69, 60, 0.06);
     transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
   }
   .dark .icon-button-soft {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    border-color: rgba(237, 229, 216, 0.10);
+    background: rgba(237, 229, 216, 0.05);
+    color: #ede5d8;
   }
   .icon-button-soft:hover {
     transform: translateY(-2px);
-    border-color: rgba(179, 61, 0, 0.40);
+    border-color: rgba(224, 63, 20, 0.40);
     color: var(--color-sunshine-cta);
-    box-shadow: 0 10px 24px rgba(179, 61, 0, 0.18);
+    box-shadow: 0 10px 24px rgba(224, 63, 20, 0.20);
   }
   .icon-button-soft:active {
     transform: scale(0.98);
@@ -730,14 +682,14 @@
     align-items: center;
   }
   .dark .nav-pill {
-    color: #ffffff;
+    color: #ede5d8;
   }
   .nav-pill:hover {
-    background-color: rgba(253, 94, 2, 0.12);
-    color: var(--color-sunshine);
+    background-color: rgba(246, 153, 19, 0.12);
+    color: var(--color-sunshine-cta);
   }
   .dark .nav-pill:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(237, 229, 216, 0.10);
     color: var(--color-sunshine);
   }
 }
@@ -772,6 +724,20 @@
 }
 :where(a, button, input, select, textarea):focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Smooth theme switching transition */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              fill 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              stroke 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-delay: 0s !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -832,6 +798,47 @@
 
 .animate-glitch-magenta {
   animation: glitch-anim-2 0.75s infinite linear alternate-reverse;
+}
+
+/* ==========================================================================
+   DARK MODE COLOR GUARD (Pure white prevention & warm parchment enforcement)
+   ========================================================================= */
+.dark .text-white,
+.dark [class*="text-white"] {
+  color: #ede5d8 !important;
+}
+
+.dark .text-white\/90,
+.dark .text-white\/80,
+.dark .text-white\/70,
+.dark .text-white\/72 {
+  color: rgba(237, 229, 216, 0.75) !important;
+}
+
+.dark .text-white\/50,
+.dark .text-white\/60,
+.dark .text-white\/40 {
+  color: rgba(237, 229, 216, 0.55) !important;
+}
+
+.dark .bg-white {
+  background-color: #1c2622 !important;
+}
+
+.dark .border-white {
+  border-color: rgba(237, 229, 216, 0.15) !important;
+}
+
+.dark .border-white\/10,
+.dark .border-white\/20,
+.dark .border-white\/30 {
+  border-color: rgba(237, 229, 216, 0.10) !important;
+}
+
+.dark .bg-white\/5,
+.dark .bg-white\/10,
+.dark .bg-white\/20 {
+  background-color: rgba(237, 229, 216, 0.05) !important;
 }
 
 /* ==========================================================================

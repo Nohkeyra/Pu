@@ -196,10 +196,10 @@ export function Step2DishSelection({
   return (
     <motion.div
       key="step2"
-      initial={{ opacity: 0, x: 20 }}
+      initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-6 text-left"
     >
       <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">

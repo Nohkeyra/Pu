@@ -47,7 +47,7 @@ export function PDFPreviewModal({
       aria-label={language === 'bm' ? 'Pratonton Invois PDF' : 'PDF Invoice Preview'}
       className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto"
     >
-      <div className="bg-[#FFFDF8] dark:bg-stone-900 text-stone-900 dark:text-stone-100 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-stone-200 dark:border-stone-800 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-stone-200 dark:border-stone-800 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50 rounded-t-2xl">

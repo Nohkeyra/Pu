@@ -1096,14 +1096,14 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                       className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 dark:bg-[var(--color-sunshine-cta)]/25 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0"
                       animate={{
                         boxShadow: [
-                          '0 0 2px rgba(251, 191, 36, 0.15)',
-                          '0 0 10px rgba(251, 191, 36, 0.55)',
-                          '0 0 2px rgba(251, 191, 36, 0.15)'
+                          '0 0 2px rgba(246, 153, 19, 0.15)',
+                          '0 0 10px rgba(246, 153, 19, 0.55)',
+                          '0 0 2px rgba(246, 153, 19, 0.15)'
                         ],
                         borderColor: [
-                          'rgba(251, 191, 36, 0.4)',
-                          'rgba(251, 191, 36, 0.85)',
-                          'rgba(251, 191, 36, 0.4)'
+                          'rgba(246, 153, 19, 0.40)',
+                          'rgba(246, 153, 19, 0.85)',
+                          'rgba(246, 153, 19, 0.40)'
                         ]
                       }}
                       transition={{

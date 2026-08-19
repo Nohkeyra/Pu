@@ -88,10 +88,10 @@ module.exports = {
         xs: "calc(var(--radius) - 6px)",
       },
       boxShadow: {
-        'sunshine-glow': '0 8px 30px rgba(255, 202, 38, 0.35)',
-        'carrot-glow':   '0 8px 30px rgba(248, 96, 21, 0.35)',
-        'kiwi-glow':     '0 8px 30px rgba(154, 188, 4, 0.35)',
-        'forest-glow':   '0 8px 30px rgba(25, 83, 43, 0.15)',
+        'sunshine-glow': '0 8px 30px rgba(233, 149, 8, 0.35)',
+        'carrot-glow':   '0 8px 30px rgba(191, 74, 3, 0.35)',
+        'kiwi-glow':     '0 8px 30px rgba(200, 89, 3, 0.35)',
+        'forest-glow':   '0 8px 30px rgba(12, 69, 60, 0.15)',
       },
       keyframes: {
         "bounce-down": {

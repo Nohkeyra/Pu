@@ -166,7 +166,7 @@ function LeafletMapContainer({
             routePolylineRef.current.remove();
           }
           const polyline = L.polyline(pathCoords, {
-            color: '#0284c7', // Sky-600
+            color: '#e03f14', // Restyle palette (tomato marker)
             weight: 6,
             opacity: 0.85,
           }).addTo(map);

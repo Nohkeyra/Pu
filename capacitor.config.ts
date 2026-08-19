@@ -22,10 +22,10 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#0B0807',
+      backgroundColor: '#0c453c',
       androidSpinnerStyle: 'large',
       showSpinner: true,
-      spinnerColor: '#D4A853'
+      spinnerColor: '#f69913'
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]

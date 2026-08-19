@@ -13,7 +13,7 @@ export default function GlitchText({ text, className = "" }: GlitchTextProps) {
       />
       
       {/* Metallic Gold Shimmer Batik Text */}
-      <span className="relative z-10 block font-display bg-gradient-to-r from-amber-100 via-amber-300 via-yellow-200 via-amber-400 to-amber-100 bg-[length:200%_auto] bg-clip-text text-transparent animate-[shimmer_6s_linear_infinite] drop-shadow-[0_4px_16px_rgba(245,158,11,0.3)] tracking-tight">
+      <span className="relative z-10 block font-display bg-gradient-to-r from-sunshine via-crisp-carrot to-sunshine bg-[length:200%_auto] bg-clip-text text-transparent animate-[shimmer_6s_linear_infinite] drop-shadow-[0_4px_16px_rgba(246,153,19,0.45)] tracking-tight">
         {text}
       </span>
     </span>

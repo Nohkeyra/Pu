@@ -112,7 +112,7 @@ export default function ExperienceSection() {
               <motion.div 
                 key={p.name} 
                 variants={cardVariants}
-                className="principle-card group bg-cream-dark/60 backdrop-blur-md rounded-3xl p-8 border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-[var(--color-sunshine-cta)]/30 hover:shadow-[0_20px_50px_rgba(232,144,37,0.08)] hover:-translate-y-1 transition-all duration-500"
+                className="principle-card group bg-cream-dark/60 backdrop-blur-md rounded-3xl p-8 border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-[var(--color-sunshine-cta)]/30 hover:shadow-[0_20px_50px_rgba(246,153,19,0.12)] hover:-translate-y-1 transition-all duration-500"
               >
                 <div className="w-14 h-14 rounded-2xl bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 group-hover:bg-[var(--color-sunshine-cta)] group-hover:border-[var(--color-sunshine-cta)] transition-all duration-500">
                   <Icon className="w-6 h-6 text-[var(--color-sunshine-cta)] group-hover:text-deep-forest transition-colors" />

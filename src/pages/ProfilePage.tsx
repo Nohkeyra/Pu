@@ -94,7 +94,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-4xl mx-auto space-y-6">
+      <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
         {isAdmin && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">

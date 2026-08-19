@@ -161,14 +161,14 @@ export default function ReviewsSection() {
             <div className="flex gap-2">
               <button
                 onClick={goPrev}
-                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
+                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(246,153,19,0.30)]"
                 aria-label="Previous slide"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
               <button
                 onClick={goNext}
-                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(232,144,37,0.2)]"
+                className="w-12 h-12 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center hover:bg-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)] hover:text-deep-forest text-deep-forest transition-all duration-300 shadow-lg hover:shadow-[0_8px_30px_rgba(246,153,19,0.30)]"
                 aria-label="Next slide"
               >
                 <ChevronRight className="w-6 h-6" />

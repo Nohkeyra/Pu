@@ -577,8 +577,8 @@ export default function CalendarPage() {
                         "min-h-[100px] sm:min-h-[140px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-all border-b border-r border-stone-200/50 dark:border-stone-800/50 hover:bg-stone-50/70 dark:hover:bg-stone-900/40 text-left focus:outline-none focus:ring-1 focus:ring-inset focus:ring-crisp-carrot",
                         isCurrentDay ? "bg-amber-500/5" : "bg-white dark:bg-card",
                         // Glowing Color Rings and ambient backing depending on daily volume limit
-                        isExtremeVolume && "ring-2 ring-rose-500 bg-rose-500/5 dark:bg-rose-950/15 shadow-[0_0_15px_rgba(244,63,94,0.3)] animate-pulse",
-                        isHeavyVolume && "ring-2 ring-amber-500 bg-amber-500/5 dark:bg-amber-950/15 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
+                        isExtremeVolume && "ring-2 ring-tomato-burst bg-tomato-burst/5 dark:bg-tomato-burst/15 shadow-[0_0_15px_rgba(224,63,20,0.30)] animate-pulse",
+                        isHeavyVolume && "ring-2 ring-sunshine bg-sunshine/5 dark:bg-sunshine/15 shadow-[0_0_15px_rgba(246,153,19,0.30)]"
                       )}
                     >
                       {/* Day Number Header */}

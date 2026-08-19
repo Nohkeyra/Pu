@@ -43,7 +43,7 @@ export default function LoginPage() {
 
       <div className="absolute inset-0">
         <Batik3DMotion mode="background" src={getAssetUrl('/assets/batik_vector_pattern.jpg')} backgroundSize="cover" backgroundRepeat="no-repeat" imgClassName="opacity-30 contrast-[1.08] saturate-[1.12] dark:opacity-22" maxRotation={10} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(252,245,227,0.95),rgba(252,245,227,0.7),rgba(252,245,227,0.35))] dark:bg-[radial-gradient(circle_at_top,rgba(253,94,2,0.12),transparent_35%),linear-gradient(to_top,rgba(18,18,20,0.95),rgba(18,18,20,0.75),rgba(18,18,20,0.45))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.70),rgba(255,255,255,0.40))] dark:bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(12,69,60,0.95),rgba(12,69,60,0.80),rgba(12,69,60,0.55))]" />
       </div>
 
       <AnimatePresence mode="wait">

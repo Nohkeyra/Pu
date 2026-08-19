@@ -55,7 +55,7 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, 1200, 240);
             ctx.drawImage(img, 0, 0, 1200, 240);
-            ctx.fillStyle = 'rgba(255, 253, 248, 0.78)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.fillRect(0, 0, 1200, 240);
 
             cachedBatikHeaderBase64 = canvas.toDataURL('image/jpeg', 0.88);

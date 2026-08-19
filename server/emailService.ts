@@ -205,16 +205,16 @@ export function buildStatusEmailHtml(copy: StatusCopy, lang: NotifyLang): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f7fafc;margin:0;padding:20px;color:#2d3748;">
-  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border:1px solid #e2e8f0;">
-    <div style="background-color:#1a202c;padding:30px;text-align:center;color:#ffffff;border-bottom:3px solid #D4AF37;">
-      <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:0.05em;color:#D4AF37;">RESTORAN WAWASAN</h1>
-      <p style="margin:5px 0 0 0;color:#a0aec0;font-size:14px;text-transform:uppercase;letter-spacing:0.1em;">${escapeHtml(copy.heading)}</p>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#ffffff;margin:0;padding:20px;color:#0c453c;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 8px -2px rgba(12,69,60,0.10);border:1px solid rgba(246,153,19,0.30);">
+    <div style="background-color:#0c453c;padding:30px;text-align:center;color:#ffffff;border-bottom:3px solid #f69913;">
+      <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:0.05em;color:#f69913;">RESTORAN WAWASAN</h1>
+      <p style="margin:5px 0 0 0;color:#e96212;font-size:14px;text-transform:uppercase;letter-spacing:0.1em;">${escapeHtml(copy.heading)}</p>
     </div>
     <div style="padding:30px;">
       <p style="font-size:16px;line-height:1.6;margin:0 0 25px 0;">${escapeHtml(copy.message)}</p>
     </div>
-    <div style="background-color:#f7fafc;padding:20px 30px;text-align:center;color:#718096;font-size:12px;border-top:1px solid #e2e8f0;">
+    <div style="background-color:#ffffff;padding:20px 30px;text-align:center;color:#718096;font-size:12px;border-top:1px solid #e2e8f0;">
       ${footerText}
     </div>
   </div>

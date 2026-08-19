@@ -68,7 +68,7 @@ export default function BottomNavigation() {
       initial={{ y: 24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-      className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/10 bg-white/95 shadow-[0_-12px_30px_rgba(2,51,65,0.08)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
+      className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/10 bg-white/95 shadow-[0_-12px_30px_rgba(12,69,60,0.10)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
       style={{
         paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 6px)',
         isolation: 'isolate',
@@ -100,7 +100,7 @@ export default function BottomNavigation() {
               }}
               className={cn(
                 'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-2 select-none cursor-pointer',
-                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-white'
+                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-[#ede5d8]'
               )}
             >
               <div className="relative flex h-9 w-16 items-center justify-center">
@@ -129,7 +129,7 @@ export default function BottomNavigation() {
                   'nav-label relative z-10 transition-colors duration-200 text-[11px] leading-none',
                   isActive
                     ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
-                    : 'nav-label-inactive text-deep-forest/80 dark:text-white/80 font-medium'
+                    : 'nav-label-inactive text-deep-forest/80 dark:text-[#ede5d8]/80 font-medium'
                 )}
               >
                 {tab.label}

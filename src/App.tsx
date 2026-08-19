@@ -193,14 +193,14 @@ function SessionGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-// Page transition wrapper component
+// Page transition wrapper component with fluid easing & micro-depth
 function PageTransition({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 12, scale: 0.995 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.995 }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="flex-grow flex flex-col w-full h-full"
     >
       {children}
@@ -278,7 +278,7 @@ function AppContent() {
 
       <main className={cn("flex-grow", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
-          <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center p-6 space-y-6">
+          <div className="min-h-screen bg-deep-forest flex flex-col items-center justify-center p-6 space-y-6">
             <Skeleton className="w-24 h-24 rounded-full animate-pulse opacity-30" />
             <div className="w-full max-w-sm space-y-3">
               <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse opacity-20" />

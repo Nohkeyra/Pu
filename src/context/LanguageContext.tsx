@@ -144,6 +144,7 @@ const translations: Translation = {
   hero_glitch: { en: 'Sincerity . Blessings', bm: 'Keikhlasan . Keberkatan' },
   explore_menu_btn: { en: 'Explore Menu', bm: 'Lihat Menu' },
   order_catering_btn: { en: 'Order Catering', bm: 'Tempah Katering' },
+  scroll_explore: { en: 'Scroll to Explore', bm: 'Tatal untuk Teroka' },
 
   view_our_menu: { en: 'View Our Menu', bm: 'Lihat Menu Kami' },
   halal_certified: { en: 'Halal Certified', bm: 'Disahkan Halal' },

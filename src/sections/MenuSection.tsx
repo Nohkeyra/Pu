@@ -78,10 +78,10 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
           </p>
         </div>
 
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-deep-forest via-[#0B4A5C] to-deep-forest dark:from-[#3b2116] dark:via-[#54301f] dark:to-[#3b2116] border border-amber-400/30 p-3 flex items-center justify-between shadow-sm group-hover:border-amber-400/70 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#bf4a03] via-[#d15605] to-[#bf4a03] border border-amber-400/30 p-3 flex items-center justify-between shadow-md shadow-[#bf4a03]/15 group-hover:border-amber-400/70 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
           {/* Authentic Non-Repeating Malaysian Batik Overlay */}
           <div 
-            className="absolute inset-0 opacity-40 dark:opacity-50 pointer-events-none transition-opacity duration-300 group-hover:opacity-70 mix-blend-overlay dark:mix-blend-soft-light"
+            className="absolute inset-0 opacity-20 dark:opacity-25 pointer-events-none transition-opacity duration-300 group-hover:opacity-40 mix-blend-overlay"
             style={{
               backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
               backgroundSize: 'cover',
@@ -90,14 +90,14 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
             }}
           />
           <div className="relative z-10 flex items-center justify-between w-full">
-            <span className="microcopy-12 font-black text-amber-300 dark:text-amber-200 uppercase tracking-widest drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)]">
+            <span className="text-[11px] font-black text-amber-200 uppercase tracking-widest drop-shadow-sm">
               {isBm ? 'Harga Bermula' : 'Price Starts'}
             </span>
-            <span className="font-sans font-black text-white dark:text-amber-50 text-base md:text-lg drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.9)] group-hover:scale-105 transition-transform duration-300">
+            <span className="font-sans font-black text-white text-base md:text-lg drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
               {isBm ? item.priceBm : item.priceEn}
-          </span>
+            </span>
+          </div>
         </div>
-      </div>
     </div>
     </motion.div>
     </div>

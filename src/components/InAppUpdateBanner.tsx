@@ -32,7 +32,7 @@ export default function InAppUpdateBanner({
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
         className="fixed top-3 left-3 right-3 sm:left-auto sm:right-4 sm:max-w-md z-[1900] pointer-events-auto"
       >
-        <div className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-[#1D1B18]/95 dark:bg-stone-900/95 text-white shadow-2xl border border-amber-500/30 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-deep-forest/95 dark:bg-stone-900/95 text-white shadow-2xl border border-amber-500/30 backdrop-blur-xl">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="p-2 rounded-xl bg-[var(--color-sunshine-cta)]/20 text-[var(--color-sunshine-cta)] shrink-0">
               <Sparkles className="w-4 h-4 animate-pulse" />

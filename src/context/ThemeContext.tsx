@@ -123,6 +123,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleTheme = () => {
+    try {
+      document.documentElement.classList.add('theme-transitioning');
+      setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 400);
+    } catch {
+      // Ignore if document is not available
+    }
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 

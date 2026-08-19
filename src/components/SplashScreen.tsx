@@ -184,7 +184,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       {stage !== 'exit' && stage !== 'logoZoom' && (
         <motion.div
           key="splash-bg"
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#121214] overflow-hidden select-none"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-deep-forest overflow-hidden select-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -419,7 +419,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               <span className="text-[#f69913] font-bold">Pak Usop</span>
             </div>
 
-            <div className="w-44 h-[2.5px] bg-[#1b1b1e] rounded-full mx-auto mt-2 overflow-hidden">
+            <div className="w-44 h-[2.5px] bg-deep-forest rounded-full mx-auto mt-2 overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
                 style={{ background: 'linear-gradient(90deg,#e96212,#f69913)', transformOrigin: 'left' }}
@@ -447,7 +447,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       {(stage === 'logoZoom' || stage === 'exit') && (
         <motion.div
           key="logo-zoom"
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#121214]"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-deep-forest"
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

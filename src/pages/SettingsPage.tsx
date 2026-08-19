@@ -36,7 +36,6 @@ import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { getApiUrl } from '@/lib/api';
-import { DesignProfileSelector } from '@/components/DesignProfileSelector';
 
 function BrandMark() {
   return (
@@ -478,7 +477,7 @@ export default function SettingsPage() {
         </header>
 
         {/* Main Settings Content */}
-        <main className="page-shell__main pt-[calc(76px+var(--sat)+2rem)] max-w-4xl mx-auto space-y-6 px-4">
+        <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 px-4" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
               <Settings className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
@@ -574,9 +573,6 @@ export default function SettingsPage() {
               {/* Sub-tab 1: Theme & Appearance */}
               {adminSubTab === 'appearance' && (
                 <div className="space-y-6 pt-2">
-                  {/* Global Design Profile Override Card */}
-                  <DesignProfileSelector compact />
-
                   {/* Feature 1: Main Color Picker */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -652,10 +648,10 @@ export default function SettingsPage() {
                           { name: 'Tomato Burst', hex: '#e03f14' },
                           { name: 'Royal Gold', hex: '#f69913' },
                           { name: 'Deep Forest', hex: '#0c453c' },
-                          { name: 'Sapphire Blue', hex: '#2563eb' },
-                          { name: 'Emerald Green', hex: '#059669' },
-                          { name: 'Royal Purple', hex: '#7c3aed' },
-                          { name: 'Crimson Red', hex: '#dc2626' },
+                          { name: 'Forest Accent', hex: '#0c453c' },
+                          { name: 'Mustard Accent', hex: '#f69913' },
+                          { name: 'Carrot Accent', hex: '#e96212' },
+                          { name: 'Tomato Accent', hex: '#e03f14' },
                         ].map((preset) => (
                           <button
                             key={preset.hex}
@@ -828,17 +824,14 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {/* 1. App Display (Design Profiles, Language & Theme) */}
+          {/* 1. App Display (Language & Theme) */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
             <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-              {language === 'bm' ? 'Pilihan Paparan & Profil Reka Bentuk' : 'Display Preferences & Design Profiles'}
+              {language === 'bm' ? 'Pilihan Paparan' : 'Display Preferences'}
             </h3>
 
-            {/* Design Profiles & Day/Night Studio */}
-            <DesignProfileSelector />
-
-            <div className="border-t border-border pt-6 space-y-6">
+            <div className="space-y-6">
               {/* Language Selection Row */}
             <div className="flex flex-col gap-3 py-2">
               <div className="space-y-0.5">

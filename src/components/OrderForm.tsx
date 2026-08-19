@@ -1401,7 +1401,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {currentStep <= 4 && (
-        <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,12px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-charcoal/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
+        <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,12px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-deep-forest/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
               <span>{orderState.guests} pax</span>

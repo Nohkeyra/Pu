@@ -23,7 +23,7 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 
 function BrandMark() {
   return (
-    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
+    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
       <TransparentLogo
         src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
@@ -81,19 +81,19 @@ export default function Header() {
 
   const brandTextClass = isScrolled 
     ? 'brand-title' 
-    : 'brand-title drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]';
+    : 'brand-title drop-shadow-[0_2px_6px_rgba(12,69,60,0.35)]';
   
   const brandSubClass = isScrolled 
     ? 'brand-subtitle' 
-    : 'brand-subtitle drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]';
+    : 'brand-subtitle drop-shadow-[0_2px_6px_rgba(12,69,60,0.35)]';
 
   const desktopActionClass = isScrolled
     ? 'icon-button-soft touch-target-row h-11 px-4 font-bold'
-    : 'inline-flex h-11 items-center justify-center rounded-2xl border border-white/30 bg-black/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-black/60 hover:text-[var(--color-sunshine-cta)] active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
+    : 'inline-flex h-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-deep-forest/60 hover:text-[var(--color-sunshine-cta)] active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   const mobileActionClass = isScrolled
     ? 'icon-button-soft touch-target h-10 w-10 font-bold'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/30 bg-black/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-black/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
+    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-deep-forest/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   return (
     <>
@@ -119,7 +119,7 @@ export default function Header() {
                       particleCount: 200,
                       spread: 120,
                       origin: { y: 0.1 },
-                      colors: ['#FFC107', '#4CAF50', '#F44336', '#2196F3'],
+                      colors: ['#f69913', '#0c453c', '#e03f14', '#e96212'],
                       zIndex: 9999
                     });
                   });
@@ -148,7 +148,7 @@ export default function Header() {
                 className={
                   isScrolled
                     ? 'nav-pill'
-                    : 'rounded-full px-4 py-2 microcopy-14-upper text-white transition-all duration-300 hover:bg-white/20 hover:text-[var(--color-sunshine-cta)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
+                    : 'rounded-full px-4 py-2 microcopy-14-upper text-white transition-all duration-300 hover:bg-white/20 hover:text-[var(--color-sunshine-cta)] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]'
                 }
               >
                 {t(link.label as Parameters<typeof t>[0]) || link.label.charAt(0).toUpperCase() + link.label.slice(1)}

@@ -47,7 +47,7 @@ export function Step5OrderSuccess({
       particleCount: 150,
       spread: 80,
       origin: { y: 0.6 },
-      colors: ['#FFC107', '#D97706', '#10B981', '#3B82F6'], // Amber, Orange, Emerald, Blue
+      colors: ['#f69913', '#e96212', '#0c453c', '#e03f14'], // Amber, Orange, Emerald, Blue
       disableForReducedMotion: true,
       zIndex: 2000
     });
@@ -67,9 +67,9 @@ export function Step5OrderSuccess({
   return (
     <motion.div
       key="step5"
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.94 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       className="space-y-6 text-center"
     >
       <div className="bg-charcoal text-white p-6 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md text-center">

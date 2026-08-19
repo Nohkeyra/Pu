@@ -26,7 +26,7 @@ export default function HighlightsSection() {
     {
       icon: MapPin,
       title: isBm ? 'Di Tengah Putrajaya' : 'In the Heart of Putrajaya',
-      subtitle: isBm ? 'Bangunan Kementerian Kewangan (MoF), Presint 2.' : 'Ministry of Finance Building (MoF), Presint 2.',
+      subtitle: isBm ? 'Aras B3, Menara PjH, Presint 2.' : 'Level B3, Menara PjH, Presint 2.',
       className: "md:col-span-2 md:row-span-1",
       accent: "from-tomato-burst/10 to-transparent",
       iconColor: "text-tomato-burst"
