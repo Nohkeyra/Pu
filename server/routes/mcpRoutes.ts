@@ -11,11 +11,26 @@ const router = Router();
 // Store active SSE transports by sessionId
 const activeSseTransports = new Map<string, SSEServerTransport>();
 
-// In-memory rate limiter tracking for submit_catering_inquiry (per IP)
+// In-memory rate limiter tracking for submit_catering_inquiry (per client IP)
 const submissionRateMap = new Map<string, { count: number; resetTime: number }>();
 
 // Track verification attempts per orderId to prevent brute-forcing 4-digit phone numbers
 const verificationAttemptMap = new Map<string, { attempts: number; lockoutUntil: number }>();
+
+// Cleanup stale rate limit & verification entries every 10 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of submissionRateMap.entries()) {
+    if (now > value.resetTime) {
+      submissionRateMap.delete(key);
+    }
+  }
+  for (const [key, value] of verificationAttemptMap.entries()) {
+    if (now > value.lockoutUntil) {
+      verificationAttemptMap.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
 
 function checkAndRecordVerificationAttempt(orderId: string, isAttempting: boolean, isSuccessful: boolean): { isLockedOut: boolean; remainingLockoutMinutes?: number; attemptsLeft?: number } {
   const now = Date.now();
@@ -125,11 +140,288 @@ async function fetchMenuItems() {
   }
 }
 
+// --------------------------------------------------------------------------
+// Core Modular Tool Execution Handlers (Shared between MCP SSE & HTTP Direct)
+// --------------------------------------------------------------------------
+
+async function executeGetMenuItems(args: { category?: string; search?: string }) {
+  const category = (args.category || 'all').toLowerCase();
+  const search = (args.search || '').toLowerCase().trim();
+
+  const items = await fetchMenuItems();
+
+  let filtered = items;
+  if (category !== 'all') {
+    filtered = filtered.filter((i: any) => i.category?.toLowerCase() === category);
+  }
+  if (search) {
+    filtered = filtered.filter((i: any) =>
+      (i.nameEn || '').toLowerCase().includes(search) ||
+      (i.nameBm || '').toLowerCase().includes(search) ||
+      (i.descEn || '').toLowerCase().includes(search) ||
+      (i.descBm || '').toLowerCase().includes(search)
+    );
+  }
+
+  const formatted = filtered.map((i: any) => ({
+    id: i.id,
+    nameEn: i.nameEn,
+    nameBm: i.nameBm,
+    category: i.category,
+    priceMYR: i.price,
+    descriptionEn: i.descEn,
+    descriptionBm: i.descBm,
+    available: i.available !== false
+  }));
+
+  return { totalItems: formatted.length, menuItems: formatted };
+}
+
+async function executeCalculateEstimate(args: { guests: number; meals?: string[]; customDishes?: string[] }) {
+  const guests = Math.max(1, args.guests || 1);
+  const meals = Array.isArray(args.meals) && args.meals.length > 0 ? args.meals : ['lunch'];
+  const customDishes = Array.isArray(args.customDishes) ? args.customDishes : [];
+
+  const menuItems = await fetchMenuItems();
+  let pricePerPax = 0;
+  const matchedDishes: Array<{ name: string; price: number }> = [];
+
+  if (customDishes.length > 0) {
+    for (const requestedDish of customDishes) {
+      const reqStr = String(requestedDish).toLowerCase().trim();
+      if (!reqStr) continue;
+      const match = menuItems.find((i: any) =>
+        (i.nameEn || '').toLowerCase() === reqStr || (i.nameBm || '').toLowerCase() === reqStr ||
+        (i.nameEn || '').toLowerCase().includes(reqStr) || (i.nameBm || '').toLowerCase().includes(reqStr)
+      );
+      if (match) {
+        pricePerPax += match.price;
+        matchedDishes.push({ name: `${match.nameEn} (${match.nameBm})`, price: match.price });
+      }
+    }
+  }
+
+  if (pricePerPax === 0) {
+    pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
+  }
+
+  const mealCount = meals.length;
+  const totalAmount = Number((pricePerPax * guests * mealCount).toFixed(2));
+
+  return {
+    guests,
+    mealSessions: meals,
+    estimatedPricePerPaxMYR: pricePerPax,
+    totalEstimateMYR: totalAmount,
+    currency: 'MYR',
+    matchedDishes,
+    note: 'Calculation formula: (Price per pax) × (Guest headcount) × (Number of meal sessions). Final menu & pricing subject to admin confirmation.'
+  };
+}
+
+async function executeCheckOrderStatus(args: { orderId: string; verifyPhone?: string }) {
+  const orderId = String(args.orderId || '').trim();
+  if (!orderId) {
+    return { found: false, message: 'Order ID is required.' };
+  }
+
+  const verifyPhone = args.verifyPhone ? String(args.verifyPhone).trim() : '';
+  const db = getFirestore();
+  const snap = await db.collection('orders').doc(orderId).get();
+
+  if (!snap.exists) {
+    return { found: false, message: `Order ID '${orderId}' was not found in the catering system.` };
+  }
+
+  const orderData = snap.data() || {};
+  const rawContact = String(orderData.contact || orderData.phone || '');
+  const rawName = String(orderData.name || orderData.customerName || '');
+  const rawEmail = String(orderData.email || '');
+
+  const cleanInputPhone = verifyPhone.replace(/\D/g, '');
+  const cleanStoredPhone = rawContact.replace(/\D/g, '');
+
+  const isAttempting = Boolean(verifyPhone);
+  // STRICT PHONE VERIFICATION (Finding 1): Must be non-empty, exactly 4 digits, and match end of stored contact
+  let isMatch = false;
+  if (isAttempting && cleanInputPhone.length === 4 && cleanStoredPhone.length >= 4) {
+    isMatch = cleanStoredPhone.endsWith(cleanInputPhone);
+  }
+
+  // Check brute-force lockout state per orderId
+  const attemptCheck = checkAndRecordVerificationAttempt(snap.id, isAttempting, isMatch);
+
+  // Finding 3 Fix: When locked out, return ONLY lockout status — DO NOT leak order details or totals!
+  if (attemptCheck.isLockedOut) {
+    return {
+      found: true,
+      orderId: snap.id,
+      isLockedOut: true,
+      error: 'VERIFICATION_LOCKED_OUT',
+      securityNotice: `Too many failed phone verification attempts. Phone verification is locked out for ${attemptCheck.remainingLockoutMinutes || 15} minute(s). Contact restaurant admin for assistance.`
+    };
+  }
+
+  // Finding 2 Fix: When unverified, return ONLY status, masked name, masked email, and security notice!
+  if (!isMatch) {
+    return {
+      found: true,
+      orderId: snap.id,
+      status: orderData.status || 'pending',
+      customerName: maskName(rawName),
+      customerEmail: maskEmail(rawEmail),
+      isVerified: false,
+      securityNotice: 'Personal contact details and invoice information are protected. Provide "verifyPhone" with the exact 4 digits of the customer phone number to unlock full order details.'
+    };
+  }
+
+  // Fully Verified Response
+  return {
+    found: true,
+    orderId: snap.id,
+    status: orderData.status || 'pending',
+    customerName: rawName,
+    customerEmail: rawEmail,
+    customerContact: rawContact,
+    eventDate: orderData.eventDate || orderData.date || 'N/A',
+    guests: orderData.guests || orderData.quantity || 0,
+    meals: orderData.meals || ['lunch'],
+    customMenu: orderData.customMenu || null,
+    notes: orderData.notes || null,
+    totalAmountMYR: orderData.totalAmount || 0,
+    invoiceNo: orderData.invoiceNo || null,
+    isVerified: true,
+    securityNotice: 'Identity verified. Displaying unmasked order and invoice details.',
+    createdAt: orderData.createdAt ? new Date(orderData.createdAt.seconds ? orderData.createdAt.seconds * 1000 : orderData.createdAt).toISOString() : null
+  };
+}
+
+async function executeGetCalendarAvailability(args: { date?: string }) {
+  const dateStr = args.date ? String(args.date).trim() : '';
+  const db = getFirestore();
+
+  // Finding 12 Fix: Targeted Firestore Query when date parameter is provided
+  if (dateStr) {
+    let snapshot = await db.collection('orders').where('eventDate', '==', dateStr).get();
+    if (snapshot.empty) {
+      snapshot = await db.collection('orders').where('date', '==', dateStr).get();
+    }
+
+    let totalPax = 0;
+    const sessions = { breakfast: 0, lunch: 0, hi_tea: 0 };
+
+    snapshot.docs.forEach(doc => {
+      const order = doc.data();
+      if (order.status === 'cancelled' || order.status === 'rejected') return;
+      const pax = Number(order.guests || order.quantity || 0);
+      totalPax += pax;
+
+      const meals = Array.isArray(order.meals) ? order.meals : ['lunch'];
+      if (meals.includes('breakfast')) sessions.breakfast += pax;
+      if (meals.includes('lunch')) sessions.lunch += pax;
+      if (meals.includes('hi_tea') || meals.includes('hi-tea') || meals.includes('tea_break')) sessions.hi_tea += pax;
+    });
+
+    const workloadStatus = totalPax > 500 ? 'heavy_workload' : totalPax > 250 ? 'moderate_workload' : 'available';
+
+    return {
+      date: dateStr,
+      status: workloadStatus,
+      totalPax,
+      mealSessions: sessions,
+      orderCount: snapshot.docs.filter(d => d.data().status !== 'cancelled' && d.data().status !== 'rejected').length
+    };
+  }
+
+  // Summary Query across all booked dates
+  const snapshot = await db.collection('orders').get();
+  const dailyWorkload: Record<string, { breakfast: number; lunch: number; hi_tea: number; totalPax: number; count: number }> = {};
+
+  snapshot.docs.forEach(doc => {
+    const order = doc.data();
+    if (order.status === 'cancelled' || order.status === 'rejected') return;
+
+    let d: string | null = null;
+    if (order.eventDate) d = String(order.eventDate).split('T')[0];
+    else if (order.date) d = String(order.date).split('T')[0];
+
+    if (!d) return;
+
+    if (!dailyWorkload[d]) {
+      dailyWorkload[d] = { breakfast: 0, lunch: 0, hi_tea: 0, totalPax: 0, count: 0 };
+    }
+
+    const pax = Number(order.guests || order.quantity || 0);
+    const meals = Array.isArray(order.meals) ? order.meals : ['lunch'];
+
+    dailyWorkload[d].count += 1;
+    dailyWorkload[d].totalPax += pax;
+    if (meals.includes('breakfast')) dailyWorkload[d].breakfast += pax;
+    if (meals.includes('lunch')) dailyWorkload[d].lunch += pax;
+    if (meals.includes('hi_tea') || meals.includes('hi-tea')) dailyWorkload[d].hi_tea += pax;
+  });
+
+  return {
+    summary: 'Calendar workload capacity',
+    bookedDatesCount: Object.keys(dailyWorkload).length,
+    dates: dailyWorkload
+  };
+}
+
+async function executeSubmitInquiry(args: {
+  customerName: string;
+  contact: string;
+  email?: string;
+  eventDate: string;
+  guests: number;
+  meals?: string[];
+  customMenu?: string;
+  notes?: string;
+}, clientIp: string) {
+  // Finding 4 Fix: Per-IP sliding window rate limiting
+  const rateCheck = checkInquiryRateLimit(clientIp);
+  if (!rateCheck.allowed) {
+    const remainingMinutes = Math.ceil((rateCheck.remainingMs || 0) / 60000);
+    return {
+      success: false,
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: `Inquiry rate limit exceeded. Maximum 5 submissions per 15 minutes per client IP. Please wait ${remainingMinutes} minute(s) before trying again.`
+    };
+  }
+
+  const db = getFirestore();
+  const orderPayload = {
+    name: args.customerName.trim(),
+    contact: args.contact.trim(),
+    email: args.email ? args.email.trim() : '',
+    eventDate: args.eventDate.trim(),
+    guests: Math.max(1, args.guests),
+    meals: Array.isArray(args.meals) && args.meals.length > 0 ? args.meals : ['lunch'],
+    customMenu: args.customMenu ? args.customMenu.trim() : '',
+    notes: args.notes ? args.notes.trim() : '',
+    source: 'ai_mcp_agent',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  const docRef = await db.collection('orders').add(orderPayload);
+
+  return {
+    success: true,
+    orderId: docRef.id,
+    status: 'pending',
+    message: 'Catering inquiry submitted successfully. Restaurant admin will review and process the invoice.'
+  };
+}
+
+// --------------------------------------------------------------------------
 // Create & Configure the Native MCP Server Instance
-function createWawasanMcpServer() {
+// --------------------------------------------------------------------------
+
+function createWawasanMcpServer(clientIp: string) {
   const server = new McpServer({
     name: 'restoran-wawasan-mcp-server',
-    version: '1.3.9'
+    version: '1.3.10'
   });
 
   // Tool 1: get_menu_items
@@ -138,45 +430,11 @@ function createWawasanMcpServer() {
     'Fetch the halal food & drink catering menu for Restoran Wawasan Pak Usop. Filter by category or search term.',
     {
       category: z.enum(['all', 'breakfast', 'lunch', 'hi tea', 'drinks']).optional().describe('Filter by meal category'),
-      search: z.string().optional().describe('Keyword search in EN or BM (e.g. "asam pedas", "nasi lemak")')
+      search: z.string().max(100).optional().describe('Keyword search in EN or BM (e.g. "asam pedas", "nasi lemak")')
     },
-    async ({ category = 'all', search = '' }) => {
-      const items = await fetchMenuItems();
-      const cat = category.toLowerCase();
-      const q = search.toLowerCase().trim();
-
-      let filtered = items;
-      if (cat !== 'all') {
-        filtered = filtered.filter((i: any) => i.category?.toLowerCase() === cat);
-      }
-      if (q) {
-        filtered = filtered.filter((i: any) =>
-          (i.nameEn || '').toLowerCase().includes(q) ||
-          (i.nameBm || '').toLowerCase().includes(q) ||
-          (i.descEn || '').toLowerCase().includes(q) ||
-          (i.descBm || '').toLowerCase().includes(q)
-        );
-      }
-
-      const formatted = filtered.map((i: any) => ({
-        id: i.id,
-        nameEn: i.nameEn,
-        nameBm: i.nameBm,
-        category: i.category,
-        priceMYR: i.price,
-        descriptionEn: i.descEn,
-        descriptionBm: i.descBm,
-        available: i.available !== false
-      }));
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ totalItems: formatted.length, menuItems: formatted }, null, 2)
-          }
-        ]
-      };
+    async (args) => {
+      const res = await executeGetMenuItems(args);
+      return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
     }
   );
 
@@ -185,54 +443,13 @@ function createWawasanMcpServer() {
     'calculate_catering_estimate',
     'Calculate per-pax pricing and total cost estimate (in MYR) for a catering order based on guest count, meal sessions, and dish selections.',
     {
-      guests: z.number().min(1).describe('Number of guests / pax'),
+      guests: z.number().min(1).max(10000).describe('Number of guests / pax'),
       meals: z.array(z.enum(['breakfast', 'lunch', 'hi_tea'])).optional().describe('Meal sessions requested'),
-      customDishes: z.array(z.string()).optional().describe('Specific requested dishes')
+      customDishes: z.array(z.string().max(100)).optional().describe('Specific requested dishes')
     },
-    async ({ guests, meals = ['lunch'], customDishes = [] }) => {
-      const menuItems = await fetchMenuItems();
-      let pricePerPax = 0;
-      const matchedDishes: Array<{ name: string; price: number }> = [];
-
-      if (customDishes.length > 0) {
-        for (const requestedDish of customDishes) {
-          const reqStr = requestedDish.toLowerCase().trim();
-          const match = menuItems.find((i: any) =>
-            i.nameEn.toLowerCase() === reqStr || i.nameBm.toLowerCase() === reqStr ||
-            i.nameEn.toLowerCase().includes(reqStr) || i.nameBm.toLowerCase().includes(reqStr)
-          );
-          if (match) {
-            pricePerPax += match.price;
-            matchedDishes.push({ name: `${match.nameEn} (${match.nameBm})`, price: match.price });
-          }
-        }
-      }
-
-      if (pricePerPax === 0) {
-        pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
-      }
-
-      const mealCount = meals.length;
-      const totalAmount = Number((pricePerPax * guests * mealCount).toFixed(2));
-
-      const estimateResult = {
-        guests,
-        mealSessions: meals,
-        estimatedPricePerPaxMYR: pricePerPax,
-        totalEstimateMYR: totalAmount,
-        currency: 'MYR',
-        matchedDishes,
-        note: 'Estimate based on standard catering portioning. Final pricing confirmed upon admin approval.'
-      };
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(estimateResult, null, 2)
-          }
-        ]
-      };
+    async (args) => {
+      const res = await executeCalculateEstimate(args);
+      return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
     }
   );
 
@@ -241,91 +458,12 @@ function createWawasanMcpServer() {
     'check_order_status',
     'Check the status, details, and invoice reference of a catering order by order reference ID.',
     {
-      orderId: z.string().describe('The order reference ID (e.g. "ord_123456" or document ID)'),
-      verifyPhone: z.string().optional().describe('Optional last 4 digits of customer phone number for identity verification')
+      orderId: z.string().min(1).max(100).describe('The order reference ID (e.g. "ord_123456" or document ID)'),
+      verifyPhone: z.string().regex(/^\d{4}$/, "Must be exactly 4 digits").optional().describe('Exact last 4 digits of customer phone number for identity verification')
     },
-    async ({ orderId, verifyPhone }) => {
-      const db = getFirestore();
-      const snap = await db.collection('orders').doc(String(orderId)).get();
-      if (!snap.exists) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({ found: false, message: `Order ID '${orderId}' was not found in the catering system.` })
-            }
-          ]
-        };
-      }
-
-      const orderData = snap.data() || {};
-      const rawContact = String(orderData.contact || '');
-      const rawName = String(orderData.name || orderData.customerName || '');
-      const rawEmail = String(orderData.email || '');
-
-      let isAttempting = Boolean(verifyPhone);
-      let isMatch = false;
-
-      if (verifyPhone && rawContact.length >= 4) {
-        const cleanInputPhone = verifyPhone.replace(/\D/g, '');
-        const cleanStoredPhone = rawContact.replace(/\D/g, '');
-        if (cleanStoredPhone.length >= 4 && cleanStoredPhone.endsWith(cleanInputPhone)) {
-          isMatch = true;
-        }
-      }
-
-      // Check brute-force lockout state per orderId
-      const attemptCheck = checkAndRecordVerificationAttempt(snap.id, isAttempting, isMatch);
-      if (attemptCheck.isLockedOut) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                found: true,
-                orderId: snap.id,
-                status: orderData.status || 'pending',
-                customerName: maskName(rawName),
-                customerEmail: maskEmail(rawEmail),
-                eventDate: orderData.eventDate || orderData.date || 'N/A',
-                guests: orderData.guests || orderData.quantity || 0,
-                totalAmountMYR: orderData.totalAmount || 0,
-                invoiceNo: orderData.invoiceNo || null,
-                isVerified: false,
-                securityNotice: `Too many failed phone verification attempts for this order. Verification is locked out for ${attemptCheck.remainingLockoutMinutes || 15} minute(s). Contact restaurant admin for assistance.`
-              }, null, 2)
-            }
-          ]
-        };
-      }
-
-      const isVerified = isMatch;
-
-      const result = {
-        found: true,
-        orderId: snap.id,
-        status: orderData.status || 'pending',
-        customerName: isVerified ? rawName : maskName(rawName),
-        customerEmail: isVerified ? rawEmail : maskEmail(rawEmail),
-        eventDate: orderData.eventDate || orderData.date || 'N/A',
-        guests: orderData.guests || orderData.quantity || 0,
-        totalAmountMYR: orderData.totalAmount || 0,
-        invoiceNo: orderData.invoiceNo || null,
-        isVerified,
-        securityNotice: isVerified
-          ? 'Identity verified. Displaying full order details.'
-          : 'Personal contact details masked for privacy. Provide "verifyPhone" with last 4 digits of phone number to unlock unmasked information.',
-        createdAt: orderData.createdAt ? new Date(orderData.createdAt.seconds ? orderData.createdAt.seconds * 1000 : orderData.createdAt).toISOString() : null
-      };
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }
-        ]
-      };
+    async (args) => {
+      const res = await executeCheckOrderStatus(args);
+      return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
     }
   );
 
@@ -334,65 +472,11 @@ function createWawasanMcpServer() {
     'get_calendar_availability',
     'Get daily catering workload capacity and session counts for specific dates.',
     {
-      date: z.string().optional().describe('Date in YYYY-MM-DD format, or empty for calendar summary')
+      date: z.string().max(20).optional().describe('Date in YYYY-MM-DD format, or empty for calendar summary')
     },
-    async ({ date }) => {
-      const db = getFirestore();
-      const snapshot = await db.collection('orders').get();
-      const dateQuery = date ? date.trim() : null;
-
-      const dailyWorkload: Record<string, { breakfast: number; lunch: number; hi_tea: number; totalPax: number }> = {};
-
-      snapshot.docs.forEach(doc => {
-        const order = doc.data();
-        if (order.status === 'cancelled' || order.status === 'rejected') return;
-
-        let dateStr: string | null = null;
-        if (order.eventDate) dateStr = String(order.eventDate).split('T')[0];
-        else if (order.date) dateStr = String(order.date).split('T')[0];
-
-        if (!dateStr) return;
-
-        if (!dailyWorkload[dateStr]) {
-          dailyWorkload[dateStr] = { breakfast: 0, lunch: 0, hi_tea: 0, totalPax: 0 };
-        }
-
-        const pax = Number(order.guests || order.quantity || 0);
-        const meals = Array.isArray(order.meals) ? order.meals : ['lunch'];
-
-        dailyWorkload[dateStr].totalPax += pax;
-        if (meals.includes('breakfast')) dailyWorkload[dateStr].breakfast += pax;
-        if (meals.includes('lunch')) dailyWorkload[dateStr].lunch += pax;
-        if (meals.includes('hi_tea') || meals.includes('hi-tea')) dailyWorkload[dateStr].hi_tea += pax;
-      });
-
-      if (dateQuery && dailyWorkload[dateQuery]) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                date: dateQuery,
-                status: dailyWorkload[dateQuery].totalPax > 500 ? 'heavy_workload' : 'available',
-                workload: dailyWorkload[dateQuery]
-              }, null, 2)
-            }
-          ]
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              summary: 'Calendar capacity and session counts',
-              bookedDatesCount: Object.keys(dailyWorkload).length,
-              dates: dailyWorkload
-            }, null, 2)
-          }
-        ]
-      };
+    async (args) => {
+      const res = await executeGetCalendarAvailability(args);
+      return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
     }
   );
 
@@ -401,66 +485,18 @@ function createWawasanMcpServer() {
     'submit_catering_inquiry',
     'Submit a new catering inquiry or preliminary order to Restoran Wawasan Pak Usop.',
     {
-      customerName: z.string().describe('Name of the person or company booking'),
-      contact: z.string().describe('Phone number or contact string'),
-      email: z.string().optional().describe('Customer email address'),
-      eventDate: z.string().describe('Date of the event (YYYY-MM-DD)'),
-      guests: z.number().min(1).describe('Number of guests / pax'),
-      meals: z.array(z.string()).optional().describe('Meal sessions'),
-      customMenu: z.string().optional().describe('Custom menu details'),
-      notes: z.string().optional().describe('Special requirements or delivery address')
+      customerName: z.string().min(2).max(100).describe('Name of the person or company booking'),
+      contact: z.string().min(3).max(30).describe('Phone number or contact string'),
+      email: z.string().email().max(100).optional().or(z.literal('')).describe('Customer email address'),
+      eventDate: z.string().min(8).max(20).describe('Date of the event (YYYY-MM-DD)'),
+      guests: z.number().min(1).max(10000).describe('Number of guests / pax'),
+      meals: z.array(z.enum(['breakfast', 'lunch', 'hi_tea'])).optional().describe('Meal sessions'),
+      customMenu: z.string().max(1000).optional().describe('Custom menu details'),
+      notes: z.string().max(1000).optional().describe('Special requirements or delivery address')
     },
-    async ({ customerName, contact, email, eventDate, guests, meals = ['lunch'], customMenu = '', notes = '' }) => {
-      // In-memory rate limiting check (sliding window per inquiry submission)
-      const clientIp = 'mcp_session_client';
-      const rateCheck = checkInquiryRateLimit(clientIp);
-      if (!rateCheck.allowed) {
-        const remainingMinutes = Math.ceil((rateCheck.remainingMs || 0) / 60000);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                success: false,
-                error: 'RATE_LIMIT_EXCEEDED',
-                message: `Inquiry rate limit exceeded. Maximum 5 submissions per 15 minutes. Please wait ${remainingMinutes} minute(s) before trying again.`
-              }, null, 2)
-            }
-          ]
-        };
-      }
-
-      const db = getFirestore();
-      const orderPayload = {
-        name: customerName.trim(),
-        contact: contact.trim(),
-        email: email ? email.trim() : '',
-        eventDate: eventDate.trim(),
-        guests: Math.max(1, guests),
-        meals,
-        customMenu: customMenu.trim(),
-        notes: notes.trim(),
-        source: 'ai_mcp_agent',
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-
-      const docRef = await db.collection('orders').add(orderPayload);
-      const result = {
-        success: true,
-        orderId: docRef.id,
-        status: 'pending',
-        message: 'Catering inquiry submitted successfully. Admin will review and process the invoice.'
-      };
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }
-        ]
-      };
+    async (args) => {
+      const res = await executeSubmitInquiry(args, clientIp);
+      return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
     }
   );
 
@@ -477,8 +513,9 @@ router.get('/sse', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
   }
 
+  const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'unknown_client').split(',')[0].trim();
   const transport = new SSEServerTransport('/api/mcp/message', res);
-  const mcpServer = createWawasanMcpServer();
+  const mcpServer = createWawasanMcpServer(clientIp);
 
   activeSseTransports.set(transport.sessionId, transport);
 
@@ -515,7 +552,7 @@ router.get('/', (_req: Request, res: Response) => {
     mcpVersion: '2024-11-05',
     server: {
       name: 'restoran-wawasan-mcp-server',
-      version: '1.3.9',
+      version: '1.3.10',
       description: 'Native Model Context Protocol (MCP) server for Restoran Wawasan Pak Usop Halal Catering.'
     },
     transports: {
@@ -553,7 +590,7 @@ router.get('/tools', (_req: Request, res: Response) => {
           type: 'object',
           properties: {
             category: { type: 'string', enum: ['all', 'breakfast', 'lunch', 'hi tea', 'drinks'] },
-            search: { type: 'string' }
+            search: { type: 'string', maxLength: 100 }
           }
         }
       },
@@ -568,9 +605,9 @@ router.get('/tools', (_req: Request, res: Response) => {
         inputSchema: {
           type: 'object',
           properties: {
-            guests: { type: 'number' },
-            meals: { type: 'array', items: { type: 'string' } },
-            customDishes: { type: 'array', items: { type: 'string' } }
+            guests: { type: 'number', minimum: 1, maximum: 10000 },
+            meals: { type: 'array', items: { type: 'string', enum: ['breakfast', 'lunch', 'hi_tea'] } },
+            customDishes: { type: 'array', items: { type: 'string', maxLength: 100 } }
           },
           required: ['guests']
         }
@@ -586,8 +623,8 @@ router.get('/tools', (_req: Request, res: Response) => {
         inputSchema: {
           type: 'object',
           properties: {
-            orderId: { type: 'string' },
-            verifyPhone: { type: 'string' }
+            orderId: { type: 'string', minLength: 1, maxLength: 100 },
+            verifyPhone: { type: 'string', pattern: '^\\d{4}$', description: 'Exact last 4 digits of customer phone number' }
           },
           required: ['orderId']
         }
@@ -603,7 +640,7 @@ router.get('/tools', (_req: Request, res: Response) => {
         inputSchema: {
           type: 'object',
           properties: {
-            date: { type: 'string' }
+            date: { type: 'string', maxLength: 20 }
           }
         }
       },
@@ -618,14 +655,14 @@ router.get('/tools', (_req: Request, res: Response) => {
         inputSchema: {
           type: 'object',
           properties: {
-            customerName: { type: 'string' },
-            contact: { type: 'string' },
-            email: { type: 'string' },
-            eventDate: { type: 'string' },
-            guests: { type: 'number' },
-            meals: { type: 'array', items: { type: 'string' } },
-            customMenu: { type: 'string' },
-            notes: { type: 'string' }
+            customerName: { type: 'string', minLength: 2, maxLength: 100 },
+            contact: { type: 'string', minLength: 3, maxLength: 30 },
+            email: { type: 'string', maxLength: 100 },
+            eventDate: { type: 'string', minLength: 8, maxLength: 20 },
+            guests: { type: 'number', minimum: 1, maximum: 10000 },
+            meals: { type: 'array', items: { type: 'string', enum: ['breakfast', 'lunch', 'hi_tea'] } },
+            customMenu: { type: 'string', maxLength: 1000 },
+            notes: { type: 'string', maxLength: 1000 }
           },
           required: ['customerName', 'contact', 'eventDate', 'guests']
         }
@@ -656,7 +693,7 @@ router.get('/docs', (req: Request, res: Response) => {
       <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Restoran Wawasan MCP Server</h1>
       <p class="text-stone-400 text-sm mt-1">Self-configuration guide for Claude Desktop, Claude Code & AI Agents</p>
     </div>
-    <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-full">v1.3.9 Active</span>
+    <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-full">v1.3.10 Active</span>
   </div>
 
   <!-- SSE Endpoint Card -->
@@ -697,9 +734,19 @@ router.get('/docs', (req: Request, res: Response) => {
     <pre class="bg-stone-950 p-4 rounded-xl border border-stone-800 font-mono text-xs text-emerald-300 overflow-x-auto">claude mcp add restoran-wawasan npx -y mcp-remote ${sseUrl}</pre>
   </div>
 
-  <!-- 3. Tool Annotations & Safety -->
+  <!-- 3. Security & Authentication -->
+  <div class="bg-stone-800/50 border border-stone-700/80 rounded-2xl p-6 space-y-3">
+    <h3 class="text-lg font-bold text-white">3. Security & Authentication Header</h3>
+    <p class="text-xs text-stone-300">If <code class="text-amber-400">AI_API_KEY</code> is configured on the server, include either of the following HTTP headers with requests:</p>
+    <div class="space-y-2 font-mono text-xs text-stone-300">
+      <div class="bg-stone-950 p-3 rounded-lg border border-stone-800"><span class="text-amber-400">X-AI-API-KEY:</span> &lt;YOUR_API_KEY&gt;</div>
+      <div class="bg-stone-950 p-3 rounded-lg border border-stone-800"><span class="text-amber-400">Authorization:</span> Bearer &lt;YOUR_API_KEY&gt;</div>
+    </div>
+  </div>
+
+  <!-- 4. Tool Annotations & Safety -->
   <div class="space-y-3">
-    <h3 class="text-lg font-bold text-white">3. Supported Tools & Annotations</h3>
+    <h3 class="text-lg font-bold text-white">4. Supported Tools & Security Controls</h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
       <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
         <div class="flex justify-between items-center">
@@ -714,7 +761,7 @@ router.get('/docs', (req: Request, res: Response) => {
           <span class="font-mono text-amber-400 font-bold">calculate_catering_estimate</span>
           <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
         </div>
-        <p class="text-stone-400 text-[11px]">Calculate cost estimate in MYR by guest headcount.</p>
+        <p class="text-stone-400 text-[11px]">Calculate cost estimate in MYR by guest headcount and meals.</p>
       </div>
 
       <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
@@ -722,7 +769,7 @@ router.get('/docs', (req: Request, res: Response) => {
           <span class="font-mono text-amber-400 font-bold">check_order_status</span>
           <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
         </div>
-        <p class="text-stone-400 text-[11px]">Order status lookup with PII masking and phone verification lock.</p>
+        <p class="text-stone-400 text-[11px]">Status lookup with strict 4-digit phone verification, PII masking & 3-strike lockout.</p>
       </div>
 
       <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
@@ -730,7 +777,7 @@ router.get('/docs', (req: Request, res: Response) => {
           <span class="font-mono text-amber-400 font-bold">get_calendar_availability</span>
           <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
         </div>
-        <p class="text-stone-400 text-[11px]">Query daily catering workload capacity.</p>
+        <p class="text-stone-400 text-[11px]">Targeted date query and daily workload capacity summary.</p>
       </div>
 
       <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1 sm:col-span-2">
@@ -741,13 +788,13 @@ router.get('/docs', (req: Request, res: Response) => {
             <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">idempotentHint: false</span>
           </div>
         </div>
-        <p class="text-stone-400 text-[11px]">Submit new catering inquiry. Creates a new order record (non-idempotent) and protected by 5 submissions per 15 min rate limit.</p>
+        <p class="text-stone-400 text-[11px]">Submit new catering inquiry. Protected by per-client IP rate limit (5 submissions per 15 min).</p>
       </div>
     </div>
   </div>
 
   <footer class="border-t border-stone-800 pt-6 text-center text-xs text-stone-500">
-    Restoran Wawasan Pak Usop &copy; 2026. Halal Catering MCP Server v1.3.9.
+    Restoran Wawasan Pak Usop &copy; 2026. Halal Catering MCP Server v1.3.10.
   </footer>
 </body>
 </html>`;
@@ -755,30 +802,50 @@ router.get('/docs', (req: Request, res: Response) => {
   return res.type('text/html').send(html);
 });
 
-// POST /api/mcp/call - Direct HTTP Tool Call
+// POST /api/mcp/call - Direct HTTP Tool Call (Finding 6 & 7 Fix)
 router.post('/call', async (req: Request, res: Response) => {
   if (!isAuthorized(req)) {
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
   }
 
   try {
-    const { name, arguments: args } = req.body || {};
+    const { name, arguments: args = {} } = req.body || {};
     if (!name) {
-      return res.status(400).json({ error: 'Tool "name" is required' });
+      return res.status(400).json({ error: 'Tool "name" is required in request body.' });
     }
 
-    // Call internal logic
-    const mcpServer = createWawasanMcpServer();
-    // Execute tool directly
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'unknown_ip').split(',')[0].trim();
+
     if (name === 'get_menu_items') {
-      const items = await fetchMenuItems();
-      return res.json({ success: true, items });
+      const result = await executeGetMenuItems(args);
+      return res.json({ success: true, result });
+    }
+    if (name === 'calculate_catering_estimate') {
+      const result = await executeCalculateEstimate(args);
+      return res.json({ success: true, result });
+    }
+    if (name === 'check_order_status') {
+      const result = await executeCheckOrderStatus(args);
+      return res.json({ success: true, result });
+    }
+    if (name === 'get_calendar_availability') {
+      const result = await executeGetCalendarAvailability(args);
+      return res.json({ success: true, result });
+    }
+    if (name === 'submit_catering_inquiry') {
+      const result = await executeSubmitInquiry(args, clientIp);
+      return res.json({ success: true, result });
     }
 
-    return res.json({
-      success: true,
-      message: `Tool '${name}' executed via MCP HTTP transport`,
-      input: args
+    return res.status(404).json({
+      error: `Unknown tool '${name}'.`,
+      supportedTools: [
+        'get_menu_items',
+        'calculate_catering_estimate',
+        'check_order_status',
+        'get_calendar_availability',
+        'submit_catering_inquiry'
+      ]
     });
   } catch (err: any) {
     return res.status(500).json({ error: err?.message || String(err) });
@@ -791,7 +858,7 @@ const getOpenApiSpec = (hostUrl: string) => ({
   info: {
     title: 'Restoran Wawasan Pak Usop - AI & MCP API',
     description: 'Complete OpenAPI 3.0 specification for Restoran Wawasan Pak Usop Halal Catering.',
-    version: '1.3.9'
+    version: '1.3.10'
   },
   servers: [{ url: hostUrl }],
   paths: {
