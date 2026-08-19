@@ -4,7 +4,18 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
-export type StyleProfile = 'DEFAULT' | 'NEO_BRUTALIST' | 'NEON_NIGHT';
+export type StyleProfile = 'DEFAULT' | 'NEO_BRUTALIST' | 'NEON_NIGHT' | 'DARK_EMBER' | 'RETRO_SUNSET' | 'BAUHAUS_POP';
+
+/** Maps each non-default style profile to the CSS class applied on <html>. */
+const STYLE_PROFILE_CLASSES: Record<Exclude<StyleProfile, 'DEFAULT'>, string> = {
+  NEO_BRUTALIST: 'profile-neo-brutalist',
+  NEON_NIGHT: 'profile-neon-night',
+  DARK_EMBER: 'profile-dark-ember',
+  RETRO_SUNSET: 'profile-retro-sunset',
+  BAUHAUS_POP: 'profile-bauhaus-pop',
+};
+
+const ALL_PROFILE_CLASSES = Object.values(STYLE_PROFILE_CLASSES);
 
 export const DEFAULT_MAIN_COLOR = '#e03f14'; // Wawasan Tomato Burst
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
@@ -80,10 +91,31 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Admin Customize UI States
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [customMainColor, setCustomMainColorState] = useState<string>(DEFAULT_MAIN_COLOR);
-  const [customFontSizePx, setCustomFontSizePxState] = useState<number>(DEFAULT_FONT_SIZE_PX);
-  const [customCardSizeScale, setCustomCardSizeScaleState] = useState<number>(DEFAULT_CARD_SCALE);
-  const [currentStyleProfile, setCurrentStyleProfileState] = useState<StyleProfile>('DEFAULT');
+  
+  const [customMainColor, setCustomMainColorState] = useState<string>(() => {
+    try { return localStorage.getItem('app_custom_main_color') || DEFAULT_MAIN_COLOR; }
+    catch { return DEFAULT_MAIN_COLOR; }
+  });
+  
+  const [customFontSizePx, setCustomFontSizePxState] = useState<number>(() => {
+    try {
+      const val = localStorage.getItem('app_custom_font_size_px');
+      return val ? parseFloat(val) : DEFAULT_FONT_SIZE_PX;
+    } catch { return DEFAULT_FONT_SIZE_PX; }
+  });
+  
+  const [customCardSizeScale, setCustomCardSizeScaleState] = useState<number>(() => {
+    try {
+      const val = localStorage.getItem('app_custom_card_scale');
+      return val ? parseFloat(val) : DEFAULT_CARD_SCALE;
+    } catch { return DEFAULT_CARD_SCALE; }
+  });
+  
+  const [currentStyleProfile, setCurrentStyleProfileState] = useState<StyleProfile>(() => {
+    try {
+      return (localStorage.getItem('app_style_profile') as StyleProfile) || 'DEFAULT';
+    } catch { return 'DEFAULT'; }
+  });
 
   // Check if admin session token exists in Capacitor Preferences / SharedPreferences
   const checkAdminStatus = useCallback(async (): Promise<boolean> => {
@@ -128,8 +160,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         const savedStyleProfile = await getSecureItem('app_style_profile');
-        if (savedStyleProfile === 'NEO_BRUTALIST' || savedStyleProfile === 'NEON_NIGHT') {
-          setCurrentStyleProfileState(savedStyleProfile as StyleProfile);
+        if (savedStyleProfile) {
+          if (savedStyleProfile === 'DEFAULT' || savedStyleProfile in STYLE_PROFILE_CLASSES) {
+            setCurrentStyleProfileState(savedStyleProfile as StyleProfile);
+          }
         }
       } catch (err) {
         console.warn('Failed to load custom UI parameters from preferences:', err);
@@ -192,11 +226,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   // Apply style profile classes to documentElement
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('profile-neo-brutalist', 'profile-neon-night');
-    if (currentStyleProfile === 'NEO_BRUTALIST') {
-      root.classList.add('profile-neo-brutalist');
-    } else if (currentStyleProfile === 'NEON_NIGHT') {
-      root.classList.add('profile-neon-night');
+    root.classList.remove(...ALL_PROFILE_CLASSES);
+    if (currentStyleProfile !== 'DEFAULT') {
+      root.classList.add(STYLE_PROFILE_CLASSES[currentStyleProfile]);
     }
     if (isLoaded) {
       setSecureItem('app_style_profile', currentStyleProfile);
@@ -237,7 +269,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     root.style.fontSize = `${DEFAULT_FONT_SIZE_PX}px`;
     root.style.setProperty('--app-card-scale', '1');
     root.style.setProperty('--menu-card-scale', '1');
-    root.classList.remove('profile-neo-brutalist', 'profile-neon-night');
+    root.classList.remove(...ALL_PROFILE_CLASSES);
 
     await removeSecureItem('app_custom_main_color');
     await removeSecureItem('app_custom_font_size_px');

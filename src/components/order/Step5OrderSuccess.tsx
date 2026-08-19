@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { 
   CheckCircle2, 
   Eye, 
@@ -41,6 +42,17 @@ export function Step5OrderSuccess({
   tText,
 }: Step5OrderSuccessProps) {
   React.useEffect(() => {
+    // 1. Trigger Confetti Cannon for a delightful "unpredictable" touch!
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#FFC107', '#D97706', '#10B981', '#3B82F6'], // Amber, Orange, Emerald, Blue
+      disableForReducedMotion: true,
+      zIndex: 2000
+    });
+
+    // 2. Trigger native notification
     scheduleLocalNotification({
       id: Math.floor(Math.random() * 100000),
       title: tText('Catering Request Received! 🍲', 'Tempahan Katering Diterima! 🍲'),

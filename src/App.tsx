@@ -1,6 +1,6 @@
 import { useEffect, useState, Suspense, lazy, type ReactNode } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig';
@@ -69,7 +69,6 @@ const AdminPage    = lazyWithRetry(() => import('./pages/AdminPage'), 'AdminPage
 const ProfilePage  = lazyWithRetry(() => import('./pages/ProfilePage'), 'ProfilePage');
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'), 'SettingsPage');
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage');
-const WawasanNeonDashboard = lazyWithRetry(() => import('./components/WawasanNeonDashboard'), 'WawasanNeonDashboard');
 import BottomNavigation from './components/BottomNavigation';
 
 // Scroll to top on route change & log Analytics screen view
@@ -194,6 +193,21 @@ function SessionGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// Page transition wrapper component
+function PageTransition({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="flex-grow flex flex-col w-full h-full"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function AppContent() {
   const location = useLocation();
   const { pathname } = location;
@@ -272,17 +286,18 @@ function AppContent() {
             </div>
           </div>
         }>
-          <div className="w-full flex-grow">
-            <Routes location={location}>
-                <Route path="/" element={<LoginPage />} />
-                <Route path="/login" element={<LoginPage />} />
+          <div className="w-full flex-grow relative">
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<PageTransition><LoginPage /></PageTransition>} />
+                <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
                 
                 {/* Client Routes protected by SessionGuard */}
                 <Route 
                   path="/home" 
                   element={
                     <SessionGuard>
-                      <LandingPage />
+                      <PageTransition><LandingPage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
@@ -290,7 +305,7 @@ function AppContent() {
                   path="/main" 
                   element={
                     <SessionGuard>
-                      <LandingPage />
+                      <PageTransition><LandingPage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
@@ -298,7 +313,7 @@ function AppContent() {
                   path="/order" 
                   element={
                     <SessionGuard>
-                      <OrderPage />
+                      <PageTransition><OrderPage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
@@ -306,7 +321,7 @@ function AppContent() {
                   path="/profile" 
                   element={
                     <SessionGuard>
-                      <ProfilePage />
+                      <PageTransition><ProfilePage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
@@ -314,7 +329,7 @@ function AppContent() {
                   path="/settings" 
                   element={
                     <SessionGuard>
-                      <SettingsPage />
+                      <PageTransition><SettingsPage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
@@ -322,17 +337,16 @@ function AppContent() {
                   path="/calendar" 
                   element={
                     <SessionGuard>
-                      <CalendarPage />
+                      <PageTransition><CalendarPage /></PageTransition>
                     </SessionGuard>
                   } 
                 />
                 
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/neon" element={<WawasanNeonDashboard />} />
-                <Route path="/bento" element={<WawasanNeonDashboard />} />
-                <Route path="*" element={<LoginPage />} />
+                <Route path="/admin" element={<PageTransition><AdminPage /></PageTransition>} />
+                <Route path="*" element={<PageTransition><LoginPage /></PageTransition>} />
               </Routes>
-            </div>
+            </AnimatePresence>
+          </div>
         </Suspense>
       </main>
       {showNav && <BottomNavigation />}
@@ -687,14 +701,7 @@ function App() {
             <NativeBackButtonHandler />
             <NativeAppListeners />
             <GlobalInAppUpdateHandler />
-            <motion.div
-              initial={{ opacity: 0.3 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="flex-grow flex flex-col w-full h-full"
-            >
-              <AppContent />
-            </motion.div>
+            <AppContent />
           </Router>
         </ToastProvider>
       </TooltipProvider>

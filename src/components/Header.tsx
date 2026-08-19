@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Menu, User as UserIcon, Sun, Moon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -46,6 +46,8 @@ export default function Header() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [profileDashboardOpen, setProfileDashboardOpen] = useState(false);
+  const [, setTapCount] = useState(0);
+  const lastTapTime = useRef<number>(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -74,8 +76,16 @@ export default function Header() {
   };
 
   const headerStateClass = isScrolled
-    ? 'topbar-shell pb-3 pt-[calc(0.7rem+var(--sat))]'
+    ? 'topbar-shell pb-3 pt-[calc(0.7rem+var(--sat))] shadow-md'
     : 'bg-transparent pb-5 pt-[calc(1.15rem+var(--sat))]';
+
+  const brandTextClass = isScrolled 
+    ? 'brand-title' 
+    : 'brand-title drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]';
+  
+  const brandSubClass = isScrolled 
+    ? 'brand-subtitle' 
+    : 'brand-subtitle drop-shadow-[0_2px_6px_rgba(0,0,0,0.3)]';
 
   const desktopActionClass = isScrolled
     ? 'icon-button-soft touch-target-row h-11 px-4 font-bold'
@@ -90,13 +100,41 @@ export default function Header() {
       <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 z-[1001]" />
       <header className={`fixed left-0 right-0 top-1 z-[1000] transition-all duration-300 ${headerStateClass}`}>
         <div className="content-container flex items-center justify-between gap-4">
-          <Link to={currentUser ? '/home' : '/'} className="flex min-w-0 items-center gap-3">
+          <Link 
+            to={currentUser ? '/home' : '/'} 
+            className="flex min-w-0 items-center gap-3 select-none"
+            onClick={(e) => {
+              const now = Date.now();
+              // Prevent navigation if the user is tapping rapidly (under 500ms between taps)
+              if (now - lastTapTime.current < 500) {
+                e.preventDefault();
+              }
+              lastTapTime.current = now;
+
+              setTapCount(prev => {
+                const newCount = prev + 1;
+                if (newCount === 5) {
+                  import('canvas-confetti').then((confetti) => {
+                    confetti.default({
+                      particleCount: 200,
+                      spread: 120,
+                      origin: { y: 0.1 },
+                      colors: ['#FFC107', '#4CAF50', '#F44336', '#2196F3'],
+                      zIndex: 9999
+                    });
+                  });
+                  return 0;
+                }
+                return newCount;
+              });
+            }}
+          >
             <BrandMark />
             <div className="min-w-0">
-              <span className={`block truncate text-lg md:text-xl font-bold ${isScrolled ? 'brand-title' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`}>
+              <span className={`block truncate text-lg md:text-xl font-bold ${brandTextClass}`}>
                 Restoran Wawasan
               </span>
-              <span className={`block microcopy-12-upper ${isScrolled ? 'brand-subtitle' : 'text-[var(--color-sunshine-cta)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]'}`}>
+              <span className={`block microcopy-12-upper ${brandSubClass}`}>
                 Pak Usop
               </span>
             </div>

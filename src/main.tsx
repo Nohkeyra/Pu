@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './styles/design-profiles.css';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';

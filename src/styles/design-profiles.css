@@ -1,0 +1,470 @@
+/* =========================================================================
+   STYLE PROFILE OVERRIDES (Dual-Mode Professional Architecture)
+   Wawasan Pak Usop — Multi-Profile Day / Night Styling System
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1. RAW MODERNIST (Street Neo-Brutalist)
+   Day (Light): Stark paper white, thick 3px black ink borders, 6px offset shadows.
+   Night (Dark): Pitch carbon, crisp paper-white & amber borders, hard shadows.
+   ------------------------------------------------------------------------- */
+.profile-neo-brutalist {
+  --radius-sm: 0px !important;
+  --radius-md: 0px !important;
+  --radius-lg: 0px !important;
+  --radius-xl: 0px !important;
+  --radius-2xl: 0px !important;
+  --radius: 0px !important;
+  --color-cream: #FFFFFF !important;
+  --color-cream-dark: #F4F4F4 !important;
+  --color-deep-forest: #000000 !important;
+  --color-sunshine-cta: #E03F14 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+  --color-sunshine-cta-hover: #000000 !important;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.dark.profile-neo-brutalist,
+.dark .profile-neo-brutalist,
+html.dark.profile-neo-brutalist {
+  --color-cream: #0A0A0C !important;
+  --color-cream-dark: #141416 !important;
+  --color-deep-forest: #F4F4F5 !important;
+  --color-sunshine-cta: #E03F14 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+}
+
+/* Cards & Surfaces */
+.profile-neo-brutalist .card,
+.profile-neo-brutalist .nature-card,
+.profile-neo-brutalist div[class*="bg-card"],
+.profile-neo-brutalist div[class*="panel-surface"],
+.profile-neo-brutalist section[class*="bg-white"],
+.profile-neo-brutalist article {
+  border: 2.5px solid #000000 !important;
+  box-shadow: 6px 6px 0px 0px #000000 !important;
+  border-radius: 0px !important;
+}
+
+.dark.profile-neo-brutalist .card,
+.dark .profile-neo-brutalist .card,
+.dark.profile-neo-brutalist .nature-card,
+.dark .profile-neo-brutalist .nature-card,
+.dark.profile-neo-brutalist div[class*="bg-card"],
+.dark .profile-neo-brutalist div[class*="bg-card"],
+.dark.profile-neo-brutalist div[class*="panel-surface"],
+.dark .profile-neo-brutalist div[class*="panel-surface"] {
+  background-color: #121215 !important;
+  border: 2.5px solid #E5E7EB !important;
+  box-shadow: 6px 6px 0px 0px #E5E7EB !important;
+  border-radius: 0px !important;
+}
+
+/* Typography & Headings */
+.profile-neo-brutalist h1,
+.profile-neo-brutalist h2,
+.profile-neo-brutalist h3,
+.profile-neo-brutalist .brand-title {
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* Buttons & Interactive Elements */
+.profile-neo-brutalist .btn-cta,
+.profile-neo-brutalist button.bg-primary,
+.profile-neo-brutalist button[class*="btn-cta"] {
+  background-color: #E03F14 !important;
+  color: #FFFFFF !important;
+  border: 2.5px solid #000000 !important;
+  box-shadow: 4px 4px 0px 0px #000000 !important;
+  border-radius: 0px !important;
+  text-transform: uppercase !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.profile-neo-brutalist .btn-cta:hover,
+.profile-neo-brutalist button.bg-primary:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 7px 7px 0px 0px #000000 !important;
+}
+
+.profile-neo-brutalist .btn-cta:active,
+.profile-neo-brutalist button.bg-primary:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px 0px #000000 !important;
+}
+
+.dark.profile-neo-brutalist .btn-cta,
+.dark .profile-neo-brutalist .btn-cta,
+.dark.profile-neo-brutalist button.bg-primary,
+.dark .profile-neo-brutalist button.bg-primary {
+  border-color: #FFFFFF !important;
+  box-shadow: 4px 4px 0px 0px #FFFFFF !important;
+}
+
+.dark.profile-neo-brutalist .btn-cta:hover,
+.dark .profile-neo-brutalist .btn-cta:hover {
+  box-shadow: 7px 7px 0px 0px #FFFFFF !important;
+}
+
+/* Inputs & Form Controls */
+.profile-neo-brutalist input,
+.profile-neo-brutalist select,
+.profile-neo-brutalist textarea {
+  border: 2.5px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 3px 3px 0px 0px #000000 !important;
+}
+
+.dark.profile-neo-brutalist input,
+.dark .profile-neo-brutalist input,
+.dark.profile-neo-brutalist select,
+.dark .profile-neo-brutalist select,
+.dark.profile-neo-brutalist textarea,
+.dark .profile-neo-brutalist textarea {
+  border-color: #E5E7EB !important;
+  box-shadow: 3px 3px 0px 0px #E5E7EB !important;
+  background-color: #121215 !important;
+  color: #FFFFFF !important;
+}
+
+/* -------------------------------------------------------------------------
+   2. MIDNIGHT TOKYO / CYBERPUNK PASAR MALAM (Neon Night Market)
+   Day (Light): "Tokyo Daylight" — Crystal frosted sky glass, subtle electric azure borders.
+   Night (Dark): "Midnight Pasar Malam" — Obsidian acrylics, glowing neon amber & cyan outlines.
+   ------------------------------------------------------------------------- */
+.profile-neon-night {
+  --color-cream: #F0F4F8 !important;
+  --color-cream-dark: #E2E8F0 !important;
+  --color-deep-forest: #0F172A !important;
+  --color-sunshine-cta: #0284C7 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+  --radius-lg: 16px !important;
+  --radius-xl: 20px !important;
+  --radius: 16px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.dark.profile-neon-night,
+.dark .profile-neon-night,
+html.dark.profile-neon-night {
+  --color-cream: #030712 !important;
+  --color-cream-dark: #090E1A !important;
+  --color-deep-forest: #E2FEF9 !important;
+  --color-sunshine-cta: #F59E0B !important;
+  --color-sunshine-cta-fg: #000000 !important;
+}
+
+/* Cards & Acrylic Glass Surfaces */
+.profile-neon-night .card,
+.profile-neon-night .nature-card,
+.profile-neon-night div[class*="bg-card"],
+.profile-neon-night div[class*="panel-surface"] {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(14, 165, 233, 0.25) !important;
+  box-shadow: 0 10px 30px -5px rgba(14, 165, 233, 0.1) !important;
+  border-radius: 20px !important;
+}
+
+.dark.profile-neon-night .card,
+.dark .profile-neon-night .card,
+.dark.profile-neon-night .nature-card,
+.dark .profile-neon-night .nature-card,
+.dark.profile-neon-night div[class*="bg-card"],
+.dark .profile-neon-night div[class*="bg-card"],
+.dark.profile-neon-night div[class*="panel-surface"],
+.dark .profile-neon-night div[class*="panel-surface"] {
+  background: rgba(9, 14, 26, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 25px -3px rgba(245, 158, 11, 0.15), 0 15px 40px -5px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 20px !important;
+}
+
+/* Neon CTAs */
+.profile-neon-night .btn-cta,
+.profile-neon-night button.bg-primary,
+.profile-neon-night button[class*="btn-cta"] {
+  background: linear-gradient(135deg, #0284C7, #38BDF8) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
+  letter-spacing: 0.02em !important;
+}
+
+.dark.profile-neon-night .btn-cta,
+.dark .profile-neon-night .btn-cta,
+.dark.profile-neon-night button.bg-primary,
+.dark .profile-neon-night button.bg-primary {
+  background: linear-gradient(135deg, #F59E0B, #E96212) !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), 0 6px 20px rgba(233, 98, 18, 0.4) !important;
+}
+
+.dark.profile-neon-night h1,
+.dark.profile-neon-night h2,
+.dark.profile-neon-night .brand-title {
+  text-shadow: 0 0 18px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* -------------------------------------------------------------------------
+   3. DARK EMBER / VOLCANIC SLATE (Glare-Free Shift Mode)
+   Day (Light): "Ash & Ember" — Cool basalt stone canvas, deep carbon text, vivid fiery orange CTAs.
+   Night (Dark): "Obsidian Campfire" — Matte slate background, glowing volcanic embers, ultra-low eye strain.
+   ------------------------------------------------------------------------- */
+.profile-dark-ember {
+  --color-cream: #F4F5F7 !important;
+  --color-cream-dark: #E5E7EB !important;
+  --color-deep-forest: #111827 !important;
+  --color-sunshine-cta: #FF5C00 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+  --radius-lg: 18px !important;
+  --radius-xl: 24px !important;
+  --radius: 18px !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.dark.profile-dark-ember,
+.dark .profile-dark-ember,
+html.dark.profile-dark-ember {
+  --color-cream: #0C0E12 !important;
+  --color-cream-dark: #07080A !important;
+  --color-deep-forest: #F9FAFB !important;
+  --color-sunshine-cta: #FF5C00 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+}
+
+.profile-dark-ember .card,
+.profile-dark-ember .nature-card,
+.profile-dark-ember div[class*="bg-card"],
+.profile-dark-ember div[class*="panel-surface"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(17, 24, 39, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.04) !important;
+  border-radius: 20px !important;
+}
+
+.dark.profile-dark-ember .card,
+.dark .profile-dark-ember .card,
+.dark.profile-dark-ember .nature-card,
+.dark .profile-dark-ember .nature-card,
+.dark.profile-dark-ember div[class*="bg-card"],
+.dark .profile-dark-ember div[class*="bg-card"],
+.dark.profile-dark-ember div[class*="panel-surface"],
+.dark .profile-dark-ember div[class*="panel-surface"] {
+  background-color: #14171E !important;
+  border: 1px solid rgba(255, 92, 0, 0.22) !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 20px !important;
+}
+
+.profile-dark-ember .btn-cta,
+.profile-dark-ember button.bg-primary,
+.profile-dark-ember button[class*="btn-cta"] {
+  background-color: #FF5C00 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 8px 24px rgba(255, 92, 0, 0.35) !important;
+  font-weight: 800 !important;
+  border-radius: 16px !important;
+  border: none !important;
+}
+
+.dark.profile-dark-ember .btn-cta,
+.dark .profile-dark-ember .btn-cta,
+.dark.profile-dark-ember button.bg-primary,
+.dark .profile-dark-ember button.bg-primary {
+  background-color: #FF5C00 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 20px rgba(255, 92, 0, 0.4), 0 8px 25px rgba(255, 92, 0, 0.45) !important;
+}
+
+/* -------------------------------------------------------------------------
+   4. RETRO SUNSET / 70S KOPITIAM (Heritage Gold)
+   Day (Light): "Classic Kopitiam" — Bone-cream ivory, vintage emerald green, champagne gold borders.
+   Night (Dark): "Royal Palace Nocturne" — Deep nocturnal emerald, brushed antique gold accents, serif headlines.
+   ------------------------------------------------------------------------- */
+.profile-retro-sunset {
+  --color-cream: #FAF6EE !important;
+  --color-cream-dark: #F0E8D7 !important;
+  --color-deep-forest: #0C453C !important;
+  --color-sunshine-cta: #0C453C !important;
+  --color-sunshine-cta-fg: #FAF6EE !important;
+  --radius-lg: 20px !important;
+  --radius-xl: 28px !important;
+  --radius: 20px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.dark.profile-retro-sunset,
+.dark .profile-retro-sunset,
+html.dark.profile-retro-sunset {
+  --color-cream: #061C18 !important;
+  --color-cream-dark: #041210 !important;
+  --color-deep-forest: #E8DCC4 !important;
+  --color-sunshine-cta: #C5A059 !important;
+  --color-sunshine-cta-fg: #061C18 !important;
+}
+
+.profile-retro-sunset h1,
+.profile-retro-sunset h2,
+.profile-retro-sunset .brand-title {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-style: italic !important;
+  letter-spacing: -0.01em !important;
+}
+
+.profile-retro-sunset .card,
+.profile-retro-sunset .nature-card,
+.profile-retro-sunset div[class*="bg-card"],
+.profile-retro-sunset div[class*="panel-surface"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(197, 160, 89, 0.3) !important;
+  box-shadow: 0 10px 30px rgba(12, 69, 60, 0.05) !important;
+  border-radius: 24px !important;
+}
+
+.dark.profile-retro-sunset .card,
+.dark .profile-retro-sunset .card,
+.dark.profile-retro-sunset .nature-card,
+.dark .profile-retro-sunset .nature-card,
+.dark.profile-retro-sunset div[class*="bg-card"],
+.dark .profile-retro-sunset div[class*="bg-card"],
+.dark.profile-retro-sunset div[class*="panel-surface"],
+.dark .profile-retro-sunset div[class*="panel-surface"] {
+  background-color: #0A2621 !important;
+  border: 1px solid rgba(197, 160, 89, 0.25) !important;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 24px !important;
+}
+
+.profile-retro-sunset .btn-cta,
+.profile-retro-sunset button.bg-primary,
+.profile-retro-sunset button[class*="btn-cta"] {
+  background-color: #0C453C !important;
+  color: #FAF6EE !important;
+  border: 1.5px solid #C5A059 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px rgba(12, 69, 60, 0.2) !important;
+}
+
+.dark.profile-retro-sunset .btn-cta,
+.dark .profile-retro-sunset .btn-cta,
+.dark.profile-retro-sunset button.bg-primary,
+.dark .profile-retro-sunset button.bg-primary {
+  background-color: #C5A059 !important;
+  color: #061C18 !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 6px 25px rgba(197, 160, 89, 0.35) !important;
+  border-radius: 9999px !important;
+}
+
+/* -------------------------------------------------------------------------
+   5. BAUHAUS POP (Kinetic Modernist)
+   Day (Light): Studio white, 3px solid black frames, kinetic red top-bars & canary yellow geometry.
+   Night (Dark): Graphic black, stark white frames, vibrant kinetic red buttons.
+   ------------------------------------------------------------------------- */
+.profile-bauhaus-pop {
+  --radius-sm: 0px !important;
+  --radius-md: 0px !important;
+  --radius-lg: 0px !important;
+  --radius-xl: 0px !important;
+  --radius-2xl: 0px !important;
+  --radius: 0px !important;
+  --color-cream: #FFFFFF !important;
+  --color-cream-dark: #ECECEC !important;
+  --color-deep-forest: #000000 !important;
+  --color-sunshine-cta: #FACC15 !important;
+  --color-sunshine-cta-fg: #000000 !important;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.dark.profile-bauhaus-pop,
+.dark .profile-bauhaus-pop,
+html.dark.profile-bauhaus-pop {
+  --color-cream: #000000 !important;
+  --color-cream-dark: #121212 !important;
+  --color-deep-forest: #FFFFFF !important;
+  --color-sunshine-cta: #E03F14 !important;
+  --color-sunshine-cta-fg: #FFFFFF !important;
+}
+
+.profile-bauhaus-pop .card,
+.profile-bauhaus-pop .nature-card,
+.profile-bauhaus-pop div[class*="bg-card"],
+.profile-bauhaus-pop div[class*="panel-surface"] {
+  background-color: var(--color-cream) !important;
+  border: 3px solid #000000 !important;
+  border-top: 12px solid #E03F14 !important;
+  box-shadow: none !important;
+  border-radius: 0px !important;
+}
+
+.dark.profile-bauhaus-pop .card,
+.dark .profile-bauhaus-pop .card,
+.dark.profile-bauhaus-pop .nature-card,
+.dark .profile-bauhaus-pop .nature-card,
+.dark.profile-bauhaus-pop div[class*="bg-card"],
+.dark .profile-bauhaus-pop div[class*="bg-card"],
+.dark.profile-bauhaus-pop div[class*="panel-surface"],
+.dark .profile-bauhaus-pop div[class*="panel-surface"] {
+  background-color: #0A0A0A !important;
+  border: 3px solid #FFFFFF !important;
+  border-top: 12px solid #E03F14 !important;
+  box-shadow: none !important;
+  border-radius: 0px !important;
+}
+
+.profile-bauhaus-pop .btn-cta,
+.profile-bauhaus-pop button.bg-primary,
+.profile-bauhaus-pop button[class*="btn-cta"] {
+  background-color: #FACC15 !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.dark.profile-bauhaus-pop .btn-cta,
+.dark .profile-bauhaus-pop .btn-cta,
+.dark.profile-bauhaus-pop button.bg-primary,
+.dark .profile-bauhaus-pop button.bg-primary {
+  background-color: #E03F14 !important;
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+.profile-bauhaus-pop h1,
+.profile-bauhaus-pop h2,
+.profile-bauhaus-pop .brand-title {
+  text-transform: uppercase !important;
+  font-weight: 900 !important;
+}
+
+/* =========================================================================
+   Global Smooth Transitions for Profile & Dual-Mode Swapping
+   ========================================================================= */
+[class*="profile-"],
+[class*="profile-"] .card,
+[class*="profile-"] button,
+[class*="profile-"] input,
+[class*="profile-"] header,
+[class*="profile-"] main {
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}

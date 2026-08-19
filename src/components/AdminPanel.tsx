@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
@@ -110,6 +111,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   // Real-time synchronization and Firestore WebSocket monitoring status
   const [syncStatus] = useState<'connecting' | 'connected' | 'offline' | 'syncing'>('connecting');
+
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    onRefresh: async () => {
+      await fetchOrders(true);
+    }
+  });
 
   const fetchCalendarState = async () => {
     try {
@@ -1119,7 +1126,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       {/* Main Content */}
       <motion.main 
         className="[grid-area:content] p-6 md:p-8 min-w-0"
-        animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: isRefreshing ? 60 : pullDistance * 0.5 }}
+        exit={{ opacity: 0, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
       >
         <div>

@@ -5,8 +5,8 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import semver from 'semver';
 
-export const CURRENT_APP_VERSION = '1.3.5';
-export const CURRENT_BUILD_NUMBER = 136;
+export const CURRENT_APP_VERSION = '1.3.8';
+export const CURRENT_BUILD_NUMBER = 139;
 export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk';
 
 export interface AppVersionConfig {

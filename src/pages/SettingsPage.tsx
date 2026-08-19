@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -10,8 +9,6 @@ import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
 import {
   ArrowLeft,
-  Sun,
-  Moon,
   Globe,
   Bell,
   Sliders,
@@ -24,8 +21,6 @@ import {
   Shield,
   RotateCcw,
   Paintbrush,
-  LayoutGrid,
-  Radio,
   Terminal,
 } from 'lucide-react';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
@@ -41,6 +36,7 @@ import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { getApiUrl } from '@/lib/api';
+import { DesignProfileSelector } from '@/components/DesignProfileSelector';
 
 function BrandMark() {
   return (
@@ -60,7 +56,6 @@ function BrandMark() {
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const {
     notificationsEnabled,
     setNotificationsEnabled,
@@ -77,8 +72,6 @@ export default function SettingsPage() {
     setCustomFontSizePx,
     customCardSizeScale,
     setCustomCardSizeScale,
-    currentStyleProfile,
-    setCurrentStyleProfile,
     resetUiToDefault,
   } = useSettings();
   const navigate = useNavigate();
@@ -420,12 +413,6 @@ export default function SettingsPage() {
     }));
   };
 
-  // Handle action triggers with haptics
-  const handleToggleTheme = async () => {
-    await triggerLightImpact();
-    toggleTheme();
-  };
-
   const handleLanguageChange = async (lang: 'en' | 'bm') => {
     await triggerLightImpact();
     setLanguage(lang);
@@ -588,82 +575,8 @@ export default function SettingsPage() {
               {adminSubTab === 'appearance' && (
                 <div className="space-y-6 pt-2">
                   {/* Global Design Profile Override Card */}
-                  <div className="p-4 rounded-2xl bg-white dark:bg-card border border-border shadow-sm space-y-3">
-                    <div className="flex items-center gap-2">
-                      <LayoutGrid className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
-                      <span className="font-bold text-base text-deep-forest dark:text-white">
-                        Select Design Profile (Global Override)
-                      </span>
-                    </div>
+                  <DesignProfileSelector compact />
 
-                    <div className="space-y-2 pt-1">
-                      {/* 1. OPTION BLOCK: STREET NEO-BRUTALIST PROFILE */}
-                      <div
-                        onClick={async () => {
-                          await triggerLightImpact();
-                          setCurrentStyleProfile('NEO_BRUTALIST');
-                          setCustomMainColor('#E03F14'); // Hard reset to Tomato Burst
-                        }}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                          currentStyleProfile === 'NEO_BRUTALIST'
-                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
-                            : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 hover:border-stone-300'
-                        }`}
-                      >
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <p className="font-extrabold text-sm text-deep-forest dark:text-white flex items-center gap-1.5">
-                            🔥 Street Neo-Brutalist
-                          </p>
-                          <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
-                            Asymmetric bento boxes, thick black borders, high-impact high-contrast blocks.
-                          </p>
-                        </div>
-                        <input
-                          type="radio"
-                          name="style_profile"
-                          checked={currentStyleProfile === 'NEO_BRUTALIST'}
-                          onChange={() => {
-                            setCurrentStyleProfile('NEO_BRUTALIST');
-                            setCustomMainColor('#E03F14');
-                          }}
-                          className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
-                        />
-                      </div>
-
-                      {/* 2. OPTION BLOCK: NEON NIGHT MARKET PROFILE */}
-                      <div
-                        onClick={async () => {
-                          await triggerLightImpact();
-                          setCurrentStyleProfile('NEON_NIGHT');
-                          setCustomMainColor('#F69913'); // Hard reset to Neon Gold
-                        }}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                          currentStyleProfile === 'NEON_NIGHT'
-                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
-                            : 'bg-stone-50 dark:bg-stone-900/40 border-stone-200 dark:border-stone-800 hover:border-stone-300'
-                        }`}
-                      >
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <p className="font-extrabold text-sm text-deep-forest dark:text-white flex items-center gap-1.5">
-                            🌌 Neon Night Market
-                          </p>
-                          <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
-                            Authentic night market vibe, pitch-black cyberpunk backdrop, layered glowing neon tube outlines.
-                          </p>
-                        </div>
-                        <input
-                          type="radio"
-                          name="style_profile"
-                          checked={currentStyleProfile === 'NEON_NIGHT'}
-                          onChange={() => {
-                            setCurrentStyleProfile('NEON_NIGHT');
-                            setCustomMainColor('#F69913');
-                          }}
-                          className="w-4 h-4 accent-amber-500 cursor-pointer flex-shrink-0"
-                        />
-                      </div>
-                    </div>
-                  </div>
                   {/* Feature 1: Main Color Picker */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -681,10 +594,15 @@ export default function SettingsPage() {
                         <div className="relative flex-shrink-0">
                           <input
                             type="color"
-                            value={customMainColor}
-                            onChange={async (e) => {
-                              await triggerLightImpact();
-                              setCustomMainColor(e.target.value);
+                            value={/^#[0-9A-Fa-f]{6}$/.test(customMainColor) ? customMainColor.toLowerCase() : '#000000'}
+                            onInput={(e) => {
+                              const val = (e.target as HTMLInputElement).value;
+                              setCustomMainColor(val.toUpperCase());
+                            }}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCustomMainColor(val.toUpperCase());
+                              triggerLightImpact();
                             }}
                             className="w-12 h-12 rounded-xl cursor-pointer border-2 border-border p-1 bg-white dark:bg-stone/20 shadow-sm transition-transform active:scale-95"
                             aria-label="Pick main theme color"
@@ -697,14 +615,14 @@ export default function SettingsPage() {
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/50 font-mono text-xs font-bold">#</span>
                             <input
                               type="text"
-                              value={customMainColor.replace(/^#/, '')}
-                              onChange={async (e) => {
+                              value={customMainColor.replace(/^#/, '').toUpperCase()}
+                              onChange={(e) => {
                                 const raw = e.target.value.trim().replace(/[^0-9a-fA-F]/g, '');
                                 if (raw.length <= 6) {
-                                  const formatted = `#${raw}`;
+                                  const formatted = `#${raw.toUpperCase()}`;
                                   setCustomMainColor(formatted);
                                   if (raw.length === 6 || raw.length === 3) {
-                                    await triggerLightImpact();
+                                    triggerLightImpact();
                                   }
                                 }
                               }}
@@ -777,9 +695,10 @@ export default function SettingsPage() {
                       max={22}
                       step={1}
                       value={customFontSizePx}
-                      onChange={async (e) => {
-                        await triggerLightImpact();
-                        setCustomFontSizePx(Number(e.target.value));
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setCustomFontSizePx(val);
+                        triggerLightImpact();
                       }}
                       className="w-full h-2 bg-stone/20 dark:bg-stone/30 rounded-lg appearance-none cursor-pointer accent-[var(--color-sunshine-cta)]"
                     />
@@ -816,9 +735,10 @@ export default function SettingsPage() {
                       max={130}
                       step={5}
                       value={Math.round(customCardSizeScale * 100)}
-                      onChange={async (e) => {
-                        await triggerLightImpact();
-                        setCustomCardSizeScale(Number(e.target.value) / 100);
+                      onChange={(e) => {
+                        const val = Number(e.target.value) / 100;
+                        setCustomCardSizeScale(val);
+                        triggerLightImpact();
                       }}
                       className="w-full h-2 bg-stone/20 dark:bg-stone/30 rounded-lg appearance-none cursor-pointer accent-[var(--color-sunshine-cta)]"
                     />
@@ -908,40 +828,18 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {/* 1. App Display (Language & Theme) */}
+          {/* 1. App Display (Design Profiles, Language & Theme) */}
           <section className="bg-white dark:bg-card border border-border rounded-3xl p-6 shadow-sm space-y-6">
             <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-deep-forest dark:text-[var(--color-sunshine-cta)] mb-4 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-              {language === 'bm' ? 'Pilihan Paparan' : 'Display Preferences'}
+              {language === 'bm' ? 'Pilihan Paparan & Profil Reka Bentuk' : 'Display Preferences & Design Profiles'}
             </h3>
 
-            {/* Theme Toggle Row */}
-            <ResponsiveToggleRow>
-              <div className="space-y-0.5 pr-2">
-                <span className="text-sm font-semibold text-deep-forest dark:text-white block">
-                  {language === 'bm' ? 'Mod Gelap' : 'Dark Mode'}
-                </span>
-                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
-                  {language === 'bm'
-                    ? 'Tukar tema antara paparan cerah dan gelap.'
-                    : 'Switch theme between light and dark display modes.'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {theme === 'dark' ? (
-                  <Moon className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-                ) : (
-                  <Sun className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-                )}
-                <Switch
-                  checked={theme === 'dark'}
-                  onCheckedChange={handleToggleTheme}
-                  aria-label="Toggle dark mode"
-                />
-              </div>
-            </ResponsiveToggleRow>
+            {/* Design Profiles & Day/Night Studio */}
+            <DesignProfileSelector />
 
-            {/* Language Selection Row */}
+            <div className="border-t border-border pt-6 space-y-6">
+              {/* Language Selection Row */}
             <div className="flex flex-col gap-3 py-2">
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-deep-forest dark:text-white block">
@@ -1035,6 +933,7 @@ export default function SettingsPage() {
                   );
                 })}
               </ResponsiveGridGroup>
+            </div>
             </div>
           </section>
 

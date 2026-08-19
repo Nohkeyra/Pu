@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import HeroSection from '@/sections/HeroSection';
@@ -10,6 +11,13 @@ import ReviewsSection from '@/sections/ReviewsSection';
 import VisitSection from '@/sections/VisitSection';
 
 export default function LandingPage() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   useEffect(() => {
     document.documentElement.style.scrollBehavior = 'smooth';
     return () => {
@@ -19,6 +27,10 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-background pattern-dots">
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-tomato-burst to-amber-400 origin-left z-[100]"
+        style={{ scaleX }}
+      />
       <Header />
       <main>
         <HeroSection />
