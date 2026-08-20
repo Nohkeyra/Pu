@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion, useScroll, useTransform, useSpring } from 'motion/react';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetUrl } from '../lib/utils';
 import { TransparentLogo } from './TransparentLogo';
@@ -8,10 +10,6 @@ import { Batik3DMotion } from './Batik3DMotion';
 function BrandMark() {
   return (
     <div className="w-12 h-12 shrink-0 flex items-center justify-center">
-      {/*
-        Brand asset path preserved verbatim — visual logo /
-        Malaysian heritage graphic must remain 100% intact.
-      */}
       <TransparentLogo
         src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
@@ -23,6 +21,22 @@ function BrandMark() {
 
 export default function Footer() {
   const { t } = useLanguage();
+  const footerRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: footerRef,
+    offset: ['start end', 'end start'],
+  });
+
+  // Parallax, scale, and scroll opacity effects mirroring HeroSection:
+  // Fades in as footer comes into view, reaches full opacity, then fades out to 0 when scrolling away
+  const rawY = useTransform(scrollYProgress, [0, 1], [80, -40]);
+  const rawScale = useTransform(scrollYProgress, [0, 0.5, 1], [1.05, 1, 0.95]);
+  const opacity = useTransform(scrollYProgress, [0, 0.35, 0.75, 1], [0, 1, 1, 0]);
+
+  const springConfig = { stiffness: 100, damping: 30, restDelta: 0.001 };
+  const smoothY = useSpring(rawY, springConfig);
+  const smoothScale = useSpring(rawScale, springConfig);
 
   const NAV_LINKS = [
     { label: t('our_story'), href: '#story' },
@@ -33,18 +47,43 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-charcoal border-t border-white/5 pt-20 pb-[calc(100px+env(safe-area-inset-bottom,16px))] text-white/90 relative overflow-hidden">
-      <Batik3DMotion
-        mode="background"
-        src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
-        backgroundSize="cover"
-        backgroundRepeat="no-repeat"
-        opacity={0.12}
-        mixBlendMode="overlay"
-        maskImage="radial-gradient(ellipse at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%)"
-        maxRotation={12}
+    <footer ref={footerRef} className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
+      {/* Cinematic Deep Dark Background Layer (Matching HeroSection) */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pointer-events-none">
+        {/* Dynamic Atmospheric Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/80 via-[#0a1c18]/40 to-[#0a1c18] dark:from-[#0c100e]/60 dark:via-[#0c100e]/30 dark:to-[#0c100e]/80 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#151d1a]/40 dark:to-transparent z-0" />
+
+        {/* Scroll-animated 3D Batik Background Layer */}
+        <motion.div 
+          style={{ y: smoothY, scale: smoothScale, opacity }} 
+          className="batik-fade-transition batik-container absolute inset-0 z-0"
+        >
+          <Batik3DMotion
+            mode="background"
+            src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
+            backgroundSize="cover"
+            backgroundRepeat="no-repeat"
+            maxRotation={15}
+            imgClassName="opacity-35 dark:opacity-55 dark:contrast-125 dark:brightness-125 transition-opacity duration-700 pointer-events-none"
+          />
+        </motion.div>
+
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none z-10" />
+      </div>
+
+      {/* Decorative Ambient Orb (Matching HeroSection) */}
+      <motion.div 
+        animate={{ 
+          scale: [1, 1.15, 1],
+          opacity: [0.08, 0.15, 0.08],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        className="absolute bottom-[10%] right-[5%] w-[40vw] h-[40vw] max-w-[400px] rounded-full bg-amber-500/10 blur-[100px] pointer-events-none z-0" 
       />
-      <div className="content-container relative z-10">
+
+      <div className="content-container relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">
 
           <div className="lg:col-span-2 space-y-6">

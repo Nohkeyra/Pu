@@ -38,28 +38,29 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-32 pb-24 min-h-[100dvh] flex flex-col justify-center items-center">
-      {/* Cinematic Deep Dark Background Layer */}
+    <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-28 sm:pt-32 pb-24 min-h-[100dvh] flex flex-col justify-center items-center">
+      {/* Cinematic Deep Dark Full-Bleed Background Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e]">
+        {/* Dynamic Atmospheric Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/80 via-[#0a1c18]/40 to-[#0a1c18] dark:from-[#0c100e]/60 dark:via-[#0c100e]/30 dark:to-[#0c100e]/80 z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#151d1a]/40 dark:to-transparent z-0 pointer-events-none" />
+        
+        {/* Batik Background */}
         <motion.div 
           style={{ y: smoothY, opacity, scale }} 
-          className="absolute inset-0"
+          className="batik-fade-transition batik-container absolute inset-0 z-0"
         >
           <Batik3DMotion
             mode="background"
             src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
             backgroundSize="cover"
             maxRotation={15}
-            imgClassName="opacity-20 dark:opacity-[0.06] mix-blend-overlay transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-35 dark:opacity-55 dark:contrast-125 dark:brightness-125 transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
         
-        {/* Dynamic Atmospheric Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/90 via-[#0a1c18]/60 to-[#0a1c18] dark:from-[#0c100e]/95 dark:via-[#0c100e]/75 dark:to-[#0c100e] z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#151d1a]/40 dark:to-transparent z-0 pointer-events-none" />
-        
         {/* Subtle grid pattern */}
-        <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none" />
+        <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none z-10" />
         
         {/* Bottom dissolving gradient seamlessly fading to page canvas */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-cream dark:from-[#0c100e] via-cream/60 dark:via-[#0c100e]/60 to-transparent z-10 pointer-events-none" />
@@ -99,7 +100,7 @@ export default function HeroSection() {
 
         {/* Unified Brand Headline */}
         <motion.div variants={itemVariants} className="mb-6 max-w-4xl">
-          <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white dark:text-[#ede5d8] tracking-tight leading-[1.05] text-balance drop-shadow-md">
+          <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white dark:text-[#ede5d8] tracking-tight leading-[1.05] text-balance drop-shadow-[0_4px_20px_rgba(0,0,0,0.85)]">
             {t('hero_title') || 'Restoran Wawasan'}
           </h1>
         </motion.div>
@@ -107,7 +108,7 @@ export default function HeroSection() {
         {/* Refined Description */}
         <motion.p 
           variants={itemVariants}
-          className="text-base sm:text-lg md:text-xl text-[#ede5d8]/80 dark:text-[#9d988f] max-w-xl mx-auto font-medium mb-10 leading-relaxed drop-shadow-sm"
+          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-xl mx-auto font-medium mb-10 leading-relaxed bg-black/40 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 shadow-2xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
         >
           {t('hero_description')}
         </motion.p>
@@ -128,7 +129,7 @@ export default function HeroSection() {
           
           <Link 
             to="/order" 
-            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#1c2622] hover:bg-[#26312d] border border-[#ede5d8]/20 hover:border-[#e99508]/40 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 active:scale-95 shadow-md"
+            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#1c2622]/90 hover:bg-[#26312d] border border-amber-400/30 hover:border-amber-400/60 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 active:scale-95 shadow-lg backdrop-blur-md"
           >
             <span>{t('order_catering_btn')}</span>
           </Link>
@@ -137,10 +138,10 @@ export default function HeroSection() {
         {/* Scroll Hint */}
         <motion.div 
           variants={itemVariants}
-          className="mt-16 sm:mt-20 opacity-60 flex flex-col items-center gap-3 text-[#9d988f]"
+          className="mt-14 sm:mt-18 flex flex-col items-center gap-3 text-amber-300/90"
         >
-          <div className="w-px h-10 bg-gradient-to-b from-[#e99508]/60 to-transparent" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.25em]">{t('scroll_explore')}</span>
+          <div className="w-px h-10 bg-gradient-to-b from-amber-400 to-transparent" />
+          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
         </motion.div>
       </motion.div>
     </section>

@@ -19,6 +19,7 @@ import NativeAppListeners from './components/NativeAppListeners';
 import InAppUpdateModal from './components/InAppUpdateModal';
 import InAppUpdateBanner from './components/InAppUpdateBanner';
 import { useInAppUpdates } from './hooks/useInAppUpdates';
+import { useBatikScrollOpacity } from './hooks/useBatikScrollOpacity';
 import ScrollToTopButton from './components/ScrollToTopButton';
 import { OfflineBanner } from './components/OfflineBanner';
 import CateringSplashScreen from './components/SplashScreen';
@@ -510,6 +511,8 @@ function FallbackDashboard({ onExit }: { onExit: () => void }) {
 }
 
 function App() {
+  useBatikScrollOpacity();
+
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isSplashFinished, setIsSplashFinished] = useState(false);
   const [useFallbackUi, setUseFallbackUi] = useState(() => {

@@ -7,7 +7,7 @@ import { MENU_ITEMS } from '@/data/menu';
 import ResponsiveImage from '@/components/ResponsiveImage';
 import { HungryButton } from '@/components/ui/HungryButton';
 
-// Unpredictable Feature: 3D Parallax Tilt Card
+// 3D Parallax Tilt Card for Menu Items
 function TiltCard({ item, isBm, idx, cardVariants }: any) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -15,8 +15,8 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 30 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["18deg", "-18deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-18deg", "18deg"]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["14deg", "-14deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-14deg", "14deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -51,55 +51,55 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
         className="menu-card group relative bg-white dark:bg-card/90 rounded-3xl overflow-hidden border border-amber-500/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/50 shadow-md hover:shadow-2xl hover:shadow-amber-500/10 transition-colors duration-500 z-10"
       >
         <div className="aspect-[3/2] overflow-hidden relative" style={{ transform: 'translateZ(50px)' }}>
-        <ResponsiveImage
-          src={item.image || ''}
-          alt={isBm ? item.nameBm : item.nameEn}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          containerClassName="w-full h-full"
-          className="group-hover:scale-110 transition-transform duration-700"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
-        
-        {/* Category Pill Tag */}
-        <div className="absolute top-4 left-4 z-10">
-          <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-400/30 shadow-md">
-            {idx % 2 === 0 ? (isBm ? 'Paling Laris' : 'Best Seller') : (isBm ? 'Sajian Warisan' : 'Heritage Dish')}
-          </span>
-        </div>
-      </div>
-
-      <div className="p-5 md:p-6 relative flex flex-col justify-between h-[calc(100%-aspect-[3/2])]" style={{ transform: 'translateZ(70px)' }}>
-        <div>
-          <h3 className="font-display font-black text-lg md:text-xl text-deep-forest dark:text-amber-100 group-hover:text-[var(--color-sunshine-cta)] transition-colors duration-300 mb-1.5">
-            {isBm ? item.nameBm : item.nameEn}
-          </h3>
-          <p className="font-body text-stone dark:text-stone/70 leading-relaxed font-normal text-xs mb-5 line-clamp-2">
-            {isBm ? item.descBm : item.descEn}
-          </p>
-        </div>
-
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#bf4a03] via-[#d15605] to-[#bf4a03] border border-amber-400/30 p-3 flex items-center justify-between shadow-md shadow-[#bf4a03]/15 group-hover:border-amber-400/70 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
-          {/* Authentic Non-Repeating Malaysian Batik Overlay */}
-          <div 
-            className="absolute inset-0 opacity-20 dark:opacity-25 pointer-events-none transition-opacity duration-300 group-hover:opacity-40 mix-blend-overlay"
-            style={{
-              backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-            }}
+          <ResponsiveImage
+            src={item.image || ''}
+            alt={isBm ? item.nameBm : item.nameEn}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            containerClassName="w-full h-full"
+            className="group-hover:scale-110 transition-transform duration-700"
           />
-          <div className="relative z-10 flex items-center justify-between w-full">
-            <span className="text-[11px] font-black text-amber-200 uppercase tracking-widest drop-shadow-sm">
-              {isBm ? 'Harga Bermula' : 'Price Starts'}
-            </span>
-            <span className="font-sans font-black text-white text-base md:text-lg drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
-              {isBm ? item.priceBm : item.priceEn}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+          
+          {/* Category Pill Tag */}
+          <div className="absolute top-4 left-4 z-10">
+            <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-400/30 shadow-md">
+              {idx % 2 === 0 ? (isBm ? 'Paling Laris' : 'Best Seller') : (isBm ? 'Sajian Warisan' : 'Heritage Dish')}
             </span>
           </div>
         </div>
-    </div>
-    </motion.div>
+
+        <div className="p-5 md:p-6 relative flex flex-col justify-between h-[calc(100%-aspect-[3/2])]" style={{ transform: 'translateZ(70px)' }}>
+          <div>
+            <h3 className="font-display font-black text-lg md:text-xl text-deep-forest dark:text-amber-100 group-hover:text-[var(--color-sunshine-cta)] transition-colors duration-300 mb-1.5">
+              {isBm ? item.nameBm : item.nameEn}
+            </h3>
+            <p className="font-body text-stone dark:text-stone/70 leading-relaxed font-normal text-xs mb-5 line-clamp-2">
+              {isBm ? item.descBm : item.descEn}
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#bf4a03] via-[#d15605] to-[#bf4a03] border border-amber-400/40 p-3 flex items-center justify-between shadow-md shadow-[#bf4a03]/25 group-hover:border-amber-400/80 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
+            {/* Authentic Non-Repeating Malaysian Batik Overlay */}
+            <div 
+              className="absolute inset-0 opacity-50 dark:opacity-75 pointer-events-none transition-opacity duration-300 group-hover:opacity-90 mix-blend-overlay dark:mix-blend-screen dark:contrast-150 dark:brightness-125"
+              style={{
+                backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+              }}
+            />
+            <div className="relative z-10 flex items-center justify-between w-full">
+              <span className="text-[11px] font-black text-amber-200 uppercase tracking-widest drop-shadow-sm">
+                {isBm ? 'Harga Bermula' : 'Price Starts'}
+              </span>
+              <span className="font-sans font-black text-white text-base md:text-lg drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
+                {isBm ? item.priceBm : item.priceEn}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -154,7 +154,7 @@ export default function MenuSection() {
   };
 
   return (
-    <section id="menu" className="section-padding bg-cream relative">
+    <section id="menu" className="section-padding bg-cream relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
         

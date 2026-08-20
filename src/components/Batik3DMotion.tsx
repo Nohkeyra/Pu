@@ -69,10 +69,10 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
           className={`absolute -inset-[6%] h-[112%] w-[112%] transform-gpu object-cover object-center ${imgClassName}`}
           referrerPolicy="no-referrer"
           onError={(e) => {
-            // Fallback to standard batik_pattern.jpg if HD asset path is unavailable
+            // Fallback to batik_vector_pattern.jpg if primary asset path is unavailable
             const target = e.currentTarget;
-            if (!target.src.includes('batik_pattern.jpg')) {
-              target.src = getAssetUrl('/assets/batik_pattern.jpg');
+            if (!target.src.includes('batik_vector_pattern.jpg')) {
+              target.src = getAssetUrl('/assets/batik_vector_pattern.jpg');
             }
           }}
         />

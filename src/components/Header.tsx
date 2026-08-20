@@ -81,11 +81,11 @@ export default function Header() {
 
   const brandTextClass = isScrolled 
     ? 'brand-title' 
-    : 'brand-title drop-shadow-[0_2px_6px_rgba(12,69,60,0.35)]';
+    : 'font-display font-bold text-white dark:text-[#ede5d8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]';
   
   const brandSubClass = isScrolled 
     ? 'brand-subtitle' 
-    : 'brand-subtitle drop-shadow-[0_2px_6px_rgba(12,69,60,0.35)]';
+    : 'font-accent text-[12px] font-black uppercase tracking-[0.18em] text-amber-400 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]';
 
   const desktopActionClass = isScrolled
     ? 'icon-button-soft touch-target-row h-11 px-4 font-bold'

@@ -34,12 +34,24 @@ export default function LandingPage() {
       <Header />
       <main>
         <HeroSection />
-        <StorySection />
-        <HighlightsSection />
-        <MenuSection />
-        <ExperienceSection />
-        <ReviewsSection />
-        <VisitSection />
+        <div className="section-visibility-auto">
+          <StorySection />
+        </div>
+        <div className="section-visibility-auto">
+          <HighlightsSection />
+        </div>
+        <div className="section-visibility-auto">
+          <MenuSection />
+        </div>
+        <div className="section-visibility-auto">
+          <ExperienceSection />
+        </div>
+        <div className="section-visibility-auto">
+          <ReviewsSection />
+        </div>
+        <div className="section-visibility-auto">
+          <VisitSection />
+        </div>
       </main>
       <Footer />
     </div>

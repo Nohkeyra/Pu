@@ -22,7 +22,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve("./src"),
     },
   },
   build: {
@@ -32,6 +32,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
     sourcemap: false,
     minify: 'esbuild',
+    cssMinify: 'esbuild',
     target: 'esnext',
     cssCodeSplit: true,
     rollupOptions: {

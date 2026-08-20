@@ -74,7 +74,7 @@ export default function BottomNavigation() {
         isolation: 'isolate',
       }}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.04] dark:opacity-[0.08] pattern-batik" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06] dark:opacity-[0.20] dark:contrast-150 pattern-batik" />
 
       <nav className="relative z-10 mx-auto flex h-[74px] max-w-xl items-center justify-around px-2">
         {tabs.map((tab) => {

@@ -171,9 +171,9 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.03em;
+    font-family: 'Outfit', 'Syne', 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.035em;
     text-wrap: balance;
   }
 
@@ -217,16 +217,25 @@
   .content-container  { @apply max-w-[1200px] mx-auto px-4 sm:px-6 md:px-12; }
 
   /* Typography Accents */
+  .font-hype {
+    font-family: 'Syne', 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+  .font-bebas {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
+  }
   .font-heritage {
     font-family: 'Playfair Display', serif;
   }
   .editorial-heading {
-    font-family: 'Playfair Display', serif;
-    @apply tracking-tight font-serif italic font-semibold;
+    font-family: 'Outfit', 'Syne', 'Plus Jakarta Sans', sans-serif;
+    @apply tracking-tight font-black uppercase;
   }
   .heritage-stamp {
-    font-family: 'Playfair Display', serif;
-    @apply text-xs uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-semibold;
+    font-family: 'Syne', 'Outfit', sans-serif;
+    @apply text-xs uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-black;
   }
   .typography-accent-pill {
     @apply inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/20 shadow-sm;
@@ -304,9 +313,12 @@
     background-attachment: scroll;
     background-position: center;
     background-repeat: repeat;
-    background-blend-mode: overlay;
-    mask-image: radial-gradient(circle, black 90%, transparent 100%);
-    -webkit-mask-image: radial-gradient(circle, black 90%, transparent 100%);
+  }
+
+  .batik-container {
+    position: relative;
+    mask-image: radial-gradient(circle at center, black 80%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at center, black 80%, transparent 100%);
   }
 
   .border-b-batik {
@@ -845,4 +857,28 @@ html.theme-transitioning *::after {
    ANIMATION & UTILITY EXTRAS
    ========================================================================= */
 
+.batik-fade-transition {
+  transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+/* ==========================================================================
+   PERFORMANCE & GPU HARDWARE ACCELERATION UTILITIES
+   ========================================================================= */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.section-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 700px;
+}
 

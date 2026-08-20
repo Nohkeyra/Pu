@@ -75,8 +75,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'sans-serif'],
-        body:    ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Outfit"', '"Syne"', '"Plus Jakarta Sans"', '"Space Grotesk"', 'sans-serif'],
+        body:    ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        hype:    ['"Syne"', '"Outfit"', '"Bebas Neue"', 'sans-serif'],
+        bebas:   ['"Bebas Neue"', 'sans-serif'],
         accent:  ['"Space Mono"', '"JetBrains Mono"', 'monospace'],
         urban:   ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
