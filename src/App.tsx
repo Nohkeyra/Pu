@@ -270,7 +270,7 @@ function AppContent() {
           className="fixed top-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none transition-transform duration-150"
           style={{ transform: `translateY(${Math.min(pullDistance, 120)}px)` }}
         >
-          <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
             <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
             <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
           </div>

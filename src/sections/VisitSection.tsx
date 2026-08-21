@@ -28,7 +28,7 @@ export default function VisitSection() {
   };
 
   return (
-    <section id="visit" className="py-24 bg-white dark:bg-zinc-950 relative overflow-hidden">
+    <section id="visit" className="py-24 bg-[#fdfbf7] dark:bg-stone-950 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-sunshine-cta)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-deep-forest/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -48,14 +48,14 @@ export default function VisitSection() {
                 <h2 className="text-deep-forest dark:text-[var(--color-sunshine-cta)] font-display text-4xl md:text-5xl font-bold tracking-tight">
                   {isBm ? 'Jemput Datang' : 'Visit Us'}
                 </h2>
-                <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-md leading-relaxed">
+                <p className="text-stone dark:text-stone-300 text-lg max-w-md leading-relaxed">
                   {isBm 
                     ? 'Nikmati hidangan asli Malaysia dengan pemandangan tasik yang tenang di tengah-tengah Putrajaya.' 
                     : 'Experience authentic Malaysian flavors with a serene lakeside view in the heart of Putrajaya.'}
                 </p>
               </div>
               
-              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-card">
+              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-stone-200 dark:border-stone-800 bg-[#fdfbf7] dark:bg-card">
                 <ResponsiveImage 
                   src="/assets/restoran-exterior.jpg" 
                   alt="Restoran Wawasan Exterior" 
@@ -74,7 +74,7 @@ export default function VisitSection() {
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
                     {isBm ? 'Lokasi' : 'Location'}
                   </h3>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+                  <p className="text-stone/80 dark:text-stone-400 text-sm leading-relaxed">
                     Unit 3, Level B3, Menara PjH, Jalan P2a, Presint 2, 62100 Putrajaya
                   </p>
                 </div>
@@ -88,7 +88,7 @@ export default function VisitSection() {
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
                     {isBm ? 'Hubungi' : 'Contact'}
                   </h3>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                  <p className="text-stone/80 dark:text-stone-400 text-sm">
                     {isBm ? 'Telefon' : 'Call'}: +60 17-858 2642<br />
                     WhatsApp: +60 17-315 7721
                   </p>
@@ -103,7 +103,7 @@ export default function VisitSection() {
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
                     {isBm ? 'Waktu Operasi' : 'Hours'}
                   </h3>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                  <p className="text-stone/80 dark:text-stone-400 text-sm">
                     {isBm ? 'Isnin - Jumaat' : 'Mon - Fri'}: 7:30 AM - 5:30 PM<br />
                     {isBm ? 'Sabtu - Ahad' : 'Sat - Sun'}: {isBm ? 'Tutup (Kecuali Tempahan)' : 'Closed (Except Catering)'}
                   </p>
@@ -118,7 +118,7 @@ export default function VisitSection() {
                   <h3 className="font-bold text-deep-forest dark:text-white mb-1">
                     {isBm ? 'E-mel' : 'Email'}
                   </h3>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+                  <p className="text-stone/80 dark:text-stone-400 text-sm">
                     wawasan.orders@gmail.com
                   </p>
                 </div>
@@ -141,7 +141,7 @@ export default function VisitSection() {
           {/* Right Column: Map */}
           <motion.div 
             variants={itemVariants}
-            className="relative w-full h-[280px] sm:h-[340px] md:h-[380px] lg:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-xl"
+            className="relative w-full h-[280px] sm:h-[340px] md:h-[380px] lg:h-[420px] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-200 dark:border-stone-800 shadow-xl"
           >
             <iframe 
               src="https://maps.google.com/maps?q=Unit%203,%20Level%20B3,%20Restoran%20Wawasan%20Pak%20Usop,%20Menara%20PjH,%20Jalan%20P2a,%20Presint%202,%2062100%20Putrajaya&t=&z=16&ie=UTF8&iwloc=&output=embed" 
@@ -156,7 +156,7 @@ export default function VisitSection() {
             />
             
             {/* Map Overlay Card */}
-            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3 sm:p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/20 shadow-md hidden sm:block">
+            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3 sm:p-4 bg-[#fdfbf7]/95 dark:bg-stone-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/20 shadow-md hidden sm:block">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-[var(--color-sunshine-cta)] rounded-lg sm:rounded-xl shrink-0">
                   <MapPin className="w-4 h-4 text-deep-forest" />

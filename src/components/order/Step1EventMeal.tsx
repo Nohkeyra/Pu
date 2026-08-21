@@ -89,7 +89,7 @@ export function Step1EventMeal({
       </div>
 
       {/* Event Type option cards */}
-      <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')}>
         <button
           type="button"
           role="radio"
@@ -152,7 +152,7 @@ export function Step1EventMeal({
           {tText('Meals / Sajian', 'Sajian *')}
         </Label>
         
-        <div className="grid grid-cols-3 gap-2.5" role="group" aria-label={tText('Meal type', 'Hidangan')}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="group" aria-label={tText('Meal type', 'Hidangan')}>
           {[
             { id: 'sarapan', label: () => tText('Breakfast', 'Sarapan'), time: '7AM - 10AM', icon: Coffee },
             { id: 'tengahari', label: () => tText('Lunch', 'Makan Tengah Hari'), time: '12PM - 3PM', icon: Sun },
@@ -198,7 +198,7 @@ export function Step1EventMeal({
         <Label className="text-sm font-bold text-deep-forest dark:text-white block">
           {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan')}
         </Label>
-        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
           <button
             type="button"
             role="radio"

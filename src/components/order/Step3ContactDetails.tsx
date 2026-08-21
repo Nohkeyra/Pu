@@ -162,13 +162,19 @@ export function Step3ContactDetails({
                 </Select>
 
                 {orderState.companyName === 'other' && (
-                  <Input
-                    value={orderState.customCompany}
-                    onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
-                    placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
-                    required
-                    className="mt-2 h-11 rounded-2xl font-sans"
-                  />
+                  <>
+                    <Label htmlFor="custom-company-input" className="sr-only">
+                      {tText('Custom Organization Name', 'Nama Organisasi Custom')}
+                    </Label>
+                    <Input
+                      id="custom-company-input"
+                      value={orderState.customCompany}
+                      onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
+                      placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
+                      required
+                      className="mt-2 h-11 rounded-2xl font-sans"
+                    />
+                  </>
                 )}
               </>
             )}
@@ -177,8 +183,9 @@ export function Step3ContactDetails({
 
         {/* Name Input */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
+          <Label htmlFor="contact-name" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
           <Input
+            id="contact-name"
             value={orderState.name}
             onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
             placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
@@ -188,8 +195,9 @@ export function Step3ContactDetails({
 
         {/* Phone Input */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
+          <Label htmlFor="contact-phone" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
           <Input
+            id="contact-phone"
             type="tel"
             value={orderState.contact}
             onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
@@ -201,8 +209,9 @@ export function Step3ContactDetails({
         {/* Email & Confirm Email Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
+            <Label htmlFor="contact-email" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
             <Input
+              id="contact-email"
               type="email"
               value={orderState.email}
               onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
@@ -211,8 +220,9 @@ export function Step3ContactDetails({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
+            <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
             <Input
+              id="contact-confirm-email"
               type="email"
               value={orderState.confirmEmail}
               onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
@@ -223,7 +233,7 @@ export function Step3ContactDetails({
         </div>
 
         {/* Date & Time Inputs */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="event-date" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
             <input
@@ -250,7 +260,7 @@ export function Step3ContactDetails({
         {/* Geolocation Autocomplete Venue Location */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <Label className="text-xs font-bold text-stone uppercase tracking-wider">
+            <Label htmlFor="contact-location" className="text-xs font-bold text-stone uppercase tracking-wider">
               {tText('Event Venue Address', 'Lokasi / Alamat Majlis *')}
             </Label>
             <button
@@ -295,6 +305,7 @@ export function Step3ContactDetails({
           )}
 
           <Textarea
+            id="contact-location"
             value={orderState.location}
             onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
             placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
@@ -306,7 +317,7 @@ export function Step3ContactDetails({
         <div className="space-y-2 pt-1">
           <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Delivery Method', 'Kaedah Penghantaran')}</Label>
 
-          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
             <button
               type="button"
               role="radio"
@@ -345,8 +356,9 @@ export function Step3ContactDetails({
 
         {/* Notes input */}
         <div className="space-y-1.5 pt-1">
-          <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Additional Notes (Optional)', 'Nota Tambahan (pilihan)')}</Label>
+          <Label htmlFor="contact-notes" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Additional Notes (Optional)', 'Nota Tambahan (pilihan)')}</Label>
           <Textarea
+            id="contact-notes"
             value={orderState.notes}
             onChange={(e) => setOrderState(prev => ({ ...prev, notes: e.target.value }))}
             placeholder={tText('e.g. Vegetarian attendees, buffer tables needed, etc.', 'Contoh: Ada tetamu yang vegetarian, perlu meja buffet, dll.')}

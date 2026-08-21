@@ -611,6 +611,7 @@ export default function SettingsPage() {
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/50 font-mono text-xs font-bold">#</span>
                             <input
                               type="text"
+                              aria-label={language === 'bm' ? 'Kod warna heksadesimal' : 'Hex color code'}
                               value={customMainColor.replace(/^#/, '').toUpperCase()}
                               onChange={(e) => {
                                 const raw = e.target.value.trim().replace(/[^0-9a-fA-F]/g, '');
@@ -676,7 +677,7 @@ export default function SettingsPage() {
                   {/* Feature 2: Font Size Slider */}
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                      <label htmlFor="settings-font-size-slider" className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
                         <Type className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                         {language === 'bm' ? 'Saiz Tulisan (Menu & Harga)' : 'Font Size Slider (Menu & Price)'}
                       </label>
@@ -686,6 +687,7 @@ export default function SettingsPage() {
                     </div>
 
                     <input
+                      id="settings-font-size-slider"
                       type="range"
                       min={12}
                       max={22}
@@ -716,7 +718,7 @@ export default function SettingsPage() {
                   {/* Feature 3: Card / Item Size Slider (RecyclerView Scale) */}
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                      <label htmlFor="settings-card-size-slider" className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
                         <LayoutGrid className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
                         {language === 'bm' ? 'Saiz Kad / Item (RecyclerView Grid)' : 'Card / Item Size Slider (Grid)'}
                       </label>
@@ -726,6 +728,7 @@ export default function SettingsPage() {
                     </div>
 
                     <input
+                      id="settings-card-size-slider"
                       type="range"
                       min={80}
                       max={130}

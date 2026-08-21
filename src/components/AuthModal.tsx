@@ -240,12 +240,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               {mode === 'signup' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                    <label htmlFor="signup-name" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Full Name *', 'Nama Penuh *')}
                     </label>
                     <div className="relative">
                       <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
+                        id="signup-name"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -257,12 +258,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                    <label htmlFor="signup-contact" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Contact Number *', 'No. Telefon *')}
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
+                        id="signup-contact"
                         type="tel"
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
@@ -274,12 +276,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                    <label htmlFor="signup-company" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Organization / Company', 'Syarikat / Organisasi')}
                     </label>
                     <div className="relative">
                       <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <select
+                        id="signup-company"
                         value={selectedCompany}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -306,6 +309,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       <div className="relative mt-2">
                         <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
+                          id="signup-custom-company"
+                          aria-label={t('Other Company Name', 'Nama Syarikat Lain')}
                           type="text"
                           value={to}
                           onChange={(e) => setTo(e.target.value)}
@@ -317,12 +322,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </div>
 
                   <div className="space-y-1">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                    <label htmlFor="signup-attn" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Department / Attention (Attn)', 'Bahagian / Untuk Perhatian')}
                     </label>
                     <div className="relative">
                       <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
+                        id="signup-attn"
                         type="text"
                         value={attn}
                         onChange={(e) => setAttn(e.target.value)}
@@ -336,12 +342,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
               {/* Core Email Field */}
               <div className="space-y-1">
-                <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                <label htmlFor="auth-email" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                   {t('Email Address', 'Alamat E-mel')}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
+                    id="auth-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -356,7 +363,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               {mode !== 'forgot' && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <label className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                    <label htmlFor="auth-password" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
                       {t('Password', 'Kata Laluan')}
                     </label>
                     {mode === 'signin' && (
@@ -372,6 +379,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
+                      id="auth-password"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

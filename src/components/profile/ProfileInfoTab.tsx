@@ -91,12 +91,13 @@ export function ProfileInfoTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 font-sans">
         {/* Full Name */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
+          <Label htmlFor="profile-fullname" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <UserIcon className="w-3.5 h-3.5 text-primary" />
             <span>{t('Full Name / Nama Penuh', 'Nama Penuh *')}</span>
           </Label>
           {isEditing ? (
             <Input
+              id="profile-fullname"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder={t('Enter your full name', 'Masukkan nama penuh')}
@@ -111,12 +112,13 @@ export function ProfileInfoTab({
 
         {/* Contact Phone */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
+          <Label htmlFor="profile-phone" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5 text-primary" />
             <span>{t('Phone Number / Nombor Telefon', 'Nombor Telefon *')}</span>
           </Label>
           {isEditing ? (
             <Input
+              id="profile-phone"
               value={editContact}
               onChange={(e) => setEditContact(e.target.value)}
               placeholder="e.g. 012-3456789"
@@ -131,7 +133,7 @@ export function ProfileInfoTab({
 
         {/* Company / Ministry */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
+          <Label htmlFor="profile-company-select" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Building className="w-3.5 h-3.5 text-primary" />
             <span>{t('Company / Ministry / Organisasi', 'Syarikat / Kementerian')}</span>
           </Label>
@@ -145,7 +147,7 @@ export function ProfileInfoTab({
                   else setEditTo('');
                 }}
               >
-                <SelectTrigger className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]">
+                <SelectTrigger id="profile-company-select" className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]">
                   <SelectValue placeholder={t('Select organization', 'Pilih organisasi')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,6 +162,8 @@ export function ProfileInfoTab({
 
               {selectedCompany === 'other' && (
                 <Input
+                  id="profile-custom-company"
+                  aria-label={t('Custom Company Name', 'Nama Organisasi Custom')}
                   value={editTo}
                   onChange={(e) => setEditTo(e.target.value)}
                   placeholder={t('Type company or agency name', 'Taip nama syarikat/agensi')}
@@ -176,12 +180,13 @@ export function ProfileInfoTab({
 
         {/* Attn / Department */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
+          <Label htmlFor="profile-attn" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5 text-primary" />
             <span>{t('Attention / Unit / Jabatan', 'Untuk Perhatian (Attn) / Unit')}</span>
           </Label>
           {isEditing ? (
             <Input
+              id="profile-attn"
               value={editAttn}
               onChange={(e) => setEditAttn(e.target.value)}
               placeholder={t('e.g. Unit Latihan, Tingkat 4', 'Cth: Jabatan Sumber Manusia')}
