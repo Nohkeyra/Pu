@@ -183,7 +183,7 @@ export function Step2DishSelection({
             {tText(item.nameEn, item.nameBm)}
           </span>
           {(item.descBm || item.descEn) && (
-            <span className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 block truncate font-normal leading-tight mt-0.5">
+            <span className="text-[10px] sm:text-xs text-stone-700 dark:text-stone-300 block truncate font-medium leading-tight mt-0.5">
               {tText(item.descEn, item.descBm)}
             </span>
           )}

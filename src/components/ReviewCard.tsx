@@ -35,19 +35,19 @@ export default function ReviewCard({ text, name, rating, date, tag, source = 'Go
             />
           ))}
           {date && (
-            <span className="ml-2 text-[11px] text-deep-forest/40 dark:text-stone-400 font-medium">
+            <span className="ml-2 text-[11px] text-deep-forest/70 dark:text-stone-300 font-medium">
               {date}
             </span>
           )}
         </div>
         
-        <p className="font-body text-[14.5px] sm:text-[15px] text-deep-forest/85 dark:text-stone-200 leading-relaxed font-light italic">
+        <p className="font-body text-[14.5px] sm:text-[15px] text-deep-forest dark:text-[#ede5d8] leading-relaxed font-normal italic">
           "{text}"
         </p>
 
         {tag && (
           <div className="mt-3">
-            <span className="inline-block px-3 py-1 text-[11px] font-medium rounded-full bg-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white border border-[var(--color-sunshine-cta)]/20">
+            <span className="inline-block px-3 py-1 text-[11px] font-semibold rounded-full bg-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white border border-[var(--color-sunshine-cta)]/20">
               {tag}
             </span>
           </div>
@@ -64,7 +64,7 @@ export default function ReviewCard({ text, name, rating, date, tag, source = 'Go
           <p className="font-display font-semibold text-[15px] text-deep-forest dark:text-white truncate">
             {name}
           </p>
-          <span className="font-sans font-medium text-[11px] text-deep-forest/50 dark:text-stone-400 uppercase tracking-wider block">
+          <span className="font-sans font-semibold text-[11px] text-deep-forest/75 dark:text-stone-300 uppercase tracking-wider block">
             Verified Google Local Guide
           </span>
         </div>

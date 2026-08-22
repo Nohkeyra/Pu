@@ -134,7 +134,7 @@ export function Step3ContactDetails({
         {/* Conditionally Render Company/Department selection for Office event */}
         {orderState.eventType === 'pejabat' && (
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-stone uppercase tracking-wider">
+            <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
               {tText('Syarikat / Kementerian / Jabatan', 'Syarikat / Kementerian / Jabatan *')}
             </Label>
             {isProfileLoading ? (
@@ -146,12 +146,12 @@ export function Step3ContactDetails({
                   onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
                   required
                 >
-                  <SelectTrigger className="w-full h-11 rounded-2xl border-stone/20 bg-muted focus:ring-crisp-carrot/20">
+                  <SelectTrigger className="w-full h-11 rounded-2xl border-stone/20 bg-muted text-deep-forest dark:text-[#ede5d8] focus:ring-crisp-carrot/20">
                     <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-stone/10">
                     {SAVED_COMPANIES.map((company, idx) => (
-                      <SelectItem key={idx} value={company} className="text-deep-forest focus:bg-crisp-carrot/10">
+                      <SelectItem key={idx} value={company} className="text-deep-forest dark:text-[#ede5d8] focus:bg-crisp-carrot/10">
                         {company}
                       </SelectItem>
                     ))}
@@ -183,7 +183,7 @@ export function Step3ContactDetails({
 
         {/* Name Input */}
         <div className="space-y-1.5">
-          <Label htmlFor="contact-name" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
+          <Label htmlFor="contact-name" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
           <Input
             id="contact-name"
             value={orderState.name}
@@ -195,7 +195,7 @@ export function Step3ContactDetails({
 
         {/* Phone Input */}
         <div className="space-y-1.5">
-          <Label htmlFor="contact-phone" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
+          <Label htmlFor="contact-phone" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
           <Input
             id="contact-phone"
             type="tel"
@@ -209,7 +209,7 @@ export function Step3ContactDetails({
         {/* Email & Confirm Email Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="contact-email" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
+            <Label htmlFor="contact-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
             <Input
               id="contact-email"
               type="email"
@@ -220,7 +220,7 @@ export function Step3ContactDetails({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
+            <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
             <Input
               id="contact-confirm-email"
               type="email"
@@ -235,24 +235,24 @@ export function Step3ContactDetails({
         {/* Date & Time Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="event-date" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
+            <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
             <input
               id="event-date"
               type="date"
               value={orderState.date}
               min={format(new Date(), 'yyyy-MM-dd')}
               onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/10 bg-card text-deep-forest rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="event-time" className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
+            <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
             <input
               id="event-time"
               type="time"
               value={orderState.time}
               onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/10 bg-card text-deep-forest rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
             />
           </div>
         </div>
@@ -260,7 +260,7 @@ export function Step3ContactDetails({
         {/* Geolocation Autocomplete Venue Location */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <Label htmlFor="contact-location" className="text-xs font-bold text-stone uppercase tracking-wider">
+            <Label htmlFor="contact-location" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
               {tText('Event Venue Address', 'Lokasi / Alamat Majlis *')}
             </Label>
             <button

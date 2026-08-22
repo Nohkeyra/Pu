@@ -222,10 +222,17 @@ jobs:
           cp android/app/key.properties android/key.properties
           echo "✅ Keystore successfully created and configured for release signing!"
 
-      - name: Setup Gradle permissions
+      - name: Setup Gradle permissions and wrapper integrity
         run: |
           cd android
           chmod +x gradlew
+          if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
+            echo "⚠️ gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
+            curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
+            unzip -t gradle/wrapper/gradle-wrapper.jar
+          else
+            echo "✅ Gradle wrapper jar verified."
+          fi
 
       - name: Build debug APK
         working-directory: ./android

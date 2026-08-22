@@ -48,7 +48,7 @@
     --color-cream: #fdfbf7;
     --color-cream-dark: rgba(233, 149, 8, 0.08);
     --color-charcoal: #0c453c;
-    --color-stone: rgba(12, 69, 60, 0.65);
+    --color-stone: rgba(12, 69, 60, 0.85);
     --background: 40 33% 98%;
     --foreground: 171 70% 17%;
     --card: 40 33% 99%;
@@ -60,9 +60,9 @@
     --secondary: 38 93% 47%;
     --secondary-foreground: 171 70% 17%;
     --muted: 38 80% 95%;
-    --muted-foreground: 171 30% 30%;
+    --muted-foreground: 171 45% 22%;
     --accent: 22 86% 49%;
-    --accent-foreground: 171 70% 17%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 22 95% 38%;
     --destructive-foreground: 0 0% 100%;
     --border: 171 25% 88%;
@@ -110,7 +110,7 @@
     --color-cream: #0c100e;
     --color-cream-dark: #151d1a;
     --color-charcoal: #0c100e;
-    --color-stone: #9d988f;
+    --color-stone: #c2bbb0;
 
     /* Tailwind / Radix HSL tokens for .dark */
     --background: 156 18% 6%;     /* #0C100E */
@@ -124,7 +124,7 @@
     --secondary: 160 12% 18%;     /* #26312D */
     --secondary-foreground: 38 30% 89%;
     --muted: 160 10% 15%;
-    --muted-foreground: 38 10% 60%; /* #9D988F */
+    --muted-foreground: 38 20% 78%; /* #D6CFB9 */
     --accent: 38 93% 47%;         /* #E99508 */
     --accent-foreground: 156 18% 6%;
     --destructive: 22 95% 38%;
@@ -827,15 +827,30 @@ html.theme-transitioning *::after {
 
 .dark .text-white\/90,
 .dark .text-white\/80,
+.dark .text-white\/85 {
+  color: rgba(237, 229, 216, 0.90) !important;
+}
+
 .dark .text-white\/70,
-.dark .text-white\/72 {
-  color: rgba(237, 229, 216, 0.75) !important;
+.dark .text-white\/72,
+.dark .text-white\/75 {
+  color: rgba(237, 229, 216, 0.85) !important;
 }
 
 .dark .text-white\/50,
 .dark .text-white\/60,
 .dark .text-white\/40 {
-  color: rgba(237, 229, 216, 0.55) !important;
+  color: rgba(237, 229, 216, 0.78) !important;
+}
+
+.dark .text-stone-400,
+.dark .text-stone-500,
+.dark .text-stone-600,
+.dark .text-gray-400,
+.dark .text-gray-500,
+.dark .text-slate-400,
+.dark .text-slate-500 {
+  color: #c2bbb0 !important;
 }
 
 .dark .bg-white {

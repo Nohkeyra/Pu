@@ -88,38 +88,38 @@ export function Step4ReviewSubmit({
         
         {/* Event & Serve Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-deep-forest uppercase tracking-wider block mb-1">
+          <span className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block mb-1">
             {tText('Event Summary', 'Maklumat Majlis')}
           </span>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Event Type', 'Jenis Majlis')}</span>
-            <span className="font-bold text-deep-forest">
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Event Type', 'Jenis Majlis')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">
               {orderState.eventType === 'pejabat' ? tText('Corporate Feast', 'Jamuan Pejabat') : tText('Private Event', 'Lain-lain')}
             </span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Catering Block', 'Hidangan Untuk')}</span>
-            <span className="font-bold text-deep-forest">
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Catering Block', 'Hidangan Untuk')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">
               {getMealTypesLabel()}
             </span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Serving Style', 'Gaya Hidangan')}</span>
-            <span className="font-bold text-deep-forest">
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Serving Style', 'Gaya Hidangan')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">
               {orderState.preparationType === 'meal_box' ? tText('Pre-Pack Box', 'Set Box / Bungkus') : tText('Buffet Style', 'Hidangan Bufet')}
             </span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Quantity', 'Kuantiti')}</span>
-            <span className="font-bold text-deep-forest">{orderState.guests} {tText('pax', 'orang')}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Quantity', 'Kuantiti')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{orderState.guests} {tText('pax', 'orang')}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Date & Time', 'Tarikh & Masa')}</span>
-            <span className="font-bold text-deep-forest">{orderState.date} @ {orderState.time}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Date & Time', 'Tarikh & Masa')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{orderState.date} @ {orderState.time}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('Method', 'Kaedah')}</span>
-            <span className="font-bold text-deep-forest">
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Method', 'Kaedah')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">
               {orderState.delivery === 'delivery' ? tText('Delivery to Location', 'Hantar ke Lokasi') : tText('Collect at Restaurant', 'Ambil di Restoran')}
             </span>
           </div>
@@ -127,32 +127,32 @@ export function Step4ReviewSubmit({
 
         {/* Customer Billing Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-deep-forest uppercase tracking-wider block mb-1">
+          <span className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block mb-1">
             {tText('Customer & Billing Info', 'Maklumat Pembayar')}
           </span>
           {orderState.eventType === 'pejabat' && (
             <div className="flex justify-between items-start text-xs gap-4">
-              <span className="text-stone shrink-0">{tText('Organization', 'Syarikat/Jabatan')}</span>
-              <span className="font-bold text-deep-forest text-right">
+              <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Organization', 'Syarikat/Jabatan')}</span>
+              <span className="font-bold text-deep-forest dark:text-white text-right">
                 {orderState.companyName === 'other' ? orderState.customCompany : orderState.companyName}
               </span>
             </div>
           )}
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('PIC Name', 'Nama')}</span>
-            <span className="font-bold text-deep-forest">{orderState.name}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('PIC Name', 'Nama')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{orderState.name}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('PIC Phone', 'Telefon')}</span>
-            <span className="font-bold text-deep-forest">{orderState.contact}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('PIC Phone', 'Telefon')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{orderState.contact}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-stone">{tText('PIC Email', 'E-mel')}</span>
-            <span className="font-bold text-deep-forest break-all text-right">{orderState.email}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('PIC Email', 'E-mel')}</span>
+            <span className="font-bold text-deep-forest dark:text-white break-all text-right">{orderState.email}</span>
           </div>
           <div className="flex justify-between items-start text-xs gap-4">
-            <span className="text-stone shrink-0">{tText('Venue Location', 'Lokasi')}</span>
-            <span className="font-bold text-deep-forest text-right">{orderState.location}</span>
+            <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Venue Location', 'Lokasi')}</span>
+            <span className="font-bold text-deep-forest dark:text-white text-right">{orderState.location}</span>
           </div>
         </div>
 

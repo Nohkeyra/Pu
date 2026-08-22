@@ -114,7 +114,7 @@ export function Step1EventMeal({
             <Briefcase className="w-5 h-5" />
           </div>
           <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-          <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Meetings, workshops & corporate.', 'Urusan rasmi, mesyuarat, kursus.')}</span>
+          <span className="microcopy-12 text-deep-forest/80 dark:text-[#ede5d8]/85 leading-tight font-medium">{tText('Meetings, workshops & corporate.', 'Urusan rasmi, mesyuarat, kursus.')}</span>
         </button>
 
         <button
@@ -141,14 +141,14 @@ export function Step1EventMeal({
             <Smile className="w-5 h-5" />
           </div>
           <span className="text-sm font-bold block text-deep-forest dark:text-white">{tText('Private Events', 'Lain-lain')}</span>
-          <span className="microcopy-12 text-stone/80 leading-tight font-normal">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
+          <span className="microcopy-12 text-deep-forest/80 dark:text-[#ede5d8]/85 leading-tight font-medium">{tText('Birthday, reunion, gatherings.', 'Sambutan hari jadi, tahlil, reuni.')}</span>
         </button>
       </div>
       {fieldErrors.eventType && <FormError message={fieldErrors.eventType} />}
 
       {/* Meal Type selection */}
       <div className="space-y-2 pt-2">
-        <Label className="text-xs font-bold text-stone dark:text-stone-300 uppercase tracking-wider block">
+        <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Meals / Sajian', 'Sajian *')}
         </Label>
         

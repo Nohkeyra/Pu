@@ -116,7 +116,7 @@ export default function StorySection() {
                   <span className="font-display font-black text-3xl md:text-4xl bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 bg-clip-text text-transparent">
                     {stat.number}
                   </span>
-                  <span className="block font-sans font-bold text-[11px] uppercase tracking-wider text-deep-forest/70 dark:text-stone/70 mt-2">
+                  <span className="block font-sans font-bold text-[11px] uppercase tracking-wider text-deep-forest dark:text-[#ede5d8] mt-2">
                     {stat.label}
                   </span>
                 </div>
