@@ -8,6 +8,15 @@ import { DEFAULT_FALLBACK_PRICE_PER_PAX } from './orderRoutes.js';
 
 const router = Router();
 
+// Public health route for MCP connectors and health checkers
+router.get(['/health', '/healthz'], (_req: Request, res: Response) => {
+  return res.status(200).json({
+    status: 'ok',
+    service: 'Wawasan Hub MCP',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Store active SSE transports by sessionId
 const activeSseTransports = new Map<string, SSEServerTransport>();
 
