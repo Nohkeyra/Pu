@@ -192,62 +192,74 @@ async function startServer() {
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);
   app.use('/api/widget', widgetRoutes);
+  // Top-level RFC 9728 & OAuth metadata probe handlers for Claude Connectors (must be before /.well-known)
+  app.use([
+    '/.well-known/oauth-protected-resource',
+    '/oauth-protected-resource',
+    '/.well-known/oauth-authorization-server',
+    '/oauth-authorization-server',
+    '/.well-known/openid-configuration',
+    '/openid-configuration',
+    '/.well-known/mcp.json',
+    '/.well-known/mcp',
+    '/mcp.json'
+  ], (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const protocol = req.protocol || 'https';
+    const host = req.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+    const url = req.originalUrl || req.url;
+
+    res.setHeader('Content-Type', 'application/json');
+
+    if (url.includes('oauth-protected-resource')) {
+      return res.status(200).json({
+        resource: `${baseUrl}/api/mcp/sse`,
+        authorization_servers: [],
+        scopes_supported: [],
+        bearer_methods_supported: [],
+        auth_required: false,
+        auth_type: 'none',
+        message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
+      });
+    }
+
+    if (url.includes('oauth-authorization-server') || url.includes('openid-configuration')) {
+      return res.status(200).json({
+        auth_required: false,
+        auth_type: 'none',
+        authorization_servers: [],
+        message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
+      });
+    }
+
+    if (url.includes('mcp')) {
+      return res.status(200).json({
+        schema_version: 'v1',
+        name_for_human: 'Wawasan Hub',
+        name_for_model: 'wawasan_hub',
+        description_for_human: 'Restoran Wawasan Pak Usop Halal Catering & Order Management Hub.',
+        description_for_model: 'API and MCP server for fetching menu items, calculating catering estimates, checking order status, and submitting catering inquiries.',
+        auth: { type: 'none' },
+        auth_type: 'none',
+        api: { type: 'mcp', url: `${baseUrl}/api/mcp/sse`, mcp_version: '2024-11-05' },
+        mcpVersion: '2024-11-05',
+        transport: 'sse',
+        endpoints: {
+          sse: `${baseUrl}/api/mcp/sse`,
+          message: `${baseUrl}/api/mcp/message`,
+          rpc: `${baseUrl}/api/mcp/call`,
+          tools: `${baseUrl}/api/mcp/tools`,
+          openapi: `${baseUrl}/api/mcp/openapi.json`
+        }
+      });
+    }
+
+    next();
+  });
+
   app.use('/api/mcp', mcpRoutes);
   app.use('/api/docs', mcpRoutes);
   app.use('/.well-known', mcpRoutes);
-
-  // Top-level RFC 9728 & OAuth metadata probe handlers for Claude Connectors
-  app.use(['/.well-known/oauth-protected-resource*', '/oauth-protected-resource*'], (req: express.Request, res: express.Response) => {
-    const protocol = req.protocol || 'https';
-    const host = req.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json({
-      resource: `${baseUrl}/api/mcp/sse`,
-      authorization_servers: [],
-      scopes_supported: [],
-      bearer_methods_supported: [],
-      auth_required: false,
-      auth_type: 'none',
-      message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
-    });
-  });
-
-  app.use(['/.well-known/oauth-authorization-server*', '/oauth-authorization-server*', '/.well-known/openid-configuration*', '/openid-configuration*'], (req: express.Request, res: express.Response) => {
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json({
-      auth_required: false,
-      auth_type: 'none',
-      authorization_servers: [],
-      message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
-    });
-  });
-
-  app.use(['/.well-known/mcp.json', '/.well-known/mcp', '/mcp.json'], (req: express.Request, res: express.Response) => {
-    const protocol = req.protocol || 'https';
-    const host = req.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json({
-      schema_version: 'v1',
-      name_for_human: 'Wawasan Hub',
-      name_for_model: 'wawasan_hub',
-      description_for_human: 'Restoran Wawasan Pak Usop Halal Catering & Order Management Hub.',
-      description_for_model: 'API and MCP server for fetching menu items, calculating catering estimates, checking order status, and submitting catering inquiries.',
-      auth: { type: 'none' },
-      auth_type: 'none',
-      api: { type: 'mcp', url: `${baseUrl}/api/mcp/sse`, mcp_version: '2024-11-05' },
-      mcpVersion: '2024-11-05',
-      transport: 'sse',
-      endpoints: {
-        sse: `${baseUrl}/api/mcp/sse`,
-        message: `${baseUrl}/api/mcp/message`,
-        rpc: `${baseUrl}/api/mcp/call`,
-        tools: `${baseUrl}/api/mcp/tools`,
-        openapi: `${baseUrl}/api/mcp/openapi.json`
-      }
-    });
-  });
 
   // API 404 handler to ensure /api/* calls return JSON instead of HTML
   app.use('/api/*', (req: express.Request, res: express.Response) => {

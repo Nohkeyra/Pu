@@ -660,26 +660,6 @@ router.use(['/oauth-protected-resource*'], (req: Request, res: Response) => {
   });
 });
 
-// RFC 9728 Protected Resource Metadata probe - Claude.ai's connector setup checks
-// /.well-known/oauth-protected-resource(<path>) to decide whether a connector needs
-// sign-in. Without this route it 404s and the UI shows a spurious "asked for
-// sign-in" warning even when auth is set to None. Match both the bare path and any
-// resource-scoped variant (e.g. /oauth-protected-resource/api/mcp/sse).
-router.get(['/oauth-protected-resource', '/oauth-protected-resource/*'], (req: Request, res: Response) => {
-  const protocol = req.protocol || 'https';
-  const host = req.get('host') || 'localhost:3000';
-  const baseUrl = `${protocol}://${host}`;
-
-  return res.json({
-    resource: `${baseUrl}/api/mcp/sse`,
-    authorization_servers: [],
-    auth_required: false,
-    auth_type: 'none',
-    bearer_methods_supported: [],
-    message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
-  });
-});
-
 // GET /api/mcp & /api/mcp/manifest - Server Manifest Info
 router.get('/', (req: Request, res: Response) => {
   const protocol = req.protocol || 'https';
