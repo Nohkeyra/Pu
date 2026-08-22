@@ -182,6 +182,50 @@ async function startServer() {
   app.get('/health', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
+  // Dedicated root route handler for AI connectors, MCP discovery, and browser client serving
+  app.get('/', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const accept = (req.headers.accept as string) || '';
+    const userAgent = (req.headers['user-agent'] as string) || '';
+
+    // If it's a connector, AI tool, or explicitly asks for JSON
+    if (accept.includes('application/json') || /claude|anthropic|connector|mcp|curator|agent/i.test(userAgent)) {
+      const protocol = req.protocol || 'https';
+      const host = req.get('host') || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      return res.status(200).json({
+        status: 'ok',
+        service: 'Wawasan Hub API',
+        auth_required: false,
+        auth_type: 'none',
+        endpoints: {
+          sse: `${baseUrl}/api/mcp/sse`,
+          health: `${baseUrl}/api/health`,
+          message: `${baseUrl}/api/mcp/message`,
+          tools: `${baseUrl}/api/mcp/tools`
+        },
+        message: 'Wawasan Hub MCP server operates in no-auth mode.'
+      });
+    }
+
+    // For regular browsers in production, serve index.html directly
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      const distPath = fs.existsSync(path.join(process.cwd(), 'dist', 'client'))
+        ? path.join(process.cwd(), 'dist', 'client')
+        : path.join(process.cwd(), 'dist');
+      const indexPath = fs.existsSync(path.join(distPath, 'index.html'))
+        ? path.join(distPath, 'index.html')
+        : path.join(process.cwd(), 'dist', 'index.html');
+
+      if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+      }
+    }
+
+    // In development or fallback, pass to Vite middleware
+    next();
+  });
+
   // Top-level RFC 9728, OAuth & MCP discovery probe interceptor for Claude Connectors
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const rawUrl = (req.originalUrl || req.url || '').toLowerCase();
@@ -293,37 +337,6 @@ async function startServer() {
       error: `API endpoint not found: ${req.method} ${req.originalUrl}`,
       requestId
     });
-  });
-
-  // Dedicated response for the root path that returns JSON when requested by API clients or connectors
-  app.get('/', (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const accept = (req.headers.accept as string) || '';
-    const userAgent = (req.headers['user-agent'] as string) || '';
-
-    const isJsonRequest = accept.includes('application/json');
-    const isConnector = /claude|anthropic|connector|mcp|curator|agent/i.test(userAgent);
-
-    if (isJsonRequest || isConnector) {
-      const protocol = req.protocol || 'https';
-      const host = req.get('host') || 'localhost:3000';
-      const baseUrl = `${protocol}://${host}`;
-
-      return res.status(200).json({
-        status: 'ok',
-        service: 'Wawasan Hub API',
-        auth_required: false,
-        auth_type: 'none',
-        endpoints: {
-          sse: `${baseUrl}/api/mcp/sse`,
-          health: `${baseUrl}/api/health`,
-          message: `${baseUrl}/api/mcp/message`,
-          tools: `${baseUrl}/api/mcp/tools`
-        },
-        message: 'Wawasan Hub MCP server operates in no-auth mode.'
-      });
-    }
-
-    next();
   });
 
   // Vite development middleware or static production serving
