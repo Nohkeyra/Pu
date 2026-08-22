@@ -513,17 +513,55 @@ router.get('/sse', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
   }
 
+  // Disable proxy/response buffering so the stream flushes immediately.
+  // Render (and most reverse proxies) will silently drop an SSE connection
+  // that goes quiet for ~55s with no bytes sent, which looks like a
+  // "connects then dies" or "never connects" failure on the client side.
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable nginx-style proxy buffering
+
   const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'unknown_client').split(',')[0].trim();
   const transport = new SSEServerTransport('/api/mcp/message', res);
   const mcpServer = createWawasanMcpServer(clientIp);
 
   activeSseTransports.set(transport.sessionId, transport);
 
-  req.on('close', () => {
-    activeSseTransports.delete(transport.sessionId);
-  });
+  // Heartbeat: send an SSE comment line every 20s to keep the connection
+  // alive through idle-timeout proxies. Comments (lines starting with ':')
+  // are ignored by SSE clients/parsers, so this is safe for mcp-remote too.
+  const heartbeat = setInterval(() => {
+    if (res.writableEnded) {
+      clearInterval(heartbeat);
+      return;
+    }
+    try {
+      res.write(': heartbeat\n\n');
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 20 * 1000);
 
-  await mcpServer.connect(transport);
+  const cleanup = () => {
+    clearInterval(heartbeat);
+    activeSseTransports.delete(transport.sessionId);
+  };
+
+  req.on('close', cleanup);
+  res.on('close', cleanup);
+  res.on('error', cleanup);
+
+  try {
+    await mcpServer.connect(transport);
+  } catch (err) {
+    cleanup();
+    console.error('[MCP SSE] Failed to connect transport:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to establish MCP SSE connection.' });
+    } else if (!res.writableEnded) {
+      res.end();
+    }
+  }
 });
 
 // POST /api/mcp/message - Post message to active SSE session
@@ -536,7 +574,15 @@ router.post('/message', async (req: Request, res: Response) => {
   const transport = activeSseTransports.get(sessionId);
 
   if (!transport) {
-    return res.status(404).json({ error: `MCP SSE Session '${sessionId}' not found or expired.` });
+    // Most common cause: the server process restarted (deploy, crash, or
+    // Render free-tier recycling) between the SSE handshake and this POST,
+    // since sessions live in memory only. The client should reconnect via
+    // a fresh GET /api/mcp/sse rather than retrying this sessionId.
+    return res.status(404).json({
+      error: `MCP SSE Session '${sessionId}' not found or expired.`,
+      reason: 'Session store is in-memory; a server restart invalidates all active sessions.',
+      action: 'Reconnect by opening a new GET /api/mcp/sse stream.'
+    });
   }
 
   await transport.handlePostMessage(req, res);
