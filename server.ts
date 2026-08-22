@@ -300,11 +300,10 @@ async function startServer() {
     const accept = (req.headers.accept as string) || '';
     const userAgent = (req.headers['user-agent'] as string) || '';
 
-    const isHtmlRequest = accept.includes('text/html');
     const isJsonRequest = accept.includes('application/json');
-    const isConnector = /claude|anthropic|connector|mcp/i.test(userAgent);
+    const isConnector = /claude|anthropic|connector|mcp|curator|agent/i.test(userAgent);
 
-    if (!isHtmlRequest && (isJsonRequest || isConnector)) {
+    if (isJsonRequest || isConnector) {
       const protocol = req.protocol || 'https';
       const host = req.get('host') || 'localhost:3000';
       const baseUrl = `${protocol}://${host}`;
@@ -317,6 +316,7 @@ async function startServer() {
         endpoints: {
           sse: `${baseUrl}/api/mcp/sse`,
           health: `${baseUrl}/api/health`,
+          message: `${baseUrl}/api/mcp/message`,
           tools: `${baseUrl}/api/mcp/tools`
         },
         message: 'Wawasan Hub MCP server operates in no-auth mode.'
