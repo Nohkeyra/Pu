@@ -182,36 +182,16 @@ async function startServer() {
   app.get('/health', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
-  // Mount Modular API Routers
-  app.use('/api/admin', authRoutes);
-  app.use('/api/orders', orderRoutes);
-  app.use('/api', orderRoutes);
-  app.use('/api/menu', menuRoutes);
-  app.use('/api/admin/menu', menuRoutes);
-  app.use('/api', updateRoutes);
-  app.use('/api', invoiceRoutes);
-  app.use('/api', diagnosticRoutes);
-  app.use('/api/widget', widgetRoutes);
-  // Top-level RFC 9728 & OAuth metadata probe handlers for Claude Connectors (must be before /.well-known)
-  app.use([
-    '/.well-known/oauth-protected-resource',
-    '/oauth-protected-resource',
-    '/.well-known/oauth-authorization-server',
-    '/oauth-authorization-server',
-    '/.well-known/openid-configuration',
-    '/openid-configuration',
-    '/.well-known/mcp.json',
-    '/.well-known/mcp',
-    '/mcp.json'
-  ], (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Top-level RFC 9728, OAuth & MCP discovery probe interceptor for Claude Connectors
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const rawUrl = (req.originalUrl || req.url || '').toLowerCase();
     const protocol = req.protocol || 'https';
     const host = req.get('host') || 'localhost:3000';
     const baseUrl = `${protocol}://${host}`;
-    const url = req.originalUrl || req.url;
 
-    res.setHeader('Content-Type', 'application/json');
-
-    if (url.includes('oauth-protected-resource')) {
+    // RFC 9728 OAuth Protected Resource Metadata probe
+    if (rawUrl.includes('oauth-protected-resource')) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(200).json({
         resource: `${baseUrl}/api/mcp/sse`,
         authorization_servers: [],
@@ -223,7 +203,9 @@ async function startServer() {
       });
     }
 
-    if (url.includes('oauth-authorization-server') || url.includes('openid-configuration')) {
+    // OAuth Authorization Server & OpenID Discovery probes
+    if (rawUrl.includes('oauth-authorization-server') || rawUrl.includes('openid-configuration')) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(200).json({
         auth_required: false,
         auth_type: 'none',
@@ -232,7 +214,9 @@ async function startServer() {
       });
     }
 
-    if (url.includes('mcp')) {
+    // MCP discovery metadata probes (.well-known/mcp, .well-known/mcp.json, /mcp.json, etc.)
+    if (rawUrl.includes('.well-known/mcp') || rawUrl.endsWith('/mcp.json') || rawUrl.endsWith('/mcp')) {
+      res.setHeader('Content-Type', 'application/json');
       return res.status(200).json({
         schema_version: 'v1',
         name_for_human: 'Wawasan Hub',
@@ -257,6 +241,16 @@ async function startServer() {
     next();
   });
 
+  // Mount Modular API Routers
+  app.use('/api/admin', authRoutes);
+  app.use('/api/orders', orderRoutes);
+  app.use('/api', orderRoutes);
+  app.use('/api/menu', menuRoutes);
+  app.use('/api/admin/menu', menuRoutes);
+  app.use('/api', updateRoutes);
+  app.use('/api', invoiceRoutes);
+  app.use('/api', diagnosticRoutes);
+  app.use('/api/widget', widgetRoutes);
   app.use('/api/mcp', mcpRoutes);
   app.use('/api/docs', mcpRoutes);
   app.use('/.well-known', mcpRoutes);
