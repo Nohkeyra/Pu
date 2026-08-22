@@ -1199,6 +1199,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <AdminOrdersTab
               t={t}
               language={language}
+              orders={orders}
               filteredOrders={filteredOrders}
               cancelRequests={cancelRequests}
               dateFromFilter={dateFromFilter}

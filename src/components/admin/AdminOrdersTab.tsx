@@ -26,6 +26,7 @@ import { List } from 'react-window';
 export function AdminOrdersTab({
   t,
   language,
+  orders = [],
   filteredOrders,
   cancelRequests,
   dateFromFilter,
@@ -60,6 +61,7 @@ export function AdminOrdersTab({
 }: {
   t: (key: string) => string;
   language: string;
+  orders?: Order[];
   filteredOrders: Order[];
   cancelRequests: Order[];
   dateFromFilter: string;
@@ -282,7 +284,7 @@ export function AdminOrdersTab({
               { 
                 id: 'approved', 
                 label: language === 'bm' ? 'Diluluskan' : 'Approved',
-                count: orders.filter(o => o.status === 'approved' || o.status === 'confirmed').length 
+                count: orders.filter((o: Order) => o.status === 'approved' || (o.status as string) === 'confirmed').length 
               },
               { 
                 id: 'billed', 
