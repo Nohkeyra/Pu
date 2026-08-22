@@ -543,11 +543,61 @@ router.post('/message', async (req: Request, res: Response) => {
 });
 
 // --------------------------------------------------------------------------
-// 2. Direct HTTP / JSON-RPC Endpoints for REST, Custom GPTs & Curl
+// 2. Direct HTTP / JSON-RPC Endpoints for REST, Custom GPTs & Claude Connectors
 // --------------------------------------------------------------------------
 
+// GET /.well-known/mcp.json & /.well-known/mcp - MCP Discovery for Claude Connectors
+const getMcpDiscoveryJson = (req: Request) => {
+  const protocol = req.protocol || 'https';
+  const host = req.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
+
+  return {
+    schema_version: 'v1',
+    name_for_human: 'Wawasan Hub',
+    name_for_model: 'wawasan_hub',
+    description_for_human: 'Restoran Wawasan Pak Usop Halal Catering & Order Management Hub.',
+    description_for_model: 'API and MCP server for fetching menu items, calculating catering estimates, checking order status, and submitting catering inquiries.',
+    auth: {
+      type: 'none'
+    },
+    auth_type: 'none',
+    api: {
+      type: 'mcp',
+      url: `${baseUrl}/api/mcp/sse`,
+      mcp_version: '2024-11-05'
+    },
+    mcpVersion: '2024-11-05',
+    transport: 'sse',
+    endpoints: {
+      sse: `${baseUrl}/api/mcp/sse`,
+      message: `${baseUrl}/api/mcp/message`,
+      rpc: `${baseUrl}/api/mcp/call`,
+      tools: `${baseUrl}/api/mcp/tools`,
+      openapi: `${baseUrl}/api/mcp/openapi.json`
+    }
+  };
+};
+
+router.get(['/mcp.json', '/mcp'], (req: Request, res: Response) => {
+  return res.json(getMcpDiscoveryJson(req));
+});
+
+// OAuth probe fallback handlers - explicit confirmation that no sign-in / OAuth is required
+router.get(['/oauth-authorization-server', '/openid-configuration'], (_req: Request, res: Response) => {
+  return res.json({
+    auth_required: false,
+    auth_type: 'none',
+    message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
+  });
+});
+
 // GET /api/mcp & /api/mcp/manifest - Server Manifest Info
-router.get('/', (_req: Request, res: Response) => {
+router.get('/', (req: Request, res: Response) => {
+  const protocol = req.protocol || 'https';
+  const host = req.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
+
   return res.json({
     mcpVersion: '2024-11-05',
     server: {
@@ -555,17 +605,21 @@ router.get('/', (_req: Request, res: Response) => {
       version: '1.3.10',
       description: 'Native Model Context Protocol (MCP) server for Restoran Wawasan Pak Usop Halal Catering.'
     },
+    auth: {
+      type: 'none'
+    },
+    auth_type: 'none',
     transports: {
-      sse: '/api/mcp/sse',
-      message: '/api/mcp/message',
-      rpc: '/api/mcp/call'
+      sse: `${baseUrl}/api/mcp/sse`,
+      message: `${baseUrl}/api/mcp/message`,
+      rpc: `${baseUrl}/api/mcp/call`
     },
     capabilities: {
       tools: { listChanged: false }
     },
     endpoints: {
-      tools: '/api/mcp/tools',
-      openapi: '/api/mcp/openapi.json'
+      tools: `${baseUrl}/api/mcp/tools`,
+      openapi: `${baseUrl}/api/mcp/openapi.json`
     }
   });
 });

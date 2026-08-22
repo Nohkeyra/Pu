@@ -52,6 +52,12 @@ function isAllowedOrigin(origin: string): boolean {
   if (hostname === 'aistudio.google.com' || hostname.endsWith('.aistudio.google.com') || hostname === 'ai.studio' || hostname.endsWith('.ai.studio')) return true;
   if (hostname.endsWith('.google.com') || hostname.endsWith('.web.app') || hostname.endsWith('.firebaseapp.com')) return true;
 
+  // Render domains
+  if (hostname.endsWith('.onrender.com') || hostname === 'onrender.com') return true;
+
+  // Claude.ai / Anthropic Connectors
+  if (hostname === 'claude.ai' || hostname.endsWith('.claude.ai') || hostname === 'anthropic.com' || hostname.endsWith('.anthropic.com')) return true;
+
   // Local development / Capacitor / testing
   if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
 
@@ -188,6 +194,7 @@ async function startServer() {
   app.use('/api/widget', widgetRoutes);
   app.use('/api/mcp', mcpRoutes);
   app.use('/api/docs', mcpRoutes);
+  app.use('/.well-known', mcpRoutes);
 
   // API 404 handler to ensure /api/* calls return JSON instead of HTML
   app.use('/api/*', (req: express.Request, res: express.Response) => {
