@@ -83,7 +83,7 @@ export default function HeroSection() {
           opacity: [0.06, 0.12, 0.06],
         }}
         transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-        className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] max-w-[450px] rounded-full bg-[#bf4a03]/10 blur-[100px] pointer-events-none z-0" 
+        className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] max-w-[450px] rounded-full bg-[#e03f14]/10 blur-[100px] pointer-events-none z-0" 
       />
 
       <motion.div 
@@ -124,7 +124,7 @@ export default function HeroSection() {
         >
           <a 
             href="#menu" 
-            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#bf4a03] hover:bg-[#d15605] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-[#bf4a03]/25"
+            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-[var(--color-sunshine-cta)]/25"
           >
             <UtensilsCrossed className="w-5 h-5 transition-transform group-hover:rotate-12" />
             <span>{t('explore_menu_btn')}</span>

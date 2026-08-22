@@ -24,6 +24,20 @@ export default defineConfig({
     alias: {
       "@": path.resolve("./src"),
     },
+    dedupe: ["react", "react-dom"],
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-label",
+      "@radix-ui/react-toggle",
+    ],
   },
   build: {
     outDir: 'dist',
@@ -54,7 +68,7 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
-            if (id.includes('react') || id.includes('scheduler')) {
+            if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/scheduler/')) {
               return 'vendor-react';
             }
           }

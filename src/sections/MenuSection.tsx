@@ -78,7 +78,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
             </p>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#bf4a03] via-[#d15605] to-[#bf4a03] border border-amber-400/40 p-3 flex items-center justify-between shadow-md shadow-[#bf4a03]/25 group-hover:border-amber-400/80 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--color-sunshine-cta)] via-[var(--color-sunshine-cta-hover)] to-[var(--color-sunshine-cta)] border border-amber-400/40 p-3 flex items-center justify-between shadow-md shadow-[var(--color-sunshine-cta)]/25 group-hover:border-amber-400/80 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
             {/* Authentic Non-Repeating Malaysian Batik Overlay */}
             <div 
               className="absolute inset-0 opacity-50 dark:opacity-75 pointer-events-none transition-opacity duration-300 group-hover:opacity-90 mix-blend-overlay dark:mix-blend-screen dark:contrast-150 dark:brightness-125"

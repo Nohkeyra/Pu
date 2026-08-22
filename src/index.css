@@ -15,12 +15,12 @@
     --color-forest: #0c453c;
     --color-light-forest: rgba(12, 69, 60, 0.12);
     --color-deep-forest-accent: #0c453c;
-    --color-sunshine: #e99508;
-    --color-honey: #d1830e;
-    --color-crisp-carrot: #c85903;
-    --color-tomato-burst: #bf4a03;
-    --color-kiwi: #c85903;
-    --color-fern: #c85903;
+    --color-sunshine: #f69913;
+    --color-honey: #f69913;
+    --color-crisp-carrot: #e96212;
+    --color-tomato-burst: #e03f14;
+    --color-kiwi: #e96212;
+    --color-fern: #e96212;
     --color-sunshine-cta: #a3310e;
     --color-sunshine-cta-bg: #a3310e;
     --color-sunshine-cta-fg: #ffffff;
@@ -46,38 +46,38 @@
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
     --color-cream: #fdfbf7;
-    --color-cream-dark: rgba(233, 149, 8, 0.08);
+    --color-cream-dark: rgba(246, 153, 19, 0.08);
     --color-charcoal: #0c453c;
     --color-stone: rgba(12, 69, 60, 0.85);
     --background: 40 33% 98%;
-    --foreground: 171 70% 17%;
+    --foreground: 171 70% 16%;
     --card: 40 33% 99%;
-    --card-foreground: 171 70% 17%;
+    --card-foreground: 171 70% 16%;
     --popover: 40 33% 99%;
-    --popover-foreground: 171 70% 17%;
-    --primary: 22 95% 38%;
+    --popover-foreground: 171 70% 16%;
+    --primary: 13 84% 48%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 38 93% 47%;
-    --secondary-foreground: 171 70% 17%;
+    --secondary: 35 93% 52%;
+    --secondary-foreground: 171 70% 16%;
     --muted: 38 80% 95%;
     --muted-foreground: 171 45% 22%;
     --accent: 22 86% 49%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 22 95% 38%;
+    --destructive: 13 84% 48%;
     --destructive-foreground: 0 0% 100%;
     --border: 171 25% 88%;
     --input: 171 25% 88%;
-    --ring: 38 93% 47%;
+    --ring: 35 93% 52%;
     --radius: 1.5rem;
-    --color-selection-bg: rgba(233, 149, 8, 0.28);
+    --color-selection-bg: rgba(246, 153, 19, 0.28);
     --color-selection-text: #0c453c;
     --color-scrollbar-track: rgba(12, 69, 60, 0.06);
     --color-scrollbar-thumb: rgba(12, 69, 60, 0.30);
-    --color-scrollbar-hover: #e99508;
+    --color-scrollbar-hover: #f69913;
     --color-input-bg: #ffffff;
     --color-input-text: #0c453c;
     --color-input-border: rgba(12, 69, 60, 0.16);
-    --color-input-focus-shadow: rgba(191, 74, 3, 0.25);
+    --color-input-focus-shadow: rgba(224, 63, 20, 0.25);
     --color-header-bg: rgba(253, 251, 247, 0.94);
     --color-header-border: rgba(12, 69, 60, 0.10);
     --color-card-bg: #ffffff;
@@ -88,14 +88,14 @@
     /* Refined 4-Color Dark Mode: Obsidian Canvas, Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
     --color-deep-forest: #ede5d8;
     --color-forest: #1c2622;
-    --color-light-forest: rgba(233, 149, 8, 0.12);
-    --color-deep-forest-accent: #e99508;
-    --color-sunshine: #e99508;
-    --color-honey: #e99508;
-    --color-crisp-carrot: #bf4a03;
-    --color-tomato-burst: #bf4a03;
-    --color-kiwi: #bf4a03;
-    --color-fern: #bf4a03;
+    --color-light-forest: rgba(246, 153, 19, 0.12);
+    --color-deep-forest-accent: #f69913;
+    --color-sunshine: #f69913;
+    --color-honey: #f69913;
+    --color-crisp-carrot: #e96212;
+    --color-tomato-burst: #e03f14;
+    --color-kiwi: #e96212;
+    --color-fern: #e96212;
     --color-sunshine-cta: #a3310e;
     --color-sunshine-cta-bg: #a3310e;
     --color-sunshine-cta-fg: #ffffff;
@@ -119,29 +119,29 @@
     --card-foreground: 38 30% 89%;/* #EDE5D8 */
     --popover: 160 15% 13%;       /* #1C2622 */
     --popover-foreground: 38 30% 89%;
-    --primary: 22 95% 38%;        /* #BF4A03 */
+    --primary: 13 84% 48%;        /* #E03F14 */
     --primary-foreground: 38 30% 89%;
     --secondary: 160 12% 18%;     /* #26312D */
     --secondary-foreground: 38 30% 89%;
     --muted: 160 10% 15%;
     --muted-foreground: 38 20% 78%; /* #D6CFB9 */
-    --accent: 38 93% 47%;         /* #E99508 */
+    --accent: 35 93% 52%;         /* #F69913 */
     --accent-foreground: 156 18% 6%;
-    --destructive: 22 95% 38%;
+    --destructive: 13 84% 48%;
     --destructive-foreground: 38 30% 89%;
     --border: 160 10% 20%;
     --input: 160 10% 20%;
-    --ring: 38 93% 47%;
+    --ring: 35 93% 52%;
 
-    --color-selection-bg: rgba(233, 149, 8, 0.40);
+    --color-selection-bg: rgba(246, 153, 19, 0.40);
     --color-selection-text: #ede5d8;
     --color-scrollbar-track: #0c100e;
-    --color-scrollbar-thumb: rgba(233, 149, 8, 0.35);
-    --color-scrollbar-hover: #e99508;
+    --color-scrollbar-thumb: rgba(246, 153, 19, 0.35);
+    --color-scrollbar-hover: #f69913;
     --color-input-bg: #151d1a;
     --color-input-text: #ede5d8;
-    --color-input-border: rgba(233, 149, 8, 0.25);
-    --color-input-focus-shadow: rgba(233, 149, 8, 0.35);
+    --color-input-border: rgba(246, 153, 19, 0.25);
+    --color-input-focus-shadow: rgba(246, 153, 19, 0.35);
     --color-header-bg: rgba(12, 16, 14, 0.92);
     --color-header-border: rgba(237, 229, 216, 0.08);
     --color-card-bg: #1c2622;
@@ -163,14 +163,14 @@
     @apply bg-cream text-deep-forest antialiased;
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-image: radial-gradient(circle at top, rgba(233, 149, 8, 0.08), transparent 32%), linear-gradient(180deg, rgba(12, 69, 60, 0.03), transparent 18%);
+    background-image: radial-gradient(circle at top, rgba(246, 153, 19, 0.08), transparent 32%), linear-gradient(180deg, rgba(12, 69, 60, 0.03), transparent 18%);
     background-attachment: fixed;
     line-height: 1.5;
     overscroll-behavior-y: none;
   }
 
   .dark body {
-    background-image: radial-gradient(circle at top, rgba(233, 149, 8, 0.06), transparent 36%), linear-gradient(180deg, rgba(233, 149, 8, 0.02), transparent 20%);
+    background-image: radial-gradient(circle at top, rgba(246, 153, 19, 0.06), transparent 36%), linear-gradient(180deg, rgba(246, 153, 19, 0.02), transparent 20%);
   }
 
   #root {
@@ -238,10 +238,10 @@
   }
   .heritage-stamp {
     font-family: 'Syne', 'Outfit', sans-serif;
-    @apply text-xs uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-black;
+    @apply text-xs uppercase tracking-[0.25em] text-crisp-carrot dark:text-sunshine font-black;
   }
   .typography-accent-pill {
-    @apply inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/20 shadow-sm;
+    @apply inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-crisp-carrot/10 text-crisp-carrot dark:text-sunshine border border-crisp-carrot/20 shadow-sm;
   }
 
   .nature-card {
@@ -468,8 +468,8 @@
     border-color: rgba(237, 229, 216, 0.15);
   }
   .dark .btn-secondary:hover {
-    background-color: rgba(233, 149, 8, 0.12);
-    border-color: rgba(233, 149, 8, 0.35);
+    background-color: rgba(246, 153, 19, 0.12);
+    border-color: rgba(246, 153, 19, 0.35);
   }
 
   .btn-ghost {
@@ -646,7 +646,7 @@
   .dark .subtle-chip {
     background: rgba(237, 229, 216, 0.05);
     color: rgba(237, 229, 216, 0.85);
-    border-color: rgba(233, 149, 8, 0.30);
+    border-color: rgba(246, 153, 19, 0.30);
   }
 
   .brand-title {
