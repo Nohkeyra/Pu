@@ -198,9 +198,8 @@ async function startServer() {
         auth_required: false,
         auth_type: 'none',
         endpoints: {
-          sse: `${baseUrl}/api/mcp/sse`,
+          mcp: `${baseUrl}/api/mcp`,
           health: `${baseUrl}/api/health`,
-          message: `${baseUrl}/api/mcp/message`,
           tools: `${baseUrl}/api/mcp/tools`
         },
         message: 'Wawasan Hub MCP server operates in no-auth mode.'
