@@ -225,94 +225,14 @@ async function startServer() {
     next();
   });
 
-  // Top-level RFC 9728, OAuth & MCP discovery probe interceptor for Claude Connectors
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const rawUrl = (req.originalUrl || req.url || '').toLowerCase();
-    const protocol = req.protocol || 'https';
-    const host = req.get('host') || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-
-    // Handle OPTIONS CORS preflight globally for all AI Connectors & discovery paths
-    if (req.method === 'OPTIONS') {
-      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD, PUT');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-AI-API-KEY, X-API-KEY, Accept');
-      return res.status(200).end();
-    }
-
-    // RFC 9728 OAuth Protected Resource Metadata probe
-    if (rawUrl.includes('oauth-protected-resource')) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).json({
-        resource: `${baseUrl}/api/mcp/sse`,
-        authorization_servers: [],
-        scopes_supported: [],
-        bearer_methods_supported: [],
-        auth_required: false,
-        auth_type: 'none',
-        message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
-      });
-    }
-
-    // OAuth Authorization Server & OpenID Discovery probes
-    if (rawUrl.includes('oauth-authorization-server') || rawUrl.includes('openid-configuration')) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).json({
-        auth_required: false,
-        auth_type: 'none',
-        authorization_servers: [],
-        message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
-      });
-    }
-
-    // MCP discovery metadata probes (.well-known/mcp, .well-known/mcp.json, /mcp.json, etc.)
-    if (rawUrl.includes('.well-known/mcp') || rawUrl.endsWith('/mcp.json') || rawUrl.endsWith('/mcp')) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).json({
-        schema_version: 'v1',
-        name_for_human: 'Wawasan Hub',
-        name_for_model: 'wawasan_hub',
-        description_for_human: 'Restoran Wawasan Pak Usop Halal Catering & Order Management Hub.',
-        description_for_model: 'API and MCP server for fetching menu items, calculating catering estimates, checking order status, and submitting catering inquiries.',
-        auth: { type: 'none' },
-        auth_type: 'none',
-        api: { type: 'mcp', url: `${baseUrl}/api/mcp/sse`, mcp_version: '2024-11-05' },
-        mcpVersion: '2024-11-05',
-        transport: 'sse',
-        endpoints: {
-          sse: `${baseUrl}/api/mcp/sse`,
-          message: `${baseUrl}/api/mcp/message`,
-          rpc: `${baseUrl}/api/mcp/call`,
-          tools: `${baseUrl}/api/mcp/tools`,
-          openapi: `${baseUrl}/api/mcp/openapi.json`
-        }
-      });
-    }
-
-    // Probes targeting /api/mcp/sse with HEAD or POST (without sessionId)
-    if (rawUrl.includes('/api/mcp/sse') || rawUrl.includes('/mcp/sse')) {
-      if (req.method === 'HEAD') {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache, no-transform');
-        res.setHeader('Connection', 'keep-alive');
-        res.setHeader('X-Accel-Buffering', 'no');
-        return res.status(200).end();
-      }
-      if (req.method === 'POST' && !req.query.sessionId) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).json({
-          status: 'ok',
-          auth_required: false,
-          auth_type: 'none',
-          message: 'Wawasan Hub MCP SSE Endpoint. Connect using GET request to establish stream.',
-          sse_endpoint: `${baseUrl}/api/mcp/sse`,
-          message_endpoint: `${baseUrl}/api/mcp/message`
-        });
-      }
-    }
-
-    next();
-  });
+  // NOTE: The legacy "top-level RFC 9728, OAuth & MCP discovery probe interceptor"
+  // that used to live here has been removed. It matched rawUrl.endsWith('/mcp'),
+  // which also matched the REAL streamable-HTTP MCP endpoint at /api/mcp — so every
+  // genuine JSON-RPC request from Claude Connectors (initialize, tools/call, etc.)
+  // was being hijacked and answered with a fake discovery stub instead of ever
+  // reaching mcpTransport. mcpRoutes.ts already implements all of the discovery,
+  // OAuth-probe, and health-check behavior this block duplicated, scoped to the
+  // correct sub-paths — so removing this is safe and fixes the connector handshake.
 
   // Mount Modular API Routers
   app.use('/api/admin', authRoutes);
