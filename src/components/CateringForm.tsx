@@ -124,7 +124,7 @@ export const CateringForm: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full min-h-[48px] py-3.5 px-6 rounded-2xl font-bold text-sm text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] shadow-lg shadow-amber-500/20 transition-all duration-200"
+              className="btn-cta w-full min-h-[48px] py-3.5 px-6 rounded-2xl font-bold text-sm text-white active:scale-[0.98] shadow-lg transition-all duration-200"
             >
               Sahkan Tempahan
             </button>

@@ -21,11 +21,11 @@
     --color-tomato-burst: #bf4a03;
     --color-kiwi: #c85903;
     --color-fern: #c85903;
-    --color-sunshine-cta: #bf4a03;
-    --color-sunshine-cta-bg: #bf4a03;
+    --color-sunshine-cta: #a3310e;
+    --color-sunshine-cta-bg: #a3310e;
     --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #d1830e;
-    --color-sunshine-cta-press: #0c453c;
+    --color-sunshine-cta-hover: #882709;
+    --color-sunshine-cta-press: #6e1f06;
     --color-on-sunshine: #0c453c;
     --color-on-crisp-carrot: #ffffff;
     --color-on-tomato-burst: #ffffff;
@@ -96,11 +96,11 @@
     --color-tomato-burst: #bf4a03;
     --color-kiwi: #bf4a03;
     --color-fern: #bf4a03;
-    --color-sunshine-cta: #bf4a03;
-    --color-sunshine-cta-bg: #bf4a03;
-    --color-sunshine-cta-fg: #ede5d8;
-    --color-sunshine-cta-hover: #d15605;
-    --color-sunshine-cta-press: #9e3d02;
+    --color-sunshine-cta: #a3310e;
+    --color-sunshine-cta-bg: #a3310e;
+    --color-sunshine-cta-fg: #ffffff;
+    --color-sunshine-cta-hover: #882709;
+    --color-sunshine-cta-press: #6e1f06;
     --color-on-sunshine: #0c100e;
     --color-on-crisp-carrot: #ede5d8;
     --color-on-tomato-burst: #ede5d8;
@@ -423,22 +423,24 @@
    * ---------------------------------------------------------------- */
   .btn-cta {
     background-color: var(--color-sunshine-cta-bg);
-    color: var(--color-sunshine-cta-fg);
+    color: #ffffff !important;
     border: 1px solid transparent;
-    box-shadow: 0 6px 14px -2px rgba(224, 63, 20, 0.30);
-    transition: background-color 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 6px 14px -2px rgba(163, 49, 14, 0.35);
+    transition: background-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
   }
   .btn-cta:hover {
     background-color: var(--color-sunshine-cta-hover);
+    color: #ffffff !important;
   }
   .btn-cta:active {
     background-color: var(--color-sunshine-cta-press);
+    color: #ffffff !important;
     transform: translateY(1px);
   }
   .dark .btn-cta {
     background-color: var(--color-sunshine-cta-bg);
-    color: var(--color-sunshine-cta-fg);
-    box-shadow: 0 6px 14px -2px rgba(246, 153, 19, 0.35);
+    color: #ffffff !important;
+    box-shadow: 0 6px 14px -2px rgba(163, 49, 14, 0.40);
   }
 
   /* ----------------------------------------------------------------

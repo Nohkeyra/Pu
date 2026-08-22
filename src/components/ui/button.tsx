@@ -20,7 +20,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--color-sunshine-cta)] text-white hover:bg-[color-mix(in_srgb,var(--color-sunshine-cta)_88%,white)] shadow-xs hover:shadow-md",
+          "bg-[var(--color-sunshine-cta)] text-white hover:bg-[color-mix(in_srgb,var(--color-sunshine-cta)_88%,black)] shadow-xs hover:shadow-md",
         destructive:
           "bg-[var(--color-error)] text-white hover:bg-[color-mix(in_srgb,var(--color-error)_88%,white)] shadow-xs",
         outline:

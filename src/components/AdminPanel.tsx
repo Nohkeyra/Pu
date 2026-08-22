@@ -1058,7 +1058,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   <motion.div
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="ml-auto flex items-center gap-1 bg-amber-500 text-white px-2 py-0.5 rounded-full text-xs font-bold z-10"
+                    className="ml-auto flex items-center gap-1 bg-amber-500 text-stone-950 px-2 py-0.5 rounded-full text-xs font-bold z-10"
                   >
                     <Bell className="w-3 h-3" />
                     <span>{cancelRequests.length}</span>

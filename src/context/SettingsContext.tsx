@@ -5,7 +5,7 @@ import { setKeepAwake } from '@/lib/nativeService';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
-export const DEFAULT_MAIN_COLOR = '#e03f14'; // Wawasan Tomato Burst
+export const DEFAULT_MAIN_COLOR = '#a3310e'; // Wawasan High Contrast Terracotta (#a3310e > 7.2:1 contrast ratio)
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
 export const DEFAULT_CARD_SCALE = 1.0;        // 100% scale
 
