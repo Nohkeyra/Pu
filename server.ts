@@ -189,6 +189,14 @@ async function startServer() {
     const host = req.get('host') || 'localhost:3000';
     const baseUrl = `${protocol}://${host}`;
 
+    // Handle OPTIONS CORS preflight globally for all AI Connectors & discovery paths
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD, PUT');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-AI-API-KEY, X-API-KEY, Accept');
+      return res.status(200).end();
+    }
+
     // RFC 9728 OAuth Protected Resource Metadata probe
     if (rawUrl.includes('oauth-protected-resource')) {
       res.setHeader('Content-Type', 'application/json');
@@ -236,6 +244,28 @@ async function startServer() {
           openapi: `${baseUrl}/api/mcp/openapi.json`
         }
       });
+    }
+
+    // Probes targeting /api/mcp/sse with HEAD or POST (without sessionId)
+    if (rawUrl.includes('/api/mcp/sse') || rawUrl.includes('/mcp/sse')) {
+      if (req.method === 'HEAD') {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        return res.status(200).end();
+      }
+      if (req.method === 'POST' && !req.query.sessionId) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json({
+          status: 'ok',
+          auth_required: false,
+          auth_type: 'none',
+          message: 'Wawasan Hub MCP SSE Endpoint. Connect using GET request to establish stream.',
+          sse_endpoint: `${baseUrl}/api/mcp/sse`,
+          message_endpoint: `${baseUrl}/api/mcp/message`
+        });
+      }
     }
 
     next();

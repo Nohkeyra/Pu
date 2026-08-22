@@ -508,10 +508,11 @@ function createWawasanMcpServer(clientIp: string) {
 // --------------------------------------------------------------------------
 
 // GET /api/mcp/sse - Establish Server-Sent Events stream for MCP
-router.get('/sse', async (req: Request, res: Response) => {
-  if (!isAuthorized(req)) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
-  }
+router.get(['/sse', '/sse/'], async (req: Request, res: Response) => {
+  // Authorization check bypassed for public MCP SSE stream
+  // if (!isAuthorized(req)) {
+  //   return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
+  // }
 
   // Disable proxy/response buffering so the stream flushes immediately.
   // Render (and most reverse proxies) will silently drop an SSE connection
@@ -566,9 +567,10 @@ router.get('/sse', async (req: Request, res: Response) => {
 
 // POST /api/mcp/message - Post message to active SSE session
 router.post('/message', async (req: Request, res: Response) => {
-  if (!isAuthorized(req)) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
-  }
+  // Authorization check bypassed for MCP SSE active session messages
+  // if (!isAuthorized(req)) {
+  //   return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
+  // }
 
   const sessionId = req.query.sessionId as string;
   const transport = activeSseTransports.get(sessionId);
