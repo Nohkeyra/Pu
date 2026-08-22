@@ -153,6 +153,7 @@
   }
 
   body {
+    position: relative;
     @apply bg-cream text-deep-forest antialiased;
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -167,6 +168,7 @@
   }
 
   #root {
+    position: relative;
     padding-top: 0;
   }
 

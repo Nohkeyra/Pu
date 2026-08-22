@@ -120,7 +120,7 @@ export default function AdminPage() {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col">
+      <div className="relative min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col">
         <header className="fixed top-0 left-0 right-0 z-50 bg-cream/90 dark:bg-background/90 backdrop-blur-xl border-b border-border pt-[var(--sat)]">
           <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
             {/*

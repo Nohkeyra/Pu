@@ -22,6 +22,8 @@ import {
   RotateCcw,
   Paintbrush,
   Terminal,
+  Radio,
+  LayoutGrid,
 } from 'lucide-react';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';

@@ -119,7 +119,7 @@ export default function PageShell({
       : 'py-6';
 
   return (
-    <div className="page-shell">
+    <div className="page-shell relative">
       {/* ---- Top App Shell Header (sticky) ---- */}
       <header className="page-shell__header">
         <div className="page-shell__main flex h-14 min-h-[44px] items-center gap-2 sm:gap-3">

@@ -4,6 +4,7 @@ import {
   getFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  setLogLevel,
   type Firestore
 } from "firebase/firestore";
 import {
@@ -72,6 +73,15 @@ export const isWorkspace = typeof window !== "undefined" && (
 // should always connect directly to the production project.
 const firebaseConfig = (isWorkspace && !isNative) ? sandboxConfig : prodConfig;
 
+// Suppress benign internal WebChannel RPC transport reconnect warnings in browser/proxy environments
+if (typeof window !== 'undefined') {
+  try {
+    setLogLevel('error');
+  } catch {
+    // Ignore if not supported in runtime
+  }
+}
+
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
 
@@ -84,18 +94,22 @@ try {
     ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     : undefined;
 
+  const firestoreSettings = {
+    localCache: localCacheConfig,
+    ...(isWorkspace
+      ? {
+          experimentalForceLongPolling: true,
+          experimentalLongPollingOptions: { timeoutSeconds: 25 },
+        }
+      : {
+          experimentalAutoDetectLongPolling: true,
+        }),
+  };
+
   if (dbId && dbId !== "(default)") {
-    dbInstance = initializeFirestore(app, {
-      localCache: localCacheConfig,
-      experimentalForceLongPolling: isWorkspace,
-      experimentalAutoDetectLongPolling: true,
-    }, dbId);
+    dbInstance = initializeFirestore(app, firestoreSettings, dbId);
   } else {
-    dbInstance = initializeFirestore(app, {
-      localCache: localCacheConfig,
-      experimentalForceLongPolling: isWorkspace,
-      experimentalAutoDetectLongPolling: true,
-    });
+    dbInstance = initializeFirestore(app, firestoreSettings);
   }
 } catch {
   if (dbId && dbId !== "(default)") {

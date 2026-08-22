@@ -277,7 +277,7 @@ function AppContent() {
         </div>
       )}
 
-      <main className={cn("flex-grow", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
+      <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
           <div className="min-h-screen bg-deep-forest flex flex-col items-center justify-center p-6 space-y-6">
             <Skeleton className="w-24 h-24 rounded-full animate-pulse opacity-30" />

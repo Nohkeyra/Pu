@@ -61,7 +61,7 @@ export default function OrderPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-cream dark:bg-background pattern-dots">
+      <div className="relative min-h-screen bg-cream dark:bg-background pattern-dots">
         {/* Pull to Refresh Indicator */}
         <motion.div
           className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
