@@ -73,17 +73,15 @@ export const isWorkspace = typeof window !== "undefined" && (
 // should always connect directly to the production project.
 const firebaseConfig = (isWorkspace && !isNative) ? sandboxConfig : prodConfig;
 
-// Suppress benign internal WebChannel RPC transport reconnect warnings in browser/proxy environments
-if (typeof window !== 'undefined') {
-  try {
-    setLogLevel('error');
-  } catch {
-    // Ignore if not supported in runtime
-  }
-}
-
 // Initialize Firebase App
 export const app = initializeApp(firebaseConfig);
+
+// Silence benign internal WebChannel streaming/heartbeat reconnect warnings
+try {
+  setLogLevel('error');
+} catch {
+  // best-effort
+}
 
 // Initialize Firestore DB with modern persistent cache configuration
 const dbId = firebaseConfig.firestoreDatabaseId;
@@ -94,22 +92,18 @@ try {
     ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     : undefined;
 
-  const firestoreSettings = {
-    localCache: localCacheConfig,
-    ...(isWorkspace
-      ? {
-          experimentalForceLongPolling: true,
-          experimentalLongPollingOptions: { timeoutSeconds: 25 },
-        }
-      : {
-          experimentalAutoDetectLongPolling: true,
-        }),
-  };
-
   if (dbId && dbId !== "(default)") {
-    dbInstance = initializeFirestore(app, firestoreSettings, dbId);
+    dbInstance = initializeFirestore(app, {
+      localCache: localCacheConfig,
+      experimentalForceLongPolling: isWorkspace,
+      experimentalAutoDetectLongPolling: true,
+    }, dbId);
   } else {
-    dbInstance = initializeFirestore(app, firestoreSettings);
+    dbInstance = initializeFirestore(app, {
+      localCache: localCacheConfig,
+      experimentalForceLongPolling: isWorkspace,
+      experimentalAutoDetectLongPolling: true,
+    });
   }
 } catch {
   if (dbId && dbId !== "(default)") {

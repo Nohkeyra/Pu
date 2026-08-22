@@ -9,11 +9,11 @@ import { Batik3DMotion } from './Batik3DMotion';
 
 function BrandMark() {
   return (
-    <div className="w-12 h-12 shrink-0 flex items-center justify-center">
+    <div className="w-12 h-12 shrink-0 flex items-center justify-center rounded-2xl bg-amber-500/10 dark:bg-white/5 border border-amber-500/20 dark:border-white/10 p-2 shadow-md shadow-black/30">
       <TransparentLogo
         src={getAssetUrl('/assets/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
+        className="w-full h-full object-contain drop-shadow"
       />
     </div>
   );
@@ -51,8 +51,9 @@ export default function Footer() {
       {/* Cinematic Deep Dark Background Layer (Matching HeroSection) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pointer-events-none">
         {/* Dynamic Atmospheric Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/80 via-[#0a1c18]/40 to-[#0a1c18] dark:from-[#0c100e]/60 dark:via-[#0c100e]/30 dark:to-[#0c100e]/80 z-0" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#151d1a]/40 dark:to-transparent z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/90 via-[#0a1c18]/65 to-[#0a1c18] dark:from-[#0c100e]/95 dark:via-[#0c100e]/75 dark:to-[#0c100e] z-0" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/35 via-transparent to-amber-950/20 dark:from-[#101915]/60 dark:to-transparent z-0" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_15%,rgba(12,16,14,0.8)_100%)] z-0" />
 
         {/* Scroll-animated 3D Batik Background Layer */}
         <motion.div 
@@ -65,7 +66,7 @@ export default function Footer() {
             backgroundSize="cover"
             backgroundRepeat="no-repeat"
             maxRotation={15}
-            imgClassName="opacity-35 dark:opacity-55 dark:contrast-125 dark:brightness-125 transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-25 dark:opacity-[0.14] dark:contrast-105 dark:brightness-85 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
 
@@ -87,18 +88,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">
 
           <div className="lg:col-span-2 space-y-6">
-            <Link to="/" className="flex items-center gap-3 group min-h-[44px]">
+            <Link to="/" className="flex items-center gap-3.5 group min-h-[44px]">
               <BrandMark />
               <div>
-                <span className="font-display font-semibold text-2xl text-white tracking-tight group-hover:text-[var(--color-sunshine-cta)] transition-colors">
+                <span className="font-display font-semibold text-2xl text-white tracking-tight group-hover:text-[var(--color-sunshine-cta)] transition-colors drop-shadow-sm">
                   Restoran Wawasan
                 </span>
-                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] mt-1">
+                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] mt-0.5 font-semibold">
                   Pak Usop
                 </span>
               </div>
             </Link>
-            <p className="font-body text-white/75 text-sm max-w-sm leading-relaxed font-light">
+            <p className="font-body text-white/80 dark:text-[#ede5d8]/85 text-sm max-w-sm leading-relaxed font-normal drop-shadow-sm">
               A culinary legacy from Singapore since 1986, now serving authentic Nusantara comfort food in the heart of Putrajaya.
             </p>
             <div className="flex gap-4 pt-2">
@@ -114,13 +115,13 @@ export default function Footer() {
           </div>
 
           <div className="space-y-6">
-            <h4 className="font-display font-semibold text-lg text-white">Explore</h4>
+            <h4 className="font-display font-semibold text-lg text-white dark:text-[#fbf7ee]">Explore</h4>
             <ul className="space-y-3">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="inline-flex min-h-[44px] items-center text-white/70 hover:text-[var(--color-sunshine-cta)] transition-colors text-sm font-light"
+                    className="inline-flex min-h-[44px] items-center text-white/80 dark:text-[#ede5d8]/80 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] transition-colors text-sm font-medium"
                   >
                     {link.label}
                   </a>
@@ -131,10 +132,10 @@ export default function Footer() {
 
         </div>
 
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-light text-white/55">
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-normal text-white/60 dark:text-[#ede5d8]/60">
           <p>© {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <Link to="/order" className="hover:text-white transition-colors min-h-[44px] inline-flex items-center">
+            <Link to="/order" className="hover:text-white transition-colors min-h-[44px] inline-flex items-center text-white/75 hover:text-[var(--color-sunshine-cta)]">
               Order Online
             </Link>
           </div>

@@ -38,7 +38,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
   };
 
   return (
-    <div style={{ perspective: 1200 }}>
+    <div style={{ perspective: 1200 }} className="relative">
       <motion.div 
         variants={cardVariants}
         onMouseMove={handleMouseMove}

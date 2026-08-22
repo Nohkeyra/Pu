@@ -72,12 +72,29 @@ const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'), 'Settin
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage');
 import BottomNavigation from './components/BottomNavigation';
 
+// Eagerly prefetch all tab chunks in the background so nav switching is instantaneous with 0ms flash
+if (typeof window !== 'undefined') {
+  const prefetchTabs = () => {
+    import('./pages/LandingPage');
+    import('./pages/OrderPage');
+    import('./pages/ProfilePage');
+    import('./pages/SettingsPage');
+    import('./pages/CalendarPage');
+    import('./pages/AdminPage');
+  };
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(prefetchTabs, { timeout: 1000 });
+  } else {
+    setTimeout(prefetchTabs, 200);
+  }
+}
+
 // Scroll to top on route change & log Analytics screen view
 function ScrollToTop() {
   const { pathname } = useLocation();
   
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
     logScreenView(pathname || '/', 'AppPage');
   }, [pathname]);
   
@@ -194,15 +211,15 @@ function SessionGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-// Page transition wrapper component with fluid easing & micro-depth
+// Page transition wrapper component with crisp, fluid crossfade and zero blank gaps
 function PageTransition({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.995 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.995 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="flex-grow flex flex-col w-full h-full"
+      initial={{ opacity: 0.88, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0.94 }}
+      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+      className="flex-grow flex flex-col w-full h-full relative"
     >
       {children}
     </motion.div>
@@ -258,7 +275,7 @@ function AppContent() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen bg-cream dark:bg-background flex flex-col relative overflow-x-hidden">
       <OfflineBanner />
       <ScrollToTop />
       <SmoothScrollHandler />
@@ -279,16 +296,16 @@ function AppContent() {
 
       <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
         <Suspense fallback={
-          <div className="min-h-screen bg-deep-forest flex flex-col items-center justify-center p-6 space-y-6">
-            <Skeleton className="w-24 h-24 rounded-full animate-pulse opacity-30" />
+          <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
+            <Skeleton className="w-20 h-20 rounded-full animate-pulse opacity-40 bg-amber-500/20" />
             <div className="w-full max-w-sm space-y-3">
-              <Skeleton className="h-8 w-3/4 mx-auto rounded-xl animate-pulse opacity-20" />
-              <Skeleton className="h-4 w-1/2 mx-auto rounded-lg animate-pulse opacity-20" />
+              <Skeleton className="h-6 w-3/4 mx-auto rounded-xl animate-pulse opacity-30 bg-amber-500/15" />
+              <Skeleton className="h-3 w-1/2 mx-auto rounded-lg animate-pulse opacity-30 bg-amber-500/15" />
             </div>
           </div>
         }>
           <div className="w-full flex-grow relative">
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false}>
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><LoginPage /></PageTransition>} />
                 <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />

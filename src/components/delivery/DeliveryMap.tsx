@@ -41,7 +41,9 @@ function LeafletMapContainer({
   useEffect(() => {
     if (!locationString) return;
 
-    let active = true;
+    const controller = new AbortController();
+    let isMounted = true;
+
     const geocodeAddress = async () => {
       try {
         const query = locationString.toLowerCase().includes('putrajaya')
@@ -53,10 +55,11 @@ function LeafletMapContainer({
           headers: {
             'User-Agent': 'RestoranWawasanCateringTracker',
           },
+          signal: controller.signal,
         });
         const data = await res.json();
 
-        if (active) {
+        if (isMounted) {
           if (data && data.length > 0) {
             const coords = {
               lat: parseFloat(data[0].lat),
@@ -69,8 +72,9 @@ function LeafletMapContainer({
           }
         }
       } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
         console.warn('Nominatim geocoding failed, using localized offset:', err);
-        if (active) {
+        if (isMounted) {
           // Putrajaya offset fallback
           const randomOffsetLat = (Math.random() - 0.5) * 0.02 + 0.01;
           const randomOffsetLng = (Math.random() - 0.5) * 0.02 + 0.01;
@@ -85,8 +89,10 @@ function LeafletMapContainer({
     };
 
     geocodeAddress();
+
     return () => {
-      active = false;
+      isMounted = false;
+      controller.abort();
     };
   }, [locationString, onCoordinatesLoaded]);
 

@@ -91,14 +91,16 @@ export default function CalendarPage() {
 
   // 1. Fetch aggregated calendar workloads publicly from our server-side API (no auth restriction!)
   useEffect(() => {
+    const controller = new AbortController();
     const fetchAggregatedSessions = async () => {
       try {
-        const res = await fetch('/api/calendar-sessions');
+        const res = await fetch('/api/calendar-sessions', { signal: controller.signal });
         const data = await res.json();
         if (data.success && data.sessions) {
           setAggregatedSessions(data.sessions);
         }
       } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
         console.error("Failed to fetch server-side aggregated calendar sessions:", err);
       } finally {
         if (!auth.currentUser) {
@@ -107,6 +109,10 @@ export default function CalendarPage() {
       }
     };
     fetchAggregatedSessions();
+
+    return () => {
+      controller.abort();
+    };
   }, [currentUser]);
 
   // 2. Real-time direct Firestore bindings ONLY matching exact auth permission capability rules

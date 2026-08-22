@@ -1003,7 +1003,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[280px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content']">
+    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[280px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
       {/* Pull to Refresh Indicator */}
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
@@ -1125,7 +1125,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
       {/* Main Content */}
       <motion.main 
-        className="[grid-area:content] p-6 md:p-8 min-w-0"
+        className="[grid-area:content] p-6 md:p-8 min-w-0 relative"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: isRefreshing ? 60 : pullDistance * 0.5 }}
         exit={{ opacity: 0, scale: 0.98 }}

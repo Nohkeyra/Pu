@@ -443,7 +443,7 @@ export default function SettingsPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-cream dark:bg-background pattern-dots pb-[calc(100px+env(safe-area-inset-bottom,16px))]">
+      <div className="min-h-screen bg-cream dark:bg-background pattern-dots pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative">
         {/* P0 — standardised dark-mode text colour override via .glass-header */}
         <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
           <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
@@ -479,7 +479,7 @@ export default function SettingsPage() {
         </header>
 
         {/* Main Settings Content */}
-        <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 px-4" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
+        <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 px-4 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/20 rounded-2xl flex items-center justify-center">
               <Settings className="w-6 h-6 text-[var(--color-sunshine-cta)]" />

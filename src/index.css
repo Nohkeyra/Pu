@@ -152,6 +152,12 @@
     @apply border-border;
   }
 
+  html {
+    position: relative;
+    scroll-behavior: smooth;
+    font-size: 90%;
+  }
+
   body {
     position: relative;
     @apply bg-cream text-deep-forest antialiased;
@@ -177,11 +183,6 @@
     font-weight: 800;
     letter-spacing: -0.035em;
     text-wrap: balance;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    font-size: 90%;
   }
 
   ::selection {
@@ -516,6 +517,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
+    position: relative;
   }
   .page-shell__main {
     flex: 1 1 auto;
@@ -523,6 +525,7 @@
     max-width: 1200px;
     margin-inline: auto;
     padding-inline: 1rem;
+    position: relative;
   }
   @media (min-width: 640px)  { .page-shell__main { padding-inline: 1.5rem; } }
   @media (min-width: 768px)  { .page-shell__main { padding-inline: 2rem;   } }
@@ -880,6 +883,7 @@ html.theme-transitioning *::after {
 }
 
 .section-visibility-auto {
+  position: relative;
   content-visibility: auto;
   contain-intrinsic-size: 1px 700px;
 }

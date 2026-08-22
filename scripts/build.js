@@ -18,11 +18,11 @@ async function build() {
 
     // 2. Run Vite build (client -> dist)
     console.log('📦 Running Vite build...');
-    execSync('./node_modules/.bin/vite build', { stdio: 'inherit' });
+    execSync('npx vite build', { stdio: 'inherit' });
 
     // 3. Run esbuild for server (-> dist/server.cjs)
     console.log('🖥️ Bundling server with esbuild...');
-    execSync('./node_modules/.bin/esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', { stdio: 'inherit' });
+    execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', { stdio: 'inherit' });
 
     // 4. Verification
     console.log('🔍 Verifying build artifacts...');

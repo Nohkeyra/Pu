@@ -41,11 +41,13 @@ export default function HeroSection() {
     <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-28 sm:pt-32 pb-24 min-h-[100dvh] flex flex-col justify-center items-center">
       {/* Cinematic Deep Dark Full-Bleed Background Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e]">
-        {/* Dynamic Atmospheric Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/80 via-[#0a1c18]/40 to-[#0a1c18] dark:from-[#0c100e]/60 dark:via-[#0c100e]/30 dark:to-[#0c100e]/80 z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#151d1a]/40 dark:to-transparent z-0 pointer-events-none" />
+        {/* Dynamic Atmospheric Overlays for maximum text & logo legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/90 via-[#0a1c18]/65 to-[#0a1c18] dark:from-[#0c100e]/95 dark:via-[#0c100e]/75 dark:to-[#0c100e] z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/35 via-transparent to-amber-950/20 dark:from-[#101915]/60 dark:to-transparent z-0 pointer-events-none" />
+        {/* Soft center vignette to ensure foreground elements are crystal clear */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_15%,rgba(12,16,14,0.8)_100%)] z-0 pointer-events-none" />
         
-        {/* Batik Background */}
+        {/* Batik Background - Elegantly balanced in both light and dark mode */}
         <motion.div 
           style={{ y: smoothY, opacity, scale }} 
           className="batik-fade-transition batik-container absolute inset-0 z-0"
@@ -55,7 +57,7 @@ export default function HeroSection() {
             src={getAssetUrl('/assets/batik_vector_pattern.jpg')}
             backgroundSize="cover"
             maxRotation={15}
-            imgClassName="opacity-35 dark:opacity-55 dark:contrast-125 dark:brightness-125 transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-25 dark:opacity-[0.16] dark:contrast-110 dark:brightness-90 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
         
@@ -90,17 +92,19 @@ export default function HeroSection() {
         animate="visible"
         className="content-container flex flex-col items-center text-center relative z-20 w-full"
       >
-        {/* 3D Interactive Logo Focal Point */}
+        {/* 3D Interactive Logo Focal Point with subtle ambient back-glow */}
         <motion.div 
           variants={itemVariants}
-          className="mb-8 transform-gpu"
+          className="mb-8 transform-gpu relative flex items-center justify-center"
         >
+          {/* Subtle warm halo behind logo to separate from background */}
+          <div className="absolute -inset-6 rounded-full bg-amber-500/15 dark:bg-amber-400/10 blur-2xl pointer-events-none -z-10" />
           <CinematicLogoLayers sizeClassName="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48" />
         </motion.div>
 
         {/* Unified Brand Headline */}
         <motion.div variants={itemVariants} className="mb-6 max-w-4xl">
-          <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white dark:text-[#ede5d8] tracking-tight leading-[1.05] text-balance drop-shadow-[0_4px_20px_rgba(0,0,0,0.85)]">
+          <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white dark:text-[#fcf8f0] tracking-tight leading-[1.05] text-balance drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)]">
             {t('hero_title') || 'Restoran Wawasan'}
           </h1>
         </motion.div>
@@ -108,7 +112,7 @@ export default function HeroSection() {
         {/* Refined Description */}
         <motion.p 
           variants={itemVariants}
-          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-xl mx-auto font-medium mb-10 leading-relaxed bg-black/40 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 shadow-2xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
+          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-xl mx-auto font-medium mb-10 leading-relaxed bg-black/45 dark:bg-[#0c100e]/85 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
           {t('hero_description')}
         </motion.p>

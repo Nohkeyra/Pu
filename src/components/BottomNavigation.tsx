@@ -19,6 +19,20 @@ function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
   return null;
 }
 
+// Prefetch chunk on hover / touchstart for instant navigation
+function prefetchTabModule(path: string) {
+  try {
+    if (path.includes('order')) import('../pages/OrderPage');
+    else if (path.includes('calendar')) import('../pages/CalendarPage');
+    else if (path.includes('profile')) import('../pages/ProfilePage');
+    else if (path.includes('settings')) import('../pages/SettingsPage');
+    else if (path.includes('admin')) import('../pages/AdminPage');
+    else if (path.includes('home') || path.includes('main')) import('../pages/LandingPage');
+  } catch {
+    // Best-effort prefetch
+  }
+}
+
 export default function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,6 +101,9 @@ export default function BottomNavigation() {
               whileTap={{ scale: 0.93 }}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
+              onMouseEnter={() => prefetchTabModule(tab.path)}
+              onTouchStart={() => prefetchTabModule(tab.path)}
+              onFocus={() => prefetchTabModule(tab.path)}
               onClick={() => {
                 if (isActive) return;
                 triggerLightImpact();

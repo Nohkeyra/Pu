@@ -57,7 +57,7 @@ function OrderItem({
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
   
-  const handleDragEnd = (_e: any, info: any) => {
+  const handleDragEnd = (e: any, info: any) => {
     if (info.offset.x < -80 && (order.status === 'cancelled' || order.status === 'rejected')) {
       // Trigger delete action
       setConfirmDialog({ type: 'delete', orderId: order.id! });
