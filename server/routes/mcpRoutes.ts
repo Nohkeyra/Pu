@@ -630,8 +630,30 @@ router.get(['/mcp.json', '/mcp'], (req: Request, res: Response) => {
 });
 
 // OAuth probe fallback handlers - explicit confirmation that no sign-in / OAuth is required
-router.get(['/oauth-authorization-server', '/openid-configuration'], (_req: Request, res: Response) => {
-  return res.json({
+router.use(['/oauth-authorization-server*', '/openid-configuration*'], (_req: Request, res: Response) => {
+  return res.status(200).json({
+    auth_required: false,
+    auth_type: 'none',
+    authorization_servers: [],
+    message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
+  });
+});
+
+// RFC 9728 Protected Resource Metadata probe - Claude.ai's connector setup checks
+// /.well-known/oauth-protected-resource(<path>) to decide whether a connector needs
+// sign-in. Without this route it 404s and the UI shows a spurious "asked for
+// sign-in" warning even when auth is set to None. Match both the bare path and any
+// resource-scoped variant (e.g. /oauth-protected-resource/api/mcp/sse).
+router.use(['/oauth-protected-resource*'], (req: Request, res: Response) => {
+  const protocol = req.protocol || 'https';
+  const host = req.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
+
+  return res.status(200).json({
+    resource: `${baseUrl}/api/mcp/sse`,
+    authorization_servers: [],
+    scopes_supported: [],
+    bearer_methods_supported: [],
     auth_required: false,
     auth_type: 'none',
     message: 'Wawasan Hub MCP server operates in no-auth mode. No sign-in required.'
