@@ -1116,23 +1116,62 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             <OrderFormTip language={language} />
             {/* Progress Bar Indicator */}
             {currentStep <= 4 && (
-              <div className="px-6 pt-6 pb-4 bg-muted/40 border-b border-stone/10" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+              <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/40 dark:bg-stone-900/40 border-b border-stone/10 dark:border-white/5" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
                 {draftSavedAt && !initialData && (
-                  <div className="flex items-center justify-between mb-3 bg-stone-100/50 dark:bg-stone-800/40 p-2 rounded-lg border border-stone/10" role="status">
-                    <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {tText('Draft loaded from this device', 'Draf dimuatkan dari peranti ini')}
+                  <div className="flex items-center justify-between mb-3 bg-stone-100/70 dark:bg-stone-800/60 px-3 py-1.5 rounded-xl border border-stone/15 dark:border-white/10" role="status">
+                    <p className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5 truncate mr-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                      <span className="truncate">{tText('Draft saved on this device', 'Draf disimpan pada peranti ini')}</span>
                     </p>
                     <button
                       type="button"
                       onClick={handleDiscardDraft}
-                      className="text-[10.5px] font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform select-none px-1.5 py-0.5 rounded"
+                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 shrink-0 underline cursor-pointer select-none px-1 py-0.5"
                     >
-                      {tText('Clear Draft & Start Fresh', 'Padam Draf & Mula Baru')}
+                      {tText('Clear Draft', 'Padam Draf')}
                     </button>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
+
+                {/* Mobile Compact Progress Header (Below sm) */}
+                <div className="sm:hidden space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
+                        {tText(`Step ${currentStep} of 4`, `Langkah ${currentStep} / 4`)}
+                      </span>
+                      <span className="text-xs font-bold text-deep-forest dark:text-stone-100">
+                        {currentStep === 1 && tText('Event Setup', 'Jenis Majlis')}
+                        {currentStep === 2 && tText('Dish Selection', 'Pilih Menu')}
+                        {currentStep === 3 && tText('Contact & Delivery', 'Maklumat & Lokasi')}
+                        {currentStep === 4 && tText('Review & Submit', 'Semak & Hantar')}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Visual Step Progress Capsules */}
+                  <div className="grid grid-cols-4 gap-1.5 w-full">
+                    {[1, 2, 3, 4].map((stepNum) => {
+                      const isPast = currentStep > stepNum;
+                      const isCurrent = currentStep === stepNum;
+                      return (
+                        <div
+                          key={stepNum}
+                          className={cn(
+                            "h-1.5 rounded-full transition-all duration-300",
+                            isPast
+                              ? "bg-deep-forest dark:bg-emerald-500"
+                              : isCurrent
+                              ? "bg-crisp-carrot"
+                              : "bg-stone-200 dark:bg-stone-800"
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Tablet / Desktop Stepper (sm and above) */}
+                <div className="hidden sm:flex items-center justify-between">
                   {[
                     { s: 1, label: tText('Event', 'Jenis') },
                     { s: 2, label: tText('Menu', 'Menu') },
@@ -1143,32 +1182,32 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     const isDone = currentStep > item.s;
                     return (
                       <div key={item.s} className="flex items-center flex-1 last:flex-none">
-                        <div className="flex flex-col items-center gap-1 relative z-10">
+                        <div className="flex flex-col items-center gap-1.5 relative z-10">
                           <div
                             aria-current={isCurrent ? 'step' : undefined}
                             className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
+                              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
                               isCurrent
                                 ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp scale-105"
                                 : isDone
-                                  ? "bg-deep-forest border-deep-forest text-white"
-                                  : "bg-muted border-stone/20 text-stone"
+                                  ? "bg-deep-forest border-deep-forest text-white dark:bg-emerald-600 dark:border-emerald-600"
+                                  : "bg-card dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400"
                             )}
                           >
                             {isDone ? <Check className="w-4 h-4" /> : item.s}
                           </div>
                           <span className={cn(
                             "microcopy-12-upper font-semibold transition-colors duration-300",
-                            isCurrent ? "text-crisp-carrot font-bold" : "text-stone"
+                            isCurrent ? "text-crisp-carrot font-bold" : "text-stone-500 dark:text-stone-400"
                           )}>
                             {item.label}
                           </span>
                         </div>
 
                         {idx < 3 && (
-                          <div className="flex-1 h-[2px] mx-2 bg-stone/10 relative -translate-y-2.5" aria-hidden="true">
+                          <div className="flex-1 h-[2px] mx-3 bg-stone-200 dark:bg-stone-800 relative -translate-y-3.5" aria-hidden="true">
                             <div
-                              className="absolute inset-y-0 left-0 bg-deep-forest transition-all duration-500"
+                              className="absolute inset-y-0 left-0 bg-deep-forest dark:bg-emerald-600 transition-all duration-500"
                               style={{ width: isDone ? '100%' : '0%' }}
                             />
                           </div>

@@ -34,21 +34,45 @@ export default function LandingPage() {
       <Header />
       <main className="relative">
         <HeroSection />
+        
+        {/* Soft visual transition to StorySection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent pointer-events-none" />
+        
         <div className="section-visibility-auto relative">
           <StorySection />
         </div>
+
+        {/* Soft visual transition to HighlightsSection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent pointer-events-none" />
+
         <div className="section-visibility-auto relative">
           <HighlightsSection />
         </div>
+
+        {/* Soft visual transition to MenuSection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent pointer-events-none" />
+
         <div className="section-visibility-auto relative">
           <MenuSection />
         </div>
+
+        {/* Soft visual transition to ExperienceSection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-tomato-burst/5 to-transparent pointer-events-none" />
+
         <div className="section-visibility-auto relative">
           <ExperienceSection />
         </div>
+
+        {/* Soft visual transition to ReviewsSection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-amber-500/5 to-transparent pointer-events-none" />
+
         <div className="section-visibility-auto relative">
           <ReviewsSection />
         </div>
+
+        {/* Soft visual transition to VisitSection */}
+        <div className="w-full h-12 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent pointer-events-none" />
+
         <div className="section-visibility-auto relative">
           <VisitSection />
         </div>

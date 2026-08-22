@@ -265,16 +265,40 @@ export function AdminOrdersTab({
           </div>
         </div>
 
-        {/* Row 2: Status filter chips (Clean horizontal scroll on mobile, wrap on tablet/desktop) */}
+        {/* Row 2: Status filter chips with live counts */}
         {setStatusFilter && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-1 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
             {[
-              { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
-              { id: 'pending', label: language === 'bm' ? 'Menunggu' : 'Pending' },
-              { id: 'approved', label: language === 'bm' ? 'Diluluskan' : 'Approved' },
-              { id: 'billed', label: language === 'bm' ? 'Dibilkan' : 'Billed' },
-              { id: 'cancel_requested', label: language === 'bm' ? 'Minta Batal' : 'Cancel req.' },
-              { id: 'cancelled', label: language === 'bm' ? 'Dibatalkan' : 'Cancelled' },
+              { 
+                id: 'all', 
+                label: language === 'bm' ? 'Semua' : 'All',
+                count: orders.length 
+              },
+              { 
+                id: 'pending', 
+                label: language === 'bm' ? 'Menunggu' : 'Pending',
+                count: orders.filter(o => o.status === 'pending').length 
+              },
+              { 
+                id: 'approved', 
+                label: language === 'bm' ? 'Diluluskan' : 'Approved',
+                count: orders.filter(o => o.status === 'approved' || o.status === 'confirmed').length 
+              },
+              { 
+                id: 'billed', 
+                label: language === 'bm' ? 'Dibilkan' : 'Billed',
+                count: orders.filter(o => o.status === 'billed').length 
+              },
+              { 
+                id: 'cancel_requested', 
+                label: language === 'bm' ? 'Minta Batal' : 'Cancel req.',
+                count: cancelRequests.length 
+              },
+              { 
+                id: 'cancelled', 
+                label: language === 'bm' ? 'Dibatalkan' : 'Cancelled',
+                count: orders.filter(o => o.status === 'cancelled').length 
+              },
             ].map((chip) => {
               const active = statusFilter === chip.id;
               return (
@@ -283,13 +307,20 @@ export function AdminOrdersTab({
                   type="button"
                   onClick={() => setStatusFilter(chip.id)}
                   aria-pressed={active}
-                  className={`h-9 min-h-[36px] px-4 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center justify-center cursor-pointer select-none ${
+                  className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer select-none ${
                     active
                       ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
-                      : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/70 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
+                      : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
                   }`}
                 >
-                  {chip.label}
+                  <span>{chip.label}</span>
+                  <span className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
+                    active 
+                      ? 'bg-white/25 text-white' 
+                      : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
+                  }`}>
+                    {chip.count}
+                  </span>
                 </button>
               );
             })}

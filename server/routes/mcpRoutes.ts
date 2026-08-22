@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { z } from 'zod';
@@ -120,7 +120,7 @@ function isAuthorized(req: Request): boolean {
 }
 
 // Helper: Fetch menu items from Firestore or fallback
-async function fetchMenuItems() {
+async function fetchMenuItems(): Promise<any[]> {
   try {
     const db = getFirestore();
     const snap = await db.collection('menu').get();

@@ -888,3 +888,10 @@ html.theme-transitioning *::after {
   contain-intrinsic-size: 1px 700px;
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+

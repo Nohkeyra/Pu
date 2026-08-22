@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
-  Loader2, 
   Sparkles, 
   ArrowLeft, 
   ArrowRight 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton, DishCardSkeleton } from '@/components/ui/Skeleton';
 import { FormError } from '@/components/ui/FormError';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
@@ -224,11 +224,17 @@ export function Step2DishSelection({
       </div>
 
       {menuLoading ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-sunshine-cta)]" />
-          <p className="text-xs text-stone font-light">
-            {tText('Loading fresh menu items...', 'Memuatkan sajian menu terkini...')}
-          </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-stone-200/60 dark:border-stone-800">
+            <Skeleton className="h-4 w-36 rounded-md" />
+            <Skeleton className="h-4 w-16 rounded-full" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
