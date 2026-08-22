@@ -8,6 +8,27 @@ import { DEFAULT_FALLBACK_PRICE_PER_PAX } from './orderRoutes.js';
 
 const router = Router();
 
+// Add this at the very top of mcpRoutes.ts, before any other routes
+router.get('/', (req: Request, res: Response) => {
+  const protocol = req.protocol || 'https';
+  const host = req.get('host') || 'localhost:3000';
+  const baseUrl = `${protocol}://${host}`;
+
+  res.status(200).json({
+    status: 'ok',
+    service: 'Wawasan Hub MCP',
+    auth_required: false,
+    auth_type: 'none',
+    endpoints: {
+      sse: `${baseUrl}/api/mcp/sse`,
+      health: `${baseUrl}/api/health`,
+      message: `${baseUrl}/api/mcp/message`,
+      tools: `${baseUrl}/api/mcp/tools`
+    },
+    message: 'Wawasan Hub MCP server operates in no-auth mode'
+  });
+});
+
 // Public health route for MCP connectors and health checkers
 router.get(['/health', '/healthz'], (_req: Request, res: Response) => {
   return res.status(200).json({
@@ -671,8 +692,8 @@ router.use(['/oauth-protected-resource*'], (req: Request, res: Response) => {
   });
 });
 
-// GET /api/mcp & /api/mcp/manifest - Server Manifest Info
-router.get('/', (req: Request, res: Response) => {
+// GET /manifest - Server Manifest Info
+router.get('/manifest', (req: Request, res: Response) => {
   const protocol = req.protocol || 'https';
   const host = req.get('host') || 'localhost:3000';
   const baseUrl = `${protocol}://${host}`;
@@ -701,10 +722,6 @@ router.get('/', (req: Request, res: Response) => {
       openapi: `${baseUrl}/api/mcp/openapi.json`
     }
   });
-});
-
-router.get('/manifest', (_req: Request, res: Response) => {
-  return res.redirect('/api/mcp');
 });
 
 // GET /api/mcp/tools - Tool Definitions List with Annotations
