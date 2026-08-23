@@ -1065,14 +1065,14 @@ export default function SettingsPage() {
                       {language === 'bm' ? 'Pautan MCP SSE Stream (Claude Desktop / mcp-remote)' : 'MCP SSE Stream URL (Claude Desktop / mcp-remote)'}
                     </span>
                     <span className="text-stone/70 dark:text-stone/60 text-[11px] break-all">
-                      {window.location.origin}/api/mcp/sse
+                      {getApiUrl('/api/mcp/sse')}
                     </span>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/api/mcp/sse`);
+                      navigator.clipboard.writeText(getApiUrl('/api/mcp/sse'));
                       toast({
                         title: language === 'bm' ? 'Disalin!' : 'Copied!',
                         description: 'MCP SSE Stream URL copied to clipboard.',
@@ -1092,14 +1092,14 @@ export default function SettingsPage() {
                       {language === 'bm' ? 'Spesifikasi OpenAPI 3.0' : 'OpenAPI 3.0 Spec URL'}
                     </span>
                     <span className="text-stone/70 dark:text-stone/60 text-[11px] break-all">
-                      {window.location.origin}/api/docs/openapi.json
+                      {getApiUrl('/api/docs/openapi.json')}
                     </span>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/api/docs/openapi.json`);
+                      navigator.clipboard.writeText(getApiUrl('/api/docs/openapi.json'));
                       toast({
                         title: language === 'bm' ? 'Disalin!' : 'Copied!',
                         description: 'OpenAPI Specification URL copied to clipboard.',

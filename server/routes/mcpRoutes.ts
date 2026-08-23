@@ -291,7 +291,7 @@ router.post('/call', mcpCallLimiter, async (req: Request, res: Response) => {
         result = await mcpContextStorage.run({ clientIp }, () => executeGetCalendarAvailability(args || {}));
         break;
       case 'submit_catering_inquiry':
-        result = await mcpContextStorage.run({ clientIp }, () => executeSubmitInquiry(args || {}));
+        result = await mcpContextStorage.run({ clientIp }, () => executeSubmitInquiry(args || {}, clientIp));
         break;
       default:
         return res.status(400).json({ error: `Unknown tool: ${tool}` });
