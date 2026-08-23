@@ -324,39 +324,61 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </>
         )}
 
-        {activeTab === 'tables' && <AdminTablesTab orders={orders} t={t} language={language} />}
-        {activeTab === 'menu' && <AdminMenuTab />}
+        {activeTab === 'tables' && (
+          <AdminTablesTab
+            orders={orders}
+            language={language as 'en' | 'bm'}
+            openOrderDetail={openOrderDetail}
+            handlePreviewPDF={handlePreviewPDF}
+            handleDownloadPDF={handleDownloadPDF}
+            handleDelete={handleDeleteOrder}
+            fetchOrders={() => fetchOrders(true)}
+            authHeaders={authHeaders}
+            getApiUrl={getApiUrl}
+            toast={toast}
+          />
+        )}
+        {activeTab === 'menu' && (
+          <AdminMenuTab
+            language={language as 'en' | 'bm'}
+            authHeaders={authHeaders}
+            getApiUrl={getApiUrl}
+            toast={toast}
+          />
+        )}
 
         <Suspense fallback={null}>
           {isDetailOpen && selectedOrder && (
             <OrderDetailModal
               isOpen={isDetailOpen}
               onClose={() => setIsDetailOpen(false)}
-              order={selectedOrder}
+              selectedOrder={selectedOrder}
               t={t}
               language={language}
               prices={prices}
               setPrices={setPrices}
-              onApprove={() => handleApprove(selectedOrder.id!)}
-              onReject={() => handleUpdateOrderStatus(selectedOrder.id!, { status: 'rejected' }, 'Order rejected')}
-              onCancel={() => handleUpdateOrderStatus(selectedOrder.id!, { status: 'cancelled' }, 'Order cancelled')}
-              onUpdateStatus={(s) => handleUpdateOrderStatus(selectedOrder.id!, { status: s }, `Status updated to ${s}`)}
-              onDownloadPDF={(isFinal) => handleDownloadPDF(selectedOrder, isFinal)}
-              onPreviewPDF={(isFinal) => handlePreviewPDF(selectedOrder, isFinal)}
+              getStatusBadge={getStatusBadge}
               isApproving={isApproving}
+              handleCancelOrderAdmin={(id: string) => { handleUpdateOrderStatus(id, { status: 'cancelled' }, 'Order cancelled'); }}
+              handleRejectCancellation={(id: string) => { handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected'); }}
+              handleApprove={(id: string) => { handleApprove(id); }}
+              handleRejectOrder={(id: string) => { handleUpdateOrderStatus(id, { status: 'rejected' }, 'Order rejected'); }}
+              handleUpdateStatus={(id: string, status: string) => { handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`); }}
+              openSendDialog={openSendDialog}
             />
           )}
           {isSendDialogOpen && sendOrder && (
             <SendInvoiceModal
               isOpen={isSendDialogOpen}
               onClose={() => setIsSendDialogOpen(false)}
+              sendOrder={sendOrder}
               recipientEmail={recipientEmail}
               setRecipientEmail={setRecipientEmail}
               recipientPhone={recipientPhone}
               setRecipientPhone={setRecipientPhone}
-              onSendEmail={handleSendEmail}
-              onSendWhatsApp={handleSendWhatsApp}
-              isSending={sendingEmail}
+              sendingEmail={sendingEmail}
+              handleSendEmail={handleSendEmail}
+              handleSendWhatsApp={handleSendWhatsApp}
               t={t}
               language={language}
             />
@@ -365,10 +387,11 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             <PdfPreviewModal
               isOpen={isPreviewOpen}
               onClose={() => setIsPreviewOpen(false)}
-              pdfUrl={previewPdfUrl}
-              fileName={previewFileName}
+              previewFileName={previewFileName}
+              previewPdfUrl={previewPdfUrl}
               t={t}
               language={language}
+              toast={toast}
             />
           )}
         </Suspense>

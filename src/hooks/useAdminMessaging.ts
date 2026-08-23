@@ -10,6 +10,7 @@ interface UseAdminMessagingProps {
   toast: (opts: { title: string; description?: string; variant?: ToastVariant; duration?: number }) => void;
   authHeaders: () => HeadersInit;
   getDisplayInvoiceNo: (order: Order) => string;
+  language?: string;
 }
 
 export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }: UseAdminMessagingProps) {

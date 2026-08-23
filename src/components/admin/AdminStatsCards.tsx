@@ -26,7 +26,7 @@ export function AdminStatsCards({ orders, t, language }: AdminStatsCardsProps) {
     },
     {
       title: t('approved_orders'),
-      value: orders.filter(o => o.status === 'approved' || o.status === 'confirmed' || o.status === 'billed').length,
+      value: orders.filter(o => o.status === 'approved' || o.status === 'billed').length,
       icon: CheckCircle,
       color: 'text-emerald-600',
       bg: 'bg-emerald-500/10'

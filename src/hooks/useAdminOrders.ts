@@ -13,6 +13,7 @@ interface UseAdminOrdersProps {
   onLogout?: () => void;
   toast: (opts: { title: string; description?: string; variant?: ToastVariant; duration?: number }) => void;
   t: (key: string) => string;
+  language?: string;
 }
 
 export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrdersProps) {

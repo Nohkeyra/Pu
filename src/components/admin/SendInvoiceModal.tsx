@@ -24,6 +24,7 @@ interface SendInvoiceModalProps {
   sendingEmail: boolean;
   handleSendEmail: () => Promise<void> | void;
   handleSendWhatsApp: () => void;
+  language?: string;
 }
 
 const getDisplayInvoiceNo = (order: Order): string => {
