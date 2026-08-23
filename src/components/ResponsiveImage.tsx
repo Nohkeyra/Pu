@@ -77,9 +77,9 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       return;
     }
     
-    if (!currentSrc.includes('/assets/nasi-campur.jpg')) {
+    if (!currentSrc.includes('/assets/images/nasi-campur.jpg')) {
       // Stage 2 retry: fallback to standard bundled asset
-      setCurrentSrc(getAssetUrl('/assets/nasi-campur.jpg'));
+      setCurrentSrc(getAssetUrl('/assets/images/nasi-campur.jpg'));
       return;
     }
 

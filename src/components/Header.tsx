@@ -80,8 +80,8 @@ export default function Header() {
     : 'bg-transparent pb-5 pt-[calc(1.15rem+var(--sat))]';
 
   const brandTextClass = isScrolled 
-    ? 'brand-title' 
-    : 'font-display font-bold text-white dark:text-[#ede5d8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]';
+    ? 'brand-title font-artistic' 
+    : 'font-artistic text-white dark:text-[#ede5d8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]';
   
   const brandSubClass = isScrolled 
     ? 'brand-subtitle' 

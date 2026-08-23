@@ -103,7 +103,7 @@ export default function OrderPage() {
             >
               <BrandMark />
               <div>
-                <span className="font-display font-bold text-base sm:text-xl page-header-text leading-none tracking-tight block">
+                <span className="font-artistic text-base sm:text-xl page-header-text leading-none tracking-tight block">
                   Restoran Wawasan
                 </span>
                 <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5 font-semibold">

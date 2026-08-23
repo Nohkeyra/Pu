@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebaseConfig';
 import AuthModal from '../components/AuthModal';
-import CinematicLogoLayers from '../components/CinematicLogoLayers';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
@@ -58,11 +57,17 @@ export default function LoginPage() {
             <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center text-center">
-              <CinematicLogoLayers sizeClassName="mb-3 h-40 w-40 sm:h-44 sm:w-44" />
+              <div className="mb-6 h-32 w-32 rounded-3xl bg-white/80 p-2 shadow-xl ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
+                <img
+                  src={getAssetUrl('/assets/wawasan_logo.svg')}
+                  alt="Restoran Wawasan Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
 
               <div className="mb-6 space-y-2">
                 <div className="subtle-chip">Since 1986</div>
-                <h1 className="font-display text-3xl font-bold tracking-tight text-deep-forest dark:text-white">
+                <h1 className="font-artistic text-3xl tracking-tight text-deep-forest dark:text-white">
                   Restoran Wawasan
                 </h1>
                 <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-[var(--color-sunshine-cta)]">

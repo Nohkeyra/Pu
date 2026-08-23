@@ -87,14 +87,12 @@ export default function StorySection() {
             variants={containerVariants}
           >
             <motion.div variants={itemVariants} className="flex justify-start mb-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <span className="heritage-stamp text-amber-700 dark:text-amber-300">
-                  ✦ {t('our_story')} — 1986
-                </span>
+              <div className="section-subtitle-artistic">
+                ✦ {t('our_story')} — 1986
               </div>
             </motion.div>
             
-            <motion.h2 variants={itemVariants} className="editorial-heading text-[40px] md:text-[52px] text-deep-forest dark:text-white leading-[1.1] mb-8">
+            <motion.h2 variants={itemVariants} className="section-title-artistic !text-left">
               {t('story_title')}
             </motion.h2>
             

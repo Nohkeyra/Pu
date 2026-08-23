@@ -451,6 +451,15 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   } else {
     doc.setFont('helvetica', 'bolditalic');
     doc.text(totalRangeStr, 192, currentY + 4.8, { align: 'right' });
+    
+    // Add dynamic estimate disclaimer
+    currentY += 12;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 0, 0); // Red color for emphasis
+    doc.setFont('helvetica', 'bolditalic');
+    doc.text('*Nota: Ini adalah sebut harga anggaran sementara sahaja.', 15, currentY);
+    doc.text(' Harga muktamad tertakluk kepada menu yang dipilih & pengesahan admin dalam invois rasmi.', 15, currentY + 4);
+    currentY -= 8; // Adjust back for spelling section
   }
   currentY += 7;
 

@@ -48,40 +48,43 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
           rotateY,
           transformStyle: "preserve-3d",
         }}
-        className="menu-card group relative bg-white dark:bg-card/90 rounded-3xl overflow-hidden border border-amber-500/15 dark:border-white/10 hover:border-[var(--color-sunshine-cta)]/50 shadow-md hover:shadow-2xl hover:shadow-amber-500/10 transition-colors duration-500 z-10"
+        className="menu-card group relative bg-white dark:bg-card/95 rounded-[2rem] overflow-hidden border border-amber-500/15 dark:border-white/10 hover:border-amber-500/40 shadow-lg hover:shadow-2xl hover:shadow-amber-500/15 transition-all duration-500 z-10 flex flex-col h-full"
       >
-        <div className="aspect-[3/2] overflow-hidden relative" style={{ transform: 'translateZ(50px)' }}>
+        {/* Subtle background batik watermark */}
+        <div className="absolute inset-0 batik-watermark opacity-25 dark:opacity-[0.05] pointer-events-none" />
+
+        <div className="aspect-[4/3] overflow-hidden relative rounded-t-[2rem]" style={{ transform: 'translateZ(40px)' }}>
           <ResponsiveImage
             src={item.image || ''}
             alt={isBm ? item.nameBm : item.nameEn}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             containerClassName="w-full h-full"
-            className="group-hover:scale-110 transition-transform duration-700"
+            className="group-hover:scale-105 transition-transform duration-700 object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-50 group-hover:opacity-35 transition-opacity duration-500" />
           
-          {/* Category Pill Tag */}
+          {/* Magazine-Style Floating Glassmorphism Badge */}
           <div className="absolute top-4 left-4 z-10">
-            <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-300 border border-amber-400/30 shadow-md">
+            <span className="px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-black/50 backdrop-blur-md text-amber-300 border border-amber-400/30 shadow-lg">
               {idx % 2 === 0 ? (isBm ? 'Paling Laris' : 'Best Seller') : (isBm ? 'Sajian Warisan' : 'Heritage Dish')}
             </span>
           </div>
         </div>
 
-        <div className="p-5 md:p-6 relative flex flex-col justify-between h-[calc(100%-aspect-[3/2])]" style={{ transform: 'translateZ(70px)' }}>
+        <div className="p-6 relative flex flex-col justify-between flex-1" style={{ transform: 'translateZ(60px)' }}>
           <div>
-            <h3 className="font-display font-black text-lg md:text-xl text-deep-forest dark:text-amber-100 group-hover:text-[var(--color-sunshine-cta)] transition-colors duration-300 mb-1.5">
+            <h3 className="font-display font-black text-xl text-deep-forest dark:text-amber-100 group-hover:text-[var(--color-sunshine-cta)] transition-colors duration-300 mb-2">
               {isBm ? item.nameBm : item.nameEn}
             </h3>
-            <p className="font-body text-stone dark:text-stone/70 leading-relaxed font-normal text-xs mb-5 line-clamp-2">
+            <p className="font-body text-stone dark:text-stone/70 leading-relaxed font-normal text-xs mb-6 line-clamp-2">
               {isBm ? item.descBm : item.descEn}
             </p>
           </div>
 
-          <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-[var(--color-sunshine-cta)] via-[var(--color-sunshine-cta-hover)] to-[var(--color-sunshine-cta)] border border-amber-400/40 p-3 flex items-center justify-between shadow-md shadow-[var(--color-sunshine-cta)]/25 group-hover:border-amber-400/80 transition-all duration-300" style={{ transform: 'translateZ(90px)' }}>
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--color-sunshine-cta)] via-[var(--color-sunshine-cta-hover)] to-[var(--color-sunshine-cta)] border border-amber-400/35 p-3.5 flex items-center justify-between shadow-md shadow-[var(--color-sunshine-cta)]/20 group-hover:border-amber-400/70 transition-all duration-300 mt-auto" style={{ transform: 'translateZ(80px)' }}>
             {/* Authentic Non-Repeating Malaysian Batik Overlay */}
             <div 
-              className="absolute inset-0 opacity-50 dark:opacity-75 pointer-events-none transition-opacity duration-300 group-hover:opacity-90 mix-blend-overlay dark:mix-blend-screen dark:contrast-150 dark:brightness-125"
+              className="absolute inset-0 opacity-40 dark:opacity-60 pointer-events-none transition-opacity duration-300 group-hover:opacity-80 mix-blend-overlay dark:mix-blend-screen"
               style={{
                 backgroundImage: `url(${getAssetUrl('/assets/batik_pattern_hd.jpg')})`,
                 backgroundSize: 'cover',
@@ -90,7 +93,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
               }}
             />
             <div className="relative z-10 flex items-center justify-between w-full">
-              <span className="text-[11px] font-black text-amber-200 uppercase tracking-widest drop-shadow-sm">
+              <span className="text-[10px] font-black text-amber-200 uppercase tracking-[0.2em] drop-shadow-sm">
                 {isBm ? 'Harga Bermula' : 'Price Starts'}
               </span>
               <span className="font-sans font-black text-white text-base md:text-lg drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
@@ -166,13 +169,11 @@ export default function MenuSection() {
           className="text-center mb-16"
         >
           <motion.div variants={headerItemVariants} className="flex justify-center mb-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-              <span className="heritage-stamp text-amber-700 dark:text-amber-300">
-                ✦ {t('our_menu')} • Warisan Rasa
-              </span>
+            <div className="section-subtitle-artistic">
+              ✦ {t('our_menu')} • Warisan Rasa
             </div>
           </motion.div>
-          <motion.h2 variants={headerItemVariants} className="editorial-heading text-[40px] md:text-[52px] text-deep-forest dark:text-white leading-[1.1] mb-6">
+          <motion.h2 variants={headerItemVariants} className="section-title-artistic">
             {t('menu_title')}
           </motion.h2>
           <motion.p variants={headerItemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed max-w-[600px] mx-auto font-light">

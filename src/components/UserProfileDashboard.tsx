@@ -620,7 +620,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             )}
           >
             <History className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('Orders', 'Tempahan')}</span>
+            <span className="truncate">{tGlobal('profile_submissions')}</span>
             {orders.length > 0 && (
               <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-mono shrink-0 font-bold">
                 {orders.length}

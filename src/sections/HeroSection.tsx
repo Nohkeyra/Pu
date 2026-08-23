@@ -5,7 +5,6 @@ import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
-import { CinematicLogoLayers } from '../components/CinematicLogoLayers';
 
 export default function HeroSection() {
   const { t } = useLanguage();
@@ -92,19 +91,9 @@ export default function HeroSection() {
         animate="visible"
         className="content-container flex flex-col items-center text-center relative z-20 w-full"
       >
-        {/* 3D Interactive Logo Focal Point with subtle ambient back-glow */}
-        <motion.div 
-          variants={itemVariants}
-          className="mb-8 transform-gpu relative flex items-center justify-center"
-        >
-          {/* Subtle warm halo behind logo to separate from background */}
-          <div className="absolute -inset-6 rounded-full bg-amber-500/15 dark:bg-amber-400/10 blur-2xl pointer-events-none -z-10" />
-          <CinematicLogoLayers sizeClassName="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48" />
-        </motion.div>
-
         {/* Unified Brand Headline */}
-        <motion.div variants={itemVariants} className="mb-6 max-w-4xl">
-          <h1 className="font-display font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white dark:text-[#fcf8f0] tracking-tight leading-[1.05] text-balance drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)]">
+        <motion.div variants={itemVariants} className="mb-6 max-w-5xl">
+          <h1 className="font-artistic text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]">
             {t('hero_title') || 'Restoran Wawasan'}
           </h1>
         </motion.div>

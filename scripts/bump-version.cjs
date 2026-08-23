@@ -18,7 +18,6 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const propsPaths = [
   path.join(root, 'android', 'version.properties'),
-  path.join(root, 'android', 'app', 'version.properties'),
 ];
 const packageJsonPath = path.join(root, 'package.json');
 const updateServicePath = path.join(root, 'src', 'services', 'updateService.ts');

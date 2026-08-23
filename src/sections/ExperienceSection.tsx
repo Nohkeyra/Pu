@@ -85,13 +85,11 @@ export default function ExperienceSection() {
           className="text-center mb-20"
         >
           <motion.div variants={headerItemVariants} className="flex justify-center mb-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10">
-              <span className="text-xs font-semibold text-deep-forest/80 uppercase tracking-[0.2em]">
-                {t('experience_title')}
-              </span>
+            <div className="section-subtitle-artistic">
+              {t('experience_title')}
             </div>
           </motion.div>
-          <motion.h2 variants={headerItemVariants} className="font-display font-bold text-[36px] md:text-[56px] text-deep-forest leading-[1.05] mb-6">
+          <motion.h2 variants={headerItemVariants} className="section-title-artistic">
             {t('more_than_meal')}
           </motion.h2>
           <motion.p variants={headerItemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed max-w-[600px] mx-auto font-light">

@@ -35,7 +35,7 @@ export function OfflineBanner({ className }: { className?: string }) {
         role="status"
         aria-live="polite"
         className={cn(
-          "sticky top-0 z-[200] w-full bg-sky-600 text-white px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
+          "sticky top-0 z-[200] w-full bg-sky-600 text-white px-4 pt-[calc(var(--sat)+10px)] pb-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
           className
         )}
       >
@@ -55,7 +55,7 @@ export function OfflineBanner({ className }: { className?: string }) {
       role="status"
       aria-live="assertive"
       className={cn(
-        "sticky top-0 z-[200] w-full bg-amber-500 text-amber-950 px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
+        "sticky top-0 z-[200] w-full bg-amber-500 text-amber-950 px-4 pt-[calc(var(--sat)+10px)] pb-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
         className
       )}
     >

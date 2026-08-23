@@ -30,7 +30,7 @@ export default function InAppUpdateBanner({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
         transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-        className="fixed top-3 left-3 right-3 sm:left-auto sm:right-4 sm:max-w-md z-[1900] pointer-events-auto"
+        className="fixed top-[calc(var(--sat)+12px)] left-3 right-3 sm:left-auto sm:right-4 sm:max-w-md z-[1900] pointer-events-auto"
       >
         <div className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-deep-forest/95 dark:bg-stone-900/95 text-white shadow-2xl border border-amber-500/30 backdrop-blur-xl">
           <div className="flex items-center gap-2.5 min-w-0">

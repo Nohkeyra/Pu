@@ -58,18 +58,18 @@ export default function BottomNavigation() {
     [location.pathname, isAdmin]
   );
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
-    { id: 'calendar', icon: Calendar, label: t('nav_calendar'), path: '/calendar' },
     {
       id: isAdmin ? 'admin' : 'profile',
       icon: isAdmin ? Shield : User,
       label: isAdmin ? t('nav_admin') : t('nav_profile'),
       path: isAdmin ? '/admin' : '/profile',
     },
+    { id: 'calendar', icon: Calendar, label: t('nav_calendar'), path: '/calendar' },
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
-  ];
+  ], [isAdmin, t]);
 
   const showNav = ['/', '/home', '/main', '/order', '/calendar', '/profile', '/settings', ...(isAdmin ? ['/admin'] : [])].some(
     (p) => p === '/' ? location.pathname === '/' : location.pathname.startsWith(p)
@@ -82,15 +82,13 @@ export default function BottomNavigation() {
       initial={{ y: 24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-      className="fixed bottom-0 left-0 right-0 z-[100] border-t border-deep-forest/10 bg-white/95 shadow-[0_-12px_30px_rgba(12,69,60,0.10)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
+      className="fixed bottom-0 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl z-[100] border-t md:border-x md:border-t border-deep-forest/15 bg-white/95 md:rounded-t-[2rem] shadow-[0_-12px_30px_rgba(12,69,60,0.12)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
       style={{
         paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 6px)',
         isolation: 'isolate',
       }}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06] dark:opacity-[0.20] dark:contrast-150 pattern-batik" />
-
-      <nav className="relative z-10 mx-auto flex h-[74px] max-w-xl items-center justify-around px-2">
+      <nav className="relative z-10 mx-auto flex h-[74px] max-w-xl items-center justify-around px-3 sm:px-6">
         {tabs.map((tab) => {
           const isActive = currentTabId === tab.id;
           const Icon = tab.icon;

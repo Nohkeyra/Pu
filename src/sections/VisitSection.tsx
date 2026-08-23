@@ -45,7 +45,10 @@ export default function VisitSection() {
           <div className="space-y-12">
             <motion.div variants={itemVariants} className="space-y-6">
               <div className="space-y-4">
-                <h2 className="text-deep-forest dark:text-[var(--color-sunshine-cta)] font-display text-4xl md:text-5xl font-bold tracking-tight">
+                <div className="section-subtitle-artistic">
+                  {isBm ? 'Lokasi & Waktu' : 'Location & Hours'}
+                </div>
+                <h2 className="section-title-artistic !text-left">
                   {isBm ? 'Jemput Datang' : 'Visit Us'}
                 </h2>
                 <p className="text-stone dark:text-stone-300 text-lg max-w-md leading-relaxed">

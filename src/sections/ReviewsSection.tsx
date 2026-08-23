@@ -138,13 +138,11 @@ export default function ReviewsSection() {
         >
           <div className="text-center md:text-left">
             <motion.div variants={headerItemVariants} className="review-header flex justify-center md:justify-start mb-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10">
-                <span className="text-xs font-semibold text-deep-forest/80 uppercase tracking-[0.2em]">
-                  {t('reviews')}
-                </span>
+              <div className="section-subtitle-artistic">
+                {t('reviews')}
               </div>
             </motion.div>
-            <motion.h2 variants={headerItemVariants} className="review-header font-display font-bold text-[40px] md:text-[56px] text-deep-forest leading-[1.05]">
+            <motion.h2 variants={headerItemVariants} className="review-header section-title-artistic !text-left">
               {t('what_they_say')}
             </motion.h2>
           </div>

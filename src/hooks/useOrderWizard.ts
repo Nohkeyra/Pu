@@ -19,23 +19,30 @@ import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
 import type { SavedLocation, Order } from '@/types';
 
-// FOOD MENU CONSTANTS
-export const LAUK_UTAMA = [
-  { id: 'asam_pedas', nameEn: 'Asam Pedas', nameBm: 'Asam Pedas', descEn: 'Fresh fish cooked in spicy, tangy herbal gravy', descBm: 'Ikan segar dimasak asam pedas berempah', price: 12 },
-  { id: 'ayam_goreng', nameEn: 'Spiced Fried Chicken', nameBm: 'Ayam Goreng Berempah', descEn: 'Crispy fried chicken with aromatic traditional spices', descBm: 'Ayam goreng crispy dengan rempah istimewa', price: 10 },
-  { id: 'daging_masak_merah', nameEn: 'Beef Masak Merah', nameBm: 'Daging Masak Merah', descEn: 'Tender beef cooked in rich sweet and savory tomato sauce', descBm: 'Daging lembu dimasak merah dengan tomato', price: 14 },
-  { id: 'sambal_sotong', nameEn: 'Sambal Squid', nameBm: 'Sambal Sotong', descEn: 'Squid cooked in rich chili sambal paste', descBm: 'Sotong dimasak sambal petai', price: 13 },
-  { id: 'ikan_keli', nameEn: 'Sambal Catfish', nameBm: 'Ikan Keli Sambal', descEn: 'Crispy fried catfish tossed in fiery house sambal', descBm: 'Ikan keli goreng dengan sambal', price: 11 },
-  { id: 'rendang_daging', nameEn: 'Beef Rendang', nameBm: 'Rendang Daging', descEn: 'Slow-cooked traditional caramelized beef curry', descBm: 'Rendang daging lembu tradisional', price: 15 },
-  { id: 'kari_kambing', nameEn: 'Mutton Curry', nameBm: 'Kari Kambing', descEn: 'Rich, thick spiced mutton curry', descBm: 'Kari kambing berempah pekat', price: 16 },
-  { id: 'udang_goreng', nameEn: 'Crispy Fried Prawns', nameBm: 'Udang Goreng Tepung', descEn: 'Crispy golden batter-fried fresh prawns', descBm: 'Udang goreng tepung rangup', price: 14 }
-];
+// FOOD MENU CONSTANTS - Derived dynamically from central menu to prevent data clashing
+export const LAUK_UTAMA = DEFAULT_MENU_ITEMS.filter(item => 
+  item.category === 'lunch' && 
+  ['asam_pedas', 'ayam_goreng_berempah', 'daging_masak_merah', 'sambal_sotong', 'ikan_keli_sambal', 'rendang_daging', 'kari_kambing', 'udang_goreng_tepung'].includes(item.id)
+).map(item => ({
+  id: item.id,
+  nameEn: item.nameEn,
+  nameBm: item.nameBm,
+  descEn: item.descEn,
+  descBm: item.descBm,
+  price: item.price
+}));
 
-export const SAYURAN = [
-  { id: 'sayur_campur', nameEn: 'Mixed Vegetables', nameBm: 'Sayur Campur', descEn: 'Stir-fried mixed vegetables with soft tofu', descBm: 'Sayur campur goreng dengan tahu', price: 5 },
-  { id: 'kangkung_belacan', nameEn: 'Kangkung Belacan', nameBm: 'Kangkung Belacan', descEn: 'Stir-fried water spinach with spicy shrimp paste', descBm: 'Kangkung tumis belacan pedas', price: 5 },
-  { id: 'pucuk_paku', nameEn: 'Pucuk Paku Lemak', nameBm: 'Pucuk Paku Masak Lemak', descEn: 'Jungle fern shoots cooked in rich yellow coconut gravy', descBm: 'Pucuk paku masak lemak dengan udang kering', price: 6 }
-];
+export const SAYURAN = DEFAULT_MENU_ITEMS.filter(item => 
+  item.category === 'lunch' && 
+  ['sayur_campur', 'kangkung_belacan', 'pucuk_paku_masak_lemak'].includes(item.id)
+).map(item => ({
+  id: item.id,
+  nameEn: item.nameEn,
+  nameBm: item.nameBm,
+  descEn: item.descEn,
+  descBm: item.descBm,
+  price: item.price
+}));
 
 export interface OrderState {
   eventType: 'pejabat' | 'lain' | '';

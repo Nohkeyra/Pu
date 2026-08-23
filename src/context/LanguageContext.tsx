@@ -343,6 +343,7 @@ const translations: Translation = {
   nav_contact: { en: 'Contact', bm: 'Hubungi' },
   nav_profile: { en: 'Profile', bm: 'Profil' },
   nav_settings: { en: 'Settings', bm: 'Tetapan' },
+  profile_submissions: { en: 'Submissions', bm: 'Serahan' },
   // Saved Locations & Help
   saved_locations: { en: 'Saved Locations', bm: 'Lokasi Disimpan' },
   manage_locations: { en: 'Manage Saved Locations', bm: 'Urus Lokasi Disimpan' },

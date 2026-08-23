@@ -732,12 +732,20 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
       try {
         let dateVal = order.eventDate || order.date || order.dateTime || order.createdAt;
         if (!dateVal) return null;
+        if (typeof dateVal === 'string') {
+          if (dateVal.length >= 10 && dateVal[4] === '-' && dateVal[7] === '-') {
+            return dateVal.slice(0, 10);
+          }
+        }
         if (typeof dateVal === 'object' && dateVal !== null && 'seconds' in dateVal) {
           dateVal = new Date((dateVal as any).seconds * 1000);
         }
         const d = new Date(dateVal);
         if (isNaN(d.getTime())) return null;
-        return d.toISOString().split('T')[0];
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       } catch {
         return null;
       }
@@ -780,6 +788,18 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
     return res.json({ success: true, sessions: dailySessions });
   } catch (err) {
     console.error('[Calendar Sessions API Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+router.get('/calendar-orders', calendarSessionsLimiter, async (_req, res) => {
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection('orders').get();
+    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return res.json({ success: true, orders });
+  } catch (err) {
+    console.error('[Calendar Orders API Error]:', err);
     return res.status(500).json({ success: false, error: String(err) });
   }
 });

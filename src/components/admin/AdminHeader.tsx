@@ -34,23 +34,56 @@ export function AdminHeader({
   getCalendarEnableUrl = () => '/api/auth/google/calendar',
 }: AdminHeaderProps) {
   return (
-    <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/80 dark:bg-card/40 backdrop-blur-md sticky top-0 z-30 transition-colors pt-[env(safe-area-inset-top,0px)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-4 flex items-center justify-between gap-3">
+    <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/95 dark:bg-card/90 backdrop-blur-md sticky top-0 z-30 transition-colors flex flex-col pt-[var(--sat)]">
+      {/* Sync Status Banner Bar - Moved to Top for better prominence on mobile */}
+      <div className={`w-full h-7 px-4 sm:px-6 flex items-center justify-between text-[10px] sm:text-[11px] font-bold transition-all duration-300 ${
+        syncStatus === 'connected' 
+          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+          : syncStatus === 'syncing'
+          ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+          : syncStatus === 'connecting'
+          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+          : 'bg-stone-500/10 text-stone-500 dark:text-stone-400'
+      }`}>
+        <div className="flex items-center gap-2 truncate pr-2">
+          <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
+            {syncStatus !== 'offline' && (
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                syncStatus === 'connected' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-sky-500' : 'bg-amber-500'
+              }`}></span>
+            )}
+            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+              syncStatus === 'connected' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-sky-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-stone-400'
+            }`}></span>
+          </span>
+          <span className="truncate uppercase tracking-wider">
+            {syncStatus === 'connected' && (language === 'en' ? 'Live connection active' : 'Sambungan aktif')}
+            {syncStatus === 'connecting' && (language === 'en' ? 'Connecting to Firestore...' : 'Menghubungkan ke Firestore...')}
+            {syncStatus === 'syncing' && (language === 'en' ? 'Syncing data...' : 'Menyelaras data...')}
+            {syncStatus === 'offline' && (language === 'en' ? 'Offline' : 'Luar talian')}
+          </span>
+        </div>
+        <span className="uppercase tracking-widest opacity-80 text-[9px] flex-shrink-0">
+          {syncStatus}
+        </span>
+      </div>
+
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-3 border-t border-stone/5 dark:border-white/5">
         {/* Brand & Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-charcoal p-1.5 flex items-center justify-center border border-amber-500/30 shadow-md">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-charcoal p-1.5 flex items-center justify-center border border-amber-500/30 shadow-md flex-shrink-0">
             <TransparentLogo src="/assets/wawasan_logo.png" alt="Restoran Wawasan Logo" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold font-display tracking-tight text-deep-forest dark:text-white leading-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-sm sm:text-lg font-bold font-display tracking-tight text-deep-forest dark:text-white leading-tight truncate">
                 Restoran Wawasan
               </h1>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10">
-                Admin HQ
+              <Badge variant="outline" className="hidden xs:inline-flex text-[9px] uppercase font-bold tracking-wider border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5 px-1.5 py-0">
+                Admin
               </Badge>
             </div>
-            <p className="microcopy-12 text-stone/80 dark:text-stone-400 font-normal">
+            <p className="hidden xs:block text-[10px] sm:text-xs text-stone/80 dark:text-stone-400 font-medium truncate">
               {language === 'en' ? 'Catering Control Center' : 'Pusat Kawalan Katering'}
             </p>
           </div>
@@ -105,39 +138,6 @@ export function AdminHeader({
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Sync Status Banner Bar */}
-      <div className={`w-full h-7 px-4 sm:px-6 border-t border-stone/15 dark:border-white/10 flex items-center justify-between text-[11px] font-medium transition-all duration-300 ${
-        syncStatus === 'connected' 
-          ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' 
-          : syncStatus === 'syncing'
-          ? 'bg-sky-500/5 text-sky-600 dark:text-sky-400'
-          : syncStatus === 'connecting'
-          ? 'bg-amber-500/5 text-amber-600 dark:text-amber-400'
-          : 'bg-stone-500/5 text-stone-500 dark:text-stone-400'
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            {syncStatus !== 'offline' && (
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                syncStatus === 'connected' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-sky-500' : 'bg-amber-500'
-              }`}></span>
-            )}
-            <span className={`relative inline-flex rounded-full h-2 w-2 ${
-              syncStatus === 'connected' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-sky-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-stone-400'
-            }`}></span>
-          </span>
-          <span>
-            {syncStatus === 'connected' && (language === 'en' ? 'Live connection active — Receiving real-time updates' : 'Sambungan langsung aktif — Menerima kemaskini masa nyata')}
-            {syncStatus === 'connecting' && (language === 'en' ? 'Connecting to Firestore WebSocket...' : 'Menghubungkan ke WebSocket Firestore...')}
-            {syncStatus === 'syncing' && (language === 'en' ? 'Syncing database logs...' : 'Penyelarasan log pangkalan data...')}
-            {syncStatus === 'offline' && (language === 'en' ? 'Offline — Reconnecting automatically' : 'Luar talian — Menyambung semula secara automatik')}
-          </span>
-        </div>
-        <span className="uppercase tracking-wider opacity-70 text-[10px]">
-          {syncStatus}
-        </span>
       </div>
     </header>
   );

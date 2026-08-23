@@ -94,7 +94,7 @@ export default function HighlightsSection() {
                   </div>
                   
                   <div>
-                    <h3 className="font-display font-black text-2xl lg:text-3xl text-charcoal dark:text-white leading-[1.1] mb-3 tracking-tighter">
+                    <h3 className="font-artistic text-2xl lg:text-3xl text-charcoal dark:text-white leading-[1.1] mb-3 tracking-tighter">
                       {item.title}
                     </h3>
                     <p className="text-sm lg:text-base text-deep-forest/85 dark:text-[#ede5d8]/85 leading-relaxed font-normal max-w-[80%]">

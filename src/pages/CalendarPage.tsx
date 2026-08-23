@@ -11,9 +11,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Clock,
-  Coffee,
-  Sun,
-  Cookie,
   Plus,
   Trash2,
   X,
@@ -38,7 +35,7 @@ import {
   isToday,
   parseISO
 } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getAssetUrl } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PageShell from '@/components/PageShell';
 import AuthModal from '@/components/AuthModal';
@@ -72,6 +69,7 @@ export default function CalendarPage() {
 
   // Active Selected Day Modal & Nested Selected Order details (Google Calendar style!)
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+  const [quickPopoverDay, setQuickPopoverDay] = useState<Date | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [noteText, setNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -89,47 +87,45 @@ export default function CalendarPage() {
 
   const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
-  // 1. Fetch aggregated calendar workloads publicly from our server-side API (no auth restriction!)
+  // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API (no auth restriction!)
   useEffect(() => {
     const controller = new AbortController();
-    const fetchAggregatedSessions = async () => {
+    const fetchCalendarData = async () => {
       try {
-        const res = await fetch('/api/calendar-sessions', { signal: controller.signal });
-        const data = await res.json();
-        if (data.success && data.sessions) {
-          setAggregatedSessions(data.sessions);
+        const [sessionsRes, ordersRes] = await Promise.all([
+          fetch('/api/calendar-sessions', { signal: controller.signal }),
+          fetch('/api/calendar-orders', { signal: controller.signal })
+        ]);
+        const sessionsData = await sessionsRes.json();
+        if (sessionsData.success && sessionsData.sessions) {
+          setAggregatedSessions(sessionsData.sessions);
+        }
+        const ordersData = await ordersRes.json();
+        if (ordersData.success && Array.isArray(ordersData.orders)) {
+          setOrders(ordersData.orders);
         }
       } catch (err) {
         if ((err as Error)?.name === 'AbortError') return;
-        console.error("Failed to fetch server-side aggregated calendar sessions:", err);
+        console.error("Failed to fetch server-side calendar data:", err);
       } finally {
-        if (!auth.currentUser) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-    fetchAggregatedSessions();
+    fetchCalendarData();
 
     return () => {
       controller.abort();
     };
-  }, [currentUser]);
+  }, []);
 
-  // 2. Real-time direct Firestore bindings ONLY matching exact auth permission capability rules
+  // 2. Real-time direct Firestore bindings
   useEffect(() => {
-    if (!currentUser) {
-      setOrders([]);
-      setCalendarNotes([]);
-      setLoading(false);
-      return;
-    }
-
     let unsubscribeOrders1 = () => {};
     let unsubscribeOrders2 = () => {};
     let unsubscribeNotes = () => {};
 
-    if (isAdmin) {
-      // Admins are authorized to listen to the whole collection
+    if (isAdmin || !currentUser) {
+      // Admins and public visitors can view the master kitchen schedule
       const ordersCol = collection(db, 'orders');
       unsubscribeOrders1 = onSnapshot(ordersCol, (snapshot) => {
         const list: Order[] = [];
@@ -140,7 +136,7 @@ export default function CalendarPage() {
         setOrders(list);
         setLoading(false);
       }, (err) => {
-        console.warn("Admin order stream permission note:", err);
+        console.warn("Order stream permission note:", err);
       });
 
       const notesCol = collection(db, 'calendar_notes');
@@ -152,7 +148,7 @@ export default function CalendarPage() {
         });
         setCalendarNotes(list);
       }, (err) => {
-        console.warn("Admin notes stream permission note:", err);
+        console.warn("Notes stream permission note:", err);
       });
     } else {
       // Members/Customers: ONLY subscribe to queries matching their own userId/uid
@@ -207,38 +203,39 @@ export default function CalendarPage() {
     };
   }, [currentUser, isAdmin]);
 
-  // Normalize and extract Date from an Order
-  const getOrderDate = (order: Order): Date | null => {
-    if (!order) return null;
+  // Normalize and extract Date string YYYY-MM-DD from an Order
+  const getOrderDateString = (order: Order): string | null => {
     try {
-      if (order.eventDate) {
-        if (order.eventDate instanceof Date) return order.eventDate;
-        if (typeof order.eventDate === 'string') return parseISO(order.eventDate);
-        if (typeof order.eventDate === 'object' && 'seconds' in order.eventDate) {
-          return new Date((order.eventDate as any).seconds * 1000);
+      const val = order.eventDate || order.date || order.dateTime || order.createdAt;
+      if (!val) return null;
+      if (typeof val === 'string') {
+        if (val.length >= 10 && val[4] === '-' && val[7] === '-') {
+          return val.slice(0, 10);
         }
       }
-      if (order.date) {
-        if (order.date instanceof Date) return order.date;
-        if (typeof order.date === 'string') return parseISO(order.date);
-        if (typeof order.date === 'object' && 'seconds' in order.date) {
-          return new Date((order.date as any).seconds * 1000);
-        }
+      let d: Date | null = null;
+      if (val instanceof Date) d = val;
+      else if (typeof val === 'object' && val !== null && 'seconds' in (val as any)) {
+        d = new Date((val as any).seconds * 1000);
+      } else if (typeof val === 'string') {
+        d = new Date(val);
       }
-      if (order.dateTime) {
-        return parseISO(order.dateTime);
-      }
-      if (order.createdAt) {
-        if (order.createdAt instanceof Date) return order.createdAt;
-        if (typeof order.createdAt === 'string') return parseISO(order.createdAt);
-        if (typeof order.createdAt === 'object' && 'seconds' in order.createdAt) {
-          return new Date((order.createdAt as any).seconds * 1000);
-        }
+      if (d && !isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       }
     } catch (e) {
-      console.warn("Failed to parse order date:", order, e);
+      console.debug("Date string parse error:", e);
     }
     return null;
+  };
+
+  // Normalize and extract Date from an Order
+  const getOrderDate = (order: Order): Date | null => {
+    const ds = getOrderDateString(order);
+    return ds ? parseISO(ds) : null;
   };
 
   // Helper to format customer selected event delivery time (NOT creation time!)
@@ -278,27 +275,16 @@ export default function CalendarPage() {
     (o) => o.status !== 'cancelled' && o.status !== 'rejected'
   );
 
-  // Filter orders based on user permission role:
-  // - Admin: see all orders
-  // - Logged-in Customer/Member: see only personal orders matching uid/userId
-  // - Public: returns empty to protect private details
+  // Filter orders for master calendar view
   const getVisibleOrders = () => {
-    if (isAdmin) {
-      return activeOrders;
-    }
-    if (currentUser) {
-      return activeOrders.filter(
-        (o) => (o as any).uid === currentUser.uid || o.userId === currentUser.uid
-      );
-    }
-    return [];
+    return activeOrders;
   };
 
   // Retrieve active orders on a given date (for displaying detailed rows inside Day modal)
   const getOrdersForDay = (date: Date) => {
+    const targetDateStr = format(date, 'yyyy-MM-dd');
     return getVisibleOrders().filter((order) => {
-      const oDate = getOrderDate(order);
-      return oDate ? isSameDay(oDate, date) : false;
+      return getOrderDateString(order) === targetDateStr;
     });
   };
 
@@ -311,8 +297,8 @@ export default function CalendarPage() {
 
     // Fallback/Admin-only real-time local calculations:
     const dayOrders = activeOrders.filter((order) => {
-      const oDate = getOrderDate(order);
-      return oDate ? isSameDay(oDate, date) : false;
+      const targetDateStr = format(date, 'yyyy-MM-dd');
+      return getOrderDateString(order) === targetDateStr;
     });
 
     const sessions = {
@@ -357,6 +343,7 @@ export default function CalendarPage() {
   const handleDayClick = async (date: Date) => {
     await triggerLightImpact();
     setSelectedDay(date);
+    setQuickPopoverDay(date);
 
     // If logged in, pre-populate editing state if they have an existing note
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -465,64 +452,59 @@ export default function CalendarPage() {
       >
         <div className="w-full space-y-5 pb-20">
           {/* Month Controller & Quick Action Toolbar */}
-          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 p-3 sm:p-4 rounded-2xl shadow-sm">
+          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 p-3 sm:p-5 rounded-3xl shadow-sm relative overflow-hidden group">
+            {/* Subtle Batik background for Month Controller */}
+            <div 
+              className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18] pointer-events-none group-hover:opacity-[0.20] transition-opacity duration-700"
+              style={{
+                backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                backgroundSize: '240px',
+                backgroundPosition: 'center',
+              }}
+            />
+            
             <ResponsiveButtonGroup align="between">
-              <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-4 relative z-10">
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={handlePrevMonth}
-                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors cursor-pointer select-none active:scale-95"
+                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850 hover:border-crisp-carrot/40 dark:hover:border-crisp-carrot/40 transition-all cursor-pointer select-none active:scale-90"
                     title={tl('Previous Month', 'Bulan Sebelumnya')}
                     aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-4.5 h-4.5" />
                   </button>
 
                   <button
                     onClick={handleNextMonth}
-                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-850 transition-colors cursor-pointer select-none active:scale-95"
+                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850 hover:border-crisp-carrot/40 dark:hover:border-crisp-carrot/40 transition-all cursor-pointer select-none active:scale-90"
                     title={tl('Next Month', 'Bulan Seterusnya')}
                     aria-label={tl('Next Month', 'Bulan Seterusnya')}
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4.5 h-4.5" />
                   </button>
                 </div>
 
-                <h3 className="font-display font-extrabold text-base sm:text-lg text-deep-forest dark:text-white capitalize tracking-tight">
-                  {format(currentDate, 'MMMM yyyy')}
-                </h3>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-crisp-carrot/80 mb-0.5">
+                    {tl('Catering Schedule', 'Jadual Katering')}
+                  </span>
+                  <h3 className="font-display font-black text-lg sm:text-xl text-deep-forest dark:text-white capitalize tracking-tight leading-none">
+                    {format(currentDate, 'MMMM yyyy')}
+                  </h3>
+                </div>
               </div>
 
               {/* Quick Actions (Today Button & Sync Indicator) */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end relative z-10">
                 <button
                   onClick={handleToday}
-                  className="w-full sm:w-auto text-xs font-bold px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-850/60 text-deep-forest dark:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer select-none active:scale-95 shadow-sm min-h-[44px]"
+                  className="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest px-5 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-850/60 text-deep-forest dark:text-white hover:bg-white dark:hover:bg-stone-800 hover:shadow-md transition-all cursor-pointer select-none active:scale-95 shadow-sm"
                 >
                   {tl('Today', 'Hari Ini')}
                 </button>
               </div>
             </ResponsiveButtonGroup>
-          </div>
-
-          {/* Status legend — clearer colour meaning & balanced pill alignment */}
-          <div className="flex items-center justify-start gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap text-xs font-semibold text-stone-600 dark:text-stone-300 scrollbar-none px-1">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-amber-500" aria-hidden />
-              {tl('Pending', 'Menunggu')}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden />
-              {tl('Approved', 'Diluluskan')}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-blue-500" aria-hidden />
-              {tl('Billed', 'Dibilkan')}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-500/10 text-stone-700 dark:text-stone-300 border border-stone-500/20 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-stone-400" aria-hidden />
-              {tl('Notes', 'Nota')}
-            </span>
           </div>
 
           {/* Loading Indicator */}
@@ -535,30 +517,27 @@ export default function CalendarPage() {
             </div>
           ) : (
             /* Monthly Calendar Grid with glowing day highlights */
-            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl shadow-sm overflow-hidden font-sans">
+            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden font-sans">
               {/* Day Labels Row */}
-              <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 py-2 sm:py-3">
+              <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 py-3">
                 {weekdays.map((day, index) => (
-                  <div key={index} className="text-center text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                  <div key={index} className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
                     {day}
                   </div>
                 ))}
               </div>
 
               {/* Day Tiles Grid */}
-              <div className="grid grid-cols-7 bg-stone-100/40 dark:bg-stone-950/20 gap-[1px]">
+              <div className="grid grid-cols-7 bg-stone-200/30 dark:bg-stone-900/40 gap-[1px]">
                 {Array.from({ length: startDayIndex }).map((_, i) => (
                   <div 
                     key={`empty-${i}`} 
-                    className="min-h-[100px] sm:min-h-[140px] bg-white dark:bg-card/20 opacity-30 border-b border-r border-stone-200/40 dark:border-stone-800/40"
+                    className="min-h-[100px] sm:min-h-[140px] bg-stone-50/30 dark:bg-stone-950/20 opacity-30"
                   />
                 ))}
 
                 {daysInMonth.map((day) => {
                   const sessions = getDailySessions(day);
-                  const hasBreakfast = sessions.breakfast.count > 0;
-                  const hasLunch = sessions.lunch.count > 0;
-                  const hasHiTea = sessions.hi_tea.count > 0;
                   const isCurrentDay = isToday(day);
 
                   // Notes check
@@ -580,109 +559,67 @@ export default function CalendarPage() {
                       key={day.toString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[100px] sm:min-h-[140px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-all border-b border-r border-stone-200/50 dark:border-stone-800/50 hover:bg-stone-50/70 dark:hover:bg-stone-900/40 text-left focus:outline-none focus:ring-1 focus:ring-inset focus:ring-crisp-carrot",
-                        isCurrentDay ? "bg-amber-500/5" : "bg-white dark:bg-card",
+                        "min-h-[100px] sm:min-h-[140px] p-2 sm:p-3 flex flex-col justify-between transition-all group/day text-left focus:outline-none",
+                        isCurrentDay ? "bg-amber-500/[0.03] dark:bg-amber-500/[0.05]" : "bg-white dark:bg-card",
+                        "hover:bg-stone-50 dark:hover:bg-stone-900/60",
                         // Glowing Color Rings and ambient backing depending on daily volume limit
-                        isExtremeVolume && "ring-2 ring-tomato-burst bg-tomato-burst/5 dark:bg-tomato-burst/15 shadow-[0_0_15px_rgba(224,63,20,0.30)] animate-pulse",
-                        isHeavyVolume && "ring-2 ring-sunshine bg-sunshine/5 dark:bg-sunshine/15 shadow-[0_0_15px_rgba(246,153,19,0.30)]"
+                        isExtremeVolume && "bg-rose-50/30 dark:bg-rose-950/10 ring-1 ring-inset ring-rose-500/20 animate-pulse-slow",
+                        isHeavyVolume && "bg-amber-50/30 dark:bg-amber-950/10 ring-1 ring-inset ring-amber-500/20"
                       )}
                     >
                       {/* Day Number Header */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-crisp-carrot text-white text-xs font-extrabold shadow-sm">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-crisp-carrot text-white text-xs font-black shadow-md shadow-crisp-carrot/20">
                             {format(day, 'd')}
                           </span>
                         ) : (
-                          <span className="text-xs font-bold text-stone-600 dark:text-stone-300">
+                          <span className={cn(
+                            "text-xs font-black transition-colors",
+                            isSameDay(day, selectedDay!) ? "text-crisp-carrot" : "text-stone-700 dark:text-stone-300 group-hover/day:text-deep-forest dark:group-hover/day:text-white"
+                          )}>
                             {format(day, 'd')}
                           </span>
                         )}
 
                         {/* Visual indicator overlay if this date contains notes */}
                         {hasNote && (
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-stone-900 shadow-sm" title={tl('Has Notes', 'Mempunyai Nota')} />
+                          <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" title={tl('Has Notes', 'Mempunyai Nota')} />
                         )}
                       </div>
 
-                      {/* Sessions List */}
-                      <div className="space-y-1.5 mt-2 flex-grow flex flex-col justify-end w-full">
-                        {hasBreakfast && (
-                          <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
-                            sessions.breakfast.pax >= 80 
-                              ? "bg-rose-600 text-white" 
-                              : sessions.breakfast.pax >= 50 
-                              ? "bg-amber-500 text-black font-extrabold" 
-                              : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                          )}>
-                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
-                              <Coffee className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate">
-                                {tl(`B${sessions.breakfast.count}`, `S${sessions.breakfast.count}`)}
-                              </span>
-                            </span>
-                            <span className="text-[9px] shrink-0 font-extrabold">
-                              {sessions.breakfast.pax}p
-                            </span>
-                          </div>
-                        )}
+                      {/* Individual Orders List (Google Calendar Style) */}
+                      <div className="space-y-1 mt-2 flex-grow flex flex-col justify-end w-full overflow-hidden max-h-[85px]">
+                        {getOrdersForDay(day).map((ord, idx) => {
+                          const pax = ord.guests || ord.quantity || 0;
+                          const meals = ord.meals || [];
+                          const mealLabel = meals.length > 0 
+                            ? meals.map(m => {
+                                if (m === 'breakfast') return 'Bre';
+                                if (m === 'lunch') return 'Lunc';
+                                if (m === 'hi_tea' || m === 'hi-tea' || m === 'tea_break') return "Hi'te";
+                                return m.slice(0, 4);
+                              }).join(', ')
+                            : 'Order';
 
-                        {hasLunch && (
-                          <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
-                            sessions.lunch.pax >= 80 
-                              ? "bg-rose-600 text-white" 
-                              : sessions.lunch.pax >= 50 
-                              ? "bg-amber-500 text-black font-extrabold" 
-                              : "bg-blue-500/10 text-blue-700 dark:text-blue-400"
-                          )}>
-                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
-                              <Sun className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate">
-                                {tl(`L${sessions.lunch.count}`, `T${sessions.lunch.count}`)}
-                              </span>
-                            </span>
-                            <span className="text-[9px] shrink-0 font-extrabold">
-                              {sessions.lunch.pax}p
-                            </span>
-                          </div>
-                        )}
+                          return (
+                            <div 
+                              key={ord.id || idx}
+                              className="px-1.5 py-1 rounded-md text-[9px] font-black leading-none bg-rose-500/15 dark:bg-rose-500/25 text-rose-900 dark:text-rose-200 border border-rose-500/30 truncate shadow-xs"
+                            >
+                              {pax} Pax | {mealLabel}
+                            </div>
+                          );
+                        })}
 
-                        {hasHiTea && (
-                          <div className={cn(
-                            "p-1 rounded text-[10px] font-bold leading-tight flex items-center justify-between w-full shadow-sm gap-0.5",
-                            sessions.hi_tea.pax >= 80 
-                              ? "bg-rose-600 text-white" 
-                              : sessions.hi_tea.pax >= 50 
-                              ? "bg-amber-500 text-black font-extrabold" 
-                              : "bg-purple-500/10 text-purple-700 dark:text-purple-400"
-                          )}>
-                            <span className="flex items-center gap-0.5 min-w-0 overflow-hidden">
-                              <Cookie className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate">
-                                {tl(`T${sessions.hi_tea.count}`, `P${sessions.hi_tea.count}`)}
-                              </span>
-                            </span>
-                            <span className="text-[9px] shrink-0 font-extrabold">
-                              {sessions.hi_tea.pax}p
-                            </span>
+                        {getNotesForDay(day).map((note, idx) => (
+                          <div 
+                            key={note.id || idx}
+                            className="px-1.5 py-1 rounded-md text-[9px] font-bold leading-none bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300 truncate"
+                          >
+                            {note.note || '(No title)'}
                           </div>
-                        )}
-
-                        {maxSessionPax >= 50 && (
-                          <div className="pt-0.5 text-center leading-none truncate min-w-0 w-full">
-                            { isExtremeVolume ? (
-                              <span className="text-[7.5px] uppercase tracking-wider font-extrabold text-rose-600 dark:text-rose-400 block truncate w-full">
-                                ⚠️ {tl('Delay Warning', 'Awas Lewat')}
-                              </span>
-                            ) : (
-                              <span className="text-[7.5px] uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-500 block truncate w-full">
-                                ⚠️ {tl('Heavy Load', 'Padat')}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </button>
                   );
@@ -693,55 +630,71 @@ export default function CalendarPage() {
 
           {/* Selected Day Details Section - Rendered Inline! */}
           {selectedDay && (
-            <div id="selected-day-details" className="bg-card dark:bg-card/40 border border-stone-200/85 dark:border-white/10 rounded-xl shadow-sm overflow-hidden font-sans animate-fade-in mt-6">
+            <div id="selected-day-details" className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-3xl shadow-xl overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 relative">
+              {/* Decorative Batik Strip at the top - Now more subtle */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-1 opacity-20 z-20"
+                style={{
+                  backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+                  backgroundSize: '160px',
+                  backgroundPosition: 'center',
+                }}
+              />
+
               {/* Header with visual accents */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-stone-100 dark:border-stone-850 bg-stone-50/50 dark:bg-stone-950/40">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-crisp-carrot/10 rounded-lg">
-                    <CalendarIcon className="w-5 h-5 text-crisp-carrot" />
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-stone-100 dark:border-stone-850 bg-stone-50/30 dark:bg-stone-950/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-crisp-carrot/10 rounded-2xl flex items-center justify-center shadow-inner">
+                    <CalendarIcon className="w-6 h-6 text-crisp-carrot" />
                   </div>
                   <div>
-                    <h3 className="font-display font-extrabold text-base sm:text-lg text-deep-forest dark:text-white">
+                    <h3 className="font-display font-black text-lg sm:text-xl text-deep-forest dark:text-white leading-tight">
                       {format(selectedDay, tl('EEEE, dd MMMM yyyy', 'EEEE, dd MMMM yyyy'))}
                     </h3>
-                    <p className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
-                      {tl('Schedule & Kitchen Instructions', 'Jadual & Arahan Dapur')}
+                    <p className="text-[10px] text-crisp-carrot font-black uppercase tracking-[0.2em] mt-0.5">
+                      {tl('Daily Production Schedule', 'Jadual Persediaan Dapur')}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedDay(null)}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-850 transition-colors"
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setSelectedDay(null);
+                  }}
+                  className="p-2 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-white dark:hover:bg-stone-850 transition-all hover:shadow-md"
                 >
-                  {tl('Clear Selection', 'Kosongkan Pilihan')}
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Grid content split into two symmetric columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-8">
                 
                 {/* Column 1: Catering Bookings */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider flex items-center gap-2 pb-1.5 border-b border-stone-100 dark:border-stone-800">
-                    <Clock className="w-4 h-4 text-crisp-carrot" />
-                    {tl('Catering Bookings on this Day', 'Rekod Tempahan pada Hari Ini')}
-                  </h4>
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+                    <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                      <UtensilsCrossed className="w-4 h-4 text-crisp-carrot/80" />
+                      {tl('Confirmed Deliveries', 'Penghantaran Disahkan')}
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-[10px] font-black text-stone-500">
+                      {getOrdersForDay(selectedDay).length}
+                    </span>
+                  </div>
 
                   {getOrdersForDay(selectedDay).length === 0 ? (
-                    <div className="p-6 text-center rounded-xl bg-stone-50 dark:bg-stone-950/20 border border-stone-150 dark:border-stone-850/60">
-                      <p className="text-sm font-semibold text-stone-500 dark:text-stone-400">
+                    <div className="p-10 text-center rounded-3xl bg-stone-50/50 dark:bg-stone-950/20 border-2 border-dashed border-stone-200 dark:border-stone-800/50">
+                      <div className="w-12 h-12 bg-stone-100 dark:bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                        <Clock className="w-6 h-6 text-stone-400" />
+                      </div>
+                      <p className="text-sm font-bold text-stone-500 dark:text-stone-400">
                         {currentUser 
-                          ? tl('You have no active catering orders on this date.', 'Tiada tempahan katering aktif anda pada tarikh ini.')
-                          : tl('No public sessions listed on this date.', 'Tiada sesi katering am tersenarai pada tarikh ini.')}
+                          ? tl('No active catering orders.', 'Tiada tempahan katering aktif.')
+                          : tl('No public sessions listed.', 'Tiada sesi katering am.')}
                       </p>
-                      {!currentUser && (
-                        <p className="text-xs text-stone-400 mt-1.5">
-                          {tl('Sign in to view your corporate bookings.', 'Log masuk untuk melihat tempahan korporat anda.')}
-                        </p>
-                      )}
                     </div>
                   ) : (
-                    <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                    <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
                       {getOrdersForDay(selectedDay).map((ord) => {
                         const totalPax = ord.guests || ord.quantity || 0;
                         const eventDeliveryTime = getCustomerSelectedEventTime(ord);
@@ -754,43 +707,45 @@ export default function CalendarPage() {
                               setSelectedOrder(ord);
                             }}
                             className={cn(
-                              "w-full p-4 rounded-xl border transition-all text-left block relative group hover:scale-[1.01] shadow-sm",
+                              "w-full p-5 rounded-2xl border transition-all text-left block relative group hover:shadow-lg",
                               isAdmin 
-                                ? "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/20" 
-                                : "bg-stone-50 hover:bg-stone-100 dark:bg-stone-950/40 dark:hover:bg-stone-900/50 border-stone-200 dark:border-white/5"
+                                ? "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-amber-500/30" 
+                                : "bg-stone-50 dark:bg-stone-950/40 border-stone-200 dark:border-white/5"
                             )}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-extrabold text-crisp-carrot">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-[10px] font-black tracking-widest text-crisp-carrot px-2 py-1 bg-crisp-carrot/5 rounded-md">
                                 #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
                               </span>
                               <span className={cn(
-                                "text-[10px] font-bold px-2.5 py-0.5 rounded-full capitalize",
-                                ord.status === 'approved' && "bg-emerald-150 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
-                                ord.status === 'pending' && "bg-amber-150 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
-                                ord.status === 'billed' && "bg-blue-150 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400",
-                                (ord.status as string) === 'completed' && "bg-stone-150 text-stone-800 dark:bg-stone-950/30 dark:text-stone-400"
+                                "text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter",
+                                ord.status === 'approved' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                                ord.status === 'pending' && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                                ord.status === 'billed' && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                                (ord.status as string) === 'completed' && "bg-stone-500/10 text-stone-600 dark:text-stone-400"
                               )}>
                                 {ord.status}
                               </span>
                             </div>
 
-                            <p className="text-xs font-bold text-deep-forest dark:text-white mt-2 truncate pr-8">
+                            <p className="text-sm font-black text-deep-forest dark:text-white group-hover:text-crisp-carrot transition-colors truncate">
                               {isAdmin ? ord.to || ord.name : tl('Your Corporate Booking', 'Tempahan Korporat Anda')}
                             </p>
 
-                            <div className="flex items-center justify-between mt-3 text-[11px] text-stone-500 dark:text-stone-400">
-                              <div className="flex items-center gap-3">
-                                <span className="flex items-center gap-1 font-semibold text-deep-forest dark:text-stone-300">
-                                  <Clock className="w-3.5 h-3.5 text-crisp-carrot shrink-0" /> {eventDeliveryTime}
-                                </span>
-                                <span className="font-semibold bg-stone-200/50 dark:bg-stone-800/80 px-2 py-0.5 rounded text-[10px]">
-                                  {totalPax} Pax
-                                </span>
+                            <div className="flex items-center justify-between mt-4">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400">
+                                  <Clock className="w-3.5 h-3.5 text-crisp-carrot/70" />
+                                  <span className="text-xs font-bold tabular-nums">{eventDeliveryTime}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400">
+                                  <UserIcon className="w-3.5 h-3.5 text-crisp-carrot/70" />
+                                  <span className="text-xs font-bold tabular-nums">{totalPax} {tl('Pax', 'Orang')}</span>
+                                </div>
                               </div>
-                              <span className="text-[10px] text-crisp-carrot font-bold flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {tl('View Details', 'Butiran')} <ArrowRight className="w-3 h-3" />
-                              </span>
+                              <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                <ArrowRight className="w-4 h-4 text-crisp-carrot" />
+                              </div>
                             </div>
                           </button>
                         );
@@ -800,18 +755,20 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Column 2: Personal Scheduling Notes */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider flex items-center gap-2 pb-1.5 border-b border-stone-100 dark:border-stone-800">
-                    <FileText className="w-4 h-4 text-crisp-carrot" />
-                    {tl('Personal Scheduling Notes', 'Nota Jadual Peribadi')}
-                  </h4>
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+                    <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-crisp-carrot/80" />
+                      {tl('Operational Notes', 'Nota Operasi')}
+                    </h4>
+                  </div>
 
                   {!currentUser ? (
-                    <div className="p-6 rounded-xl bg-amber-500/5 border border-amber-500/10 text-center space-y-4 shadow-sm">
-                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
+                    <div className="p-8 rounded-3xl bg-amber-500/[0.03] border border-amber-500/10 text-center space-y-5 shadow-inner">
+                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-bold">
                         {tl(
-                          'You must be signed in to your Member or Administrator account to write and save notes on the calendar.',
-                          'Sila log masuk ke akaun Ahli atau Pentadbir untuk menulis dan menyimpan nota peribadi pada kalendar.'
+                          'Sign in to your account to save notes and specific instructions for this date.',
+                          'Sila log masuk untuk menyimpan nota dan arahan khusus pada tarikh ini.'
                         )}
                       </p>
                       <button
@@ -819,52 +776,53 @@ export default function CalendarPage() {
                           await triggerLightImpact();
                           setAuthModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-2 text-xs font-extrabold px-4 py-2.5 rounded-xl bg-crisp-carrot text-white hover:bg-opacity-90 shadow-sm transition-all"
+                        className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-3 rounded-xl bg-crisp-carrot text-white hover:bg-opacity-90 shadow-lg shadow-crisp-carrot/20 transition-all active:scale-95"
                       >
                         <LogIn className="w-4 h-4" />
-                        {tl('Sign In / Register', 'Log Masuk / Daftar')}
+                        {tl('Sign In', 'Log Masuk')}
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {/* Existing notes list display */}
-                      <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
+                      <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                         {getNotesForDay(selectedDay).length === 0 ? (
-                          <p className="text-xs text-stone-400 dark:text-stone-500 italic py-4 text-center">
-                            {tl('No scheduling notes saved for this date.', 'Tiada nota jadual disimpan untuk tarikh ini.')}
-                          </p>
+                          <div className="p-6 text-center italic">
+                            <p className="text-xs text-stone-400 font-bold">
+                              {tl('No scheduling notes saved.', 'Tiada nota jadual disimpan.')}
+                            </p>
+                          </div>
                         ) : (
                           getNotesForDay(selectedDay).map((n) => (
                             <div 
                               key={n.id}
-                              className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-950/20 border border-stone-200/50 dark:border-white/5 space-y-1.5 relative group shadow-sm animate-fade-in"
+                              className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 space-y-2 relative group shadow-sm"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-stone-400 flex items-center gap-1">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-stone-400 flex items-center gap-2">
                                   {n.userId === 'admin' ? (
-                                    <span className="inline-flex items-center gap-1 text-amber-500 font-bold">
-                                      <Shield className="w-3 h-3" /> Admin
+                                    <span className="flex items-center gap-1 text-amber-600 font-black">
+                                      <Shield className="w-3 h-3" /> ADMIN
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-stone-500 font-bold">
-                                      <UserIcon className="w-3 h-3" /> {n.userName}
+                                    <span className="flex items-center gap-1 text-stone-500 font-black">
+                                      <UserIcon className="w-3 h-3" /> {n.userName.toUpperCase()}
                                     </span>
                                   )}
-                                  • {format(parseISO(n.updatedAt), 'hh:mm a')}
+                                  <span className="opacity-50">•</span> {format(parseISO(n.updatedAt), 'hh:mm a')}
                                 </span>
 
-                                {/* Delete action button (only author can delete) */}
                                 {(isAdmin || n.userId === currentUser.uid) && (
                                   <button
                                     onClick={() => handleDeleteNote(n.id)}
-                                    className="text-rose-500 hover:text-rose-700 p-1 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
+                                    className="text-rose-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all opacity-0 group-hover:opacity-100"
                                     title={tl('Delete note', 'Padam nota')}
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
                               </div>
-                              <p className="text-xs font-medium text-stone-700 dark:text-stone-300 whitespace-pre-wrap leading-relaxed">
+                              <p className="text-xs font-bold text-stone-700 dark:text-stone-300 whitespace-pre-wrap leading-relaxed">
                                 {n.note}
                               </p>
                             </div>
@@ -873,32 +831,34 @@ export default function CalendarPage() {
                       </div>
 
                       {/* Notes Input Field for Editing/Creating */}
-                      <div className="space-y-3 pt-2.5 border-t border-stone-100 dark:border-stone-800">
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setNoteText(e.target.value)}
-                          placeholder={isAdmin 
-                            ? tl('Add kitchen instruction note, prep alert, or delivery note...', 'Tambah nota arahan dapur, awas persediaan, atau pesanan penghantaran...')
-                            : tl('Add personal reminder, event coordinator name, or guest request...', 'Tambah peringatan peribadi, nama penyelaras acara, atau permintaan tetamu...')}
-                          maxLength={1000}
-                          rows={3}
-                          className="w-full text-xs font-medium p-3 rounded-xl border border-stone-200 dark:border-stone-850 bg-stone-50/50 dark:bg-stone-900/20 text-stone-800 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-crisp-carrot focus:border-crisp-carrot"
-                        />
+                      <div className="space-y-4 pt-4 border-t border-stone-100 dark:border-stone-800">
+                        <div className="relative">
+                          <textarea
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder={isAdmin 
+                              ? tl('Add kitchen instruction, prep alert...', 'Tambah arahan dapur, awas persediaan...')
+                              : tl('Add personal reminder, request...', 'Tambah peringatan, permintaan...')}
+                            maxLength={1000}
+                            rows={3}
+                            className="w-full text-xs font-bold p-4 rounded-2xl border border-stone-200 dark:border-stone-850 bg-stone-50/50 dark:bg-stone-900/40 text-deep-forest dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-crisp-carrot/20 focus:border-crisp-carrot transition-all resize-none shadow-inner"
+                          />
+                        </div>
 
                         <div className="flex justify-end">
                           <button
                             onClick={handleSaveNote}
-                            disabled={isSavingNote}
-                            className="text-xs font-bold px-4 py-2 rounded-xl bg-crisp-carrot hover:bg-opacity-90 text-white disabled:opacity-50 transition-all shadow-sm flex items-center gap-1.5"
+                            disabled={isSavingNote || !noteText.trim()}
+                            className="text-[11px] font-black uppercase tracking-widest px-6 py-3 rounded-xl bg-deep-forest dark:bg-white text-white dark:text-deep-forest hover:shadow-lg disabled:opacity-40 transition-all flex items-center gap-2 active:scale-95"
                           >
                             {isSavingNote ? (
                               <>
-                                <Clock className="w-3.5 h-3.5 animate-spin" />
+                                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
                                 {tl('Saving...', 'Menyimpan...')}
                               </>
                             ) : (
                               <>
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-4 h-4" />
                                 {tl('Save Note', 'Simpan Nota')}
                               </>
                             )}
@@ -1082,6 +1042,151 @@ export default function CalendarPage() {
                   className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-crisp-carrot hover:bg-opacity-95 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
                 >
                   {isAdmin ? tl('Open in Admin panel', 'Buka di Panel Admin') : tl('View Order History', 'Butiran Tempahan')}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Quick Compact Popover Modal when clicking any day tile */}
+        {quickPopoverDay && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-md animate-fade-in font-sans">
+            <div className="bg-white dark:bg-stone-900 w-full max-w-lg rounded-3xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-950/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-crisp-carrot/10 rounded-xl flex items-center justify-center">
+                    <CalendarIcon className="w-5 h-5 text-crisp-carrot" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-black text-base text-deep-forest dark:text-white">
+                      {format(quickPopoverDay, 'EEEE, dd MMMM yyyy')}
+                    </h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-crisp-carrot">
+                      {tl('Date Orders & Schedule', 'Ringkasan Tempahan Tarikh')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setQuickPopoverDay(null);
+                  }}
+                  className="p-2 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Orders List */}
+              <div className="p-5 overflow-y-auto max-h-[380px] space-y-3.5 custom-scrollbar">
+                {getOrdersForDay(quickPopoverDay).length === 0 ? (
+                  <div className="p-8 text-center rounded-2xl bg-stone-50 dark:bg-stone-950/30 border border-dashed border-stone-200 dark:border-stone-800">
+                    <p className="text-xs font-bold text-stone-500">
+                      {tl('No orders listed for this date.', 'Tiada pesanan disenaraikan pada tarikh ini.')}
+                    </p>
+                  </div>
+                ) : (
+                  getOrdersForDay(quickPopoverDay).map((ord) => {
+                    const totalPax = ord.guests || ord.quantity || 0;
+                    const eventArrival = getCustomerSelectedEventTime(ord);
+                    return (
+                      <div 
+                        key={ord.id}
+                        className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-950/40 border border-stone-200/80 dark:border-stone-800 space-y-3 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black tracking-widest text-crisp-carrot px-2 py-0.5 bg-crisp-carrot/10 rounded">
+                            #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-tighter",
+                            ord.status === 'approved' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                            ord.status === 'pending' && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                            ord.status === 'billed' && "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          )}>
+                            {ord.status}
+                          </span>
+                        </div>
+
+                        <p className="font-black text-deep-forest dark:text-white text-sm">
+                          {isAdmin ? ord.to || ord.name : tl('Your Corporate Order', 'Tempahan Korporat Anda')}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-stone-200/50 dark:border-stone-800/50">
+                          {/* Waktu Event (Sampai di Lokasi) */}
+                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
+                            <Clock className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
+                            <div>
+                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Event Arrival Time', 'Waktu Sampai Event')}</span>
+                              <span className="font-black tabular-nums">{eventArrival}</span>
+                            </div>
+                          </div>
+
+                          {/* Quantity / Pax */}
+                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
+                            <UserIcon className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
+                            <div>
+                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Quantity', 'Kuantiti')}</span>
+                              <span className="font-black tabular-nums">{totalPax} {tl('Pax', 'Orang')}</span>
+                            </div>
+                          </div>
+
+                          {/* Lokasi */}
+                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300 col-span-2">
+                            <MapPin className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
+                            <div>
+                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Location / Address', 'Lokasi / Alamat')}</span>
+                              <span className="font-bold truncate">{ord.location || ord.to || '-'}</span>
+                            </div>
+                          </div>
+
+                          {/* Meal For */}
+                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300 col-span-2">
+                            <UtensilsCrossed className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
+                            <div>
+                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Meal For', 'Jenis Hidangan')}</span>
+                              <span className="font-bold capitalize">{ord.meals?.join(', ') || '-'}</span>
+                            </div>
+                          </div>
+
+                          {/* Menu / Dishes */}
+                          {(ord.menu || (ord.dishes && ord.dishes.length > 0)) && (
+                            <div className="col-span-2 pt-1">
+                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Menu & Dishes', 'Menu & Hidangan')}</span>
+                              <p className="font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+                                {ord.menu || ord.dishes?.join(', ')}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            onClick={() => {
+                              setQuickPopoverDay(null);
+                              setSelectedOrder(ord);
+                            }}
+                            className="text-[11px] font-black uppercase tracking-wider text-crisp-carrot hover:underline flex items-center gap-1"
+                          >
+                            {tl('View Full Order Details →', 'Lihat Butiran Penuh →')}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/30 flex justify-end">
+                <button
+                  onClick={() => setQuickPopoverDay(null)}
+                  className="px-5 py-2 rounded-xl bg-deep-forest dark:bg-white text-white dark:text-deep-forest font-bold text-xs"
+                >
+                  {tl('Close', 'Tutup')}
                 </button>
               </div>
 

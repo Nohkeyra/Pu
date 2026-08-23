@@ -37,6 +37,7 @@ export default function AdminPage() {
 
   const [token, setToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,6 +55,7 @@ export default function AdminPage() {
         setToken(storedToken);
         setIsAuthenticated(true);
       }
+      setIsInitializing(false);
     };
     init();
   }, []);
@@ -121,6 +123,16 @@ export default function AdminPage() {
       setIsLoading(false);
     }
   };
+
+  // Initial Session Verification
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
+        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+        <p className="microcopy-12-upper text-stone animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
 
   // Login Screen
   if (!isAuthenticated) {

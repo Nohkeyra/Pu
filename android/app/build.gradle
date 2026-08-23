@@ -16,9 +16,6 @@ if (keyPropertiesFile.exists()) {
 }
 
 def versionPropertiesFile = rootProject.file('version.properties')
-if (!versionPropertiesFile.exists()) {
-    versionPropertiesFile = file('version.properties')
-}
 def versionProperties = new Properties()
 if (versionPropertiesFile.exists()) {
     versionProperties.load(new FileInputStream(versionPropertiesFile))
