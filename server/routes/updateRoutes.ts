@@ -33,6 +33,43 @@ router.get('/app-version', async (_req, res) => {
   }
 });
 
+router.post('/app-version/github-sync', async (req, res) => {
+  try {
+    const incomingToken = req.headers['x-github-token'];
+    const secret = process.env.RELEASE_SYNC_SECRET || process.env.ADMIN_JWT_SECRET;
+
+    if (!secret || incomingToken !== secret) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid or missing sync token' });
+    }
+
+    const { version, buildNumber, apkUrl, releaseNotes } = req.body;
+    if (!version) {
+      return res.status(400).json({ error: 'version is required' });
+    }
+
+    const payload = {
+      latestVersion: String(version).trim(),
+      minVersion: '1.2.0',
+      buildNumber: Number(buildNumber || 125),
+      apkUrl: String(apkUrl || `https://github.com/Nohkeyra/Pu/releases/download/v${version}/app-release-signed.apk`).trim(),
+      bundleUrl: '',
+      releaseNotes: Array.isArray(releaseNotes) 
+        ? releaseNotes 
+        : [releaseNotes ? String(releaseNotes) : 'Kemaskini automatik dari pelepasan GitHub.'],
+      forceUpdate: false,
+      updatedAt: new Date().toISOString(),
+      publishedBy: 'GitHub Actions Auto-Sync'
+    };
+
+    const db = getFirestore();
+    await db.collection('app_config').doc('version').set(payload, { merge: true });
+
+    return res.json({ success: true, message: 'App live version updated automatically via GitHub Release!', config: payload });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
+  }
+});
+
 router.post('/app-version', verifyAdminToken, async (req, res) => {
   try {
     const adminReq = req as typeof req & {

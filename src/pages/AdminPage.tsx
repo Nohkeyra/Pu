@@ -103,6 +103,11 @@ export default function AdminPage() {
         }
 
         setIsAuthenticated(true);
+        try {
+          window.dispatchEvent(new CustomEvent('admin:login-state-change'));
+        } catch (e) {
+          console.warn('Failed to dispatch login event:', e);
+        }
       } else {
         const serverError =
           data?.error || (response.status ? `Server HTTP ${response.status}` : null);
@@ -248,7 +253,7 @@ export default function AdminPage() {
                   </div>
                 </form>
 
-                <p className="mt-8 text-center microcopy-12-upper text-stone">
+                <p className="mt-8 text-center microcopy-12-upper text-stone max-w-[40ch] mx-auto">
                   This area is protected. Unauthorized access is prohibited.
                 </p>
               </div>
@@ -303,6 +308,11 @@ export default function AdminPage() {
           });
           setIsAuthenticated(false);
           setToken('');
+          try {
+            window.dispatchEvent(new CustomEvent('admin:login-state-change'));
+          } catch {
+            // Ignored
+          }
           // Ensure a full clean slate of UI states/blurs by reloading
           window.location.reload();
         }}

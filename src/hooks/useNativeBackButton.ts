@@ -1,24 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { App } from '@capacitor/app';
 import type { BackButtonListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
+import { useToast } from '@/components/ui/Toast';
 
 // Routes that are considered "top level" — pressing hardware back here should
 // exit the app rather than trying to go back further, since there is nowhere
 // meaningful left to return to within the SPA.
-const ROOT_PATHS = ['/', '/main', '/home'];
+const ROOT_PATHS = ['/', '/main', '/home', '/login'];
 
 /**
  * Wires the Android hardware/gesture back button to prioritize:
  * 1. Dismissing open overlays / modals / sheets / mobile menus (via Escape event or close button).
  * 2. Navigating back in React Router history if on a nested route.
- * 3. Exiting the native app if on a top-level root path or if browser history cannot go back.
+ * 3. Double-tapping to minimize the native app if on a top-level root path.
  */
 export function useNativeBackButton() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  const lastBackPressRef = useRef<number>(0);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
@@ -63,7 +66,21 @@ export function useNativeBackButton() {
           const isRootPath = ROOT_PATHS.includes(location.pathname);
 
           if (isRootPath || !canGoBack) {
-            App.exitApp();
+            const now = Date.now();
+            const timeDiff = now - lastBackPressRef.current;
+            
+            if (timeDiff < 2000) {
+              // Double tapped within 2 seconds -> minimize app
+              App.minimizeApp();
+            } else {
+              lastBackPressRef.current = now;
+              toast({
+                title: 'Sentuh sekali lagi untuk keluar',
+                description: 'Tekan sekali lagi untuk menutup aplikasi secara latar belakang. / Press back again to minimize the app.',
+                variant: 'info',
+                duration: 2000,
+              });
+            }
           } else {
             navigate(-1);
           }
@@ -87,5 +104,5 @@ export function useNativeBackButton() {
         listenerHandle.remove();
       }
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, toast]);
 }

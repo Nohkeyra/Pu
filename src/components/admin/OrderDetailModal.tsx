@@ -145,7 +145,7 @@ export function OrderDetailModal({
               
               {/* Main section: All fields */}
               <div className="lg:col-span-2 space-y-10">
-                <div className="bg-white/50 dark:bg-background/20 p-6 md:p-8 rounded-3xl border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-8">
+                <div className="bg-white/50 dark:bg-background/20 p-6 md:p-8 rounded-2xl border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-8">
                   {[
                     { label: language === 'bm' ? "Tarikh Hantar :" : "Submitted Date :", value: (() => {
                       const d = selectedOrder.createdAt;
@@ -171,7 +171,7 @@ export function OrderDetailModal({
                       <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block mb-2 opacity-80">
                         {field!.label}
                       </span>
-                      <p className="text-lg md:text-xl font-bold text-deep-forest dark:text-white leading-relaxed break-words whitespace-pre-line">
+                      <p className="text-lg md:text-xl font-bold text-deep-forest dark:text-white leading-relaxed break-words max-w-[70ch] whitespace-pre-line">
                         {field!.value}
                       </p>
                     </div>
@@ -183,7 +183,7 @@ export function OrderDetailModal({
               <div className="lg:col-span-1 space-y-6">
                 
                 {/* Status Banner */}
-                <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
+                <div className="p-6 rounded-2xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
                   <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">Status</span>
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
@@ -216,7 +216,7 @@ export function OrderDetailModal({
                 </div>
 
                 {/* Pricing and Grand Total */}
-                <div className="p-6 rounded-3xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-6">
+                <div className="p-6 rounded-2xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-6">
                   <h4 className="font-bold text-deep-forest dark:text-white border-b border-[var(--color-sunshine-cta)]/10 pb-3 uppercase tracking-wider text-sm">{t('price_pax')}</h4>
                   <div className="space-y-5">
                     {selectedOrder.meals.map((meal, idx) => (
@@ -236,7 +236,7 @@ export function OrderDetailModal({
                               ...prev, 
                               [meal]: e.target.value 
                             }))}
-                            className="pl-12 h-12 bg-cream/30 dark:bg-background/40 border-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-white text-lg font-bold rounded-2xl focus:ring-[var(--color-sunshine-cta)]/30"
+                            className="pl-12 h-12 bg-cream/30 dark:bg-background/40 border-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-white text-lg font-bold rounded-xl focus:ring-[var(--color-sunshine-cta)]/30"
                             placeholder="0.00"
                           />
                         </div>
@@ -245,7 +245,7 @@ export function OrderDetailModal({
                   </div>
 
                   {/* Total Preview */}
-                  <div className="p-5 bg-[var(--color-sunshine-cta)]/5 dark:bg-background/60 rounded-2xl border border-[var(--color-sunshine-cta)]/10">
+                  <div className="p-5 bg-[var(--color-sunshine-cta)]/5 dark:bg-background/60 rounded-xl border border-[var(--color-sunshine-cta)]/10">
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/40 uppercase tracking-widest">{t('grand_total')}:</span>
                       <span className="text-2xl font-black text-[var(--color-sunshine-cta)]">

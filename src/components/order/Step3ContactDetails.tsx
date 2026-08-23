@@ -146,7 +146,7 @@ export function Step3ContactDetails({
                   onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
                   required
                 >
-                  <SelectTrigger className="w-full h-11 rounded-2xl border-stone/20 bg-muted text-deep-forest dark:text-[#ede5d8] focus:ring-crisp-carrot/20">
+                  <SelectTrigger className="w-full h-11 rounded-xl border-stone/20 bg-muted text-deep-forest dark:text-[#ede5d8] focus:ring-crisp-carrot/20">
                     <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-stone/10">
@@ -172,7 +172,7 @@ export function Step3ContactDetails({
                       onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
                       placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
                       required
-                      className="mt-2 h-11 rounded-2xl font-sans"
+                      className="mt-2 h-11 rounded-xl font-sans"
                     />
                   </>
                 )}
@@ -189,7 +189,7 @@ export function Step3ContactDetails({
             value={orderState.name}
             onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
             placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
-            className="h-11 rounded-2xl font-sans"
+            className="h-11 rounded-xl font-sans"
           />
         </div>
 
@@ -202,7 +202,7 @@ export function Step3ContactDetails({
             value={orderState.contact}
             onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
             placeholder={tText('e.g. 012-345 6789', 'Contoh: 012-345 6789')}
-            className="h-11 rounded-2xl font-sans"
+            className="h-11 rounded-xl font-sans"
           />
         </div>
 
@@ -216,7 +216,7 @@ export function Step3ContactDetails({
               value={orderState.email}
               onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
               placeholder={tText('e.g. ahmad@gmail.com', 'Contoh: ahmad@gmail.com')}
-              className="h-11 rounded-2xl font-sans"
+              className="h-11 rounded-xl font-sans"
             />
           </div>
           <div className="space-y-1.5">
@@ -227,7 +227,7 @@ export function Step3ContactDetails({
               value={orderState.confirmEmail}
               onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
               placeholder={tText('Re-type email address', 'Ulang alamat e-mel')}
-              className="h-11 rounded-2xl font-sans"
+              className="h-11 rounded-xl font-sans"
             />
           </div>
         </div>
@@ -242,7 +242,7 @@ export function Step3ContactDetails({
               value={orderState.date}
               min={format(new Date(), 'yyyy-MM-dd')}
               onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
             />
           </div>
           <div className="space-y-1.5">
@@ -252,7 +252,7 @@ export function Step3ContactDetails({
               type="time"
               value={orderState.time}
               onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-2xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
             />
           </div>
         </div>
@@ -309,7 +309,7 @@ export function Step3ContactDetails({
             value={orderState.location}
             onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
             placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
-            className="rounded-2xl min-h-[70px] font-sans"
+            className="rounded-xl min-h-[70px] font-sans"
           />
         </div>
 
@@ -362,7 +362,7 @@ export function Step3ContactDetails({
             value={orderState.notes}
             onChange={(e) => setOrderState(prev => ({ ...prev, notes: e.target.value }))}
             placeholder={tText('e.g. Vegetarian attendees, buffer tables needed, etc.', 'Contoh: Ada tetamu yang vegetarian, perlu meja buffet, dll.')}
-            className="rounded-2xl min-h-[70px] font-sans"
+            className="rounded-xl min-h-[70px] font-sans"
           />
         </div>
 

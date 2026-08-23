@@ -26,7 +26,7 @@ export function HungryButton({ text, onHungryClick, className, ...props }: Hungr
     <button
       onClick={handleClick}
       className={cn(
-        "relative overflow-hidden w-full sm:w-auto px-10 py-4 md:py-4.5 bg-[var(--color-sunshine-cta)] text-white font-black rounded-2xl shadow-sunshine-glow hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer group/hungry",
+        "relative overflow-hidden w-full sm:w-auto px-8 py-4 bg-[var(--color-sunshine-cta)] text-white font-black rounded-2xl shadow-sunshine-glow hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer group/hungry",
         className
       )}
       {...props}

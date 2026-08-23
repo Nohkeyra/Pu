@@ -48,7 +48,8 @@ function NativeAppListeners() {
   useEffect(() => {
     let isActive = true;
     let wasOnline: boolean | null = null;
-
+    let listenerHandle: { remove: () => void } | null = null;
+ 
     const setupPendingOrdersListener = async () => {
       try {
         const initial = await Network.getStatus();
@@ -56,23 +57,32 @@ function NativeAppListeners() {
       } catch {
         wasOnline = null;
       }
-
-      await Network.addListener('networkStatusChange', (status) => {
+ 
+      const handle = await Network.addListener('networkStatusChange', (status) => {
         if (!isActive) return;
         const isNowOnline = status.connected;
         const justCameOnline = wasOnline === false && isNowOnline === true;
         wasOnline = isNowOnline;
-
+ 
         if (justCameOnline) {
           triggerPendingOrdersCheck();
         }
       });
+
+      if (!isActive) {
+        handle.remove();
+      } else {
+        listenerHandle = handle;
+      }
     };
-
+ 
     setupPendingOrdersListener();
-
+ 
     return () => {
       isActive = false;
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, [triggerPendingOrdersCheck]);
 
@@ -94,7 +104,8 @@ function NativeAppListeners() {
 
   useEffect(() => {
     let active = true;
-
+    let listenerHandle: { remove: () => void } | null = null;
+ 
     const requestMotionPermissions = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
@@ -106,6 +117,8 @@ function NativeAppListeners() {
             if (typeof listener.remove === 'function') {
               listener.remove();
             }
+          } else {
+            listenerHandle = listener;
           }
         } else {
           // Web motion and orientation permission request (iOS Safari & supporting browsers)
@@ -113,7 +126,7 @@ function NativeAppListeners() {
             DeviceMotionEvent?: { requestPermission?: () => Promise<string> };
             DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
           };
-
+ 
           if (typeof win.DeviceMotionEvent?.requestPermission === 'function') {
             try {
               const res = await win.DeviceMotionEvent.requestPermission();
@@ -122,7 +135,7 @@ function NativeAppListeners() {
               console.warn('[NativeAppListeners] Device Motion permission requires user gesture');
             }
           }
-
+ 
           if (typeof win.DeviceOrientationEvent?.requestPermission === 'function') {
             try {
               const res = await win.DeviceOrientationEvent.requestPermission();
@@ -136,11 +149,14 @@ function NativeAppListeners() {
         /* Ignore permissions setup errors on unsupported devices */
       }
     };
-
+ 
     requestMotionPermissions();
-
+ 
     return () => {
       active = false;
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, []);
   

@@ -112,7 +112,7 @@ export default function HeroSection() {
         {/* Refined Description */}
         <motion.p 
           variants={itemVariants}
-          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-xl mx-auto font-medium mb-10 leading-relaxed bg-black/45 dark:bg-[#0c100e]/85 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
+          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-[65ch] mx-auto font-medium mb-10 leading-relaxed bg-black/45 dark:bg-[#0c100e]/85 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
           {t('hero_description')}
         </motion.p>

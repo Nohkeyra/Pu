@@ -36,9 +36,10 @@ export function useNetworkStatus() {
 
     // Listeners
     let isActive = true;
+    let listenerHandle: { remove: () => void } | null = null;
     const setupListener = async () => {
       try {
-        await Network.addListener('networkStatusChange', status => {
+        const handle = await Network.addListener('networkStatusChange', status => {
           if (!isActive) return;
           
           const wasOnline = prevStatusRef.current;
@@ -72,6 +73,12 @@ export function useNetworkStatus() {
             }
           }
         });
+
+        if (!isActive) {
+          handle.remove();
+        } else {
+          listenerHandle = handle;
+        }
       } catch (err) {
         console.warn('Network listener setup failed:', err);
       }
@@ -81,7 +88,9 @@ export function useNetworkStatus() {
 
     return () => {
       isActive = false;
-      Network.removeAllListeners();
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
     };
   }, []);
 

@@ -99,13 +99,13 @@ export default function StorySection() {
             </motion.h2>
             
             <div className="space-y-6 mb-12">
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p1')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p2')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p3')}
               </motion.p>
             </div>

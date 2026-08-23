@@ -1,45 +1,16 @@
-import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  Check, 
-  Loader2, 
-  ArrowLeft 
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
-import { getAssetUrl } from '@/lib/utils';
+import { getAssetUrl, resolveDishImage } from '@/lib/utils';
 
-interface Dish {
-  id: string;
-  nameEn: string;
-  nameBm: string;
-}
-
-interface OrderState {
-  eventType: 'pejabat' | 'lain' | '';
-  preparationType: 'buffet' | 'meal_box';
-  guests: number;
-  date: string;
-  time: string;
-  delivery: 'delivery' | 'pickup' | '';
-  companyName: string;
-  customCompany: string;
-  name: string;
-  contact: string;
-  email: string;
-  location: string;
-  dishes: Dish[];
-  veggies: Dish[];
-  customMenu: string;
-}
-
-interface Step4ReviewSubmitProps {
-  orderState: OrderState;
+export interface Step4ReviewSubmitProps {
+  orderState: any;
   getMealTypesLabel: () => string;
   isSubmitting: boolean;
-  handleOrderSubmission: () => Promise<void> | void;
-  setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
-  triggerLightImpact: () => Promise<void> | void;
+  handleOrderSubmission: () => void;
+  setCurrentStep: (step: number) => void;
+  triggerLightImpact: () => Promise<void>;
   tText: (en: string, bm: string) => string;
   t: (key: string) => string;
 }
@@ -177,103 +148,91 @@ export function Step4ReviewSubmit({
               <>
                 <p className="text-stone-300 microcopy-12 uppercase">{tText('Main Dishes & Drinks:', 'Hidangan & Minuman:')}</p>
                 <div className="space-y-1 pl-1">
-                  {orderState.dishes.map((d: any) => (
-                    <div key={d.id} className="flex justify-between items-center bg-white/10 border border-white/5 px-2.5 py-1 rounded text-xs">
-                      <span className="text-white font-medium">{tText(d.nameEn, d.nameBm)}</span>
-                    </div>
-                  ))}
+                  {orderState.dishes.map((d: any) => {
+                    const dishImg = resolveDishImage(d);
+                    return (
+                      <div key={d.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
+                        {dishImg && (
+                          <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
+                            <img src={getAssetUrl(dishImg)} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <span className="text-white font-medium flex-1 leading-tight">{tText(d.nameEn, d.nameBm)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
-
+            
             {orderState.veggies.length > 0 && (
               <>
                 <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Vegetables & Add-ons:', 'Sayur & Tambahan:')}</p>
                 <div className="space-y-1 pl-1">
-                  {orderState.veggies.map((v: any) => (
-                    <div key={v.id} className="flex justify-between items-center bg-white/10 border border-white/5 px-2.5 py-1 rounded text-xs">
-                      <span className="text-white font-medium">{tText(v.nameEn, v.nameBm)}</span>
-                    </div>
-                  ))}
+                  {orderState.veggies.map((v: any) => {
+                    const dishImg = resolveDishImage(v);
+                    return (
+                      <div key={v.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
+                        {dishImg && (
+                          <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
+                            <img src={getAssetUrl(dishImg)} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <span className="text-white font-medium flex-1 leading-tight">{tText(v.nameEn, v.nameBm)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
-
-            {orderState.customMenu && (
-              <>
-                <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Custom Menu / Request:', 'Menu Khas / Permintaan:')}</p>
-                <p className="pl-2 microcopy-12 font-normal text-white italic whitespace-pre-wrap bg-white/10 p-2 rounded-lg border border-white/5 mt-0.5">
-                  "{orderState.customMenu}"
-                </p>
-              </>
-            )}
-
-            {orderState.dishes.length === 0 && orderState.veggies.length === 0 && !orderState.customMenu && (
-              <div className="bg-[var(--color-sunshine-cta)]/15 border border-[var(--color-sunshine-cta)]/30 p-2.5 rounded-lg text-center mt-2 relative z-10">
-                <p className="text-xs font-bold text-[var(--color-sunshine-cta)]">
-                  {tText('Set Box Makanan & Minuman (Default)', 'Set Box Makanan & Minuman (Lalai)')}
-                </p>
-                <p className="microcopy-12-upper text-stone-300 font-light mt-0.5 leading-tight">
-                  {tText('You have skipped individual dish selection. Standard boxed meal set will be served.', 'Anda melangkau pilihan lauk. Set hidangan kotak standard akan disediakan.')}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="relative z-10 border-t border-white/10 pt-2.5 mt-2 flex justify-between items-center">
-            <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
-              {tText('Catering Price:', 'Harga Katering:')}
-            </span>
-            <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
-              {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-            </span>
           </div>
         </div>
 
-        <p className="microcopy-12-upper text-stone leading-tight italic text-center px-4">
-          {tText(
-            '* Note: The restaurant admin will review your booking details and provide a finalized quote via WhatsApp or Email within 24 hours.',
-            '* Nota: Admin restoran akan menyemak butiran tempahan dan memberikan sebut harga muktamad melalui WhatsApp atau E-mel dalam masa 24 jam.'
-          )}
-        </p>
+        {/* Pricing Summary */}
+        <div className="bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 p-5 rounded-2xl shadow-sm space-y-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Subtotal', 'Jumlah Kecil')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">RM {(orderState.guests * (orderState.preparationType === 'meal_box' ? 12 : 15)).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Delivery Fee', 'Caj Penghantaran')}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{orderState.delivery === 'delivery' ? 'RM 15.00' : 'RM 0.00'}</span>
+          </div>
+          <div className="pt-4 border-t border-[var(--color-light-forest)] dark:border-stone-800 flex justify-between items-center">
+            <span className="text-sm font-bold text-deep-forest dark:text-white uppercase tracking-wider">{tText('Total Estimate', 'Anggaran Penuh')}</span>
+            <span className="text-xl font-black text-[var(--color-sunshine-cta)]">
+              RM {((orderState.guests * (orderState.preparationType === 'meal_box' ? 12 : 15)) + (orderState.delivery === 'delivery' ? 15 : 0)).toFixed(2)}
+            </span>
+          </div>
+          <p className="text-[10px] text-stone-500 text-right leading-tight">
+            * {tText('Final price may vary based on custom requirements.', 'Harga akhir mungkin berbeza mengikut keperluan tambahan.')}
+          </p>
+        </div>
 
       </div>
 
-      {isSubmitting && (
-        <p className="text-center text-sm font-semibold text-stone-600 dark:text-stone-300" role="status" aria-live="polite">
-          {tText(
-            'Please wait — do not close this screen while your order is being sent.',
-            'Sila tunggu — jangan tutup skrin ini semasa tempahan dihantar.'
-          )}
-        </p>
-      )}
-
-      {/* Submitting Actions */}
       <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
-        <Button
+        <Button 
+          variant="outline" 
           onClick={async () => { await triggerLightImpact(); setCurrentStep(3); }}
+          className="flex-1 h-12 rounded-xl font-bold border-stone/20 text-stone hover:bg-stone/5 dark:hover:bg-white/5"
           disabled={isSubmitting}
-          variant="outline"
-          className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
           {t('back')}
         </Button>
-        <Button
-          onClick={handleOrderSubmission}
+        <Button 
+          onClick={handleOrderSubmission} 
           disabled={isSubmitting}
-          className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
+          className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-xl font-bold text-sm shadow-md"
         >
           {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden />
-              <span>{tText('Sending order…', 'Menghantar tempahan…')}</span>
-            </>
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              {tText('Submitting...', 'Menghantar...')}
+            </span>
           ) : (
-            <>
-              <span>{tText('Submit Order', 'Hantar Tempahan')}</span>
-              <Check className="w-4 h-4 ml-1.5" aria-hidden />
-            </>
+            tText('Submit Order', 'Hantar Tempahan')
           )}
         </Button>
       </ResponsiveButtonGroup>

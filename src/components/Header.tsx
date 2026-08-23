@@ -92,8 +92,8 @@ export default function Header() {
     : 'inline-flex h-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-deep-forest/60 hover:text-[var(--color-sunshine-cta)] active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   const mobileActionClass = isScrolled
-    ? 'icon-button-soft touch-target h-10 w-10 font-bold'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-deep-forest/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
+    ? 'icon-button-soft touch-target h-11 w-11 font-bold'
+    : 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-deep-forest/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   return (
     <>

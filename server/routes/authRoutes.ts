@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from '../firebaseAdmin.js';
+import { getFirestore, getAdminApp } from '../firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from '../adminAuth.js';
 
 const router = Router();
@@ -20,8 +20,35 @@ const router = Router();
 // in your local .env before `npm run dev` if you need to log in as admin.
 router.post('/login', adminLoginLimiter, async (req, res) => {
   const { password } = req.body;
-  const adminHash = process.env.ADMIN_PASSWORD_HASH;
+  let adminHash = process.env.ADMIN_PASSWORD_HASH;
   const rawAdminPass = process.env.ADMIN_PASSWORD;
+
+  const db = getFirestore();
+
+  // Auto-sync or load credentials via Firestore meta/admin_auth (Admin SDK only)
+  if (adminHash || rawAdminPass) {
+    try {
+      const hashToSync = adminHash || await bcrypt.hash(rawAdminPass!, 10);
+      await db.collection('meta').doc('admin_auth').set({
+        hash: hashToSync,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (syncErr) {
+      console.warn('[Admin Auth] Auto-sync to Firestore failed (non-fatal):', syncErr);
+    }
+  } else {
+    try {
+      const authDoc = await db.collection('meta').doc('admin_auth').get();
+      if (authDoc.exists) {
+        const data = authDoc.data();
+        if (data && data.hash) {
+          adminHash = data.hash;
+        }
+      }
+    } catch (dbErr) {
+      console.warn('[Admin Auth] Failed to fetch synced credential from Firestore:', dbErr);
+    }
+  }
 
   if (!adminHash && !rawAdminPass) {
     if (process.env.NODE_ENV === 'production') {
@@ -59,7 +86,7 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
 
     let firebaseCustomToken: string | null = null;
     try {
-      const auth = getAuth();
+      const auth = getAuth(getAdminApp());
       firebaseCustomToken = await auth.createCustomToken('admin_hq_user', { admin: true });
     } catch (err) {
       console.warn('[Admin Auth] Firebase custom token creation failed:', err);

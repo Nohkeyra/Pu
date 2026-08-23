@@ -213,12 +213,13 @@ function SessionGuard({ children }: { children: ReactNode }) {
 
 // Page transition wrapper component with crisp, fluid crossfade and zero blank gaps
 function PageTransition({ children }: { children: ReactNode }) {
+  const isNative = Capacitor.isNativePlatform();
   return (
     <motion.div
-      initial={{ opacity: 0.88, y: 4 }}
+      initial={isNative ? { opacity: 0.95 } : { opacity: 0.88, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0.94 }}
-      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+      exit={isNative ? undefined : { opacity: 0.94 }}
+      transition={{ duration: isNative ? 0.08 : 0.16, ease: [0.22, 1, 0.36, 1] }}
       className="flex-grow flex flex-col w-full h-full relative"
     >
       {children}
@@ -238,6 +239,18 @@ function AppContent() {
   });
 
   useEffect(() => {
+    const handleAdminStateChange = () => {
+      try {
+        const isUserAdmin = localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+        setIsAdmin(isUserAdmin);
+      } catch (err) {
+        console.warn('Failed to read admin state:', err);
+      }
+    };
+
+    window.addEventListener('admin:login-state-change', handleAdminStateChange);
+    window.addEventListener('storage', handleAdminStateChange);
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       const isUserAdmin = user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
       setIsAdmin(isUserAdmin);
@@ -261,8 +274,22 @@ function AppContent() {
       // Ignored
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      window.removeEventListener('admin:login-state-change', handleAdminStateChange);
+      window.removeEventListener('storage', handleAdminStateChange);
+    };
   }, []);
+
+  // Sync state whenever the pathname changes (e.g. navigation back/forth)
+  useEffect(() => {
+    try {
+      const isUserAdmin = localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+      setIsAdmin(isUserAdmin);
+    } catch {
+      // Ignored
+    }
+  }, [pathname]);
 
   const hideNavPaths = ['/', '/login', ...(isAdmin ? [] : ['/admin'])];
   const showNav = !hideNavPaths.includes(pathname);

@@ -125,7 +125,7 @@ export function AdminOrdersTab({
     <>
       {/* Cancellation Requests Section */}
       {cancelRequests.length > 0 && (
-        <div className="mb-6 p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl backdrop-blur-sm">
+        <div className="mb-6 p-5 bg-amber-500/10 border border-amber-500/30 rounded-xl backdrop-blur-sm">
           <h2 className="text-base font-bold text-amber-900 dark:text-amber-300 mb-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             {t('cancellation_requests') || 'Cancellation Requests'} ({cancelRequests.length})
@@ -199,13 +199,13 @@ export function AdminOrdersTab({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
               aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
-              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-2xl border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
+              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-lg border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
             />
           </div>
 
           {/* Date range picker group */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl px-3.5 h-11 min-h-[44px]">
+            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-3.5 h-11 min-h-[44px]">
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
                 {language === 'bm' ? 'Dari' : 'From'}
               </span>
@@ -231,7 +231,7 @@ export function AdminOrdersTab({
             {(dateFromFilter || dateToFilter) && (
               <button
                 onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
-                className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-2xl border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
+                className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-lg border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
                 title={language === 'bm' ? 'Reset' : 'Reset'}
               >
                 <X className="w-4 h-4" />
@@ -241,7 +241,7 @@ export function AdminOrdersTab({
 
           {/* Primary actions toolbar */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl h-11 min-h-[44px]">
+            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg h-11 min-h-[44px]">
               <Switch
                 id="select-mode-toggle"
                 checked={isSelectMode}
@@ -259,7 +259,7 @@ export function AdminOrdersTab({
               variant="default"
               size="default"
               onClick={() => setIsExportOpen(true)}
-              className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-2xl cursor-pointer transition-all active:scale-[0.98]"
+              className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
             >
               <FileSpreadsheet className="w-4 h-4" />
               <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
@@ -332,7 +332,7 @@ export function AdminOrdersTab({
         {/* Row 3: Selection tools — only when Select Mode is on */}
         {isSelectMode && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--color-light-forest)] dark:border-stone-800">
-            <div className="flex items-center gap-2.5 px-3.5 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-2xl h-10 min-h-[40px]">
+            <div className="flex items-center gap-2.5 px-3.5 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-xl h-10 min-h-[40px]">
               <Switch
                 id="email-filter-toggle"
                 checked={filterBySameEmail}
@@ -374,7 +374,7 @@ export function AdminOrdersTab({
                   }
                   setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                 }}
-                className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-2xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
+                className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
               >
                 {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
                   <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>
@@ -488,14 +488,14 @@ export function AdminOrdersTab({
                   <div
                     onClick={() => openOrderDetail(order)}
                     className={`
-                      relative flex flex-col gap-3 p-4 rounded-[22px] bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
+                      relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
                       cursor-pointer transition-all duration-200
                       hover:shadow-[0_8px_28px_rgba(224,63,20,0.20)] hover:-translate-y-0.5
                       ${isSelected ? 'ring-2 ring-sunshine-cta shadow-[0_8px_28px_rgba(224,63,20,0.25)]' : ''}
                       ${order.status === 'cancel_requested' ? 'ring-2 ring-amber-400/60' : ''}
                     `}
                   >
-                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[22px] ${stripColor}`} />
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl ${stripColor}`} />
 
                     <div className="flex items-start justify-between gap-2 pl-2">
                       <div className="min-w-0">
@@ -601,7 +601,7 @@ export function AdminOrdersTab({
         without touching the pull-to-refresh animation in AdminPanel.tsx.
       */}
       {selectedOrderIds.size >= 2 && createPortal(
-        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-[var(--color-sunshine-cta)] border border-border/10 rounded-2xl p-4 shadow-2xl flex items-center justify-between z-[110]">
+        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-[var(--color-sunshine-cta)] border border-border/10 rounded-xl p-4 shadow-2xl flex items-center justify-between z-[110]">
           <div className="text-sm font-bold text-white flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <span className="text-white">{selectedOrderIds.size}</span>
@@ -636,7 +636,7 @@ export function AdminOrdersTab({
             onClick={() => setShowConsolidateModal(false)}
             className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
+          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-xl p-6 shadow-2xl space-y-5">
             <div className="space-y-1.5">
               <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
                 {language === 'bm' ? 'Invois Konsolidasi' : 'Consolidated Invoice'}

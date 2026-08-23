@@ -318,3 +318,23 @@ jobs:
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # =============================================
+      # 📡 AUTOMATIC LIVE UPDATE BROADCAST
+      # =============================================
+      - name: Trigger Automatic In-App Live Update Broadcast
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
+        env:
+          SYNC_SECRET: ${{ secrets.RELEASE_SYNC_SECRET }}
+        run: |
+          if [ -z "$SYNC_SECRET" ]; then
+            echo "⚠️ RELEASE_SYNC_SECRET is not configured in GitHub Secrets. Skipping auto-sync."
+          else
+            echo "🚀 Broadcasting live app version update to Wawasan Hub..."
+            curl -X POST "https://restoran-wawasan-bio.onrender.com/api/app-version/github-sync" \
+              -H "Content-Type: application/json" \
+              -H "x-github-token: $SYNC_SECRET" \
+              -d "{\"version\":\"${{ env.VERSION_NAME }}\",\"buildNumber\":\"${{ env.VERSION_CODE }}\",\"apkUrl\":\"https://github.com/Nohkeyra/Pu/releases/download/v${{ env.VERSION_NAME }}/app-release-signed.apk\"}"
+            echo "✅ Broadcast request completed successfully!"
+          fi
+

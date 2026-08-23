@@ -38,6 +38,7 @@ import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { getApiUrl } from '@/lib/api';
+import { DiagnosticConsole } from '@/components/DiagnosticConsole';
 
 function BrandMark() {
   return (
@@ -82,6 +83,7 @@ export default function SettingsPage() {
   // Admin sub-menu active tab state ('appearance' | 'updates' | 'diagnostics')
   const [adminSubTab, setAdminSubTab] = useState<'appearance' | 'updates' | 'diagnostics'>('appearance');
   const [previewUpdateConfig, setPreviewUpdateConfig] = useState<AppVersionConfig | null>(null);
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
 
   // Diagnostics states
   const [diagFirebase, setDiagFirebase] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; projectId?: string }>({ status: 'idle' });
@@ -657,7 +659,7 @@ export default function SettingsPage() {
                           { name: 'Tomato Accent', hex: '#e03f14' },
                         ].map((preset) => (
                           <button
-                            key={preset.hex}
+                            key={`${preset.name}-${preset.hex}`}
                             type="button"
                             onClick={async () => {
                               await triggerLightImpact();
@@ -1008,6 +1010,32 @@ export default function SettingsPage() {
                 className="flex-shrink-0"
               />
             </ResponsiveToggleRow>
+
+            {/* Diagnostic & Telemetry Console */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border/40">
+              <div className="space-y-0.5 pr-2">
+                <span className="text-sm font-semibold text-deep-forest dark:text-white block">
+                  {language === 'bm' ? 'Konsol Diagnostik & Telemetri' : 'Diagnostic & Telemetry Console'}
+                </span>
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
+                  {language === 'bm'
+                    ? 'Uji getaran haptik peranti, pantau sensor paksi giroskop secara langsung, dan bersihkan cache.'
+                    : 'Test device haptic feedback, monitor live gyroscope orientation sensors, and clear cached state.'}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  await triggerLightImpact();
+                  setDiagnosticOpen(true);
+                }}
+                className="rounded-2xl min-h-[44px] px-5 font-semibold text-xs border-[var(--color-sunshine-cta)] text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10"
+              >
+                <Terminal className="w-4 h-4 mr-1.5" />
+                {language === 'bm' ? 'Buka Konsol' : 'Open Console'}
+              </Button>
+            </div>
           </section>
 
           {/* AI Agent & MCP Integration Section (Gated for Admins / Developer Mode Only) */}
@@ -1153,6 +1181,11 @@ export default function SettingsPage() {
             onDismiss={() => setPreviewUpdateConfig(null)}
           />
         )}
+
+        <DiagnosticConsole
+          isOpen={diagnosticOpen}
+          onClose={() => setDiagnosticOpen(false)}
+        />
       </div>
     </ErrorBoundary>
   );

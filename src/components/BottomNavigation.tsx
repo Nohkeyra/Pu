@@ -143,7 +143,7 @@ export default function BottomNavigation() {
                 animate={isActive ? { y: 0, opacity: 1 } : { y: 1, opacity: 0.85 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
                 className={cn(
-                  'nav-label relative z-10 transition-colors duration-200 text-[11px] leading-none',
+                  'nav-label relative z-10 transition-colors duration-200 text-[10px] sm:text-[11px] leading-none tracking-wide whitespace-nowrap',
                   isActive
                     ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
                     : 'nav-label-inactive text-deep-forest/80 dark:text-[#ede5d8]/80 font-medium'
