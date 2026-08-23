@@ -5,11 +5,21 @@ import { createBrevoTransporter } from '../emailService.js';
 const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_PDF_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB limit
+const MAX_PDF_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Validate that a Buffer contains a valid PDF by checking magic bytes.
+ * PDF files start with "%PDF-1.x" where x is 0-7.
+ */
+function isValidPdf(buffer: Buffer): boolean {
+  if (buffer.length < 5) return false;
+  const header = buffer.toString('ascii', 0, 5);
+  return header.startsWith('%PDF-');
+}
 
 router.post('/send-invoice', verifyAdminToken, async (req, res) => {
   const { orderId, email, subject, body, pdfBase64 } = req.body || {};
-  
+
   try {
     if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
       return res.status(400).json({ success: false, error: 'Invalid or missing email recipient address.' });
@@ -24,6 +34,10 @@ router.post('/send-invoice', verifyAdminToken, async (req, res) => {
       pdfBuffer = Buffer.from(pdfBase64, 'base64');
       if (pdfBuffer.length > MAX_PDF_ATTACHMENT_BYTES) {
         return res.status(400).json({ success: false, error: 'PDF attachment size exceeds 10MB limit.' });
+      }
+      // SECURITY FIX: Validate PDF magic bytes to prevent executable injection
+      if (!isValidPdf(pdfBuffer)) {
+        return res.status(400).json({ success: false, error: 'Invalid PDF format. File does not start with valid PDF header.' });
       }
     }
 

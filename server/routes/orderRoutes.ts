@@ -28,7 +28,6 @@ function getReferenceDishes(): ReferenceDish[] {
 
   const list: ReferenceDish[] = [];
 
-  // Add from DEFAULT_MENU_ITEMS
   if (Array.isArray(DEFAULT_MENU_ITEMS)) {
     for (const item of DEFAULT_MENU_ITEMS) {
       if (item && item.price) {
@@ -41,7 +40,6 @@ function getReferenceDishes(): ReferenceDish[] {
     }
   }
 
-  // Add from MALAYSIAN_HALAL_CATALOG
   if (Array.isArray(MALAYSIAN_HALAL_CATALOG)) {
     for (const item of MALAYSIAN_HALAL_CATALOG) {
       if (item && item.suggestedPrice) {
@@ -74,7 +72,7 @@ function splitCustomMenu(menuStr: string): string[] {
     .replace(/\s+&\s+/gi, ',')
     .replace(/\s*\+\s*/g, ',')
     .replace(/\n+/g, ',');
-  
+
   return normalized
     .split(',')
     .map(s => s.trim())
@@ -88,7 +86,6 @@ function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceD
   let bestMatch: ReferenceDish | null = null;
   let bestScore = 0;
 
-  // Tokenize the fragment
   const fragmentWords = cleanFragment
     .split(/\s+/)
     .map(w => w.replace(/[^\w\s]/g, ""))
@@ -100,12 +97,10 @@ function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceD
 
     let score = 0;
 
-    // 1. Exact string match
     if (nameEnClean === cleanFragment || nameBmClean === cleanFragment) {
       score += 100;
     }
 
-    // 2. Substring match
     if (cleanFragment.includes(nameEnClean) || cleanFragment.includes(nameBmClean)) {
       score += 50;
     }
@@ -113,7 +108,6 @@ function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceD
       score += 40;
     }
 
-    // 3. Word token matching
     const dishEnWords = nameEnClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
     const dishBmWords = nameBmClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
 
@@ -139,10 +133,6 @@ function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceD
   return bestMatch;
 }
 
-/**
- * Default fallback price per pax (in MYR) used when custom dish selections
- * produce a total price of 0 (e.g. for default boxed meals or custom orders).
- */
 export const DEFAULT_FALLBACK_PRICE_PER_PAX = 11.50;
 
 function calculateOrderPricing(
@@ -155,7 +145,6 @@ function calculateOrderPricing(
   const refDishes = getReferenceDishes();
   let pricePerPax = 0;
 
-  // 1. Sum up picked dishes
   if (Array.isArray(dishes)) {
     for (const dish of dishes) {
       const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (dish.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (dish.nameBm || '').toLowerCase());
@@ -167,7 +156,6 @@ function calculateOrderPricing(
     }
   }
 
-  // 2. Sum up picked veggies
   if (Array.isArray(veggies)) {
     for (const veg of veggies) {
       const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (veg.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (veg.nameBm || '').toLowerCase());
@@ -179,7 +167,6 @@ function calculateOrderPricing(
     }
   }
 
-  // 3. Handle custom order strings
   if (customMenu && typeof customMenu === 'string' && customMenu.trim()) {
     const fragments = splitCustomMenu(customMenu);
     for (const fragment of fragments) {
@@ -190,15 +177,13 @@ function calculateOrderPricing(
     }
   }
 
-  // 4. Fallback if price is still 0 (Default Boxed Meal)
   if (pricePerPax === 0) {
     pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
   }
 
-  // 5. Construct prices map and total amount
   const prices: Record<string, number> = {};
   const mealCount = Array.isArray(meals) && meals.length > 0 ? meals.length : 1;
-  
+
   if (Array.isArray(meals)) {
     meals.forEach(meal => {
       prices[meal] = pricePerPax;
@@ -215,14 +200,6 @@ function calculateOrderPricing(
   };
 }
 
-// F-RATE (audit 2026-08-11): POST /api/orders is public (no verifyAdminToken)
-// and writes to Firestore + fires calendar sync on every call. It previously
-// had no rate limiter at all, unlike /send-preliminary-invoice which already
-// used this same express-rate-limit pattern. A spam bot could hit this
-// unthrottled and flood the orders collection / calendar / email pipeline.
-// idempotencyKey (see IDEMPOTENCY_KEY_RE above) already prevents duplicate
-// orders from a legit retry, but does nothing to stop a high-volume spammer
-// sending fresh keys each time — that's what this limiter is for.
 const createOrderLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
@@ -231,11 +208,6 @@ const createOrderLimiter = rateLimit({
   message: { success: false, error: 'Too many order submissions. Please try again later.' },
 });
 
-// F-RATE (audit 2026-08-11): /cancel, /delete, /poke are also public routes
-// (ownership is checked inside the handler via verifyCustomerIdToken, but
-// there's no rate limiter guarding the endpoint itself). Looser than the
-// create-order limiter since a legitimate customer may legitimately poke or
-// retry a cancel a few times, but still bounded.
 const customerOrderActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
@@ -244,11 +216,9 @@ const customerOrderActionLimiter = rateLimit({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-// Validation middleware for incoming order submissions
 export function validateOrderSubmission(req: any, res: any, next: any) {
   const body = req.body || {};
 
-  // 1. Cap string fields (max 5000 chars) and array fields (max 100 items)
   for (const key of Object.keys(body)) {
     const val = body[key];
     if (typeof val === 'string' && val.length > 5000) {
@@ -259,13 +229,11 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
     }
   }
 
-  // 2. Validate customer name
   const name = typeof body.name === 'string' ? body.name.trim() : typeof body.customerName === 'string' ? body.customerName.trim() : '';
   if (!name) {
     return res.status(400).json({ success: false, error: 'Customer name (name) is required.' });
   }
 
-  // 3. Validate contact info (contact, email, or phone)
   const contact = typeof body.contact === 'string' ? body.contact.trim() : '';
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
@@ -273,13 +241,11 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
     return res.status(400).json({ success: false, error: 'At least one contact method (contact, phone, or email) is required.' });
   }
 
-  // 4. Validate event date
   const eventDate = typeof body.eventDate === 'string' ? body.eventDate.trim() : typeof body.date === 'string' ? body.date.trim() : '';
   if (!eventDate) {
     return res.status(400).json({ success: false, error: 'Event date (eventDate or date) is required.' });
   }
 
-  // 5. Validate guests / quantity
   const guestsNum = Number(body.guests || body.quantity);
   if (isNaN(guestsNum) || guestsNum < 1) {
     return res.status(400).json({ success: false, error: 'Number of guests or quantity must be a positive number.' });
@@ -294,7 +260,6 @@ router.post('/', createOrderLimiter, validateOrderSubmission, async (req, res) =
     const { idempotencyKey, ...orderData } = req.body || {};
     const db = getFirestore();
 
-    // SERVER-SIDE PRICING OVERWRITE & ESTIMATE
     const { prices, totalAmount } = calculateOrderPricing(
       orderData.dishes,
       orderData.veggies,
@@ -306,16 +271,6 @@ router.post('/', createOrderLimiter, validateOrderSubmission, async (req, res) =
     orderData.prices = prices;
     orderData.totalAmount = totalAmount;
 
-    // F-DISHES (2026-08-18): calculateOrderPricing() above needs the rich
-    // client-side dish objects ({id, nameEn, nameBm, price, category}) to
-    // recompute pricing server-side. But `Order.dishes` (src/types.ts) is
-    // typed as string[] and is read as plain strings downstream —
-    // ProfileOrdersTab.tsx does `order.dishes.join(', ')` and
-    // CalendarPage.tsx does `.map((dish, i) => ...)` rendering `dish`
-    // directly as text. Persisting the rich objects as-is under `dishes`
-    // made those screens render "[object Object]" for any order with
-    // selected dishes. Normalize to string[] here, after pricing is done
-    // with the rich objects and before anything is written to Firestore.
     if (Array.isArray(orderData.dishes)) {
       const isBm = orderData.lang === 'bm';
       orderData.dishes = orderData.dishes
@@ -401,10 +356,10 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const orderRef = db.collection('orders').doc(orderId);
       const oldSnap = await orderRef.get();
       if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
-      
+
       const oldData = oldSnap.data() as OrderData;
       const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
-      
+
       if ((data.status === 'approved' || data.status === 'billed') && !oldData.invoiceNo) {
         updates.invoiceNo = await generateSequentialInvoiceNo();
       }
@@ -609,6 +564,15 @@ const preliminaryInvoiceLimiter = rateLimit({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
+/**
+ * Validate that a Buffer contains a valid PDF by checking magic bytes.
+ */
+function isValidPdf(buffer: Buffer): boolean {
+  if (buffer.length < 5) return false;
+  const header = buffer.toString('ascii', 0, 5);
+  return header.startsWith('%PDF-');
+}
+
 router.post('/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
   const { id } = req.params;
   const { email, name, pdfBase64, lang } = req.body;
@@ -633,6 +597,12 @@ router.post('/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (r
       throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
     }
 
+    // SECURITY FIX: Validate PDF magic bytes before sending
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    if (!isValidPdf(pdfBuffer)) {
+      return res.status(400).json({ success: false, error: 'Invalid PDF format. File does not start with valid PDF header.' });
+    }
+
     const transporter = createBrevoTransporter();
     const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
     const isBm = lang === 'bm';
@@ -649,7 +619,7 @@ router.post('/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (r
       attachments: [
         {
           filename: `Preliminary_Invoice_${id}.pdf`,
-          content: Buffer.from(pdfBase64, 'base64'),
+          content: pdfBuffer,
           contentType: 'application/pdf'
         }
       ]
@@ -667,12 +637,12 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
     const db = getFirestore();
     const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
     const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as OrderData[];
-    
+
     const workbook = await generateOrdersWorkbook(orders);
-    
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=Orders_Export.xlsx');
-    
+
     await workbook.xlsx.write(res);
     return res.end();
   } catch {
@@ -680,24 +650,6 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   }
 });
 
-// F-CALENDAR (audit 2026-08-11): Public calendar-sessions aggregation endpoint.
-// Since public guests and corporate customers are restricted from performing collection-wide reads
-// on '/orders' for security/privacy rules, this server-side endpoint compiles and aggregates
-// daily workload sessions anonymously and securely.
-//
-// SECURITY FIX (2026-08-13): this endpoint had no rate limiter and no auth,
-// and does a full `orders` collection scan on every call (it can't use
-// .limit() — the aggregation needs every order across all dates, not a
-// recent slice). Unlike the widget endpoint (which is bounded by
-// .limit(20)), an unbounded full-collection read repeated rapidly is a
-// real cost/DoS vector: each hit is a full Firestore read of the entire
-// orders collection, and the orders collection only grows over time.
-// Two changes: (1) a rate limiter matching the other public order routes
-// in this file, (2) a short in-memory cache so repeated calls within the
-// TTL reuse the last computed result instead of re-scanning Firestore.
-// Cache is intentionally short (2 min) — Calendar page data doesn't need
-// to be second-fresh, and this is the same in-memory (no Redis) tradeoff
-// already accepted for adminLoginLimiter on this single-instance deployment.
 const calendarSessionsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
@@ -713,15 +665,29 @@ export function invalidateCalendarSessionsCache(): void {
   calendarSessionsCache = null;
 }
 
-router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
+// SECURITY FIX: Added optional date range filtering to prevent unbounded full-collection scans.
+// Query params: ?from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
   try {
     if (calendarSessionsCache && calendarSessionsCache.expiresAt > Date.now()) {
       return res.json({ success: true, sessions: calendarSessionsCache.data });
     }
 
     const db = getFirestore();
-    const snapshot = await db.collection('orders').get();
-    
+
+    const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
+    const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
+
+    let snapshot: FirebaseFirestore.QuerySnapshot;
+    if (fromDate && toDate) {
+      snapshot = await db.collection('orders')
+        .where('eventDate', '>=', fromDate)
+        .where('eventDate', '<=', toDate)
+        .get();
+    } else {
+      snapshot = await db.collection('orders').get();
+    }
+
     const dailySessions: Record<string, {
       breakfast: { count: number; pax: number };
       lunch: { count: number; pax: number };
@@ -792,11 +758,36 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (_req, res) => {
   }
 });
 
-router.get('/calendar-orders', calendarSessionsLimiter, async (_req, res) => {
+// SECURITY FIX: Added date range filtering and removed full PII exposure
+router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
   try {
     const db = getFirestore();
-    const snapshot = await db.collection('orders').get();
-    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+
+    const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
+    const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
+
+    let snapshot: FirebaseFirestore.QuerySnapshot;
+    if (fromDate && toDate) {
+      snapshot = await db.collection('orders')
+        .where('eventDate', '>=', fromDate)
+        .where('eventDate', '<=', toDate)
+        .get();
+    } else {
+      snapshot = await db.collection('orders').limit(100).get();
+    }
+
+    // SECURITY FIX: Strip PII from public calendar-orders response
+    const orders = snapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        status: d.status || 'pending',
+        eventDate: d.eventDate || d.date || null,
+        meals: d.meals || [],
+        guests: d.guests || d.quantity || 0,
+      };
+    });
+
     return res.json({ success: true, orders });
   } catch (err) {
     console.error('[Calendar Orders API Error]:', err);

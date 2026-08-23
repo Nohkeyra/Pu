@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import {
   mcpTransport,
   mcpContextStorage,
@@ -11,7 +12,15 @@ import {
 
 const router = Router();
 
-// Helper: Verify API Key if process.env.AI_API_KEY is defined
+// SECURITY FIX: Added rate limiter to MCP direct HTTP call endpoint
+const mcpCallLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many MCP tool calls. Please try again later.' },
+});
+
 function isAuthorized(req: Request): boolean {
   const configuredKey = process.env.AI_API_KEY;
   if (!configuredKey) return true;
@@ -31,11 +40,9 @@ function isAuthorized(req: Request): boolean {
   return token === configuredKey;
 }
 
-// Add this at the very top of mcpRoutes.ts, before any other routes
 router.all('/', (req: Request, res: Response) => {
   const accept = req.headers.accept || '';
 
-  // Handle both POST requests and GET text/event-stream connection requests for Streamable HTTP transport
   if (req.method === 'POST' || accept.includes('text/event-stream')) {
     if (!isAuthorized(req)) {
       return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
@@ -46,7 +53,6 @@ router.all('/', (req: Request, res: Response) => {
     });
   }
 
-  // Otherwise, fallback to a clean discovery endpoint
   const protocol = req.protocol || 'https';
   const host = req.get('host') || 'localhost:3000';
   const baseUrl = `${protocol}://${host}`;
@@ -65,7 +71,6 @@ router.all('/', (req: Request, res: Response) => {
   });
 });
 
-// Public health route for MCP connectors and health checkers
 router.get(['/health', '/healthz'], (_req: Request, res: Response) => {
   return res.status(200).json({
     status: 'ok',
@@ -74,11 +79,6 @@ router.get(['/health', '/healthz'], (_req: Request, res: Response) => {
   });
 });
 
-// --------------------------------------------------------------------------
-// Direct HTTP / JSON-RPC Endpoints for REST, Custom GPTs & Claude Connectors
-// --------------------------------------------------------------------------
-
-// GET /.well-known/mcp.json & /.well-known/mcp - MCP Discovery for Claude Connectors
 const getMcpDiscoveryJson = (req: Request) => {
   const protocol = req.protocol || 'https';
   const host = req.get('host') || 'localhost:3000';
@@ -114,7 +114,6 @@ router.get(['/mcp.json', '/mcp'], (req: Request, res: Response) => {
   return res.json(getMcpDiscoveryJson(req));
 });
 
-// OAuth probe fallback handlers - explicit confirmation that no sign-in / OAuth is required
 router.use(['/oauth-authorization-server*', '/openid-configuration*'], (_req: Request, res: Response) => {
   return res.status(200).json({
     auth_required: false,
@@ -124,7 +123,6 @@ router.use(['/oauth-authorization-server*', '/openid-configuration*'], (_req: Re
   });
 });
 
-// RFC 9728 Protected Resource Metadata probe - Claude.ai's connector setup checks
 router.use(['/oauth-protected-resource*'], (req: Request, res: Response) => {
   const protocol = req.protocol || 'https';
   const host = req.get('host') || 'localhost:3000';
@@ -141,7 +139,6 @@ router.use(['/oauth-protected-resource*'], (req: Request, res: Response) => {
   });
 });
 
-// GET /manifest - Server Manifest Info
 router.get('/manifest', (req: Request, res: Response) => {
   const protocol = req.protocol || 'https';
   const host = req.get('host') || 'localhost:3000';
@@ -172,7 +169,6 @@ router.get('/manifest', (req: Request, res: Response) => {
   });
 });
 
-// GET /api/mcp/tools - Tool Definitions List with Annotations
 router.get('/tools', (_req: Request, res: Response) => {
   return res.json({
     tools: [
@@ -254,239 +250,110 @@ router.get('/tools', (_req: Request, res: Response) => {
           type: 'object',
           properties: {
             customerName: { type: 'string', minLength: 2, maxLength: 100 },
-            contact: { type: 'string', minLength: 3, maxLength: 30 },
-            email: { type: 'string', maxLength: 100 },
-            eventDate: { type: 'string', minLength: 8, maxLength: 20 },
+            email: { type: 'string', format: 'email', maxLength: 100 },
+            phone: { type: 'string', maxLength: 20 },
+            eventDate: { type: 'string', maxLength: 20 },
             guests: { type: 'number', minimum: 1, maximum: 10000 },
+            location: { type: 'string', maxLength: 200 },
             meals: { type: 'array', items: { type: 'string', enum: ['breakfast', 'lunch', 'hi_tea'] } },
-            customMenu: { type: 'string', maxLength: 1000 },
-            notes: { type: 'string', maxLength: 1000 }
+            customMenu: { type: 'string', maxLength: 500 }
           },
-          required: ['customerName', 'contact', 'eventDate', 'guests']
+          required: ['customerName', 'eventDate', 'guests']
         }
       }
     ]
   });
 });
 
-// GET /api/mcp/docs - Public HTML documentation page for self-configuring Claude Desktop & Claude Code
-router.get('/docs', (req: Request, res: Response) => {
-  const protocol = req.protocol || 'http';
-  const host = req.get('host') || 'localhost:3000';
-  const baseUrl = `${protocol}://${host}`;
-  const mcpUrl = `${baseUrl}/api/mcp`;
+// SECURITY FIX: Added mcpCallLimiter rate limiter to the /call endpoint
+router.post('/call', mcpCallLimiter, async (req: Request, res: Response) => {
+  const { tool, args } = req.body || {};
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restoran Wawasan Pak Usop - Model Context Protocol (MCP) Setup</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-stone-900 text-stone-100 font-sans min-h-screen p-6 sm:p-10 max-w-4xl mx-auto space-y-8">
-  <div class="border-b border-stone-800 pb-6 flex items-center justify-between">
-    <div>
-      <span class="text-xs font-bold uppercase tracking-wider text-amber-500">MCP Protocol 2025-03-26</span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Restoran Wawasan MCP Server</h1>
-      <p class="text-stone-400 text-sm mt-1">Self-configuration guide for Claude Desktop, Claude Code & AI Agents</p>
-    </div>
-    <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-full">v1.3.10 Active</span>
-  </div>
-
-  <!-- Streamable HTTP Endpoint Card -->
-  <div class="bg-stone-800/80 border border-stone-700 rounded-2xl p-6 space-y-3">
-    <h2 class="text-base font-bold text-white flex items-center gap-2">
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-      Streamable HTTP Endpoint (Latest spec)
-    </h2>
-    <p class="text-xs text-stone-300">Use this endpoint URL to connect your MCP clients:</p>
-    <div class="bg-stone-950 p-3.5 rounded-xl border border-stone-800 font-mono text-xs text-emerald-300 break-all select-all">
-      ${mcpUrl}
-    </div>
-  </div>
-
-  <!-- 1. Claude Desktop Config -->
-  <div class="space-y-3">
-    <h3 class="text-lg font-bold text-white">1. Claude Desktop Configuration</h3>
-    <p class="text-xs text-stone-400">Add the following block to your <code class="text-amber-300">claude_desktop_config.json</code> file:</p>
-    <pre class="bg-stone-950 p-4 rounded-xl border border-stone-800 font-mono text-xs text-amber-300 overflow-x-auto">
-{
-  "mcpServers": {
-    "restoran-wawasan": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "--transport",
-        "http",
-        "${mcpUrl}"
-      ]
-    }
-  }
-}</pre>
-  </div>
-
-  <!-- 2. Claude Code CLI -->
-  <div class="space-y-3">
-    <h3 class="text-lg font-bold text-white">2. Claude Code CLI Command</h3>
-    <p class="text-xs text-stone-400">To quickly connect from Claude Code, execute:</p>
-    <pre class="bg-stone-950 p-4 rounded-xl border border-stone-800 font-mono text-xs text-emerald-300 overflow-x-auto">claude mcp add restoran-wawasan npx -y mcp-remote --transport http ${mcpUrl}</pre>
-  </div>
-
-  <!-- 3. Security & Authentication -->
-  <div class="bg-stone-800/50 border border-stone-700/80 rounded-2xl p-6 space-y-3">
-    <h3 class="text-lg font-bold text-white">3. Security & Authentication Header</h3>
-    <p class="text-xs text-stone-300">If <code class="text-amber-400">AI_API_KEY</code> is configured on the server, include either of the following HTTP headers with requests:</p>
-    <div class="space-y-2 font-mono text-xs text-stone-300">
-      <div class="bg-stone-950 p-3 rounded-lg border border-stone-800"><span class="text-amber-400">X-AI-API-KEY:</span> &lt;YOUR_API_KEY&gt;</div>
-      <div class="bg-stone-950 p-3 rounded-lg border border-stone-800"><span class="text-amber-400">Authorization:</span> Bearer &lt;YOUR_API_KEY&gt;</div>
-    </div>
-  </div>
-
-  <!-- 4. Supported Tools & Safety -->
-  <div class="space-y-3">
-    <h3 class="text-lg font-bold text-white">4. Supported Tools & Security Controls</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-      <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
-        <div class="flex justify-between items-center">
-          <span class="font-mono text-amber-400 font-bold">get_menu_items</span>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
-        </div>
-        <p class="text-stone-400 text-[11px]">Fetch halal food and drink catering items and pricing.</p>
-      </div>
-
-      <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
-        <div class="flex justify-between items-center">
-          <span class="font-mono text-amber-400 font-bold">calculate_catering_estimate</span>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
-        </div>
-        <p class="text-stone-400 text-[11px]">Calculate cost estimate in MYR by guest headcount and meals.</p>
-      </div>
-
-      <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
-        <div class="flex justify-between items-center">
-          <span class="font-mono text-amber-400 font-bold">check_order_status</span>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
-        </div>
-        <p class="text-stone-400 text-[11px]">Status lookup with strict 4-digit phone verification, PII masking & 3-strike lockout.</p>
-      </div>
-
-      <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1">
-        <div class="flex justify-between items-center">
-          <span class="font-mono text-amber-400 font-bold">get_calendar_availability</span>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">readOnlyHint: true</span>
-        </div>
-        <p class="text-stone-400 text-[11px]">Targeted date query and daily workload capacity summary.</p>
-      </div>
-
-      <div class="p-3 bg-stone-800/50 border border-stone-700/80 rounded-xl space-y-1 sm:col-span-2">
-        <div class="flex justify-between items-center">
-          <span class="font-mono text-amber-400 font-bold">submit_catering_inquiry</span>
-          <div class="flex gap-1.5">
-            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">readOnlyHint: false</span>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">idempotentHint: false</span>
-          </div>
-        </div>
-        <p class="text-stone-400 text-[11px]">Submit new catering inquiry. Protected by per-client IP rate limit (5 submissions per 15 min).</p>
-      </div>
-    </div>
-  </div>
-
-  <footer class="border-t border-stone-800 pt-6 text-center text-xs text-stone-500">
-    Restoran Wawasan Pak Usop &copy; 2026. Halal Catering MCP Server v1.3.10.
-  </footer>
-</body>
-</html>`;
-
-  return res.type('text/html').send(html);
-});
-
-// POST /api/mcp/call - Direct HTTP Tool Call (Finding 6 & 7 Fix)
-router.post('/call', async (req: Request, res: Response) => {
-  if (!isAuthorized(req)) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-AI-API-KEY' });
+  if (!tool || typeof tool !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid "tool" parameter' });
   }
 
   try {
-    const { name, arguments: args = {} } = req.body || {};
-    if (!name) {
-      return res.status(400).json({ error: 'Tool "name" is required in request body.' });
-    }
-
     const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'unknown_ip').split(',')[0].trim();
 
-    if (name === 'get_menu_items') {
-      const result = await executeGetMenuItems(args);
-      return res.json({ success: true, result });
-    }
-    if (name === 'calculate_catering_estimate') {
-      const result = await executeCalculateEstimate(args);
-      return res.json({ success: true, result });
-    }
-    if (name === 'check_order_status') {
-      const result = await executeCheckOrderStatus(args);
-      return res.json({ success: true, result });
-    }
-    if (name === 'get_calendar_availability') {
-      const result = await executeGetCalendarAvailability(args);
-      return res.json({ success: true, result });
-    }
-    if (name === 'submit_catering_inquiry') {
-      const result = await executeSubmitInquiry(args, clientIp);
-      return res.json({ success: true, result });
+    let result: any;
+    switch (tool) {
+      case 'get_menu_items':
+        result = await mcpContextStorage.run({ clientIp }, () => executeGetMenuItems(args || {}));
+        break;
+      case 'calculate_catering_estimate':
+        result = await mcpContextStorage.run({ clientIp }, () => executeCalculateEstimate(args || {}));
+        break;
+      case 'check_order_status':
+        result = await mcpContextStorage.run({ clientIp }, () => executeCheckOrderStatus(args || {}));
+        break;
+      case 'get_calendar_availability':
+        result = await mcpContextStorage.run({ clientIp }, () => executeGetCalendarAvailability(args || {}));
+        break;
+      case 'submit_catering_inquiry':
+        result = await mcpContextStorage.run({ clientIp }, () => executeSubmitInquiry(args || {}));
+        break;
+      default:
+        return res.status(400).json({ error: `Unknown tool: ${tool}` });
     }
 
-    return res.status(404).json({
-      error: `Unknown tool '${name}'.`,
-      supportedTools: [
-        'get_menu_items',
-        'calculate_catering_estimate',
-        'check_order_status',
-        'get_calendar_availability',
-        'submit_catering_inquiry'
-      ]
-    });
+    return res.json({ success: true, result });
   } catch (err: any) {
-    return res.status(500).json({ error: err?.message || String(err) });
+    console.error(`[MCP Tool Error] ${tool}:`, err);
+    return res.status(500).json({ success: false, error: err?.message || 'Tool execution failed' });
   }
 });
 
-// GET /api/mcp/openapi.json & /api/docs/openapi.json
-const getOpenApiSpec = (hostUrl: string) => ({
-  openapi: '3.0.3',
-  info: {
-    title: 'Restoran Wawasan Pak Usop - AI & MCP API',
-    description: 'Complete OpenAPI 3.0 specification for Restoran Wawasan Pak Usop Halal Catering.',
-    version: '1.3.10'
-  },
-  servers: [{ url: hostUrl }],
-  paths: {
-    '/api/mcp': {
-      post: {
-        summary: 'Connect to MCP Server Streamable HTTP JSON-RPC endpoint',
-        description: 'Post JSON-RPC messages and establish streaming connection.'
-      }
+router.get('/openapi.json', (_req: Request, res: Response) => {
+  return res.json({
+    openapi: '3.1.0',
+    info: {
+      title: 'Restoran Wawasan Pak Usop - MCP API',
+      version: '1.3.10',
+      description: 'Native Model Context Protocol (MCP) server for Restoran Wawasan Pak Usop Halal Catering.'
     },
-    '/api/mcp/tools': {
-      get: {
-        summary: 'List MCP Tools',
-        description: 'Returns available function calling schemas.'
-      }
-    },
-    '/api/mcp/call': {
-      post: {
-        summary: 'Execute MCP Tool',
-        description: 'Direct tool execution endpoint.'
+    servers: [{ url: 'https://restoran-wawasan-bio.onrender.com', description: 'Production' }],
+    paths: {
+      '/api/mcp': {
+        get: {
+          summary: 'MCP Server Discovery',
+          responses: {
+            '200': { description: 'MCP server discovery JSON' }
+          }
+        }
+      },
+      '/api/mcp/tools': {
+        get: {
+          summary: 'List Available MCP Tools',
+          responses: {
+            '200': { description: 'List of available tools' }
+          }
+        }
+      },
+      '/api/mcp/call': {
+        post: {
+          summary: 'Execute MCP Tool',
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    tool: { type: 'string', description: 'Tool name to execute' },
+                    args: { type: 'object', description: 'Tool arguments' }
+                  },
+                  required: ['tool']
+                }
+              }
+            }
+          },
+          responses: {
+            '200': { description: 'Tool execution result' }
+          }
+        }
       }
     }
-  }
-});
-
-router.get('/openapi.json', (req: Request, res: Response) => {
-  const protocol = req.protocol || 'http';
-  const host = req.get('host') || 'localhost:3000';
-  return res.json(getOpenApiSpec(`${protocol}://${host}`));
+  });
 });
 
 export default router;

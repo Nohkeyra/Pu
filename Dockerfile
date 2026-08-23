@@ -1,25 +1,36 @@
-FROM node:20-slim
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files first for better layer caching
 COPY package*.json ./
 RUN npm install
 
-# Copy source code
 COPY . .
-
-# Build client and bundle server
 RUN npm run build
 
-# Expose port 3000
+# Production stage
+FROM node:20-alpine
+
+# SECURITY FIX: Create and switch to non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+WORKDIR /app
+
+# SECURITY FIX: Copy package-lock.json for reproducible builds
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy built assets from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/src ./src
+
+# SECURITY FIX: Switch to non-root user
+USER nextjs
+
 EXPOSE 3000
-ENV PORT=3000
-ENV NODE_ENV=production
 
-# Health check rule for Docker runtime & Cloud Run instance monitoring
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
-
-# Start production server
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]

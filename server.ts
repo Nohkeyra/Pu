@@ -9,7 +9,6 @@ import { randomUUID } from 'crypto';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import { getFirestore } from './server/firebaseAdmin.js';
 
-// Import modular API routers
 import authRoutes from './server/routes/authRoutes.js';
 import orderRoutes from './server/routes/orderRoutes.js';
 import menuRoutes from './server/routes/menuRoutes.js';
@@ -47,19 +46,24 @@ function isAllowedOrigin(origin: string): boolean {
 
   const hostname = parsed.hostname.toLowerCase();
 
-  // All AI Studio sandboxes, preview environments & Cloud Run instances
+  // SECURITY FIX: Removed broad .google.com / .web.app / .firebaseapp.com wildcards
+  // that allowed any subdomain (including attacker-owned ones) to bypass CORS.
+  const ALLOWED_HOSTS = new Set([
+    'aistudio.google.com',
+    'ai.studio',
+    'claude.ai',
+    'anthropic.com',
+    'localhost',
+    '127.0.0.1',
+  ]);
+
+  if (ALLOWED_HOSTS.has(hostname)) return true;
+
+  if (hostname.endsWith('.onrender.com')) return true;
   if (hostname.endsWith('.run.app')) return true;
-  if (hostname === 'aistudio.google.com' || hostname.endsWith('.aistudio.google.com') || hostname === 'ai.studio' || hostname.endsWith('.ai.studio')) return true;
-  if (hostname.endsWith('.google.com') || hostname.endsWith('.web.app') || hostname.endsWith('.firebaseapp.com')) return true;
-
-  // Render domains
-  if (hostname.endsWith('.onrender.com') || hostname === 'onrender.com') return true;
-
-  // Claude.ai / Anthropic Connectors
-  if (hostname === 'claude.ai' || hostname.endsWith('.claude.ai') || hostname === 'anthropic.com' || hostname.endsWith('.anthropic.com')) return true;
-
-  // Local development / Capacitor / testing
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+  if (hostname.endsWith('.aistudio.google.com')) return true;
+  if (hostname.endsWith('.claude.ai')) return true;
+  if (hostname.endsWith('.anthropic.com')) return true;
 
   return false;
 }
@@ -68,7 +72,6 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Request ID tracing middleware (X-Request-Id header)
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const requestId = (req.headers['x-request-id'] as string) || randomUUID();
     (req as any).requestId = requestId;
@@ -101,15 +104,14 @@ async function startServer() {
     })
   );
 
-  app.use(express.json({ limit: '50mb' }));
+  // SECURITY FIX: Reduced from 50mb to 5mb general limit.
+  app.use(express.json({ limit: '5mb' }));
 
-  // API & Cloud Run Health Check Endpoint (/health and /api/health)
   const healthCheckHandler = async (req: express.Request, res: express.Response) => {
     const uptime = process.uptime();
     const timestamp = new Date().toISOString();
     const detectedPlatform = (req as any).detectedPlatform || detectServerPlatform(req);
 
-    // 1. Database Connection Status Check (Firestore)
     let dbStatus: 'connected' | 'disconnected' | 'optional' = 'optional';
     let dbError: string | undefined;
     try {
@@ -126,7 +128,6 @@ async function startServer() {
       dbError = err?.message || String(err);
     }
 
-    // 2. Disk Usage Status Check
     let diskStatus = {
       status: 'ok',
       totalBytes: 0,
@@ -160,8 +161,6 @@ async function startServer() {
       };
     }
 
-    // Server process is running and able to serve web requests.
-    // Cloud Run startup probes require a 200 OK so that container routing is activated.
     res.status(200).json({
       status: 'ok',
       platform: detectedPlatform,
@@ -182,12 +181,10 @@ async function startServer() {
   app.get('/health', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
-  // Dedicated root route handler for AI connectors, MCP discovery, and browser client serving
   app.get('/', (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const accept = (req.headers.accept as string) || '';
     const userAgent = (req.headers['user-agent'] as string) || '';
 
-    // If it's a connector, AI tool, or explicitly asks for JSON
     if (accept.includes('application/json') || /claude|anthropic|connector|mcp|curator|agent/i.test(userAgent)) {
       const protocol = req.protocol || 'https';
       const host = req.get('host') || 'localhost:3000';
@@ -206,7 +203,6 @@ async function startServer() {
       });
     }
 
-    // For regular browsers in production, serve index.html directly
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       const distPath = fs.existsSync(path.join(process.cwd(), 'dist', 'client'))
@@ -221,23 +217,12 @@ async function startServer() {
       }
     }
 
-    // In development or fallback, pass to Vite middleware
     next();
   });
 
-  // NOTE: The legacy "top-level RFC 9728, OAuth & MCP discovery probe interceptor"
-  // that used to live here has been removed. It matched rawUrl.endsWith('/mcp'),
-  // which also matched the REAL streamable-HTTP MCP endpoint at /api/mcp — so every
-  // genuine JSON-RPC request from Claude Connectors (initialize, tools/call, etc.)
-  // was being hijacked and answered with a fake discovery stub instead of ever
-  // reaching mcpTransport. mcpRoutes.ts already implements all of the discovery,
-  // OAuth-probe, and health-check behavior this block duplicated, scoped to the
-  // correct sub-paths — so removing this is safe and fixes the connector handshake.
-
-  // Mount Modular API Routers
+  // SECURITY FIX: Removed duplicate `app.use('/api', orderRoutes)`
   app.use('/api/admin', authRoutes);
   app.use('/api/orders', orderRoutes);
-  app.use('/api', orderRoutes);
   app.use('/api/menu', menuRoutes);
   app.use('/api/admin/menu', menuRoutes);
   app.use('/api', updateRoutes);
@@ -248,7 +233,6 @@ async function startServer() {
   app.use('/api/docs', mcpRoutes);
   app.use('/.well-known', mcpRoutes);
 
-  // API 404 handler to ensure /api/* calls return JSON instead of HTML
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];
     return res.status(404).json({
@@ -258,7 +242,6 @@ async function startServer() {
     });
   });
 
-  // Vite development middleware or static production serving
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -293,7 +276,6 @@ async function startServer() {
     });
   }
 
-  // Global Express error handler returning JSON with request ID
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];

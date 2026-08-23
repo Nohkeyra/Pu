@@ -5,6 +5,61 @@ import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
 
 const router = Router();
 
+const ALLOWED_CATEGORIES = new Set(['breakfast', 'lunch', 'hi tea', 'drinks']);
+const ALLOWED_SUITABILITY = new Set(['breakfast_hitea', 'lunch', undefined]);
+
+const NAME_REGEX = /^[a-zA-Z0-9\s\-'&/().]{1,100}$/;
+
+function sanitizeString(val: unknown, maxLen = 500): string {
+  if (typeof val !== 'string') return '';
+  const trimmed = val.trim();
+  if (trimmed.length > maxLen) return trimmed.slice(0, maxLen);
+  return trimmed;
+}
+
+function validateMenuItem(body: any): { valid: false; error: string } | { valid: true; data: any } {
+  const nameEn = sanitizeString(body.nameEn, 100);
+  const nameBm = sanitizeString(body.nameBm, 100);
+
+  if (!nameEn || !nameBm) {
+    return { valid: false, error: 'Missing required menu item fields (nameEn, nameBm)' };
+  }
+  if (!NAME_REGEX.test(nameEn) || !NAME_REGEX.test(nameBm)) {
+    return { valid: false, error: 'Name fields contain invalid characters.' };
+  }
+
+  const price = Number(body.price);
+  if (isNaN(price) || price < 0 || price > 9999) {
+    return { valid: false, error: 'Price must be a number between 0 and 9999.' };
+  }
+
+  const category = sanitizeString(body.category, 20) || 'lunch';
+  if (!ALLOWED_CATEGORIES.has(category)) {
+    return { valid: false, error: `Invalid category. Allowed: ${Array.from(ALLOWED_CATEGORIES).join(', ')}` };
+  }
+
+  const descEn = sanitizeString(body.descEn, 500);
+  const descBm = sanitizeString(body.descBm, 500);
+  const suitability = body.suitability !== undefined ? sanitizeString(body.suitability, 30) : undefined;
+
+  if (suitability !== undefined && !ALLOWED_SUITABILITY.has(suitability)) {
+    return { valid: false, error: 'Invalid suitability value.' };
+  }
+
+  return {
+    valid: true,
+    data: {
+      nameEn,
+      nameBm,
+      descEn,
+      descBm,
+      price,
+      category,
+      suitability,
+      available: body.available !== undefined ? Boolean(body.available) : true,
+    }
+  };
+}
 
 router.get('/', async (_req, res) => {
   try {
@@ -33,43 +88,49 @@ router.get('/', async (_req, res) => {
 router.post('/', verifyAdminToken, async (req, res) => {
   try {
     const db = getFirestore();
-    
+
     // Bulk replace mode
     if (Array.isArray(req.body.items)) {
+      if (req.body.items.length > 200) {
+        return res.status(400).json({ error: 'Maximum 200 items allowed in bulk replace.' });
+      }
+
+      const validatedItems = [];
+      for (const item of req.body.items) {
+        const validation = validateMenuItem(item);
+        if (!validation.valid) {
+          return res.status(400).json({ error: validation.error });
+        }
+        validatedItems.push(validation.data);
+      }
+
       const batch = db.batch();
       const oldSnap = await db.collection('menu').get();
       oldSnap.docs.forEach(doc => batch.delete(doc.ref));
 
-      req.body.items.forEach((item: any) => {
-        const docRef = item.id ? db.collection('menu').doc(String(item.id)) : db.collection('menu').doc();
+      validatedItems.forEach((item: any, index: number) => {
+        const rawItem = req.body.items[index];
+        const docRef = rawItem.id ? db.collection('menu').doc(String(rawItem.id)) : db.collection('menu').doc();
         batch.set(docRef, {
-          available: item.available !== undefined ? Boolean(item.available) : true,
           ...item,
           updatedAt: new Date().toISOString()
         });
       });
 
       await batch.commit();
-      return res.json({ success: true, count: req.body.items.length });
+      return res.json({ success: true, count: validatedItems.length });
     }
 
     // Single item add mode
-    const { nameEn, nameBm, descEn, descBm, price, category, available, suitability } = req.body;
-    if (!nameEn || !nameBm || price === undefined) {
-      return res.status(400).json({ error: 'Missing required menu item fields (nameEn, nameBm, price)' });
+    const validation = validateMenuItem(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
     }
 
     const docRef = req.body.id ? db.collection('menu').doc(String(req.body.id)) : db.collection('menu').doc();
     const newItem = {
       id: docRef.id,
-      nameEn: String(nameEn).trim(),
-      nameBm: String(nameBm).trim(),
-      descEn: String(descEn || '').trim(),
-      descBm: String(descBm || '').trim(),
-      price: Number(price) || 0,
-      category: category || 'lunch',
-      suitability: suitability || undefined,
-      available: available !== undefined ? Boolean(available) : true,
+      ...validation.data,
       updatedAt: new Date().toISOString()
     };
 
@@ -84,25 +145,21 @@ router.post('/', verifyAdminToken, async (req, res) => {
 router.put('/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nameEn, nameBm, descEn, descBm, price, category, available, suitability } = req.body;
-    
     const db = getFirestore();
     const docRef = db.collection('menu').doc(id);
     const existing = await docRef.get();
-    
+
     if (!existing.exists) {
       return res.status(404).json({ error: 'Menu item not found' });
     }
 
+    const validation = validateMenuItem(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
     const updatedData = {
-      nameEn: nameEn !== undefined ? String(nameEn).trim() : existing.data()?.nameEn,
-      nameBm: nameBm !== undefined ? String(nameBm).trim() : existing.data()?.nameBm,
-      descEn: descEn !== undefined ? String(descEn).trim() : existing.data()?.descEn,
-      descBm: descBm !== undefined ? String(descBm).trim() : existing.data()?.descBm,
-      price: price !== undefined ? Number(price) : existing.data()?.price,
-      category: category !== undefined ? category : existing.data()?.category,
-      suitability: suitability !== undefined ? suitability : existing.data()?.suitability,
-      available: available !== undefined ? Boolean(available) : (existing.data()?.available ?? true),
+      ...validation.data,
       updatedAt: new Date().toISOString()
     };
 
@@ -118,7 +175,7 @@ router.patch('/:id/toggle', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { available } = req.body;
-    
+
     const db = getFirestore();
     const docRef = db.collection('menu').doc(id);
     const existing = await docRef.get();
