@@ -119,7 +119,7 @@ export default function PageShell({
       : 'py-6';
 
   return (
-    <div className="page-shell relative">
+    <div className="page-shell min-h-screen relative bg-cream dark:bg-background flex flex-col">
       {/* ---- Top App Shell Header (sticky) ---- */}
       <header className="page-shell__header">
         <div className="page-shell__main flex h-14 min-h-[44px] items-center gap-2 sm:gap-3">
@@ -212,7 +212,7 @@ export default function PageShell({
       ) : null}
 
       {/* ---- Main content area (uniform gutter) ---- */}
-      <main role="main" className={cn('page-shell__main relative', variantClass)}>
+      <main role="main" className={cn('page-shell__main relative flex-grow', variantClass)}>
         {/*
           Optional decorative Batik kept as a fixed background only —
           image asset path / file is untouched.
