@@ -6,8 +6,9 @@ import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
 import { cn } from '@/lib/utils';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { RefreshCw } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { BungaRayaSpinner } from '@/components/ui/BungaRayaSpinner';
 import { logScreenView, setAnalyticsUserId } from '@/services/analyticsService';
 import { setCrashlyticsUserId } from '@/services/crashlyticsService';
 
@@ -107,6 +108,7 @@ export default function AppContent() {
   const location = useLocation();
   const { pathname } = location;
   const [isAdmin, setIsAdmin] = useState(false);
+  const { tl } = useLanguage();
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -153,14 +155,27 @@ export default function AppContent() {
           style={{ transform: `translateY(${Math.min(pullDistance, 120)}px)` }}
         >
           <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
-            <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
+            <BungaRayaSpinner className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} showPulseGlow={false} />
+            <span>
+              {isRefreshing 
+                ? tl('Refreshing app...', 'Menyegarkan aplikasi...') 
+                : pullDistance > 80 
+                  ? tl('Release to refresh', 'Lepaskan untuk menyegar') 
+                  : tl('Pull down to refresh', 'Tarik ke bawah untuk menyegar')}
+            </span>
           </div>
         </div>
       )}
 
       <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-amber-500" /></div>}>
+        <Suspense fallback={
+          <div className="min-h-screen flex flex-col items-center justify-center gap-3.5 bg-cream dark:bg-background">
+            <BungaRayaSpinner className="w-12 h-12 text-amber-500 dark:text-[var(--color-sunshine-cta)]" />
+            <span className="text-xs font-bold tracking-widest uppercase text-amber-700/80 dark:text-amber-400/80 animate-pulse">
+              {tl('Loading...', 'Memuatkan...')}
+            </span>
+          </div>
+        }>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageTransition><LoginPageComp /></PageTransition>} />

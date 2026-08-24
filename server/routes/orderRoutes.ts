@@ -546,7 +546,7 @@ router.post('/poke', customerOrderActionLimiter, async (req, res) => {
 
     await orderRef.update({
       lastPokedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return res.json({ success: true, message: 'Admin has been nudged!' });

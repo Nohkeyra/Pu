@@ -54,7 +54,7 @@ export default function StorySection() {
             <div className="relative max-w-md mx-auto lg:max-w-none">
               <div className="relative rounded-3xl overflow-hidden aspect-[16/9] border border-deep-forest/[0.03] dark:border-white/5 shadow-premium bg-white dark:bg-card">
                 <ResponsiveImage 
-                  src="/assets/story-interior.jpg" 
+                  src="/assets/heritage/story-interior.jpg" 
                   alt={language === 'bm' ? 'Ruang Makan Restoran Wawasan' : 'Restoran Wawasan Dining Area'} 
                   objectFit="cover"
                   containerClassName="w-full h-full"

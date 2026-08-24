@@ -29,7 +29,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi lemak harum bersama sambal sotong pekat, telur, timun & kacang',
     price: 11.00,
     category: 'breakfast',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'laksa_johor_sarapan',
@@ -39,7 +39,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Laksa Johor tradisi dengan spageti, kuah ikan pekat, ulam-ulaman segar & limau',
     price: 11.00,
     category: 'breakfast',
-    image: '/assets/images/laksa_johor_drawn_1786969106862.jpg'
+    image: '/assets/dishes/vector/laksa_johor.jpg'
   },
   {
     id: 'asam_laksa_sarapan',
@@ -49,7 +49,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi laksa kuah asam pedas ikan bersama timun, nanas & daun pudina',
     price: 10.00,
     category: 'breakfast',
-    image: '/assets/images/asam_laksa_drawn_1786969613303.jpg'
+    image: '/assets/dishes/vector/asam_laksa.jpg'
   },
   {
     id: 'mee_kari_sarapan',
@@ -59,7 +59,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi kuning dalam kuah kari santan pekat bersama tauhu pok, kerang & telur',
     price: 10.00,
     category: 'breakfast',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'lontong_singapore',
@@ -69,7 +69,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi himpit kuah lodeh sayuran bersantan pekat bersama serunding kelapa & sambal',
     price: 9.50,
     category: 'breakfast',
-    image: '/assets/images/lontong_drawn_1786678109750.jpg'
+    image: '/assets/dishes/vector/lontong.jpg'
   },
   {
     id: 'soto_ayam_sarapan',
@@ -79,7 +79,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Sup ayam berempah dengan nasi himpit, carikan ayam, kacang & bergedil kentang',
     price: 9.50,
     category: 'breakfast',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
   {
     id: 'mee_soto_sarapan',
@@ -89,7 +89,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi kuning dalam sup ayam berempah dengan carikan ayam & sambal kicap pedas',
     price: 9.50,
     category: 'breakfast',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
   {
     id: 'nasi_lemak_ayam_goreng',
@@ -99,7 +99,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi lemak santan wangi bersama ayam goreng berempah rangup & sambal tumis',
     price: 9.00,
     category: 'breakfast',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'mee_siam_sarapan',
@@ -109,7 +109,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bihun goreng siam masam manis pedas dihidang bersama telur, taukua & sambal',
     price: 9.00,
     category: 'breakfast',
-    image: '/assets/images/laksa_johor_drawn_1786969106862.jpg'
+    image: '/assets/dishes/vector/laksa_johor.jpg'
   },
   {
     id: 'mee_rebus_sarapan',
@@ -119,7 +119,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi kuning dengan kuah pekat keledek berempah bersama telur, tauhu & limau kasturi',
     price: 9.00,
     category: 'breakfast',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'bihun_goreng',
@@ -129,7 +129,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bihun goreng kampung tradisi dengan sayur-sayuran dan perencah lazat',
     price: 8.50,
     category: 'breakfast',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'maggi_goreng',
@@ -139,7 +139,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi Maggi goreng kuali panas dengan telur, sayur dan tauhu',
     price: 8.00,
     category: 'breakfast',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'bubur_ayam',
@@ -149,7 +149,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bubur nasi ayam lembut aromatik bersama daun bawang, bawang goreng & halia',
     price: 7.50,
     category: 'breakfast',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
   {
     id: 'mee_goreng_mamak',
@@ -159,7 +159,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi goreng mamak pedas berkicap dengan kentang, tauhu, telur & limau kasturi',
     price: 7.50,
     category: 'breakfast',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'roti_sardin',
@@ -169,7 +169,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Roti canai bakar berinti sambal sardin pedas berempah',
     price: 5.50,
     category: 'breakfast',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'nasi_lemak_biasa',
@@ -179,7 +179,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi lemak daun pisang klasik bersama sambal tumis, telur rebus, timun & kacang',
     price: 5.50,
     category: 'breakfast',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'roti_telur',
@@ -189,7 +189,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Roti canai lembut berinti telur dihidang bersama kuah dhal & kari',
     price: 4.50,
     category: 'breakfast',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'roti_boom',
@@ -199,7 +199,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Roti boom tebal, rangup, manis berlemak marjerin',
     price: 4.50,
     category: 'breakfast',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'tosai',
@@ -209,7 +209,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Tosai garing tradisi dihidang bersama kuah kari dhal & chutney kelapa',
     price: 3.50,
     category: 'breakfast',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'roti_canai',
@@ -219,7 +219,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Roti canai garing lembut di luar bersama kuah dhal aromatik',
     price: 3.50,
     category: 'breakfast',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'kuih_muih_campur_sarapan',
@@ -229,7 +229,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Aneka hidangan kuih-muih tradisional Melayu manis & berempah',
     price: 3.00,
     category: 'breakfast',
-    image: '/assets/images/kuih_muih_drawn_1786678145689.jpg'
+    image: '/assets/dishes/vector/kuih_muih.jpg'
   },
   {
     id: 'telur_mata_sapi_sarapan',
@@ -239,7 +239,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Telur goreng mata sapi kuning cair menyelerakan',
     price: 2.50,
     category: 'breakfast',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
 
   // ==========================================
@@ -253,7 +253,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Daging kambing lembut dimasak kari berempah pekat tradisi',
     price: 19.00,
     category: 'lunch',
-    image: '/assets/images/kari_kambing_drawn_1786969139262.jpg'
+    image: '/assets/dishes/vector/kari_kambing.jpg'
   },
   {
     id: 'rendang_daging',
@@ -263,7 +263,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Rendang daging lembu tok asli dengan kerisik wangi dan santan pekat',
     price: 17.00,
     category: 'lunch',
-    image: '/assets/images/rendang_daging_drawn_1786678134956.jpg'
+    image: '/assets/dishes/vector/rendang_daging.jpg'
   },
   {
     id: 'sambal_udang',
@@ -273,7 +273,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Udang laut segar dimasak sambal tumis pedas manis menyelerakan',
     price: 17.00,
     category: 'lunch',
-    image: '/assets/images/sambal_udang_drawn_1786969546168.jpg'
+    image: '/assets/dishes/vector/sambal_udang.jpg'
   },
   {
     id: 'udang_goreng_tepung',
@@ -283,7 +283,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Udang goreng tepung celup rangup keemasan',
     price: 16.00,
     category: 'lunch',
-    image: '/assets/images/sambal_udang_drawn_1786969546168.jpg'
+    image: '/assets/dishes/vector/sambal_udang.jpg'
   },
   {
     id: 'nasi_briyani',
@@ -293,7 +293,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi briyani beras basmati wangi berempah bersama kuah dalca & acar buah',
     price: 16.00,
     category: 'lunch',
-    image: '/assets/images/nasi_briyani_drawn_1786969169870.jpg'
+    image: '/assets/dishes/vector/nasi_briyani.jpg'
   },
   {
     id: 'dendeng',
@@ -303,7 +303,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Daging dendeng kepingan rangup disalut sambal kicap manis pedas',
     price: 16.00,
     category: 'lunch',
-    image: '/assets/images/rendang_daging_drawn_1786678134956.jpg'
+    image: '/assets/dishes/vector/rendang_daging.jpg'
   },
   {
     id: 'daging_masak_merah',
@@ -313,7 +313,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Daging lembu lembut dimasak sos merah tomato, bawang dan lada benggala',
     price: 16.00,
     category: 'lunch',
-    image: '/assets/images/rendang_daging_drawn_1786678134956.jpg'
+    image: '/assets/dishes/vector/rendang_daging.jpg'
   },
   {
     id: 'sambal_sotong',
@@ -323,7 +323,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Sotong segar lembut dimasak sambal tumis bawang beraroma',
     price: 15.00,
     category: 'lunch',
-    image: '/assets/images/sambal_udang_drawn_1786969546168.jpg'
+    image: '/assets/dishes/vector/sambal_udang.jpg'
   },
   {
     id: 'asam_pedas',
@@ -333,7 +333,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Masakan asam pedas Melaka asli pekat dengan daun kesum & bunga kantan',
     price: 14.00,
     category: 'lunch',
-    image: '/assets/images/asam_pedas_drawn_1786678089136.jpg'
+    image: '/assets/dishes/vector/asam_pedas.jpg'
   },
   {
     id: 'daging_masak_hitam',
@@ -343,7 +343,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Daging lembu masak hitam manis berempah dengan kismis dan bawang karamel',
     price: 14.00,
     category: 'lunch',
-    image: '/assets/images/rendang_daging_drawn_1786678134956.jpg'
+    image: '/assets/dishes/vector/rendang_daging.jpg'
   },
   {
     id: 'ikan_keli_sambal',
@@ -353,7 +353,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ikan keli goreng garing disalut sambal tumis merah pedas menyengat',
     price: 13.00,
     category: 'lunch',
-    image: '/assets/images/ikan_keli_drawn_1786969559146.jpg'
+    image: '/assets/dishes/vector/ikan_keli.jpg'
   },
   {
     id: 'ikan_goreng_berlada',
@@ -363,7 +363,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ikan goreng garing ditumis dengan cili merah & hijau tumbuk',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/ikan_keli_drawn_1786969559146.jpg'
+    image: '/assets/dishes/vector/ikan_keli.jpg'
   },
   {
     id: 'masak_lemak_cili_api',
@@ -373,7 +373,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Gulai kuning santan cili api Negeri Sembilan pekat pedas berkrim',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'ayam_paprik',
@@ -383,7 +383,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ayam paprik ditumis bersama serai, daun limau purut dan sayuran segar',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/ayam_berempah_drawn_1786678122149.jpg'
+    image: '/assets/dishes/vector/ayam_berempah.jpg'
   },
   {
     id: 'rendang_ayam',
@@ -393,7 +393,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Rendang ayam tradisi dengan kerisik wangi dan aroma daun kunyit',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/rendang_daging_drawn_1786678134956.jpg'
+    image: '/assets/dishes/vector/rendang_daging.jpg'
   },
   {
     id: 'ayam_kurma',
@@ -403,7 +403,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Gulai kurma ayam berempah wangi bersama kentang dan tomato',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/ayam_berempah_drawn_1786678122149.jpg'
+    image: '/assets/dishes/vector/ayam_berempah.jpg'
   },
   {
     id: 'ayam_goreng_berempah',
@@ -413,7 +413,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ayam goreng berempah panas dengan serdak serai & ketumbar rangup',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/images/ayam_berempah_drawn_1786678122149.jpg'
+    image: '/assets/dishes/vector/ayam_berempah.jpg'
   },
   {
     id: 'nasi_campur',
@@ -423,7 +423,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Set hidangan lengkap Nasi Campur dengan pilihan lauk tengahari',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/nasi-campur.jpg'
+    image: '/assets/dishes/photos/nasi-campur.jpg'
   },
   {
     id: 'ayam_masak_kicap',
@@ -433,7 +433,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ayam masak kicap manis pekat bersama hirisan bawang besar dan cili',
     price: 11.00,
     category: 'lunch',
-    image: '/assets/images/ayam_berempah_drawn_1786678122149.jpg'
+    image: '/assets/dishes/vector/ayam_berempah.jpg'
   },
   {
     id: 'ayam_masak_merah',
@@ -443,7 +443,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ayam masak merah kenduri bersama sos tomato pekat dan kacang pis',
     price: 11.00,
     category: 'lunch',
-    image: '/assets/images/ayam_berempah_drawn_1786678122149.jpg'
+    image: '/assets/dishes/vector/ayam_berempah.jpg'
   },
   {
     id: 'nasi_goreng_kampung',
@@ -453,7 +453,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi goreng kampung dengan ikan bilis garing, kangkung dan cili padi tumbuk',
     price: 10.00,
     category: 'lunch',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'nasi_goreng_cina',
@@ -463,7 +463,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi goreng Cina harum tidak pedas bersama telur dan sayur campur',
     price: 9.50,
     category: 'lunch',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'pucuk_paku_masak_lemak',
@@ -473,7 +473,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Pucuk paku segar dimasak lemak kuning santan bersama udang kering',
     price: 8.00,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'kerabu',
@@ -483,7 +483,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Ulam-ulaman kerabu tradisi bersama kerisik, limau kasturi dan sambal belacan',
     price: 8.00,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'kangkung_belacan',
@@ -493,7 +493,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Kangkung segar ditumis dengan sambal belacan harum pedas berapi',
     price: 7.00,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'sayur_campur',
@@ -503,7 +503,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Sayur-sayuran campur segar ditumis rangup bersama bawang putih',
     price: 7.00,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'nasi_tomato',
@@ -513,7 +513,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi tomato wangi dimasak dengan minyak sapi, tomato puree & rempah ratus',
     price: 6.00,
     category: 'lunch',
-    image: '/assets/images/nasi_briyani_drawn_1786969169870.jpg'
+    image: '/assets/dishes/vector/nasi_briyani.jpg'
   },
   {
     id: 'taugeh_goreng',
@@ -523,7 +523,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Taugeh rangup ditumis bersama tauhu, kucai dan ikan masin',
     price: 5.50,
     category: 'lunch',
-    image: '/assets/images/masak_lemak_drawn_1786969572016.jpg'
+    image: '/assets/dishes/vector/masak_lemak.jpg'
   },
   {
     id: 'nasi_minyak',
@@ -533,7 +533,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Nasi minyak tradisi wangi berlemak dengan rempah ratus kenduri',
     price: 5.00,
     category: 'lunch',
-    image: '/assets/images/nasi_briyani_drawn_1786969169870.jpg'
+    image: '/assets/dishes/vector/nasi_briyani.jpg'
   },
   {
     id: 'telur_dadar',
@@ -543,7 +543,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Telur dadar goreng gebu dengan hirisan bawang besar dan cili',
     price: 2.50,
     category: 'lunch',
-    image: '/assets/images/roti_canai_drawn_1786969584576.jpg'
+    image: '/assets/dishes/vector/roti_canai.jpg'
   },
   {
     id: 'telur_mata_sapi_lunch',
@@ -553,7 +553,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Telur mata sapi goreng garing',
     price: 2.50,
     category: 'lunch',
-    image: '/assets/images/nasi_lemak_drawn_1786678078469.jpg'
+    image: '/assets/dishes/vector/nasi_lemak.jpg'
   },
   {
     id: 'bergedil',
@@ -563,7 +563,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bergedil kentang goreng disalut telur beraroma daging & daun sup',
     price: 3.00,
     category: 'lunch',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
 
   // ==========================================
@@ -577,7 +577,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Laksa Johor tradisi dengan kuah ikan pekat dan ulam-ulaman segar',
     price: 11.00,
     category: 'hi tea',
-    image: '/assets/images/laksa_johor_drawn_1786969106862.jpg'
+    image: '/assets/dishes/vector/laksa_johor.jpg'
   },
   {
     id: 'asam_laksa_petang',
@@ -587,7 +587,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi laksa asam pedas beraroma dengan hirisan nanas, timun dan pudina',
     price: 10.00,
     category: 'hi tea',
-    image: '/assets/images/asam_laksa_drawn_1786969613303.jpg'
+    image: '/assets/dishes/vector/asam_laksa.jpg'
   },
   {
     id: 'mee_kari_petang',
@@ -597,7 +597,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi kari berkuah pekat santan bersama tauhu pok dan telur',
     price: 10.00,
     category: 'hi tea',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'soto_ayam_petang',
@@ -607,7 +607,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Sup ayam berempah pekat bersama nasi himpit dan bergedil kentang',
     price: 9.50,
     category: 'hi tea',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
   {
     id: 'mee_soto_petang',
@@ -617,7 +617,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi sup ayam berempah harum bersama sambal kicap pedas',
     price: 9.50,
     category: 'hi tea',
-    image: '/assets/images/soto_ayam_drawn_1786678098460.jpg'
+    image: '/assets/dishes/vector/soto_ayam.jpg'
   },
   {
     id: 'mee_siam_petang',
@@ -627,7 +627,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bihun goreng siam masam manis pedas bersama telur dan limau',
     price: 9.00,
     category: 'hi tea',
-    image: '/assets/images/laksa_johor_drawn_1786969106862.jpg'
+    image: '/assets/dishes/vector/laksa_johor.jpg'
   },
   {
     id: 'mee_rebus_petang',
@@ -637,7 +637,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi rebus kuah pekat keledek manis berempah bersama telur dan tauhu',
     price: 9.00,
     category: 'hi tea',
-    image: '/assets/images/mee_kari_drawn_1786969128509.jpg'
+    image: '/assets/dishes/vector/mee_kari.jpg'
   },
   {
     id: 'rojak_singapore',
@@ -647,7 +647,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Rojak tauhu, timun dan cakoi rangup digaul sos petis manis pedas & kacang tumbuk',
     price: 9.00,
     category: 'hi tea',
-    image: '/assets/images/rojak_singapore_drawn_1786969151162.jpg'
+    image: '/assets/dishes/vector/rojak_singapore.jpg'
   },
   {
     id: 'rojak_buah',
@@ -657,7 +657,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Campuran buah-buahan segar bersama sos rojak pekat dan taburan kacang garing',
     price: 8.50,
     category: 'hi tea',
-    image: '/assets/images/rojak_singapore_drawn_1786969151162.jpg'
+    image: '/assets/dishes/vector/rojak_singapore.jpg'
   },
   {
     id: 'popia',
@@ -667,7 +667,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Popia goreng garing berinti sayuran sengkuang manis berempah',
     price: 4.50,
     category: 'hi tea',
-    image: '/assets/images/pisang_goreng_drawn_1786969603197.jpg'
+    image: '/assets/dishes/vector/pisang_goreng.jpg'
   },
   {
     id: 'pisang_goreng_crisp',
@@ -677,7 +677,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Pisang goreng bertepung rangup rangup manis keemasan',
     price: 4.50,
     category: 'hi tea',
-    image: '/assets/images/pisang_goreng_drawn_1786969603197.jpg'
+    image: '/assets/dishes/vector/pisang_goreng.jpg'
   },
   {
     id: 'samosa_kentang',
@@ -687,7 +687,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Samosa kulit garing berinti kentang berempah dan kacang pis',
     price: 4.00,
     category: 'hi tea',
-    image: '/assets/images/pisang_goreng_drawn_1786969603197.jpg'
+    image: '/assets/dishes/vector/pisang_goreng.jpg'
   },
   {
     id: 'cucur_goreng_pisang',
@@ -697,7 +697,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Cucur kodok pisang lembut manis beraroma',
     price: 3.50,
     category: 'hi tea',
-    image: '/assets/images/pisang_goreng_drawn_1786969603197.jpg'
+    image: '/assets/dishes/vector/pisang_goreng.jpg'
   },
   {
     id: 'kuih_muih_campur_petang',
@@ -707,7 +707,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Aneka hidangan kuih-muih tradisional minum petang',
     price: 3.00,
     category: 'hi tea',
-    image: '/assets/images/kuih_muih_drawn_1786678145689.jpg'
+    image: '/assets/dishes/vector/kuih_muih.jpg'
   },
 
   // ==========================================
@@ -723,7 +723,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
   {
     id: 'nescafe_panas',
@@ -734,7 +734,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
   {
     id: 'teh_tarik',
@@ -745,7 +745,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/teh_tarik_drawn_1786678155597.jpg'
+    image: '/assets/dishes/vector/teh_tarik.jpg'
   },
   {
     id: 'kopi_kampung',
@@ -756,7 +756,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
   {
     id: 'nescafe_o',
@@ -767,7 +767,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
   {
     id: 'milo_o',
@@ -778,7 +778,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
   {
     id: 'teh_o',
@@ -789,7 +789,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/teh_tarik_drawn_1786678155597.jpg'
+    image: '/assets/dishes/vector/teh_tarik.jpg'
   },
   {
     id: 'kopi_o',
@@ -800,7 +800,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/images/kopi_kampung_drawn_1786678168694.jpg'
+    image: '/assets/dishes/vector/kopi_kampung.jpg'
   },
 
   // Lunch Cold / Box Drinks
@@ -813,7 +813,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   },
   {
     id: 'tetra_pak_peel_fresh_kecil',
@@ -824,7 +824,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   },
   {
     id: 'air_tetra_pak_berperisa',
@@ -835,7 +835,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   },
   {
     id: 'tetra_pak_mineral_water',
@@ -846,7 +846,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   },
   {
     id: 'air_kordial',
@@ -857,7 +857,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 2.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   },
   {
     id: 'air_mineral_botol',
@@ -868,7 +868,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 2.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/images/sirap_bandung_drawn_1786678177483.jpg'
+    image: '/assets/dishes/vector/sirap_bandung.jpg'
   }
 ];
 
@@ -883,7 +883,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 14.00,
     priceEn: 'From RM 14.00',
     priceBm: 'Daripada RM 14.00',
-    image: '/assets/images/asam-pedas.jpg',
+    image: '/assets/dishes/photos/asam-pedas.jpg',
     category: 'lunch',
     tags: ['spicy', 'fish', 'signature'],
   },
@@ -896,7 +896,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 4.50,
     priceEn: 'From RM 4.50',
     priceBm: 'Daripada RM 4.50',
-    image: '/assets/images/nasi-lemak.jpg',
+    image: '/assets/dishes/photos/nasi-lemak.jpg',
     category: 'breakfast',
     tags: ['breakfast', 'classic'],
   },
@@ -909,7 +909,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 8.50,
     priceEn: 'From RM 8.50',
     priceBm: 'Daripada RM 8.50',
-    image: '/assets/images/lontong-singapore.jpg',
+    image: '/assets/dishes/photos/lontong-singapore.jpg',
     category: 'breakfast',
     tags: ['vegetarian-friendly'],
   },
@@ -922,7 +922,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 8.00,
     priceEn: 'From RM 8.00',
     priceBm: 'Daripada RM 8.00',
-    image: '/assets/images/mee-soto.jpg',
+    image: '/assets/dishes/photos/mee-soto.jpg',
     category: 'breakfast',
   },
   {
@@ -934,7 +934,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 8.50,
     priceEn: 'From RM 8.50',
     priceBm: 'Daripada RM 8.50',
-    image: '/assets/images/soto-ayam.jpg',
+    image: '/assets/dishes/photos/soto-ayam.jpg',
     category: 'breakfast',
   },
   {
@@ -946,7 +946,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 10.00,
     priceEn: 'From RM 10.00',
     priceBm: 'Daripada RM 10.00',
-    image: '/assets/images/nasi-campur.jpg',
+    image: '/assets/dishes/photos/nasi-campur.jpg',
     category: 'lunch',
     tags: ['daily-special'],
   },
@@ -959,7 +959,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 2.50,
     priceEn: 'From RM 2.50',
     priceBm: 'Daripada RM 2.50',
-    image: '/assets/images/teh-tarik.jpg',
+    image: '/assets/dishes/photos/teh-tarik.jpg',
     category: 'drinks',
   },
   {
@@ -971,7 +971,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 2.80,
     priceEn: 'From RM 2.80',
     priceBm: 'Daripada RM 2.80',
-    image: '/assets/images/kopi_kampung.jpg',
+    image: '/assets/dishes/photos/kopi_kampung.jpg',
     category: 'drinks',
   },
 ];

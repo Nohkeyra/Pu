@@ -1,0 +1,1 @@
+import{W as e}from"./vendor-firebase-DaCEVfZ2.js";class o extends e{constructor(){super(),this.registerWindowListener("devicemotion","accel"),this.registerWindowListener("deviceorientation","orientation")}}export{o as MotionWeb};

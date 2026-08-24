@@ -153,7 +153,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           {/* FULL SIZE PUTRAJAYA STICKER BOMB WALLPAPER OVER YELLOW CANVAS */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <img
-              src={getAssetUrl('/assets/putrajaya_stickerbomb.jpg')}
+              src={getAssetUrl('/assets/heritage/putrajaya_stickerbomb.jpg')}
               alt="Putrajaya Sticker Bomb Wallpaper"
               className="w-full h-full object-cover object-center opacity-35 mix-blend-multiply scale-105"
               draggable={false}
@@ -237,7 +237,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             <div className="relative w-72 h-72">
               {!riderSvgError ? (
                 <img
-                  src={getAssetUrl('/assets/rider-grouped.svg')}
+                  src={getAssetUrl('/assets/ui/rider-grouped.svg')}
                   alt=""
                   aria-hidden="true"
                   className="w-full h-full object-contain"
@@ -247,13 +247,13 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative w-40 h-40 rounded-2xl bg-[#1b1b1e] border-2 border-[#f69913]/60 shadow-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-[10px] font-black text-white tracking-tight uppercase">Restoran</p>
-                      <p className="text-base font-black text-[#e96212] tracking-tight uppercase mt-0.5">WAWASAN</p>
-                      <div className="w-10 h-[2px] bg-[#f69913] mx-auto mt-1 rounded-full" />
-                      <p className="text-[9px] font-bold text-white/70 tracking-widest uppercase mt-1">Pak Usop</p>
-                    </div>
+                  <div className="relative w-40 h-40 flex items-center justify-center">
+                    <img
+                      src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
+                      alt="Restoran Wawasan"
+                      className="w-full h-full object-contain drop-shadow-lg"
+                      draggable={false}
+                    />
                   </div>
                 </div>
               )}
@@ -299,7 +299,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       }}
                     >
                       <img
-                        src={getAssetUrl('/assets/wawasan_logo_badge.png')}
+                        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                         alt="Restoran Wawasan"
                         className="w-[120%] h-[120%] object-contain drop-shadow-lg"
                         draggable={false}
@@ -379,7 +379,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           {/* Sticker bomb background layer */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <img
-              src={getAssetUrl('/assets/putrajaya_stickerbomb.jpg')}
+              src={getAssetUrl('/assets/heritage/putrajaya_stickerbomb.jpg')}
               alt="Putrajaya Sticker Bomb Wallpaper"
               className="w-full h-full object-cover object-center opacity-35 mix-blend-multiply scale-105"
               draggable={false}
@@ -387,7 +387,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/60 via-[#f59e0b]/50 to-[#d97706]/70" />
           </div>
           <motion.img
-            src={getAssetUrl('/assets/wawasan_logo_badge.png')}
+            src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
             alt="Restoran Wawasan"
             className="w-60 h-60 object-contain drop-shadow-2xl"
             draggable={false}

@@ -97,11 +97,11 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             onClick={onClose} 
             className="mb-6 flex items-center gap-3 select-none"
           >
-            <div className="h-12 w-12 rounded-2xl bg-white/80 dark:bg-[#1c2622] p-1.5 shadow-sm ring-1 ring-black/5 dark:ring-amber-500/20 flex items-center justify-center">
+            <div className="h-12 w-12 flex items-center justify-center">
               <TransparentLogo
-                src={getAssetUrl('/assets/wawasan_logo.svg')}
+                src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                 alt="Restoran Wawasan Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-sm"
               />
             </div>
             <div>

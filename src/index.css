@@ -324,7 +324,7 @@
 
   /* Batik Pattern Overlays — image assets preserved verbatim */
   .pattern-batik {
-    background-image: url("/assets/batik_pattern.jpg");
+    background-image: url("/assets/ui/batik_pattern.jpg");
     background-size: 140px auto;
     background-attachment: scroll;
     background-position: center;
@@ -347,7 +347,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background-image: url("/assets/batik_pattern.jpg");
+    background-image: url("/assets/ui/batik_pattern.jpg");
     background-size: 120px auto;
     background-position: center;
     background-repeat: repeat;
@@ -366,7 +366,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background-image: url("/assets/batik_pattern.jpg");
+    background-image: url("/assets/ui/batik_pattern.jpg");
     background-size: 120px auto;
     background-position: center;
     background-repeat: repeat;
@@ -382,7 +382,7 @@
     content: '';
     position: absolute;
     inset: -2px;
-    background-image: url("/assets/batik_pattern.jpg");
+    background-image: url("/assets/ui/batik_pattern.jpg");
     background-size: 120px auto;
     background-position: center;
     background-repeat: repeat;
@@ -402,7 +402,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background-image: url("/assets/batik_pattern.jpg");
+    background-image: url("/assets/ui/batik_pattern.jpg");
     background-size: 120px auto;
     background-position: center;
     background-repeat: repeat;
@@ -944,7 +944,7 @@ html.theme-transitioning *::after {
 }
 
 .batik-watermark {
-  background-image: url('/assets/batik_vector_pattern.jpg');
+  background-image: url('/assets/ui/batik_vector_pattern.jpg');
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;

@@ -135,15 +135,15 @@ export default function PageShell({
             </button>
           ) : (
             <Link to={homeRoute} className="flex items-center gap-2 min-h-[44px]">
-              <div className="h-9 w-9 rounded-xl bg-white/80 p-0.5 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
+              <div className="h-9 w-9 flex items-center justify-center">
                 {/*
                   Brand asset path preserved verbatim — visual logo /
                   Malaysian heritage graphic must remain 100% intact.
                 */}
                 <TransparentLogo
-                  src={getAssetUrl('/assets/wawasan_logo.svg')}
+                  src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                   alt="Restoran Wawasan"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-sm"
                 />
               </div>
               <span className="hidden sm:block text-sm font-extrabold tracking-tight text-deep-forest dark:text-white">

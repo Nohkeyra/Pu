@@ -525,7 +525,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       "relative w-full bg-cream dark:bg-background flex flex-col z-10",
       isEmbedded ? "h-auto" : "h-full max-w-xl border-l border-border shadow-2xl"
     )}>
-      {/* Pull to Refresh Pak Usop Indicator */}
+      {/* Pull to Refresh Indicator */}
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none"
         animate={{ 
@@ -534,16 +534,15 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       >
         <div className="relative overflow-hidden w-20 h-20 sm:w-24 sm:h-24 rounded-b-[2rem] bg-amber-500/10 shadow-lg border-b border-l border-r border-[var(--color-sunshine-cta)]/30 flex items-end justify-center backdrop-blur-md pb-2">
           <motion.img 
-            src={getAssetUrl('/assets/pak_usop.png')}
-            alt="Pak Usop"
-            className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md origin-bottom"
+            src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
+            alt="Restoran Wawasan"
+            className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md origin-bottom"
             animate={{
               scale: isRefreshing ? [1, 1.1, 1] : 1,
               rotate: isRefreshing ? [-5, 5, -5] : 0,
             }}
             transition={isRefreshing ? { repeat: Infinity, duration: 0.8, ease: "easeInOut" } : {}}
             onError={(e) => {
-              // Fallback to chef hat icon if image isn't placed yet
               (e.target as HTMLImageElement).style.display = 'none';
               (e.target as HTMLImageElement).parentElement?.classList.add('pak-usop-fallback');
             }}

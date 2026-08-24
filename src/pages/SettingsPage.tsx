@@ -48,7 +48,7 @@ function BrandMark() {
         Malaysian heritage graphic must remain 100% intact.
       */}
       <TransparentLogo
-        src={getAssetUrl('/assets/wawasan_logo.svg')}
+        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
         className="w-full h-full object-contain"
       />

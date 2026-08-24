@@ -23,11 +23,11 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 
 function BrandMark() {
   return (
-    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
+    <div className="h-11 w-11 flex items-center justify-center">
       <TransparentLogo
-        src={getAssetUrl('/assets/wawasan_logo.svg')}
+        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
+        className="w-full h-full object-contain drop-shadow-sm"
         onError={() => {
           // Fallback to png if svg fails
         }}

@@ -31,13 +31,13 @@ export function MenuItemCard({ item, isSelected, onToggle, tText }: MenuItemCard
       
       <div className="w-14 h-14 rounded-full overflow-hidden bg-stone-100 dark:bg-stone-800 shrink-0 border-2 border-white dark:border-stone-700 shadow-md relative group-hover:border-crisp-carrot/30 transition-colors">
         <img
-          src={getAssetUrl(dishImg || '/assets/images/nasi_lemak_drawn_1786678078469.jpg')}
+          src={getAssetUrl(dishImg || '/assets/dishes/vector/nasi_lemak.jpg')}
           alt={tText(item.nameEn, item.nameBm)}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           loading="lazy"
           referrerPolicy="no-referrer"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = getAssetUrl('/assets/images/nasi_lemak_drawn_1786678078469.jpg');
+            (e.currentTarget as HTMLImageElement).src = getAssetUrl('/assets/dishes/vector/nasi_lemak.jpg');
           }}
         />
         <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-full" />

@@ -82,13 +82,13 @@ export function PDFPreviewModal({
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-stone-200 dark:border-stone-700 gap-4">
             <div className="flex items-center gap-3">
               <img 
-                src={getAssetUrl('/assets/wawasan_logo.svg')} 
+                src={getAssetUrl('/assets/brand/wawasan_logo.svg')} 
                 alt="Restoran Wawasan" 
-                className="w-14 h-14 object-contain rounded-lg bg-orange-50/80 p-1 border border-orange-200"
+                className="w-14 h-14 object-contain"
                 onError={(e) => {
                   const target = e.currentTarget;
                   if (!target.src.includes('.png')) {
-                    target.src = getAssetUrl('/assets/wawasan_logo.png');
+                    target.src = getAssetUrl('/assets/brand/wawasan_logo.png');
                   } else {
                     target.style.display = 'none';
                   }

@@ -72,7 +72,7 @@ export default function ProfilePage() {
                 Malaysian heritage graphic must remain 100% intact.
               */}
               <TransparentLogo
-                src={getAssetUrl('/assets/wawasan_logo.svg')}
+                src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                 alt="Logo"
                 className="w-full h-full object-contain"
               />

@@ -120,7 +120,7 @@ export function Step2DishSelection({
         <div 
           className="absolute inset-0 opacity-[0.22] pointer-events-none"
           style={{
-            backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+            backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -251,7 +251,7 @@ export function Step2DishSelection({
         <div 
           className="absolute inset-0 opacity-[0.25] pointer-events-none"
           style={{
-            backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
+            backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}

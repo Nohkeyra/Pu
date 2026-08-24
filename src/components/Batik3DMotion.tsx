@@ -40,7 +40,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
   const moveX = useTransform(rotateY, (rY) => rY * 0.65);
   const moveY = useTransform(rotateX, (rX) => -rX * 0.65);
 
-  const batikUrl = src || getAssetUrl('/assets/batik_pattern_hd.jpg');
+  const batikUrl = src || getAssetUrl('/assets/ui/batik_pattern.jpg');
 
   return (
     <div 
@@ -72,7 +72,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             // Fallback to batik_vector_pattern.jpg if primary asset path is unavailable
             const target = e.currentTarget;
             if (!target.src.includes('batik_vector_pattern.jpg')) {
-              target.src = getAssetUrl('/assets/batik_vector_pattern.jpg');
+              target.src = getAssetUrl('/assets/ui/batik_vector_pattern.jpg');
             }
           }}
         />
