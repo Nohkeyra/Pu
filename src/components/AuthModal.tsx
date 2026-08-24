@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -39,6 +40,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const { toast } = useToast();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
 
   // Form Fields
   const [email, setEmail] = useState('');
@@ -53,17 +57,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      if (initialMode) {
-        setMode(initialMode);
-      }
-    } else {
-      document.body.style.overflow = 'unset';
+    if (isOpen && initialMode) {
+      setMode(initialMode);
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen, initialMode]);
 
   const resetForm = () => {
@@ -190,6 +186,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
         {/* Modal Panel */}
         <motion.div
+          ref={modalRef}
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}

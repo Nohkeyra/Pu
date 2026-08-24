@@ -2,13 +2,12 @@ import React from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { 
-  CheckCircle2, 
   Eye, 
   ExternalLink,
   Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getAssetUrl } from '@/lib/utils';
+import { SuccessState } from '@/components/ui/SuccessState';
 import { scheduleLocalNotification } from '@/lib/nativeService';
 
 interface OrderState {
@@ -72,33 +71,14 @@ export function Step5OrderSuccess({
       transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       className="space-y-6 text-center"
     >
-      <div className="bg-charcoal text-white p-6 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md text-center">
-        {/* Background Batik Pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.22] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-        
-        <div className="relative z-10">
-          <div className="w-14 h-14 rounded-full bg-deep-forest/15 text-deep-forest flex items-center justify-center mx-auto mb-3.5 shadow-sm">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-          <h2 className="text-lg font-bold text-white font-display">
-            {tText('Booking Request Sent!', 'Tempahan Dihantar!')}
-          </h2>
-          <p className="text-xs text-stone-300 font-light max-w-sm mx-auto mt-1 leading-relaxed">
-            {tText(
-              'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
-              'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
-            )}
-          </p>
-        </div>
-      </div>
+      <SuccessState
+        title={tText('Booking Request Sent!', 'Tempahan Dihantar!')}
+        subtitle={tText(
+          'Thank you. Restoran Wawasan will review your booking details and contact you within 24 hours to confirm.',
+          'Terima kasih. Pihak Restoran Wawasan akan menyemak butiran dan menghubungi anda dalam masa 24 jam untuk pengesahan.'
+        )}
+        className="shadow-md"
+      />
 
       {/* Bill details receipt box */}
       <div className="bg-muted border border-stone/10 p-5 rounded-2xl text-left space-y-2.5">

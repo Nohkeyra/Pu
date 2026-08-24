@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { 
@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { format } from 'date-fns';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
+import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -62,6 +63,9 @@ export function OrderDetailModal({
   openSendDialog,
 }: OrderDetailModalProps) {
   const { toast } = useToast();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
 
   if (!isOpen) return null;
 
@@ -77,6 +81,7 @@ export function OrderDetailModal({
       <div className="absolute inset-0 bg-deep-forest/80 backdrop-blur-md" />
       
       <motion.div
+        ref={modalRef}
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}

@@ -54,7 +54,7 @@ const SAYURAN = [
 ];
 
 // TYPES
-interface OrderState {
+export interface OrderState {
   eventType: 'pejabat' | 'lain' | '';
   mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
   preparationType: 'buffet' | 'meal_box';

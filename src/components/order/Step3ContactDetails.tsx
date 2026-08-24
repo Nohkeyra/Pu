@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { cn, getAssetUrl } from '@/lib/utils';
-import type { OrderState } from '@/hooks/useOrderWizard';
+import type { OrderState } from '@/components/OrderForm';
 
 interface SavedLocation {
   id: string;
