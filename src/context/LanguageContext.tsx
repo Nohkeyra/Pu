@@ -363,7 +363,7 @@ const translations: Translation = {
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations) => string;
+  t: (keyOrBm: string | number, fallbackEnOrBm?: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -376,8 +376,30 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = (key: keyof typeof translations): string => {
-    return translations[key]?.[language] ?? String(key);
+  const t = (keyOrBm: string | number, fallbackEnOrBm?: string): string => {
+    const keyStr = String(keyOrBm);
+    if (keyStr in translations) {
+      return translations[keyStr]?.[language] ?? keyStr;
+    }
+    if (fallbackEnOrBm !== undefined) {
+      const isFirstArgBM = /[a-z]/i.test(keyStr) && (
+        /\b(pesanan|kemas|kini|batal|minta|padam|simpan|butiran|status|lihat|hantar|rekod|diterima|dapur|sajian|nota|masa|dikeluarkan|dibatalkan|baru|baca|semua|tiada|lagi|pemberitahuan|katering|anda|pihak|restoran|sedang|telah|selamat|menjamu|selera|perjalanan|kru|jamuan|pejabat|majlis)\b/i.test(keyStr)
+      );
+      const isSecondArgBM = /[a-z]/i.test(fallbackEnOrBm) && (
+        /\b(pesanan|kemas|kini|batal|minta|padam|simpan|butiran|status|lihat|hantar|rekod|diterima|dapur|sajian|nota|masa|dikeluarkan|dibatalkan|baru|baca|semua|tiada|lagi|pemberitahuan|katering|anda|pihak|restoran|sedang|telah|selamat|menjamu|selera|perjalanan|kru|jamuan|pejabat|majlis)\b/i.test(fallbackEnOrBm)
+      );
+
+      if (language === 'bm') {
+        if (isFirstArgBM) return keyStr;
+        if (isSecondArgBM) return fallbackEnOrBm;
+        return keyStr;
+      } else {
+        if (isFirstArgBM) return fallbackEnOrBm;
+        if (isSecondArgBM) return keyStr;
+        return fallbackEnOrBm;
+      }
+    }
+    return keyStr;
   };
 
   return (

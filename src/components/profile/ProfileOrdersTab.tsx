@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/Toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
 import { 
   History, 
   RotateCcw, 
@@ -53,6 +61,7 @@ function OrderItem({
   pokingOrderId,
   setTrackingOrder,
   setConfirmDialog,
+  setEditingOrder,
   cancellingOrderId,
   t,
   itemVariants
@@ -471,7 +480,7 @@ export function ProfileOrdersTab({
       )}
 
       {/* Edit Pending Order Modal */}
-      <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+      <Dialog open={!!editingOrder} onOpenChange={(open: boolean) => !open && setEditingOrder(null)}>
         <DialogContent className="max-w-md bg-card border-stone-200 dark:border-white/10 text-deep-forest dark:text-white rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
@@ -489,7 +498,7 @@ export function ProfileOrdersTab({
               <Input 
                 type="time" 
                 value={editTime}
-                onChange={(e) => setEditTime(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditTime(e.target.value)}
                 className="rounded-xl h-11 font-sans"
               />
             </div>
@@ -498,7 +507,7 @@ export function ProfileOrdersTab({
               <Label className="text-xs font-bold uppercase tracking-wider">{t('Nota Tambahan / Special Notes', 'Nota Tambahan / Special Notes')}</Label>
               <Textarea
                 value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditNotes(e.target.value)}
                 placeholder={t('Taip nota khas (cth: Perlu meja buffet, kurang pedas, dll)', 'Type special instructions (e.g. less spicy, buffet table needed)')}
                 className="rounded-xl min-h-[90px] font-sans"
               />

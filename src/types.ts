@@ -87,6 +87,7 @@ export interface Order {
   invoiceEmailSentAt?: string;
   menu?: string;
   notes?: string;
+  time?: string;
   prices?: Record<string, number>;
   totalAmount?: number;
   invoiceNo?: string;
