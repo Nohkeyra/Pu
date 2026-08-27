@@ -3,7 +3,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, ArrowLeft, Shield, Sun, Moon } from 'lucide-react';
+import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2 } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';

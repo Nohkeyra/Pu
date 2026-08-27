@@ -8,6 +8,7 @@ import {
   Ban, 
   Trash2, 
   Mail, 
+  Loader2,
   Utensils, 
   Check 
 } from 'lucide-react';
