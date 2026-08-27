@@ -449,11 +449,17 @@ router.post('/cancel', customerOrderActionLimiter, async (req, res) => {
 
     const oldData = oldSnap.data() as OrderData;
     const ownerUid = oldData.userId || oldData.uid || null;
-    if (ownerUid) {
-      const callerUid = await verifyCustomerIdToken(req);
-      if (!callerUid || callerUid !== ownerUid) {
-        return res.status(403).json({ error: 'Not authorized to cancel this order' });
-      }
+    // SECURITY FIX (audit 2026-08-28): previously this only checked ownership
+    // when ownerUid was present, so any guest order (userId/uid null, which is
+    // the majority of orders since checkout doesn't require login) could be
+    // cancelled by anyone who knew or harvested its orderId — e.g. via the
+    // public /calendar-orders endpoint, which returns order ids. The frontend
+    // (UserProfileDashboard) only ever calls this endpoint while signed in
+    // with a matching idToken, so there is no legitimate flow that needs the
+    // permissive fallback. Deny by default, matching the /delete endpoint.
+    const callerUid = await verifyCustomerIdToken(req);
+    if (!ownerUid || !callerUid || callerUid !== ownerUid) {
+      return res.status(403).json({ error: 'Not authorized to cancel this order' });
     }
 
     const updates: Partial<OrderData> = {

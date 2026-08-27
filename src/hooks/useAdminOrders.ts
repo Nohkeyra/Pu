@@ -24,8 +24,12 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
   });
 
-  const fetchOrders = async () => {
-    // Left for backwards compatibility with parts of the app that may call it directly
+  const fetchOrders = async (silent?: boolean) => {
+    // Left for backwards compatibility with parts of the app that may call it directly.
+    // Orders are kept live via the Firestore onSnapshot listener below, so this is
+    // intentionally a no-op; the optional param exists only so callers (e.g. pull-to-refresh)
+    // can pass a "silent" flag without a TypeScript signature mismatch.
+    void silent;
   };
 
   useEffect(() => {
