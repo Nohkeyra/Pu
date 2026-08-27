@@ -96,7 +96,7 @@ export function CustomerInvoicePreviewModal({
               />
               <div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white">
-                  RESTORAN WAWASAN PAK USOP
+                  RESTORAN WAWASAN
                 </h1>
                 <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
                   Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
@@ -251,7 +251,7 @@ export function CustomerInvoicePreviewModal({
           )}
 
           <div className="text-center pt-4 microcopy-12 text-stone-500 dark:text-stone-500 border-t border-stone-200 dark:border-stone-800">
-            {language === 'bm' ? 'Terima kasih atas sokongan anda kepada Restoran Wawasan Pak Usop.' : 'Thank you for your continued support to Restoran Wawasan Pak Usop.'}
+            {language === 'bm' ? 'Terima kasih atas sokongan anda kepada Restoran Wawasan.' : 'Thank you for your continued support to Restoran Wawasan.'}
           </div>
 
         </div>

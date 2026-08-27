@@ -238,7 +238,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 <button
                   key={tab.id}
                   onClick={tab.onClick}
-                  className={`px-5 py-3.5 font-bold text-sm flex items-center gap-3 rounded-xl transition-all duration-200 relative z-10 ${
+                  className={`px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm flex items-center gap-2.5 sm:gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 ${
                     isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-deep-forest/70 dark:text-stone/70 hover:bg-stone/10'
                   }`}
                 >
@@ -253,7 +253,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         </div>
       </nav>
 
-      <motion.main className="[grid-area:content] p-6 md:p-8 min-w-0 relative">
+      <motion.main className="[grid-area:content] p-4 sm:p-6 md:p-8 min-w-0 relative">
         <div className="mb-8">
           <h1 className="text-3xl font-display font-bold text-deep-forest mb-2">
             {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : 'Submissions Table'}

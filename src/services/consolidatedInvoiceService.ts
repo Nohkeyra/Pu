@@ -130,14 +130,14 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN PAK USOP', 40, 18);
+    doc.text('RESTORAN WAWASAN', 40, 18);
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
     doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
-    doc.text('Est. 1986', 40, 31);
+    doc.text('W.P Putrajaya', 40, 31);
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
@@ -410,7 +410,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text('Restoran Wawasan Pak Usop  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
   }
 
   // --- Final summary page: lists every page's own invoice number + total,

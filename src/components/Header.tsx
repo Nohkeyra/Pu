@@ -12,6 +12,7 @@ import { TransparentLogo } from './TransparentLogo';
 import MobileMenu from './MobileMenu';
 import AuthModal from './AuthModal';
 import UserProfileDashboard from './UserProfileDashboard';
+import { NotificationBell } from './NotificationBell';
 
 const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
   { label: 'story', href: '#story' },
@@ -190,6 +191,12 @@ export default function Header() {
               <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)]' : ''}>BM</span>
             </button>
 
+            <NotificationBell
+              currentUser={currentUser}
+              isScrolled={isScrolled}
+              onOpenProfileWithOrder={() => setProfileDashboardOpen(true)}
+            />
+
             <button
               type="button"
               onClick={handleAuthClick}
@@ -236,6 +243,12 @@ export default function Header() {
             >
               {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
             </button>
+
+            <NotificationBell
+              currentUser={currentUser}
+              isScrolled={isScrolled}
+              onOpenProfileWithOrder={() => setProfileDashboardOpen(true)}
+            />
 
             <button
               type="button"

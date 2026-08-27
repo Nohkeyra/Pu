@@ -8,6 +8,8 @@ export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 export const DEFAULT_MAIN_COLOR = '#a3310e'; // Wawasan High Contrast Terracotta (#a3310e > 7.2:1 contrast ratio)
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
 export const DEFAULT_CARD_SCALE = 1.0;        // 100% scale
+export const DEFAULT_BATIK_COLOR = '#E6C387';  // Kunyit Gold
+export const DEFAULT_BATIK_DENSITY = 4;        // 4x4 Grid
 
 interface SettingsContextType {
   notificationsEnabled: boolean;
@@ -19,7 +21,7 @@ interface SettingsContextType {
   keepAwakeEnabled: boolean;
   setKeepAwakeEnabled: (enabled: boolean) => void;
 
-  // Admin Customize UI
+  // Admin & Hardware Diagnostics UI
   isAdmin: boolean;
   checkAdminStatus: () => Promise<boolean>;
   customMainColor: string;
@@ -28,6 +30,10 @@ interface SettingsContextType {
   setCustomFontSizePx: (size: number) => void;
   customCardSizeScale: number; // 0.8 to 1.3 (80% to 130%)
   setCustomCardSizeScale: (scale: number) => void;
+  customBatikColor: string;
+  setCustomBatikColor: (color: string) => void;
+  batikDensity: number;
+  setBatikDensity: (density: number) => void;
   resetUiToDefault: () => Promise<void>;
 }
 
@@ -97,6 +103,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     } catch { return DEFAULT_CARD_SCALE; }
   });
 
+  const [customBatikColor, setCustomBatikColorState] = useState<string>(() => {
+    try { return localStorage.getItem('app_custom_batik_color') || DEFAULT_BATIK_COLOR; }
+    catch { return DEFAULT_BATIK_COLOR; }
+  });
+
+  const [batikDensity, setBatikDensityState] = useState<number>(() => {
+    try {
+      const val = localStorage.getItem('app_custom_batik_density');
+      return val ? parseInt(val, 10) : DEFAULT_BATIK_DENSITY;
+    } catch { return DEFAULT_BATIK_DENSITY; }
+  });
+
   // Check if admin session token exists in Capacitor Preferences / SharedPreferences
   const checkAdminStatus = useCallback(async (): Promise<boolean> => {
     try {
@@ -136,6 +154,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           const parsed = parseFloat(savedCardScale);
           if (!isNaN(parsed) && parsed >= 0.7 && parsed <= 1.5) {
             setCustomCardSizeScaleState(parsed);
+          }
+        }
+
+        const savedBatikColor = await getSecureItem('app_custom_batik_color');
+        if (savedBatikColor && savedBatikColor.startsWith('#')) {
+          setCustomBatikColorState(savedBatikColor);
+        }
+
+        const savedBatikDensity = await getSecureItem('app_custom_batik_density');
+        if (savedBatikDensity) {
+          const parsed = parseInt(savedBatikDensity, 10);
+          if (!isNaN(parsed) && parsed >= 2 && parsed <= 12) {
+            setBatikDensityState(parsed);
           }
         }
       } catch (err) {
@@ -196,6 +227,24 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [customCardSizeScale, isLoaded]);
 
+  // Apply custom Batik accent color live
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--batik-accent-color', customBatikColor);
+    if (isLoaded) {
+      setSecureItem('app_custom_batik_color', customBatikColor);
+    }
+  }, [customBatikColor, isLoaded]);
+
+  // Apply custom Batik grid density live
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--batik-density', String(batikDensity));
+    if (isLoaded) {
+      setSecureItem('app_custom_batik_density', String(batikDensity));
+    }
+  }, [batikDensity, isLoaded]);
+
   // Handlers for live updates
   const setCustomMainColor = (color: string) => {
     setCustomMainColorState(color);
@@ -209,11 +258,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setCustomCardSizeScaleState(scale);
   };
 
+  const setCustomBatikColor = (color: string) => {
+    setCustomBatikColorState(color);
+  };
+
+  const setBatikDensity = (density: number) => {
+    setBatikDensityState(density);
+  };
+
   // Reset to Default button logic
   const resetUiToDefault = async () => {
     setCustomMainColorState(DEFAULT_MAIN_COLOR);
     setCustomFontSizePxState(DEFAULT_FONT_SIZE_PX);
     setCustomCardSizeScaleState(DEFAULT_CARD_SCALE);
+    setCustomBatikColorState(DEFAULT_BATIK_COLOR);
+    setBatikDensityState(DEFAULT_BATIK_DENSITY);
     setFontSizeState('base');
 
     const root = document.documentElement;
@@ -225,10 +284,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     root.style.fontSize = `${DEFAULT_FONT_SIZE_PX}px`;
     root.style.setProperty('--app-card-scale', '1');
     root.style.setProperty('--menu-card-scale', '1');
+    root.style.setProperty('--batik-accent-color', DEFAULT_BATIK_COLOR);
+    root.style.setProperty('--batik-density', String(DEFAULT_BATIK_DENSITY));
 
     await removeSecureItem('app_custom_main_color');
     await removeSecureItem('app_custom_font_size_px');
     await removeSecureItem('app_custom_card_scale');
+    await removeSecureItem('app_custom_batik_color');
+    await removeSecureItem('app_custom_batik_density');
     await removeSecureItem('app_style_profile');
   };
 
@@ -275,6 +338,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setCustomFontSizePx,
         customCardSizeScale,
         setCustomCardSizeScale,
+        customBatikColor,
+        setCustomBatikColor,
+        batikDensity,
+        setBatikDensity,
         resetUiToDefault,
       }}
     >

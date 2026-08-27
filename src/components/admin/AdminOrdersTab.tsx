@@ -408,7 +408,7 @@ export function AdminOrdersTab({
           <List
             style={{ height: 650, width: '100%' }}
             rowCount={searchedOrders.length}
-            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 210 : 168}
+            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 190 : 160}
             rowProps={{}}
             rowComponent={(({ index, style }: any) => {
               const order = searchedOrders[index];
@@ -484,11 +484,11 @@ export function AdminOrdersTab({
                   : 'bg-[#f69913]';
 
               return (
-                <div style={style} className="px-3 py-2">
+                <div style={style} className="px-2 sm:px-3 py-1.5">
                   <div
                     onClick={() => openOrderDetail(order)}
                     className={`
-                      relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
+                      relative flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
                       cursor-pointer transition-all duration-200
                       hover:shadow-[0_8px_28px_rgba(224,63,20,0.20)] hover:-translate-y-0.5
                       ${isSelected ? 'ring-2 ring-sunshine-cta shadow-[0_8px_28px_rgba(224,63,20,0.25)]' : ''}
@@ -498,14 +498,15 @@ export function AdminOrdersTab({
                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl ${stripColor}`} />
 
                     <div className="flex items-start justify-between gap-2 pl-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-[15px] text-[#0c453c] dark:text-emerald-400 leading-tight">
+                          <span className="font-bold text-sm sm:text-[15px] text-[#0c453c] dark:text-emerald-400 leading-tight">
                             {formattedHeaderDate}
                           </span>
                           <span className="text-[11px] text-stone-400 dark:text-stone-500">· {relativeTime} ago</span>
+                          {getStatusBadge(order.status)}
                         </div>
-                        <h3 className="font-bold text-base text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug">
+                        <h3 className="font-bold text-sm sm:text-base text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug">
                           {clientName}
                         </h3>
                         {order.email && (
@@ -519,7 +520,7 @@ export function AdminOrdersTab({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => handleToggleOrderSelect(order.id)}
-                            className="w-5 h-5 accent-[#f69913] rounded"
+                            className="w-5 h-5 accent-[#f69913] rounded cursor-pointer"
                           />
                         ) : (
                           <button
@@ -535,7 +536,7 @@ export function AdminOrdersTab({
                                 return next;
                               });
                             }}
-                            className="p-1.5 rounded-full hover:bg-[#f69913]/15 dark:hover:bg-stone-800"
+                            className="p-1.5 rounded-full hover:bg-[#f69913]/15 dark:hover:bg-stone-800 transition-colors"
                           >
                             <Star className={`w-4 h-4 ${isStarred ? 'fill-[#f69913] text-[#f69913]' : 'text-stone-300 dark:text-stone-600'}`} />
                           </button>
@@ -545,18 +546,14 @@ export function AdminOrdersTab({
 
                     <div className="flex items-center justify-between gap-3 pl-2">
                       <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center justify-center min-w-[56px] h-12 rounded-xl bg-[#f69913]/15 dark:bg-[#f69913]/20 border border-[#f69913]/30 px-2">
-                          <span className="font-bold text-lg text-[#0c453c] dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
+                        <div className="flex flex-col items-center justify-center min-w-[52px] h-11 rounded-xl bg-[#f69913]/15 dark:bg-[#f69913]/20 border border-[#f69913]/30 px-2">
+                          <span className="font-bold text-base sm:text-lg text-[#0c453c] dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
                           <span className="text-[9px] font-bold uppercase tracking-wider text-[#0c453c]/60 dark:text-amber-300/80">pax</span>
                         </div>
 
                         <div>
                           <p className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider">Total</p>
                           <p className="font-bold text-[#0c453c] dark:text-emerald-400 text-sm font-mono">{totalAmount}</p>
-                        </div>
-
-                        <div className="hidden sm:block">
-                          {getStatusBadge(order.status)}
                         </div>
                       </div>
 
@@ -566,6 +563,7 @@ export function AdminOrdersTab({
                           variant="ghost"
                           className="h-9 w-9 rounded-xl hover:bg-[#f69913]/15 dark:hover:bg-stone-800 text-[#0c453c] dark:text-stone-200"
                           onClick={() => openOrderDetail(order)}
+                          title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -574,6 +572,7 @@ export function AdminOrdersTab({
                           variant="ghost"
                           className="h-9 w-9 rounded-xl hover:bg-[#e96212]/15 dark:hover:bg-stone-800 text-[#0c453c] dark:text-stone-200"
                           onClick={() => openSendDialog(order)}
+                          title="Send Invoice"
                         >
                           <Send className="w-4 h-4" />
                         </Button>

@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
 import { exportOrdersAsExcelTemplate } from '@/lib/exportUtils';
+import { getDisplayInvoiceNo } from '@/lib/utils';
 
 interface AdminTablesTabProps {
   orders: Order[];
@@ -895,7 +896,7 @@ export function AdminTablesTab({
                             onClick={() => openOrderDetail(order)}
                             className="hover:text-[var(--color-sunshine-cta)] text-left underline-offset-2 hover:underline transition-colors"
                           >
-                            {order.invoiceNo || order.id || 'N/A'}
+                            {getDisplayInvoiceNo(order)}
                           </button>
                         </td>
                       )}

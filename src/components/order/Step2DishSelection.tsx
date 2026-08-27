@@ -77,20 +77,15 @@ export function Step2DishSelection({
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
-          <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block`}>
+        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
+          <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block shrink-0`}>
             {icon} {title}
           </Label>
-          <span className={`microcopy-12-upper font-bold px-2 py-0.5 rounded-full transition-colors ${
-            selectedCount > 0 
-              ? 'text-white bg-crisp-carrot shadow-sm' 
-              : 'text-stone-500 bg-stone-100 dark:bg-stone-800'
-          }`}>
-            {selectedCount > 0 
-              ? `${selectedCount} / ${categoryDishes.length} ${tText('Selected', 'Dipilih')}`
-              : `${categoryDishes.length} ${tText('Available', 'Tersedia')}`
-            }
-          </span>
+          {selectedCount > 0 && (
+            <span className="microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full transition-colors text-white bg-crisp-carrot shadow-sm shrink-0 whitespace-nowrap">
+              {selectedCount} / {categoryDishes.length} {tText('Selected', 'Dipilih')}
+            </span>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
           {categoryDishes.map(item => (
@@ -157,20 +152,15 @@ export function Step2DishSelection({
 
           {visibleMenu.some(item => item.category === 'drinks') && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
-                <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block">
+              <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
+                <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block shrink-0">
                   🥤 {tText('Drinks Selection', 'Pilihan Minuman')}
                 </Label>
-                <span className={`microcopy-12-upper font-bold px-2 py-0.5 rounded-full transition-colors ${
-                  orderState.dishes.filter(d => d.category === 'drinks').length > 0 
-                    ? 'text-white bg-crisp-carrot shadow-sm' 
-                    : 'text-stone-500 bg-stone-100 dark:bg-stone-800'
-                }`}>
-                  {orderState.dishes.filter(d => d.category === 'drinks').length > 0 
-                    ? `${orderState.dishes.filter(d => d.category === 'drinks').length} / ${visibleMenu.filter(item => item.category === 'drinks').length} ${tText('Selected', 'Dipilih')}`
-                    : `${visibleMenu.filter(item => item.category === 'drinks').length} ${tText('Available', 'Tersedia')}`
-                  }
-                </span>
+                {orderState.dishes.filter(d => d.category === 'drinks').length > 0 && (
+                  <span className="microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full transition-colors text-white bg-crisp-carrot shadow-sm shrink-0 whitespace-nowrap">
+                    {orderState.dishes.filter(d => d.category === 'drinks').length} / {visibleMenu.filter(item => item.category === 'drinks').length} {tText('Selected', 'Dipilih')}
+                  </span>
+                )}
               </div>
 
               {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (

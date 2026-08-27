@@ -210,9 +210,9 @@ export function Step5OrderSuccess({
 
         <Button
           onClick={() => setShowPdfPreviewModal(true)}
-          className="w-full bg-deep-forest hover:bg-deep-forest/90 text-white h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
+          className="w-full bg-stone-900 hover:bg-stone-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white dark:text-stone-950 h-12 rounded-2xl font-black text-sm shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
         >
-          <Eye className="w-5 h-5 text-white" />
+          <Eye className="w-5 h-5 text-white dark:text-stone-950" />
           <span>{tText('Preview & Download PDF Invoice', 'Pratonton & Muat Turun Invois PDF')}</span>
         </Button>
 

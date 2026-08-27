@@ -25,6 +25,7 @@ import { Step3ContactDetails } from './order/Step3ContactDetails';
 import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
 import { Step5OrderSuccess } from './order/Step5OrderSuccess';
 import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
+import { SAVED_COMPANIES } from '@/constants/companies';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Geolocation } from '@capacitor/geolocation';
@@ -283,9 +284,13 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const profile = userSnap.data();
+            const userTo = profile.to || '';
+            const isKnownCompany = userTo && SAVED_COMPANIES.includes(userTo);
+            
             setOrderState(prev => ({
               ...prev,
-              companyName: profile.to || prev.companyName,
+              companyName: isKnownCompany ? userTo : (userTo ? 'other' : prev.companyName),
+              customCompany: !isKnownCompany && userTo ? userTo : prev.customCompany,
               name: profile.name || prev.name,
               contact: profile.contact || prev.contact,
               email: profile.email || prev.email,
@@ -1313,7 +1318,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </h3>
               </div>
               <span className="microcopy-12-upper font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
-                Step {currentStep} / 4
+                {currentStep >= 5 ? tText('Completed', 'Selesai') : `Step ${currentStep} / 4`}
               </span>
             </div>
 

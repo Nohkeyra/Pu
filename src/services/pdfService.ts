@@ -279,14 +279,14 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text('RESTORAN WAWASAN PAK USOP', 39, 16);
+  doc.text('RESTORAN WAWASAN', 39, 16);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.text('Unit 3, Level B3, Menara PjH', 39, 21);
   doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 39, 25);
-  doc.text('Est. 1986', 39, 29);
+  doc.text('W.P Putrajaya', 39, 29);
 
   // Invoice Big Heading on right
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
@@ -526,7 +526,7 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Restoran Wawasan Pak Usop  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+  doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
 
 
   // Final page with PIC info
@@ -689,14 +689,14 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN PAK USOP', 40, 18);
+    doc.text('RESTORAN WAWASAN', 40, 18);
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
     doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
-    doc.text('Est. 1986', 40, 31);
+    doc.text('W.P Putrajaya', 40, 31);
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
@@ -930,7 +930,7 @@ export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFi
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text('Restoran Wawasan Pak Usop  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
   }
 
   doc.addPage();

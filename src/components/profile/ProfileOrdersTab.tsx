@@ -10,12 +10,15 @@ import {
   Mail, 
   Loader2,
   Utensils, 
-  Check 
+  Check,
+  MessageCircle,
+  Pencil
 } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
 import { format } from 'date-fns';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import type { Order } from '@/types';
+import { getDisplayInvoiceNo } from '@/lib/utils';
 
 interface ProfileOrdersTabProps {
   orders: Order[];
@@ -92,30 +95,42 @@ function OrderItem({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         style={{ x }}
-        className={`relative z-10 p-4 sm:p-5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+        className={`relative z-10 p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
           isSelected
-            ? 'bg-stone-50/50 dark:bg-stone-900/30 border-stone-300 shadow-sm'
-            : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300'
+            ? 'bg-stone-50/50 dark:bg-stone-900/30 border-primary/50 ring-2 ring-primary/20 shadow-sm'
+            : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300 dark:hover:border-white/20'
         }`}
       >
-        <div className="space-y-2 flex-1">
+        <div 
+          onClick={() => {
+            if (isSelectMode && order.id) {
+              handleToggleOrderSelect(order.id);
+            } else {
+              setPreviewOrder(order);
+            }
+          }}
+          className="space-y-2 flex-1 cursor-pointer group/item min-w-0"
+        >
           <div className="flex items-center gap-2 flex-wrap">
             {isSelectMode && order.id && (
               <button
                 type="button"
-                onClick={() => handleToggleOrderSelect(order.id!)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleOrderSelect(order.id!);
+                }}
                 className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                  isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-stone-300 bg-white'
+                  isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800'
                 }`}
               >
                 {isSelected && <Check className="w-3.5 h-3.5" />}
               </button>
             )}
-            <span className="font-mono text-xs font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900 px-2.5 py-1 rounded border border-stone-200/80 dark:border-white/5">
-              {order.invoiceNo || order.id || 'ORDER'}
+            <span className="font-mono text-xs font-bold text-deep-forest dark:text-white bg-stone-100 dark:bg-stone-800/90 px-2.5 py-1 rounded border border-stone-200/80 dark:border-white/10">
+              {getDisplayInvoiceNo(order)}
             </span>
             {getStatusBadge(order.status)}
-            <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto md:ml-0">
+            <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto sm:ml-0">
               {order.eventDate
                 ? format(new Date(order.eventDate), 'dd MMM yyyy')
                 : order.createdAt
@@ -125,43 +140,72 @@ function OrderItem({
           </div>
 
           <div>
-            <h4 className="text-sm sm:text-base font-bold text-deep-forest dark:text-white">
+            <h4 className="text-sm sm:text-base font-bold text-deep-forest dark:text-white group-hover/item:text-primary transition-colors truncate">
               {order.eventType === 'pejabat' ? t('Office Feast', 'Jamuan Pejabat') : t('Private Event', 'Majlis Katering')} ({order.guests} pax)
             </h4>
-            <p className="text-xs text-stone-550 dark:text-stone-300 font-normal line-clamp-1 mt-0.5">
+            <p className="text-xs text-stone-600 dark:text-stone-400 font-normal line-clamp-1 mt-0.5">
               {order.dishes && order.dishes.length > 0 ? order.dishes.join(', ') : t('Standard Catering Package', 'Pakej Katering Standard')}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap justify-end pt-2 md:pt-0 border-t md:border-t-0 border-stone-100 dark:border-white/5">
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2 flex-wrap justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-white/5 shrink-0"
+        >
           <Button
-            onClick={() => onReorder(order)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReorder(order);
+            }}
             variant="outline"
             size="sm"
-            className="rounded-lg border-stone-200 text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
+            className="rounded-lg border-stone-200 dark:border-stone-800 text-deep-forest dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800 font-bold text-xs gap-1.5 h-8 px-3"
           >
             <RotateCcw className="w-3.5 h-3.5 text-primary" />
             <span>{t('Reorder', 'Pesan Semula')}</span>
           </Button>
 
           <Button
-            onClick={() => setPreviewOrder(order)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreviewOrder(order);
+            }}
             variant="ghost"
             size="sm"
-            className="rounded-lg text-deep-forest dark:text-white hover:bg-stone-50 font-bold text-xs gap-1.5"
+            className="rounded-lg text-deep-forest dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 font-bold text-xs gap-1.5 h-8 px-3"
           >
             <FileDown className="w-3.5 h-3.5" />
             <span>{t('View Invoice', 'Lihat Invois')}</span>
           </Button>
 
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              const invNo = getDisplayInvoiceNo(order);
+              const text = encodeURIComponent(
+                `Salam Restoran Wawasan Pak Usop, saya ingin bertanyakan tentang pesanan #${invNo} (${order.eventType === 'pejabat' ? 'Jamuan Pejabat' : 'Majlis Katering'}, ${order.guests} pax, Tarikh: ${order.date || order.eventDate || ''}).`
+              );
+              window.open(`https://wa.me/60123456789?text=${text}`, '_blank');
+            }}
+            variant="outline"
+            size="sm"
+            className="rounded-lg border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs gap-1.5 h-8 px-3"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>{t('WhatsApp', 'Bantuan WA')}</span>
+          </Button>
+
           {order.id && (order.status === 'approved' || order.status === 'billed') && (
             <Button
-              onClick={() => handleRequestInvoiceEmail(order)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRequestInvoiceEmail(order);
+              }}
               disabled={pokingOrderId === order.id || order.invoiceEmailRequested}
               variant="outline"
               size="sm"
-              className="rounded-lg border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-xs gap-1.5"
+              className="rounded-lg border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-xs gap-1.5 h-8 px-3"
             >
               {pokingOrderId === order.id ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -178,25 +222,48 @@ function OrderItem({
 
           {order.id && (order.status === 'in_transit' || order.status === 'delivered') && setTrackingOrder && (
             <Button
-              onClick={() => setTrackingOrder(order)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setTrackingOrder(order);
+              }}
               size="sm"
-              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5"
+              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3"
             >
               <span>🚚 {t('Track Delivery', 'Jejak Penghantaran')}</span>
             </Button>
           )}
 
           {order.id && order.status === 'pending' && (
-            <Button
-              onClick={() => setConfirmDialog({ type: 'cancel', orderId: order.id! })}
-              disabled={cancellingOrderId === order.id}
-              variant="ghost"
-              size="sm"
-              className="rounded-lg text-red-500 hover:text-red-600 hover:bg-red-500/10 font-bold text-xs gap-1.5"
-            >
-              {cancellingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-              <span>{t('Cancel Order', 'Batal Tempahan')}</span>
-            </Button>
+            <>
+              {setEditingOrder && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingOrder(order);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-xs gap-1.5 h-8 px-3"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>{t('Edit Notes', 'Nota/Masa')}</span>
+                </Button>
+              )}
+
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDialog({ type: 'cancel', orderId: order.id! });
+                }}
+                disabled={cancellingOrderId === order.id}
+                variant="ghost"
+                size="sm"
+                className="rounded-lg text-red-500 hover:text-red-600 hover:bg-red-500/10 font-bold text-xs gap-1.5 h-8 px-3"
+              >
+                {cancellingOrderId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                <span>{t('Cancel Order', 'Batal Tempahan')}</span>
+              </Button>
+            </>
           )}
         </div>
       </motion.div>
@@ -223,6 +290,47 @@ export function ProfileOrdersTab({
   setTrackingOrder,
   t,
 }: ProfileOrdersTabProps) {
+  const { toast } = useToast();
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editNotes, setEditNotes] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleOpenEditModal = (order: Order) => {
+    setEditingOrder(order);
+    setEditNotes(order.notes || '');
+    setEditTime(order.time || '12:00');
+  };
+
+  const handleSavePendingEdit = async () => {
+    if (!editingOrder || !editingOrder.id) return;
+    setIsSavingEdit(true);
+    try {
+      const orderRef = doc(db, 'orders', editingOrder.id);
+      await updateDoc(orderRef, {
+        notes: editNotes,
+        time: editTime,
+        updatedAt: new Date().toISOString()
+      });
+
+      toast({
+        title: t('Order Updated', 'Pesanan Dikemas Kini'),
+        description: t('Your order notes and serving time have been updated.', 'Nota dan masa sajian anda telah dikemas kini.'),
+        variant: 'success'
+      });
+      setEditingOrder(null);
+    } catch (err) {
+      console.error('Failed to update pending order:', err);
+      toast({
+        title: t('Update Failed', 'Gagal Dikemas Kini'),
+        description: t('Could not update order details.', 'Gagal mengemas kini pesanan.'),
+        variant: 'error'
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const listVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -351,6 +459,7 @@ export function ProfileOrdersTab({
                 pokingOrderId={pokingOrderId}
                 setTrackingOrder={setTrackingOrder}
                 setConfirmDialog={setConfirmDialog}
+                setEditingOrder={handleOpenEditModal}
                 cancellingOrderId={cancellingOrderId}
                 deletingOrderId={deletingOrderId}
                 t={t}
@@ -360,6 +469,61 @@ export function ProfileOrdersTab({
           })}
         </motion.div>
       )}
+
+      {/* Edit Pending Order Modal */}
+      <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
+        <DialogContent className="max-w-md bg-card border-stone-200 dark:border-white/10 text-deep-forest dark:text-white rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-amber-500" />
+              <span>{t('Kemas Kini Nota & Masa Tempahan', 'Update Order Notes & Serving Time')}</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-stone-500 dark:text-stone-400">
+              {t('Tukar arahan khas atau masa sajian sebelum pihak restoran mengesahkan tempahan ini.', 'Modify special notes or serving time before restaurant confirms this order.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider">{t('Masa Sajian / Serving Time', 'Masa Sajian / Serving Time')}</Label>
+              <Input 
+                type="time" 
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+                className="rounded-xl h-11 font-sans"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold uppercase tracking-wider">{t('Nota Tambahan / Special Notes', 'Nota Tambahan / Special Notes')}</Label>
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder={t('Taip nota khas (cth: Perlu meja buffet, kurang pedas, dll)', 'Type special instructions (e.g. less spicy, buffet table needed)')}
+                className="rounded-xl min-h-[90px] font-sans"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setEditingOrder(null)}
+              className="rounded-xl border-stone-200 dark:border-stone-700 font-bold text-xs"
+            >
+              {t('Batal', 'Cancel')}
+            </Button>
+            <Button
+              onClick={handleSavePendingEdit}
+              disabled={isSavingEdit}
+              className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs gap-1.5"
+            >
+              {isSavingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              <span>{t('Simpan Perubahan', 'Save Changes')}</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

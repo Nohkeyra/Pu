@@ -129,7 +129,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bihun goreng kampung tradisi dengan sayur-sayuran dan perencah lazat',
     price: 8.50,
     category: 'breakfast',
-    image: '/assets/dishes/vector/mee_kari.jpg'
+    image: '/assets/dishes/vector/bihun_goreng.jpg'
   },
   {
     id: 'maggi_goreng',
@@ -139,7 +139,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi Maggi goreng kuali panas dengan telur, sayur dan tauhu',
     price: 8.00,
     category: 'breakfast',
-    image: '/assets/dishes/vector/mee_kari.jpg'
+    image: '/assets/dishes/vector/mee_goreng.jpg'
   },
   {
     id: 'bubur_ayam',
@@ -159,7 +159,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Mi goreng mamak pedas berkicap dengan kentang, tauhu, telur & limau kasturi',
     price: 7.50,
     category: 'breakfast',
-    image: '/assets/dishes/vector/mee_kari.jpg'
+    image: '/assets/dishes/vector/mee_goreng.jpg'
   },
   {
     id: 'roti_sardin',
@@ -199,7 +199,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Roti boom tebal, rangup, manis berlemak marjerin',
     price: 4.50,
     category: 'breakfast',
-    image: '/assets/dishes/vector/roti_canai.jpg'
+    image: '/assets/dishes/vector/roti_boom.jpg'
   },
   {
     id: 'tosai',
@@ -209,7 +209,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Tosai garing tradisi dihidang bersama kuah kari dhal & chutney kelapa',
     price: 3.50,
     category: 'breakfast',
-    image: '/assets/dishes/vector/roti_canai.jpg'
+    image: '/assets/dishes/vector/tosai.jpg'
   },
   {
     id: 'roti_canai',
@@ -239,7 +239,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Telur goreng mata sapi kuning cair menyelerakan',
     price: 2.50,
     category: 'breakfast',
-    image: '/assets/dishes/vector/nasi_lemak.jpg'
+    image: '/assets/dishes/vector/telur_mata_sapi.jpg'
   },
 
   // ==========================================
@@ -627,7 +627,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Bihun goreng siam masam manis pedas bersama telur dan limau',
     price: 9.00,
     category: 'hi tea',
-    image: '/assets/dishes/vector/laksa_johor.jpg'
+    image: '/assets/dishes/vector/bihun_goreng.jpg'
   },
   {
     id: 'mee_rebus_petang',
@@ -723,7 +723,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/drinks/kopi_kampung_vector.jpg'
+    image: '/assets/drinks/milo_vector.jpg'
   },
   {
     id: 'nescafe_panas',
@@ -778,7 +778,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/drinks/kopi_kampung_vector.jpg'
+    image: '/assets/drinks/milo_vector.jpg'
   },
   {
     id: 'teh_o',
@@ -824,7 +824,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/drinks/sirap_bandung.jpg'
+    image: '/assets/drinks/mineral_water_vector.jpg'
   },
   {
     id: 'air_tetra_pak_berperisa',
@@ -835,7 +835,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/drinks/sirap_bandung.jpg'
+    image: '/assets/drinks/mineral_water_vector.jpg'
   },
   {
     id: 'tetra_pak_mineral_water',
@@ -846,7 +846,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/drinks/sirap_bandung.jpg'
+    image: '/assets/drinks/mineral_water_vector.jpg'
   },
   {
     id: 'air_kordial',
@@ -868,7 +868,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 2.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/drinks/sirap_bandung.jpg'
+    image: '/assets/drinks/mineral_water_vector.jpg'
   }
 ];
 

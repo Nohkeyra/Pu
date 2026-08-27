@@ -18,6 +18,7 @@ import {
   triggerNotification, 
   NotificationType 
 } from '@/lib/haptics';
+import { useSettings } from '@/context/SettingsContext';
 
 interface DiagnosticConsoleProps {
   isOpen: boolean;
@@ -37,9 +38,13 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   const [ping, setPing] = useState<number | null>(null);
   const [isPinging, setIsPinging] = useState(false);
 
-  // 4. Batik playground states
-  const [customBatikColor, setCustomBatikColor] = useState('#E6C387'); // Kunyit Gold
-  const [batikDensity, setBatikDensity] = useState(4);
+  // 4. Batik playground states connected directly to global SettingsContext
+  const { 
+    customBatikColor, 
+    setCustomBatikColor, 
+    batikDensity, 
+    setBatikDensity 
+  } = useSettings();
 
   // 5. Retro Terminal Output
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
