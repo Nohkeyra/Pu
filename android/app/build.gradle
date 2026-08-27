@@ -27,6 +27,9 @@ def appVersionName = versionProperties['versionName'] ?: "1.2.5"
 android {
     namespace "com.wawasanpakusop.app"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "com.wawasanpakusop.app"
         minSdkVersion rootProject.ext.minSdkVersion
