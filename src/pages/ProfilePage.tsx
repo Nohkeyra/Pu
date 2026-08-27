@@ -7,7 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, User as UserIcon, Shield, ExternalLink, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/Skeleton';
+import WawasanLoader from '@/components/WawasanLoader';
 import { TransparentLogo } from '@/components/TransparentLogo';
 import AuthModal from '@/components/AuthModal';
 
@@ -29,22 +29,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background flex flex-col p-6 space-y-8">
-        <div className="flex items-center gap-4 pt-4">
-          <Skeleton className="w-12 h-12 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-32 rounded-lg" />
-            <Skeleton className="h-4 w-24 rounded-md" />
-          </div>
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-40 w-full rounded-3xl" />
-          <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-32 w-full rounded-3xl" />
-            <Skeleton className="h-32 w-full rounded-3xl" />
-          </div>
-          <Skeleton className="h-64 w-full rounded-3xl" />
-        </div>
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
+        <WawasanLoader size={80} />
+        <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
       </div>
     );
   }

@@ -57,7 +57,7 @@ export default function LoginPage() {
             <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="mb-6 h-32 w-32 rounded-3xl bg-white/80 p-2 shadow-xl ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
+              <div className="mb-4 h-32 w-32 flex items-center justify-center">
                 <img
                   src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                   alt="Restoran Wawasan Logo"

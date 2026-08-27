@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { cn } from '@/lib/utils';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import WawasanLoader from '@/components/WawasanLoader';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { RefreshCw } from 'lucide-react';
 import { logScreenView, setAnalyticsUserId } from '@/services/analyticsService';
 import { setCrashlyticsUserId } from '@/services/crashlyticsService';
 
@@ -70,12 +70,9 @@ function SessionGuard({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
-      <Skeleton className="w-24 h-24 rounded-full" />
-      <div className="w-full max-w-sm space-y-3">
-        <Skeleton className="h-8 w-3/4 mx-auto rounded-xl" />
-        <Skeleton className="h-4 w-1/2 mx-auto rounded-lg" />
-      </div>
+    <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
+      <WawasanLoader size={80} />
+      <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
     </div>
   );
 
@@ -179,14 +176,23 @@ export default function AppContent() {
       )}
 
       <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
-        {isNavigating && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-cream/90 dark:bg-background/90 backdrop-blur-sm transition-opacity duration-300">
-            <div className="flex flex-col items-center space-y-3">
-              <WawasanLoader size={88} />
-              <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {isNavigating && (
+            <motion.div 
+              key="nav-loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-cream/95 dark:bg-background/95 backdrop-blur-md pointer-events-none"
+            >
+              <div className="flex flex-col items-center space-y-3">
+                <WawasanLoader size={88} />
+                <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>

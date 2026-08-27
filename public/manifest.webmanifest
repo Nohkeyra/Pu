@@ -1,4 +1,16 @@
 {
+  "name": "Restoran Wawasan Pak Usop",
+  "short_name": "Wawasan",
+  "description": "Restoran Wawasan Pak Usop - Warisan Sejak 1986. Malaysian multi-cuisine dining & catering.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0c453c",
+  "theme_color": "#0c453c",
+  "lang": "ms-MY",
+  "dir": "ltr",
+  "categories": ["food", "shopping", "business"],
   "icons": [
     {
       "src": "assets/icons/icon-48.webp",

@@ -92,7 +92,7 @@ try {
   const localCacheConfig = typeof window !== 'undefined'
     ? persistentLocalCache({
         tabManager: isNative
-          ? persistentSingleTabManager()
+          ? persistentSingleTabManager({})
           : persistentMultipleTabManager()
       })
     : undefined;

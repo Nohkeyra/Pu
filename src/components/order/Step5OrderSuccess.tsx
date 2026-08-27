@@ -4,11 +4,13 @@ import confetti from 'canvas-confetti';
 import { 
   Eye, 
   ExternalLink,
-  Share2
+  Share2,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SuccessState } from '@/components/ui/SuccessState';
-import { scheduleLocalNotification } from '@/lib/nativeService';
+import { scheduleLocalNotification, launchWhatsApp } from '@/lib/nativeService';
+import { RESTORAN_CONTACT } from '@/constants/contact';
 
 interface OrderState {
   name: string;
@@ -174,6 +176,38 @@ export function Step5OrderSuccess({
 
       {/* Success Screen Action Buttons */}
       <div className="flex flex-col gap-3 pt-2">
+        {/* Direct WhatsApp Order Forwarding */}
+        <Button
+          onClick={() => {
+            const message = tText(
+              `*CATERING BOOKING REQUEST - RESTORAN WAWASAN PAK USOP*\n\n` +
+              `*Reference No:* ${referenceNumber}\n` +
+              `*Name:* ${orderState.name}\n` +
+              `*Contact:* ${orderState.contact}\n` +
+              `*Event Date:* ${orderState.date}\n` +
+              `*Meal Block:* ${getMealTypesLabel()}\n` +
+              `*Pax Count:* ${orderState.guests} pax\n\n` +
+              `Hi Pak Usop / Restoran Wawasan, I have just submitted this catering request via the app. Looking forward to your quotation/confirmation!`,
+              `*TEMPAHAN KATERING - RESTORAN WAWASAN PAK USOP*\n\n` +
+              `*No. Rujukan:* ${referenceNumber}\n` +
+              `*Nama:* ${orderState.name}\n` +
+              `*Telefon:* ${orderState.contact}\n` +
+              `*Tarikh Majlis:* ${orderState.date}\n` +
+              `*Hidangan:* ${getMealTypesLabel()}\n` +
+              `*Bilangan Pax:* ${orderState.guests} orang\n\n` +
+              `Salam Pak Usop / Restoran Wawasan, saya telah menghantar tempahan katering ini melalui aplikasi. Mohon semakan dan sebut harga/pengesahan lanjut. Terima kasih!`
+            );
+            launchWhatsApp({
+              phone: RESTORAN_CONTACT.whatsappRaw,
+              message
+            });
+          }}
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-13 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+        >
+          <MessageCircle className="w-5 h-5 text-white fill-white" />
+          <span>{tText('Forward Order to WhatsApp (017-3157731)', 'Hantar Tempahan ke WhatsApp (017-3157731)')}</span>
+        </Button>
+
         <Button
           onClick={() => setShowPdfPreviewModal(true)}
           className="w-full bg-deep-forest hover:bg-deep-forest/90 text-white h-12 rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"

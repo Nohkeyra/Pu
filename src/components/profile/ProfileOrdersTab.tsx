@@ -8,10 +8,10 @@ import {
   Ban, 
   Trash2, 
   Mail, 
-  Loader2, 
   Utensils, 
   Check 
 } from 'lucide-react';
+import WawasanLoader from '@/components/WawasanLoader';
 import { format } from 'date-fns';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import type { Order } from '@/types';
@@ -315,8 +315,8 @@ export function ProfileOrdersTab({
       </div>
 
       {isLoadingOrders ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="flex flex-col items-center justify-center py-10 space-y-2">
+          <WawasanLoader size={52} />
         </div>
       ) : orders.length === 0 ? (
         <EmptyState

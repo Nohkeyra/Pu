@@ -3,7 +3,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2 } from 'lucide-react';
+import { Lock, ArrowLeft, Shield, Sun, Moon } from 'lucide-react';
+import WawasanLoader from '@/components/WawasanLoader';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -127,9 +128,9 @@ export default function AdminPage() {
   // Initial Session Verification
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
-        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
-        <p className="microcopy-12-upper text-stone animate-pulse">Verifying Session...</p>
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
+        <WawasanLoader size={80} />
+        <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
       </div>
     );
   }

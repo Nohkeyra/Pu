@@ -75,10 +75,33 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
     const invoiceNo = getDisplayInvoiceNo(sendOrder);
     const total = sendOrder.totalAmount || 0;
     const formattedPhone = recipientPhone.replace(/\D/g, '').replace(/^0/, '60');
+    const isBm = sendOrder.lang !== 'en';
     
-    const msg = sendOrder.lang === 'bm' 
-      ? `Salam *${sendOrder.name}*... Invois: *${invoiceNo}*... Total: *RM ${total.toFixed(2)}*`
-      : `Hello *${sendOrder.name}*... Invoice: *${invoiceNo}*... Total: *RM ${total.toFixed(2)}*`;
+    const msg = isBm 
+      ? `Salam ${sendOrder.name},\n\nTerima kasih kerana memilih *Restoran Wawasan Pak Usop*.\n\n` +
+        `Berikut adalah butiran invois tempahan katering anda:\n` +
+        `• *No. Invois:* ${invoiceNo}\n` +
+        `• *Tarikh Majlis:* ${sendOrder.date}\n` +
+        `• *Bilangan Pax:* ${sendOrder.quantity || '-'} orang\n` +
+        `• *Jumlah Bayaran:* RM ${total.toFixed(2)}\n\n` +
+        `*Maklumat Pembayaran (Bank Transfer):*\n` +
+        `• Bank: *Bank Muamalat*\n` +
+        `• Nama Akaun: *RESTORAN WAWASAN*\n` +
+        `• No. Akaun: *16010000-405710*\n\n` +
+        `Sila hantarkan resit bayaran di sini setelah pembayaran dibuat. Sekiranya ada sebarang pertanyaan, sila hubungi kami di talian *017-3157731*.\n\n` +
+        `Terima kasih!`
+      : `Hello ${sendOrder.name},\n\nThank you for choosing *Restoran Wawasan Pak Usop*.\n\n` +
+        `Here are your catering invoice details:\n` +
+        `• *Invoice No:* ${invoiceNo}\n` +
+        `• *Event Date:* ${sendOrder.date}\n` +
+        `• *Guest Count:* ${sendOrder.quantity || '-'} pax\n` +
+        `• *Total Amount:* RM ${total.toFixed(2)}\n\n` +
+        `*Bank Payment Details:*\n` +
+        `• Bank: *Bank Muamalat*\n` +
+        `• Account Name: *RESTORAN WAWASAN*\n` +
+        `• Account No: *16010000-405710*\n\n` +
+        `Please share your payment transfer receipt once completed. For any inquiries, feel free to reach us at *017-3157731*.\n\n` +
+        `Thank you!`;
 
     const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
     

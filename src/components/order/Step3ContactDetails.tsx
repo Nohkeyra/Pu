@@ -314,25 +314,29 @@ export function Step3ContactDetails({
         </div>
 
         {/* Delivery vs Pickup Method Cards */}
-        <div className="space-y-2 pt-1">
-          <Label className="text-xs font-bold text-stone uppercase tracking-wider">{tText('Delivery Method', 'Kaedah Penghantaran')}</Label>
+        <div className="space-y-1.5 pt-1">
+          <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">{tText('Delivery Method', 'Kaedah Penghantaran *')}</Label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
+          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
             <button
               type="button"
               role="radio"
               aria-checked={orderState.delivery === 'delivery'}
               onClick={() => setOrderState(prev => ({ ...prev, delivery: 'delivery' }))}
               className={cn(
-                "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
+                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                 orderState.delivery === 'delivery'
-                  ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                  : "bg-muted border-stone/15 text-stone"
+                  ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30"
+                  : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
               )}
             >
-              <Truck className="w-5 h-5 text-crisp-carrot" />
-              <span className="text-xs font-bold block">{tText('Delivery to Location', 'Hantar ke Lokasi')}</span>
-              <span className="microcopy-12 text-stone leading-tight font-light">{tText('Delivered to your event address.', 'Dihantar terus ke tapak majlis.')}</span>
+              <div className="w-8 h-8 rounded-xl bg-card border border-stone/10 dark:bg-stone-800 flex items-center justify-center transition-all shrink-0">
+                <Truck className="w-4 h-4 text-crisp-carrot" />
+              </div>
+              <div className="w-full">
+                <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Delivery', 'Hantar ke Lokasi')}</span>
+                <span className="text-[11px] text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Direct to venue', 'Dihantar ke majlis')}</span>
+              </div>
             </button>
 
             <button
@@ -341,15 +345,19 @@ export function Step3ContactDetails({
               aria-checked={orderState.delivery === 'pickup'}
               onClick={() => setOrderState(prev => ({ ...prev, delivery: 'pickup' }))}
               className={cn(
-                "p-5 rounded-2xl border text-center transition-all duration-300 flex flex-col items-center gap-1.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-crisp-carrot/40",
+                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
                 orderState.delivery === 'pickup'
-                  ? "bg-crisp-carrot/15 border-crisp-carrot text-crisp-carrot shadow-sm"
-                  : "bg-muted border-stone/15 text-stone"
+                  ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30"
+                  : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
               )}
             >
-              <Store className="w-5 h-5 text-crisp-carrot" />
-              <span className="text-xs font-bold block">{tText('Pickup at Restaurant', 'Ambil di Restoran')}</span>
-              <span className="microcopy-12 text-stone leading-tight font-light">{tText('Collect directly from Pak Usop.', 'Ambil sendiri di Restoran Wawasan.')}</span>
+              <div className="w-8 h-8 rounded-xl bg-card border border-stone/10 dark:bg-stone-800 flex items-center justify-center transition-all shrink-0">
+                <Store className="w-4 h-4 text-crisp-carrot" />
+              </div>
+              <div className="w-full">
+                <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Self Pickup', 'Ambil di Restoran')}</span>
+                <span className="text-[11px] text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Collect at Presint 2', 'Ambil di Restoran')}</span>
+              </div>
             </button>
           </div>
         </div>

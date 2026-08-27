@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useNavigate } from 'react-router-dom';
-import { Skeleton } from '@/components/ui/Skeleton';
+import WawasanLoader from '@/components/WawasanLoader';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import type { Order } from '@/types';
@@ -183,17 +183,9 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background p-6 space-y-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48 rounded-xl" />
-            <Skeleton className="h-4 w-32 rounded-lg" />
-          </div>
-          <Skeleton className="w-12 h-12 rounded-full" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
-        </div>
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
+        <WawasanLoader size={80} />
+        <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
       </div>
     );
   }

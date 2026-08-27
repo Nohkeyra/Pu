@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { verifyAdminToken } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
+import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
 
 const router = Router();
 
@@ -16,6 +17,67 @@ function isValidPdf(buffer: Buffer): boolean {
   const header = buffer.toString('ascii', 0, 5);
   return header.startsWith('%PDF-');
 }
+
+// WhatsApp API Endpoint for Admin Invoice Sharing
+router.post('/send-invoice-whatsapp', verifyAdminToken, async (req, res) => {
+  const { recipientPhone, customerName, invoiceNo, eventDate, pax, totalAmount, pdfDownloadUrl, lang } = req.body || {};
+
+  if (!recipientPhone || !customerName || !invoiceNo) {
+    return res.status(400).json({
+      success: false,
+      error: 'recipientPhone, customerName, and invoiceNo are required fields.'
+    });
+  }
+
+  try {
+    const result = await whatsappBusinessService.shareInvoiceToCustomer({
+      recipientPhone,
+      customerName,
+      invoiceNo,
+      eventDate: eventDate || 'Akan Dimaklumkan',
+      pax: pax || '-',
+      totalAmount: Number(totalAmount) || 0,
+      pdfDownloadUrl,
+      lang: lang === 'en' ? 'en' : 'bm'
+    });
+
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: String(err?.message || err) });
+  }
+});
+
+// WhatsApp API Endpoint for Order Forwarding
+router.post('/forward-order-whatsapp', async (req, res) => {
+  const orderPayload = req.body || {};
+
+  if (!orderPayload.customerName || !orderPayload.contactNumber) {
+    return res.status(400).json({
+      success: false,
+      error: 'customerName and contactNumber are required to forward order.'
+    });
+  }
+
+  try {
+    const result = await whatsappBusinessService.forwardOrderToAdmin({
+      orderId: orderPayload.orderId || orderPayload.id,
+      customerName: orderPayload.customerName || orderPayload.name,
+      contactNumber: orderPayload.contactNumber || orderPayload.contact || orderPayload.phone,
+      eventDate: orderPayload.eventDate || orderPayload.date || 'Akan Dimaklumkan',
+      eventTime: orderPayload.eventTime || orderPayload.time || '12:00 PM',
+      pax: orderPayload.pax || orderPayload.guests || orderPayload.quantity || '-',
+      mealType: orderPayload.mealType || orderPayload.meal || 'Katering',
+      totalAmount: Number(orderPayload.totalAmount) || 0,
+      selectedDishes: orderPayload.selectedDishes || orderPayload.dishes || [],
+      deliveryAddress: orderPayload.deliveryAddress || orderPayload.address,
+      specialNotes: orderPayload.specialNotes || orderPayload.notes
+    });
+
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: String(err?.message || err) });
+  }
+});
 
 router.post('/send-invoice', verifyAdminToken, async (req, res) => {
   const { orderId, email, subject, body, pdfBase64 } = req.body || {};

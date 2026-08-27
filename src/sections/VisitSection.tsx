@@ -93,7 +93,7 @@ export default function VisitSection() {
                   </h3>
                   <p className="text-stone/80 dark:text-stone-400 text-sm">
                     {isBm ? 'Telefon' : 'Call'}: +60 17-858 2642<br />
-                    WhatsApp: +60 17-315 7721
+                    WhatsApp: +60 17-315 7731
                   </p>
                 </div>
               </motion.div>

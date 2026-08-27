@@ -7,6 +7,7 @@ import { notifyCustomerOfStatusChange, createBrevoTransporter } from '../emailSe
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
+import { isValidStatusTransition } from '../services/orderValidator.js';
 
 const router = Router();
 
@@ -393,6 +394,12 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
     if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
 
     const oldData = oldSnap.data() as OrderData;
+    if (status && !isValidStatusTransition(oldData.status || 'pending', status)) {
+      return res.status(400).json({
+        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${status}'`
+      });
+    }
+
     const updates: Partial<OrderData> = { status, updatedAt: FieldValue.serverTimestamp() };
 
     if ((status === 'approved' || status === 'billed') && !oldData.invoiceNo) {
