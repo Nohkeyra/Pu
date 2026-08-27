@@ -66,7 +66,27 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
             const invoiceNo = data.invoiceNo || data.officialInvoiceNo || orderId.slice(0, 8);
             const status = data.status || 'pending';
             const pax = data.guests || data.pax || 0;
-            const updatedAt = data.updatedAt || data.createdAt || new Date().toISOString();
+            // Safe extraction of Firestore Timestamp, standard JS Date, or ISO date string
+            const getIsoString = (val: any): string => {
+              if (!val) return new Date().toISOString();
+              if (typeof val === 'string') return val;
+              if (val instanceof Date) return val.toISOString();
+              if (typeof val === 'object') {
+                if (typeof val.toDate === 'function') {
+                  return val.toDate().toISOString();
+                }
+                if (typeof val.seconds === 'number') {
+                  return new Date(val.seconds * 1000).toISOString();
+                }
+                if (typeof val._seconds === 'number') {
+                  return new Date(val._seconds * 1000).toISOString();
+                }
+              }
+              const d = new Date(val);
+              return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+            };
+
+            const updatedAt = getIsoString(data.updatedAt || data.createdAt);
 
             let title = t('Pesanan Dikemas Kini', 'Order Updated');
             let message = t('Status pesanan anda telah dikemas kini.', 'Your order status has been updated.');
@@ -341,13 +361,25 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
 
 function formatRelativeTime(isoDateString: string): string {
   try {
-    const diff = Date.now() - new Date(isoDateString).getTime();
+    if (!isoDateString) return '';
+    const parsedDate = new Date(isoDateString);
+    const timeMs = parsedDate.getTime();
+    if (isNaN(timeMs)) {
+      return '';
+    }
+    
+    const diff = Date.now() - timeMs;
     const minutes = Math.floor(diff / (1000 * 60));
+    if (isNaN(minutes)) return '';
     if (minutes < 1) return 'Baru sahaja';
     if (minutes < 60) return `${minutes}m lalu`;
+    
     const hours = Math.floor(minutes / 60);
+    if (isNaN(hours)) return '';
     if (hours < 24) return `${hours}j lalu`;
+    
     const days = Math.floor(hours / 24);
+    if (isNaN(days)) return '';
     return `${days}d lalu`;
   } catch {
     return '';
