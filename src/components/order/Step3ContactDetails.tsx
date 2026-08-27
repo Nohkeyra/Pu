@@ -113,7 +113,7 @@ export function Step3ContactDetails({
         <div 
           className="absolute inset-0 opacity-[0.22] pointer-events-none"
           style={{
-            backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}

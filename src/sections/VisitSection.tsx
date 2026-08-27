@@ -60,7 +60,7 @@ export default function VisitSection() {
               
               <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-stone-200 dark:border-stone-800 bg-[#fdfbf7] dark:bg-card">
                 <ResponsiveImage 
-                  src="/assets/ui/restoran-exterior.jpg" 
+                  src="/assets/venue/restoran-exterior.jpg" 
                   alt="Restoran Wawasan Exterior" 
                   objectFit="cover"
                   containerClassName="w-full h-full"

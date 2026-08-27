@@ -41,7 +41,7 @@ export default function LoginPage() {
       </header>
 
       <div className="absolute inset-0">
-        <Batik3DMotion mode="background" src={getAssetUrl('/assets/ui/batik_vector_pattern.jpg')} backgroundSize="cover" backgroundRepeat="no-repeat" imgClassName="opacity-30 contrast-[1.08] saturate-[1.12] dark:opacity-22" maxRotation={10} />
+        <Batik3DMotion mode="background" src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} backgroundSize="cover" backgroundRepeat="no-repeat" imgClassName="opacity-30 contrast-[1.08] saturate-[1.12] dark:opacity-22" maxRotation={10} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.70),rgba(255,255,255,0.40))] dark:bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(12,69,60,0.95),rgba(12,69,60,0.80),rgba(12,69,60,0.55))]" />
       </div>
 
@@ -57,11 +57,11 @@ export default function LoginPage() {
             <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="mb-4 h-32 w-32 flex items-center justify-center">
+              <div className="mb-6 h-32 w-32 rounded-3xl bg-white/80 p-2 shadow-xl ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
                 <img
                   src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                   alt="Restoran Wawasan Logo"
-                  className="w-full h-full object-contain drop-shadow-md"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
@@ -73,14 +73,12 @@ export default function LoginPage() {
                 <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-[var(--color-sunshine-cta)]">
                   Pak Usop
                 </p>
-                <div className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/72 dark:text-white/72 text-center space-y-1">
-                  <p className="font-medium">
-                    &ldquo;Sistem tak pernah lupa, kita je selalu leka.&rdquo;
-                  </p>
-                  <p className="font-medium">
-                    &ldquo;Maka registerlah&rdquo;
-                  </p>
-                </div>
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/72 dark:text-white/72">
+                  {tLocal(
+                    'Catering, signature dishes, and a smoother ordering flow in one place.',
+                    'Katering, hidangan istimewa, dan aliran tempahan yang lebih kemas dalam satu aplikasi.'
+                  )}
+                </p>
               </div>
 
               <div className="w-full space-y-3">

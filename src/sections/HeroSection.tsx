@@ -53,7 +53,7 @@ export default function HeroSection() {
         >
           <Batik3DMotion
             mode="background"
-            src={getAssetUrl('/assets/ui/batik_vector_pattern.jpg')}
+            src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
             backgroundSize="cover"
             maxRotation={15}
             imgClassName="opacity-25 dark:opacity-[0.16] dark:contrast-110 dark:brightness-90 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"

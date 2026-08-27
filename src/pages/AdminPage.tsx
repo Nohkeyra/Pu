@@ -11,7 +11,6 @@ import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
-import { BungaRayaSpinner } from '@/components/ui/BungaRayaSpinner';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -129,7 +128,7 @@ export default function AdminPage() {
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-6">
-        <BungaRayaSpinner className="w-12 h-12 text-amber-500" />
+        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
         <p className="microcopy-12-upper text-stone animate-pulse">Verifying Session...</p>
       </div>
     );
@@ -310,6 +309,8 @@ export default function AdminPage() {
             localStorage.removeItem('wawasan_admin_token');
             localStorage.removeItem('wawasan_admin_authenticated');
             sessionStorage.removeItem('wawasan_admin_token');
+            sessionStorage.removeItem('wawasan_session_started');
+            sessionStorage.removeItem('wawasan_guest_allowed');
           } catch (e) {
             console.warn('Manual storage cleanup warning:', e);
           }

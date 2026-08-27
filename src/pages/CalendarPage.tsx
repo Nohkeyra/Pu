@@ -5,7 +5,6 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
-import { BungaRayaSpinner } from '@/components/ui/BungaRayaSpinner';
 const cateringBanner = '/assets/ui/catering_banner.jpg';
 import { 
   Calendar as CalendarIcon, 
@@ -458,7 +457,7 @@ export default function CalendarPage() {
             <div 
               className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18] pointer-events-none group-hover:opacity-[0.20] transition-opacity duration-700"
               style={{
-                backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+                backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
                 backgroundSize: '240px',
                 backgroundPosition: 'center',
               }}
@@ -510,8 +509,8 @@ export default function CalendarPage() {
 
           {/* Loading Indicator */}
           {loading ? (
-            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-12 text-center shadow-sm flex flex-col items-center justify-center">
-              <BungaRayaSpinner className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-12 text-center shadow-sm">
+              <Clock className="w-8 h-8 text-crisp-carrot animate-spin mx-auto mb-3" />
               <p className="text-sm font-bold text-deep-forest dark:text-stone-300">
                 {tl('Loading live kitchen calendar...', 'Memuatkan jadual langsung dapur...')}
               </p>
@@ -636,7 +635,7 @@ export default function CalendarPage() {
               <div 
                 className="absolute top-0 left-0 right-0 h-1 opacity-20 z-20"
                 style={{
-                  backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+                  backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
                   backgroundSize: '160px',
                   backgroundPosition: 'center',
                 }}

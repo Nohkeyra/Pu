@@ -69,8 +69,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const clientAttn = orders[0].attn;
   const recipientText = clientName + (clientAttn ? ` (Attn: ${clientAttn})` : '');
 
-  const JsPDFClass = (jsPDF as any).default || jsPDF;
-  const doc = new JsPDFClass({
+  const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',

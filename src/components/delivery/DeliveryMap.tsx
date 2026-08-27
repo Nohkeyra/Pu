@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css';
 import { launchMaps } from '@/lib/nativeService';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
-const leaflet = (L as any)?.default || L;
 
 interface DeliveryMapProps {
   order: Order;
@@ -101,13 +100,13 @@ function LeafletMapContainer({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const map = leaflet.map(mapContainerRef.current, {
+    const map = L.map(mapContainerRef.current, {
       zoomControl: true,
       scrollWheelZoom: true,
     }).setView([RESTORAN_WAWASAN_COORDS.lat, RESTORAN_WAWASAN_COORDS.lng], 13);
 
     // Gorgeous elegant light grey tile theme from CartoDB
-    leaflet.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 20,
@@ -132,24 +131,24 @@ function LeafletMapContainer({
     if (!map || !destLatLng) return;
 
     // Restaurant marker
-    const restIcon = leaflet.divIcon({
+    const restIcon = L.divIcon({
       html: `<div class="w-10 h-10 bg-orange-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300">🍽️</div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 20],
     });
-    const restMarker = leaflet.marker([RESTORAN_WAWASAN_COORDS.lat, RESTORAN_WAWASAN_COORDS.lng], { icon: restIcon })
+    const restMarker = L.marker([RESTORAN_WAWASAN_COORDS.lat, RESTORAN_WAWASAN_COORDS.lng], { icon: restIcon })
       .addTo(map)
       .bindPopup('<b>Restoran Wawasan</b><br>Putrajaya Holdings');
 
     // Customer marker
-    const destIcon = leaflet.divIcon({
+    const destIcon = L.divIcon({
       html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300">🏠</div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 20],
     });
-    const destMarker = leaflet.marker([destLatLng.lat, destLatLng.lng], { icon: destIcon })
+    const destMarker = L.marker([destLatLng.lat, destLatLng.lng], { icon: destIcon })
       .addTo(map)
       .bindPopup(`<b>Catering Delivery Point</b><br>${locationString}`);
 
@@ -172,7 +171,7 @@ function LeafletMapContainer({
           if (routePolylineRef.current) {
             routePolylineRef.current.remove();
           }
-          const polyline = leaflet.polyline(pathCoords, {
+          const polyline = L.polyline(pathCoords, {
             color: '#e03f14', // Restyle palette (tomato marker)
             weight: 6,
             opacity: 0.85,
@@ -189,7 +188,7 @@ function LeafletMapContainer({
           setRouteLoaded(true);
 
           // Animate vehicle marker
-          const truckIcon = leaflet.divIcon({
+          const truckIcon = L.divIcon({
             html: `<div class="bg-sky-500 hover:bg-sky-600 border-2 border-white text-white p-2.5 rounded-full shadow-premium flex items-center justify-center animate-bounce transition-all duration-300"><svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></div>`,
             className: '',
             iconSize: [44, 44],
@@ -202,10 +201,10 @@ function LeafletMapContainer({
 
           if (orderStatus === 'delivered') {
             const finalPos = pathCoords[pathCoords.length - 1];
-            vehicleMarkerRef.current = leaflet.marker(finalPos, { icon: truckIcon }).addTo(map);
+            vehicleMarkerRef.current = L.marker(finalPos, { icon: truckIcon }).addTo(map);
           } else {
             let index = 0;
-            vehicleMarkerRef.current = leaflet.marker(pathCoords[0], { icon: truckIcon }).addTo(map);
+            vehicleMarkerRef.current = L.marker(pathCoords[0], { icon: truckIcon }).addTo(map);
 
             animationInterval = setInterval(() => {
               if (!active) return;

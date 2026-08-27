@@ -77,8 +77,8 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
 
     tryLoad([
       getAssetUrl('/assets/heritage/Jawi.jpg'),
-      getAssetUrl('/assets/ui/batik_vector_pattern.jpg'),
-      getAssetUrl('/assets/ui/batik_pattern.jpg')
+      getAssetUrl('/assets/heritage/batik_vector_pattern.jpg'),
+      getAssetUrl('/assets/heritage/batik_pattern.jpg')
     ], 0);
   });
 };
@@ -144,7 +144,8 @@ export const preloadLogoForPDF = (): Promise<string> => {
     };
 
     tryLoad([
-      getAssetUrl('/assets/brand/wawasan_logo.png')
+      getAssetUrl('/assets/brand/wawasan_logo.png'),
+      getAssetUrl('/assets/brand/wawasan_logo_fallback.png')
     ], 0);
   });
 };
@@ -243,8 +244,7 @@ export const drawBatikHeaderBackground = (doc: jsPDF, headerHeight: number = 36)
 };
 
 export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 'bm' = 'bm'): jsPDF => {
-  const JsPDFClass = (jsPDF as any).default || jsPDF;
-  const doc = new JsPDFClass({
+  const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
@@ -664,8 +664,7 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
 
 export const generateCombinedInvoicePDF = (payload: CombinedInvoicePayload, isFinal: boolean = true): jsPDF => {
   const { orders, includeNotes, lang = 'bm' } = payload;
-  const JsPDFClass = (jsPDF as any).default || jsPDF;
-  const doc = new JsPDFClass({
+  const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',

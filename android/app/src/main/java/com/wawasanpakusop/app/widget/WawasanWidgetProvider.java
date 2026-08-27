@@ -31,7 +31,9 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             setRefreshIntent(context, views);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
-        WidgetUpdateService.fetchAndUpdate(context, appWidgetIds);
+        
+        PendingResult pendingResult = goAsync();
+        WidgetUpdateService.fetchAndUpdate(context, appWidgetIds, pendingResult);
     }
 
     private void setOpenAdminIntent(Context context, RemoteViews views) {
@@ -63,7 +65,8 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             int[] ids = manager.getAppWidgetIds(
                 new android.content.ComponentName(context, WawasanWidgetProvider.class)
             );
-            WidgetUpdateService.fetchAndUpdate(context, ids);
+            PendingResult pendingResult = goAsync();
+            WidgetUpdateService.fetchAndUpdate(context, ids, pendingResult);
         }
     }
 

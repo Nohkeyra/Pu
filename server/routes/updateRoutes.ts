@@ -5,9 +5,9 @@ import { verifyAdminToken } from '../adminAuth.js';
 const router = Router();
 
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.40',
+  latestVersion: '1.3.16',
   minVersion: '1.2.0',
-  buildNumber: 171,
+  buildNumber: 147,
   apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk',
   bundleUrl: '',
   releaseNotes: [

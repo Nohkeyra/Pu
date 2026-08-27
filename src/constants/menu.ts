@@ -723,7 +723,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
   {
     id: 'nescafe_panas',
@@ -734,7 +734,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
   {
     id: 'teh_tarik',
@@ -745,7 +745,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/teh_tarik.jpg'
+    image: '/assets/drinks/teh_tarik.jpg'
   },
   {
     id: 'kopi_kampung',
@@ -756,7 +756,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
   {
     id: 'nescafe_o',
@@ -767,7 +767,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
   {
     id: 'milo_o',
@@ -778,7 +778,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
   {
     id: 'teh_o',
@@ -789,7 +789,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/teh_tarik.jpg'
+    image: '/assets/drinks/teh_tarik.jpg'
   },
   {
     id: 'kopi_o',
@@ -800,7 +800,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'breakfast_hitea',
-    image: '/assets/dishes/vector/kopi_kampung.jpg'
+    image: '/assets/drinks/kopi_kampung_vector.jpg'
   },
 
   // Lunch Cold / Box Drinks
@@ -813,7 +813,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   },
   {
     id: 'tetra_pak_peel_fresh_kecil',
@@ -824,7 +824,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   },
   {
     id: 'air_tetra_pak_berperisa',
@@ -835,7 +835,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   },
   {
     id: 'tetra_pak_mineral_water',
@@ -846,7 +846,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 3.00,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   },
   {
     id: 'air_kordial',
@@ -857,7 +857,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 2.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   },
   {
     id: 'air_mineral_botol',
@@ -868,7 +868,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     price: 2.50,
     category: 'drinks',
     suitability: 'lunch',
-    image: '/assets/dishes/vector/sirap_bandung.jpg'
+    image: '/assets/drinks/sirap_bandung.jpg'
   }
 ];
 
@@ -959,7 +959,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 2.50,
     priceEn: 'From RM 2.50',
     priceBm: 'Daripada RM 2.50',
-    image: '/assets/dishes/photos/teh-tarik.jpg',
+    image: '/assets/drinks/teh-tarik.jpg',
     category: 'drinks',
   },
   {
@@ -971,7 +971,7 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
     price: 2.80,
     priceEn: 'From RM 2.80',
     priceBm: 'Daripada RM 2.80',
-    image: '/assets/dishes/photos/kopi_kampung.jpg',
+    image: '/assets/drinks/kopi_kampung.jpg',
     category: 'drinks',
   },
 ];

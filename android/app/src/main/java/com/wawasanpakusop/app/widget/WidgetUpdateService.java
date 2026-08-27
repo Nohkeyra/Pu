@@ -2,6 +2,7 @@ package com.wawasanpakusop.app.widget;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -41,7 +42,7 @@ public class WidgetUpdateService {
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public static void fetchAndUpdate(Context context, int[] appWidgetIds) {
+    public static void fetchAndUpdate(Context context, int[] appWidgetIds, BroadcastReceiver.PendingResult pendingResult) {
         executor.execute(() -> {
             String ordersJson = null;
             boolean success = false;
@@ -61,7 +62,7 @@ public class WidgetUpdateService {
                     reader.close();
 
                     JSONObject json = new JSONObject(sb.toString());
-                    if (json.optBoolean("success", false)) {
+                    if (json.optBoolean("success", false) && json.has("orders")) {
                         ordersJson = json.getJSONArray("orders").toString();
                         success = true;
                     }
@@ -72,14 +73,17 @@ public class WidgetUpdateService {
             }
 
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            if (success) {
+            if (success && ordersJson != null) {
                 prefs.edit().putString(PREF_ORDERS_JSON, ordersJson).apply();
             }
 
             final boolean finalSuccess = success;
-            new Handler(Looper.getMainLooper()).post(() ->
-                applyUpdate(context, appWidgetIds, finalSuccess)
-            );
+            new Handler(Looper.getMainLooper()).post(() -> {
+                applyUpdate(context, appWidgetIds, finalSuccess);
+                if (pendingResult != null) {
+                    pendingResult.finish();
+                }
+            });
         });
     }
 

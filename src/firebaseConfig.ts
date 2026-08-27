@@ -4,6 +4,7 @@ import {
   getFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
   setLogLevel,
   type Firestore
 } from "firebase/firestore";
@@ -89,7 +90,11 @@ let dbInstance: Firestore;
 
 try {
   const localCacheConfig = typeof window !== 'undefined'
-    ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    ? persistentLocalCache({
+        tabManager: isNative
+          ? persistentSingleTabManager()
+          : persistentMultipleTabManager()
+      })
     : undefined;
 
   if (dbId && dbId !== "(default)") {

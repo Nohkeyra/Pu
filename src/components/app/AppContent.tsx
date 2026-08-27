@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense, ReactNode } from 'react';
+import { useEffect, useState, useRef, Suspense, ReactNode } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -6,9 +6,8 @@ import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
 import { cn } from '@/lib/utils';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { useLanguage } from '@/context/LanguageContext';
+import WawasanLoader from '@/components/WawasanLoader';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { BungaRayaSpinner } from '@/components/ui/BungaRayaSpinner';
 import { logScreenView, setAnalyticsUserId } from '@/services/analyticsService';
 import { setCrashlyticsUserId } from '@/services/crashlyticsService';
 
@@ -48,16 +47,22 @@ function SmoothScrollHandler() {
 }
 
 function SessionGuard({ children }: { children: ReactNode }) {
-  const [loading, setLoading] = useState(false);
-  const [allowed] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, () => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       try {
-        sessionStorage.setItem('wawasan_session_started', 'true');
-        sessionStorage.setItem('wawasan_guest_allowed', 'true');
+        const isSessionStarted = sessionStorage.getItem('wawasan_session_started') === 'true';
+        const isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
+        if (user || isSessionStarted || isGuestAllowed) {
+          setAllowed(true);
+        } else {
+          setAllowed(false);
+        }
       } catch (err) {
-        console.warn('Session storage failed:', err);
+        console.warn('Session storage check failed:', err);
+        setAllowed(false);
       }
       setLoading(false);
     });
@@ -108,7 +113,19 @@ export default function AppContent() {
   const location = useLocation();
   const { pathname } = location;
   const [isAdmin, setIsAdmin] = useState(false);
-  const { tl } = useLanguage();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const prevPathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    if (prevPathnameRef.current !== pathname) {
+      setIsNavigating(true);
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+      }, 600); // 600ms delay to give time and show the loading logo
+      prevPathnameRef.current = pathname;
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -155,27 +172,22 @@ export default function AppContent() {
           style={{ transform: `translateY(${Math.min(pullDistance, 120)}px)` }}
         >
           <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            <BungaRayaSpinner className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} showPulseGlow={false} />
-            <span>
-              {isRefreshing 
-                ? tl('Refreshing app...', 'Menyegarkan aplikasi...') 
-                : pullDistance > 80 
-                  ? tl('Release to refresh', 'Lepaskan untuk menyegar') 
-                  : tl('Pull down to refresh', 'Tarik ke bawah untuk menyegar')}
-            </span>
+            <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
+            <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
           </div>
         </div>
       )}
 
       <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
-        <Suspense fallback={
-          <div className="min-h-screen flex flex-col items-center justify-center gap-3.5 bg-cream dark:bg-background">
-            <BungaRayaSpinner className="w-12 h-12 text-amber-500 dark:text-[var(--color-sunshine-cta)]" />
-            <span className="text-xs font-bold tracking-widest uppercase text-amber-700/80 dark:text-amber-400/80 animate-pulse">
-              {tl('Loading...', 'Memuatkan...')}
-            </span>
+        {isNavigating && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-cream/90 dark:bg-background/90 backdrop-blur-sm transition-opacity duration-300">
+            <div className="flex flex-col items-center space-y-3">
+              <WawasanLoader size={88} />
+              <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
+            </div>
           </div>
-        }>
+        )}
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageTransition><LoginPageComp /></PageTransition>} />

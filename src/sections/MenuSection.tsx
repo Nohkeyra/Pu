@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { getAssetUrl } from '@/lib/utils';
-import { resolveDishImage } from '@/utils/dishUtils';
-import { MENU_ITEMS } from '@/data/menu';
+import { MENU_ITEMS } from '@/constants/menu';
 import ResponsiveImage from '@/components/ResponsiveImage';
 import { HungryButton } from '@/components/ui/HungryButton';
 
@@ -56,7 +55,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
 
         <div className="aspect-[4/3] overflow-hidden relative rounded-t-[2rem]" style={{ transform: 'translateZ(40px)' }}>
           <ResponsiveImage
-            src={resolveDishImage(item)}
+            src={item.image || ''}
             alt={isBm ? item.nameBm : item.nameEn}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             containerClassName="w-full h-full"
@@ -87,7 +86,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
             <div 
               className="absolute inset-0 opacity-40 dark:opacity-60 pointer-events-none transition-opacity duration-300 group-hover:opacity-80 mix-blend-overlay dark:mix-blend-screen"
               style={{
-                backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+                backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern_hd.jpg')})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center',

@@ -2,16 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
 
-// F-SPLASH: Animated splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
-//
-// DARK MODE STYLING:
-//   When dark mode is active, the background switches to a rich "Gold Kunyit"
-//   (turmeric gold) canvas gradient (#1c1303 → #3a2700 → #170f02) with glowing
-//   amber ambient light flares and golden batik dot accents.
-//
-// PUTRAJAYA BOMB STICKER:
-//   An illustrated die-cut bomb sticker badge featuring the iconic Putrajaya view
-//   (Putra Mosque & Seri Wawasan Bridge) floats in the scene with a pop rotation.
+// F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
 export interface SplashScreenProps {
   isLoading: boolean;
@@ -30,14 +21,12 @@ if (typeof window !== 'undefined') {
 export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const [badgeError, setBadgeError] = useState(false);
-  const [riderSvgError, setRiderSvgError] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
   const isReducedRef = useRef(false);
   const [isLowEnd] = useState(isLowEndDevice);
   const [skipFaded, setSkipFaded] = useState(false);
 
-  // Auto-fade Skip button after rider settles
   useEffect(() => {
     if (isReducedRef.current) return;
     const id = setTimeout(() => setSkipFaded(true), 1500);
@@ -130,9 +119,9 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   };
 
   const isRiding = stage === 'ride';
-  const isSettling = stage === 'settle';
-  const showOverlay = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
-  const doFlip = stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isSettling = stage === 'settle' || stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isLifting = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isFlipped = stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
   const showTitle = stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
 
   return (
@@ -143,30 +132,28 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           key="splash-bg"
           className={cn(
             "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden select-none transition-colors duration-700",
-            "bg-gradient-to-b from-[#fde047] via-[#f59e0b] to-[#d97706]" // Warm Sunshine Kunyit Yellow
+            "bg-gradient-to-b from-[#fde047] via-[#f59e0b] to-[#d97706]"
           )}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
         >
-          {/* FULL SIZE PUTRAJAYA STICKER BOMB WALLPAPER OVER YELLOW CANVAS */}
+          {/* Putrajaya Sticker Wallpaper Background */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <img
               src={getAssetUrl('/assets/heritage/putrajaya_stickerbomb.jpg')}
-              alt="Putrajaya Sticker Bomb Wallpaper"
+              alt="Putrajaya Sticker Wallpaper"
               className="w-full h-full object-cover object-center opacity-35 mix-blend-multiply scale-105"
               draggable={false}
             />
-            {/* Yellow Kunyit Radial & Overlay Blends */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/60 via-[#f59e0b]/50 to-[#d97706]/70" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(254,240,138,0.35)_0%,transparent_80%)]" />
-            {/* Yellow Ambient Flares & Glow */}
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] bg-[#fef08a]/50 rounded-full blur-[110px]" />
             <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[420px] h-[420px] bg-[#ea580c]/35 rounded-full blur-[90px]" />
           </div>
 
-          {/* Batik-style dot background */}
+          {/* Batik Dots Pattern */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.15]">
             <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
               <defs>
@@ -217,99 +204,41 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           {/* Ground line */}
           <div className="absolute bottom-[30%] left-8 right-8 h-px bg-black/20" />
 
-          {/* ── RIDER RIG ─────────────────────────────────────────────────── */}
-          <motion.div
-            className="absolute bottom-[28%] left-1/2 z-20"
-            initial={{ x: 'calc(-50% - 100vw)' }}
-            animate={{
-              x: '-50%',
-              y: isSettling ? (isLowEnd ? [0, -8, 0] : [0, 14, -6, 2, 0]) : 0,
-            }}
-            transition={{
-              x: isLowEnd
-                ? { duration: 1.1, ease: [0.22, 1, 0.36, 1] }
-                : { type: 'spring', stiffness: 60, damping: 14, mass: 1.2 },
-              y: isLowEnd
-                ? { duration: 0.25, ease: 'easeOut' }
-                : { type: 'spring', stiffness: 180, damping: 10, mass: 0.8 },
-            }}
-          >
-            <div className="relative w-72 h-72">
-              {!riderSvgError ? (
-                <img
-                  src={getAssetUrl('/assets/ui/rider-grouped.svg')}
-                  alt=""
-                  aria-hidden="true"
-                  className="w-full h-full object-contain"
-                  style={{ transform: 'scaleX(-1)' }}
-                  draggable={false}
-                  onError={() => setRiderSvgError(true)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative w-40 h-40 flex items-center justify-center">
-                    <img
-                      src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-                      alt="Restoran Wawasan"
-                      className="w-full h-full object-contain drop-shadow-lg"
-                      draggable={false}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Delivery Bag Flip Overlay */}
-              {showOverlay && !riderSvgError && (
-                <div
-                  className="absolute"
-                  style={{
-                    left: '15.4%',
-                    top: '25.6%',
-                    width: '18.3%',
-                    height: '37.5%',
-                    perspective: '800px',
-                  }}
-                >
-                  <motion.div
-                    className="w-full h-full relative"
-                    style={{ transformStyle: 'preserve-3d' }}
-                    animate={{
-                      y: showOverlay ? -8 : 0,
-                      rotate: showOverlay ? -6 : 0,
-                      rotateY: doFlip ? 180 : 0,
-                    }}
-                    transition={{
-                      y: isLowEnd
-                        ? { duration: 0.3, ease: 'easeOut' }
-                        : { type: 'spring', stiffness: 280, damping: 18 },
-                      rotate: isLowEnd
-                        ? { duration: 0.3, ease: 'easeOut' }
-                        : { type: 'spring', stiffness: 280, damping: 18 },
-                      rotateY: isLowEnd
-                        ? { duration: 0.45, ease: [0.4, 0, 0.2, 1], delay: 0.1 }
-                        : { type: 'spring', stiffness: 120, damping: 14, delay: 0.08 },
-                    }}
-                  >
-                    <div
-                      className="absolute inset-0 flex items-center justify-center overflow-visible"
-                      style={{
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
-                      }}
-                    >
-                      <img
-                        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-                        alt="Restoran Wawasan"
-                        className="w-[120%] h-[120%] object-contain drop-shadow-lg"
-                        draggable={false}
-                      />
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-            </div>
-          </motion.div>
+          {/* ── RIDER ANIMATION SCENE ──────────────────────────────────────── */}
+          <div className="absolute inset-x-4 top-[25%] bottom-[32%] flex items-center justify-center z-20">
+            <motion.div
+              className="relative w-full max-w-sm aspect-square flex items-center justify-center"
+              initial={{ x: '-110vw', opacity: 0, rotate: -8 }}
+              animate={
+                isFlipped
+                  ? { x: 0, y: [0, -12, 0], opacity: 1, rotate: [0, 4, 0], scale: [1, 1.03, 1] }
+                  : isLifting
+                  ? { x: 0, y: [0, -18, -4], opacity: 1, rotate: [0, -4, 2] }
+                  : isSettling
+                  ? { x: 0, y: [0, 6, 0], opacity: 1, rotate: [0, 2, 0] }
+                  : { x: 0, opacity: 1, rotate: 0 }
+              }
+              transition={
+                isFlipped
+                  ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+                  : isLifting
+                  ? { duration: 0.45, ease: 'easeOut' }
+                  : isSettling
+                  ? { duration: 0.35, ease: 'easeInOut' }
+                  : isLowEnd
+                  ? { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+                  : { type: 'spring', stiffness: 90, damping: 14 }
+              }
+            >
+              <img
+                src={getAssetUrl('/assets/ui/rider-grouped.svg')}
+                alt="Restoran Wawasan Delivery Rider"
+                className="w-full h-full object-contain pointer-events-none drop-shadow-2xl bg-transparent"
+                style={{ background: 'transparent' }}
+                draggable={false}
+              />
+            </motion.div>
+          </div>
 
           {/* Motion trail */}
           {isRiding && (
@@ -387,7 +316,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/60 via-[#f59e0b]/50 to-[#d97706]/70" />
           </div>
           <motion.img
-            src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
+            src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
             alt="Restoran Wawasan"
             className="w-60 h-60 object-contain drop-shadow-2xl"
             draggable={false}

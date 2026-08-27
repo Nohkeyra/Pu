@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, User as UserIcon, Sun, Moon } from 'lucide-react';
+import { Menu, User as UserIcon, Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -23,11 +23,11 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 
 function BrandMark() {
   return (
-    <div className="h-11 w-11 flex items-center justify-center">
+    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
       <TransparentLogo
         src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain drop-shadow-sm"
+        className="w-full h-full object-contain"
         onError={() => {
           // Fallback to png if svg fails
         }}
@@ -102,7 +102,7 @@ export default function Header() {
         <div className="content-container flex items-center justify-between gap-4">
           <Link 
             to={currentUser ? '/home' : '/'} 
-            className="flex min-w-0 items-center gap-3 select-none"
+            className="flex shrink-0 items-center gap-2.5 sm:gap-3 select-none"
             onClick={(e) => {
               const now = Date.now();
               // Prevent navigation if the user is tapping rapidly (under 500ms between taps)
@@ -130,8 +130,8 @@ export default function Header() {
             }}
           >
             <BrandMark />
-            <div className="min-w-0">
-              <span className={`block truncate text-lg md:text-xl font-bold ${brandTextClass}`}>
+            <div className="shrink-0">
+              <span className={`block whitespace-nowrap text-base sm:text-lg xl:text-xl font-bold ${brandTextClass}`}>
                 Restoran Wawasan
               </span>
               <span className={`block microcopy-12-upper ${brandSubClass}`}>
@@ -140,7 +140,7 @@ export default function Header() {
             </div>
           </Link>
 
-          <nav className={`hidden items-center gap-1 md:flex ${isScrolled ? '' : 'rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-md'}`}>
+          <nav className={`hidden items-center gap-1 xl:flex ${isScrolled ? '' : 'rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-md'}`}>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -148,7 +148,7 @@ export default function Header() {
                 className={
                   isScrolled
                     ? 'nav-pill'
-                    : 'rounded-full px-4 py-2 microcopy-14-upper text-white transition-all duration-300 hover:bg-white/20 hover:text-[var(--color-sunshine-cta)] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]'
+                    : 'rounded-full px-3.5 py-1.5 microcopy-14-upper text-white transition-all duration-300 hover:bg-white/20 hover:text-[var(--color-sunshine-cta)] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]'
                 }
               >
                 {t(link.label as Parameters<typeof t>[0]) || link.label.charAt(0).toUpperCase() + link.label.slice(1)}
@@ -156,7 +156,20 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 xl:flex shrink-0">
+            <button
+              type="button"
+              onClick={async () => {
+                await triggerLightImpact();
+                navigate('/settings');
+              }}
+              className={desktopActionClass}
+              aria-label={language === 'bm' ? 'Tetapan' : 'Settings'}
+              title={language === 'bm' ? 'Tetapan' : 'Settings'}
+            >
+              <SettingsIcon className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
+            </button>
+
             <button
               type="button"
               onClick={handleThemeToggle}
@@ -169,7 +182,7 @@ export default function Header() {
             <button
               type="button"
               onClick={toggleLanguage}
-              className={`${desktopActionClass} gap-2 text-xs font-bold`}
+              className={`${desktopActionClass} gap-1.5 text-xs font-bold`}
               aria-label="Toggle Language"
             >
               <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)]' : ''}>EN</span>
@@ -180,15 +193,15 @@ export default function Header() {
             <button
               type="button"
               onClick={handleAuthClick}
-              className={`${desktopActionClass} gap-2.5 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
+              className={`${desktopActionClass} gap-2 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
                 <>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white shadow-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white shadow-sm">
                     {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
-                  <span className="hidden max-w-[140px] truncate lg:inline">
+                  <span className="hidden max-w-[120px] truncate xl:inline">
                     {currentUser.displayName || currentUser.email?.split('@')[0] || (currentUser.uid === 'admin' ? 'Admin' : 'User')}
                   </span>
                 </>
@@ -201,7 +214,20 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden shrink-0">
+            <button
+              type="button"
+              onClick={async () => {
+                await triggerLightImpact();
+                navigate('/settings');
+              }}
+              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
+              aria-label={language === 'bm' ? 'Tetapan' : 'Settings'}
+              title={language === 'bm' ? 'Tetapan' : 'Settings'}
+            >
+              <SettingsIcon className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
+            </button>
+
             <button
               type="button"
               onClick={handleThemeToggle}

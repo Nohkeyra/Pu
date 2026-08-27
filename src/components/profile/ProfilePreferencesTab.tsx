@@ -1,6 +1,8 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Bell, Mail, Ban } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Bell, Mail, Ban, Settings as SettingsIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfilePreferencesTabProps {
   notifyOrderStatus: boolean;
@@ -24,6 +26,7 @@ export function ProfilePreferencesTab({
   handleSavePreferences,
   t,
 }: ProfilePreferencesTabProps) {
+  const navigate = useNavigate();
   return (
     <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
       <div className="pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans">
@@ -94,6 +97,19 @@ export function ProfilePreferencesTab({
               setTimeout(() => handleSavePreferences(), 100);
             }}
           />
+        </div>
+
+        {/* Full Application Settings Button */}
+        <div className="pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate('/settings')}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border-stone-300 dark:border-white/15 py-3 font-semibold text-deep-forest dark:text-white hover:bg-stone-100 dark:hover:bg-stone-800"
+          >
+            <SettingsIcon className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+            <span>{t('Open Full Application Settings', 'Buka Tetapan Penuh Aplikasi')}</span>
+          </Button>
         </div>
       </div>
     </div>

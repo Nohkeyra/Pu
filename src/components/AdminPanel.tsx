@@ -30,7 +30,7 @@ import { useAdminMessaging } from '@/hooks/useAdminMessaging';
 
 const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
 const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
-const PdfPreviewModal = lazy(() => import('./admin/PdfPreviewModal').then(m => ({ default: m.PdfPreviewModal })));
+const AdminPdfShareModal = lazy(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })));
 
 const getDisplayInvoiceNo = (order: Order): string => {
   if (order.invoiceNo) return order.invoiceNo;
@@ -384,7 +384,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             />
           )}
           {isPreviewOpen && (
-            <PdfPreviewModal
+            <AdminPdfShareModal
               isOpen={isPreviewOpen}
               onClose={() => setIsPreviewOpen(false)}
               previewFileName={previewFileName}

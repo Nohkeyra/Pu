@@ -78,17 +78,18 @@ export default function BottomNavigation() {
   if (!showNav) return null;
 
   return (
-    <motion.div
-      initial={{ y: 24, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-      className="fixed bottom-0 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl z-[100] border-t md:border-x md:border-t border-deep-forest/15 bg-white/95 md:rounded-t-[2rem] shadow-[0_-12px_30px_rgba(12,69,60,0.12)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
-      style={{
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 12px) + 6px)',
-        isolation: 'isolate',
-      }}
-    >
-      <nav className="relative z-10 mx-auto flex h-[74px] max-w-xl items-center justify-around px-3 sm:px-6">
+    <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex justify-center">
+      <motion.div
+        initial={{ y: 24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+        className="pointer-events-auto w-full max-w-xl border-t sm:border-x border-deep-forest/15 bg-white/95 sm:rounded-t-[2rem] shadow-[0_-12px_30px_rgba(12,69,60,0.12)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          isolation: 'isolate',
+        }}
+      >
+        <nav className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
         {tabs.map((tab) => {
           const isActive = currentTabId === tab.id;
           const Icon = tab.icon;
@@ -114,11 +115,11 @@ export default function BottomNavigation() {
                 navigate(tab.path);
               }}
               className={cn(
-                'relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-2 select-none cursor-pointer',
+                'relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-1 sm:px-2 select-none cursor-pointer',
                 isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-[#ede5d8]'
               )}
             >
-              <div className="relative flex h-9 w-16 items-center justify-center">
+              <div className="relative flex h-8 sm:h-9 w-12 sm:w-14 items-center justify-center shrink-0">
                 {isActive && (
                   <motion.div
                     layoutId="activeTabPill"
@@ -128,20 +129,20 @@ export default function BottomNavigation() {
                 )}
                 <motion.div
                   initial={false}
-                  animate={isActive ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }}
+                  animate={isActive ? { scale: 1.1, y: -0.5 } : { scale: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 480, damping: 26 }}
                   className="relative z-10 flex items-center justify-center"
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                 </motion.div>
               </div>
 
               <motion.span
                 initial={false}
-                animate={isActive ? { y: 0, opacity: 1 } : { y: 1, opacity: 0.85 }}
+                animate={isActive ? { y: 0, opacity: 1 } : { y: 0.5, opacity: 0.85 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
                 className={cn(
-                  'nav-label relative z-10 transition-colors duration-200 text-[10px] sm:text-[11px] leading-none tracking-wide whitespace-nowrap',
+                  'nav-label relative z-10 transition-colors duration-200 text-[10px] sm:text-[11px] leading-tight tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-0.5',
                   isActive
                     ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
                     : 'nav-label-inactive text-deep-forest/80 dark:text-[#ede5d8]/80 font-medium'
@@ -154,6 +155,7 @@ export default function BottomNavigation() {
         })}
       </nav>
     </motion.div>
+    </div>
   );
 }
 

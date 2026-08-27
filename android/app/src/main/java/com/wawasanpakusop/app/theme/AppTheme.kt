@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.wawasanpakusop.app.ui.CustomizeUiState
 
@@ -52,8 +53,11 @@ fun AppTheme(
         else -> uiState.mainColor
     }
 
-    val baseColorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val colorScheme = baseColorScheme.copy(primary = activePrimary)
+    // Fix: Memoize the color scheme to prevent unnecessary allocations on every recomposition
+    val colorScheme = remember(activePrimary, darkTheme) {
+        val baseColorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+        baseColorScheme.copy(primary = activePrimary)
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, type ImgHTMLAttributes } from 'react';
 import { cn, getAssetUrl } from '@/lib/utils';
-import { ImageOff } from 'lucide-react';
 
 export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;
@@ -15,7 +14,6 @@ export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageEl
   onLoad?: (event?: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   onError?: (event?: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   enableSrcSet?: boolean;
-  fallbackText?: string;
 }
 
 /**
@@ -26,7 +24,7 @@ export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageEl
  * 2. Generates responsive srcSet variants with automatic fallback on loading errors.
  * 3. Shows a smooth shimmer loading state and elegant blur-to-clear transition on load.
  * 4. Provides a graceful fallback visual card when an image fails to load.
- */
+ * */
 export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   src,
   alt,
@@ -38,7 +36,6 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   containerClassName = '',
   onLoad,
   onError,
-  fallbackText,
   style,
   ...imgProps
 }) => {
@@ -71,41 +68,72 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       : 'object-cover';
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // Stage 1: Resolve /src/assets/ legacy paths
     if (currentSrc.includes('/src/assets/')) {
-      // Stage 1 retry: replace /src/assets/ with /assets/
       setCurrentSrc(currentSrc.replace('/src/assets/', '/assets/'));
       return;
     }
-    
-    if (!currentSrc.includes('/assets/dishes/photos/nasi-campur.jpg')) {
-      // Stage 2 retry: fallback to standard bundled asset
-      setCurrentSrc(getAssetUrl('/assets/dishes/photos/nasi-campur.jpg'));
-      return;
-    }
 
-    // Final Stage: show graceful placeholder
+    // Final Stage: show graceful designer placeholder
     setError(true);
     onError?.(e);
   };
 
   if (error || !currentSrc) {
+    const isDrink =
+      src.toLowerCase().includes('drink') ||
+      src.toLowerCase().includes('kopi') ||
+      src.toLowerCase().includes('teh') ||
+      src.toLowerCase().includes('sirap') ||
+      alt.toLowerCase().includes('teh') ||
+      alt.toLowerCase().includes('kopi') ||
+      alt.toLowerCase().includes('drink') ||
+      alt.toLowerCase().includes('water');
+
+    const displayName = alt ? alt.replace(/\s+Catering|\s+Kaw|\s+434|\s+Nasi Impit/gi, '') : 'Wawasan Special';
+
     return (
       <div
         className={cn(
-          'relative flex flex-col items-center justify-center p-4 text-center bg-stone-100 dark:bg-stone-800/60 text-stone-500 dark:text-stone-400 rounded-2xl border border-stone-200/50 dark:border-stone-700/50 overflow-hidden select-none',
+          'relative flex flex-col items-center justify-center p-6 text-center overflow-hidden select-none transition-all duration-500',
+          'bg-gradient-to-br from-amber-500/10 to-amber-600/5 dark:from-stone-900 dark:to-stone-950',
+          'border border-amber-500/10 dark:border-white/5 rounded-t-[2rem] w-full h-full',
           containerClassName
         )}
         style={{ aspectRatio, ...style }}
         role="img"
         aria-label={alt}
       >
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <div className="p-3 rounded-full bg-stone-200/70 dark:bg-stone-700/70 text-stone-400 dark:text-stone-500">
-            <ImageOff className="w-6 h-6 stroke-[1.5]" />
+        {/* Artistic Batik Watermark Pattern overlay */}
+        <div 
+          className="absolute inset-0 opacity-15 dark:opacity-5 mix-blend-overlay dark:mix-blend-screen pointer-events-none"
+          style={{
+            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        
+        {/* Decorative ambient radial glow */}
+        <div className="absolute top-[30%] left-[30%] w-[60%] h-[60%] bg-amber-500/10 blur-[30px] rounded-full pointer-events-none" />
+
+        {/* Content container */}
+        <div className="relative z-10 flex flex-col items-center justify-center space-y-3.5 p-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-stone-850 shadow-md border border-amber-500/20 text-amber-600 dark:text-amber-400 transform transition-transform duration-500 hover:scale-110">
+            {isDrink ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-coffee"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h12Z"/><path d="M6 2v2"/><path d="M17 12h1a2 2 0 0 1 2 2v1a2.5 2.5 0 0 1-2.5 2.5H17"/></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-utensils"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+            )}
           </div>
-          <span className="text-xs font-medium max-w-[80%] truncate">
-            {fallbackText || alt || 'Image unavailable'}
-          </span>
+          <div className="flex flex-col space-y-1">
+            <span className="font-display font-black text-sm lg:text-base tracking-tight text-stone-800 dark:text-amber-100 max-w-[180px] line-clamp-1">
+              {displayName}
+            </span>
+            <span className="text-[9px] uppercase font-black tracking-widest text-amber-600/80 dark:text-amber-400/80">
+              {isDrink ? 'Authentic Drink' : 'Heritage Food'}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -133,8 +161,13 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
         loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
         onLoad={(e) => {
-          setLoaded(true);
-          onLoad?.(e);
+          // Robust check for corrupt decodes of served 0-byte/faulty files
+          if (e.currentTarget.naturalWidth === 0) {
+            handleImageError(e as any);
+          } else {
+            setLoaded(true);
+            onLoad?.(e);
+          }
         }}
         onError={handleImageError}
         className={cn(

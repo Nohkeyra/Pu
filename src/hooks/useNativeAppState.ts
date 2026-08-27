@@ -16,7 +16,7 @@ export function useNativeAppState() {
 
     const setupAppStateListener = async () => {
       try {
-        listenerHandle = await App.addListener('appStateChange', ({ isActive: isAppActive }) => {
+        const handle = await App.addListener('appStateChange', ({ isActive: isAppActive }) => {
           if (!isActive) return;
           
           if (!isAppActive) {
@@ -38,6 +38,12 @@ export function useNativeAppState() {
             backgroundTimeRef.current = null;
           }
         });
+
+        if (!isActive) {
+          handle.remove();
+        } else {
+          listenerHandle = handle;
+        }
       } catch (err) {
         console.warn('Failed to listen to app state changes:', err);
       }

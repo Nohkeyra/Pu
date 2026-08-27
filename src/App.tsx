@@ -76,6 +76,21 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // F-LAUNCH: Force landing on Login Page on fresh cold starts
+    try {
+      const isFreshSession = !sessionStorage.getItem('wawasan_app_initialized');
+      if (isFreshSession) {
+        sessionStorage.setItem('wawasan_app_initialized', 'true');
+        sessionStorage.removeItem('wawasan_session_started');
+        sessionStorage.removeItem('wawasan_guest_allowed');
+        if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#/login') {
+          window.location.hash = '#/';
+        }
+      }
+    } catch (err) {
+      console.warn('Session storage init error:', err);
+    }
+
     syncPreferencesToLocalStorage();
 
     const runWhenIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000));

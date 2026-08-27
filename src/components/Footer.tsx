@@ -9,7 +9,7 @@ import { Batik3DMotion } from './Batik3DMotion';
 
 function BrandMark() {
   return (
-    <div className="w-12 h-12 shrink-0 flex items-center justify-center">
+    <div className="w-12 h-12 shrink-0 flex items-center justify-center rounded-2xl bg-amber-500/10 dark:bg-white/5 border border-amber-500/20 dark:border-white/10 p-2 shadow-md shadow-black/30">
       <TransparentLogo
         src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
@@ -62,7 +62,7 @@ export default function Footer() {
         >
           <Batik3DMotion
             mode="background"
-            src={getAssetUrl('/assets/ui/batik_vector_pattern.jpg')}
+            src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
             backgroundSize="cover"
             backgroundRepeat="no-repeat"
             maxRotation={15}

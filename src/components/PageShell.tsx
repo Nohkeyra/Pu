@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Sun, Moon, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { useTheme } from '@/context/ThemeContext';
@@ -135,7 +135,7 @@ export default function PageShell({
             </button>
           ) : (
             <Link to={homeRoute} className="flex items-center gap-2 min-h-[44px]">
-              <div className="h-9 w-9 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl bg-white/80 p-0.5 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
                 {/*
                   Brand asset path preserved verbatim — visual logo /
                   Malaysian heritage graphic must remain 100% intact.
@@ -143,7 +143,7 @@ export default function PageShell({
                 <TransparentLogo
                   src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                   alt="Restoran Wawasan"
-                  className="w-full h-full object-contain drop-shadow-sm"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <span className="hidden sm:block text-sm font-extrabold tracking-tight text-deep-forest dark:text-white">
@@ -172,6 +172,18 @@ export default function PageShell({
           {/* Right-side minimal actions */}
           <div className="flex items-center gap-2">
             {actions}
+            <button
+              type="button"
+              onClick={async () => {
+                await triggerLightImpact();
+                navigate('/settings');
+              }}
+              className="icon-button-soft touch-target flex"
+              aria-label={t('nav_settings') || 'Settings'}
+              title={t('nav_settings') || 'Settings'}
+            >
+              <SettingsIcon className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
+            </button>
             <button
               type="button"
               onClick={handleThemeToggle}

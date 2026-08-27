@@ -34,7 +34,7 @@ export function useDeepLinks() {
 
     const setupDeepLinks = async () => {
       try {
-        listenerHandle = await App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+        const handle = await App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
           if (!isActive) return;
           
           console.log('App opened with URL:', event.url);
@@ -75,6 +75,12 @@ export function useDeepLinks() {
             console.warn('Failed to parse deep link url:', e);
           }
         });
+
+        if (!isActive) {
+          handle.remove();
+        } else {
+          listenerHandle = handle;
+        }
       } catch (err) {
         console.warn('Failed to setup deep links:', err);
       }

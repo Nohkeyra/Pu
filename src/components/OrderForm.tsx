@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
-import { PDFPreviewModal } from '@/components/PDFPreviewModal';
+import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
 import { AnimatePresence } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -1039,7 +1039,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           <div 
             className="absolute inset-0 opacity-[0.25] pointer-events-none"
             style={{
-              backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+              backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
@@ -1384,7 +1384,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 <div 
                   className="absolute inset-0 opacity-[0.2] pointer-events-none"
                   style={{
-                    backgroundImage: `url(${getAssetUrl('/assets/ui/batik_pattern.jpg')})`,
+                    backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
@@ -1430,7 +1430,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* PDF Preview Modal for submitted order */}
       {submittedOrder && (
-        <PDFPreviewModal
+        <CustomerInvoicePreviewModal
           isOpen={showPdfPreviewModal}
           onClose={() => setShowPdfPreviewModal(false)}
           order={submittedOrder}

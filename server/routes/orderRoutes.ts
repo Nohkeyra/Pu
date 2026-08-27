@@ -7,7 +7,6 @@ import { notifyCustomerOfStatusChange, createBrevoTransporter } from '../emailSe
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
-import { MALAYSIAN_HALAL_CATALOG } from '../../src/data/malaysianHalalCatalog.js';
 
 const router = Router();
 
@@ -36,24 +35,6 @@ function getReferenceDishes(): ReferenceDish[] {
           nameBm: item.nameBm || '',
           price: Number(item.price),
         });
-      }
-    }
-  }
-
-  if (Array.isArray(MALAYSIAN_HALAL_CATALOG)) {
-    for (const item of MALAYSIAN_HALAL_CATALOG) {
-      if (item && item.suggestedPrice) {
-        const alreadyExists = list.some(d => 
-          d.nameEn.toLowerCase() === item.nameEn.toLowerCase() || 
-          d.nameBm.toLowerCase() === item.nameBm.toLowerCase()
-        );
-        if (!alreadyExists) {
-          list.push({
-            nameEn: item.nameEn || '',
-            nameBm: item.nameBm || '',
-            price: Number(item.suggestedPrice),
-          });
-        }
       }
     }
   }
@@ -546,7 +527,7 @@ router.post('/poke', customerOrderActionLimiter, async (req, res) => {
 
     await orderRef.update({
       lastPokedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
     });
 
     return res.json({ success: true, message: 'Admin has been nudged!' });
