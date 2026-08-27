@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TransparentLogo } from '@/components/TransparentLogo';
+import { getAssetUrl } from '@/lib/utils';
 import { 
   LogOut, 
   Sun, 
@@ -72,7 +73,7 @@ export function AdminHeader({
         {/* Brand & Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-charcoal p-1.5 flex items-center justify-center border border-amber-500/30 shadow-md flex-shrink-0">
-            <TransparentLogo src="/assets/wawasan_logo.png" alt="Restoran Wawasan Logo" className="w-full h-full object-contain" />
+            <TransparentLogo src={getAssetUrl('/assets/brand/wawasan_logo.png')} alt="Restoran Wawasan Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">

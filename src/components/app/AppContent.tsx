@@ -109,7 +109,6 @@ const CalendarPageComp = React.lazy(() => import('@/pages/CalendarPage'));
 export default function AppContent() {
   const location = useLocation();
   const { pathname } = location;
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const prevPathnameRef = useRef(pathname);
 
@@ -125,15 +124,7 @@ export default function AppContent() {
   }, [pathname]);
 
   useEffect(() => {
-    const checkAdmin = () => {
-      const isUserAdmin = localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
-      setIsAdmin(isUserAdmin);
-    };
-    checkAdmin();
-    window.addEventListener('admin:login-state-change', checkAdmin);
-    window.addEventListener('storage', checkAdmin);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      checkAdmin();
       if (user) {
         setAnalyticsUserId(user.uid);
         setCrashlyticsUserId(user.uid);
@@ -141,12 +132,10 @@ export default function AppContent() {
     });
     return () => {
       unsubscribe();
-      window.removeEventListener('admin:login-state-change', checkAdmin);
-      window.removeEventListener('storage', checkAdmin);
     };
   }, []);
 
-  const hideNavPaths = ['/', '/login', ...(isAdmin ? [] : ['/admin'])];
+  const hideNavPaths = ['/', '/login', '/admin'];
   const showNav = !hideNavPaths.includes(pathname);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({

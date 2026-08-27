@@ -193,7 +193,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[280px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
+    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[220px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
         animate={{ 
@@ -207,7 +207,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           {isRefreshing && <span className="microcopy-12-upper font-black text-[var(--color-sunshine-cta)]">Refreshing</span>}
         </div>
       </motion.div>
-
+ 
       <AdminHeader
         syncStatus="connected"
         language={language}
@@ -219,18 +219,18 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         onLogout={() => onLogout?.()}
         getApiUrl={getApiUrl}
       />
-
-      <nav className="[grid-area:nav] p-3 sm:p-4 lg:p-8 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
+ 
+      <nav className="[grid-area:nav] p-3 sm:p-4 lg:p-4 bg-stone/5 dark:bg-card/20 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <Batik3DMotion maxRotation={10} imgClassName="opacity-[0.06] dark:opacity-[0.1]" mode="background" />
         </div>
         <div className="relative z-10 flex flex-col h-full">
-          <p className="hidden lg:block microcopy-12 font-black text-[var(--color-sunshine-cta)] uppercase tracking-widest mb-4">
+          <p className="hidden lg:block text-[10px] font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider mb-2">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
-          <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
+          <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
             {[
-              { id: 'orders' as const, label: t('orders'), icon: FileText, onClick: () => setActiveTab('orders'), badge: cancelRequests.length > 0 ? <Badge className="ml-auto bg-amber-500 text-stone-950">{cancelRequests.length}</Badge> : null },
+              { id: 'orders' as const, label: t('orders'), icon: FileText, onClick: () => setActiveTab('orders'), badge: cancelRequests.length > 0 ? <Badge className="ml-auto bg-amber-500 text-stone-950 px-1 py-0 text-[10px]">{cancelRequests.length}</Badge> : null },
               { id: 'tables' as const, label: 'Tables View', icon: Table, onClick: () => setActiveTab('tables') },
               { id: 'menu' as const, label: language === 'en' ? 'Menu Manager' : 'Pengurus Menu', icon: UtensilsIcon, onClick: () => setActiveTab('menu') },
             ].map((tab) => {
@@ -240,12 +240,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                 <button
                   key={tab.id}
                   onClick={tab.onClick}
-                  className={`px-4 sm:px-5 py-3 font-bold text-xs sm:text-sm flex items-center gap-2.5 sm:gap-3 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 ${
+                  className={`px-3 py-2 font-bold text-xs flex items-center gap-2 rounded-lg transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 ${
                     isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-deep-forest/70 dark:text-stone/70 hover:bg-stone/10'
                   }`}
                 >
-                  {isActive && <motion.div layoutId="adminActiveTab" className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 rounded-xl border border-[var(--color-sunshine-cta)]/40 z-0" />}
-                  <Icon className="w-4 h-4 z-10" />
+                  {isActive && <motion.div layoutId="adminActiveTab" className="absolute inset-0 bg-[var(--color-sunshine-cta)]/20 rounded-lg border border-[var(--color-sunshine-cta)]/30 z-0" />}
+                  <Icon className="w-3.5 h-3.5 z-10" />
                   <span className="z-10">{tab.label}</span>
                   {tab.badge}
                 </button>
@@ -254,13 +254,13 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           </div>
         </div>
       </nav>
-
-      <motion.main className="[grid-area:content] p-4 sm:p-6 md:p-8 min-w-0 relative">
-        <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-deep-forest mb-2">
+ 
+      <motion.main className="[grid-area:content] p-3.5 sm:p-5 lg:p-6 min-w-0 relative">
+        <div className="mb-5">
+          <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest mb-0.5">
             {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : 'Submissions Table'}
           </h1>
-          <p className="text-deep-forest/50 text-sm">
+          <p className="text-deep-forest/50 text-xs">
             {activeTab === 'orders' ? t('orders_subtitle') : 'Jotform-style submission grid with customizable columns.'}
           </p>
         </div>

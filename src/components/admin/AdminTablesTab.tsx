@@ -89,7 +89,7 @@ export function AdminTablesTab({
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Table customization
-  const [density, setDensity] = useState<TableDensity>('normal');
+  const [density, setDensity] = useState<TableDensity>('compact');
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(ALL_COLUMNS.filter(c => c.defaultVisible).map(c => c.key))
   );
@@ -327,72 +327,72 @@ export function AdminTablesTab({
   }[density];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       {/* Table Summary Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
               {isBm ? 'Jumlah Permohonan' : 'Total Submissions'}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold text-xs">
-              <Layers className="w-4 h-4" />
+            <div className="w-6 h-6 rounded-md bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold text-xs shrink-0">
+              <Layers className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-display font-bold text-deep-forest dark:text-white">
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
               {stats.total}
             </span>
-            <span className="text-xs text-deep-forest/40 dark:text-stone/40">{isBm ? 'rekod' : 'records'}</span>
+            <span className="text-[10px] text-deep-forest/40 dark:text-stone/40">{isBm ? 'rekod' : 'records'}</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-card border border-amber-500/20 dark:border-amber-500/10 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+        <div className="bg-white dark:bg-card border border-amber-500/20 dark:border-amber-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate">
               {isBm ? 'Menunggu Disahkan' : 'Pending Review'}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs">
+            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-[10px] shrink-0">
               {stats.pending}
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-display font-bold text-amber-600 dark:text-amber-400">
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-display font-bold text-amber-600 dark:text-amber-400 leading-none">
               {stats.pending}
             </span>
-            <span className="text-xs text-amber-600/60 dark:text-amber-400/60">{isBm ? 'perlu tindakan' : 'need review'}</span>
+            <span className="text-[10px] text-amber-600/60 dark:text-amber-400/60">{isBm ? 'tindakan' : 'pending'}</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-card border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+        <div className="bg-white dark:bg-card border border-emerald-500/20 dark:border-emerald-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider truncate">
               {isBm ? 'Invois / Diluluskan' : 'Approved & Billed'}
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs">
+            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
               {stats.approved + stats.billed}
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400">
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-none">
               {stats.approved + stats.billed}
             </span>
-            <span className="text-xs text-emerald-600/60 dark:text-emerald-400/60">{isBm ? 'selesai' : 'completed'}</span>
+            <span className="text-[10px] text-emerald-600/60 dark:text-emerald-400/60">{isBm ? 'selesai' : 'done'}</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-card border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/20 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider">
+        <div className="bg-white dark:bg-card border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/20 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
               {isBm ? 'Hasil Terkumpul' : 'Total Revenue'}
             </span>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)]">
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)] shrink-0">
               RM
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-xs font-bold text-[var(--color-sunshine-cta)]">RM</span>
-            <span className="text-2xl font-display font-bold text-deep-forest dark:text-white">
+          <div className="mt-1.5 flex items-baseline gap-0.5">
+            <span className="text-[10px] font-bold text-[var(--color-sunshine-cta)]">RM</span>
+            <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
               {stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>

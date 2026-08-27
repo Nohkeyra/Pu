@@ -41,23 +41,23 @@ export function AdminStatsCards({ orders, t, language }: AdminStatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
       {stats.map((stat, i) => (
         <motion.div
           key={stat.title}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.1 }}
-          className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 p-6 rounded-2xl shadow-sm"
+          transition={{ delay: i * 0.05 }}
+          className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 p-4 rounded-xl shadow-xs"
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`${stat.bg} p-2 rounded-xl`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+          <div className="flex items-center gap-3">
+            <div className={`${stat.bg} p-1.5 rounded-lg shrink-0`}>
+              <stat.icon className={`w-4 h-4 ${stat.color}`} />
             </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-stone dark:text-stone/70 mb-1">{stat.title}</p>
-            <h3 className="text-2xl font-bold text-deep-forest dark:text-white">{stat.value}</h3>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-stone/55 dark:text-stone/50 uppercase tracking-wider truncate">{stat.title}</p>
+              <h3 className="text-xl font-bold text-deep-forest dark:text-white leading-tight mt-0.5">{stat.value}</h3>
+            </div>
           </div>
         </motion.div>
       ))}

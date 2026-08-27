@@ -47,10 +47,23 @@ export default function BottomNavigation() {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAdmin(user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null);
+    const checkAdmin = () => {
+      const isUserAdmin = localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+      setIsAdmin(isUserAdmin);
+    };
+    checkAdmin();
+
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      checkAdmin();
     });
-    return () => unsubscribe();
+
+    window.addEventListener('admin:login-state-change', checkAdmin);
+    window.addEventListener('storage', checkAdmin);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('admin:login-state-change', checkAdmin);
+      window.removeEventListener('storage', checkAdmin);
+    };
   }, []);
 
   const currentTabId = useMemo(
@@ -71,7 +84,7 @@ export default function BottomNavigation() {
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
   ], [isAdmin, t]);
 
-  const showNav = ['/', '/home', '/main', '/order', '/calendar', '/profile', '/settings', ...(isAdmin ? ['/admin'] : [])].some(
+  const showNav = ['/', '/home', '/main', '/order', '/calendar', '/profile', '/settings'].some(
     (p) => p === '/' ? location.pathname === '/' : location.pathname.startsWith(p)
   );
 
