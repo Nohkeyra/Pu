@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { verifyAdminToken } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
@@ -7,6 +8,20 @@ const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_PDF_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
+// SECURITY FIX (audit 2026-08-28): every other public write endpoint in this
+// app (order submission, cancel/delete/poke, preliminary invoice)
+// has a rate limiter; this one didn't, so an unauthenticated caller could
+// spam-call it to flood the admin's WhatsApp Business number and burn
+// message-sending quota/cost. Mirrors the customerOrderActionLimiter used
+// for the other unauthenticated customer-facing endpoints in orderRoutes.ts.
+const forwardOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
+});
 
 /**
  * Validate that a Buffer contains a valid PDF by checking magic bytes.
@@ -48,7 +63,7 @@ router.post('/send-invoice-whatsapp', verifyAdminToken, async (req, res) => {
 });
 
 // WhatsApp API Endpoint for Order Forwarding
-router.post('/forward-order-whatsapp', async (req, res) => {
+router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => {
   const orderPayload = req.body || {};
 
   if (!orderPayload.customerName || !orderPayload.contactNumber) {

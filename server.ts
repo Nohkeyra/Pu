@@ -16,7 +16,6 @@ import updateRoutes from './server/routes/updateRoutes.js';
 import invoiceRoutes from './server/routes/invoiceRoutes.js';
 import diagnosticRoutes from './server/routes/diagnosticRoutes.js';
 import widgetRoutes from './server/routes/widgetRoutes.js';
-import mcpRoutes from './server/routes/mcpRoutes.js';
 
 dotenv.config();
 
@@ -181,28 +180,7 @@ async function startServer() {
   app.get('/health', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
-  app.get('/', (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const accept = (req.headers.accept as string) || '';
-    const userAgent = (req.headers['user-agent'] as string) || '';
-
-    if (accept.includes('application/json') || /claude|anthropic|connector|mcp|curator|agent/i.test(userAgent)) {
-      const protocol = req.protocol || 'https';
-      const host = req.get('host') || 'localhost:3000';
-      const baseUrl = `${protocol}://${host}`;
-      return res.status(200).json({
-        status: 'ok',
-        service: 'Wawasan Hub API',
-        auth_required: false,
-        auth_type: 'none',
-        endpoints: {
-          mcp: `${baseUrl}/api/mcp`,
-          health: `${baseUrl}/api/health`,
-          tools: `${baseUrl}/api/mcp/tools`
-        },
-        message: 'Wawasan Hub MCP server operates in no-auth mode.'
-      });
-    }
-
+  app.get('/', (_req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       const distPath = fs.existsSync(path.join(process.cwd(), 'dist', 'client'))
@@ -231,9 +209,6 @@ async function startServer() {
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);
   app.use('/api/widget', widgetRoutes);
-  app.use('/api/mcp', mcpRoutes);
-  app.use('/api/docs', mcpRoutes);
-  app.use('/.well-known', mcpRoutes);
 
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];
