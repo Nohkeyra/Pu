@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
+import { db, auth } from '@/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface UseAdminOrdersProps {
   adminToken?: string;
@@ -32,6 +33,11 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     void silent;
   };
 
+  const onLogoutRef = useRef(onLogout);
+  useEffect(() => {
+    onLogoutRef.current = onLogout;
+  }, [onLogout]);
+
   useEffect(() => {
     if (!adminToken) {
       setOrders([]);
@@ -39,44 +45,59 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     }
 
     setLoading(true);
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedOrders: Order[] = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        let createdAtObj = data.createdAt;
-        if (data.createdAt) {
-          const sec = typeof data.createdAt.seconds === 'number'
-            ? data.createdAt.seconds
-            : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
-          const nanosec = typeof data.createdAt.nanoseconds === 'number'
-            ? data.createdAt.nanoseconds
-            : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
-              
-          if (sec !== null) {
-            createdAtObj = { seconds: sec, nanoseconds: nanosec };
-          }
-        }
-        
-        fetchedOrders.push({ 
-          id: docSnap.id, 
-          ...data,
-          createdAt: createdAtObj 
-        } as Order);
-      });
-      setOrders(fetchedOrders);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching admin orders in real-time:', error);
-      if (error.code === 'permission-denied') {
-        onLogout?.();
+    let unsubscribeSnapshot: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, () => {
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
       }
-      setLoading(false);
+
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+      
+      unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
+        const fetchedOrders: Order[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          let createdAtObj = data.createdAt;
+          if (data.createdAt) {
+            const sec = typeof data.createdAt.seconds === 'number'
+              ? data.createdAt.seconds
+              : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
+            const nanosec = typeof data.createdAt.nanoseconds === 'number'
+              ? data.createdAt.nanoseconds
+              : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
+                
+            if (sec !== null) {
+              createdAtObj = { seconds: sec, nanoseconds: nanosec };
+            }
+          }
+          
+          fetchedOrders.push({ 
+            id: docSnap.id, 
+            ...data,
+            createdAt: createdAtObj 
+          } as Order);
+        });
+        setOrders(fetchedOrders);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error fetching admin orders in real-time:', error);
+        // If permission is denied even after Auth initialized, the custom token might be expired.
+        // In that case, we should log out.
+        if (error.code === 'permission-denied') {
+          onLogoutRef.current?.();
+        }
+        setLoading(false);
+      });
     });
 
-    return () => unsubscribe();
-  }, [adminToken, onLogout]);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+      }
+    };
+  }, [adminToken]); // Removed onLogout to prevent infinite loops from inline functions
 
   const handleUpdateOrderStatus = async (orderId: string, data: Partial<Order>, successMsg?: string) => {
     setIsApproving(true);
