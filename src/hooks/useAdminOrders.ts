@@ -3,10 +3,8 @@ import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
-
-interface SerializedOrder extends Omit<Order, 'createdAt'> {
-  createdAt: { seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number } | null;
-}
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
 
 interface UseAdminOrdersProps {
   adminToken?: string;
@@ -26,63 +24,55 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
   });
 
-  const fetchOrders = async (silent: boolean = false) => {
-    if (!silent) {
-      setLoading(true);
-    }
-    
-    try {
-      const response = await fetch(getApiUrl('/api/admin/orders'), {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ action: 'fetch', pageSize: 50 })
-      });
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          const formattedOrders = result.orders.map((order: SerializedOrder) => {
-            let createdAtObj = order.createdAt;
-            if (order.createdAt) {
-              const sec = typeof order.createdAt.seconds === 'number'
-                ? order.createdAt.seconds
-                : (typeof order.createdAt._seconds === 'number' ? order.createdAt._seconds : null);
-              const nanosec = typeof order.createdAt.nanoseconds === 'number'
-                ? order.createdAt.nanoseconds
-                : (typeof order.createdAt._nanoseconds === 'number' ? order.createdAt._nanoseconds : 0);
-              
-              if (sec !== null) {
-                createdAtObj = {
-                  seconds: sec,
-                  nanoseconds: nanosec,
-                };
-              }
-            }
-            return {
-              ...order,
-              createdAt: createdAtObj,
-            };
-          });
-          
-          setOrders(formattedOrders);
-        }
-      } else if (response.status === 401) {
-        onLogout?.();
-      }
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-    } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-    }
+  const fetchOrders = async () => {
+    // Left for backwards compatibility with parts of the app that may call it directly
   };
 
   useEffect(() => {
-    fetchOrders();
-    const interval = setInterval(() => fetchOrders(true), 30000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminToken]);
+    if (!adminToken) {
+      setOrders([]);
+      return;
+    }
+
+    setLoading(true);
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedOrders: Order[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        let createdAtObj = data.createdAt;
+        if (data.createdAt) {
+          const sec = typeof data.createdAt.seconds === 'number'
+            ? data.createdAt.seconds
+            : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
+          const nanosec = typeof data.createdAt.nanoseconds === 'number'
+            ? data.createdAt.nanoseconds
+            : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
+              
+          if (sec !== null) {
+            createdAtObj = { seconds: sec, nanoseconds: nanosec };
+          }
+        }
+        
+        fetchedOrders.push({ 
+          id: docSnap.id, 
+          ...data,
+          createdAt: createdAtObj 
+        } as Order);
+      });
+      setOrders(fetchedOrders);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching admin orders in real-time:', error);
+      if (error.code === 'permission-denied') {
+        onLogout?.();
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [adminToken, onLogout]);
 
   const handleUpdateOrderStatus = async (orderId: string, data: Partial<Order>, successMsg?: string) => {
     setIsApproving(true);
@@ -105,7 +95,6 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
             variant: 'success'
           });
         }
-        fetchOrders(true);
         return true;
       }
       throw new Error('Failed to update order');
@@ -144,7 +133,6 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
           description: t('order_deleted'),
           variant: 'success'
         });
-        fetchOrders(true);
       } else {
         throw new Error('Failed to delete order');
       }

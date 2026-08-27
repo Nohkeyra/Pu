@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
@@ -113,54 +113,55 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     }
   };
 
-  const fetchUserOrders = async (uid: string) => {
-    setIsLoadingOrders(true);
-    try {
-      const q = query(collection(db, 'orders'), where('userId', '==', uid));
-      const querySnapshot = await getDocs(q);
-      const fetchedOrders: Order[] = [];
-      querySnapshot.forEach((docSnap) => {
-        fetchedOrders.push({ id: docSnap.id, ...docSnap.data() } as Order);
-      });
-
-      fetchedOrders.sort((a, b) => {
-        const dateA = (a.createdAt as any)?.seconds || 0;
-        const dateB = (b.createdAt as any)?.seconds || 0;
-        return dateB - dateA;
-      });
-
-      setOrders(fetchedOrders);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-    } finally {
-      setIsLoadingOrders(false);
-    }
-  };
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeOrders: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await Promise.all([
-          fetchUserProfile(user),
-          fetchUserOrders(user.uid)
-        ]);
+        setIsLoadingOrders(true);
+        await fetchUserProfile(user);
+        
+        const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+        unsubscribeOrders = onSnapshot(q, (querySnapshot) => {
+          const fetchedOrders: Order[] = [];
+          querySnapshot.forEach((docSnap) => {
+            fetchedOrders.push({ id: docSnap.id, ...docSnap.data() } as Order);
+          });
+          fetchedOrders.sort((a, b) => {
+            const dateA = (a.createdAt as any)?.seconds || 0;
+            const dateB = (b.createdAt as any)?.seconds || 0;
+            return dateB - dateA;
+          });
+          setOrders(fetchedOrders);
+          setIsLoadingOrders(false);
+        }, (err) => {
+          console.error('Error fetching orders in realtime:', err);
+          setIsLoadingOrders(false);
+        });
       } else {
         setProfile(null);
         setOrders([]);
         setSavedLocations([]);
+        if (unsubscribeOrders) {
+          unsubscribeOrders();
+          unsubscribeOrders = undefined;
+        }
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeOrders) {
+        unsubscribeOrders();
+      }
+    };
   }, []);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
       if (currentUser) {
-        await Promise.all([
-          fetchUserProfile(currentUser),
-          fetchUserOrders(currentUser.uid)
-        ]);
+        await fetchUserProfile(currentUser);
       }
     }
   });
@@ -322,7 +323,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       });
 
       if (currentUser) {
-        await fetchUserOrders(currentUser.uid);
+        // Real-time listener handles the update automatically
       }
     } catch (err) {
       console.error('Poke error:', err);
@@ -418,7 +419,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'success',
       });
 
-      await fetchUserOrders(currentUser.uid);
+      
     } catch (err) {
       console.error('Error cancelling order:', err);
       toast({
@@ -457,7 +458,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'success',
       });
 
-      await fetchUserOrders(currentUser.uid);
+      
     } catch (err) {
       console.error('Error deleting order:', err);
       toast({

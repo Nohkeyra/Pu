@@ -223,6 +223,8 @@ async function startServer() {
   // SECURITY FIX: Removed duplicate `app.use('/api', orderRoutes)`
   app.use('/api/admin', authRoutes);
   app.use('/api/orders', orderRoutes);
+  // Restore orderRoutes mapping to /api for /api/admin/orders, /api/calendar-sessions, and /api/calendar-orders
+  app.use('/api', orderRoutes);
   app.use('/api/menu', menuRoutes);
   app.use('/api/admin/menu', menuRoutes);
   app.use('/api', updateRoutes);

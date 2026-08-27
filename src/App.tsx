@@ -18,6 +18,7 @@ import { useBatikScrollOpacity } from './hooks/useBatikScrollOpacity';
 import CateringSplashScreen from './components/SplashScreen';
 import FallbackDashboard from './components/app/FallbackDashboard';
 import AppContent from './components/app/AppContent';
+import { getApiUrl } from './lib/api';
 
 // Speed Insights wrapper
 function VercelSpeedInsights() {
@@ -92,6 +93,12 @@ function App() {
     }
 
     syncPreferencesToLocalStorage();
+
+    // Fire-and-forget background ping to wake up Render (or any sleeping backend) 
+    // immediately on app launch so it is ready by the time the user logs in.
+    fetch(getApiUrl('/api/health'), { method: 'GET' }).catch(() => {
+      // Ignore network errors on background ping
+    });
 
     const runWhenIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000));
     runWhenIdle(() => {
