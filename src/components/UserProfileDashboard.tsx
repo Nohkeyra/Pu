@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -18,7 +18,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
-import { generateInvoicePDF, generateCombinedInvoicePDF, preloadLogoForPDF } from '@/services/pdfService';
 import type { Order, CombinedInvoicePayload, UserProfile, SavedLocation } from '@/types';
 import { cn, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -26,13 +25,14 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { getApiUrl } from '@/lib/api';
-import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
 
 import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
 import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTab';
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
-import { DeliveryMap } from '@/components/delivery/DeliveryMap';
+
+const CustomerInvoicePreviewModal = lazy(() => import('@/components/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })));
+const DeliveryMap = lazy(() => import('@/components/delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })));
 
 interface UserProfileDashboardProps {
   isOpen: boolean;
@@ -344,6 +344,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'info'
       });
 
+      const { generateInvoicePDF, preloadLogoForPDF } = await import('@/services/pdfService');
       await preloadLogoForPDF();
       const pdfDoc = generateInvoicePDF(order, true, language);
       const fileName = `Invois_Wawasan_${getDisplayInvoiceNo(order)}.pdf`;
@@ -478,6 +479,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'info'
       });
 
+      const { generateCombinedInvoicePDF, preloadLogoForPDF } = await import('@/services/pdfService');
       await preloadLogoForPDF();
       const selectedOrderData = orders.filter(o => selectedOrders.has(o.id!));
       const payload: CombinedInvoicePayload = {
@@ -928,19 +930,23 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       {combineModal}
       {confirmModal}
       {previewOrder && (
-        <CustomerInvoicePreviewModal
-          isOpen={!!previewOrder}
-          onClose={() => setPreviewOrder(null)}
-          order={previewOrder}
-          onDownload={() => handleDownloadPDF(previewOrder)}
-          language={language}
-        />
+        <Suspense fallback={null}>
+          <CustomerInvoicePreviewModal
+            isOpen={!!previewOrder}
+            onClose={() => setPreviewOrder(null)}
+            order={previewOrder}
+            onDownload={() => handleDownloadPDF(previewOrder)}
+            language={language}
+          />
+        </Suspense>
       )}
       {trackingOrder && (
-        <DeliveryMap
-          order={trackingOrder}
-          onClose={() => setTrackingOrder(null)}
-        />
+        <Suspense fallback={null}>
+          <DeliveryMap
+            order={trackingOrder}
+            onClose={() => setTrackingOrder(null)}
+          />
+        </Suspense>
       )}
     </>
   );

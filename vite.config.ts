@@ -59,16 +59,28 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            if (id.includes('exceljs')) {
+              return 'vendor-excel';
+            }
+            if (id.includes('jspdf') || id.includes('html2canvas')) {
+              return 'vendor-pdf';
+            }
+            if (id.includes('leaflet')) {
+              return 'vendor-maps';
+            }
             if (id.includes('firebase')) {
               return 'vendor-firebase';
             }
-            if (id.includes('recharts') || id.includes('d3')) {
-              return 'vendor-charts';
+            if (id.includes('motion') || id.includes('gsap') || id.includes('canvas-confetti')) {
+              return 'vendor-animation';
+            }
+            if (id.includes('@radix-ui') || id.includes('date-fns') || id.includes('react-day-picker')) {
+              return 'vendor-ui-libs';
             }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
-            if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/scheduler/')) {
+            if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react-router/') || id.includes('/node_modules/scheduler/')) {
               return 'vendor-react';
             }
           }
