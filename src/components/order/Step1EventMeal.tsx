@@ -112,7 +112,7 @@ export function Step1EventMeal({
               </div>
             )}
             <div className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm shrink-0",
+              "w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
               orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Briefcase className="w-4.5 h-4.5" />
@@ -141,7 +141,7 @@ export function Step1EventMeal({
               </div>
             )}
             <div className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm shrink-0",
+              "w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
               orderState.eventType === 'lain' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Smile className="w-4.5 h-4.5" />

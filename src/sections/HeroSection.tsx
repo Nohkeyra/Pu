@@ -56,7 +56,7 @@ export default function HeroSection() {
             src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
             backgroundSize="cover"
             maxRotation={15}
-            imgClassName="opacity-25 dark:opacity-[0.16] dark:contrast-110 dark:brightness-90 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-[0.15] sm:opacity-25 dark:opacity-[0.09] dark:sm:opacity-[0.16] dark:contrast-110 dark:brightness-90 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
         
@@ -92,8 +92,13 @@ export default function HeroSection() {
         className="content-container flex flex-col items-center text-center relative z-20 w-full my-auto py-2 sm:py-6 px-4 sm:px-6"
       >
         {/* Unified Brand Headline */}
-        <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl">
-          <h1 className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]">
+        <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl select-none">
+          <h1 
+            className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]"
+            style={{
+              textShadow: '0 4px 24px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.6)'
+            }}
+          >
             {t('hero_title') || 'Restoran Wawasan'}
           </h1>
         </motion.div>

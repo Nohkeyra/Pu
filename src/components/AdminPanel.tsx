@@ -31,6 +31,7 @@ import { useAdminMessaging } from '@/hooks/useAdminMessaging';
 const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
 const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
 const AdminPdfShareModal = lazy(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })));
+const DeliveryMap = lazy(() => import('./delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })));
 
 const getDisplayInvoiceNo = (order: Order): string => {
   if (order.invoiceNo) return order.invoiceNo;
@@ -88,6 +89,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
@@ -357,6 +359,17 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               handleRejectOrder={(id: string) => { handleUpdateOrderStatus(id, { status: 'rejected' }, 'Order rejected'); }}
               handleUpdateStatus={(id: string, status: string) => { handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`); }}
               openSendDialog={openSendDialog}
+              handleTrack={(order) => setTrackingOrder(order)}
+            />
+          )}
+          {trackingOrder && (
+            <DeliveryMap
+              order={trackingOrder}
+              onClose={() => setTrackingOrder(null)}
+              onUpdateStatus={async (id, status) => {
+                await handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`);
+                setTrackingOrder(prev => prev ? { ...prev, status: status as any } : null);
+              }}
             />
           )}
           {isSendDialogOpen && sendOrder && (

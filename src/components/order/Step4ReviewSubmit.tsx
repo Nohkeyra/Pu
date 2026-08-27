@@ -190,20 +190,31 @@ export function Step4ReviewSubmit({
 
         {/* Pricing Summary */}
         <div className="bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 p-5 rounded-2xl shadow-sm space-y-4">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Subtotal', 'Jumlah Kecil')}</span>
-            <span className="font-bold text-deep-forest dark:text-white">RM {(orderState.guests * (orderState.preparationType === 'meal_box' ? 12 : 15)).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Delivery Fee', 'Caj Penghantaran')}</span>
-            <span className="font-bold text-deep-forest dark:text-white">{orderState.delivery === 'delivery' ? 'RM 15.00' : 'RM 0.00'}</span>
-          </div>
-          <div className="pt-4 border-t border-[var(--color-light-forest)] dark:border-stone-800 flex justify-between items-center">
-            <span className="text-sm font-bold text-deep-forest dark:text-white uppercase tracking-wider">{tText('Total Estimate', 'Anggaran Penuh')}</span>
-            <span className="text-xl font-black text-[var(--color-sunshine-cta)]">
-              RM {((orderState.guests * (orderState.preparationType === 'meal_box' ? 12 : 15)) + (orderState.delivery === 'delivery' ? 15 : 0)).toFixed(2)}
-            </span>
-          </div>
+          {(() => {
+            const isDefaultBox = orderState.customMenu === "Set Box Makanan dan Minuman" || (orderState.dishes.length === 0 && orderState.veggies.length === 0);
+            const subtotal = isDefaultBox ? 0 : (orderState.guests * (orderState.preparationType === 'meal_box' ? 12 : 15));
+            const deliveryFee = (isDefaultBox || orderState.delivery !== 'delivery') ? 0 : 15;
+            const totalAmount = isDefaultBox ? 0 : (subtotal + deliveryFee);
+
+            return (
+              <>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Subtotal', 'Jumlah Kecil')}</span>
+                  <span className="font-bold text-deep-forest dark:text-white">RM {subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-stone-600 dark:text-stone-400 font-medium">{tText('Delivery Fee', 'Caj Penghantaran')}</span>
+                  <span className="font-bold text-deep-forest dark:text-white">RM {deliveryFee.toFixed(2)}</span>
+                </div>
+                <div className="pt-4 border-t border-[var(--color-light-forest)] dark:border-stone-800 flex justify-between items-center">
+                  <span className="text-sm font-bold text-deep-forest dark:text-white uppercase tracking-wider">{tText('Total Estimate', 'Anggaran Penuh')}</span>
+                  <span className="text-xl font-black text-[var(--color-sunshine-cta)]">
+                    RM {totalAmount.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
           <p className="text-[10px] text-stone-500 text-right leading-tight">
             * {tText('Final price may vary based on custom requirements.', 'Harga akhir mungkin berbeza mengikut keperluan tambahan.')}
           </p>

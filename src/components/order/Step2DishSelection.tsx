@@ -57,13 +57,10 @@ export function Step2DishSelection({
     const dishCount = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
     const hasCustom = Boolean(orderState.customMenu?.trim());
     if (dishCount === 0 && !hasCustom) {
-      setFieldError(
-        tText(
-          'Select at least one dish, or add a custom menu note.',
-          'Pilih sekurang-kurangnya satu hidangan, atau isi nota menu khas.'
-        )
-      );
-      return;
+      setOrderState((prev: any) => ({
+        ...prev,
+        customMenu: "Set Box Makanan dan Minuman"
+      }));
     }
     setFieldError(null);
     await handleStepNext(2);

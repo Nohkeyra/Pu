@@ -939,8 +939,8 @@ export const MENU_ITEMS: FeaturedMenuItem[] = [
   },
   {
     id: 'nasi-campur',
-    nameEn: 'Nasi Campur Catering',
-    nameBm: 'Nasi Campur Lauk Catering',
+    nameEn: 'Nasi Campur',
+    nameBm: 'Nasi Campur',
     descEn: 'White rice paired with your selection of daily freshly cooked Malay dishes, from rendang to fresh greens.',
     descBm: 'Nasi putih berlauk dengan pilihan hidangan segar harian, dari rendang hingga sayur tumis.',
     price: 10.00,

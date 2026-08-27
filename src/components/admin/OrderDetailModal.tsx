@@ -35,6 +35,7 @@ interface OrderDetailModalProps {
   handleRejectOrder: (id: string) => Promise<void> | void;
   handleUpdateStatus?: (id: string, status: string) => Promise<void> | void;
   openSendDialog: (order: Order) => void;
+  handleTrack?: (order: Order) => void;
 }
 
 const MEAL_LABELS: Record<string, { en: string; bm: string }> = {
@@ -61,6 +62,7 @@ export function OrderDetailModal({
   handleRejectOrder,
   handleUpdateStatus,
   openSendDialog,
+  handleTrack,
 }: OrderDetailModalProps) {
   const { toast } = useToast();
   const modalRef = useRef<HTMLDivElement>(null);
@@ -216,6 +218,18 @@ export function OrderDetailModal({
                           ✅ {language === 'bm' ? 'Hantar' : 'Delivered'}
                         </Button>
                       </div>
+                      {handleTrack && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            onClose();
+                            handleTrack(selectedOrder);
+                          }}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold h-9 mt-2 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                        >
+                          🗺️ {language === 'bm' ? 'Jejak & Geofence' : 'Track & Geofence'}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -11,7 +11,7 @@ import {
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -1145,12 +1145,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
                         {tText(`Step ${currentStep} of 4`, `Langkah ${currentStep} / 4`)}
                       </span>
-                      <span className="text-xs font-bold text-deep-forest dark:text-stone-100">
+                      <motion.span
+                        key={currentStep}
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-xs font-bold text-deep-forest dark:text-stone-100"
+                      >
                         {currentStep === 1 && tText('Event Setup', 'Jenis Majlis')}
                         {currentStep === 2 && tText('Dish Selection', 'Pilih Menu')}
                         {currentStep === 3 && tText('Contact & Delivery', 'Maklumat & Lokasi')}
                         {currentStep === 4 && tText('Review & Submit', 'Semak & Hantar')}
-                      </span>
+                      </motion.span>
                     </div>
                   </div>
                   {/* Visual Step Progress Capsules */}
@@ -1161,15 +1167,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       return (
                         <div
                           key={stepNum}
-                          className={cn(
-                            "h-1.5 rounded-full transition-all duration-300",
-                            isPast
-                              ? "bg-deep-forest dark:bg-emerald-500"
-                              : isCurrent
-                              ? "bg-crisp-carrot"
-                              : "bg-stone-200 dark:bg-stone-800"
-                          )}
-                        />
+                          className="h-1.5 rounded-full bg-stone-200 dark:bg-stone-800 relative overflow-hidden"
+                        >
+                          <motion.div
+                            initial={{ width: "0%" }}
+                            animate={{ width: isPast || isCurrent ? "100%" : "0%" }}
+                            transition={{ duration: 0.35, ease: "easeInOut" }}
+                            className={cn(
+                              "absolute inset-0 rounded-full",
+                              isPast ? "bg-deep-forest dark:bg-emerald-500" : "bg-crisp-carrot"
+                            )}
+                          />
+                        </div>
                       );
                     })}
                   </div>
@@ -1188,19 +1197,33 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     return (
                       <div key={item.s} className="flex items-center flex-1 last:flex-none">
                         <div className="flex flex-col items-center gap-1.5 relative z-10">
-                          <div
+                          <motion.div
                             aria-current={isCurrent ? 'step' : undefined}
+                            animate={{
+                              scale: isCurrent ? 1.12 : 1.0,
+                            }}
+                            transition={{ type: "spring", stiffness: 450, damping: 24 }}
                             className={cn(
-                              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300",
+                              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border transition-colors duration-300",
                               isCurrent
-                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp scale-105"
+                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp"
                                 : isDone
                                   ? "bg-deep-forest border-deep-forest text-white dark:bg-emerald-600 dark:border-emerald-600"
                                   : "bg-card dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400"
                             )}
                           >
-                            {isDone ? <Check className="w-4 h-4" /> : item.s}
-                          </div>
+                            {isDone ? (
+                              <motion.div
+                                initial={{ scale: 0, rotate: -20 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <Check className="w-4 h-4" />
+                              </motion.div>
+                            ) : (
+                              item.s
+                            )}
+                          </motion.div>
                           <span className={cn(
                             "microcopy-12-upper font-semibold transition-colors duration-300",
                             isCurrent ? "text-crisp-carrot font-bold" : "text-stone-500 dark:text-stone-400"
@@ -1211,9 +1234,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
                         {idx < 3 && (
                           <div className="flex-1 h-[2px] mx-3 bg-stone-200 dark:bg-stone-800 relative -translate-y-3.5" aria-hidden="true">
-                            <div
-                              className="absolute inset-y-0 left-0 bg-deep-forest dark:bg-emerald-600 transition-all duration-500"
-                              style={{ width: isDone ? '100%' : '0%' }}
+                            <motion.div
+                              className="absolute inset-y-0 left-0 bg-deep-forest dark:bg-emerald-600"
+                              initial={{ width: "0%" }}
+                              animate={{ width: isDone ? '100%' : '0%' }}
+                              transition={{ duration: 0.4, ease: "easeInOut" }}
                             />
                           </div>
                         )}

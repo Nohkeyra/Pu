@@ -159,7 +159,10 @@ function calculateOrderPricing(
     }
   }
 
-  if (pricePerPax === 0) {
+  const isDefaultBox = customMenu === 'Set Box Makanan dan Minuman' || 
+    ( (!dishes || dishes.length === 0) && (!veggies || veggies.length === 0) && customMenu === 'Set Box Makanan dan Minuman' );
+
+  if (pricePerPax === 0 && !isDefaultBox) {
     pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
   }
 
