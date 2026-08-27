@@ -264,11 +264,33 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
+      # BUGFIX (2026-08-27): Gradle outputs the signed APK as
+      # android/app/build/outputs/apk/release/app-release.apk. The
+      # upload-artifact step below used "app-release-signed" only as its
+      # display name — that never renamed the actual file. The GitHub
+      # Release asset (created later by ncipollo/release-action) keeps
+      # Gradle's original filename, but the live-update broadcast step
+      # further down hardcodes the download URL as ".../app-release-signed.apk".
+      # That filename never existed in the Release, so every broadcast to
+      # /api/app-version/github-sync carried a 404 apkUrl. Renaming the real
+      # file on disk here makes the artifact, the Release asset, and the
+      # broadcast URL all refer to the same actual file.
+      - name: Rename release APK to match broadcast URL
+        working-directory: ./android/app/build/outputs/apk/release
+        run: |
+          for f in *.apk; do
+            if [ "$f" != "app-release-signed.apk" ]; then
+              echo "Renaming $f -> app-release-signed.apk"
+              mv "$f" app-release-signed.apk
+            fi
+          done
+          ls -la
+
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-signed
-          path: android/app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/apk/release/app-release-signed.apk
           retention-days: 30
 
       - name: Upload Release Bundle
