@@ -73,7 +73,7 @@ export default function ExperienceSection() {
   };
 
   return (
-    <section id="experience" className="section-padding bg-cream relative">
+    <section id="experience" className="section-padding bg-cream dark:bg-background relative">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
         

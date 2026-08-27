@@ -76,8 +76,8 @@ export default function Header() {
   };
 
   const headerStateClass = isScrolled
-    ? 'topbar-shell pb-3 pt-[calc(0.7rem+var(--sat))] shadow-md'
-    : 'bg-transparent pb-5 pt-[calc(1.15rem+var(--sat))]';
+    ? 'topbar-shell pb-2.5 sm:pb-3 pt-[calc(0.5rem+var(--sat))] sm:pt-[calc(0.7rem+var(--sat))] shadow-md'
+    : 'bg-transparent pb-3 sm:pb-5 pt-[calc(0.65rem+var(--sat))] sm:pt-[calc(1.15rem+var(--sat))]';
 
   const brandTextClass = isScrolled 
     ? 'brand-title font-artistic' 

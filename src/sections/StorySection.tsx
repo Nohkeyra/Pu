@@ -40,7 +40,7 @@ export default function StorySection() {
   };
 
   return (
-    <section id="story" className="section-padding bg-cream relative">
+    <section id="story" className="section-padding bg-cream dark:bg-background relative">
       <div className="content-container">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center">
           
@@ -67,10 +67,10 @@ export default function StorySection() {
                     <Award className="w-6 h-6 text-[var(--color-sunshine-cta)]" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </div>
                   <div>
-                    <p className="font-display font-medium text-deep-forest text-base leading-tight mb-1">
+                    <p className="font-display font-medium text-deep-forest dark:text-white text-base leading-tight mb-1">
                       {language === 'bm' ? 'Halal & mesra keluarga' : 'Halal & family-friendly'}
                     </p>
-                    <p className="microcopy-12 text-deep-forest/50 uppercase tracking-[0.1em] font-semibold">
+                    <p className="microcopy-12 text-deep-forest/50 dark:text-stone-400 uppercase tracking-[0.1em] font-semibold">
                       {language === 'bm' ? 'Sarapan, makan tengah hari, katering' : 'Breakfast, lunch, catering'}
                     </p>
                   </div>
@@ -97,13 +97,13 @@ export default function StorySection() {
             </motion.h2>
             
             <div className="space-y-6 mb-12">
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p1')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p2')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p3')}
               </motion.p>
             </div>

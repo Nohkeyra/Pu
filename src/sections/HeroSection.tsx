@@ -37,7 +37,7 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-28 sm:pt-32 pb-24 min-h-[100dvh] flex flex-col justify-center items-center">
+    <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-[calc(7.5rem+var(--sat,0px))] sm:pt-36 pb-[calc(6.5rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-center items-center">
       {/* Cinematic Deep Dark Full-Bleed Background Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e]">
         {/* Dynamic Atmospheric Overlays for maximum text & logo legibility */}
@@ -89,11 +89,11 @@ export default function HeroSection() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="content-container flex flex-col items-center text-center relative z-20 w-full"
+        className="content-container flex flex-col items-center text-center relative z-20 w-full my-auto py-2 sm:py-6 px-4 sm:px-6"
       >
         {/* Unified Brand Headline */}
-        <motion.div variants={itemVariants} className="mb-6 max-w-5xl">
-          <h1 className="font-artistic text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]">
+        <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl">
+          <h1 className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]">
             {t('hero_title') || 'Restoran Wawasan'}
           </h1>
         </motion.div>
@@ -101,7 +101,7 @@ export default function HeroSection() {
         {/* Refined Description */}
         <motion.p 
           variants={itemVariants}
-          className="text-base sm:text-lg md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-[65ch] mx-auto font-medium mb-10 leading-relaxed bg-black/45 dark:bg-[#0c100e]/85 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/10 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
+          className="text-sm sm:text-base md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-[65ch] mx-auto font-medium mb-8 sm:mb-10 leading-relaxed bg-black/50 dark:bg-[#0c100e]/85 backdrop-blur-md px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-white/10 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]"
         >
           {t('hero_description')}
         </motion.p>
@@ -109,11 +109,11 @@ export default function HeroSection() {
         {/* Action Cluster */}
         <motion.div 
           variants={itemVariants} 
-          className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-6 sm:px-0"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-md sm:max-w-none"
         >
           <a 
             href="#menu" 
-            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-[var(--color-sunshine-cta)]/25"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-[var(--color-sunshine-cta)]/25"
           >
             <UtensilsCrossed className="w-5 h-5 transition-transform group-hover:rotate-12" />
             <span>{t('explore_menu_btn')}</span>
@@ -122,7 +122,7 @@ export default function HeroSection() {
           
           <Link 
             to="/order" 
-            className="group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#1c2622]/90 hover:bg-[#26312d] border border-amber-400/30 hover:border-amber-400/60 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 active:scale-95 shadow-lg backdrop-blur-md"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[#1c2622]/90 hover:bg-[#26312d] border border-amber-400/30 hover:border-amber-400/60 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-all duration-300 active:scale-95 shadow-lg backdrop-blur-md"
           >
             <span>{t('order_catering_btn')}</span>
           </Link>
@@ -131,10 +131,10 @@ export default function HeroSection() {
         {/* Scroll Hint */}
         <motion.div 
           variants={itemVariants}
-          className="mt-14 sm:mt-18 flex flex-col items-center gap-3 text-amber-300/90"
+          className="mt-8 sm:mt-14 flex flex-col items-center gap-2 sm:gap-3 text-amber-300/90"
         >
-          <div className="w-px h-10 bg-gradient-to-b from-amber-400 to-transparent" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
+          <div className="w-px h-8 sm:h-10 bg-gradient-to-b from-amber-400 to-transparent" />
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
         </motion.div>
       </motion.div>
     </section>

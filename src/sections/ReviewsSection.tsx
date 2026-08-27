@@ -125,7 +125,7 @@ export default function ReviewsSection() {
   };
 
   return (
-    <section id="reviews" className="section-padding bg-cream relative">
+    <section id="reviews" className="section-padding bg-cream dark:bg-background relative">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
         
@@ -148,11 +148,11 @@ export default function ReviewsSection() {
           </div>
           
           <motion.div variants={headerItemVariants} className="review-header flex items-center justify-center gap-6 mt-8 md:mt-0">
-            <div className="flex items-center gap-3 bg-cream-dark/60 backdrop-blur-md border border-deep-forest/10 dark:border-white/10 rounded-2xl px-5 py-3 shadow-lg">
+            <div className="flex items-center gap-3 bg-cream-dark/60 dark:bg-card/80 backdrop-blur-md border border-deep-forest/10 dark:border-white/10 rounded-2xl px-5 py-3 shadow-lg">
               <Star className="w-5 h-5 text-[var(--color-sunshine-cta)] fill-sunshine animate-pulse" />
               <div className="flex flex-col">
-                <span className="font-bold text-deep-forest leading-none">4.9</span>
-                <span className="text-deep-forest/50 microcopy-12-upper uppercase font-bold tracking-widest mt-1">Rating</span>
+                <span className="font-bold text-deep-forest dark:text-white leading-none">4.9</span>
+                <span className="text-deep-forest/50 dark:text-stone-400 microcopy-12-upper uppercase font-bold tracking-widest mt-1">Rating</span>
               </div>
             </div>
             

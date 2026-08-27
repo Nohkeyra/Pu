@@ -157,7 +157,7 @@ export default function MenuSection() {
   };
 
   return (
-    <section id="menu" className="section-padding bg-cream relative overflow-hidden">
+    <section id="menu" className="section-padding bg-cream dark:bg-background relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
         
