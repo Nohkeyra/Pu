@@ -126,6 +126,23 @@ const ProfilePageComp = React.lazy(() => import('@/pages/ProfilePage'));
 const SettingsPageComp = React.lazy(() => import('@/pages/SettingsPage'));
 const CalendarPageComp = React.lazy(() => import('@/pages/CalendarPage'));
 
+function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
+  return (
+    <Routes location={location} key={location.pathname}>
+      <Route path="/" element={<PageTransition><LoginPageComp /></PageTransition>} />
+      <Route path="/login" element={<PageTransition><LoginPageComp /></PageTransition>} />
+      <Route path="/home" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
+      <Route path="/main" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
+      <Route path="/order" element={<SessionGuard><PageTransition><OrderPageComp /></PageTransition></SessionGuard>} />
+      <Route path="/profile" element={<SessionGuard><PageTransition><ProfilePageComp /></PageTransition></SessionGuard>} />
+      <Route path="/settings" element={<SessionGuard><PageTransition><SettingsPageComp /></PageTransition></SessionGuard>} />
+      <Route path="/calendar" element={<SessionGuard><PageTransition><CalendarPageComp /></PageTransition></SessionGuard>} />
+      <Route path="/admin" element={<PageTransition><AdminPageComp /></PageTransition>} />
+      <Route path="*" element={<PageTransition><LoginPageComp /></PageTransition>} />
+    </Routes>
+  );
+}
+
 export default function AppContent() {
   const location = useLocation();
 
@@ -169,20 +186,34 @@ export default function AppContent() {
 
       <main className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]">
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
-          <AnimatePresence mode="wait">
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<PageTransition><LoginPageComp /></PageTransition>} />
-              <Route path="/login" element={<PageTransition><LoginPageComp /></PageTransition>} />
-              <Route path="/home" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
-              <Route path="/main" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
-              <Route path="/order" element={<SessionGuard><PageTransition><OrderPageComp /></PageTransition></SessionGuard>} />
-              <Route path="/profile" element={<SessionGuard><PageTransition><ProfilePageComp /></PageTransition></SessionGuard>} />
-              <Route path="/settings" element={<SessionGuard><PageTransition><SettingsPageComp /></PageTransition></SessionGuard>} />
-              <Route path="/calendar" element={<SessionGuard><PageTransition><CalendarPageComp /></PageTransition></SessionGuard>} />
-              <Route path="/admin" element={<PageTransition><AdminPageComp /></PageTransition>} />
-              <Route path="*" element={<PageTransition><LoginPageComp /></PageTransition>} />
-            </Routes>
-          </AnimatePresence>
+          {/*
+            BUG FIX (audit 2026-08-28): AnimatePresence mode="wait" defers
+            mounting the new route until the outgoing route's exit animation
+            reports completion. PageTransition sets exit={undefined} on
+            native builds (Capacitor.isNativePlatform()) since no exit
+            animation is used there — so on native, AnimatePresence was
+            waiting on an exit signal that never meaningfully fires,
+            combined with `key` living on a non-motion <Routes> wrapper and
+            a single shared Suspense boundary for every lazy page. Confirmed
+            on-device: tapping Home/Calendar/Settings while on /admin
+            updated the URL and bottom-nav highlight, flashed the loading
+            screen, then silently reverted to the old (admin) screen and
+            stayed there — navigation looked like it worked but never
+            actually completed. Since native never had a real exit
+            animation to sequence in the first place, AnimatePresence's
+            "wait" behavior provided no benefit there — only risk. Skipping
+            it entirely on native (routes swap immediately, matching what
+            the disabled exit already implied) removes that race outright.
+            Web keeps AnimatePresence since it has a real exit animation to
+            sequence.
+          */}
+          {Capacitor.isNativePlatform() ? (
+            <AppRoutes location={location} />
+          ) : (
+            <AnimatePresence mode="wait">
+              <AppRoutes location={location} />
+            </AnimatePresence>
+          )}
         </Suspense>
       </main>
       <BottomNavigation />
