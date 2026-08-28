@@ -118,17 +118,36 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
     }
   }, [threshold]);
 
+  // BUG FIX (audit 2026-08-28): touchend was the only place that reset
+  // startYRef/pullDistance, but the OS can interrupt an in-progress touch
+  // (a system gesture, an incoming notification, multi-touch, the
+  // screen-recording overlay, etc.) by firing touchcancel instead of
+  // touchend. Without this handler, that interruption would leave the pull
+  // gesture permanently "armed" — pullDistance stuck at a nonzero value and,
+  // if isRefreshing had already flipped true, the "Refreshing..." indicator
+  // stuck on screen forever with no way to clear it. A cancelled gesture is
+  // never treated as a completed pull — it just resets state, same as an
+  // under-threshold release.
+  const handleTouchCancel = useCallback(() => {
+    startYRef.current = null;
+    if (!isRefreshingRef.current) {
+      updatePullDistance(0);
+    }
+  }, []);
+
   useEffect(() => {
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchCancel, { passive: true });
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
 
   return { pullDistance, isRefreshing };
 }
