@@ -570,71 +570,76 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
       </motion.div>
 
-      {/* Header */}
-      <div className="px-6 border-b border-border flex items-center justify-between pt-[var(--sat)] h-[calc(76px+var(--sat))] relative overflow-hidden bg-white dark:bg-card">
-        <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none"></div>
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 rounded-full bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/20 flex items-center justify-center text-[var(--color-sunshine-cta)]">
-            <UserIcon className="w-5 h-5" />
+      {/* Header (Only shown when not embedded as a page) */}
+      {!isEmbedded && (
+        <div className="px-6 border-b border-border flex items-center justify-between pt-[var(--sat)] h-[calc(76px+var(--sat))] relative overflow-hidden bg-white dark:bg-card">
+          <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none"></div>
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-10 h-10 rounded-full bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/20 flex items-center justify-center text-[var(--color-sunshine-cta)]">
+              <UserIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-bold text-deep-forest tracking-wide">
+                {t('Member Portal', 'Portal Ahli')}
+              </h2>
+              <p className="microcopy-12-upper text-stone uppercase tracking-widest font-bold">
+                Restoran Wawasan
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-display text-lg font-bold text-deep-forest tracking-wide">
-              {t('Member Portal', 'Portal Ahli')}
-            </h2>
-            <p className="microcopy-12-upper text-stone uppercase tracking-widest font-bold">
-              Restoran Wawasan
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 relative z-10">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleSignOut}
-                className="p-2 text-stone hover:text-tomato-burst hover:bg-tomato-burst/10 rounded-lg transition-colors duration-200"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{t('Log Out', 'Log Keluar')}</p>
-            </TooltipContent>
-          </Tooltip>
-          {!isEmbedded && (
+          
+          <div className="flex items-center gap-2 relative z-10">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={onClose}
-                  className="p-2 text-stone hover:text-deep-forest hover:bg-black/5 rounded-lg transition-colors duration-200"
+                  onClick={handleSignOut}
+                  className="p-2 text-stone hover:text-tomato-burst hover:bg-tomato-burst/10 rounded-lg transition-colors duration-200"
                 >
-                  <X className="w-5 h-5" />
+                  <LogOut className="w-5 h-5" />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{t('Close', 'Tutup')}</p>
+                <p>{t('Log Out', 'Log Keluar')}</p>
               </TooltipContent>
             </Tooltip>
-          )}
+            {!isEmbedded && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onClose}
+                    className="p-2 text-stone hover:text-deep-forest hover:bg-black/5 rounded-lg transition-colors duration-200"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('Close', 'Tutup')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tab Navigation Segmented Bar */}
-      <div className="px-4 pt-2 pb-1 bg-card">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-stone-100/90 dark:bg-stone-850/80 rounded-2xl border border-stone-200/70 dark:border-stone-800/70">
+      <div className="p-3 sm:p-4 bg-stone-50/90 dark:bg-stone-900/40 border-b border-border">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-white dark:bg-card rounded-2xl border border-stone-200/80 dark:border-white/10 shadow-sm">
           <button
             onClick={() => setActiveTab('orders')}
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'orders'
-                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
             )}
           >
             <History className="w-4 h-4 shrink-0" />
             <span className="truncate">{tGlobal('profile_submissions')}</span>
             {orders.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-mono shrink-0 font-bold">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 font-bold",
+                activeTab === 'orders' ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+              )}>
                 {orders.length}
               </span>
             )}
@@ -645,8 +650,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'profile'
-                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
             )}
           >
             <Sliders className="w-4 h-4 shrink-0" />
@@ -658,14 +663,17 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'locations'
-                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
             )}
           >
             <MapPin className="w-4 h-4 shrink-0" />
             <span className="truncate">{t('Locations', 'Lokasi')}</span>
             {savedLocations.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-stone/15 text-stone-600 dark:text-stone-300 font-mono shrink-0 font-bold">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 font-bold",
+                activeTab === 'locations' ? "bg-white/20 text-white" : "bg-stone/15 text-stone-600 dark:text-stone-300"
+              )}>
                 {savedLocations.length}
               </span>
             )}
@@ -676,8 +684,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             className={cn(
               "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'preferences'
-                ? "bg-white dark:bg-stone-800 text-primary shadow-sm scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5"
+                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
+                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
             )}
           >
             <Bell className="w-4 h-4 shrink-0" />

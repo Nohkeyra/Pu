@@ -71,6 +71,10 @@ export default function SettingsPage() {
     setFontSize,
     keepAwakeEnabled,
     setKeepAwakeEnabled,
+    statusBarHidden,
+    setStatusBarHidden,
+    statusBarColor,
+    setStatusBarColor,
     isAdmin,
     customMainColor,
     setCustomMainColor,
@@ -443,6 +447,18 @@ export default function SettingsPage() {
       description: checked
         ? (language === 'bm' ? 'Skrin peranti tidak akan dimalapkan atau dikunci.' : 'Device screen will stay active and won\'t turn off.')
         : (language === 'bm' ? 'Tetapan tidur skrin biasa telah dipulihkan.' : 'Normal screen sleep settings restored.'),
+      variant: 'success',
+    });
+  };
+
+  const handleToggleStatusBarHidden = async (checked: boolean) => {
+    await triggerLightImpact();
+    setStatusBarHidden(checked);
+    toast({
+      title: language === 'bm' ? (checked ? 'Mod Imersif Penuh' : 'Bar Status Dipaparkan') : (checked ? 'Full Immersive Mode' : 'Status Bar Visible'),
+      description: checked
+        ? (language === 'bm' ? 'Bar status disembunyikan untuk paparan skrin penuh.' : 'Status bar is hidden for full immersive screen estate.')
+        : (language === 'bm' ? 'Bar status dipaparkan semula.' : 'Status bar restored.'),
       variant: 'success',
     });
   };
@@ -1047,6 +1063,81 @@ export default function SettingsPage() {
                 className="flex-shrink-0"
               />
             </ResponsiveToggleRow>
+
+            {/* Immersive Mode (Hide Status Bar) Toggle */}
+            <ResponsiveToggleRow>
+              <div className="space-y-0.5 pr-2">
+                <span className="text-sm font-semibold text-deep-forest dark:text-white block">
+                  {language === 'bm' ? 'Mod Imersif (Sembunyi Bar Status)' : 'Immersive Mode (Hide Status Bar)'}
+                </span>
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75 block">
+                  {language === 'bm'
+                    ? 'Sembunyikan bar status peranti untuk paparan skrin penuh tanpa gangguan.'
+                    : 'Hide mobile device status bar for a clean, full-screen immersive app experience.'}
+                </span>
+              </div>
+              <Switch
+                checked={statusBarHidden}
+                onCheckedChange={handleToggleStatusBarHidden}
+                aria-label="Toggle immersive mode status bar"
+                className="flex-shrink-0"
+              />
+            </ResponsiveToggleRow>
+
+            {/* Status Bar Color Customization */}
+            {!statusBarHidden && (
+              <div className="space-y-3 pt-3 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-deep-forest dark:text-white flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                    {language === 'bm' ? 'Warna Bar Status' : 'Status Bar Background Color'}
+                  </label>
+                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-stone/10 dark:bg-stone/20 text-deep-forest dark:text-white uppercase">
+                    {statusBarColor}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <input
+                      type="color"
+                      value={/^#[0-9A-Fa-f]{6}$/.test(statusBarColor) ? statusBarColor.toLowerCase() : '#000000'}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setStatusBarColor(val);
+                        triggerLightImpact();
+                      }}
+                      className="w-11 h-11 rounded-xl cursor-pointer border-2 border-border p-1 bg-white dark:bg-stone/20 shadow-sm transition-transform active:scale-95"
+                      aria-label="Pick status bar color"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                      { name: 'Terracotta', hex: '#a3310e' },
+                      { name: 'Dark Slate', hex: '#121212' },
+                      { name: 'Deep Forest', hex: '#0c453c' },
+                      { name: 'Royal Gold', hex: '#f69913' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.hex}
+                        type="button"
+                        onClick={async () => {
+                          await triggerLightImpact();
+                          setStatusBarColor(preset.hex);
+                        }}
+                        style={{ backgroundColor: preset.hex }}
+                        className={`w-7 h-7 rounded-lg border-2 transition-all ${
+                          statusBarColor.toLowerCase() === preset.hex.toLowerCase()
+                            ? 'border-white dark:border-white ring-2 ring-[var(--color-sunshine-cta)] scale-110 shadow-sm'
+                            : 'border-transparent opacity-80 hover:opacity-100'
+                        }`}
+                        title={preset.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Developer Mode */}
             <ResponsiveToggleRow>

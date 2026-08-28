@@ -2,6 +2,8 @@ package com.wawasanpakusop.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
@@ -11,6 +13,17 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Optimize WebView rendering performance & hardware acceleration
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            WebSettings settings = webView.getSettings();
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setJavaScriptEnabled(true);
+            settings.setLoadsImagesAutomatically(true);
+        }
 
         // Native back button handling for API 33+
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

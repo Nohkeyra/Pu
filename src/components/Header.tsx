@@ -221,20 +221,7 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden shrink-0">
-            <button
-              type="button"
-              onClick={async () => {
-                await triggerLightImpact();
-                navigate('/settings');
-              }}
-              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
-              aria-label={language === 'bm' ? 'Tetapan' : 'Settings'}
-              title={language === 'bm' ? 'Tetapan' : 'Settings'}
-            >
-              <SettingsIcon className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
-            </button>
-
+          <div className="flex items-center gap-1 sm:gap-1.5 xl:hidden shrink-0">
             <button
               type="button"
               onClick={handleThemeToggle}

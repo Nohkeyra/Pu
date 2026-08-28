@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { setKeepAwake } from '@/lib/nativeService';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -20,6 +22,10 @@ interface SettingsContextType {
   setFontSize: (size: FontSizeOption) => void;
   keepAwakeEnabled: boolean;
   setKeepAwakeEnabled: (enabled: boolean) => void;
+  statusBarHidden: boolean;
+  setStatusBarHidden: (hidden: boolean) => void;
+  statusBarColor: string;
+  setStatusBarColor: (color: string) => void;
 
   // Admin & Hardware Diagnostics UI
   isAdmin: boolean;
@@ -69,6 +75,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       return localStorage.getItem('keepAwakeEnabled') === 'true';
     } catch {
       return false;
+    }
+  });
+
+  const [statusBarHidden, setStatusBarHidden] = useState(() => {
+    try {
+      return localStorage.getItem('statusBarHidden') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [statusBarColor, setStatusBarColor] = useState(() => {
+    try {
+      return localStorage.getItem('statusBarColor') || '#a3310e';
+    } catch {
+      return '#a3310e';
     }
   });
 
@@ -308,6 +330,28 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setKeepAwake(keepAwakeEnabled);
   }, [keepAwakeEnabled]);
 
+  useEffect(() => {
+    const applyStatusBar = async () => {
+      if (!Capacitor.isNativePlatform()) return;
+      try {
+        if (statusBarHidden) {
+          await StatusBar.hide();
+        } else {
+          await StatusBar.show();
+          await StatusBar.setStyle({ style: Style.Dark });
+          await StatusBar.setBackgroundColor({ color: statusBarColor });
+        }
+      } catch (err) {
+        console.warn('StatusBar plugin error:', err);
+      }
+    };
+    applyStatusBar();
+    if (isLoaded) {
+      setSecureItem('statusBarHidden', String(statusBarHidden));
+      setSecureItem('statusBarColor', statusBarColor);
+    }
+  }, [statusBarHidden, statusBarColor, isLoaded]);
+
   const setFontSize = (size: FontSizeOption) => {
     setFontSizeState(size);
     const fontSizeMap: Record<FontSizeOption, number> = {
@@ -330,6 +374,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setFontSize,
         keepAwakeEnabled,
         setKeepAwakeEnabled,
+        statusBarHidden,
+        setStatusBarHidden,
+        statusBarColor,
+        setStatusBarColor,
         isAdmin,
         checkAdminStatus,
         customMainColor,
