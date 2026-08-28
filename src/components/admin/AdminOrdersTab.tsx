@@ -51,6 +51,7 @@ export function AdminOrdersTab({
   handleToggleOrderSelect,
   openOrderDetail,
   openSendDialog,
+  handleDelete,
   handleRejectCancellation,
   handleGenerateConsolidatedInvoice,
   authHeaders,

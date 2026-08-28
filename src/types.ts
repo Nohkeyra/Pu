@@ -110,6 +110,7 @@ export interface Order {
   eventType?: string;
   guests?: number;
   dishes?: string[];
+  company?: string;
 }
 
 export interface CombinedInvoicePayload {

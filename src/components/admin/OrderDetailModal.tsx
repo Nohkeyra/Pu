@@ -157,25 +157,88 @@ export function OrderDetailModal({
               <div className="lg:col-span-2 space-y-10">
                 <div className="bg-white/50 dark:bg-background/20 p-6 md:p-8 rounded-2xl border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-8">
                   {[
-                    { label: language === 'bm' ? "Tarikh Hantar :" : "Submitted Date :", value: (() => {
-                      const d = selectedOrder.createdAt;
-                      if (!d) return '-';
-                      const date = d instanceof Date ? d : typeof d === 'string' ? new Date(d) : 'seconds' in d ? new Date((d as any).seconds * 1000) : '_seconds' in d ? new Date((d as any)._seconds * 1000) : null;
-                      return date ? format(date, 'EEEE, d MMMM yyyy, h:mm a') : '-';
-                    })() },
-                    { label: language === 'bm' ? "Klien / Organisasi :" : "Client / Organization :", value: selectedOrder.to || '-' },
-                    selectedOrder.department ? { label: language === 'bm' ? "Jabatan :" : "Department :", value: selectedOrder.department } : null,
-                    selectedOrder.attn ? { label: language === 'bm' ? "Untuk Perhatian :" : "Attn :", value: selectedOrder.attn } : null,
-                    { label: language === 'bm' ? "Pegawai Bertanggungjawab :" : "Contact Person :", value: selectedOrder.name || '-' },
-                    { label: language === 'bm' ? "Nombor Telefon :" : "Contact Number :", value: selectedOrder.contact || '-' },
-                    { label: language === 'bm' ? "Alamat Emel :" : "Email Address :", value: selectedOrder.email || '-' },
-                    { label: language === 'bm' ? "Tarikh & Masa Acara :" : "Event Date & Time :", value: selectedOrder.dateTime ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') : '-' },
-                    { label: language === 'bm' ? "Lokasi Acara :" : "Event Location :", value: selectedOrder.location || '-' },
-                    { label: language === 'bm' ? "Jenis Sajian :" : "Preparation Type :", value: selectedOrder.preparationType === 'meal_box' ? (language === 'bm' ? 'Pek Makanan (Meal Box)' : 'Meal Box') : selectedOrder.preparationType === 'buffet' ? 'Buffet' : '-' },
-                    { label: language === 'bm' ? "Bilangan Pax :" : "Quantity :", value: selectedOrder.quantity != null ? `${selectedOrder.quantity} pax` : '-' },
-                    { label: language === 'bm' ? "Sajian :" : "Meals :", value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' },
-                    { label: language === 'bm' ? "Butiran Menu :" : "Menu Details :", value: selectedOrder.menu || '-' },
-                    { label: language === 'bm' ? "Nota :" : "Notes :", value: selectedOrder.notes || '-' },
+                    { 
+                      label: language === 'bm' ? "Tarikh & Masa Acara :" : "Event Date & Time :", 
+                      value: selectedOrder.dateTime 
+                        ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') 
+                        : (selectedOrder.eventDate 
+                            ? format(new Date(selectedOrder.eventDate), 'EEEE, d MMMM yyyy') 
+                            : (selectedOrder.date ? String(selectedOrder.date) : '-')) 
+                    },
+                    { 
+                      label: language === 'bm' ? "Bilangan Pax :" : "Quantity :", 
+                      value: selectedOrder.quantity != null 
+                        ? `${selectedOrder.quantity} pax` 
+                        : (selectedOrder.guests != null ? `${selectedOrder.guests} pax` : '-') 
+                    },
+                    { 
+                      label: language === 'bm' ? "Sajian :" : "Meals :", 
+                      value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' 
+                    },
+                    { 
+                      label: language === 'bm' ? "Butiran Menu :" : "Menu Details :", 
+                      value: selectedOrder.menu || (selectedOrder.dishes && selectedOrder.dishes.length > 0 ? selectedOrder.dishes.join(', ') : '-') 
+                    },
+                    { 
+                      label: language === 'bm' ? "Jenis Sajian :" : "Preparation Type :", 
+                      value: selectedOrder.preparationType === 'meal_box' 
+                        ? (language === 'bm' ? 'Pek Makanan (Meal Box)' : 'Meal Box') 
+                        : selectedOrder.preparationType === 'buffet' 
+                          ? (language === 'bm' ? 'Bufet (Buffet)' : 'Buffet') 
+                          : '-' 
+                    },
+                    { 
+                      label: language === 'bm' ? "Lokasi Acara :" : "Event Location :", 
+                      value: selectedOrder.location || '-' 
+                    },
+                    { 
+                      label: language === 'bm' ? "Tarikh Hantar :" : "Submitted Date :", 
+                      value: (() => {
+                        const d = selectedOrder.createdAt;
+                        if (!d) return '-';
+                        let date: Date | null = null;
+                        if (d instanceof Date) {
+                          date = d;
+                        } else if (typeof d === 'string') {
+                          date = new Date(d);
+                        } else if (typeof d === 'object') {
+                          if ('seconds' in d && typeof (d as any).seconds === 'number') {
+                            date = new Date((d as any).seconds * 1000);
+                          } else if ('_seconds' in d && typeof (d as any)._seconds === 'number') {
+                            date = new Date((d as any)._seconds * 1000);
+                          }
+                        }
+                        return date && !isNaN(date.getTime()) ? format(date, 'EEEE, d MMMM yyyy, h:mm a') : '-';
+                      })() 
+                    },
+                    { 
+                      label: language === 'bm' ? "Klien / Organisasi :" : "Client / Organization :", 
+                      value: selectedOrder.to || selectedOrder.company || '-' 
+                    },
+                    selectedOrder.department ? { 
+                      label: language === 'bm' ? "Jabatan :" : "Department :", 
+                      value: selectedOrder.department 
+                    } : null,
+                    { 
+                      label: language === 'bm' ? "Untuk Perhatian :" : "Attn :", 
+                      value: selectedOrder.attn || '-' 
+                    },
+                    { 
+                      label: language === 'bm' ? "Pegawai Bertanggungjawab :" : "Contact Person :", 
+                      value: selectedOrder.name || '-' 
+                    },
+                    { 
+                      label: language === 'bm' ? "Nombor Telefon :" : "Contact Number :", 
+                      value: selectedOrder.contact || '-' 
+                    },
+                    selectedOrder.email ? { 
+                      label: language === 'bm' ? "Alamat Emel :" : "Email Address :", 
+                      value: selectedOrder.email 
+                    } : null,
+                    selectedOrder.notes ? { 
+                      label: language === 'bm' ? "Nota :" : "Notes :", 
+                      value: selectedOrder.notes 
+                    } : null,
                   ].filter(Boolean).map((field, idx) => (
                     <div key={idx} className="pb-6 border-b border-[var(--color-sunshine-cta)]/10 last:border-0 last:pb-0">
                       <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block mb-2 opacity-80">
