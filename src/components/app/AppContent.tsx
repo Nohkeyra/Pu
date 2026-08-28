@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, Suspense, ReactNode } from 'react';
+import { useEffect, useState, Suspense, ReactNode } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -128,20 +128,6 @@ const CalendarPageComp = React.lazy(() => import('@/pages/CalendarPage'));
 
 export default function AppContent() {
   const location = useLocation();
-  const { pathname } = location;
-  const [isNavigating, setIsNavigating] = useState(false);
-  const prevPathnameRef = useRef(pathname);
-
-  useEffect(() => {
-    if (prevPathnameRef.current !== pathname) {
-      setIsNavigating(true);
-      const timer = setTimeout(() => {
-        setIsNavigating(false);
-      }, 600); // 600ms delay to give time and show the loading logo
-      prevPathnameRef.current = pathname;
-      return () => clearTimeout(timer);
-    }
-  }, [pathname]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -182,23 +168,6 @@ export default function AppContent() {
       )}
 
       <main className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]">
-        <AnimatePresence>
-          {isNavigating && (
-            <motion.div 
-              key="nav-loader"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-[120] flex items-center justify-center bg-cream/95 dark:bg-background/95 backdrop-blur-md pointer-events-none"
-            >
-              <div className="flex flex-col items-center space-y-3">
-                <WawasanLoader size={88} />
-                <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
