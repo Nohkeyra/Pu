@@ -11,7 +11,6 @@ import {
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
@@ -90,19 +89,19 @@ export function OrderDetailModal({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full h-full max-w-5xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-deep-forest"
+        className="w-full max-w-5xl max-h-[92vh] bg-[#faf8f5] dark:bg-[#121614] border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-stone-900 dark:text-stone-100"
         onClick={(e) => e.stopPropagation()}
         id="order-detail-dialog-container"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-sm flex-shrink-0" id="order-detail-header">
-          <div className="flex-1">
+        <div className="px-6 py-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-white/60 dark:bg-stone-900/60 backdrop-blur-md shrink-0" id="order-detail-header">
+          <div className="flex-1 min-w-0 pr-4">
             <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
               {t('order_details')}
             </h2>
             {selectedOrder && (
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs md:text-sm text-deep-forest/60 dark:text-stone/40 font-medium">
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 font-mono">
                   {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
                 </p>
                 {(selectedOrder.invoiceNo || selectedOrder.id) && (
@@ -115,13 +114,9 @@ export function OrderDetailModal({
                       try {
                         const { Clipboard } = await import('@capacitor/clipboard');
                         await Clipboard.write({ string: text });
-                        
-                        // We could use toast here, but we need it from props or hooks.
-                        // I'll dynamically import useToast or just use alert as a fallback, 
-                        // wait, let's see if we have toast in this component.
                         toast({
-                          title: "Copied!",
-                          description: "Order ID copied to clipboard",
+                          title: language === 'bm' ? "Disalin!" : "Copied!",
+                          description: language === 'bm' ? "ID pesanan disalin ke papan keratan" : "Order ID copied to clipboard",
                           variant: "success",
                           duration: 2000
                         });
@@ -129,7 +124,7 @@ export function OrderDetailModal({
                         console.error('Clipboard failed', err);
                       }
                     }}
-                    className="p-1 rounded hover:bg-stone/10 text-deep-forest/50 transition-colors"
+                    className="p-1 rounded-md hover:bg-stone-200/60 dark:hover:bg-stone-800 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
                     title="Copy ID"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -140,59 +135,61 @@ export function OrderDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-2 rounded-full hover:bg-stone/10 transition-colors flex-shrink-0"
+            className="p-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
             aria-label="Close"
             id="order-detail-close-btn"
           >
-            <X className="w-6 h-6 text-deep-forest/60 dark:text-stone/60" />
+            <X className="w-5 h-5 text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100" />
           </button>
         </div>
 
         {/* Body - Scrollable Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 md:p-10" id="order-detail-body">
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 sm:p-8" id="order-detail-body">
           {selectedOrder ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               
-              {/* Main section: All fields */}
-              <div className="lg:col-span-2 space-y-10">
-                <div className="bg-white/50 dark:bg-background/20 p-6 md:p-8 rounded-2xl border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-8">
+              {/* Main section: All submission fields strictly aligned */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white dark:bg-[#181d1a] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
                   {[
                     { 
-                      label: language === 'bm' ? "Tarikh & Masa Acara :" : "Event Date & Time :", 
+                      label: language === 'bm' ? "EVENT DATE :" : "EVENT DATE :", 
                       value: selectedOrder.dateTime 
                         ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') 
                         : (selectedOrder.eventDate 
                             ? format(new Date(selectedOrder.eventDate), 'EEEE, d MMMM yyyy') 
-                            : (selectedOrder.date ? String(selectedOrder.date) : '-')) 
+                            : (selectedOrder.date ? (selectedOrder.time ? `${selectedOrder.date} @ ${selectedOrder.time}` : String(selectedOrder.date)) : '-')) 
                     },
                     { 
-                      label: language === 'bm' ? "Bilangan Pax :" : "Quantity :", 
+                      label: language === 'bm' ? "QUANTITY :" : "QUANTITY :", 
                       value: selectedOrder.quantity != null 
                         ? `${selectedOrder.quantity} pax` 
                         : (selectedOrder.guests != null ? `${selectedOrder.guests} pax` : '-') 
                     },
                     { 
-                      label: language === 'bm' ? "Sajian :" : "Meals :", 
-                      value: selectedOrder.meals?.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') || '-' 
+                      label: language === 'bm' ? "MEALS :" : "MEALS :", 
+                      value: selectedOrder.meals && selectedOrder.meals.length > 0 
+                        ? selectedOrder.meals.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') 
+                        : '-' 
                     },
                     { 
-                      label: language === 'bm' ? "Butiran Menu :" : "Menu Details :", 
+                      label: language === 'bm' ? "MENU DETAILS :" : "MENU DETAILS :", 
                       value: selectedOrder.menu || (selectedOrder.dishes && selectedOrder.dishes.length > 0 ? selectedOrder.dishes.join(', ') : '-') 
                     },
                     { 
-                      label: language === 'bm' ? "Jenis Sajian :" : "Preparation Type :", 
+                      label: language === 'bm' ? "PREPARATION TYPE :" : "PREPARATION TYPE :", 
                       value: selectedOrder.preparationType === 'meal_box' 
-                        ? (language === 'bm' ? 'Pek Makanan (Meal Box)' : 'Meal Box') 
+                        ? (language === 'bm' ? 'Meal Box' : 'Meal Box') 
                         : selectedOrder.preparationType === 'buffet' 
-                          ? (language === 'bm' ? 'Bufet (Buffet)' : 'Buffet') 
+                          ? (language === 'bm' ? 'Buffet' : 'Buffet') 
                           : '-' 
                     },
                     { 
-                      label: language === 'bm' ? "Lokasi Acara :" : "Event Location :", 
+                      label: language === 'bm' ? "EVENT LOCATION :" : "EVENT LOCATION :", 
                       value: selectedOrder.location || '-' 
                     },
                     { 
-                      label: language === 'bm' ? "Tarikh Hantar :" : "Submitted Date :", 
+                      label: language === 'bm' ? "SUBMITTED DATE :" : "SUBMITTED DATE :", 
                       value: (() => {
                         const d = selectedOrder.createdAt;
                         if (!d) return '-';
@@ -212,39 +209,39 @@ export function OrderDetailModal({
                       })() 
                     },
                     { 
-                      label: language === 'bm' ? "Klien / Organisasi :" : "Client / Organization :", 
+                      label: language === 'bm' ? "CLIENT / ORGANIZATION :" : "CLIENT / ORGANIZATION :", 
                       value: selectedOrder.to || selectedOrder.company || '-' 
                     },
                     selectedOrder.department ? { 
-                      label: language === 'bm' ? "Jabatan :" : "Department :", 
+                      label: language === 'bm' ? "DEPARTMENT :" : "DEPARTMENT :", 
                       value: selectedOrder.department 
                     } : null,
                     { 
-                      label: language === 'bm' ? "Untuk Perhatian :" : "Attn :", 
+                      label: language === 'bm' ? "ATTN :" : "ATTN :", 
                       value: selectedOrder.attn || '-' 
                     },
                     { 
-                      label: language === 'bm' ? "Pegawai Bertanggungjawab :" : "Contact Person :", 
+                      label: language === 'bm' ? "CONTACT PERSON :" : "CONTACT PERSON :", 
                       value: selectedOrder.name || '-' 
                     },
                     { 
-                      label: language === 'bm' ? "Nombor Telefon :" : "Contact Number :", 
+                      label: language === 'bm' ? "CONTACT NUMBER :" : "CONTACT NUMBER :", 
                       value: selectedOrder.contact || '-' 
                     },
                     selectedOrder.email ? { 
-                      label: language === 'bm' ? "Alamat Emel :" : "Email Address :", 
+                      label: language === 'bm' ? "EMAIL ADDRESS :" : "EMAIL ADDRESS :", 
                       value: selectedOrder.email 
                     } : null,
                     selectedOrder.notes ? { 
-                      label: language === 'bm' ? "Nota :" : "Notes :", 
+                      label: language === 'bm' ? "NOTES :" : "NOTES :", 
                       value: selectedOrder.notes 
                     } : null,
                   ].filter(Boolean).map((field, idx) => (
-                    <div key={idx} className="pb-6 border-b border-[var(--color-sunshine-cta)]/10 last:border-0 last:pb-0">
-                      <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block mb-2 opacity-80">
+                    <div key={idx} className="pb-5 border-b border-stone-100 dark:border-stone-800/80 last:border-0 last:pb-0">
+                      <span className="text-[11px] sm:text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1.5">
                         {field!.label}
                       </span>
-                      <p className="text-lg md:text-xl font-bold text-deep-forest dark:text-white leading-relaxed break-words max-w-[70ch] whitespace-pre-line">
+                      <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug break-words max-w-[70ch] whitespace-pre-line">
                         {field!.value}
                       </p>
                     </div>
@@ -256,14 +253,14 @@ export function OrderDetailModal({
               <div className="lg:col-span-1 space-y-6">
                 
                 {/* Status Banner */}
-                <div className="p-6 rounded-2xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
-                  <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">Status</span>
+                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#181d1a] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-4">
+                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Status</span>
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
                   </div>
                   {handleUpdateStatus && selectedOrder.id && ['approved', 'billed', 'in_transit', 'delivered'].includes(selectedOrder.status?.toLowerCase() || '') && (
-                    <div className="pt-3 border-t border-[var(--color-sunshine-cta)]/10 space-y-2">
-                      <span className="text-xs font-bold text-deep-forest/50 dark:text-stone/40 uppercase tracking-widest block">
+                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-2">
+                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">
                         {language === 'bm' ? 'Kemaskini Penghantaran :' : 'Update Delivery :'}
                       </span>
                       <div className="grid grid-cols-2 gap-2">
@@ -301,16 +298,18 @@ export function OrderDetailModal({
                 </div>
 
                 {/* Pricing and Grand Total */}
-                <div className="p-6 rounded-2xl bg-white/50 dark:bg-background/20 border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-6">
-                  <h4 className="font-bold text-deep-forest dark:text-white border-b border-[var(--color-sunshine-cta)]/10 pb-3 uppercase tracking-wider text-sm">{t('price_pax')}</h4>
-                  <div className="space-y-5">
+                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#181d1a] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-5">
+                  <h4 className="font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800/80 pb-3 uppercase tracking-wider text-xs">
+                    {t('price_pax')}
+                  </h4>
+                  <div className="space-y-4">
                     {selectedOrder.meals.map((meal, idx) => (
-                      <div key={`${meal}-${idx}`} className="flex flex-col gap-2">
-                        <Label className="text-xs text-deep-forest/70 dark:text-stone/40 font-bold uppercase tracking-wide">
+                      <div key={`${meal}-${idx}`} className="flex flex-col gap-1.5">
+                        <Label className="text-xs text-stone-600 dark:text-stone-400 font-bold uppercase tracking-wide">
                           {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
                         </Label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-deep-forest/40">RM</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">RM</span>
                           <Input
                             id={`meal-price-${meal}`}
                             type="number"
@@ -321,7 +320,7 @@ export function OrderDetailModal({
                               ...prev, 
                               [meal]: e.target.value 
                             }))}
-                            className="pl-12 h-12 bg-cream/30 dark:bg-background/40 border-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-white text-lg font-bold rounded-xl focus:ring-[var(--color-sunshine-cta)]/30"
+                            className="pl-11 h-11 bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white text-base font-bold rounded-xl focus:ring-orange-500/20"
                             placeholder="0.00"
                           />
                         </div>
@@ -330,17 +329,17 @@ export function OrderDetailModal({
                   </div>
 
                   {/* Total Preview */}
-                  <div className="p-5 bg-[var(--color-sunshine-cta)]/5 dark:bg-background/60 rounded-xl border border-[var(--color-sunshine-cta)]/10">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/40 uppercase tracking-widest">{t('grand_total')}:</span>
-                      <span className="text-2xl font-black text-[var(--color-sunshine-cta)]">
+                  <div className="p-4 bg-orange-500/5 dark:bg-orange-500/10 rounded-xl border border-orange-500/20">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">{t('grand_total')}:</span>
+                      <span className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400">
                         RM {selectedOrder.meals.reduce((total, meal) => {
                           const price = parseFloat(prices[meal] || '0');
                           return total + (price * selectedOrder.quantity);
                         }, 0).toFixed(2)}
                       </span>
                     </div>
-                    <p className="text-xs text-deep-forest/50 dark:text-stone/50 italic leading-relaxed font-medium">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 italic leading-relaxed font-medium">
                       {numberToWords(selectedOrder.meals.reduce((total, meal) => {
                         const price = parseFloat(prices[meal] || '0');
                         return total + (price * selectedOrder.quantity);
@@ -353,26 +352,26 @@ export function OrderDetailModal({
 
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center space-y-4 text-deep-forest/40">
-              <Loader2 className="w-12 h-12 animate-spin text-[var(--color-sunshine-cta)]" />
-              <p className="font-medium">Loading order details...</p>
+            <div className="h-full flex flex-col items-center justify-center space-y-4 text-stone-400">
+              <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+              <p className="font-medium text-sm">Loading order details...</p>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <ResponsiveButtonGroup stackOnMobile={true} className="px-6 py-5 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-sm justify-end" id="order-detail-footer">
+        <div className="px-6 py-4 border-t border-stone-200 dark:border-stone-800 bg-white/60 dark:bg-stone-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0" id="order-detail-footer">
           {selectedOrder && (
-            <div className="flex flex-wrap gap-2 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
               {selectedOrder?.status === 'cancel_requested' ? (
                 <>
                   <Button
                     id="btn-approve-cancellation"
                     onClick={() => selectedOrder.id && handleCancelOrderAdmin(selectedOrder.id)}
                     disabled={isApproving}
-                    className="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-rose-600/20 transition-all active:scale-95"
+                    className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                     {t('approve_cancellation') || 'Approve Cancellation'}
                   </Button>
                   <Button
@@ -380,9 +379,9 @@ export function OrderDetailModal({
                     onClick={() => selectedOrder.id && handleRejectCancellation(selectedOrder.id)}
                     disabled={isApproving}
                     variant="outline"
-                    className="border-rose-200 text-rose-600 hover:bg-rose-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                    className="border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl px-5 h-11 font-bold transition-all active:scale-95 text-sm"
                   >
-                    <XCircle className="w-5 h-5 mr-2" />
+                    <XCircle className="w-4 h-4 mr-2" />
                     {t('reject_cancellation') || 'Reject Cancellation'}
                   </Button>
                 </>
@@ -392,9 +391,9 @@ export function OrderDetailModal({
                     id="btn-approve-pending"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
                     disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-8 py-6 h-auto font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex-1 sm:flex-none"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                     {t('approve') || 'Approve & Set Pricing'}
                   </Button>
                   <Button
@@ -402,9 +401,9 @@ export function OrderDetailModal({
                     onClick={() => selectedOrder?.id && handleRejectOrder(selectedOrder.id)}
                     disabled={isApproving}
                     variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                    className="border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl px-5 h-11 font-bold transition-all active:scale-95 text-sm"
                   >
-                    <XCircle className="w-5 h-5 mr-2" />
+                    <XCircle className="w-4 h-4 mr-2" />
                     {t('reject_order') || 'Reject Order'}
                   </Button>
                 </>
@@ -414,27 +413,27 @@ export function OrderDetailModal({
                     id="btn-update-invoice"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
                     disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <CheckCircle className="w-5 h-5 mr-2" />}
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                     {t('update_invoice') || 'Update Invoice'}
                   </Button>
                   <Button
                     id="btn-send-invoice"
                     onClick={() => selectedOrder && openSendDialog(selectedOrder)}
                     disabled={isApproving}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-6 py-6 h-auto font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    <Send className="w-5 h-5 mr-2" />
+                    <Send className="w-4 h-4 mr-2" />
                     {t('send_invoice') || 'Send Invoice'}
                   </Button>
                   <Button
                     id="btn-cancel-order"
                     onClick={() => selectedOrder?.id && handleCancelOrderAdmin(selectedOrder.id)}
                     variant="outline"
-                    className="border-stone-200 text-stone-600 hover:bg-stone-50 rounded-2xl px-6 py-6 h-auto font-bold transition-all active:scale-95"
+                    className="border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl px-4 h-11 font-bold transition-all active:scale-95 text-sm"
                   >
-                    <XCircle className="w-5 h-5 mr-2" />
+                    <XCircle className="w-4 h-4 mr-2" />
                     {t('cancel_order') || 'Cancel Order'}
                   </Button>
                 </>
@@ -447,9 +446,9 @@ export function OrderDetailModal({
                     onClose();
                   }}
                   variant="outline"
-                  className="border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-2xl px-5 py-6 h-auto font-bold transition-all active:scale-95"
+                  className="border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl px-4 h-11 font-bold transition-all active:scale-95 text-sm"
                 >
-                  <Trash2 className="w-5 h-5 mr-2" />
+                  <Trash2 className="w-4 h-4 mr-2" />
                   {language === 'bm' ? 'Padam Tempahan' : 'Delete Order'}
                 </Button>
               )}
@@ -459,11 +458,11 @@ export function OrderDetailModal({
             id="btn-close-detail"
             variant="ghost"
             onClick={onClose}
-            className="text-deep-forest/60 hover:bg-stone/10 rounded-2xl px-6 py-6 h-auto font-bold"
+            className="text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 rounded-xl px-5 h-11 font-bold text-sm ml-auto"
           >
             {t('close')}
           </Button>
-        </ResponsiveButtonGroup>
+        </div>
       </motion.div>
     </div>,
     document.body
