@@ -1,24 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Home, Utensils, Settings, User, Calendar } from 'lucide-react';
+import { Home, Utensils, Settings, User, Shield, Calendar } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
+import { auth } from '@/firebaseConfig';
 import { triggerLightImpact } from '@/lib/haptics';
-
-// Bottom navigation is intentionally session-agnostic: it does not read
-// admin/auth state and does not swap tabs based on who is logged in.
-// It always shows the same 5 tabs (Home, Order, Profile, Calendar,
-// Settings) for every user. Admin access is a separate, deliberate
-// entry point elsewhere in the app (LoginPage, ProfilePage, MobileMenu,
-// CalendarPage all link to /admin directly) — it does not live here.
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Helper to determine tab ID from pathname
-function getTabIdFromPath(pathname: string): string | null {
+function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
   if (pathname === '/' || pathname === '/home' || pathname === '/main') return 'home';
   if (pathname.startsWith('/order')) return 'order';
   if (pathname.startsWith('/calendar')) return 'calendar';
-  if (pathname.startsWith('/profile')) return 'profile';
+  if (pathname.startsWith('/admin')) return adminFlag ? 'admin' : null;
+  if (pathname.startsWith('/profile')) return !adminFlag ? 'profile' : null;
   if (pathname.startsWith('/settings')) return 'settings';
   return null;
 }
@@ -30,6 +26,7 @@ function prefetchTabModule(path: string) {
     else if (path.includes('calendar')) import('../pages/CalendarPage');
     else if (path.includes('profile')) import('../pages/ProfilePage');
     else if (path.includes('settings')) import('../pages/SettingsPage');
+    else if (path.includes('admin')) import('../pages/AdminPage');
     else if (path.includes('home') || path.includes('main')) import('../pages/LandingPage');
   } catch {
     // Best-effort prefetch
@@ -41,18 +38,51 @@ export default function BottomNavigation() {
   const location = useLocation();
   const { t } = useLanguage();
 
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      return localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const isUserAdmin = localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
+      setIsAdmin(isUserAdmin);
+    };
+    checkAdmin();
+
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      checkAdmin();
+    });
+
+    window.addEventListener('admin:login-state-change', checkAdmin);
+    window.addEventListener('storage', checkAdmin);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('admin:login-state-change', checkAdmin);
+      window.removeEventListener('storage', checkAdmin);
+    };
+  }, []);
+
   const currentTabId = useMemo(
-    () => getTabIdFromPath(location.pathname),
-    [location.pathname]
+    () => getTabIdFromPath(location.pathname, isAdmin),
+    [location.pathname, isAdmin]
   );
 
   const tabs = useMemo(() => [
     { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
-    { id: 'profile', icon: User, label: t('nav_profile'), path: '/profile' },
+    {
+      id: isAdmin ? 'admin' : 'profile',
+      icon: isAdmin ? Shield : User,
+      label: isAdmin ? (t('nav_admin') || 'Admin') : t('nav_profile'),
+      path: isAdmin ? '/admin' : '/profile',
+    },
     { id: 'calendar', icon: Calendar, label: t('nav_calendar'), path: '/calendar' },
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
-  ], [t]);
+  ], [isAdmin, t]);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex justify-center">
