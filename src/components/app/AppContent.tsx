@@ -51,11 +51,15 @@ function SessionGuard({ children }: { children: ReactNode }) {
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const checkAccess = (user: unknown) => {
       try {
         const isSessionStarted = sessionStorage.getItem('wawasan_session_started') === 'true';
         const isGuestAllowed = sessionStorage.getItem('wawasan_guest_allowed') === 'true';
-        if (user || isSessionStarted || isGuestAllowed) {
+        const isAdmin = Boolean(
+          localStorage.getItem('wawasan_admin_token') ||
+          localStorage.getItem('wawasan_admin_authenticated') === 'true'
+        );
+        if (user || isSessionStarted || isGuestAllowed || isAdmin) {
           setAllowed(true);
         } else {
           setAllowed(false);
@@ -65,8 +69,24 @@ function SessionGuard({ children }: { children: ReactNode }) {
         setAllowed(false);
       }
       setLoading(false);
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      checkAccess(user);
     });
-    return () => unsubscribe();
+
+    const handleAdminChange = () => {
+      checkAccess(auth.currentUser);
+    };
+
+    window.addEventListener('admin:login-state-change', handleAdminChange);
+    window.addEventListener('storage', handleAdminChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('admin:login-state-change', handleAdminChange);
+      window.removeEventListener('storage', handleAdminChange);
+    };
   }, []);
 
   if (loading) return (
@@ -135,9 +155,6 @@ export default function AppContent() {
     };
   }, []);
 
-  const hideNavPaths = ['/', '/login', '/admin'];
-  const showNav = !hideNavPaths.includes(pathname);
-
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
       window.dispatchEvent(new CustomEvent('app:global-refresh'));
@@ -164,7 +181,7 @@ export default function AppContent() {
         </div>
       )}
 
-      <main className={cn("flex-grow relative", showNav && "pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]")}>
+      <main className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]">
         <AnimatePresence>
           {isNavigating && (
             <motion.div 
@@ -199,7 +216,7 @@ export default function AppContent() {
           </AnimatePresence>
         </Suspense>
       </main>
-      {showNav && <BottomNavigation />}
+      <BottomNavigation />
     </div>
   );
 }
