@@ -102,6 +102,10 @@ export interface Order {
   billedAt?: string;
   cancelledAt?: string;
   rejectedAt?: string;
+  deletedByAdmin?: boolean;
+  deletedByAdminAt?: { seconds: number; nanoseconds: number } | string | Date;
+  deletedByUser?: boolean;
+  deletedByUserAt?: { seconds: number; nanoseconds: number } | string | Date;
   eventDate?: string | Date;
   eventType?: string;
   guests?: number;

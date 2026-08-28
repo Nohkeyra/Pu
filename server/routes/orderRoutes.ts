@@ -240,7 +240,7 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
 }
 
 // Public Order Submission
-router.post('/', createOrderLimiter, validateOrderSubmission, async (req, res) => {
+router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, res) => {
   try {
     const { idempotencyKey, ...orderData } = req.body || {};
     const db = getFirestore();
@@ -374,9 +374,29 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
     }
 
     if (action === 'delete' && orderId) {
-      await db.collection('orders').doc(orderId).delete();
+      const orderRef = db.collection('orders').doc(orderId);
+      const snap = await orderRef.get();
+      if (!snap.exists) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      const orderData = snap.data() as OrderData;
+      const ownerUid = orderData.userId || orderData.uid || null;
+
+      // If the order has no registered user, or user already deleted it from their profile, hard delete.
+      // Otherwise, mark as deletedByAdmin so the signed-in user will see it ready to delete in their profile.
+      if (!ownerUid || orderData.deletedByUser) {
+        await orderRef.delete();
+      } else {
+        await orderRef.update({
+          deletedByAdmin: true,
+          deletedByAdminAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      }
+
       invalidateCalendarSessionsCache();
-      return res.json({ success: true });
+      return res.json({ success: true, message: 'Order deleted on admin side' });
     }
 
     return res.status(400).json({ error: 'Invalid action' });
@@ -437,7 +457,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 });
 
 // Customer Cancel Request
-router.post('/cancel', customerOrderActionLimiter, async (req, res) => {
+router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();
@@ -495,7 +515,7 @@ router.post('/cancel', customerOrderActionLimiter, async (req, res) => {
 });
 
 // Customer Order Delete
-router.post('/delete', customerOrderActionLimiter, async (req, res) => {
+router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();
@@ -513,16 +533,23 @@ router.post('/delete', customerOrderActionLimiter, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this order' });
     }
 
+    // STRICT POLICY: Customers cannot delete an order manually until it has been deleted on the admin side
+    if (!orderData.deletedByAdmin) {
+      return res.status(403).json({
+        error: 'Order cannot be deleted manually until it has been deleted or cleared by restaurant management (Admin).'
+      });
+    }
+
     await orderRef.delete();
     invalidateCalendarSessionsCache();
-    return res.json({ success: true });
+    return res.json({ success: true, message: 'Order successfully removed from history' });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }
 });
 
 // Customer Poke Admin
-router.post('/poke', customerOrderActionLimiter, async (req, res) => {
+router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body;
   if (!orderId) return res.status(400).json({ error: 'orderId is required' });
   const db = getFirestore();
@@ -570,7 +597,7 @@ function isValidPdf(buffer: Buffer): boolean {
   return header.startsWith('%PDF-');
 }
 
-router.post('/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
+router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
   const { id } = req.params;
   const { email, name, pdfBase64, lang } = req.body;
 
@@ -633,7 +660,9 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
     const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
-    const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as OrderData[];
+    const orders = snapshot.docs
+      .map(doc => ({ ...doc.data(), id: doc.id }))
+      .filter((o: any) => !o.deletedByAdmin) as OrderData[];
 
     const workbook = await generateOrdersWorkbook(orders);
 
@@ -716,7 +745,7 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
 
     snapshot.docs.forEach(doc => {
       const order = doc.data();
-      if (order.status === 'cancelled' || order.status === 'rejected') return;
+      if (order.status === 'cancelled' || order.status === 'rejected' || order.deletedByAdmin) return;
 
       const dateStr = parseOrderDateStr(order);
       if (!dateStr) return;
@@ -774,16 +803,18 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
     }
 
     // SECURITY FIX: Strip PII from public calendar-orders response
-    const orders = snapshot.docs.map(doc => {
-      const d = doc.data();
-      return {
-        id: doc.id,
-        status: d.status || 'pending',
-        eventDate: d.eventDate || d.date || null,
-        meals: d.meals || [],
-        guests: d.guests || d.quantity || 0,
-      };
-    });
+    const orders = snapshot.docs
+      .map(doc => doc.data())
+      .filter((d: any) => !d.deletedByAdmin)
+      .map((d: any, idx) => {
+        return {
+          id: snapshot.docs[idx]?.id || '',
+          status: d.status || 'pending',
+          eventDate: d.eventDate || d.date || null,
+          meals: d.meals || [],
+          guests: d.guests || d.quantity || 0,
+        };
+      });
 
     return res.json({ success: true, orders });
   } catch (err) {

@@ -111,6 +111,10 @@ export interface OrderData {
   approvedAt?: string;
   billedAt?: string;
   cancelRequestedAt?: string;
+  deletedByAdmin?: boolean;
+  deletedByAdminAt?: string | Timestamp | FieldValue;
+  deletedByUser?: boolean;
+  deletedByUserAt?: string | Timestamp | FieldValue;
   totalAmount?: number | null;
   eventTimestamp?: Timestamp;
   createdAt?: Timestamp | { seconds?: number; nanoseconds?: number } | FieldValue;

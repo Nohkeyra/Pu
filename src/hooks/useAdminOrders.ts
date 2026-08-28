@@ -58,6 +58,9 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
         const fetchedOrders: Order[] = [];
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
+          if (data.deletedByAdmin) {
+            return;
+          }
           let createdAtObj = data.createdAt;
           if (data.createdAt) {
             const sec = typeof data.createdAt.seconds === 'number'

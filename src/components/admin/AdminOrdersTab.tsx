@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
-  AlertTriangle, Check, Eye, FileDown, Send, Loader2, FileSpreadsheet, X, Star, Search, Inbox
+  AlertTriangle, Check, Eye, FileDown, Send, Loader2, FileSpreadsheet, X, Star, Search, Inbox, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -575,6 +575,15 @@ export function AdminOrdersTab({
                           title="Send Invoice"
                         >
                           <Send className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-lg hover:bg-rose-500/15 dark:hover:bg-stone-800 text-stone-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400"
+                          onClick={() => order.id && handleDelete(order.id)}
+                          title={language === 'bm' ? 'Padam Tempahan' : 'Delete Order'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>

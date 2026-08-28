@@ -18,7 +18,7 @@ const router = Router();
 // no logins are accepted at all (503), rather than silently accepting a
 // known password. This applies in dev too — on Termux, set ADMIN_PASSWORD
 // in your local .env before `npm run dev` if you need to log in as admin.
-router.post('/login', adminLoginLimiter, async (req, res) => {
+router.post('/admin/login', adminLoginLimiter, async (req, res) => {
   const { password } = req.body;
   let adminHash = process.env.ADMIN_PASSWORD_HASH;
   const rawAdminPass = process.env.ADMIN_PASSWORD;
@@ -99,12 +99,12 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
 });
 
 // Admin Verify Token Endpoint
-router.get('/verify', verifyAdminToken, (_req, res) => {
+router.get('/admin/verify', verifyAdminToken, (_req, res) => {
   return res.json({ success: true, verified: true });
 });
 
 // Admin Logout Endpoint
-router.post('/logout', verifyAdminToken, async (req, res) => {
+router.post('/admin/logout', verifyAdminToken, async (req, res) => {
   try {
     const adminReq = req as any;
     if (adminReq.adminPayload && adminReq.adminPayload.jti) {
@@ -118,7 +118,7 @@ router.post('/logout', verifyAdminToken, async (req, res) => {
 });
 
 // Admin Branding Update Endpoint
-router.post('/branding', verifyAdminToken, async (req, res) => {
+router.post('/admin/branding', verifyAdminToken, async (req, res) => {
   try {
     const { accent } = req.body;
     const db = getFirestore();
@@ -130,7 +130,7 @@ router.post('/branding', verifyAdminToken, async (req, res) => {
 });
 
 // Next Invoice Number Helper
-router.get('/next-invoice-number', verifyAdminToken, async (_req, res) => {
+router.get('/admin/next-invoice-number', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
     const counterSnap = await db.collection('meta').doc('invoiceCounter').get();

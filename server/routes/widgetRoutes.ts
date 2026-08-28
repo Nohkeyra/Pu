@@ -4,7 +4,7 @@ import { getFirestore } from '../firebaseAdmin.js';
 const router = Router();
 
 // Upcoming orders widget (public) — PII stripped for security
-router.get('/upcoming-orders', async (_req, res) => {
+router.get('/widget/upcoming-orders', async (_req, res) => {
   try {
     const db = getFirestore();
     const now = new Date();
@@ -45,7 +45,7 @@ router.get('/upcoming-orders', async (_req, res) => {
 });
 
 // Daily summary widget (public) — no PII, just aggregate counts
-router.get('/daily-summary', async (_req, res) => {
+router.get('/widget/daily-summary', async (_req, res) => {
   try {
     const db = getFirestore();
     const now = new Date();

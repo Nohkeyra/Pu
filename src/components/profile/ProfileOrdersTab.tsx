@@ -63,6 +63,7 @@ function OrderItem({
   setConfirmDialog,
   setEditingOrder,
   cancellingOrderId,
+  deletingOrderId,
   t,
   itemVariants
 }: any) {
@@ -70,8 +71,10 @@ function OrderItem({
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
   
+  const isDeletable = Boolean(order.id && order.deletedByAdmin);
+
   const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.x < -80 && (order.status === 'cancelled' || order.status === 'rejected')) {
+    if (info.offset.x < -80 && isDeletable) {
       // Trigger delete action
       setConfirmDialog({ type: 'delete', orderId: order.id! });
       // Snap back instantly since it will open a dialog or get deleted
@@ -82,20 +85,20 @@ function OrderItem({
     }
   };
 
-  const isDeletable = order.id && (order.status === 'cancelled' || order.status === 'rejected');
-
   return (
     <motion.div variants={itemVariants} className="relative w-full rounded-xl overflow-hidden touch-pan-y">
-      {/* Background Actions (Revealed on Swipe) */}
-      <div className="absolute inset-y-0 right-0 w-32 bg-red-500 rounded-xl flex items-center justify-end px-6 z-0">
-        <motion.div 
-          className="flex flex-col items-center justify-center text-white"
-          style={{ opacity: swipeOpacity, scale: swipeScale }}
-        >
-          <Trash2 className="w-6 h-6 mb-1" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">{t('Delete', 'Padam')}</span>
-        </motion.div>
-      </div>
+      {/* Background Actions (Revealed on Swipe only when deletable) */}
+      {isDeletable && (
+        <div className="absolute inset-y-0 right-0 w-32 bg-rose-600 rounded-xl flex items-center justify-end px-6 z-0">
+          <motion.div 
+            className="flex flex-col items-center justify-center text-white"
+            style={{ opacity: swipeOpacity, scale: swipeScale }}
+          >
+            <Trash2 className="w-6 h-6 mb-1" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">{t('Delete', 'Padam')}</span>
+          </motion.div>
+        </div>
+      )}
 
       {/* Foreground Draggable Card */}
       <motion.div
@@ -107,6 +110,8 @@ function OrderItem({
         className={`relative z-10 p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
           isSelected
             ? 'bg-stone-50/50 dark:bg-stone-900/30 border-primary/50 ring-2 ring-primary/20 shadow-sm'
+            : order.deletedByAdmin
+            ? 'bg-rose-50/20 dark:bg-rose-950/10 border-rose-200/80 dark:border-rose-900/40 hover:border-rose-300'
             : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300 dark:hover:border-white/20'
         }`}
       >
@@ -139,6 +144,12 @@ function OrderItem({
               {getDisplayInvoiceNo(order)}
             </span>
             {getStatusBadge(order.status)}
+            {order.deletedByAdmin && (
+              <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-xs font-bold gap-1 animate-pulse">
+                <Trash2 className="w-3 h-3" />
+                <span>{t('Cleared by Management · Ready to Delete', 'Dihapuskan Pengurusan · Sedia Dipadam')}</span>
+              </Badge>
+            )}
             <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto sm:ml-0">
               {order.eventDate
                 ? format(new Date(order.eventDate), 'dd MMM yyyy')
@@ -156,12 +167,44 @@ function OrderItem({
               {order.dishes && order.dishes.length > 0 ? order.dishes.join(', ') : t('Standard Catering Package', 'Pakej Katering Standard')}
             </p>
           </div>
+
+          {order.deletedByAdmin && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-800 dark:text-rose-300">
+              <Trash2 className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+              <p className="flex-1">
+                {t(
+                  'This order has been deleted by restaurant management. You can now delete this record from your history.',
+                  'Tempahan ini telah dipadamkan oleh pihak pengurusan. Anda kini boleh memadamkan rekod ini daripada dashboard anda.'
+                )}
+              </p>
+            </div>
+          )}
         </div>
 
         <div 
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-2 flex-wrap justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-white/5 shrink-0"
         >
+          {order.deletedByAdmin && (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDialog({ type: 'delete', orderId: order.id! });
+              }}
+              disabled={deletingOrderId === order.id}
+              variant="outline"
+              size="sm"
+              className="rounded-lg border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs gap-1.5 h-8 px-3"
+            >
+              {deletingOrderId === order.id ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              <span>{t('Delete Record', 'Padam Rekod')}</span>
+            </Button>
+          )}
+
           <Button
             onClick={(e) => {
               e.stopPropagation();

@@ -357,6 +357,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               handleRejectCancellation={(id: string) => { handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected'); }}
               handleApprove={(id: string) => { handleApprove(id); }}
               handleRejectOrder={(id: string) => { handleUpdateOrderStatus(id, { status: 'rejected' }, 'Order rejected'); }}
+              handleDeleteOrder={(id: string) => { handleDeleteOrder(id); }}
               handleUpdateStatus={(id: string, status: string) => { handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`); }}
               openSendDialog={openSendDialog}
               handleTrack={(order) => setTrackingOrder(order)}

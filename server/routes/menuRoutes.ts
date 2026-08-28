@@ -61,7 +61,7 @@ function validateMenuItem(body: any): { valid: false; error: string } | { valid:
   };
 }
 
-router.get('/', async (_req, res) => {
+router.get('/menu', async (_req, res) => {
   try {
     const db = getFirestore();
     const snap = await db.collection('menu').get();
@@ -85,7 +85,7 @@ router.get('/', async (_req, res) => {
 });
 
 // Single item or Bulk save POST handler
-router.post('/', verifyAdminToken, async (req, res) => {
+router.post('/admin/menu', verifyAdminToken, async (req, res) => {
   try {
     const db = getFirestore();
 
@@ -142,7 +142,7 @@ router.post('/', verifyAdminToken, async (req, res) => {
 });
 
 // Single item PUT handler
-router.put('/:id', verifyAdminToken, async (req, res) => {
+router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getFirestore();
@@ -171,7 +171,7 @@ router.put('/:id', verifyAdminToken, async (req, res) => {
 });
 
 // Single item PATCH toggle handler
-router.patch('/:id/toggle', verifyAdminToken, async (req, res) => {
+router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { available } = req.body;
@@ -197,7 +197,7 @@ router.patch('/:id/toggle', verifyAdminToken, async (req, res) => {
 });
 
 // Single item DELETE handler
-router.delete('/:id', verifyAdminToken, async (req, res) => {
+router.delete('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getFirestore();
@@ -208,7 +208,7 @@ router.delete('/:id', verifyAdminToken, async (req, res) => {
   }
 });
 
-router.post('/reset', verifyAdminToken, async (_req, res) => {
+router.post('/admin/menu/reset', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
     const batch = db.batch();

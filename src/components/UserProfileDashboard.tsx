@@ -126,7 +126,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         unsubscribeOrders = onSnapshot(q, (querySnapshot) => {
           const fetchedOrders: Order[] = [];
           querySnapshot.forEach((docSnap) => {
-            fetchedOrders.push({ id: docSnap.id, ...docSnap.data() } as Order);
+            const data = docSnap.data() as Order;
+            if (!data.deletedByUser) {
+              fetchedOrders.push({ id: docSnap.id, ...data });
+            }
           });
           fetchedOrders.sort((a, b) => {
             const dateA = (a.createdAt as any)?.seconds || 0;

@@ -198,17 +198,14 @@ async function startServer() {
     next();
   });
 
-  // SECURITY FIX: Removed duplicate `app.use('/api', orderRoutes)`
-  app.use('/api/admin', authRoutes);
-  app.use('/api/orders', orderRoutes);
-  // Restore orderRoutes mapping to /api for /api/admin/orders, /api/calendar-sessions, and /api/calendar-orders
+  // Route handlers (exact paths mapped inside routers)
+  app.use('/api', authRoutes);
   app.use('/api', orderRoutes);
-  app.use('/api/menu', menuRoutes);
-  app.use('/api/admin/menu', menuRoutes);
+  app.use('/api', menuRoutes);
   app.use('/api', updateRoutes);
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);
-  app.use('/api/widget', widgetRoutes);
+  app.use('/api', widgetRoutes);
 
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];
