@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useTheme } from '@/context/ThemeContext';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ResponsiveToggleRow, ResponsiveGridGroup } from '@/components/ui/ResponsiveButtonGroup';
@@ -24,6 +25,8 @@ import {
   Terminal,
   Radio,
   LayoutGrid,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -58,6 +61,7 @@ function BrandMark() {
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const {
     notificationsEnabled,
     setNotificationsEnabled,
@@ -881,6 +885,59 @@ export default function SettingsPage() {
                   <Globe className="w-4 h-4 mr-2 flex-shrink-0" />
                   <span>Bahasa Melayu</span>
                   {language === 'bm' && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
+                </Button>
+              </ResponsiveGridGroup>
+            </div>
+
+            {/* Theme Mode Selection Row */}
+            <div className="flex flex-col gap-3 py-2">
+              <div className="space-y-0.5">
+                <span className="text-sm font-semibold text-deep-forest dark:text-white block flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
+                  {language === 'bm' ? 'Tema Warna (Siang / Malam)' : 'Theme Mode (Day / Night)'}
+                </span>
+                <span className="text-[13px] sm:text-[14px] leading-5 text-stone dark:text-stone/75">
+                  {language === 'bm'
+                    ? 'Pilih antara mod cerah (Siang) atau mod gelap (Malam) mengikut keselesaan anda.'
+                    : 'Choose between light mode (Day) or dark mode (Night) to suit your environment.'}
+                </span>
+              </div>
+              <ResponsiveGridGroup columns={2} className="mt-1">
+                <Button
+                  type="button"
+                  variant={theme === 'light' ? 'default' : 'outline'}
+                  aria-pressed={theme === 'light'}
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setTheme('light');
+                  }}
+                  className={`w-full rounded-2xl min-h-[44px] font-semibold transition-all ${
+                    theme === 'light'
+                      ? 'btn-cta text-white font-extrabold shadow-sm'
+                      : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
+                  }`}
+                >
+                  <Sun className="w-4 h-4 mr-2 flex-shrink-0 text-amber-500" />
+                  <span>{language === 'bm' ? 'Mod Siang (Cerah)' : 'Light Mode (Day)'}</span>
+                  {theme === 'light' && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  aria-pressed={theme === 'dark'}
+                  onClick={async () => {
+                    await triggerLightImpact();
+                    setTheme('dark');
+                  }}
+                  className={`w-full rounded-2xl min-h-[44px] font-semibold transition-all ${
+                    theme === 'dark'
+                      ? 'btn-cta text-white font-extrabold shadow-sm'
+                      : 'border-border text-deep-forest dark:text-white hover:bg-stone/5'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 mr-2 flex-shrink-0 text-amber-300" />
+                  <span>{language === 'bm' ? 'Mod Malam (Gelap)' : 'Dark Mode (Night)'}</span>
+                  {theme === 'dark' && <Check className="w-4 h-4 ml-auto flex-shrink-0" />}
                 </Button>
               </ResponsiveGridGroup>
             </div>

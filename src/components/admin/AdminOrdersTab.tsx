@@ -188,13 +188,14 @@ export function AdminOrdersTab({
       )}
 
       {/* Balanced toolbar */}
-      <div className="mb-4 bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 rounded-xl p-3 shadow-xs space-y-3">
+      <div className="mb-4 bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 rounded-xl p-3 sm:p-4 shadow-xs space-y-3">
         {/* Row 1: Search, Date range, and Primary action buttons */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[220px]">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" aria-hidden />
             <input
+              id="admin-order-search"
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -211,6 +212,7 @@ export function AdminOrdersTab({
                 {language === 'bm' ? 'Dari' : 'From'}
               </span>
               <input
+                id="admin-date-from"
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
@@ -222,6 +224,7 @@ export function AdminOrdersTab({
                 {language === 'bm' ? 'Hingga' : 'To'}
               </span>
               <input
+                id="admin-date-to"
                 type="date"
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
@@ -231,6 +234,7 @@ export function AdminOrdersTab({
             </div>
             {(dateFromFilter || dateToFilter) && (
               <button
+                id="admin-clear-date-filter"
                 onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
                 className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-lg border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
                 title={language === 'bm' ? 'Reset' : 'Reset'}
@@ -257,6 +261,7 @@ export function AdminOrdersTab({
             </div>
 
             <Button
+              id="admin-export-btn"
               variant="default"
               size="default"
               onClick={() => setIsExportOpen(true)}
@@ -270,7 +275,7 @@ export function AdminOrdersTab({
 
         {/* Row 2: Status filter chips with live counts */}
         {setStatusFilter && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-1 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-2 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
             {[
               { 
                 id: 'all', 
@@ -307,6 +312,7 @@ export function AdminOrdersTab({
               return (
                 <button
                   key={chip.id}
+                  id={`admin-filter-status-${chip.id}`}
                   type="button"
                   onClick={() => setStatusFilter(chip.id)}
                   aria-pressed={active}
@@ -406,12 +412,17 @@ export function AdminOrdersTab({
                   : 'Adjust date filters or wait for new orders.')}
           />
         ) : (
-          <List
-            style={{ height: 600, width: '100%' }}
-            rowCount={searchedOrders.length}
-            rowHeight={typeof window !== 'undefined' && window.innerWidth < 768 ? 150 : 118}
-            rowProps={{}}
-            rowComponent={(({ index, style }: any) => {
+          (() => {
+            const rowHeight = typeof window !== 'undefined' && window.innerWidth < 768 ? 134 : 118;
+            const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 620);
+
+            return (
+              <List
+                style={{ height: dynamicListHeight, width: '100%' }}
+                rowCount={searchedOrders.length}
+                rowHeight={rowHeight}
+                rowProps={{}}
+                rowComponent={(({ index, style }: any) => {
               const order = searchedOrders[index];
               const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
               const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
@@ -489,7 +500,7 @@ export function AdminOrdersTab({
                   <div
                     onClick={() => openOrderDetail(order)}
                     className={`
-                      relative flex flex-col gap-1.5 p-2.5 sm:p-3 rounded-lg bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
+                      relative flex flex-col justify-between gap-1.5 p-2.5 sm:p-3 rounded-lg bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
                       cursor-pointer transition-all duration-150
                       hover:shadow-xs hover:-translate-y-0.5
                       ${isSelected ? 'ring-1.5 ring-sunshine-cta shadow-xs' : ''}
@@ -593,7 +604,9 @@ export function AdminOrdersTab({
               );
             })}
           />
-        )}
+        );
+      })()
+    )}
       </div>
 
       {/*

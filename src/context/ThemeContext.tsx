@@ -12,6 +12,7 @@ export type AccentColor = 'sunshine' | 'kiwi';
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
   accent: AccentColor;
   setAccent: (accent: AccentColor) => void;
   updateAccentInDb: (accent: AccentColor, adminToken?: string) => Promise<void>;
@@ -134,6 +135,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const handleSetTheme = (newTheme: Theme) => {
+    try {
+      document.documentElement.classList.add('theme-transitioning');
+      setTimeout(() => {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 400);
+    } catch {
+      // Ignore if document is not available
+    }
+    setTheme(newTheme);
+  };
+
   const setAccent = (newAccent: AccentColor) => {
     setAccentState(newAccent);
   };
@@ -160,7 +173,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, accent, setAccent, updateAccentInDb }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme: handleSetTheme, accent, setAccent, updateAccentInDb }}>
       {children}
     </ThemeContext.Provider>
   );

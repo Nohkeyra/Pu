@@ -20,7 +20,6 @@ import { AdminHeader } from './admin/AdminHeader';
 import { AdminOrdersTab } from './admin/AdminOrdersTab';
 import { AdminTablesTab } from './admin/AdminTablesTab';
 import AdminMenuTab from './admin/AdminMenuTab';
-import { AdminStatsCards } from './admin/AdminStatsCards';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 
 // Hooks
@@ -256,66 +255,63 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </nav>
  
       <motion.main className="[grid-area:content] p-3.5 sm:p-5 lg:p-6 min-w-0 relative">
-        <div className="mb-5">
-          <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest mb-0.5">
+        <div className="mb-4 sm:mb-5">
+          <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-0.5 tracking-tight">
             {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : 'Submissions Table'}
           </h1>
-          <p className="text-deep-forest/50 text-xs">
+          <p className="text-deep-forest/60 dark:text-stone-400 text-xs sm:text-sm">
             {activeTab === 'orders' ? t('orders_subtitle') : 'Jotform-style submission grid with customizable columns.'}
           </p>
         </div>
 
         {activeTab === 'orders' && (
-          <>
-            <AdminStatsCards orders={orders} t={t} language={language} />
-            <AdminOrdersTab
-              t={t}
-              language={language}
-              orders={orders}
-              filteredOrders={filteredOrders}
-              cancelRequests={cancelRequests}
-              dateFromFilter={dateFromFilter}
-              setDateFromFilter={setDateFromFilter}
-              dateToFilter={dateToFilter}
-              setDateToFilter={setDateToFilter}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              isSelectMode={isSelectMode}
-              setIsSelectMode={setIsSelectMode}
-              filterBySameEmail={filterBySameEmail}
-              setFilterBySameEmail={setFilterBySameEmail}
-              consolidatedInvoiceNo={consolidatedInvoiceNo}
-              setConsolidatedInvoiceNo={setConsolidatedInvoiceNo}
-              prepareConsolidateModal={prepareConsolidateModal}
-              selectedOrderIds={selectedOrderIds}
-              setSelectedOrderIds={setSelectedOrderIds}
-              showConsolidateModal={showConsolidateModal}
-              setShowConsolidateModal={setShowConsolidateModal}
-              isGeneratingConsolidated={isGeneratingConsolidated}
-              generatingInvoice={generatingInvoice}
-              getStatusBadge={getStatusBadge}
-              handleToggleOrderSelect={(id) => {
-                if (!id) return;
-                setSelectedOrderIds(prev => {
-                  const next = new Set(prev);
-                  if (next.has(id)) next.delete(id); else next.add(id);
-                  return next;
-                });
-              }}
-              openOrderDetail={openOrderDetail}
-              openSendDialog={openSendDialog}
-              handlePreviewPDF={handlePreviewPDF}
-              handleDownloadPDF={handleDownloadPDF}
-              handleDelete={handleDeleteOrder}
-              handleRejectCancellation={(id) => handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected')}
-              handleGenerateConsolidatedInvoice={(notes, inv) => handleGenerateConsolidatedInvoice(orders.filter(o => o.id && selectedOrderIds.has(o.id)), notes, inv)}
-              authHeaders={authHeaders}
-              getApiUrl={getApiUrl}
-              fetchOrders={() => fetchOrders(true)}
-              toast={toast}
-              setIsApproving={setIsApproving}
-            />
-          </>
+          <AdminOrdersTab
+            t={t}
+            language={language}
+            orders={orders}
+            filteredOrders={filteredOrders}
+            cancelRequests={cancelRequests}
+            dateFromFilter={dateFromFilter}
+            setDateFromFilter={setDateFromFilter}
+            dateToFilter={dateToFilter}
+            setDateToFilter={setDateToFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            isSelectMode={isSelectMode}
+            setIsSelectMode={setIsSelectMode}
+            filterBySameEmail={filterBySameEmail}
+            setFilterBySameEmail={setFilterBySameEmail}
+            consolidatedInvoiceNo={consolidatedInvoiceNo}
+            setConsolidatedInvoiceNo={setConsolidatedInvoiceNo}
+            prepareConsolidateModal={prepareConsolidateModal}
+            selectedOrderIds={selectedOrderIds}
+            setSelectedOrderIds={setSelectedOrderIds}
+            showConsolidateModal={showConsolidateModal}
+            setShowConsolidateModal={setShowConsolidateModal}
+            isGeneratingConsolidated={isGeneratingConsolidated}
+            generatingInvoice={generatingInvoice}
+            getStatusBadge={getStatusBadge}
+            handleToggleOrderSelect={(id) => {
+              if (!id) return;
+              setSelectedOrderIds(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                return next;
+              });
+            }}
+            openOrderDetail={openOrderDetail}
+            openSendDialog={openSendDialog}
+            handlePreviewPDF={handlePreviewPDF}
+            handleDownloadPDF={handleDownloadPDF}
+            handleDelete={handleDeleteOrder}
+            handleRejectCancellation={(id) => handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected')}
+            handleGenerateConsolidatedInvoice={(notes, inv) => handleGenerateConsolidatedInvoice(orders.filter(o => o.id && selectedOrderIds.has(o.id)), notes, inv)}
+            authHeaders={authHeaders}
+            getApiUrl={getApiUrl}
+            fetchOrders={() => fetchOrders(true)}
+            toast={toast}
+            setIsApproving={setIsApproving}
+          />
         )}
 
         {activeTab === 'tables' && (
