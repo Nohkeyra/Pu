@@ -51,10 +51,23 @@ export default function AdminPage() {
       } catch (storageErr) {
         console.warn('SessionStorage unavailable:', storageErr);
       }
-      const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
-      if (storedToken) {
-        setToken(storedToken);
-        setIsAuthenticated(true);
+      // BUG FIX (audit 2026-08-28): getSecureItem() (Capacitor Preferences
+      // bridge) was called outside any try/catch. If the native bridge
+      // throws — e.g. a transient failure right after app resume/cold
+      // start — this whole init() rejects unhandled, and the line below
+      // that turns off the loading screen never runs. The user is then
+      // stuck on the full-screen "Memuatkan..." loader forever with no
+      // error, no retry, and no way out short of force-closing the app.
+      // Safe fallback: treat a failed read the same as "no stored token"
+      // and fall through to the login screen rather than hanging.
+      try {
+        const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+        if (storedToken) {
+          setToken(storedToken);
+          setIsAuthenticated(true);
+        }
+      } catch (secureItemErr) {
+        console.warn('[Admin Auth] Failed to read stored admin token:', secureItemErr);
       }
       setIsInitializing(false);
     };
