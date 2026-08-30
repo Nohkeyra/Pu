@@ -16,6 +16,7 @@ import InAppUpdateBanner from './components/InAppUpdateBanner';
 import { useInAppUpdates } from './hooks/useInAppUpdates';
 import { useBatikScrollOpacity } from './hooks/useBatikScrollOpacity';
 import CateringSplashScreen from './components/SplashScreen';
+import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import FallbackDashboard from './components/app/FallbackDashboard';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
@@ -61,6 +62,7 @@ function App() {
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isSplashFinished, setIsSplashFinished] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [useFallbackUi, setUseFallbackUi] = useState(() => {
     try {
       return localStorage.getItem('wawasan_fallback_ui') === 'true' || 
@@ -75,6 +77,36 @@ function App() {
     const timer = setTimeout(() => setShowTroubleshoot(true), 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const handleOpenPrivacy = () => setShowPrivacyPolicy(true);
+    window.addEventListener('app:open-privacy-policy', handleOpenPrivacy);
+    return () => window.removeEventListener('app:open-privacy-policy', handleOpenPrivacy);
+  }, []);
+
+  const handleSplashComplete = () => {
+    setIsSplashFinished(true);
+    try {
+      const isAcknowledged = localStorage.getItem('wawasan_privacy_acknowledged') === 'true';
+      if (!isAcknowledged) {
+        setShowPrivacyPolicy(true);
+      }
+    } catch {
+      setShowPrivacyPolicy(true);
+    }
+  };
+
+  const handlePrivacyUnderstood = () => {
+    setShowPrivacyPolicy(false);
+    try {
+      sessionStorage.setItem('wawasan_privacy_completed', 'true');
+      if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#/login') {
+        window.location.hash = '#/';
+      }
+    } catch (err) {
+      console.warn('Privacy redirect warning:', err);
+    }
+  };
 
   useEffect(() => {
     // F-LAUNCH: Force landing on Login Page on fresh cold starts
@@ -152,7 +184,7 @@ function App() {
       {!isSplashFinished && (
         <CateringSplashScreen 
           isLoading={isAppLoading} 
-          onComplete={() => setIsSplashFinished(true)} 
+          onComplete={handleSplashComplete} 
         />
       )}
       {!isSplashFinished && showTroubleshoot && (
@@ -175,6 +207,10 @@ function App() {
       )}
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
+          <PrivacyPolicyModal
+            isOpen={showPrivacyPolicy && isSplashFinished}
+            onUnderstood={handlePrivacyUnderstood}
+          />
           <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <VercelSpeedInsights />
             <PushNotificationHandler />

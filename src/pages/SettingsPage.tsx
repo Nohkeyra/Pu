@@ -39,7 +39,7 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from 'lucide-react';
-import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
+import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -1302,14 +1302,29 @@ export default function SettingsPage() {
               title={language === 'bm' ? 'Kesan Bunyi Sentuhan (Sound FX)' : 'Touch & Click Sound Effects'}
               isLast={true}
               action={
-                <Switch
-                  checked={soundEffectsEnabled}
-                  onCheckedChange={(checked) => {
-                    setSoundEffectsEnabled(checked);
-                    triggerLightImpact();
-                  }}
-                  aria-label="Toggle touch sounds"
-                />
+                <div className="flex items-center gap-2">
+                  {soundEffectsEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => playClickSound('force')}
+                      className="px-2.5 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-bold text-[11px] transition-colors"
+                      title="Uji Bunyi Klik"
+                    >
+                      {language === 'bm' ? 'Uji Bunyi' : 'Test Sound'}
+                    </button>
+                  )}
+                  <Switch
+                    checked={soundEffectsEnabled}
+                    onCheckedChange={(checked) => {
+                      setSoundEffectsEnabled(checked);
+                      if (checked) {
+                        playClickSound('force');
+                      }
+                      triggerLightImpact();
+                    }}
+                    aria-label="Toggle touch sounds"
+                  />
+                </div>
               }
             />
           </SettingsSection>
