@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
 import { exportOrdersAsExcelTemplate } from '@/lib/exportUtils';
-import { getDisplayInvoiceNo } from '@/lib/utils';
+import { getDisplayInvoiceNo, formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 
 interface AdminTablesTabProps {
   orders: Order[];
@@ -783,7 +783,7 @@ export function AdminTablesTab({
                         <td className={`${densityCellPadding} text-deep-forest/80 dark:text-stone/80 whitespace-nowrap`}>
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] shrink-0" />
-                            <span>{order.dateTime || '-'}</span>
+                            <span>{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</span>
                           </div>
                         </td>
                       )}
@@ -904,26 +904,7 @@ export function AdminTablesTab({
                       {/* Submitted Date */}
                       {visibleColumns.has('createdAt') && (
                         <td className={`${densityCellPadding} text-deep-forest/70 dark:text-stone/70 whitespace-nowrap`}>
-                          {(() => {
-                            if (!order.createdAt) return '-';
-                            let dateVal: Date;
-                            if (typeof order.createdAt === 'string') {
-                              dateVal = new Date(order.createdAt);
-                            } else if (order.createdAt instanceof Date) {
-                              dateVal = order.createdAt;
-                            } else if (typeof order.createdAt === 'object') {
-                              if ('seconds' in order.createdAt && typeof order.createdAt.seconds === 'number') {
-                                dateVal = new Date(order.createdAt.seconds * 1000);
-                              } else if ('_seconds' in order.createdAt && typeof (order.createdAt as any)._seconds === 'number') {
-                                dateVal = new Date((order.createdAt as any)._seconds * 1000);
-                              } else {
-                                dateVal = new Date(order.createdAt as any);
-                              }
-                            } else {
-                              dateVal = new Date(order.createdAt);
-                            }
-                            return isNaN(dateVal.getTime()) ? '-' : dateVal.toLocaleDateString('en-GB');
-                          })()}
+                          {formatDateDisplay(order.createdAt)}
                         </td>
                       )}
 

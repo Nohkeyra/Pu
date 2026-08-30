@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import type { Order } from '@/types';
-import { getAssetUrl } from '@/lib/utils';
+import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
 import { 
   Download, 
   X, 
@@ -54,9 +54,7 @@ export function CustomerInvoicePreviewModal({
   if (!isOpen) return null;
 
   const invoiceNo = order?.invoiceNo || order?.officialInvoiceNo || order?.orderId || `RW-PREVIEW`;
-  const dateStr = order?.date 
-    ? (typeof order.date === 'string' ? order.date : new Date(order.date).toLocaleDateString())
-    : new Date().toLocaleDateString();
+  const dateStr = formatDateDisplay(order?.eventDate || order?.dateTime || order?.date || new Date());
 
   const totalAmount = order?.totalAmount || (order?.quantity ? order.quantity * 15 : 150);
   const isOrderFinal = isFinal || ['approved', 'billed', 'in_transit', 'delivered'].includes(order?.status?.toLowerCase() || '');
@@ -98,8 +96,8 @@ export function CustomerInvoicePreviewModal({
     triggerLightImpact();
     const customerName = order?.name || order?.to || 'Pelanggan';
     const msg = language === 'bm' 
-      ? `Salam Sejahtera Restoran Wawasan,\n\nSaya ingin merujuk invois katering saya:\n🧾 No Invois: *${invoiceNo}*\n👤 Nama: *${customerName}*\n📅 Tarikh Majlis: *${order?.dateTime || dateStr}*\n👥 Kuantiti: *${qty} Pax*\n💰 Jumlah: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nMohon semakan dan maklum balas lanjut. Terima kasih!`
-      : `Hello Restoran Wawasan,\n\nI would like to refer to my catering invoice:\n🧾 Invoice No: *${invoiceNo}*\n👤 Name: *${customerName}*\n📅 Event Date: *${order?.dateTime || dateStr}*\n👥 Quantity: *${qty} Pax*\n💰 Total: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nThank you!`;
+      ? `Salam Sejahtera Restoran Wawasan,\n\nSaya ingin merujuk invois katering saya:\n🧾 No Invois: *${invoiceNo}*\n👤 Nama: *${customerName}*\n📅 Tarikh Majlis: *${dateStr}*\n👥 Kuantiti: *${qty} Pax*\n💰 Jumlah: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nMohon semakan dan maklum balas lanjut. Terima kasih!`
+      : `Hello Restoran Wawasan,\n\nI would like to refer to my catering invoice:\n🧾 Invoice No: *${invoiceNo}*\n👤 Name: *${customerName}*\n📅 Event Date: *${dateStr}*\n👥 Quantity: *${qty} Pax*\n💰 Total: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nThank you!`;
     
     launchWhatsApp({
       phone: RESTORAN_CONTACT.whatsappRaw,

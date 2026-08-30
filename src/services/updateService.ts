@@ -3,10 +3,11 @@ import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { getApiUrl } from '@/lib/api';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import semver from 'semver';
 
-export const CURRENT_APP_VERSION = '1.3.41';
-export const CURRENT_BUILD_NUMBER = 172;
+export const CURRENT_APP_VERSION = '1.3.43';
+export const CURRENT_BUILD_NUMBER = 173;
 export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk';
 
 export interface AppVersionConfig {
@@ -36,6 +37,35 @@ export const DEFAULT_VERSION_CONFIG: AppVersionConfig = {
   updatedAt: new Date().toISOString(),
   publishedBy: 'System Admin'
 };
+
+/**
+ * Resolves the currently running/installed app version and build number.
+ * On native Android / iOS platforms, queries @capacitor/app directly.
+ * Otherwise, falls back to the declared constants.
+ */
+export async function getInstalledAppInfo(): Promise<{ version: string; buildNumber: number }> {
+  let version = CURRENT_APP_VERSION;
+  let buildNumber = CURRENT_BUILD_NUMBER;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const info = await CapApp.getInfo();
+      if (info?.version) {
+        version = info.version;
+      }
+      if (info?.build) {
+        const parsedBuild = parseInt(info.build, 10);
+        if (!isNaN(parsedBuild) && parsedBuild > 0) {
+          buildNumber = parsedBuild;
+        }
+      }
+    } catch (err) {
+      console.warn('[UpdateService] Failed to read native app info:', err);
+    }
+  }
+
+  return { version, buildNumber };
+}
 
 /**
  * Notify Capgo native container that the app bundle loaded successfully.
@@ -74,6 +104,7 @@ export async function downloadAndApplyCapgoOta(bundleUrl: string, version: strin
   }
   return false;
 }
+
 /**
  * Compare two semver strings (e.g., "1.2.5" vs "1.2.4") using the robust semver package.
  * Returns:
@@ -88,14 +119,35 @@ export function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * Check if a given remote version requires an update compared to local version.
+ * Check if a given remote version requires an update compared to local version & build.
+ * Ensures that if the user is already on the latest APK version, no update popup or banner is triggered.
  */
-export function isUpdateRequired(remoteVersion: AppVersionConfig, currentVersion = CURRENT_APP_VERSION): {
+export function isUpdateRequired(
+  remoteVersion: AppVersionConfig,
+  currentVersion: string = CURRENT_APP_VERSION,
+  currentBuild: number = CURRENT_BUILD_NUMBER
+): {
   hasUpdate: boolean;
   isForce: boolean;
 } {
-  const hasUpdate = compareVersions(remoteVersion.latestVersion, currentVersion) > 0;
-  const isForce = remoteVersion.forceUpdate || compareVersions(currentVersion, remoteVersion.minVersion) < 0;
+  const verComparison = compareVersions(remoteVersion.latestVersion, currentVersion);
+  
+  // 1. Remote is strictly newer than current version (e.g. 1.4.0 > 1.3.41)
+  const isVersionNewer = verComparison > 0;
+  
+  // 2. Versions are identical, but remote build number is higher (e.g. build 175 > build 172)
+  const isSameVersionHigherBuild = verComparison === 0 && Boolean(
+    remoteVersion.buildNumber && 
+    currentBuild && 
+    remoteVersion.buildNumber > currentBuild
+  );
+  
+  const hasUpdate = isVersionNewer || isSameVersionHigherBuild;
+
+  // IMPORTANT: An update is NEVER forced or flagged if the user is already running the latest or newer release!
+  // isForce only applies if an update actually exists AND (remote explicitly set forceUpdate OR current meets less than minVersion).
+  const isBelowMin = compareVersions(currentVersion, remoteVersion.minVersion) < 0;
+  const isForce = hasUpdate && (Boolean(remoteVersion.forceUpdate) || isBelowMin);
 
   return { hasUpdate, isForce };
 }

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
-import { format } from 'date-fns';
+import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
 import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
@@ -153,63 +153,47 @@ export function OrderDetailModal({
                 <div className="bg-white dark:bg-[#181d1a] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
                   {[
                     { 
-                      label: language === 'bm' ? "EVENT DATE :" : "EVENT DATE :", 
+                      label: "EVENT DATE :", 
                       value: selectedOrder.dateTime 
-                        ? format(new Date(selectedOrder.dateTime), 'EEEE, d MMMM yyyy, h:mm a') 
+                        ? formatDateTimeDisplay(selectedOrder.dateTime) 
                         : (selectedOrder.eventDate 
-                            ? format(new Date(selectedOrder.eventDate), 'EEEE, d MMMM yyyy') 
-                            : (selectedOrder.date ? (selectedOrder.time ? `${selectedOrder.date} @ ${selectedOrder.time}` : String(selectedOrder.date)) : '-')) 
+                            ? (selectedOrder.time ? `${formatDateDisplay(selectedOrder.eventDate)} @ ${selectedOrder.time}` : formatDateDisplay(selectedOrder.eventDate)) 
+                            : (selectedOrder.date ? (selectedOrder.time ? `${formatDateDisplay(selectedOrder.date)} @ ${selectedOrder.time}` : formatDateDisplay(selectedOrder.date)) : '-')) 
                     },
                     { 
-                      label: language === 'bm' ? "QUANTITY :" : "QUANTITY :", 
+                      label: "QUANTITY :", 
                       value: selectedOrder.quantity != null 
                         ? `${selectedOrder.quantity} pax` 
                         : (selectedOrder.guests != null ? `${selectedOrder.guests} pax` : '-') 
                     },
                     { 
-                      label: language === 'bm' ? "MEALS :" : "MEALS :", 
+                      label: "MEALS :", 
                       value: selectedOrder.meals && selectedOrder.meals.length > 0 
                         ? selectedOrder.meals.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') 
                         : '-' 
                     },
                     { 
-                      label: language === 'bm' ? "MENU DETAILS :" : "MENU DETAILS :", 
+                      label: "MENU DETAILS :", 
                       value: selectedOrder.menu || (selectedOrder.dishes && selectedOrder.dishes.length > 0 ? selectedOrder.dishes.join(', ') : '-') 
                     },
                     { 
-                      label: language === 'bm' ? "PREPARATION TYPE :" : "PREPARATION TYPE :", 
+                      label: "PREPARATION TYPE :", 
                       value: selectedOrder.preparationType === 'meal_box' 
-                        ? (language === 'bm' ? 'Meal Box' : 'Meal Box') 
+                        ? 'Meal Box' 
                         : selectedOrder.preparationType === 'buffet' 
-                          ? (language === 'bm' ? 'Buffet' : 'Buffet') 
+                          ? 'Buffet' 
                           : '-' 
                     },
                     { 
-                      label: language === 'bm' ? "EVENT LOCATION :" : "EVENT LOCATION :", 
+                      label: "EVENT LOCATION :", 
                       value: selectedOrder.location || '-' 
                     },
                     { 
-                      label: language === 'bm' ? "SUBMITTED DATE :" : "SUBMITTED DATE :", 
-                      value: (() => {
-                        const d = selectedOrder.createdAt;
-                        if (!d) return '-';
-                        let date: Date | null = null;
-                        if (d instanceof Date) {
-                          date = d;
-                        } else if (typeof d === 'string') {
-                          date = new Date(d);
-                        } else if (typeof d === 'object') {
-                          if ('seconds' in d && typeof (d as any).seconds === 'number') {
-                            date = new Date((d as any).seconds * 1000);
-                          } else if ('_seconds' in d && typeof (d as any)._seconds === 'number') {
-                            date = new Date((d as any)._seconds * 1000);
-                          }
-                        }
-                        return date && !isNaN(date.getTime()) ? format(date, 'EEEE, d MMMM yyyy, h:mm a') : '-';
-                      })() 
+                      label: "SUBMITTED DATE :", 
+                      value: formatDateTimeDisplay(selectedOrder.createdAt) 
                     },
                     { 
-                      label: language === 'bm' ? "CLIENT / ORGANIZATION :" : "CLIENT / ORGANIZATION :", 
+                      label: "CLIENT / ORGANIZATION :", 
                       value: selectedOrder.to || selectedOrder.company || '-' 
                     },
                     selectedOrder.department ? { 

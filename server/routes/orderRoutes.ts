@@ -5,184 +5,33 @@ import { verifyAdminToken } from '../adminAuth.js';
 import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransporter } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
-import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
-import { isValidStatusTransition } from '../services/orderValidator.js';
+import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
+import { calculateOrderPricing, SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
 
-interface ReferenceDish {
-  nameEn: string;
-  nameBm: string;
-  price: number;
-}
+export function deriveEventDate(body: any): string | null {
+  if (!body) return null;
+  const raw = body.eventDate || body.date || body.dateTime;
+  if (!raw) return null;
 
-let cachedReferenceDishes: ReferenceDish[] = [];
-
-function getReferenceDishes(): ReferenceDish[] {
-  if (cachedReferenceDishes.length > 0) {
-    return cachedReferenceDishes;
-  }
-
-  const list: ReferenceDish[] = [];
-
-  if (Array.isArray(DEFAULT_MENU_ITEMS)) {
-    for (const item of DEFAULT_MENU_ITEMS) {
-      if (item && item.price) {
-        list.push({
-          nameEn: item.nameEn || '',
-          nameBm: item.nameBm || '',
-          price: Number(item.price),
-        });
-      }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
     }
   }
 
-  cachedReferenceDishes = list;
-  return list;
-}
-
-function splitCustomMenu(menuStr: string): string[] {
-  if (!menuStr) return [];
-  const normalized = menuStr
-    .replace(/\s+dan\s+/gi, ',')
-    .replace(/\s+and\s+/gi, ',')
-    .replace(/\s+dengan\s+/gi, ',')
-    .replace(/\s+with\s+/gi, ',')
-    .replace(/\s+&\s+/gi, ',')
-    .replace(/\s*\+\s*/g, ',')
-    .replace(/\n+/g, ',');
-
-  return normalized
-    .split(',')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-}
-
-function findBestMatch(fragment: string, refDishes: ReferenceDish[]): ReferenceDish | null {
-  const cleanFragment = fragment.toLowerCase().trim();
-  if (!cleanFragment) return null;
-
-  let bestMatch: ReferenceDish | null = null;
-  let bestScore = 0;
-
-  const fragmentWords = cleanFragment
-    .split(/\s+/)
-    .map(w => w.replace(/[^\w\s]/g, ""))
-    .filter(w => w.length > 1);
-
-  for (const dish of refDishes) {
-    const nameEnClean = dish.nameEn.toLowerCase();
-    const nameBmClean = dish.nameBm.toLowerCase();
-
-    let score = 0;
-
-    if (nameEnClean === cleanFragment || nameBmClean === cleanFragment) {
-      score += 100;
-    }
-
-    if (cleanFragment.includes(nameEnClean) || cleanFragment.includes(nameBmClean)) {
-      score += 50;
-    }
-    if (nameEnClean.includes(cleanFragment) || nameBmClean.includes(cleanFragment)) {
-      score += 40;
-    }
-
-    const dishEnWords = nameEnClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
-    const dishBmWords = nameBmClean.split(/\s+/).map(w => w.replace(/[^\w\s]/g, "")).filter(w => w.length > 1);
-
-    let enWordMatches = 0;
-    for (const fw of fragmentWords) {
-      if (dishEnWords.includes(fw)) enWordMatches++;
-    }
-
-    let bmWordMatches = 0;
-    for (const fw of fragmentWords) {
-      if (dishBmWords.includes(fw)) bmWordMatches++;
-    }
-
-    const wordMatchScore = Math.max(enWordMatches, bmWordMatches) * 10;
-    score += wordMatchScore;
-
-    if (score > bestScore && score >= 15) {
-      bestScore = score;
-      bestMatch = dish;
-    }
+  try {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(d);
+  } catch {
+    return null;
   }
-
-  return bestMatch;
-}
-
-export const DEFAULT_FALLBACK_PRICE_PER_PAX = 11.50;
-
-function calculateOrderPricing(
-  dishes: any[] | undefined,
-  veggies: any[] | undefined,
-  customMenu: string | undefined,
-  quantity: number,
-  meals: string[]
-): { prices: Record<string, number>; totalAmount: number } {
-  const refDishes = getReferenceDishes();
-  let pricePerPax = 0;
-
-  if (Array.isArray(dishes)) {
-    for (const dish of dishes) {
-      const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (dish.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (dish.nameBm || '').toLowerCase());
-      if (matchInRef) {
-        pricePerPax += matchInRef.price;
-      } else {
-        pricePerPax += Number(dish.price) || 0;
-      }
-    }
-  }
-
-  if (Array.isArray(veggies)) {
-    for (const veg of veggies) {
-      const matchInRef = refDishes.find(r => r.nameEn.toLowerCase() === (veg.nameEn || '').toLowerCase() || r.nameBm.toLowerCase() === (veg.nameBm || '').toLowerCase());
-      if (matchInRef) {
-        pricePerPax += matchInRef.price;
-      } else {
-        pricePerPax += Number(veg.price) || 0;
-      }
-    }
-  }
-
-  if (customMenu && typeof customMenu === 'string' && customMenu.trim()) {
-    const fragments = splitCustomMenu(customMenu);
-    for (const fragment of fragments) {
-      const bestMatch = findBestMatch(fragment, refDishes);
-      if (bestMatch) {
-        pricePerPax += bestMatch.price;
-      }
-    }
-  }
-
-  const isDefaultBox = customMenu === 'Set Box Makanan dan Minuman' || 
-    ( (!dishes || dishes.length === 0) && (!veggies || veggies.length === 0) && customMenu === 'Set Box Makanan dan Minuman' );
-
-  if (pricePerPax === 0 && !isDefaultBox) {
-    pricePerPax = DEFAULT_FALLBACK_PRICE_PER_PAX;
-  }
-
-  const prices: Record<string, number> = {};
-  const mealCount = Array.isArray(meals) && meals.length > 0 ? meals.length : 1;
-
-  if (Array.isArray(meals)) {
-    meals.forEach(meal => {
-      prices[meal] = pricePerPax;
-    });
-  } else {
-    prices['default'] = pricePerPax;
-  }
-
-  const totalAmount = pricePerPax * (Number(quantity) || 1) * mealCount;
-
-  return {
-    prices,
-    totalAmount
-  };
 }
 
 const createOrderLimiter = createDistributedRateLimiter({
@@ -212,26 +61,13 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
     }
   }
 
-  const name = typeof body.name === 'string' ? body.name.trim() : typeof body.customerName === 'string' ? body.customerName.trim() : '';
-  if (!name) {
-    return res.status(400).json({ success: false, error: 'Customer name (name) is required.' });
-  }
-
-  const contact = typeof body.contact === 'string' ? body.contact.trim() : '';
-  const email = typeof body.email === 'string' ? body.email.trim() : '';
-  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
-  if (!contact && !email && !phone) {
-    return res.status(400).json({ success: false, error: 'At least one contact method (contact, phone, or email) is required.' });
-  }
-
-  const eventDate = typeof body.eventDate === 'string' ? body.eventDate.trim() : typeof body.date === 'string' ? body.date.trim() : '';
-  if (!eventDate) {
-    return res.status(400).json({ success: false, error: 'Event date (eventDate or date) is required.' });
-  }
-
-  const guestsNum = Number(body.guests || body.quantity);
-  if (isNaN(guestsNum) || guestsNum < 1) {
-    return res.status(400).json({ success: false, error: 'Number of guests or quantity must be a positive number.' });
+  const validation = validateOrderPayload(body);
+  if (!validation.valid) {
+    return res.status(400).json({
+      success: false,
+      error: validation.errors[0]?.message || 'Invalid order submission payload.',
+      errors: validation.errors,
+    });
   }
 
   next();
@@ -240,23 +76,31 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
 // Public Order Submission
 router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, res) => {
   try {
-    const { idempotencyKey, ...orderData } = req.body || {};
+    const rawBody = req.body || {};
     const db = getFirestore();
 
-    const { prices, totalAmount } = calculateOrderPricing(
-      orderData.dishes,
-      orderData.veggies,
-      orderData.customMenu,
-      orderData.quantity || orderData.guests,
-      orderData.meals || []
-    );
+    const derivedDate = deriveEventDate(rawBody) || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
+    const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
+    const mappedMeals = Array.isArray(rawBody.meals) ? rawBody.meals : (rawBody.mealType ? [rawBody.mealType] : ['default']);
 
-    orderData.prices = prices;
-    orderData.totalAmount = totalAmount;
+    // Authoritative Server Pricing Calculation via shared module
+    const { prices, totalAmount } = calculateOrderPricing({
+      dishes: rawBody.dishes,
+      veggies: rawBody.veggies,
+      customMenu: rawBody.customMenu,
+      quantity: qty,
+      meals: mappedMeals,
+      menu: rawBody.menu,
+    });
 
-    if (Array.isArray(orderData.dishes)) {
-      const isBm = orderData.lang === 'bm';
-      orderData.dishes = orderData.dishes
+    if (rawBody.totalAmount !== undefined && Number(rawBody.totalAmount) !== totalAmount) {
+      console.warn(`[Order Pricing Warning] Client submitted totalAmount (${rawBody.totalAmount}) differs from server calculated totalAmount (${totalAmount})`);
+    }
+
+    let processedDishes: string[] = [];
+    if (Array.isArray(rawBody.dishes)) {
+      const isBm = rawBody.lang === 'bm';
+      processedDishes = rawBody.dishes
         .map((d: any) => {
           if (typeof d === 'string') return d;
           if (d && typeof d === 'object') {
@@ -267,37 +111,75 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
         .filter((name: string) => typeof name === 'string' && name.length > 0);
     }
 
+    // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
+    const sanitizedOrderDoc = {
+      to: typeof rawBody.to === 'string' ? rawBody.to.slice(0, 200) : 'Majlis Persendirian',
+      attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
+      name: typeof rawBody.name === 'string' ? rawBody.name.slice(0, 200) : typeof rawBody.customerName === 'string' ? rawBody.customerName.slice(0, 200) : '',
+      contact: typeof rawBody.contact === 'string' ? rawBody.contact.slice(0, 50) : typeof rawBody.contactNumber === 'string' ? rawBody.contactNumber.slice(0, 50) : typeof rawBody.phone === 'string' ? rawBody.phone.slice(0, 50) : '',
+      email: typeof rawBody.email === 'string' ? rawBody.email.slice(0, 150) : typeof rawBody.customerEmail === 'string' ? rawBody.customerEmail.slice(0, 150) : '',
+      date: derivedDate,
+      eventDate: derivedDate,
+      time: typeof rawBody.time === 'string' ? rawBody.time.slice(0, 20) : typeof rawBody.eventTime === 'string' ? rawBody.eventTime.slice(0, 20) : '12:00',
+      location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
+      quantity: qty,
+      guests: qty,
+      pax: qty,
+      meals: mappedMeals,
+      menu: typeof rawBody.menu === 'string' ? rawBody.menu.slice(0, 500) : SET_BOX_MENU_TITLE,
+      preparationType: rawBody.preparationType === 'meal_box' ? 'meal_box' : 'buffet',
+      notes: typeof rawBody.notes === 'string' ? rawBody.notes.slice(0, 5000) : '',
+      dateTime: rawBody.dateTime ? String(rawBody.dateTime) : `${derivedDate}T${rawBody.time || '12:00'}:00+08:00`,
+      lang: rawBody.lang === 'en' ? 'en' : 'bm',
+      status: 'pending',
+      prices,
+      totalAmount,
+      dishes: processedDishes,
+      veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],
+      customMenu: typeof rawBody.customMenu === 'string' ? rawBody.customMenu.slice(0, 1000) : '',
+      userId: typeof rawBody.userId === 'string' ? rawBody.userId : null,
+      delivery: typeof rawBody.delivery === 'object' && rawBody.delivery !== null ? rawBody.delivery : null,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
     let orderId: string;
     let isDuplicate = false;
+    const idempotencyKey = typeof rawBody.idempotencyKey === 'string' && IDEMPOTENCY_KEY_RE.test(rawBody.idempotencyKey)
+      ? rawBody.idempotencyKey
+      : null;
 
-    if (typeof idempotencyKey === 'string' && IDEMPOTENCY_KEY_RE.test(idempotencyKey)) {
-      const docRef = db.collection('orders').doc(idempotencyKey);
-      try {
-        await docRef.create({
-          ...orderData,
-          status: 'pending',
-          createdAt: FieldValue.serverTimestamp()
-        });
-        orderId = docRef.id;
-      } catch (createErr: any) {
-        const alreadyExists = createErr?.code === 6 || /ALREADY_EXISTS/i.test(String(createErr?.message || ''));
-        if (!alreadyExists) throw createErr;
-        orderId = docRef.id;
+    if (idempotencyKey) {
+      const idempRef = db.collection('idempotency_keys').doc(idempotencyKey);
+      const idempSnap = await idempRef.get();
+
+      if (idempSnap.exists) {
+        const idempData = idempSnap.data();
+        orderId = idempData?.orderId;
         isDuplicate = true;
+      } else {
+        const orderRef = db.collection('orders').doc();
+        orderId = orderRef.id;
+
+        const batch = db.batch();
+        batch.set(orderRef, sanitizedOrderDoc);
+        batch.set(idempRef, {
+          orderId,
+          createdAt: FieldValue.serverTimestamp(),
+          totalAmount,
+          prices,
+        });
+        await batch.commit();
       }
     } else {
-      const docRef = await db.collection('orders').add({
-        ...orderData,
-        status: 'pending',
-        createdAt: FieldValue.serverTimestamp()
-      });
-      orderId = docRef.id;
+      const orderRef = await db.collection('orders').add(sanitizedOrderDoc);
+      orderId = orderRef.id;
     }
 
     const initialOrderData: OrderData = {
-      ...orderData,
+      ...sanitizedOrderDoc,
       id: orderId,
-      status: 'pending'
+      status: 'pending',
     };
 
     if (!isDuplicate) {
@@ -310,12 +192,12 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       sendNotificationToTopic(
         'new_orders',
         '🍽️ Tempahan Baharu Diterima!',
-        `Tempahan daripada ${orderData.name || 'Pelanggan'} (${orderData.quantity || orderData.pax || '-'} pax) untuk ${orderData.date || 'tarikh majlis'}.`,
+        `Tempahan daripada ${sanitizedOrderDoc.name || 'Pelanggan'} (${sanitizedOrderDoc.quantity} pax) untuk ${sanitizedOrderDoc.eventDate}.`,
         {
           type: 'new_order',
           orderId: String(orderId),
-          invoiceNo: String(orderData.invoiceNo || ''),
-          customerName: String(orderData.name || ''),
+          invoiceNo: '',
+          customerName: String(sanitizedOrderDoc.name || ''),
         }
       ).catch(err => {
         console.error('[FCM] Failed to send new order push to admin topic:', err);
@@ -327,7 +209,12 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       });
     }
 
-    return res.json({ id: orderId, duplicate: isDuplicate, prices: orderData.prices, totalAmount: orderData.totalAmount });
+    return res.json({
+      id: orderId,
+      duplicate: isDuplicate,
+      prices,
+      totalAmount,
+    });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }
@@ -340,7 +227,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
   try {
     if (action === 'fetch') {
-      const pageSize = req.body.pageSize || 50;
+      const pageSize = Math.max(1, Math.min(100, Number(req.body.pageSize) || 50));
       let query: FirebaseFirestore.Query = db.collection('orders').orderBy('createdAt', 'desc').limit(pageSize);
 
       if (req.body.lastId) {
@@ -361,6 +248,12 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
 
       const oldData = oldSnap.data() as OrderData;
+      if (data.status && !isValidStatusTransition(oldData.status || 'pending', data.status)) {
+        return res.status(400).json({
+          error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
+        });
+      }
+
       const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
 
       if ((data.status === 'approved' || data.status === 'billed') && !oldData.invoiceNo) {
@@ -401,15 +294,13 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const orderData = snap.data() as OrderData;
       const ownerUid = orderData.userId || orderData.uid || null;
 
-      // If the order has no registered user, or user already deleted it from their profile, hard delete.
-      // Otherwise, mark as deletedByAdmin so the signed-in user will see it ready to delete in their profile.
       if (!ownerUid || orderData.deletedByUser) {
         await orderRef.delete();
       } else {
         await orderRef.update({
           deletedByAdmin: true,
           deletedByAdminAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
         });
       }
 
@@ -437,7 +328,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
     const oldData = oldSnap.data() as OrderData;
     if (status && !isValidStatusTransition(oldData.status || 'pending', status)) {
       return res.status(400).json({
-        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${status}'`
+        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${status}'`,
       });
     }
 
@@ -487,23 +378,22 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
 
     const oldData = oldSnap.data() as OrderData;
     const ownerUid = oldData.userId || oldData.uid || null;
-    // SECURITY FIX (audit 2026-08-28): previously this only checked ownership
-    // when ownerUid was present, so any guest order (userId/uid null, which is
-    // the majority of orders since checkout doesn't require login) could be
-    // cancelled by anyone who knew or harvested its orderId — e.g. via the
-    // public /calendar-orders endpoint, which returns order ids. The frontend
-    // (UserProfileDashboard) only ever calls this endpoint while signed in
-    // with a matching idToken, so there is no legitimate flow that needs the
-    // permissive fallback. Deny by default, matching the /delete endpoint.
+
     const callerUid = await verifyCustomerIdToken(req);
     if (!ownerUid || !callerUid || callerUid !== ownerUid) {
       return res.status(403).json({ error: 'Not authorized to cancel this order' });
     }
 
+    if (!isValidStatusTransition(oldData.status || 'pending', 'cancel_requested')) {
+      return res.status(400).json({
+        error: `Cannot request cancellation for order in '${oldData.status || 'pending'}' status.`,
+      });
+    }
+
     const updates: Partial<OrderData> = {
       status: 'cancel_requested',
       cancelRequestedAt: new Date().toISOString(),
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     await orderRef.update(updates);
@@ -569,7 +459,7 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
     // STRICT POLICY: Customers cannot delete an order manually until it has been deleted on the admin side
     if (!orderData.deletedByAdmin) {
       return res.status(403).json({
-        error: 'Order cannot be deleted manually until it has been deleted or cleared by restaurant management (Admin).'
+        error: 'Order cannot be deleted manually until it has been deleted or cleared by restaurant management (Admin).',
       });
     }
 
@@ -603,7 +493,7 @@ router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
 
     await orderRef.update({
       lastPokedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return res.json({ success: true, message: 'Admin has been nudged!' });
@@ -620,9 +510,6 @@ const preliminaryInvoiceLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-/**
- * Validate that a Buffer contains a valid PDF by checking magic bytes.
- */
 function isValidPdf(buffer: Buffer): boolean {
   if (buffer.length < 5) return false;
   const header = buffer.toString('ascii', 0, 5);
@@ -653,7 +540,6 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
       throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
     }
 
-    // SECURITY FIX: Validate PDF magic bytes before sending
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
     if (!isValidPdf(pdfBuffer)) {
       return res.status(400).json({ success: false, error: 'Invalid PDF format. File does not start with valid PDF header.' });
@@ -676,9 +562,9 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
         {
           filename: `Preliminary_Invoice_${id}.pdf`,
           content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
+          contentType: 'application/pdf',
+        },
+      ],
     });
 
     return res.json({ success: true });
@@ -715,25 +601,26 @@ const calendarSessionsLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-let calendarSessionsCache: { data: Record<string, unknown>; expiresAt: number } | null = null;
+const calendarSessionsCacheMap = new Map<string, { data: Record<string, unknown>; expiresAt: number }>();
 const CALENDAR_SESSIONS_CACHE_TTL_MS = 3 * 60 * 1000;
 
 export function invalidateCalendarSessionsCache(): void {
-  calendarSessionsCache = null;
+  calendarSessionsCacheMap.clear();
 }
 
-// SECURITY FIX: Added optional date range filtering to prevent unbounded full-collection scans.
-// Query params: ?from=YYYY-MM-DD&to=YYYY-MM-DD
+// Keyed date range filtering for calendar sessions
 router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
   try {
-    if (calendarSessionsCache && calendarSessionsCache.expiresAt > Date.now()) {
-      return res.json({ success: true, sessions: calendarSessionsCache.data });
+    const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
+    const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
+    const cacheKey = `${fromDate || 'all'}|${toDate || 'all'}`;
+
+    const cached = calendarSessionsCacheMap.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.json({ success: true, sessions: cached.data });
     }
 
     const db = getFirestore();
-
-    const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
-    const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
 
     let snapshot: FirebaseFirestore.QuerySnapshot;
     if (fromDate && toDate) {
@@ -785,7 +672,7 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
         dailySessions[dateStr] = {
           breakfast: { count: 0, pax: 0 },
           lunch: { count: 0, pax: 0 },
-          hi_tea: { count: 0, pax: 0 }
+          hi_tea: { count: 0, pax: 0 },
         };
       }
 
@@ -806,7 +693,14 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
       }
     });
 
-    calendarSessionsCache = { data: dailySessions, expiresAt: Date.now() + CALENDAR_SESSIONS_CACHE_TTL_MS };
+    if (calendarSessionsCacheMap.size > 100) {
+      calendarSessionsCacheMap.clear();
+    }
+
+    calendarSessionsCacheMap.set(cacheKey, {
+      data: dailySessions,
+      expiresAt: Date.now() + CALENDAR_SESSIONS_CACHE_TTL_MS,
+    });
 
     return res.json({ success: true, sessions: dailySessions });
   } catch (err) {
@@ -815,7 +709,7 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
   }
 });
 
-// SECURITY FIX: Added date range filtering and removed full PII exposure
+// SECURITY & BUG FIX: Exact document ID mapping and PII stripping for calendar-orders
 router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
   try {
     const db = getFirestore();
@@ -833,13 +727,12 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
       snapshot = await db.collection('orders').limit(100).get();
     }
 
-    // SECURITY FIX: Strip PII from public calendar-orders response
     const orders = snapshot.docs
-      .map(doc => doc.data())
-      .filter((d: any) => !d.deletedByAdmin)
-      .map((d: any, idx) => {
+      .filter(doc => !doc.data().deletedByAdmin)
+      .map(doc => {
+        const d = doc.data();
         return {
-          id: snapshot.docs[idx]?.id || '',
+          id: doc.id,
           status: d.status || 'pending',
           eventDate: d.eventDate || d.date || null,
           meals: d.meals || [],

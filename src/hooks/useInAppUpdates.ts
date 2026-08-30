@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   CURRENT_APP_VERSION,
+  CURRENT_BUILD_NUMBER,
+  getInstalledAppInfo,
   fetchLatestAppVersion,
   subscribeToAppUpdates,
   isUpdateRequired,
@@ -12,6 +14,8 @@ import { Network } from '@capacitor/network';
 const DISMISSED_VERSION_KEY = 'wawasan_dismissed_update_version';
 
 export function useInAppUpdates() {
+  const [currentVersion, setCurrentVersion] = useState(CURRENT_APP_VERSION);
+  const [currentBuild, setCurrentBuild] = useState(CURRENT_BUILD_NUMBER);
   const [latestConfig, setLatestConfig] = useState<AppVersionConfig | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showNotificationBanner, setShowNotificationBanner] = useState(false);
@@ -19,14 +23,34 @@ export function useInAppUpdates() {
   const [checking, setChecking] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
+  // Initialize native app info on mount
+  useEffect(() => {
+    let isMounted = true;
+    getInstalledAppInfo().then((info) => {
+      if (isMounted) {
+        setCurrentVersion(info.version);
+        setCurrentBuild(info.buildNumber);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const evaluateVersion = useCallback(async (config: AppVersionConfig, isAutoCheck = true) => {
     setLatestConfig(config);
-    const { hasUpdate, isForce } = isUpdateRequired(config, CURRENT_APP_VERSION);
+    const localInfo = await getInstalledAppInfo();
+    setCurrentVersion(localInfo.version);
+    setCurrentBuild(localInfo.buildNumber);
+
+    const { hasUpdate, isForce } = isUpdateRequired(config, localInfo.version, localInfo.buildNumber);
     setIsForceUpdate(isForce);
 
+    // If user is already on the latest or newer release version, NEVER show popup or banner
     if (!hasUpdate) {
       setUpdateAvailable(false);
       setShowNotificationBanner(false);
+      setIsForceUpdate(false);
       return;
     }
 
@@ -73,10 +97,19 @@ export function useInAppUpdates() {
     setChecking(true);
     try {
       const config = await fetchLatestAppVersion();
-      await evaluateVersion(config, false);
-      const { hasUpdate } = isUpdateRequired(config, CURRENT_APP_VERSION);
+      const localInfo = await getInstalledAppInfo();
+      setCurrentVersion(localInfo.version);
+      setCurrentBuild(localInfo.buildNumber);
+
+      const { hasUpdate, isForce } = isUpdateRequired(config, localInfo.version, localInfo.buildNumber);
+      setIsForceUpdate(isForce);
+
       if (hasUpdate) {
         setUpdateAvailable(true);
+        setShowNotificationBanner(false);
+        setIsDismissed(false);
+      } else {
+        setUpdateAvailable(false);
         setShowNotificationBanner(false);
         setIsDismissed(false);
       }
@@ -84,7 +117,7 @@ export function useInAppUpdates() {
     } finally {
       setChecking(false);
     }
-  }, [evaluateVersion]);
+  }, []);
 
   // 1. Setup real-time listener & manual event trigger
   useEffect(() => {
@@ -137,7 +170,8 @@ export function useInAppUpdates() {
   }, [latestConfig]);
 
   return {
-    currentVersion: CURRENT_APP_VERSION,
+    currentVersion,
+    currentBuild,
     latestConfig,
     updateAvailable,
     showNotificationBanner,

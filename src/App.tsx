@@ -30,6 +30,7 @@ function VercelSpeedInsights() {
 
 function GlobalInAppUpdateHandler() {
   const { 
+    currentVersion,
     updateAvailable, 
     showNotificationBanner, 
     latestConfig, 
@@ -50,6 +51,7 @@ function GlobalInAppUpdateHandler() {
       <InAppUpdateModal
         isOpen={updateAvailable}
         config={latestConfig}
+        currentVersion={currentVersion}
         isForceUpdate={isForceUpdate}
         onDismiss={dismissUpdate}
       />

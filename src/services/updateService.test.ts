@@ -64,6 +64,25 @@ describe('isUpdateRequired', () => {
     expect(result.isForce).toBe(false);
   });
 
+  it('does not flag an update or force update when current already matches latestVersion, even if forceUpdate flag is true', () => {
+    const forcedConfig: AppVersionConfig = { ...baseConfig, forceUpdate: true };
+    const result = isUpdateRequired(forcedConfig, '1.3.0', 130);
+    expect(result.hasUpdate).toBe(false);
+    expect(result.isForce).toBe(false);
+  });
+
+  it('flags an update when versions match but remote buildNumber is higher', () => {
+    const result = isUpdateRequired(baseConfig, '1.3.0', 125);
+    expect(result.hasUpdate).toBe(true);
+    expect(result.isForce).toBe(false);
+  });
+
+  it('does not flag an update when versions match and local buildNumber is newer than remote', () => {
+    const result = isUpdateRequired(baseConfig, '1.3.0', 135);
+    expect(result.hasUpdate).toBe(false);
+    expect(result.isForce).toBe(false);
+  });
+
   it('forces an update when current version is below minVersion, even if forceUpdate flag is false', () => {
     const result = isUpdateRequired(baseConfig, '1.1.0');
     expect(result.hasUpdate).toBe(true);

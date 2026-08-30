@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { formatDateDisplay } from './dateUtils';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -133,20 +134,7 @@ export async function exportOrdersAsExcelTemplate(
       sheet.getCell('C9').value = o.name || o.attn || '';
       sheet.getCell('I8').value = o.invoiceNo || (o.id ? `RW-${o.id.substring(0, 6).toUpperCase()}` : '-');
 
-      let formattedDate = '-';
-      if (o.dateTime) {
-        try {
-          formattedDate = format(new Date(o.dateTime), 'dd/MM/yyyy');
-        } catch {
-          formattedDate = String(o.dateTime);
-        }
-      } else if (o.date) {
-        try {
-          formattedDate = format(new Date(o.date), 'dd/MM/yyyy');
-        } catch {
-          formattedDate = String(o.date);
-        }
-      }
+      const formattedDate = formatDateDisplay(o.dateTime || o.eventDate || o.date);
       sheet.getCell('I9').value = formattedDate;
 
       for (let r = 15; r <= 24; r++) {
@@ -272,15 +260,14 @@ export async function exportOrdersAsExcelStandard(
     sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'left' };
 
     orders.forEach((o) => {
-      let dateStr = '-';
+      const dateStr = formatDateDisplay(o.dateTime || o.eventDate || o.date);
       let timeStr = '-';
       if (o.dateTime) {
         try {
           const d = new Date(o.dateTime);
-          dateStr = format(d, 'yyyy-MM-dd');
           timeStr = format(d, 'HH:mm');
         } catch {
-          dateStr = String(o.dateTime);
+          timeStr = '-';
         }
       }
 

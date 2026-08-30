@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/Toast';
 import { useLanguage } from '@/context/LanguageContext';
+import { formatDateDisplay } from '@/lib/utils';
 import { 
   Sparkles, 
   Send, 
@@ -288,7 +289,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
                 {isBM ? 'Tarikh Disiar' : 'Last Broadcast'}
               </span>
               <span className="font-mono text-xs text-stone dark:text-stone/80 truncate block">
-                {new Date(currentConfig.updatedAt).toLocaleDateString()}
+                {formatDateDisplay(currentConfig.updatedAt)}
               </span>
             </div>
           </div>

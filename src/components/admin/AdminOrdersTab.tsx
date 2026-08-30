@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
-import { format } from 'date-fns';
+import { formatDateTimeDisplay } from '@/lib/utils';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -136,7 +136,7 @@ export function AdminOrdersTab({
               <div key={order.id || `cancel-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 bg-white dark:bg-card border border-amber-500/20 rounded-xl shadow-sm">
                 <div>
                   <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{order.name} ({order.quantity} pax)</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">{order.dateTime ? format(new Date(order.dateTime), 'PP p') : '-'}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button
@@ -430,25 +430,7 @@ export function AdminOrdersTab({
               let formattedHeaderDate = '-';
               const rawDate = order.dateTime || order.eventDate || order.createdAt;
               if (rawDate) {
-                try {
-                  let d: Date;
-                  if (typeof rawDate === 'object' && rawDate !== null) {
-                    if ('seconds' in rawDate && typeof (rawDate as any).seconds === 'number') {
-                      d = new Date((rawDate as any).seconds * 1000);
-                    } else if ('_seconds' in rawDate && typeof (rawDate as any)._seconds === 'number') {
-                      d = new Date((rawDate as any)._seconds * 1000);
-                    } else {
-                      d = new Date(rawDate as any);
-                    }
-                  } else {
-                    d = new Date(rawDate as any);
-                  }
-                  if (!isNaN(d.getTime())) {
-                    formattedHeaderDate = format(d, 'MMM d, yyyy h:mm a');
-                  }
-                } catch {
-                  formattedHeaderDate = String(rawDate);
-                }
+                formattedHeaderDate = formatDateTimeDisplay(rawDate);
               }
               if (formattedHeaderDate === '-') {
                 formattedHeaderDate = order.orderId ? `#${order.orderId}` : (language === 'bm' ? 'Pesanan Katering' : 'Catering Order');

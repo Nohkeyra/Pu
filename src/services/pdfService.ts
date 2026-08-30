@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import { getBilingualWordsInTotal } from './numberToWordsBM';
 import type { Order, CombinedInvoicePayload } from '@/types';
-import { getAssetUrl } from '@/lib/utils';
+import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
 
 const getBankDetails = () => {
   const bankName = (import.meta.env?.VITE_BANK_NAME) || 
@@ -150,21 +150,11 @@ export const preloadLogoForPDF = (): Promise<string> => {
   });
 };
 
-export const formatDateSafe = (dateString: string | undefined, lang: 'en' | 'bm'): string => {
+export const formatDateSafe = (dateString: string | undefined, _lang?: 'en' | 'bm'): string => {
+  void _lang;
   if (!dateString) return '-';
   try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return '-';
-    
-    const day = d.getDate().toString().padStart(2, '0');
-    
-    const monthsBM = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
-    const monthsEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    const monthName = lang === 'bm' ? monthsBM[d.getMonth()] : monthsEN[d.getMonth()];
-    const year = d.getFullYear();
-    
-    return `${day} ${monthName} ${year}`;
+    return formatDateDisplay(dateString);
   } catch (e) {
     console.error('Date parsing error:', e);
     return '-';

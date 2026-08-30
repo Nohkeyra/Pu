@@ -169,8 +169,8 @@ export default function OrderPage() {
 
         <motion.main
           key={refreshKey}
-          className="page-shell__main pt-28 sm:pt-32 pb-[calc(140px+env(safe-area-inset-bottom,16px))] relative"
-          style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}
+          className="page-shell__main pt-20 sm:pt-24 pb-[calc(140px+env(safe-area-inset-bottom,16px))] relative"
+          style={{ paddingTop: 'calc(72px + var(--sat, 0px) + 1rem)' }}
           animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
           transition={{ type: 'spring', stiffness: 400, damping: 40 }}
         >

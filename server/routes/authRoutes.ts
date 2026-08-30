@@ -6,68 +6,34 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, getAdminApp, verifyCustomerIdToken } from '../firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from '../adminAuth.js';
+import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
-// F-SEC (audit 2026-08-30): the raw ADMIN_PASSWORD fallback path (used when
-// ADMIN_PASSWORD_HASH isn't set) compared the submitted password with plain
-// `===`. String equality in JS short-circuits on the first mismatched byte,
-// so response time leaks how many leading characters an attacker guessed
-// correctly — a classic timing side-channel. crypto.timingSafeEqual() fixes
-// the comparison itself, but it requires both buffers to be the SAME length
-// (it throws otherwise), which would leak the real password's length via a
-// try/catch branch. Hashing both sides to a fixed-length digest first avoids
-// that: every comparison is 32 bytes vs 32 bytes, so there's no length- or
-// content-dependent branching before the constant-time comparison runs.
-// Note: the bcrypt.compare() path just below (used when ADMIN_PASSWORD_HASH
-// is set) was never affected — bcrypt is constant-time internally.
-function secureCompare(a: string, b: string): boolean {
+// Constant-time string comparison preventing timing attacks
+export function secureCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
   const hashA = createHash('sha256').update(a).digest();
   const hashB = createHash('sha256').update(b).digest();
   return timingSafeEqual(hashA, hashB);
 }
 
-// F-SEC (audit 2026-08-14): this endpoint used to fall back to a hardcoded
-// literal password ('wawasan123') whenever ADMIN_PASSWORD_HASH and
-// ADMIN_PASSWORD were both unset — a value visible to anyone reading the
-// public GitHub source. Combined with the previous ADMIN_JWT_SECRET
-// auto-generate fallback, a Render deploy missing both env vars would let
-// anyone log in as admin with a password known from the repo itself.
-// Both production and dev now fail closed: no configured credential means
-// no logins are accepted at all (503), rather than silently accepting a
-// known password. This applies in dev too — on Termux, set ADMIN_PASSWORD
-// in your local .env before `npm run dev` if you need to log in as admin.
+// Module-level cache for hashed credentials to avoid bcrypt hashing DoS on unauthenticated requests
+let cachedRawPassHash: { raw: string; hash: string } | null = null;
+
+const fcmTokenLimiter = createDistributedRateLimiter({
+  prefix: 'fcm_token',
+  limit: 20,
+  windowMs: 15 * 60 * 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many FCM token registration requests.' },
+});
+
 router.post('/admin/login', adminLoginLimiter, async (req, res) => {
   const { password } = req.body;
-  let adminHash = process.env.ADMIN_PASSWORD_HASH;
+  const adminHash = process.env.ADMIN_PASSWORD_HASH;
   const rawAdminPass = process.env.ADMIN_PASSWORD;
-
-  const db = getFirestore();
-
-  // Auto-sync or load credentials via Firestore meta/admin_auth (Admin SDK only)
-  if (adminHash || rawAdminPass) {
-    try {
-      const hashToSync = adminHash || await bcrypt.hash(rawAdminPass!, 10);
-      await db.collection('meta').doc('admin_auth').set({
-        hash: hashToSync,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (syncErr) {
-      console.warn('[Admin Auth] Auto-sync to Firestore failed (non-fatal):', syncErr);
-    }
-  } else {
-    try {
-      const authDoc = await db.collection('meta').doc('admin_auth').get();
-      if (authDoc.exists) {
-        const data = authDoc.data();
-        if (data && data.hash) {
-          adminHash = data.hash;
-        }
-      }
-    } catch (dbErr) {
-      console.warn('[Admin Auth] Failed to fetch synced credential from Firestore:', dbErr);
-    }
-  }
 
   if (!adminHash && !rawAdminPass) {
     if (process.env.NODE_ENV === 'production') {
@@ -89,14 +55,34 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
     });
   }
 
+  if (typeof password !== 'string' || !password) {
+    return res.status(401).json({ success: false, error: 'Invalid password' });
+  }
+
   let isValid = false;
   if (adminHash) {
     isValid = await bcrypt.compare(password, adminHash);
-  } else {
-    isValid = secureCompare(typeof password === 'string' ? password : '', rawAdminPass!);
+  } else if (rawAdminPass) {
+    isValid = secureCompare(password, rawAdminPass);
   }
 
   if (isValid) {
+    // Background sync credential to Firestore meta/admin_auth only after successful login (not on failed attempts)
+    if (rawAdminPass && (!cachedRawPassHash || cachedRawPassHash.raw !== rawAdminPass)) {
+      bcrypt.hash(rawAdminPass, 10).then(hash => {
+        cachedRawPassHash = { raw: rawAdminPass, hash };
+        const db = getFirestore();
+        db.collection('meta').doc('admin_auth').set({
+          hash,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true }).catch(err => {
+          console.warn('[Admin Auth] Firestore sync background error:', err);
+        });
+      }).catch(err => {
+        console.warn('[Admin Auth] bcrypt background hash error:', err);
+      });
+    }
+
     const token = jwt.sign(
       { role: 'admin', admin: true, timestamp: Date.now() },
       effectiveJwtSecret,
@@ -248,9 +234,9 @@ router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
 });
 
 // User / Customer FCM Token Sync Endpoint
-router.post('/user/fcm-token', async (req, res) => {
+router.post('/user/fcm-token', fcmTokenLimiter, async (req, res) => {
   try {
-    const { fcmToken, orderId, email } = req.body;
+    const { fcmToken, orderId, invoiceNo, email } = req.body;
     if (!fcmToken || typeof fcmToken !== 'string') {
       return res.status(400).json({ success: false, error: 'fcmToken string is required' });
     }
@@ -259,35 +245,70 @@ router.post('/user/fcm-token', async (req, res) => {
     const uid = await verifyCustomerIdToken(req);
     const db = getFirestore();
 
+    // Case 1: Authenticated Firebase customer
     if (uid) {
       await db.collection('users').doc(uid).set({
         fcmToken: cleanToken,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
-    }
 
-    if (orderId && typeof orderId === 'string') {
-      const orderRef = db.collection('orders').doc(orderId);
-      const snap = await orderRef.get();
-      if (snap.exists) {
-        await orderRef.update({
-          fcmToken: cleanToken,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
+      if (orderId && typeof orderId === 'string') {
+        const orderRef = db.collection('orders').doc(orderId);
+        const snap = await orderRef.get();
+        if (snap.exists) {
+          const data = snap.data();
+          if (data && (data.userId === uid || data.uid === uid)) {
+            await orderRef.update({
+              fcmToken: cleanToken,
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+        }
       }
+
+      return res.json({ success: true });
     }
 
-    if (email && typeof email === 'string' && !uid) {
-      const usersSnap = await db.collection('users').where('email', '==', email.trim()).limit(1).get();
-      if (!usersSnap.empty) {
-        await usersSnap.docs[0].ref.set({
-          fcmToken: cleanToken,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
+    // Case 2: Guest order with proof of ownership (orderId/invoiceNo + matching email)
+    if (email && typeof email === 'string' && (orderId || invoiceNo)) {
+      const cleanEmail = email.toLowerCase().trim();
+      let targetOrderDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+
+      if (orderId && typeof orderId === 'string') {
+        const snap = await db.collection('orders').doc(orderId).get();
+        if (snap.exists) {
+          targetOrderDoc = snap;
+        }
+      } else if (invoiceNo && typeof invoiceNo === 'string') {
+        const snap = await db.collection('orders').where('invoiceNo', '==', invoiceNo.trim()).limit(1).get();
+        if (!snap.empty) {
+          targetOrderDoc = snap.docs[0];
+        }
       }
+
+      if (!targetOrderDoc) {
+        return res.status(404).json({ success: false, error: 'Order not found' });
+      }
+
+      const data = targetOrderDoc.data();
+      const orderEmail = (data?.email || data?.customerEmail || '').toLowerCase().trim();
+
+      if (!orderEmail || orderEmail !== cleanEmail) {
+        return res.status(403).json({ success: false, error: 'Unauthorized: Email does not match order record' });
+      }
+
+      await targetOrderDoc.ref.update({
+        fcmToken: cleanToken,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return res.json({ success: true });
     }
 
-    return res.json({ success: true });
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication or order ownership proof (orderId/invoiceNo + email) is required',
+    });
   } catch (err) {
     console.error('[FCM] Save user token failed:', err);
     return res.status(500).json({ success: false, error: String(err) });

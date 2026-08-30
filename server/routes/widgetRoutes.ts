@@ -3,17 +3,18 @@ import { getFirestore } from '../firebaseAdmin.js';
 
 const router = Router();
 
-// Upcoming orders widget (public) — PII stripped for security
+function getMalaysiaTodayString(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
+}
+
+// Upcoming orders widget (public) — today's orders only, PII stripped for security
 router.get('/widget/upcoming-orders', async (_req, res) => {
   try {
     const db = getFirestore();
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const todayStr = getMalaysiaTodayString();
 
     const snapshot = await db.collection('orders')
-      .where('eventDate', '>=', startOfDay.toISOString().split('T')[0])
-      .where('eventDate', '<=', endOfDay.toISOString().split('T')[0])
+      .where('eventDate', '==', todayStr)
       .where('status', 'in', ['pending', 'approved'])
       .orderBy('eventDate', 'asc')
       .limit(10)
@@ -36,7 +37,7 @@ router.get('/widget/upcoming-orders', async (_req, res) => {
     return res.json({
       success: true,
       orders,
-      date: startOfDay.toISOString().split('T')[0]
+      date: todayStr,
     });
   } catch (err) {
     console.error('[Widget Error]:', err);
@@ -44,15 +45,14 @@ router.get('/widget/upcoming-orders', async (_req, res) => {
   }
 });
 
-// Daily summary widget (public) — no PII, just aggregate counts
+// Daily summary widget (public) — no PII, just aggregate counts for today
 router.get('/widget/daily-summary', async (_req, res) => {
   try {
     const db = getFirestore();
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
+    const todayStr = getMalaysiaTodayString();
 
     const snapshot = await db.collection('orders')
-      .where('eventDate', '==', dateStr)
+      .where('eventDate', '==', todayStr)
       .where('status', 'in', ['pending', 'approved'])
       .get();
 
@@ -74,10 +74,10 @@ router.get('/widget/daily-summary', async (_req, res) => {
 
     return res.json({
       success: true,
-      date: dateStr,
+      date: todayStr,
       totalOrders,
       totalGuests,
-      sessionCounts
+      sessionCounts,
     });
   } catch (err) {
     console.error('[Widget Daily Summary Error]:', err);

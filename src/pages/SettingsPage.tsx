@@ -46,7 +46,7 @@ import { Share } from '@capacitor/share';
 import { Device } from '@capacitor/device';
 import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect, useCallback } from 'react';
-import { CURRENT_APP_VERSION, type AppVersionConfig } from '@/services/updateService';
+import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from '@/services/updateService';
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
@@ -169,6 +169,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [activeVersion, setActiveVersion] = useState(CURRENT_APP_VERSION);
 
   // Authentication state
   const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
@@ -226,6 +227,11 @@ export default function SettingsPage() {
     });
     calculateCacheSize();
     setOfflinePendingCount(getPendingOrdersCount());
+    getInstalledAppInfo().then((info) => {
+      if (info.version) {
+        setActiveVersion(info.version);
+      }
+    });
     return () => unsub();
   }, [calculateCacheSize]);
 
@@ -723,7 +729,7 @@ export default function SettingsPage() {
       } else {
         toast({
           title: language === 'bm' ? 'Aplikasi Terkini' : 'Up to Date',
-          description: `v${CURRENT_APP_VERSION} ${language === 'bm' ? 'adalah versi terkini.' : 'is the latest version.'}`,
+          description: `v${activeVersion} ${language === 'bm' ? 'adalah versi terkini.' : 'is the latest version.'}`,
           variant: 'success',
         });
       }
@@ -1578,7 +1584,7 @@ export default function SettingsPage() {
                 Restoran Wawasan Pak Usop
               </p>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-mono">
-                v{CURRENT_APP_VERSION}
+                v{activeVersion}
               </p>
             </div>
 

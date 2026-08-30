@@ -224,7 +224,7 @@ export async function createOrder(orderData: OrderData): Promise<{ orderId: stri
 
   const newOrderDoc = {
     ...orderData,
-    status: orderData.status || "SUBMITTED",
+    status: (orderData.status || "pending").toLowerCase(),
     eventTimestamp,
     createdAt: FieldValue.serverTimestamp(),
   };

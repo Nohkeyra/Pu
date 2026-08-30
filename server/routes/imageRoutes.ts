@@ -2,9 +2,12 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import fs from 'fs';
 import path from 'path';
 import URL from 'url';
+import dns from 'dns';
+import net from 'net';
 import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
+import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
@@ -19,6 +22,24 @@ const TRUSTED_REFERER_DOMAINS = new Set([
   'localhost',
   '127.0.0.1',
 ]);
+
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/avif',
+]);
+
+const imageProxyLimiter = createDistributedRateLimiter({
+  prefix: 'image_proxy',
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many image proxy requests.' },
+});
 
 /**
  * Validates if a Referer header is authorized or allowed.
@@ -48,7 +69,6 @@ export function isAllowedReferer(refererHeader: string | undefined, originHeader
  * Express Middleware for Anti-Hotlink Protection on static image assets
  */
 export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction) {
-  // Only apply to image file requests
   const isImageRequest = /\.(png|jpe?g|gif|webp|svg|ico)$/i.test(req.path);
   if (!isImageRequest) {
     return next();
@@ -58,7 +78,6 @@ export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction
   const origin = req.headers['origin'] as string | undefined;
 
   if (!isAllowedReferer(referer, origin)) {
-    // Generate an Anti-Hotlink SVG Warning Badge
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('X-Anti-Hotlink-Protected', 'true');
@@ -86,20 +105,83 @@ export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction
 }
 
 /**
- * SSRF Security Checker:
- * Prevents fetching internal IP ranges or localhost.
+ * Checks whether an IPv4 or IPv6 address is private, loopback, link-local, or reserved.
  */
-function isPrivateIpHost(hostname: string): boolean {
-  const lower = hostname.toLowerCase();
-  if (lower === 'localhost' || lower === '127.0.0.1' || lower === '::1' || lower === '0.0.0.0') {
-    return true;
+function isPrivateOrReservedIp(ip: string): boolean {
+  let cleanIp = ip;
+  if (cleanIp.startsWith('::ffff:')) {
+    cleanIp = cleanIp.substring(7);
   }
-  // Check private IP ranges
-  if (/^10\./.test(lower)) return true;
-  if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(lower)) return true;
-  if (/^192\.168\./.test(lower)) return true;
-  if (/^169\.254\./.test(lower)) return true; // Link-local / Cloud metadata
-  return false;
+
+  if (net.isIPv4(cleanIp)) {
+    const parts = cleanIp.split('.').map(Number);
+    if (parts.length !== 4 || parts.some(isNaN)) return true;
+    const [a, b] = parts;
+
+    if (a === 0) return true; // 0.0.0.0/8
+    if (a === 10) return true; // 10.0.0.0/8
+    if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+    if (a === 127) return true; // 127.0.0.0/8
+    if (a === 169 && b === 254) return true; // 169.254.0.0/16 Link-local
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16
+    if (a >= 224) return true; // 224.0.0.0/4 Multicast & 240.0.0.0/4 Reserved / Broadcast
+
+    return false;
+  }
+
+  if (net.isIPv6(cleanIp)) {
+    const lower = cleanIp.toLowerCase();
+    if (lower === '::1' || lower === '::' || lower === '0:0:0:0:0:0:0:0' || lower === '0:0:0:0:0:0:0:1') return true;
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // fc00::/7 Unique Local
+    if (/^fe[89ab]/i.test(lower)) return true; // fe80::/10 Link Local
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * SSRF Security Checker:
+ * Validates protocol, hostname, and resolves DNS to ensure target does not map to private/internal IPs.
+ */
+export async function isSafeUrl(urlStr: string): Promise<{ safe: boolean; parsedUrl?: URL.URL }> {
+  try {
+    const parsed = new URL.URL(urlStr);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { safe: false };
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname.endsWith('.lan')
+    ) {
+      return { safe: false };
+    }
+
+    if (net.isIP(hostname)) {
+      if (isPrivateOrReservedIp(hostname)) {
+        return { safe: false };
+      }
+    } else {
+      const lookups = await dns.promises.lookup(hostname, { all: true });
+      if (!lookups || lookups.length === 0) {
+        return { safe: false };
+      }
+      for (const addr of lookups) {
+        if (isPrivateOrReservedIp(addr.address)) {
+          return { safe: false };
+        }
+      }
+    }
+
+    return { safe: true, parsedUrl: parsed };
+  } catch {
+    return { safe: false };
+  }
 }
 
 /**
@@ -111,7 +193,16 @@ export function getLocalFallbackImagePath(dishHint?: string, categoryHint?: stri
   const category = (categoryHint || '').toLowerCase();
 
   // 1. Check Drinks
-  if (category === 'drink' || category === 'drinks' || dish.includes('drink') || dish.includes('teh') || dish.includes('kopi') || dish.includes('sirap') || dish.includes('milo') || dish.includes('water')) {
+  if (
+    category === 'drink' ||
+    category === 'drinks' ||
+    dish.includes('drink') ||
+    dish.includes('teh') ||
+    dish.includes('kopi') ||
+    dish.includes('sirap') ||
+    dish.includes('milo') ||
+    dish.includes('water')
+  ) {
     if (dish.includes('bandung')) return path.join(publicDir, 'assets/drinks/sirap_bandung.jpg');
     if (dish.includes('limau')) return path.join(publicDir, 'assets/drinks/sirap_limau_vector.jpg');
     if (dish.includes('milo')) return path.join(publicDir, 'assets/drinks/milo_vector.jpg');
@@ -142,12 +233,11 @@ export function getLocalFallbackImagePath(dishHint?: string, categoryHint?: stri
  * Route: Image Proxy & Auto-Repair Endpoint
  * GET /api/images/proxy?url=<encoded_url>&dish=<dish_id>&category=<category>
  */
-router.get('/images/proxy', async (req: Request, res: Response) => {
+router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Response) => {
   const targetUrl = req.query.url as string | undefined;
   const dish = req.query.dish as string | undefined;
   const category = req.query.category as string | undefined;
 
-  // Function to serve local repaired image
   const serveRepairedFallback = () => {
     const fallbackPath = getLocalFallbackImagePath(dish, category);
     if (fs.existsSync(fallbackPath)) {
@@ -173,55 +263,78 @@ router.get('/images/proxy', async (req: Request, res: Response) => {
     return serveRepairedFallback();
   }
 
-  // Parse and validate URL
   try {
-    const parsed = new URL.URL(targetUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    let currentUrl = targetUrl;
+    let response: globalThis.Response | null = null;
+    const maxRedirects = 3;
+
+    for (let hop = 0; hop <= maxRedirects; hop++) {
+      const { safe, parsedUrl } = await isSafeUrl(currentUrl);
+      if (!safe || !parsedUrl) {
+        return serveRepairedFallback();
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      try {
+        const fetchRes = await fetch(currentUrl, {
+          signal: controller.signal,
+          redirect: 'manual',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Referer': `${parsedUrl.protocol}//${parsedUrl.hostname}/`,
+          },
+        });
+        clearTimeout(timeoutId);
+
+        if (fetchRes.status >= 300 && fetchRes.status < 400) {
+          const location = fetchRes.headers.get('location');
+          if (!location) {
+            return serveRepairedFallback();
+          }
+          currentUrl = new URL.URL(location, currentUrl).toString();
+          continue;
+        }
+
+        response = fetchRes;
+        break;
+      } catch {
+        clearTimeout(timeoutId);
+        return serveRepairedFallback();
+      }
+    }
+
+    if (!response || !response.ok) {
       return serveRepairedFallback();
     }
-    if (isPrivateIpHost(parsed.hostname)) {
+
+    const rawContentType = (response.headers.get('content-type') || '').toLowerCase();
+    const mimeType = rawContentType.split(';')[0].trim();
+
+    if (!ALLOWED_IMAGE_TYPES.has(mimeType)) {
       return serveRepairedFallback();
     }
 
-    // Fetch remote image with appropriate headers
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'Referer': `${parsed.protocol}//${parsed.hostname}/`,
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      // Remote server returned error (e.g. 403 Hotlink Forbidden or 404 Not Found)
-      return serveRepairedFallback();
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('image/') && !contentType.includes('octet-stream')) {
+    const contentLengthHeader = response.headers.get('content-length');
+    if (contentLengthHeader && parseInt(contentLengthHeader, 10) > 10 * 1024 * 1024) {
       return serveRepairedFallback();
     }
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    if (buffer.length === 0) {
+    if (buffer.length === 0 || buffer.length > 10 * 1024 * 1024) {
       return serveRepairedFallback();
     }
 
-    res.setHeader('Content-Type', contentType || 'image/jpeg');
+    res.setHeader('Content-Type', mimeType);
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('X-Image-Repaired', 'false');
     res.setHeader('X-Image-Proxy-Success', 'true');
     return res.send(buffer);
   } catch {
-    // Network error, DNS failure, timeout or abort -> Repair with local fallback
     return serveRepairedFallback();
   }
 });
@@ -271,8 +384,7 @@ router.get('/images/health', verifyAdminToken, async (_req: Request, res: Respon
           repairedCount++;
         }
       } else if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
-        // External link
-        status = 'repaired'; // External links are proxied & repaired dynamically
+        status = 'repaired';
         repairedCount++;
       } else {
         status = 'repaired';
@@ -340,7 +452,6 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
 
       if (needsRepair) {
         const fallback = getLocalFallbackImagePath(doc.id || data.nameEn, data.category);
-        // Normalize to web asset path
         const relativeAsset = fallback.substring(publicDir.length).replace(/\\/g, '/');
         newImg = relativeAsset.startsWith('/') ? relativeAsset : `/${relativeAsset}`;
 

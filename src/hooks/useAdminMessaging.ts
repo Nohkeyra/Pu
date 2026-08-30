@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Order } from '@/types';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { getApiUrl } from '@/lib/api';
+import { formatDateDisplay } from '@/lib/utils';
 import { Capacitor } from '@capacitor/core';
 import type { ToastVariant } from '@/components/ui/Toast';
 
@@ -77,11 +78,13 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
     const formattedPhone = recipientPhone.replace(/\D/g, '').replace(/^0/, '60');
     const isBm = sendOrder.lang !== 'en';
     
+    const eventDateDisplay = formatDateDisplay(sendOrder.dateTime || sendOrder.eventDate || sendOrder.date);
+    
     const msg = isBm 
       ? `Salam ${sendOrder.name},\n\nTerima kasih kerana memilih *Restoran Wawasan Pak Usop*.\n\n` +
         `Berikut adalah butiran invois tempahan katering anda:\n` +
         `• *No. Invois:* ${invoiceNo}\n` +
-        `• *Tarikh Majlis:* ${sendOrder.date}\n` +
+        `• *Tarikh Majlis:* ${eventDateDisplay}\n` +
         `• *Bilangan Pax:* ${sendOrder.quantity || '-'} orang\n` +
         `• *Jumlah Bayaran:* RM ${total.toFixed(2)}\n\n` +
         `*Maklumat Pembayaran (Bank Transfer):*\n` +
@@ -93,7 +96,7 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
       : `Hello ${sendOrder.name},\n\nThank you for choosing *Restoran Wawasan Pak Usop*.\n\n` +
         `Here are your catering invoice details:\n` +
         `• *Invoice No:* ${invoiceNo}\n` +
-        `• *Event Date:* ${sendOrder.date}\n` +
+        `• *Event Date:* ${eventDateDisplay}\n` +
         `• *Guest Count:* ${sendOrder.quantity || '-'} pax\n` +
         `• *Total Amount:* RM ${total.toFixed(2)}\n\n` +
         `*Bank Payment Details:*\n` +

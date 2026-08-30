@@ -23,10 +23,9 @@ import {
   Pencil
 } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
-import { format } from 'date-fns';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import type { Order } from '@/types';
-import { getDisplayInvoiceNo } from '@/lib/utils';
+import { getDisplayInvoiceNo, formatDateDisplay } from '@/lib/utils';
 
 interface ProfileOrdersTabProps {
   orders: Order[];
@@ -151,11 +150,7 @@ function OrderItem({
               </Badge>
             )}
             <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto sm:ml-0">
-              {order.eventDate
-                ? format(new Date(order.eventDate), 'dd MMM yyyy')
-                : order.createdAt
-                ? format(new Date((order.createdAt as any)?.seconds ? (order.createdAt as any).seconds * 1000 : String(order.createdAt)), 'dd MMM yyyy')
-                : '—'}
+              {formatDateDisplay(order.eventDate || order.dateTime || order.date || order.createdAt)}
             </span>
           </div>
 
@@ -235,8 +230,9 @@ function OrderItem({
             onClick={(e) => {
               e.stopPropagation();
               const invNo = getDisplayInvoiceNo(order);
+              const formattedDateStr = formatDateDisplay(order.date || order.eventDate || order.dateTime);
               const text = encodeURIComponent(
-                `Salam Restoran Wawasan Pak Usop, saya ingin bertanyakan tentang pesanan #${invNo} (${order.eventType === 'pejabat' ? 'Jamuan Pejabat' : 'Majlis Katering'}, ${order.guests} pax, Tarikh: ${order.date || order.eventDate || ''}).`
+                `Salam Restoran Wawasan Pak Usop, saya ingin bertanyakan tentang pesanan #${invNo} (${order.eventType === 'pejabat' ? 'Jamuan Pejabat' : 'Majlis Katering'}, ${order.guests} pax, Tarikh: ${formattedDateStr}).`
               );
               window.open(`https://wa.me/60123456789?text=${text}`, '_blank');
             }}

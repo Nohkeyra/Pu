@@ -34,6 +34,7 @@ import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib
 import { addPendingOrder } from '@/lib/pendingOrdersQueue';
 import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
+import { calculateOrderPricing, getPricePerPax as computePricePerPax, SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
 import type { SavedLocation, Order } from '@/types';
 
 // FOOD MENU CONSTANTS FROM KIMI HTML
@@ -510,13 +511,17 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   // REALTIME CALCULATIONS FOR STEP 2 BUDGET PREVIEW
   const getPricePerPax = () => {
-    const dishSum = orderState.dishes.reduce((acc, curr) => acc + (curr.price || 0), 0);
-    const vegSum = orderState.veggies.reduce((acc, curr) => acc + (curr.price || 0), 0);
-    return dishSum + vegSum;
+    return computePricePerPax(orderState.dishes, orderState.veggies, orderState.customMenu);
   };
 
   const getGrandTotal = () => {
-    return getPricePerPax() * orderState.guests * (orderState.mealTypes.length || 1);
+    return calculateOrderPricing({
+      dishes: orderState.dishes,
+      veggies: orderState.veggies,
+      customMenu: orderState.customMenu,
+      guests: orderState.guests,
+      meals: orderState.mealTypes,
+    }).totalAmount;
   };
 
   // HANDLERS FOR FIELD UPDATES
@@ -739,7 +744,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       } else if (orderState.customMenu) {
         combinedMenuStr = `Menu Lain: ${orderState.customMenu}`;
       } else {
-        combinedMenuStr = 'Set Box Makanan & Minuman';
+        combinedMenuStr = SET_BOX_MENU_TITLE;
       }
 
       const formattedDateStr = orderState.date; // YYYY-MM-DD
@@ -757,6 +762,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         contact: orderState.contact,
         email: orderState.email,
         date: formattedDateStr,
+        eventDate: formattedDateStr,
         time: orderState.time,
         location: orderState.location,
         quantity: orderState.guests,
@@ -1038,47 +1044,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
       <div className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0">
         
-        {/* App Header Bar mirroring Wawasan brand */}
-        <div className="bg-charcoal text-white p-5 sm:p-6 rounded-2xl shadow-xl border border-charcoal/80 relative overflow-hidden">
-          {/* Background Batik Pattern for Header */}
-          <div 
-            className="absolute inset-0 opacity-[0.25] pointer-events-none"
-            style={{
-              backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
-          <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
-            <div>
-              <span className="microcopy-12 text-[var(--color-sunshine-cta)] font-bold uppercase tracking-widest block mb-0.5">
-                {tText('CATERING BOOKING SYSTEM', 'SISTEM TEMPAHAN KATERING')}
-              </span>
-              <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2 font-display">
-                Restoran Wawasan Pak Usop
-              </h1>
-              <p className="text-xs text-stone font-medium tracking-wide mt-1">
-                Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-kiwi/20 text-kiwi text-xs font-bold border border-kiwi/30">
-                <span className="w-2 h-2 rounded-full bg-kiwi animate-pulse" />
-                {tText('Accepting Bookings', 'Menerima Tempahan')}
-              </span>
-              <a 
-                href="tel:+60178582642" 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/10"
-              >
-                <Phone className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
-                017-858 2642
-              </a>
-            </div>
-          </div>
-        </div>
-
         {/* Sign In / Sign Up banner for unauthenticated guests */}
         {!currentUser && (
           <div className="bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/25 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
@@ -1112,13 +1077,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           </div>
         )}
 
+        <OrderFormTip language={language} />
+
         {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Left Column: Stepper Wizard & Inputs Panel */}
           <div className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl overflow-hidden">
             
-            <OrderFormTip language={language} />
             {/* Progress Bar Indicator */}
             {currentStep <= 4 && (
               <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/40 dark:bg-stone-900/40 border-b border-stone/10 dark:border-white/5" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>

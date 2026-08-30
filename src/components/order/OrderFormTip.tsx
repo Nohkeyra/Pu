@@ -32,7 +32,7 @@ export function OrderFormTip({ language }: { language: string }) {
   return (
     <div
       role="note"
-      className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-deep-forest dark:text-white"
+      className="flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-deep-forest dark:text-white"
     >
       <Lightbulb className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden />
       <div className="flex-1 min-w-0">

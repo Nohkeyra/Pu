@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+export { formatDateDisplay, formatDateTimeDisplay } from './dateUtils'
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -26,7 +28,7 @@ export function getAssetUrl(path: string): string {
     return `.${cleanPath}`;
   }
   // Append cache buster to force fresh loads of newly added assets
-  const buster = 'v=1.3.41';
+  const buster = 'v=1.3.43';
   if (cleanPath.includes('?')) {
     cleanPath = `${cleanPath}&${buster}`;
   } else {

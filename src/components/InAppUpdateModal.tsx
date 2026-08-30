@@ -21,6 +21,7 @@ import { CURRENT_APP_VERSION, downloadAndApplyCapgoOta } from '@/services/update
 interface InAppUpdateModalProps {
   isOpen: boolean;
   config: AppVersionConfig | null;
+  currentVersion?: string;
   isForceUpdate: boolean;
   onDismiss: () => void;
 }
@@ -28,6 +29,7 @@ interface InAppUpdateModalProps {
 export default function InAppUpdateModal({
   isOpen,
   config,
+  currentVersion,
   isForceUpdate,
   onDismiss,
 }: InAppUpdateModalProps) {
@@ -37,6 +39,7 @@ export default function InAppUpdateModal({
 
   if (!isOpen || !config) return null;
 
+  const displayCurrentVersion = currentVersion || CURRENT_APP_VERSION;
   const isBM = language === 'bm';
   const apkUrl = config.apkUrl || 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk';
   const hasCapgoBundle = Boolean(config.bundleUrl && config.bundleUrl.trim().length > 0);
@@ -153,7 +156,7 @@ export default function InAppUpdateModal({
                 {isBM ? 'Versi Semasa' : 'Current Version'}
               </span>
               <span className="text-stone dark:text-stone/80 font-mono text-sm">
-                v{CURRENT_APP_VERSION}
+                v{displayCurrentVersion}
               </span>
             </div>
 

@@ -49,6 +49,36 @@ export interface WhatsAppServiceResponse {
   whatsappUrl: string;
 }
 
+function formatServerDateDisplay(val: unknown): string {
+  if (!val) return '-';
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+    if (isoMatch) {
+      const [, year, month, day] = isoMatch;
+      return `${day}/${month}/${year}`;
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      return trimmed;
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+    return trimmed;
+  }
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    const day = String(val.getDate()).padStart(2, '0');
+    const month = String(val.getMonth() + 1).padStart(2, '0');
+    const year = val.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  return String(val);
+}
+
 export class WhatsAppBusinessService {
   private config: WhatsAppConfig;
 
@@ -88,6 +118,7 @@ export class WhatsAppBusinessService {
   public formatInvoiceMessage(payload: WhatsAppInvoicePayload): string {
     const isBm = payload.lang !== 'en';
     const totalFormatted = payload.totalAmount ? payload.totalAmount.toFixed(2) : '0.00';
+    const formattedDate = formatServerDateDisplay(payload.eventDate);
 
     if (isBm) {
       return (
@@ -95,7 +126,7 @@ export class WhatsAppBusinessService {
         `Terima kasih kerana memilih *Restoran Wawasan Pak Usop*.\n\n` +
         `Berikut adalah butiran invois tempahan katering anda:\n` +
         `• *No. Invois:* ${payload.invoiceNo}\n` +
-        `• *Tarikh Majlis:* ${payload.eventDate}\n` +
+        `• *Tarikh Majlis:* ${formattedDate}\n` +
         `• *Bilangan Pax:* ${payload.pax} orang\n` +
         `• *Jumlah Bayaran:* RM ${totalFormatted}\n\n` +
         `*Maklumat Pembayaran (Bank Transfer):*\n` +
@@ -113,7 +144,7 @@ export class WhatsAppBusinessService {
       `Thank you for choosing *Restoran Wawasan Pak Usop*.\n\n` +
       `Here are your catering invoice details:\n` +
       `• *Invoice No:* ${payload.invoiceNo}\n` +
-      `• *Event Date:* ${payload.eventDate}\n` +
+      `• *Event Date:* ${formattedDate}\n` +
       `• *Guest Count:* ${payload.pax} pax\n` +
       `• *Total Amount:* RM ${totalFormatted}\n\n` +
       `*Bank Payment Details:*\n` +
@@ -134,6 +165,7 @@ export class WhatsAppBusinessService {
       ? payload.selectedDishes.map((d: any) => `  - ${d.name || d.dishName || 'Hidangan'}`).join('\n')
       : '  - Mengikut pakej tempahan';
 
+    const formattedDate = formatServerDateDisplay(payload.eventDate);
     const orderRef = payload.orderId ? `*No. Rujukan:* ${payload.orderId}\n` : '';
     const totalStr = payload.totalAmount ? `*Jumlah Anggaran:* RM ${payload.totalAmount.toFixed(2)}\n` : '';
     const deliveryStr = payload.deliveryAddress ? `*Lokasi Penghantaran:* ${payload.deliveryAddress}\n` : '';
@@ -144,7 +176,7 @@ export class WhatsAppBusinessService {
       `${orderRef}` +
       `*Nama Pelanggan:* ${payload.customerName}\n` +
       `*No. Telefon:* ${payload.contactNumber}\n` +
-      `*Tarikh Majlis:* ${payload.eventDate}\n` +
+      `*Tarikh Majlis:* ${formattedDate}\n` +
       `*Masa Majlis:* ${payload.eventTime}\n` +
       `*Bilangan Tetamu:* ${payload.pax} pax\n` +
       `*Jenis Jamuan:* ${payload.mealType.toUpperCase()}\n` +

@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
-import { getAssetUrl, resolveDishImage } from '@/lib/utils';
+import { getAssetUrl, resolveDishImage, formatDateDisplay } from '@/lib/utils';
 
 export interface Step4ReviewSubmitProps {
   orderState: any;
@@ -86,7 +86,7 @@ export function Step4ReviewSubmit({
           </div>
           <div className="flex justify-between items-center text-xs">
             <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Date & Time', 'Tarikh & Masa')}</span>
-            <span className="font-bold text-deep-forest dark:text-white">{orderState.date} @ {orderState.time}</span>
+            <span className="font-bold text-deep-forest dark:text-white">{formatDateDisplay(orderState.date)} @ {orderState.time}</span>
           </div>
           <div className="flex justify-between items-center text-xs">
             <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Method', 'Kaedah')}</span>

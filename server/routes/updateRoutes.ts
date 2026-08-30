@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
+import { secureCompare } from './authRoutes.js';
 
 const router = Router();
 
@@ -35,10 +36,15 @@ router.get('/app-version', async (_req, res) => {
 
 router.post('/app-version/github-sync', async (req, res) => {
   try {
-    const incomingToken = req.headers['x-github-token'];
-    const secret = process.env.RELEASE_SYNC_SECRET || process.env.ADMIN_JWT_SECRET;
+    const secret = process.env.RELEASE_SYNC_SECRET;
+    if (!secret || secret.trim() === '') {
+      return res.status(503).json({ error: 'Release sync is not configured on this server.' });
+    }
 
-    if (!secret || incomingToken !== secret) {
+    const headerVal = req.headers['x-github-token'];
+    const incomingToken = Array.isArray(headerVal) ? headerVal[0] : headerVal;
+
+    if (!incomingToken || typeof incomingToken !== 'string' || !secureCompare(incomingToken.trim(), secret.trim())) {
       return res.status(401).json({ error: 'Unauthorized: Invalid or missing sync token' });
     }
 
