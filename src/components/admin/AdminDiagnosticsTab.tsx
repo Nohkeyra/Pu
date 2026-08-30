@@ -37,6 +37,7 @@ interface AdminDiagnosticsTabProps {
   runCalendarDiag: () => void;
   runPdfDiag: () => void;
   runNativeDiag: () => void;
+  runImageDiag?: () => void;
   runSendTestEmail: (e: React.FormEvent) => void;
   runSendTestPush?: (e: React.FormEvent) => void;
   runFeatureTest: (feature: string) => void;

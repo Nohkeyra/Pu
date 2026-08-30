@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 import URL from 'url';
