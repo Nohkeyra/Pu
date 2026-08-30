@@ -14,7 +14,8 @@ import {
   Info,
   CupSoda,
   Eye,
-  EyeOff
+  EyeOff,
+  Wrench
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
 import { Switch } from '@/components/ui/switch';
@@ -65,6 +66,37 @@ export default function AdminMenuTab({
     available: true
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isRepairingImages, setIsRepairingImages] = useState(false);
+
+  const handleRepairImages = async () => {
+    setIsRepairingImages(true);
+    try {
+      const response = await fetch(getApiUrl('/api/admin/menu/repair-images'), {
+        method: 'POST',
+        headers: authHeaders()
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: tText('Image Health Check Complete', 'Pemeriksaan Imej Selesai'),
+          description: data.message || tText('Menu images checked and repaired.', 'Semua imej menu telah diperiksa dan dibaik pulih.'),
+          variant: 'success'
+        });
+        invalidateFetchCache('/api/menu');
+        fetchMenuItems();
+      } else {
+        throw new Error(data.error || 'Failed to repair images');
+      }
+    } catch (err) {
+      toast({
+        title: tText('Repair Failed', 'Gagal Membaiki Imej'),
+        description: String(err),
+        variant: 'error'
+      });
+    } finally {
+      setIsRepairingImages(false);
+    }
+  };
 
   const tText = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -329,13 +361,29 @@ export default function AdminMenuTab({
             </span>
           </div>
 
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot text-deep-forest px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{tText('Add Menu Item', 'Tambah Hidangan')}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRepairImages}
+              disabled={isRepairingImages}
+              title={tText('Audit and repair missing or broken menu images', 'Periksa dan baiki imej menu yang rosak')}
+              className="flex items-center gap-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 border border-stone-200 dark:border-stone-700 disabled:opacity-50"
+            >
+              {isRepairingImages ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
+              ) : (
+                <Wrench className="w-3.5 h-3.5 text-amber-500" />
+              )}
+              <span className="hidden md:inline">{tText('Audit & Repair Images', 'Baiki Imej')}</span>
+            </button>
+
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot text-deep-forest px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{tText('Add Menu Item', 'Tambah Hidangan')}</span>
+            </button>
+          </div>
         </div>
       </div>
 

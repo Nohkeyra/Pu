@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, type ImgHTMLAttributes } from 'react';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { cn, getAssetUrl, resolveDishImage } from '@/lib/utils';
+import { normalizeImageUrl, getProxiedOrRepairedImageUrl } from '@/lib/imageRepair';
 
 export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src: string;
@@ -44,11 +45,14 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   const [currentSrc, setCurrentSrc] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const [repairStage, setRepairStage] = useState(0);
+
   // Initialize and reset currentSrc when src prop changes
   useEffect(() => {
     setLoaded(false);
     setError(false);
-    setCurrentSrc(getAssetUrl(src));
+    setRepairStage(0);
+    setCurrentSrc(normalizeImageUrl(src));
   }, [src]);
 
   // Handle cached image instant loads
@@ -72,6 +76,23 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
     if (currentSrc.includes('/src/assets/')) {
       setCurrentSrc(currentSrc.replace('/src/assets/', '/assets/'));
       return;
+    }
+
+    // Stage 2: External image hotlink bypass via server proxy
+    if ((currentSrc.startsWith('http://') || currentSrc.startsWith('https://')) && !currentSrc.includes('/api/images/proxy') && repairStage === 0) {
+      setRepairStage(1);
+      setCurrentSrc(getProxiedOrRepairedImageUrl(currentSrc, { useProxyForExternal: true, dishId: alt }));
+      return;
+    }
+
+    // Stage 3: Local dish vector illustration repair
+    if (repairStage <= 1) {
+      setRepairStage(2);
+      const repairedFallback = resolveDishImage({ id: src, nameEn: alt, nameBm: alt });
+      if (repairedFallback && getAssetUrl(repairedFallback) !== currentSrc) {
+        setCurrentSrc(getAssetUrl(repairedFallback));
+        return;
+      }
     }
 
     // Final Stage: show graceful designer placeholder

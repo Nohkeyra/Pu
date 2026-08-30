@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import { cn, getAssetUrl, resolveDishImage } from '@/lib/utils';
+import { cn, getAssetUrl } from '@/lib/utils';
+import { repairDishImage } from '@/lib/imageRepair';
 
 interface MenuItemCardProps {
   item: any;
@@ -11,7 +12,7 @@ interface MenuItemCardProps {
 
 export const MenuItemCard = React.memo(
   function MenuItemCard({ item, isSelected, onToggle, tText }: MenuItemCardProps) {
-    const dishImg = resolveDishImage(item);
+    const dishImg = repairDishImage(item, { useProxyForExternal: true });
 
     return (
       <div

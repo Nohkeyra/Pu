@@ -16,6 +16,7 @@ import updateRoutes from './server/routes/updateRoutes.js';
 import invoiceRoutes from './server/routes/invoiceRoutes.js';
 import diagnosticRoutes from './server/routes/diagnosticRoutes.js';
 import widgetRoutes from './server/routes/widgetRoutes.js';
+import imageRoutes, { antiHotlinkGuard } from './server/routes/imageRoutes.js';
 
 dotenv.config();
 
@@ -105,6 +106,9 @@ async function startServer() {
 
   // SECURITY FIX: Reduced from 50mb to 5mb general limit.
   app.use(express.json({ limit: '5mb' }));
+
+  // Anti-hotlink protection for static images
+  app.use(antiHotlinkGuard);
 
   const healthCheckHandler = async (req: express.Request, res: express.Response) => {
     const uptime = process.uptime();
@@ -206,6 +210,7 @@ async function startServer() {
   app.use('/api', invoiceRoutes);
   app.use('/api', diagnosticRoutes);
   app.use('/api', widgetRoutes);
+  app.use('/api', imageRoutes);
 
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];

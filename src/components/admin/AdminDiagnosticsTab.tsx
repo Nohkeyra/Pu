@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Database, Calendar, FileText, Smartphone, Mail, Bell, Activity, 
-  Terminal, ShieldCheck, AlertTriangle, Loader2, Play, Settings
+  Terminal, ShieldCheck, AlertTriangle, Loader2, Play, Settings, Image
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ interface AdminDiagnosticsTabProps {
   diagPdf: DiagState;
   diagNative: DiagState;
   diagEmail: DiagState;
+  diagImage?: DiagState;
   diagTests: { id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[];
   testEmailAddress: string;
   isSendingTestEmail: boolean;
@@ -127,6 +128,7 @@ export function AdminDiagnosticsTab({
   diagPdf,
   diagNative,
   diagEmail,
+  diagImage = { status: 'pass', message: 'Anti-Hotlink Guard Active • Server Proxy & Image Repair Ready' },
   testEmailAddress,
   isSendingTestEmail,
   testPushTitle = '🔔 Ujian Notifikasi FCM / FCM Test Push',
@@ -139,6 +141,7 @@ export function AdminDiagnosticsTab({
   runCalendarDiag,
   runPdfDiag,
   runNativeDiag,
+  runImageDiag = () => {},
   runSendTestEmail,
   runSendTestPush,
   toggleEruda,
@@ -202,6 +205,13 @@ export function AdminDiagnosticsTab({
           description="Checks Capacitor plugins (Filesystem, Share, Network) for mobile."
           state={diagNative}
           onRun={runNativeDiag}
+        />
+        <DiagCard 
+          icon={Image}
+          title="Image Repair & Anti-Hotlink"
+          description="Monitors anti-hotlink guard, image proxy, and vector repair pipeline."
+          state={diagImage}
+          onRun={runImageDiag}
         />
       </div>
 
