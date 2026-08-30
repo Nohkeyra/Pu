@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Database, Calendar, FileText, Smartphone, Mail, Activity, 
+  Database, Calendar, FileText, Smartphone, Mail, Bell, Activity, 
   Terminal, ShieldCheck, AlertTriangle, Loader2, Play, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface DiagState {
 
 interface AdminDiagnosticsTabProps {
   diagFirebase: DiagState;
+  diagFcm?: DiagState;
   diagCalendar: DiagState;
   diagPdf: DiagState;
   diagNative: DiagState;
@@ -25,16 +26,23 @@ interface AdminDiagnosticsTabProps {
   diagTests: { id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[];
   testEmailAddress: string;
   isSendingTestEmail: boolean;
+  testPushTitle?: string;
+  testPushBody?: string;
+  isSendingTestPush?: boolean;
   erudaEnabled: boolean;
   runAllDiagnostics: () => void;
   runFirebaseDiag: () => void;
+  runFcmDiag?: () => void;
   runCalendarDiag: () => void;
   runPdfDiag: () => void;
   runNativeDiag: () => void;
   runSendTestEmail: (e: React.FormEvent) => void;
+  runSendTestPush?: (e: React.FormEvent) => void;
   runFeatureTest: (feature: string) => void;
   toggleEruda: () => void;
   setTestEmailAddress: (val: string) => void;
+  setTestPushTitle?: (val: string) => void;
+  setTestPushBody?: (val: string) => void;
   setDiagTests: React.Dispatch<React.SetStateAction<{ id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[]>>;
 }
 
@@ -114,21 +122,29 @@ const DiagCard = ({
 
 export function AdminDiagnosticsTab({
   diagFirebase,
+  diagFcm,
   diagCalendar,
   diagPdf,
   diagNative,
   diagEmail,
   testEmailAddress,
   isSendingTestEmail,
+  testPushTitle = '🔔 Ujian Notifikasi FCM / FCM Test Push',
+  testPushBody = 'Notifikasi tolak berfungsi dengan cemerlang pada peranti anda!',
+  isSendingTestPush = false,
   erudaEnabled,
   runAllDiagnostics,
   runFirebaseDiag,
+  runFcmDiag,
   runCalendarDiag,
   runPdfDiag,
   runNativeDiag,
   runSendTestEmail,
+  runSendTestPush,
   toggleEruda,
-  setTestEmailAddress
+  setTestEmailAddress,
+  setTestPushTitle,
+  setTestPushBody
 }: AdminDiagnosticsTabProps) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -151,13 +167,20 @@ export function AdminDiagnosticsTab({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <DiagCard 
           icon={Database}
           title="Firebase & Firestore"
           description="Checks connection and write permissions to the Firestore database."
           state={diagFirebase}
           onRun={runFirebaseDiag}
+        />
+        <DiagCard 
+          icon={Bell}
+          title="FCM Push Messaging"
+          description="Verifies Firebase Cloud Messaging channels and admin push pipeline."
+          state={diagFcm || { status: 'idle' }}
+          onRun={runFcmDiag || runFirebaseDiag}
         />
         <DiagCard 
           icon={Calendar}
@@ -183,6 +206,7 @@ export function AdminDiagnosticsTab({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* SMTP Test Card */}
         <div className="bg-white dark:bg-card border border-stone-200/60 dark:border-white/10 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -228,7 +252,51 @@ export function AdminDiagnosticsTab({
           </form>
         </div>
 
+        {/* FCM Push Notification Test Card */}
         <div className="bg-white dark:bg-card border border-stone-200/60 dark:border-white/10 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h3 className="font-bold text-stone-900 dark:text-stone-100">FCM Push Notification Test</h3>
+              <p className="text-xs text-stone-500">Broadcast test push to 'new_orders' topic</p>
+            </div>
+          </div>
+          
+          <form onSubmit={runSendTestPush || ((e) => e.preventDefault())} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-stone-700 dark:text-stone-300">Push Notification Title</Label>
+              <Input
+                type="text"
+                required
+                value={testPushTitle}
+                onChange={(e) => setTestPushTitle && setTestPushTitle(e.target.value)}
+                className="bg-stone-50 dark:bg-background/50 border-stone-200 dark:border-white/10"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-stone-700 dark:text-stone-300">Push Message Body</Label>
+              <Input
+                type="text"
+                required
+                value={testPushBody}
+                onChange={(e) => setTestPushBody && setTestPushBody(e.target.value)}
+                className="bg-stone-50 dark:bg-background/50 border-stone-200 dark:border-white/10"
+              />
+            </div>
+            <Button 
+              type="submit" 
+              disabled={isSendingTestPush || !runSendTestPush}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white rounded-xl h-10 font-bold shadow-amber-500/20 shadow-lg"
+            >
+              {isSendingTestPush ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
+              Send Test Push to 'new_orders' Topic
+            </Button>
+          </form>
+        </div>
+
+        <div className="bg-white dark:bg-card border border-stone-200/60 dark:border-white/10 rounded-2xl p-6 shadow-sm lg:col-span-2">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
               <Settings className="w-5 h-5 text-purple-600 dark:text-purple-400" />

@@ -451,15 +451,6 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   } else {
     doc.setFont('helvetica', 'bolditalic');
     doc.text(totalRangeStr, 192, currentY + 4.8, { align: 'right' });
-    
-    // Add dynamic estimate disclaimer
-    currentY += 12;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 0, 0); // Red color for emphasis
-    doc.setFont('helvetica', 'bolditalic');
-    doc.text('*Nota: Ini adalah sebut harga anggaran sementara sahaja.', 15, currentY);
-    doc.text(' Harga muktamad tertakluk kepada menu yang dipilih & pengesahan admin dalam invois rasmi.', 15, currentY + 4);
-    currentY -= 8; // Adjust back for spelling section
   }
   currentY += 7;
 
@@ -625,8 +616,44 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   const splitNotes = doc.splitTextToSize(notesText, 174);
   doc.text(splitNotes, 18, picBoxY + 40);
 
-  // --- 3. SIGNATURE SECTION ---
-  const sigSectionY = picBoxY + picBoxHeight + 25;
+  // --- 3. PRELIMINARY ESTIMATE NOTICE (If not final) ---
+  let p2NextSectionY = picBoxY + picBoxHeight + 8;
+
+  if (!isFinal) {
+    const noticeBoxY = p2NextSectionY;
+    const noticeBoxHeight = 16;
+
+    // Soft red tinted background with crisp red border
+    doc.setFillColor(254, 242, 242);
+    doc.rect(15, noticeBoxY, 180, noticeBoxHeight, 'F');
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(0.35);
+    doc.rect(15, noticeBoxY, 180, noticeBoxHeight, 'S');
+
+    // Red left accent indicator
+    doc.setFillColor(185, 28, 28);
+    doc.rect(15, noticeBoxY, 1.8, noticeBoxHeight, 'F');
+
+    // Red notice title
+    doc.setTextColor(185, 28, 28);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('* NOTA / NOTE:', 20, noticeBoxY + 5.2);
+
+    // Red notice body lines
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setFontSize(8);
+    doc.setTextColor(153, 27, 27);
+    doc.text('• Ini adalah sebut harga anggaran sementara sahaja.', 20, noticeBoxY + 9.5);
+    doc.text('• Harga muktamad tertakluk kepada menu yang dipilih & pengesahan admin dalam invois rasmi.', 20, noticeBoxY + 13.5);
+
+    p2NextSectionY = noticeBoxY + noticeBoxHeight + 10;
+  } else {
+    p2NextSectionY = picBoxY + picBoxHeight + 12;
+  }
+
+  // --- 4. SIGNATURE SECTION ---
+  const sigSectionY = p2NextSectionY + 6;
 
   // Prepared By (Left)
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
@@ -643,8 +670,8 @@ export const generateInvoicePDF = (order: Order, isFinal: boolean, lang: 'en' | 
   doc.setLineWidth(0.4);
   doc.line(15, sigSectionY + 25, 80, sigSectionY + 25); // signature line
 
-  // --- 4. PAGE 2 FOOTER LINE & TEXTS ---
-  const footerLineY = sigSectionY + 42;
+  // --- 5. PAGE 2 FOOTER LINE & TEXTS ---
+  const footerLineY = 280;
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
   doc.setLineWidth(0.3);
   doc.line(15, footerLineY, 195, footerLineY);

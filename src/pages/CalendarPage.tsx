@@ -1,27 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
-const cateringBanner = '/assets/ui/catering_banner.jpg';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
-  Clock,
-  Plus,
-  Trash2,
-  X,
-  FileText,
-  User as UserIcon,
-  Shield,
-  LogIn,
-  MapPin,
-  UtensilsCrossed,
-  Layers,
-  ArrowRight
+  Clock, 
+  Plus, 
+  Trash2, 
+  X, 
+  FileText, 
+  User as UserIcon, 
+  Shield, 
+  LogIn, 
+  MapPin, 
+  UtensilsCrossed, 
+  ArrowRight,
+  Coffee,
+  Sun,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   format, 
@@ -35,12 +36,14 @@ import {
   isToday,
   parseISO
 } from 'date-fns';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { ms, enUS } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PageShell from '@/components/PageShell';
 import AuthModal from '@/components/AuthModal';
-import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import type { Order } from '@/types';
+
+const cateringBanner = '/assets/ui/catering_banner.jpg';
 
 interface CalendarNote {
   id: string;
@@ -51,9 +54,12 @@ interface CalendarNote {
   updatedAt: string;
 }
 
+type MealFilter = 'all' | 'breakfast' | 'lunch' | 'hi_tea';
+
 export default function CalendarPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const dateLocale = language === 'bm' ? ms : enUS;
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [orders, setOrders] = useState<Order[]>([]);
@@ -67,14 +73,14 @@ export default function CalendarPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // Active Selected Day Modal & Nested Selected Order details (Google Calendar style!)
+  // Active Selected Day & Filter states
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
-  const [quickPopoverDay, setQuickPopoverDay] = useState<Date | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [mealFilter, setMealFilter] = useState<MealFilter>('all');
   const [noteText, setNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
 
-  // Translate local label function
+  // Translation helper
   const tl = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
   // Auth Listener
@@ -87,7 +93,7 @@ export default function CalendarPage() {
 
   const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
-  // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API (no auth restriction!)
+  // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API
   useEffect(() => {
     const controller = new AbortController();
     const fetchCalendarData = async () => {
@@ -125,13 +131,12 @@ export default function CalendarPage() {
     let unsubscribeNotes = () => {};
 
     if (isAdmin || !currentUser) {
-      // Admins and public visitors can view the master kitchen schedule
       const ordersCol = collection(db, 'orders');
       unsubscribeOrders1 = onSnapshot(ordersCol, (snapshot) => {
         const list: Order[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data() as Order;
-          list.push({ ...data, id: doc.id });
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Order;
+          list.push({ ...data, id: docSnap.id });
         });
         setOrders(list);
         setLoading(false);
@@ -142,27 +147,26 @@ export default function CalendarPage() {
       const notesCol = collection(db, 'calendar_notes');
       unsubscribeNotes = onSnapshot(notesCol, (snapshot) => {
         const list: CalendarNote[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data() as any;
-          list.push({ ...data, id: doc.id });
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          list.push({ ...data, id: docSnap.id });
         });
         setCalendarNotes(list);
       }, (err) => {
         console.warn("Notes stream permission note:", err);
       });
     } else {
-      // Members/Customers: ONLY subscribe to queries matching their own userId/uid
       const ordersCol = collection(db, 'orders');
       const q1 = query(ordersCol, where('userId', '==', currentUser.uid));
       const q2 = query(ordersCol, where('uid', '==', currentUser.uid));
 
       const handleSnapshot = (snapshot1: any, snapshot2: any) => {
         const map = new Map<string, Order>();
-        snapshot1?.forEach((doc: any) => {
-          map.set(doc.id, { ...(doc.data() as Order), id: doc.id });
+        snapshot1?.forEach((docSnap: any) => {
+          map.set(docSnap.id, { ...(docSnap.data() as Order), id: docSnap.id });
         });
-        snapshot2?.forEach((doc: any) => {
-          map.set(doc.id, { ...(doc.data() as Order), id: doc.id });
+        snapshot2?.forEach((docSnap: any) => {
+          map.set(docSnap.id, { ...(docSnap.data() as Order), id: docSnap.id });
         });
         setOrders(Array.from(map.values()));
         setLoading(false);
@@ -181,14 +185,13 @@ export default function CalendarPage() {
         handleSnapshot(snap1Docs, snap2Docs);
       }, (err) => console.warn("Member order Q2 permission note:", err));
 
-      // Members: Only subscribe to their own notes
       const notesCol = collection(db, 'calendar_notes');
       const qNotes = query(notesCol, where('userId', '==', currentUser.uid));
       unsubscribeNotes = onSnapshot(qNotes, (snapshot) => {
         const list: CalendarNote[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data() as any;
-          list.push({ ...data, id: doc.id });
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          list.push({ ...data, id: docSnap.id });
         });
         setCalendarNotes(list);
       }, (err) => {
@@ -232,13 +235,6 @@ export default function CalendarPage() {
     return null;
   };
 
-  // Normalize and extract Date from an Order
-  const getOrderDate = (order: Order): Date | null => {
-    const ds = getOrderDateString(order);
-    return ds ? parseISO(ds) : null;
-  };
-
-  // Helper to format customer selected event delivery time (NOT creation time!)
   const getCustomerSelectedEventTime = (order: Order): string => {
     if (order.dateTime) {
       try {
@@ -250,42 +246,42 @@ export default function CalendarPage() {
         // ignore
       }
     }
-    // Fallback directly to event details
     return order.dateTime ? order.dateTime.split('T')[1]?.slice(0, 5) || '3:00 PM' : '3:00 PM';
   };
 
-  // Helper to format exact event day of delivery
   const getCustomerSelectedEventDay = (order: Order): string => {
     if (order.dateTime) {
       try {
         const parsed = parseISO(order.dateTime);
         if (!isNaN(parsed.getTime())) {
-          return format(parsed, 'EEEE, dd MMM yyyy');
+          return format(parsed, 'EEEE, dd MMM yyyy', { locale: dateLocale });
         }
       } catch {
         // ignore
       }
     }
-    const oDate = getOrderDate(order);
-    return oDate ? format(oDate, 'EEEE, dd MMM yyyy') : '';
+    const oDateStr = getOrderDateString(order);
+    return oDateStr ? format(parseISO(oDateStr), 'EEEE, dd MMM yyyy', { locale: dateLocale }) : '';
   };
 
-  // Helper to filter out canceled and rejected orders
-  const activeOrders = orders.filter(
-    (o) => o.status !== 'cancelled' && o.status !== 'rejected'
-  );
+  // Filter out canceled and rejected orders
+  const activeOrders = useMemo(() => {
+    return orders.filter((o) => o.status !== 'cancelled' && o.status !== 'rejected');
+  }, [orders]);
 
-  // Filter orders for master calendar view
-  const getVisibleOrders = () => {
-    return activeOrders;
-  };
-
-  // Retrieve active orders on a given date (for displaying detailed rows inside Day modal)
+  // Retrieve active orders on a given date
   const getOrdersForDay = (date: Date) => {
     const targetDateStr = format(date, 'yyyy-MM-dd');
-    return getVisibleOrders().filter((order) => {
-      return getOrderDateString(order) === targetDateStr;
-    });
+    let dayOrders = activeOrders.filter((order) => getOrderDateString(order) === targetDateStr);
+
+    if (mealFilter === 'breakfast') {
+      dayOrders = dayOrders.filter((o) => o.meals?.includes('breakfast'));
+    } else if (mealFilter === 'lunch') {
+      dayOrders = dayOrders.filter((o) => o.meals?.includes('lunch'));
+    } else if (mealFilter === 'hi_tea') {
+      dayOrders = dayOrders.filter((o) => o.meals?.some((m) => m === 'hi_tea' || m === 'hi-tea' || m === 'tea_break'));
+    }
+    return dayOrders;
   };
 
   // For aggregate counters on the grid cells
@@ -295,11 +291,7 @@ export default function CalendarPage() {
       return aggregatedSessions[dateStr];
     }
 
-    // Fallback/Admin-only real-time local calculations:
-    const dayOrders = activeOrders.filter((order) => {
-      const targetDateStr = format(date, 'yyyy-MM-dd');
-      return getOrderDateString(order) === targetDateStr;
-    });
+    const dayOrders = activeOrders.filter((order) => getOrderDateString(order) === dateStr);
 
     const sessions = {
       breakfast: { count: 0, pax: 0 },
@@ -328,24 +320,49 @@ export default function CalendarPage() {
     return sessions;
   };
 
-  // Retrieve notes written on a specific day (Admin sees all; Member sees their own)
   const getNotesForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return calendarNotes.filter((n) => {
-      const matchesDate = n.date === dateStr;
-      if (!matchesDate) return false;
+      if (n.date !== dateStr) return false;
       if (isAdmin) return true;
       return n.userId === currentUser?.uid;
     });
   };
 
+  // Monthly Overview Statistics
+  const monthStats = useMemo(() => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(monthStart);
+    const daysInCurrentMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    
+    let totalBookings = 0;
+    let totalPax = 0;
+    let operatingDays = 0;
+    let totalNotes = 0;
+
+    daysInCurrentMonth.forEach((day) => {
+      const dStr = format(day, 'yyyy-MM-dd');
+      const dayOrders = activeOrders.filter((o) => getOrderDateString(o) === dStr);
+      const dayNotes = calendarNotes.filter((n) => n.date === dStr);
+
+      if (dayOrders.length > 0) {
+        operatingDays += 1;
+        totalBookings += dayOrders.length;
+        dayOrders.forEach((o) => {
+          totalPax += o.guests || o.quantity || 0;
+        });
+      }
+      totalNotes += dayNotes.length;
+    });
+
+    return { totalBookings, totalPax, operatingDays, totalNotes };
+  }, [currentDate, activeOrders, calendarNotes]);
+
   // Handle click on a calendar cell
   const handleDayClick = async (date: Date) => {
     await triggerLightImpact();
     setSelectedDay(date);
-    setQuickPopoverDay(date);
 
-    // If logged in, pre-populate editing state if they have an existing note
     const dateStr = format(date, 'yyyy-MM-dd');
     const existingUserNote = calendarNotes.find(
       (n) => n.date === dateStr && n.userId === (isAdmin ? 'admin' : currentUser?.uid)
@@ -364,7 +381,6 @@ export default function CalendarPage() {
       const docId = `${uid}_${dateStr}`;
 
       if (!noteText.trim()) {
-        // If empty, delete
         await deleteDoc(doc(db, 'calendar_notes', docId));
       } else {
         await setDoc(doc(db, 'calendar_notes', docId), {
@@ -396,6 +412,11 @@ export default function CalendarPage() {
     }
   };
 
+  // Quick Preset Insert for Notes
+  const handleInsertPresetNote = (preset: string) => {
+    setNoteText((prev) => (prev ? `${prev} • ${preset}` : preset));
+  };
+
   // Navigation handlers
   const handlePrevMonth = async () => {
     await triggerLightImpact();
@@ -409,29 +430,72 @@ export default function CalendarPage() {
 
   const handleToday = async () => {
     await triggerLightImpact();
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDay(today);
   };
 
-  // Calendar calculations
+  // Calendar calculations (Monday-first ISO grid)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const startDayIndex = (getDay(monthStart) + 6) % 7;
+  const startDayIndex = (getDay(monthStart) + 6) % 7; // Monday = 0
+
+  // Padding days from previous month
+  const prevMonthDays = useMemo(() => {
+    if (startDayIndex === 0) return [];
+    const prevMonthEnd = endOfMonth(subMonths(currentDate, 1));
+    const days: Date[] = [];
+    for (let i = startDayIndex - 1; i >= 0; i--) {
+      const d = new Date(prevMonthEnd);
+      d.setDate(prevMonthEnd.getDate() - i);
+      days.push(d);
+    }
+    return days;
+  }, [currentDate, startDayIndex]);
+
+  // Trailing days for neat 7xN grid
+  const nextMonthDays = useMemo(() => {
+    const totalRendered = prevMonthDays.length + daysInMonth.length;
+    const remaining = (7 - (totalRendered % 7)) % 7;
+    const days: Date[] = [];
+    const nextStart = addMonths(monthStart, 1);
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(nextStart);
+      d.setDate(i);
+      days.push(d);
+    }
+    return days;
+  }, [prevMonthDays, daysInMonth, monthStart]);
 
   const weekdays = [
-    tl('Mon', 'Isn'),
-    tl('Tue', 'Sel'),
-    tl('Wed', 'Rab'),
-    tl('Thu', 'Kha'),
-    tl('Fri', 'Jum'),
-    tl('Sat', 'Sab'),
-    tl('Sun', 'Aha'),
+    { label: tl('M', 'I'), full: tl('Mon', 'Isn') },
+    { label: tl('T', 'S'), full: tl('Tue', 'Sel') },
+    { label: tl('W', 'R'), full: tl('Wed', 'Rab') },
+    { label: tl('T', 'K'), full: tl('Thu', 'Kha') },
+    { label: tl('F', 'J'), full: tl('Fri', 'Jum') },
+    { label: tl('S', 'S'), full: tl('Sat', 'Sab'), weekend: true },
+    { label: tl('S', 'A'), full: tl('Sun', 'Ahad'), weekend: true },
   ];
+
+  // Quick preset tags for kitchen/operations
+  const notePresets = [
+    tl('Allergen Alert', 'Awas Alahan'),
+    tl('VIP Protocol', 'Protokol VIP'),
+    tl('Early Delivery', 'Hantar Awal'),
+    tl('Extra Sambal', 'Sambal Tambahan'),
+    tl('Buffet Setup', 'Susun Atur Bufet'),
+  ];
+
+  const selectedDaySessions = selectedDay ? getDailySessions(selectedDay) : null;
+  const selectedDayTotalPax = selectedDaySessions 
+    ? (selectedDaySessions.breakfast.pax + selectedDaySessions.lunch.pax + selectedDaySessions.hi_tea.pax)
+    : 0;
 
   const todayAction = (
     <button
       onClick={handleToday}
-      className="text-xs font-bold px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-850 text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-900/40 transition-colors"
+      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
     >
       {tl('Today', 'Hari Ini')}
     </button>
@@ -440,389 +504,480 @@ export default function CalendarPage() {
   return (
     <ErrorBoundary>
       <PageShell
-        title={tl('Kitchen Schedule', 'Jadual Dapur')}
+        title={tl('Catering Schedule', 'Jadual Katering')}
         subtitle={isAdmin 
-          ? tl('Admin Master Calendar', 'Kalendar Induk Pentadbir') 
+          ? tl('Kitchen booking management', 'Pengurusan tempahan dapur') 
           : currentUser 
-          ? tl('Member Schedule', 'Jadual Rekod Ahli') 
-          : tl('Live Capacity Trackers', 'Pemantauan Kapasiti')}
-        showBatik={true}
+          ? tl('Your catering dates & availability', 'Tarikh katering & ketersediaan') 
+          : tl('Kitchen availability & bookings', 'Ketersediaan & tempahan')}
+        showBatik={false}
         backHref="/home"
         actions={todayAction}
       >
         <div className="w-full space-y-5 pb-20">
-          {/* Month Controller & Quick Action Toolbar */}
-          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 p-3 sm:p-5 rounded-3xl shadow-sm relative overflow-hidden group">
-            {/* Subtle Batik background for Month Controller */}
-            <div 
-              className="absolute inset-0 opacity-[0.12] dark:opacity-[0.18] pointer-events-none group-hover:opacity-[0.20] transition-opacity duration-700"
-              style={{
-                backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-                backgroundSize: '240px',
-                backgroundPosition: 'center',
-              }}
-            />
-            
-            <ResponsiveButtonGroup align="between">
-              <div className="flex items-center justify-between w-full sm:w-auto gap-4 relative z-10">
-                <div className="flex items-center gap-1.5">
+
+          {/* 1. MINIMALIST MONTH HEADER & CLEAN FILTER BAR */}
+          <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              
+              {/* Left: Month Nav & Clean Title */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/60 dark:border-stone-800">
                   <button
                     onClick={handlePrevMonth}
-                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850 hover:border-crisp-carrot/40 dark:hover:border-crisp-carrot/40 transition-all cursor-pointer select-none active:scale-90"
-                    title={tl('Previous Month', 'Bulan Sebelumnya')}
+                    className="p-1.5 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer"
                     aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
                   >
-                    <ChevronLeft className="w-4.5 h-4.5" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
-
                   <button
                     onClick={handleNextMonth}
-                    className="p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-deep-forest dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-850 hover:border-crisp-carrot/40 dark:hover:border-crisp-carrot/40 transition-all cursor-pointer select-none active:scale-90"
-                    title={tl('Next Month', 'Bulan Seterusnya')}
+                    className="p-1.5 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer"
                     aria-label={tl('Next Month', 'Bulan Seterusnya')}
                   >
-                    <ChevronRight className="w-4.5 h-4.5" />
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-crisp-carrot/80 mb-0.5">
-                    {tl('Catering Schedule', 'Jadual Katering')}
-                  </span>
-                  <h3 className="font-display font-black text-lg sm:text-xl text-deep-forest dark:text-white capitalize tracking-tight leading-none">
-                    {format(currentDate, 'MMMM yyyy')}
-                  </h3>
+                <div>
+                  <h2 className="font-display font-bold text-xl sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
+                    {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
+                  </h2>
                 </div>
               </div>
 
-              {/* Quick Actions (Today Button & Sync Indicator) */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end relative z-10">
+              {/* Right: Refined Segmented Meal Filters */}
+              <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/60 dark:border-stone-800 self-start sm:self-auto overflow-x-auto max-w-full">
                 <button
-                  onClick={handleToday}
-                  className="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest px-5 py-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-850/60 text-deep-forest dark:text-white hover:bg-white dark:hover:bg-stone-800 hover:shadow-md transition-all cursor-pointer select-none active:scale-95 shadow-sm"
+                  onClick={() => setMealFilter('all')}
+                  className={cn(
+                    "text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap",
+                    mealFilter === 'all'
+                      ? "bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs"
+                      : "text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200"
+                  )}
                 >
-                  {tl('Today', 'Hari Ini')}
+                  {tl('All Meals', 'Semua')}
+                </button>
+
+                <button
+                  onClick={() => setMealFilter('breakfast')}
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
+                    mealFilter === 'breakfast'
+                      ? "bg-white dark:bg-stone-800 text-amber-700 dark:text-amber-300 shadow-xs"
+                      : "text-stone-500 dark:text-stone-400 hover:text-amber-600"
+                  )}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  {tl('Breakfast', 'Sarapan')}
+                </button>
+
+                <button
+                  onClick={() => setMealFilter('lunch')}
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
+                    mealFilter === 'lunch'
+                      ? "bg-white dark:bg-stone-800 text-emerald-700 dark:text-emerald-300 shadow-xs"
+                      : "text-stone-500 dark:text-stone-400 hover:text-emerald-600"
+                  )}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  {tl('Lunch', 'Tengah Hari')}
+                </button>
+
+                <button
+                  onClick={() => setMealFilter('hi_tea')}
+                  className={cn(
+                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
+                    mealFilter === 'hi_tea'
+                      ? "bg-white dark:bg-stone-800 text-purple-700 dark:text-purple-300 shadow-xs"
+                      : "text-stone-500 dark:text-stone-400 hover:text-purple-600"
+                  )}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  {tl('Hi-Tea', 'Petang')}
                 </button>
               </div>
-            </ResponsiveButtonGroup>
+            </div>
+
+            {/* Subtle month summary strip */}
+            <div className="flex items-center gap-4 sm:gap-6 mt-3.5 pt-3 border-t border-stone-100 dark:border-stone-850/60 text-xs text-stone-500 dark:text-stone-400 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalBookings}</span>
+                <span>{tl('Events', 'Acara')}</span>
+              </div>
+              <span className="text-stone-300 dark:text-stone-700">•</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalPax}</span>
+                <span>{tl('Total Pax', 'Jumlah Pax')}</span>
+              </div>
+              <span className="text-stone-300 dark:text-stone-700">•</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.operatingDays}</span>
+                <span>{tl('Active Days', 'Hari Beroperasi')}</span>
+              </div>
+              {monthStats.totalNotes > 0 && (
+                <>
+                  <span className="text-stone-300 dark:text-stone-700">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalNotes}</span>
+                    <span>{tl('Notes', 'Nota')}</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Loading Indicator */}
+          {/* 2. AIRY, SIMPLE CALENDAR GRID */}
           {loading ? (
-            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-12 text-center shadow-sm">
-              <Clock className="w-8 h-8 text-crisp-carrot animate-spin mx-auto mb-3" />
-              <p className="text-sm font-bold text-deep-forest dark:text-stone-300">
-                {tl('Loading live kitchen calendar...', 'Memuatkan jadual langsung dapur...')}
+            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl p-16 text-center shadow-xs">
+              <Clock className="w-7 h-7 text-stone-400 animate-spin mx-auto mb-3" />
+              <p className="text-xs font-semibold text-stone-500">
+                {tl('Loading kitchen calendar...', 'Memuatkan jadual dapur...')}
               </p>
             </div>
           ) : (
-            /* Monthly Calendar Grid with glowing day highlights */
-            <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden font-sans">
-              {/* Day Labels Row */}
-              <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 py-3">
-                {weekdays.map((day, index) => (
-                  <div key={index} className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500">
-                    {day}
+            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl shadow-xs overflow-hidden">
+              
+              {/* Clean Weekdays Header */}
+              <div className="grid grid-cols-7 border-b border-stone-100 dark:border-stone-850 bg-stone-50/70 dark:bg-stone-900/40">
+                {weekdays.map((day, idx) => (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "py-2.5 text-center text-[11px] font-semibold tracking-wider",
+                      day.weekend 
+                        ? "text-stone-400 dark:text-stone-500" 
+                        : "text-stone-600 dark:text-stone-400"
+                    )}
+                  >
+                    <span className="hidden sm:inline">{day.full}</span>
+                    <span className="sm:hidden">{day.label}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Day Tiles Grid */}
-              <div className="grid grid-cols-7 bg-stone-200/30 dark:bg-stone-900/40 gap-[1px]">
-                {Array.from({ length: startDayIndex }).map((_, i) => (
-                  <div 
-                    key={`empty-${i}`} 
-                    className="min-h-[100px] sm:min-h-[140px] bg-stone-50/30 dark:bg-stone-950/20 opacity-30"
-                  />
+              {/* Days Matrix - Clean, breathable layout */}
+              <div className="grid grid-cols-7 divide-x divide-y divide-stone-100 dark:divide-stone-850">
+                
+                {/* 1. Leading Prev Month Days */}
+                {prevMonthDays.map((pDay) => (
+                  <div
+                    key={`prev-${pDay.toISOString()}`}
+                    className="min-h-[75px] sm:min-h-[95px] p-2 bg-stone-50/30 dark:bg-stone-950/20 text-stone-300 dark:text-stone-700 select-none text-xs"
+                  >
+                    <span>{format(pDay, 'd')}</span>
+                  </div>
                 ))}
 
+                {/* 2. Current Month Days */}
                 {daysInMonth.map((day) => {
-                  const sessions = getDailySessions(day);
                   const isCurrentDay = isToday(day);
-
-                  // Notes check
-                  const dailyNotes = getNotesForDay(day);
-                  const hasNote = dailyNotes.length > 0;
-
-                  // Glowing color detection logic
-                  const maxSessionPax = Math.max(
-                    sessions.breakfast.pax,
-                    sessions.lunch.pax,
-                    sessions.hi_tea.pax
-                  );
-
-                  const isExtremeVolume = maxSessionPax >= 80;
-                  const isHeavyVolume = maxSessionPax >= 50 && maxSessionPax < 80;
+                  const isDaySelected = selectedDay ? isSameDay(day, selectedDay) : false;
+                  const dayOrders = getOrdersForDay(day);
+                  const dayNotes = getNotesForDay(day);
+                  const sessions = getDailySessions(day);
+                  const totalPax = sessions.breakfast.pax + sessions.lunch.pax + sessions.hi_tea.pax;
+                  const hasOrders = dayOrders.length > 0;
 
                   return (
                     <button
-                      key={day.toString()}
+                      key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[100px] sm:min-h-[140px] p-2 sm:p-3 flex flex-col justify-between transition-all group/day text-left focus:outline-none",
-                        isCurrentDay ? "bg-amber-500/[0.03] dark:bg-amber-500/[0.05]" : "bg-white dark:bg-card",
-                        "hover:bg-stone-50 dark:hover:bg-stone-900/60",
-                        // Glowing Color Rings and ambient backing depending on daily volume limit
-                        isExtremeVolume && "bg-rose-50/30 dark:bg-rose-950/10 ring-1 ring-inset ring-rose-500/20 animate-pulse-slow",
-                        isHeavyVolume && "bg-amber-50/30 dark:bg-amber-950/10 ring-1 ring-inset ring-amber-500/20"
+                        "min-h-[75px] sm:min-h-[95px] p-2 sm:p-2.5 flex flex-col justify-between transition-colors text-left relative cursor-pointer group",
+                        isDaySelected 
+                          ? "bg-amber-500/5 dark:bg-amber-500/10 ring-2 ring-inset ring-crisp-carrot/80 z-10" 
+                          : "hover:bg-stone-50 dark:hover:bg-stone-900/60 bg-white dark:bg-card"
                       )}
                     >
-                      {/* Day Number Header */}
+                      {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-crisp-carrot text-white text-xs font-black shadow-md shadow-crisp-carrot/20">
+                          <span className="w-6 h-6 rounded-full bg-crisp-carrot text-white text-xs font-bold flex items-center justify-center shadow-xs">
                             {format(day, 'd')}
                           </span>
                         ) : (
                           <span className={cn(
-                            "text-xs font-black transition-colors",
-                            isSameDay(day, selectedDay!) ? "text-crisp-carrot" : "text-stone-700 dark:text-stone-300 group-hover/day:text-deep-forest dark:group-hover/day:text-white"
+                            "text-xs font-semibold transition-colors",
+                            isDaySelected ? "text-crisp-carrot font-bold" : "text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white"
                           )}>
                             {format(day, 'd')}
                           </span>
                         )}
 
-                        {/* Visual indicator overlay if this date contains notes */}
-                        {hasNote && (
-                          <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" title={tl('Has Notes', 'Mempunyai Nota')} />
+                        {/* Subtle Note / Heavy Indicator */}
+                        {dayNotes.length > 0 && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title={tl('Has note', 'Ada nota')} />
                         )}
                       </div>
 
-                      {/* Individual Orders List (Google Calendar Style) */}
-                      <div className="space-y-1 mt-2 flex-grow flex flex-col justify-end w-full overflow-hidden max-h-[85px]">
-                        {getOrdersForDay(day).map((ord, idx) => {
-                          const pax = ord.guests || ord.quantity || 0;
-                          const meals = ord.meals || [];
-                          const mealLabel = meals.length > 0 
-                            ? meals.map(m => {
-                                if (m === 'breakfast') return 'Bre';
-                                if (m === 'lunch') return 'Lunc';
-                                if (m === 'hi_tea' || m === 'hi-tea' || m === 'tea_break') return "Hi'te";
-                                return m.slice(0, 4);
-                              }).join(', ')
-                            : 'Order';
-
-                          return (
-                            <div 
-                              key={ord.id || idx}
-                              className="px-1.5 py-1 rounded-md text-[9px] font-black leading-none bg-rose-500/15 dark:bg-rose-500/25 text-rose-900 dark:text-rose-200 border border-rose-500/30 truncate shadow-xs"
-                            >
-                              {pax} Pax | {mealLabel}
+                      {/* Bottom Info: Clean, uncluttered indicator */}
+                      <div className="mt-auto pt-1">
+                        {hasOrders ? (
+                          <div className="space-y-1">
+                            {/* Color dots for meals */}
+                            <div className="flex items-center gap-1">
+                              {sessions.breakfast.count > 0 && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Breakfast" />
+                              )}
+                              {sessions.lunch.count > 0 && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Lunch" />
+                              )}
+                              {sessions.hi_tea.count > 0 && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Hi-Tea" />
+                              )}
                             </div>
-                          );
-                        })}
 
-                        {getNotesForDay(day).map((note, idx) => (
-                          <div 
-                            key={note.id || idx}
-                            className="px-1.5 py-1 rounded-md text-[9px] font-bold leading-none bg-stone-200/80 dark:bg-stone-800 text-stone-700 dark:text-stone-300 truncate"
-                          >
-                            {note.note || '(No title)'}
+                            {/* Clean summary line */}
+                            <div className="text-[10px] font-semibold text-stone-600 dark:text-stone-400 truncate">
+                              <span className="text-stone-900 dark:text-stone-200 font-bold tabular-nums">
+                                {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
+                              </span>
+                              <span className="hidden sm:inline text-stone-400 font-normal ml-1">
+                                ({dayOrders.length})
+                              </span>
+                            </div>
                           </div>
-                        ))}
+                        ) : (
+                          <span className="text-[10px] text-transparent select-none">·</span>
+                        )}
                       </div>
                     </button>
                   );
                 })}
+
+                {/* 3. Trailing Next Month Days */}
+                {nextMonthDays.map((nDay) => (
+                  <div
+                    key={`next-${nDay.toISOString()}`}
+                    className="min-h-[75px] sm:min-h-[95px] p-2 bg-stone-50/30 dark:bg-stone-950/20 text-stone-300 dark:text-stone-700 select-none text-xs"
+                  >
+                    <span>{format(nDay, 'd')}</span>
+                  </div>
+                ))}
+
               </div>
             </div>
           )}
 
-          {/* Selected Day Details Section - Rendered Inline! */}
+          {/* 3. REFINED SELECTED DAY AGENDA */}
           {selectedDay && (
-            <div id="selected-day-details" className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-3xl shadow-xl overflow-hidden font-sans animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8 relative">
-              {/* Decorative Batik Strip at the top - Now more subtle */}
-              <div 
-                className="absolute top-0 left-0 right-0 h-1 opacity-20 z-20"
-                style={{
-                  backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-                  backgroundSize: '160px',
-                  backgroundPosition: 'center',
-                }}
-              />
-
-              {/* Header with visual accents */}
-              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-stone-100 dark:border-stone-850 bg-stone-50/30 dark:bg-stone-950/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-crisp-carrot/10 rounded-2xl flex items-center justify-center shadow-inner">
-                    <CalendarIcon className="w-6 h-6 text-crisp-carrot" />
+            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl shadow-xs overflow-hidden">
+              
+              {/* Day Header */}
+              <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/40 dark:bg-stone-900/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 shrink-0">
+                    <CalendarIcon className="w-4 h-4 text-crisp-carrot" />
                   </div>
                   <div>
-                    <h3 className="font-display font-black text-lg sm:text-xl text-deep-forest dark:text-white leading-tight">
-                      {format(selectedDay, tl('EEEE, dd MMMM yyyy', 'EEEE, dd MMMM yyyy'))}
-                    </h3>
-                    <p className="text-[10px] text-crisp-carrot font-black uppercase tracking-[0.2em] mt-0.5">
-                      {tl('Daily Production Schedule', 'Jadual Persediaan Dapur')}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display font-bold text-base sm:text-lg text-stone-900 dark:text-white leading-tight">
+                        {format(selectedDay, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
+                      </h3>
+                      {isToday(selectedDay) && (
+                        <span className="px-2 py-0.5 rounded-full bg-crisp-carrot/10 text-crisp-carrot text-[10px] font-bold">
+                          {tl('Today', 'Hari Ini')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-400 mt-0.5">
+                      {selectedDayTotalPax > 0 
+                        ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}` 
+                        : tl('No bookings scheduled', 'Tiada tempahan dijadualkan')}
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={async () => {
-                    await triggerLightImpact();
-                    setSelectedDay(null);
-                  }}
-                  className="p-2 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-white dark:hover:bg-stone-850 transition-all hover:shadow-md"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+
+                {/* Meal Breakdown Pills */}
+                {selectedDaySessions && selectedDayTotalPax > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedDaySessions.breakfast.pax > 0 && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <Coffee className="w-3 h-3 text-amber-600" />
+                        <span>{selectedDaySessions.breakfast.pax}p</span>
+                      </span>
+                    )}
+                    {selectedDaySessions.lunch.pax > 0 && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                        <Sun className="w-3 h-3 text-emerald-600" />
+                        <span>{selectedDaySessions.lunch.pax}p</span>
+                      </span>
+                    )}
+                    {selectedDaySessions.hi_tea.pax > 0 && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
+                        <UtensilsCrossed className="w-3 h-3 text-purple-600" />
+                        <span>{selectedDaySessions.hi_tea.pax}p</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Grid content split into two symmetric columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-8">
+              {/* Day Body: Orders & Notes */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-5">
                 
-                {/* Column 1: Catering Bookings */}
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
-                    <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.15em] flex items-center gap-2">
-                      <UtensilsCrossed className="w-4 h-4 text-crisp-carrot/80" />
-                      {tl('Confirmed Deliveries', 'Penghantaran Disahkan')}
-                    </h4>
-                    <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-[10px] font-black text-stone-500">
-                      {getOrdersForDay(selectedDay).length}
+                {/* Left: Orders (7 cols) */}
+                <div className="lg:col-span-7 space-y-3">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                      {tl('Bookings for this day', 'Tempahan hari ini')} ({getOrdersForDay(selectedDay).length})
                     </span>
                   </div>
 
                   {getOrdersForDay(selectedDay).length === 0 ? (
-                    <div className="p-10 text-center rounded-3xl bg-stone-50/50 dark:bg-stone-950/20 border-2 border-dashed border-stone-200 dark:border-stone-800/50">
-                      <div className="w-12 h-12 bg-stone-100 dark:bg-stone-900 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                        <Clock className="w-6 h-6 text-stone-400" />
-                      </div>
-                      <p className="text-sm font-bold text-stone-500 dark:text-stone-400">
-                        {currentUser 
-                          ? tl('No active catering orders.', 'Tiada tempahan katering aktif.')
-                          : tl('No public sessions listed.', 'Tiada sesi katering am.')}
+                    <div className="p-8 text-center rounded-xl bg-stone-50/50 dark:bg-stone-900/20 border border-dashed border-stone-200 dark:border-stone-800 space-y-2.5">
+                      <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
+                        {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
                       </p>
+                      <button
+                        onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {tl('Book for this date', 'Tempah untuk tarikh ini')}
+                      </button>
                     </div>
                   ) : (
-                    <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                       {getOrdersForDay(selectedDay).map((ord) => {
                         const totalPax = ord.guests || ord.quantity || 0;
                         const eventDeliveryTime = getCustomerSelectedEventTime(ord);
 
                         return (
-                          <button 
+                          <div 
                             key={ord.id}
-                            onClick={async () => {
-                              await triggerLightImpact();
-                              setSelectedOrder(ord);
-                            }}
-                            className={cn(
-                              "w-full p-5 rounded-2xl border transition-all text-left block relative group hover:shadow-lg",
-                              isAdmin 
-                                ? "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-amber-500/30" 
-                                : "bg-stone-50 dark:bg-stone-950/40 border-stone-200 dark:border-white/5"
-                            )}
+                            className="p-3.5 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/40 hover:border-stone-300 dark:hover:border-stone-700 transition-all space-y-2.5"
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-[10px] font-black tracking-widest text-crisp-carrot px-2 py-1 bg-crisp-carrot/5 rounded-md">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-stone-400">
                                 #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
                               </span>
                               <span className={cn(
-                                "text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter",
-                                ord.status === 'approved' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                                ord.status === 'pending' && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-                                ord.status === 'billed' && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                                (ord.status as string) === 'completed' && "bg-stone-500/10 text-stone-600 dark:text-stone-400"
+                                "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize",
+                                ord.status === 'approved' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                                ord.status === 'pending' && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                ord.status === 'billed' && "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+                                (ord.status as string) === 'completed' && "bg-stone-500/10 text-stone-700 dark:text-stone-300"
                               )}>
                                 {ord.status}
                               </span>
                             </div>
 
-                            <p className="text-sm font-black text-deep-forest dark:text-white group-hover:text-crisp-carrot transition-colors truncate">
-                              {isAdmin ? ord.to || ord.name : tl('Your Corporate Booking', 'Tempahan Korporat Anda')}
-                            </p>
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h5 className="font-semibold text-sm text-stone-900 dark:text-stone-100">
+                                  {isAdmin ? (ord.to || ord.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
+                                </h5>
+                                {ord.company && ord.company !== ord.to && (
+                                  <p className="text-xs text-stone-400 mt-0.5">{ord.company}</p>
+                                )}
+                              </div>
 
-                            <div className="flex items-center justify-between mt-4">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400">
-                                  <Clock className="w-3.5 h-3.5 text-crisp-carrot/70" />
-                                  <span className="text-xs font-bold tabular-nums">{eventDeliveryTime}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400">
-                                  <UserIcon className="w-3.5 h-3.5 text-crisp-carrot/70" />
-                                  <span className="text-xs font-bold tabular-nums">{totalPax} {tl('Pax', 'Orang')}</span>
-                                </div>
-                              </div>
-                              <div className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
-                                <ArrowRight className="w-4 h-4 text-crisp-carrot" />
-                              </div>
+                              <span className="text-xs font-bold text-stone-800 dark:text-stone-200 tabular-nums shrink-0 px-2 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
+                                {totalPax} {tl('Pax', 'Orang')}
+                              </span>
                             </div>
-                          </button>
+
+                            <div className="flex items-center gap-4 text-xs text-stone-500 dark:text-stone-400">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                <span>{eventDeliveryTime}</span>
+                              </div>
+                              {ord.location && (
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  <span className="truncate">{ord.location}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-stone-100 dark:border-stone-800/80 flex justify-end">
+                              <button
+                                onClick={async () => {
+                                  await triggerLightImpact();
+                                  setSelectedOrder(ord);
+                                }}
+                                className="text-xs font-semibold text-crisp-carrot hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                {tl('View Details', 'Lihat Butiran')}
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
 
-                {/* Column 2: Personal Scheduling Notes */}
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
-                    <h4 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.15em] flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-crisp-carrot/80" />
+                {/* Right: Notes (5 cols) */}
+                <div className="lg:col-span-5 space-y-3">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
                       {tl('Operational Notes', 'Nota Operasi')}
-                    </h4>
+                    </span>
                   </div>
 
                   {!currentUser ? (
-                    <div className="p-8 rounded-3xl bg-amber-500/[0.03] border border-amber-500/10 text-center space-y-5 shadow-inner">
-                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-bold">
-                        {tl(
-                          'Sign in to your account to save notes and specific instructions for this date.',
-                          'Sila log masuk untuk menyimpan nota dan arahan khusus pada tarikh ini.'
-                        )}
+                    <div className="p-5 rounded-xl bg-stone-50/60 dark:bg-stone-900/30 border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5">
+                      <p className="text-xs text-stone-500 font-medium">
+                        {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
                       </p>
                       <button
                         onClick={async () => {
                           await triggerLightImpact();
                           setAuthModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest px-6 py-3 rounded-xl bg-crisp-carrot text-white hover:bg-opacity-90 shadow-lg shadow-crisp-carrot/20 transition-all active:scale-95"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:opacity-90 transition-all cursor-pointer"
                       >
-                        <LogIn className="w-4 h-4" />
+                        <LogIn className="w-3.5 h-3.5" />
                         {tl('Sign In', 'Log Masuk')}
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-5">
-                      {/* Existing notes list display */}
-                      <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3">
+                      {/* Notes list */}
+                      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
                         {getNotesForDay(selectedDay).length === 0 ? (
-                          <div className="p-6 text-center italic">
-                            <p className="text-xs text-stone-400 font-bold">
-                              {tl('No scheduling notes saved.', 'Tiada nota jadual disimpan.')}
+                          <div className="p-4 text-center rounded-xl bg-stone-50/40 dark:bg-stone-900/20 border border-dashed border-stone-200 dark:border-stone-800">
+                            <p className="text-xs text-stone-400">
+                              {tl('No notes for this date.', 'Tiada nota untuk tarikh ini.')}
                             </p>
                           </div>
                         ) : (
                           getNotesForDay(selectedDay).map((n) => (
                             <div 
                               key={n.id}
-                              className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 space-y-2 relative group shadow-sm"
+                              className="p-3 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/60 dark:border-stone-800 text-xs space-y-1"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-stone-400 flex items-center gap-2">
+                                <span className="text-[10px] text-stone-400 font-semibold flex items-center gap-1">
                                   {n.userId === 'admin' ? (
-                                    <span className="flex items-center gap-1 text-amber-600 font-black">
-                                      <Shield className="w-3 h-3" /> ADMIN
+                                    <span className="text-amber-600 font-bold flex items-center gap-1">
+                                      <Shield className="w-3 h-3" /> Admin
                                     </span>
                                   ) : (
-                                    <span className="flex items-center gap-1 text-stone-500 font-black">
-                                      <UserIcon className="w-3 h-3" /> {n.userName.toUpperCase()}
+                                    <span className="flex items-center gap-1">
+                                      <UserIcon className="w-3 h-3" /> {n.userName}
                                     </span>
                                   )}
-                                  <span className="opacity-50">•</span> {format(parseISO(n.updatedAt), 'hh:mm a')}
+                                  <span>•</span>
+                                  <span>{format(parseISO(n.updatedAt), 'hh:mm a')}</span>
                                 </span>
 
                                 {(isAdmin || n.userId === currentUser.uid) && (
                                   <button
                                     onClick={() => handleDeleteNote(n.id)}
-                                    className="text-rose-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all opacity-0 group-hover:opacity-100"
-                                    title={tl('Delete note', 'Padam nota')}
+                                    className="text-stone-400 hover:text-rose-500 p-0.5 rounded transition-colors"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
                                 )}
                               </div>
-                              <p className="text-xs font-bold text-stone-700 dark:text-stone-300 whitespace-pre-wrap leading-relaxed">
+                              <p className="text-stone-700 dark:text-stone-300 font-medium whitespace-pre-wrap">
                                 {n.note}
                               </p>
                             </div>
@@ -830,38 +985,42 @@ export default function CalendarPage() {
                         )}
                       </div>
 
-                      {/* Notes Input Field for Editing/Creating */}
-                      <div className="space-y-4 pt-4 border-t border-stone-100 dark:border-stone-800">
-                        <div className="relative">
-                          <textarea
-                            value={noteText}
-                            onChange={(e) => setNoteText(e.target.value)}
-                            placeholder={isAdmin 
-                              ? tl('Add kitchen instruction, prep alert...', 'Tambah arahan dapur, awas persediaan...')
-                              : tl('Add personal reminder, request...', 'Tambah peringatan, permintaan...')}
-                            maxLength={1000}
-                            rows={3}
-                            className="w-full text-xs font-bold p-4 rounded-2xl border border-stone-200 dark:border-stone-850 bg-stone-50/50 dark:bg-stone-900/40 text-deep-forest dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-crisp-carrot/20 focus:border-crisp-carrot transition-all resize-none shadow-inner"
-                          />
+                      {/* Note composer */}
+                      <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800/80">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {notePresets.slice(0, 3).map((preset, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              onClick={() => handleInsertPresetNote(preset)}
+                              className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors cursor-pointer"
+                            >
+                              +{preset}
+                            </button>
+                          ))}
                         </div>
 
-                        <div className="flex justify-end">
+                        <textarea
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder={tl('Add prep alert, special request...', 'Tambah arahan penyediaan, permintaan khusus...')}
+                          maxLength={500}
+                          rows={2}
+                          className="w-full text-xs p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-crisp-carrot transition-all resize-none"
+                        />
+
+                        <div className="flex items-center justify-end">
                           <button
                             onClick={handleSaveNote}
                             disabled={isSavingNote || !noteText.trim()}
-                            className="text-[11px] font-black uppercase tracking-widest px-6 py-3 rounded-xl bg-deep-forest dark:bg-white text-white dark:text-deep-forest hover:shadow-lg disabled:opacity-40 transition-all flex items-center gap-2 active:scale-95"
+                            className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1 cursor-pointer"
                           >
                             {isSavingNote ? (
-                              <>
-                                <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                                {tl('Saving...', 'Menyimpan...')}
-                              </>
+                              <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
                             ) : (
-                              <>
-                                <Plus className="w-4 h-4" />
-                                {tl('Save Note', 'Simpan Nota')}
-                              </>
+                              <Plus className="w-3.5 h-3.5" />
                             )}
+                            {tl('Save Note', 'Simpan')}
                           </button>
                         </div>
                       </div>
@@ -873,334 +1032,162 @@ export default function CalendarPage() {
             </div>
           )}
 
-        {/* Nested Google Calendar-Style Event Detail Drawer */}
-        {selectedOrder && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-md animate-fade-in font-sans">
-            <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-3xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-              
-              {/* Premium Event Banner Header */}
-              <div className="relative h-44 sm:h-48 w-full overflow-hidden shrink-0">
-                <img 
-                  src={cateringBanner} 
-                  alt="Catering Setup" 
-                  className="w-full h-full object-cover brightness-95"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-white">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold tracking-widest uppercase bg-crisp-carrot px-2.5 py-1 rounded-full shadow-sm">
-                      {tl('Corporate Event Delivery', 'Penghantaran Korporat')}
-                    </span>
-                    <button
-                      onClick={() => setSelectedOrder(null)}
-                      className="p-1.5 rounded-full bg-white/25 hover:bg-white/40 text-white transition-all backdrop-blur-sm"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <h3 className="font-display font-extrabold text-base sm:text-lg tracking-tight mt-2 text-white">
-                    {selectedOrder.guests || selectedOrder.quantity || 0} Pax • {selectedOrder.meals?.join(' & ') || 'Event'}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Drawer Content */}
-              <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-grow">
-                {/* Event Name & Invoice info */}
-                <div className="pb-4 border-b border-stone-100 dark:border-stone-800">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-display font-extrabold text-deep-forest dark:text-white leading-snug">
-                      {isAdmin ? selectedOrder.to || selectedOrder.name : tl('Your Corporate Event Session', 'Sesi Acara Korporat Anda')}
-                    </h2>
-                  </div>
-                  <p className="text-[11px] font-bold text-crisp-carrot mt-1">
-                    Invoice No: #{selectedOrder.invoiceNo || selectedOrder.id?.slice(0, 8).toUpperCase()} • {selectedOrder.status?.toUpperCase()}
-                  </p>
-                </div>
-
-                {/* Structured details rows */}
-                <div className="space-y-4 text-xs font-sans text-stone-700 dark:text-stone-300">
-                  
-                  {/* Event Time row (Set by customer) */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="h-8 w-8 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-extrabold text-deep-forest dark:text-white block text-[13px]">
-                        {getCustomerSelectedEventTime(selectedOrder)}
+          {/* 4. MODAL: ORDER DETAILS */}
+          {selectedOrder && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+              <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                
+                {/* Banner Header */}
+                <div className="relative h-32 w-full overflow-hidden shrink-0">
+                  <img 
+                    src={cateringBanner} 
+                    alt="Catering" 
+                    className="w-full h-full object-cover brightness-90"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4 text-white">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase bg-crisp-carrot px-2 py-0.5 rounded-md">
+                        {tl('Catering Event', 'Acara Katering')}
                       </span>
-                      <span className="text-[11px] font-medium text-stone-400 block mt-0.5">
-                        {getCustomerSelectedEventDay(selectedOrder)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Location row */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="h-8 w-8 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-extrabold text-deep-forest dark:text-white block text-[13px]">
-                        {selectedOrder.location || tl('Plant Location', 'Lokasi Kilang')}
-                      </span>
-                      <span className="text-[11px] font-medium text-stone-400 block mt-0.5 leading-relaxed">
-                        {selectedOrder.to || tl('Corporate Office Block Address', 'Alamat Blok Pejabat Korporat')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Menu packages checklist row */}
-                  {(selectedOrder.menu || selectedOrder.dishes) && (
-                    <div className="flex items-start gap-3.5">
-                      <div className="h-8 w-8 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
-                        <UtensilsCrossed className="w-4 h-4" />
-                      </div>
-                      <div className="flex-grow">
-                        <span className="font-extrabold text-deep-forest dark:text-white block text-[13px] mb-1.5">
-                          {tl('Scheduled Menu & Dishes', 'Menu Acara & Hidangan')}
-                        </span>
-                        
-                        {selectedOrder.menu && (
-                          <div className="bg-stone-50 dark:bg-stone-950/40 border border-stone-200/50 dark:border-white/5 p-2.5 rounded-xl mb-2">
-                            <span className="font-bold text-crisp-carrot block text-[11px]">
-                              {selectedOrder.menu}
-                            </span>
-                          </div>
-                        )}
-
-                        {selectedOrder.dishes && selectedOrder.dishes.length > 0 && (
-                          <div className="space-y-1 mt-1 pl-1">
-                            {selectedOrder.dishes.map((dish, i) => (
-                              <div key={i} className="flex items-center gap-2 text-[11px]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                <span className="font-medium text-stone-600 dark:text-stone-300">{dish}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Customer Preparation details row */}
-                  {selectedOrder.preparationType && (
-                    <div className="flex items-start gap-3.5">
-                      <div className="h-8 w-8 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
-                        <Layers className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="font-extrabold text-deep-forest dark:text-white block text-[13px]">
-                          {selectedOrder.preparationType === 'buffet' ? tl('Classic Buffet Catering', 'Hidangan Katering Bufet') : tl('Individual Meal Box Delivery', 'Penghantaran Kotak Hidangan Peribadi')}
-                        </span>
-                        <span className="text-[11px] font-medium text-stone-400 block mt-0.5">
-                          {tl('Setup details & warming trays provided', 'Peralatan persediaan & pemanas makanan disediakan')}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Customer specific instructions note */}
-                  {selectedOrder.notes && (
-                    <div className="flex items-start gap-3.5 pt-1">
-                      <div className="h-8 w-8 bg-rose-500/10 rounded-lg flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 mt-0.5">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="flex-grow">
-                        <span className="font-extrabold text-deep-forest dark:text-white block text-[13px]">
-                          {tl('Special Delivery Notes', 'Nota Khas Penghantaran')}
-                        </span>
-                        <p className="bg-red-500/5 text-rose-900 dark:text-rose-300 p-2.5 rounded-xl border border-red-500/10 text-[11px] leading-relaxed mt-1.5 font-medium italic">
-                          "{selectedOrder.notes}"
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-
-              {/* Action Footer */}
-              <div className="p-4 sm:p-5 border-t border-stone-100 dark:border-stone-850 bg-stone-50 dark:bg-stone-950/40 shrink-0 flex gap-2">
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="flex-1 text-xs font-bold py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-850 transition-colors"
-                >
-                  {tl('Close Details', 'Tutup')}
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedOrder(null);
-                    setSelectedDay(null);
-                    if (isAdmin) {
-                      navigate('/admin', { state: { highlightOrderId: selectedOrder.id } });
-                    } else {
-                      navigate('/profile');
-                    }
-                  }}
-                  className="flex-1 text-xs font-bold py-2.5 rounded-xl bg-crisp-carrot hover:bg-opacity-95 text-white shadow-md transition-all flex items-center justify-center gap-1.5"
-                >
-                  {isAdmin ? tl('Open in Admin panel', 'Buka di Panel Admin') : tl('View Order History', 'Butiran Tempahan')}
-                </button>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* Quick Compact Popover Modal when clicking any day tile */}
-        {quickPopoverDay && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-md animate-fade-in font-sans">
-            <div className="bg-white dark:bg-stone-900 w-full max-w-lg rounded-3xl border border-stone-200 dark:border-stone-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-950/40">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-crisp-carrot/10 rounded-xl flex items-center justify-center">
-                    <CalendarIcon className="w-5 h-5 text-crisp-carrot" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-black text-base text-deep-forest dark:text-white">
-                      {format(quickPopoverDay, 'EEEE, dd MMMM yyyy')}
-                    </h3>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-crisp-carrot">
-                      {tl('Date Orders & Schedule', 'Ringkasan Tempahan Tarikh')}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={async () => {
-                    await triggerLightImpact();
-                    setQuickPopoverDay(null);
-                  }}
-                  className="p-2 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Scrollable Orders List */}
-              <div className="p-5 overflow-y-auto max-h-[380px] space-y-3.5 custom-scrollbar">
-                {getOrdersForDay(quickPopoverDay).length === 0 ? (
-                  <div className="p-8 text-center rounded-2xl bg-stone-50 dark:bg-stone-950/30 border border-dashed border-stone-200 dark:border-stone-800">
-                    <p className="text-xs font-bold text-stone-500">
-                      {tl('No orders listed for this date.', 'Tiada pesanan disenaraikan pada tarikh ini.')}
-                    </p>
-                  </div>
-                ) : (
-                  getOrdersForDay(quickPopoverDay).map((ord) => {
-                    const totalPax = ord.guests || ord.quantity || 0;
-                    const eventArrival = getCustomerSelectedEventTime(ord);
-                    return (
-                      <div 
-                        key={ord.id}
-                        className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-950/40 border border-stone-200/80 dark:border-stone-800 space-y-3 text-xs"
+                      <button
+                        onClick={() => setSelectedOrder(null)}
+                        className="p-1 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors cursor-pointer"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black tracking-widest text-crisp-carrot px-2 py-0.5 bg-crisp-carrot/10 rounded">
-                            #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <h3 className="font-display font-bold text-base tracking-tight mt-1 text-white">
+                      {selectedOrder.guests || selectedOrder.quantity || 0} Pax • {selectedOrder.meals?.join(' & ') || 'Event'}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-4 overflow-y-auto space-y-3.5 text-xs flex-grow">
+                  <div className="pb-2.5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-stone-900 dark:text-white">
+                        {isAdmin ? selectedOrder.to || selectedOrder.name : tl('Catering Session', 'Sesi Katering')}
+                      </h4>
+                      <p className="text-[11px] text-crisp-carrot font-semibold mt-0.5">
+                        #{selectedOrder.invoiceNo || selectedOrder.id?.slice(0, 8).toUpperCase()}
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize",
+                      selectedOrder.status === 'approved' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                      selectedOrder.status === 'pending' && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                      selectedOrder.status === 'billed' && "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                    )}>
+                      {selectedOrder.status}
+                    </span>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2.5 text-stone-600 dark:text-stone-300">
+                    <div className="flex items-start gap-2.5">
+                      <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-stone-900 dark:text-white">
+                          {getCustomerSelectedEventTime(selectedOrder)}
+                        </span>
+                        <span className="text-stone-400 block text-[11px]">
+                          {getCustomerSelectedEventDay(selectedOrder)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-stone-900 dark:text-white">
+                          {selectedOrder.location || tl('Delivery Location', 'Lokasi Penghantaran')}
+                        </span>
+                        {selectedOrder.to && (
+                          <span className="text-stone-400 block text-[11px]">{selectedOrder.to}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {(selectedOrder.menu || selectedOrder.dishes) && (
+                      <div className="flex items-start gap-2.5">
+                        <UtensilsCrossed className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                        <div className="flex-grow">
+                          <span className="font-semibold text-stone-900 dark:text-white block mb-1">
+                            {tl('Menu & Dishes', 'Menu & Hidangan')}
                           </span>
-                          <span className={cn(
-                            "text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-tighter",
-                            ord.status === 'approved' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                            ord.status === 'pending' && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-                            ord.status === 'billed' && "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                          )}>
-                            {ord.status}
-                          </span>
-                        </div>
-
-                        <p className="font-black text-deep-forest dark:text-white text-sm">
-                          {isAdmin ? ord.to || ord.name : tl('Your Corporate Order', 'Tempahan Korporat Anda')}
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-stone-200/50 dark:border-stone-800/50">
-                          {/* Waktu Event (Sampai di Lokasi) */}
-                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
-                            <Clock className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
-                            <div>
-                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Event Arrival Time', 'Waktu Sampai Event')}</span>
-                              <span className="font-black tabular-nums">{eventArrival}</span>
-                            </div>
-                          </div>
-
-                          {/* Quantity / Pax */}
-                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
-                            <UserIcon className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
-                            <div>
-                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Quantity', 'Kuantiti')}</span>
-                              <span className="font-black tabular-nums">{totalPax} {tl('Pax', 'Orang')}</span>
-                            </div>
-                          </div>
-
-                          {/* Lokasi */}
-                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300 col-span-2">
-                            <MapPin className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
-                            <div>
-                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Location / Address', 'Lokasi / Alamat')}</span>
-                              <span className="font-bold truncate">{ord.location || ord.to || '-'}</span>
-                            </div>
-                          </div>
-
-                          {/* Meal For */}
-                          <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300 col-span-2">
-                            <UtensilsCrossed className="w-3.5 h-3.5 text-crisp-carrot shrink-0" />
-                            <div>
-                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Meal For', 'Jenis Hidangan')}</span>
-                              <span className="font-bold capitalize">{ord.meals?.join(', ') || '-'}</span>
-                            </div>
-                          </div>
-
-                          {/* Menu / Dishes */}
-                          {(ord.menu || (ord.dishes && ord.dishes.length > 0)) && (
-                            <div className="col-span-2 pt-1">
-                              <span className="text-[10px] text-stone-400 block font-bold uppercase">{tl('Menu & Dishes', 'Menu & Hidangan')}</span>
-                              <p className="font-medium text-stone-600 dark:text-stone-400 mt-0.5">
-                                {ord.menu || ord.dishes?.join(', ')}
-                              </p>
+                          {selectedOrder.menu && (
+                            <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-[11px] font-semibold text-stone-800 dark:text-stone-200">
+                              {selectedOrder.menu}
+                            </p>
+                          )}
+                          {selectedOrder.dishes && selectedOrder.dishes.length > 0 && (
+                            <div className="space-y-1 mt-1 pl-1">
+                              {selectedOrder.dishes.map((dish, i) => (
+                                <div key={i} className="flex items-center gap-1.5 text-[11px] text-stone-600 dark:text-stone-400">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                  <span>{dish}</span>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
+                      </div>
+                    )}
 
-                        <div className="pt-2 flex justify-end">
-                          <button
-                            onClick={() => {
-                              setQuickPopoverDay(null);
-                              setSelectedOrder(ord);
-                            }}
-                            className="text-[11px] font-black uppercase tracking-wider text-crisp-carrot hover:underline flex items-center gap-1"
-                          >
-                            {tl('View Full Order Details →', 'Lihat Butiran Penuh →')}
-                          </button>
+                    {selectedOrder.notes && (
+                      <div className="flex items-start gap-2.5 pt-1">
+                        <FileText className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                        <div className="flex-grow">
+                          <span className="font-semibold text-stone-900 dark:text-white block">
+                            {tl('Notes', 'Nota')}
+                          </span>
+                          <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-[11px] text-stone-600 dark:text-stone-300 italic mt-0.5">
+                            "{selectedOrder.notes}"
+                          </p>
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    )}
+                  </div>
+                </div>
 
-              {/* Footer */}
-              <div className="p-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/30 flex justify-end">
-                <button
-                  onClick={() => setQuickPopoverDay(null)}
-                  className="px-5 py-2 rounded-xl bg-deep-forest dark:bg-white text-white dark:text-deep-forest font-bold text-xs"
-                >
-                  {tl('Close', 'Tutup')}
-                </button>
-              </div>
+                {/* Footer */}
+                <div className="p-3.5 border-t border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+                  >
+                    {tl('Close', 'Tutup')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(null);
+                      if (isAdmin) {
+                        navigate('/admin', { state: { highlightOrderId: selectedOrder.id } });
+                      } else {
+                        navigate('/profile');
+                      }
+                    }}
+                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
+                  >
+                    {isAdmin ? tl('Open in Admin', 'Buka di Admin') : tl('View in Profile', 'Lihat di Profil')}
+                  </button>
+                </div>
 
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-          initialMode="signin"
-        />
-      </div>
-    </PageShell>
-  </ErrorBoundary>
+          <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            initialMode="signin"
+          />
+
+        </div>
+      </PageShell>
+    </ErrorBoundary>
   );
 }
+

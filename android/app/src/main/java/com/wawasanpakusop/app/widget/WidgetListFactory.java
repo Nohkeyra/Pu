@@ -118,16 +118,32 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         OrderRow item = row.order;
 
         itemView.setTextViewText(R.id.item_client_name, item.clientName);
-        itemView.setTextViewText(R.id.item_time_pax, item.quantity + " Pax  •  " + item.time);
-        itemView.setTextViewText(R.id.item_meal_location, item.location + "  —  " + item.meals);
-        itemView.setTextViewText(R.id.item_menu, item.menu);
+        itemView.setTextViewText(R.id.item_pax_badge, item.quantity + " PAX");
+
+        String timeAndMeals = "⏰ " + (item.time != null && !item.time.isEmpty() ? item.time : "--:--") 
+            + (item.meals != null && !item.meals.isEmpty() && !item.meals.equals("N/A") ? "  •  " + item.meals : "");
+        itemView.setTextViewText(R.id.item_time_pax, timeAndMeals);
+
+        String locationStr = "📍 " + (item.location != null && !item.location.isEmpty() && !item.location.equals("N/A") ? item.location : "Lokasi Belum Dinyatakan");
+        itemView.setTextViewText(R.id.item_meal_location, locationStr);
+
+        String menuStr = "🍽️ " + (item.menu != null && !item.menu.isEmpty() && !item.menu.equals("N/A") ? item.menu : "Pakej Katering Wawasan");
+        itemView.setTextViewText(R.id.item_menu, menuStr);
         
-        // Status stripe color
+        // Status stripe color with refined palette
         int stripeColor;
-        switch (item.status) {
-            case "approved": stripeColor = 0xFF4CAF50; break;  // green
-            case "billed":   stripeColor = 0xFF2196F3; break;  // blue
-            default:         stripeColor = 0xFFD4A853; break;  // gold (pending)
+        switch (item.status != null ? item.status.toLowerCase() : "") {
+            case "approved": 
+            case "disahkan":
+                stripeColor = 0xFF10B981; // Emerald green
+                break;
+            case "billed":   
+            case "selesai":
+                stripeColor = 0xFF38BDF8; // Sky blue
+                break;
+            default:         
+                stripeColor = 0xFFF59E0B; // Amber gold (pending)
+                break;
         }
         itemView.setInt(R.id.item_status_stripe, "setBackgroundColor", stripeColor);
 

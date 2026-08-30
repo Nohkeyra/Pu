@@ -124,22 +124,43 @@ export interface OrderData {
   preparationType?: string;
   prices?: Record<string, number>;
   department?: string;
+  fcmToken?: string;
 }
 
-export async function sendNotificationToTopic(topic: string, title: string, body: string) {
+export async function sendNotificationToTopic(
+  topic: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>
+) {
   try {
     const app = getAdminApp();
+    const cleanTopic = (topic || 'new_orders').trim();
     const message = {
       notification: {
         title,
         body,
       },
-      topic: topic,
+      android: {
+        notification: {
+          channelId: cleanTopic === 'new_orders' ? 'new_orders' : 'order_status',
+          sound: 'default',
+          priority: 'high' as const,
+        },
+      },
+      data: {
+        topic: cleanTopic,
+        timestamp: new Date().toISOString(),
+        ...(data || {}),
+      },
+      topic: cleanTopic,
     };
     const response = await getMessaging(app).send(message);
-    console.log(`Successfully sent message to topic ${topic}:`, response);
+    console.log(`[FCM] Successfully sent message to topic ${cleanTopic}:`, response);
+    return response;
   } catch (error) {
-    console.error(`Error sending message to topic ${topic}:`, error);
+    console.error(`[FCM] Error sending message to topic ${topic}:`, error);
+    return null;
   }
 }
 

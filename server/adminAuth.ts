@@ -1,18 +1,13 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import rateLimit from "express-rate-limit";
 import { getFirestore } from "./firebaseAdmin.js";
 import { Timestamp } from "firebase-admin/firestore";
+import { createDistributedRateLimiter } from "./distributedRateLimit.js";
 
-// F-XX (audit 2026-08-02): express-rate-limit was already declared in
-// package.json but never actually wired to any route — the admin login
-// endpoint accepted unlimited password guesses from any IP. This limiter
-// is in-memory only (no Redis), which is appropriate for the current
-// single-instance Render deployment. If the deployment ever moves to
-// multiple instances, this must be swapped for a shared store (e.g.
-// Redis-backed) or each instance will track attempts independently.
-export const adminLoginLimiter = rateLimit({
+// Distributed rate limiter backed by Firestore with memory fallback across multiple instances
+export const adminLoginLimiter = createDistributedRateLimiter({
+  prefix: "admin_login",
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 10, // 10 attempts per IP per window
   standardHeaders: true,

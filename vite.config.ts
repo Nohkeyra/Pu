@@ -24,12 +24,14 @@ export default defineConfig({
     alias: {
       "@": path.resolve("./src"),
     },
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react-router-dom", "react-router"],
   },
   optimizeDeps: {
     include: [
       "react",
       "react-dom",
+      "react-router-dom",
+      "react-router",
       "@radix-ui/react-tooltip",
       "@radix-ui/react-dialog",
       "@radix-ui/react-popover",

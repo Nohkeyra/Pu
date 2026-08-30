@@ -103,6 +103,8 @@ public class WidgetUpdateService {
                 context, 0, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
             views.setOnClickPendingIntent(R.id.widget_title, openPendingIntent);
+            views.setOnClickPendingIntent(R.id.widget_header_clickable, openPendingIntent);
+            views.setOnClickPendingIntent(R.id.widget_today_summary, openPendingIntent);
             views.setOnClickPendingIntent(R.id.widget_empty_view, openPendingIntent);
 
             // Manual Refresh Intent
@@ -133,7 +135,9 @@ public class WidgetUpdateService {
             if (!hasData) {
                 views.setTextViewText(
                     R.id.widget_empty_view,
-                    fetchSucceeded ? "No upcoming orders" : "Unable to load orders"
+                    fetchSucceeded 
+                        ? "Tiada Tempahan Terdekat\nKetik untuk buka sistem pengurusan" 
+                        : "Gagal memuatkan data\nKetik untuk cuba semula atau buka sistem"
                 );
             }
 
@@ -154,8 +158,8 @@ public class WidgetUpdateService {
             } catch (Exception ignored) {}
 
             String summaryText = todayOrders > 0
-                ? "Hari ini: " + todayPax + " pax (" + todayOrders + " order)"
-                : "Tiada order hari ini";
+                ? "⚡ Hari Ini: " + todayPax + " Pax  •  " + todayOrders + " Tempahan"
+                : "✓ Tiada tempahan aktif hari ini";
 
             views.setTextViewText(R.id.widget_today_summary, summaryText);
 

@@ -27,6 +27,12 @@ interface SettingsContextType {
   statusBarColor: string;
   setStatusBarColor: (color: string) => void;
 
+  // Haptics & Audio Settings
+  hapticsEnabled: boolean;
+  setHapticsEnabled: (enabled: boolean) => void;
+  soundEffectsEnabled: boolean;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
+
   // Admin & Hardware Diagnostics UI
   isAdmin: boolean;
   checkAdminStatus: () => Promise<boolean>;
@@ -93,6 +99,43 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       return '#a3310e';
     }
   });
+
+  // Haptic Feedback & Sound FX
+  const [hapticsEnabled, setHapticsEnabledState] = useState<boolean>(() => {
+    try {
+      const val = localStorage.getItem('wawasan_haptics_enabled');
+      return val === null ? true : val === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const [soundEffectsEnabled, setSoundEffectsEnabledState] = useState<boolean>(() => {
+    try {
+      const val = localStorage.getItem('wawasan_sound_effects_enabled');
+      return val === null ? false : val === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const setHapticsEnabled = (enabled: boolean) => {
+    setHapticsEnabledState(enabled);
+    try {
+      localStorage.setItem('wawasan_haptics_enabled', String(enabled));
+    } catch {
+      // ignore
+    }
+  };
+
+  const setSoundEffectsEnabled = (enabled: boolean) => {
+    setSoundEffectsEnabledState(enabled);
+    try {
+      localStorage.setItem('wawasan_sound_effects_enabled', String(enabled));
+    } catch {
+      // ignore
+    }
+  };
 
   // Admin Status State
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -378,6 +421,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setStatusBarHidden,
         statusBarColor,
         setStatusBarColor,
+        hapticsEnabled,
+        setHapticsEnabled,
+        soundEffectsEnabled,
+        setSoundEffectsEnabled,
         isAdmin,
         checkAdminStatus,
         customMainColor,

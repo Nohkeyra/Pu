@@ -1,12 +1,32 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, getAdminApp } from '../firebaseAdmin.js';
+import { getMessaging } from 'firebase-admin/messaging';
+import { FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, getAdminApp, verifyCustomerIdToken } from '../firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from '../adminAuth.js';
 
 const router = Router();
+
+// F-SEC (audit 2026-08-30): the raw ADMIN_PASSWORD fallback path (used when
+// ADMIN_PASSWORD_HASH isn't set) compared the submitted password with plain
+// `===`. String equality in JS short-circuits on the first mismatched byte,
+// so response time leaks how many leading characters an attacker guessed
+// correctly — a classic timing side-channel. crypto.timingSafeEqual() fixes
+// the comparison itself, but it requires both buffers to be the SAME length
+// (it throws otherwise), which would leak the real password's length via a
+// try/catch branch. Hashing both sides to a fixed-length digest first avoids
+// that: every comparison is 32 bytes vs 32 bytes, so there's no length- or
+// content-dependent branching before the constant-time comparison runs.
+// Note: the bcrypt.compare() path just below (used when ADMIN_PASSWORD_HASH
+// is set) was never affected — bcrypt is constant-time internally.
+function secureCompare(a: string, b: string): boolean {
+  const hashA = createHash('sha256').update(a).digest();
+  const hashB = createHash('sha256').update(b).digest();
+  return timingSafeEqual(hashA, hashB);
+}
 
 // F-SEC (audit 2026-08-14): this endpoint used to fall back to a hardcoded
 // literal password ('wawasan123') whenever ADMIN_PASSWORD_HASH and
@@ -74,7 +94,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
   if (adminHash) {
     isValid = await bcrypt.compare(password, adminHash);
   } else {
-    isValid = (password === rawAdminPass);
+    isValid = secureCompare(typeof password === 'string' ? password : '', rawAdminPass!);
   }
 
   if (isValid) {
@@ -145,6 +165,141 @@ router.get('/admin/next-invoice-number', verifyAdminToken, async (_req, res) => 
     return res.json({ nextInvoiceNo: formatted, next: formatted });
   } catch {
     return res.status(500).json({ error: 'Failed to fetch counter' });
+  }
+});
+
+// Admin Subscribe to FCM Topic
+router.post('/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
+  try {
+    const { token, topic } = req.body;
+    if (!token || typeof token !== 'string' || !topic || typeof topic !== 'string') {
+      return res.status(400).json({ success: false, error: 'Valid token and topic strings are required' });
+    }
+    const app = getAdminApp();
+    const messaging = getMessaging(app);
+    const response = await messaging.subscribeToTopic([token.trim()], topic.trim());
+    console.log(`[FCM] Subscribed device token to topic '${topic}':`, response);
+    return res.json({ success: true, topic, response });
+  } catch (err) {
+    console.error('[FCM] Error subscribing token to topic:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// Admin Unsubscribe from FCM Topic
+router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) => {
+  try {
+    const { token, topic } = req.body;
+    if (!token || typeof token !== 'string' || !topic || typeof topic !== 'string') {
+      return res.status(400).json({ success: false, error: 'Valid token and topic strings are required' });
+    }
+    const app = getAdminApp();
+    const messaging = getMessaging(app);
+    const response = await messaging.unsubscribeFromTopic([token.trim()], topic.trim());
+    console.log(`[FCM] Unsubscribed device token from topic '${topic}':`, response);
+    return res.json({ success: true, topic, response });
+  } catch (err) {
+    console.error('[FCM] Error unsubscribing token from topic:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// Admin Send Test Push Notification
+router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
+  try {
+    const { target, topic = 'new_orders', token, title, body } = req.body;
+    const app = getAdminApp();
+    const messaging = getMessaging(app);
+    const pushTitle = title || '🔔 Ujian Notifikasi FCM / FCM Test Push';
+    const pushBody = body || 'Notifikasi tolak berfungsi dengan cemerlang pada peranti anda!';
+
+    if (target === 'token' && token) {
+      const response = await messaging.send({
+        token: token.trim(),
+        notification: { title: pushTitle, body: pushBody },
+        android: {
+          notification: {
+            channelId: 'order_status',
+            sound: 'default',
+            priority: 'high',
+          },
+        },
+        data: {
+          type: 'test_notification',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return res.json({ success: true, target: 'token', response });
+    } else {
+      const targetTopic = (topic || 'new_orders').trim();
+      const response = await messaging.send({
+        topic: targetTopic,
+        notification: { title: pushTitle, body: pushBody },
+        android: {
+          notification: {
+            channelId: 'order_status',
+            sound: 'default',
+            priority: 'high',
+          },
+        },
+        data: {
+          type: 'test_topic_notification',
+          topic: targetTopic,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return res.json({ success: true, target: 'topic', topic: targetTopic, response });
+    }
+  } catch (err) {
+    console.error('[FCM] Send test push failed:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// User / Customer FCM Token Sync Endpoint
+router.post('/user/fcm-token', async (req, res) => {
+  try {
+    const { fcmToken, orderId, email } = req.body;
+    if (!fcmToken || typeof fcmToken !== 'string') {
+      return res.status(400).json({ success: false, error: 'fcmToken string is required' });
+    }
+
+    const cleanToken = fcmToken.trim();
+    const uid = await verifyCustomerIdToken(req);
+    const db = getFirestore();
+
+    if (uid) {
+      await db.collection('users').doc(uid).set({
+        fcmToken: cleanToken,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    if (orderId && typeof orderId === 'string') {
+      const orderRef = db.collection('orders').doc(orderId);
+      const snap = await orderRef.get();
+      if (snap.exists) {
+        await orderRef.update({
+          fcmToken: cleanToken,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    if (email && typeof email === 'string' && !uid) {
+      const usersSnap = await db.collection('users').where('email', '==', email.trim()).limit(1).get();
+      if (!usersSnap.empty) {
+        await usersSnap.docs[0].ref.set({
+          fcmToken: cleanToken,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[FCM] Save user token failed:', err);
+    return res.status(500).json({ success: false, error: String(err) });
   }
 });
 

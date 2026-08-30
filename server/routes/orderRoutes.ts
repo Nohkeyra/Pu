@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken } from '../firebaseAdmin.js';
+import { getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
-import { notifyCustomerOfStatusChange, createBrevoTransporter } from '../emailService.js';
+import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransporter } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
 import { isValidStatusTransition } from '../services/orderValidator.js';
+import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
@@ -185,19 +185,17 @@ function calculateOrderPricing(
   };
 }
 
-const createOrderLimiter = rateLimit({
+const createOrderLimiter = createDistributedRateLimiter({
+  prefix: 'create_order',
   windowMs: 15 * 60 * 1000,
   limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { success: false, error: 'Too many order submissions. Please try again later.' },
 });
 
-const customerOrderActionLimiter = rateLimit({
+const customerOrderActionLimiter = createDistributedRateLimiter({
+  prefix: 'customer_order_action',
   windowMs: 15 * 60 * 1000,
   limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
@@ -306,6 +304,26 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       invalidateCalendarSessionsCache();
       syncGoogleCalendarEvent(orderId, initialOrderData).catch(err => {
         console.error('[Calendar] Auto-sync initial pending status failed:', err);
+      });
+
+      // FCM: Notify admin topic of new order
+      sendNotificationToTopic(
+        'new_orders',
+        '🍽️ Tempahan Baharu Diterima!',
+        `Tempahan daripada ${orderData.name || 'Pelanggan'} (${orderData.quantity || orderData.pax || '-'} pax) untuk ${orderData.date || 'tarikh majlis'}.`,
+        {
+          type: 'new_order',
+          orderId: String(orderId),
+          invoiceNo: String(orderData.invoiceNo || ''),
+          customerName: String(orderData.name || ''),
+        }
+      ).catch(err => {
+        console.error('[FCM] Failed to send new order push to admin topic:', err);
+      });
+
+      // FCM: Notify customer of pending confirmation if token available
+      sendOrderStatusPush(initialOrderData, 'pending').catch(err => {
+        console.error('[FCM] Failed to send order received push to customer:', err);
       });
     }
 
@@ -504,6 +522,21 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
       process.env.SMTP_PASS
     ).catch(err => console.error('[Email] Failed to notify cancel request:', err));
 
+    // FCM: Notify admin topic of cancellation request
+    sendNotificationToTopic(
+      'new_orders',
+      '⚠️ Permintaan Pembatalan Tempahan',
+      `Pelanggan ${mergedOrderData.name || 'Pelanggan'} memohon pembatalan tempahan ${mergedOrderData.invoiceNo || orderId}.`,
+      {
+        type: 'cancel_requested',
+        orderId: String(orderId),
+        invoiceNo: String(mergedOrderData.invoiceNo || ''),
+        customerName: String(mergedOrderData.name || ''),
+      }
+    ).catch(err => {
+      console.error('[FCM] Failed to send cancel request push to admin topic:', err);
+    });
+
     syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
       console.error('[Calendar] Failed to auto-sync calendar event on cancel request:', err);
     });
@@ -580,11 +613,10 @@ router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
 });
 
 // Send Preliminary Invoice
-const preliminaryInvoiceLimiter = rateLimit({
+const preliminaryInvoiceLimiter = createDistributedRateLimiter({
+  prefix: 'preliminary_invoice',
   windowMs: 15 * 60 * 1000,
   limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
@@ -676,11 +708,10 @@ router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   }
 });
 
-const calendarSessionsLimiter = rateLimit({
+const calendarSessionsLimiter = createDistributedRateLimiter({
+  prefix: 'calendar_sessions',
   windowMs: 15 * 60 * 1000,
   limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 

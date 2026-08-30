@@ -6,59 +6,92 @@
     android:orientation="horizontal"
     android:background="@drawable/widget_card_background">
 
-    <!-- Jalur warna status -->
+    <!-- Status accent stripe with rounded outer profile -->
     <View
         android:id="@+id/item_status_stripe"
         android:layout_width="4dp"
         android:layout_height="match_parent"
-        android:background="#D4A853" />  <!-- default: gold/pending -->
+        android:background="#D4A853" />
 
-    <!-- Kandungan order -->
+    <!-- Order Details Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="9dp"
+        android:paddingBottom="9dp">
 
-        <TextView
-            android:id="@+id/item_client_name"
+        <!-- Client Title & Pax Chip -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/widget_primary_text"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.01"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <TextView
+                android:id="@+id/item_client_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/widget_primary_text"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.01"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/item_pax_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/widget_badge_text"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:background="@drawable/widget_badge_background"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <!-- Time & Session Category -->
         <TextView
             android:id="@+id/item_time_pax"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/widget_primary_text"
-            android:textSize="13sp"
+            android:textColor="@color/widget_secondary_text"
+            android:textSize="11.5sp"
             android:textStyle="bold"
-            android:letterSpacing="0.02" />
+            android:paddingTop="3dp"
+            android:letterSpacing="0.01" />
 
+        <!-- Location & Destination -->
         <TextView
             android:id="@+id/item_meal_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/widget_secondary_text"
-            android:textSize="11.5sp"
-            android:textStyle="normal"
-            android:paddingTop="4dp"
-            android:letterSpacing="0.01" />
+            android:textColor="@color/widget_tertiary_text"
+            android:textSize="11sp"
+            android:paddingTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
+        <!-- Menu Highlights Preview -->
         <TextView
             android:id="@+id/item_menu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="11sp"
-            android:paddingTop="3dp"
-            android:letterSpacing="0.01" />
+            android:textColor="@color/widget_muted_text"
+            android:textSize="10sp"
+            android:paddingTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
     </LinearLayout>
 
 </LinearLayout>
+

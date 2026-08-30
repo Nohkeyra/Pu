@@ -153,21 +153,21 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     const s = status ? status.toLowerCase() : '';
     switch (s) {
       case 'cancel_requested':
-        return <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-bold animate-pulse shadow-sm">{t('cancel_requested')}</Badge>;
+        return <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-bold animate-pulse shadow-xs whitespace-nowrap">{t('cancel_requested')}</Badge>;
       case 'billed':
-        return <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">{t('billed')}</Badge>;
+        return <Badge className="bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 font-semibold shadow-xs whitespace-nowrap">{t('billed')}</Badge>;
       case 'approved':
-        return <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">{t('approved')}</Badge>;
+        return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold shadow-xs whitespace-nowrap">{t('approved')}</Badge>;
       case 'cancelled':
-        return <Badge className="bg-stone/15 text-stone dark:text-stone-300 border-stone/20">{t('cancelled')}</Badge>;
+        return <Badge className="bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-500/30 font-semibold whitespace-nowrap">{t('cancelled')}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">{t('rejected')}</Badge>;
+        return <Badge className="bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30 font-semibold whitespace-nowrap">{t('rejected')}</Badge>;
       case 'in_transit':
-        return <Badge className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 animate-pulse">{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</Badge>;
+        return <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold animate-pulse whitespace-nowrap">{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</Badge>;
       case 'delivered':
-        return <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">{language === 'bm' ? 'Dihantar' : 'Delivered'}</Badge>;
+        return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold whitespace-nowrap">{language === 'bm' ? 'Dihantar' : 'Delivered'}</Badge>;
       default:
-        return <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{t('pending')}</Badge>;
+        return <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-semibold whitespace-nowrap">{t('pending')}</Badge>;
     }
   };
 

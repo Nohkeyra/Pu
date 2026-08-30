@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import { verifyAdminToken } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
+import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
@@ -15,11 +15,10 @@ const MAX_PDF_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 // spam-call it to flood the admin's WhatsApp Business number and burn
 // message-sending quota/cost. Mirrors the customerOrderActionLimiter used
 // for the other unauthenticated customer-facing endpoints in orderRoutes.ts.
-const forwardOrderLimiter = rateLimit({
+const forwardOrderLimiter = createDistributedRateLimiter({
+  prefix: 'forward_order',
   windowMs: 15 * 60 * 1000,
   limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 

@@ -4,73 +4,103 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_background"
-    android:padding="16dp">
+    android:padding="14dp">
 
+    <!-- Top Branding & Action Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="2dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="6dp">
 
-        <TextView
-            android:id="@+id/widget_title"
+        <LinearLayout
+            android:id="@+id/widget_header_clickable"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="RESTORAN WAWASAN"
-            android:textColor="@color/widget_title_text"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.08"
-            android:gravity="center" />
+            android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/widget_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RESTORAN WAWASAN"
+                android:textColor="@color/widget_title_text"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Jadual Tempahan Katering"
+                android:textColor="@color/widget_tertiary_text"
+                android:textSize="9.5sp"
+                android:letterSpacing="0.02" />
+        </LinearLayout>
+
+        <!-- Refresh Button with Polished Circular Container -->
         <ImageButton
             android:id="@+id/widget_refresh_button"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="7dp"
             android:src="@android:drawable/ic_menu_rotate"
-            android:background="@android:color/transparent"
+            android:background="@drawable/widget_refresh_bg"
             android:tint="@color/widget_title_text"
-            android:contentDescription="Refresh" />
+            android:contentDescription="Muat Semula Jadual" />
 
     </LinearLayout>
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/widget_divider"
-        android:layout_marginBottom="4dp" />
-
-    <TextView
-        android:id="@+id/widget_today_summary"
+    <!-- Today Summary Metrics Pill -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/widget_tertiary_text"
-        android:textSize="11sp"
-        android:gravity="center"
-        android:paddingBottom="6dp"
-        android:text="" />
+        android:background="@drawable/widget_summary_pill_bg"
+        android:gravity="center_vertical"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="8dp">
 
+        <TextView
+            android:id="@+id/widget_today_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/widget_title_accent"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:letterSpacing="0.02"
+            android:text="Memuatkan jadual..." />
+    </LinearLayout>
+
+    <!-- Upcoming Orders Scrollable List -->
     <ListView
         android:id="@+id/widget_orders_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:divider="@android:color/transparent"
-        android:dividerHeight="8dp"
+        android:dividerHeight="7dp"
+        android:clipToPadding="false"
         android:scrollbarStyle="outsideOverlay" />
 
+    <!-- Polished Empty State Display -->
     <TextView
         android:id="@+id/widget_empty_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="No upcoming orders"
+        android:text="Tiada Tempahan Terdekat\nKetik untuk buka sistem pengurusan"
         android:textColor="@color/widget_tertiary_text"
-        android:textSize="12sp"
+        android:textSize="11.5sp"
+        android:lineSpacingExtra="3dp"
         android:visibility="gone" />
 
 </LinearLayout>
+

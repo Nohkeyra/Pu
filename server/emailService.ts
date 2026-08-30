@@ -254,20 +254,27 @@ export async function sendOrderStatusEmail(
   return true;
 }
 
-export async function resolveCustomerFcmToken(order: Partial<OrderData> & { uid?: string; userId?: string | null; email?: string }): Promise<string | null> {
+export async function resolveCustomerFcmToken(order: Partial<OrderData> & { uid?: string; userId?: string | null; email?: string; fcmToken?: string }): Promise<string | null> {
   try {
+    if (order.fcmToken && typeof order.fcmToken === 'string' && order.fcmToken.trim().length > 10) {
+      return order.fcmToken.trim();
+    }
     const db = getFirestore();
     const customerUid = order.userId || order.uid;
     if (customerUid) {
       const snap = await db.collection("users").doc(customerUid).get();
       const token = snap.exists ? (snap.data()?.fcmToken as string | undefined) : undefined;
-      if (token) return token;
+      if (token && typeof token === 'string' && token.trim().length > 10) {
+        return token.trim();
+      }
     }
     if (order.email) {
-      const q = await db.collection("users").where("email", "==", order.email).limit(1).get();
+      const q = await db.collection("users").where("email", "==", order.email.trim()).limit(1).get();
       if (!q.empty) {
         const token = q.docs[0].data()?.fcmToken as string | undefined;
-        if (token) return token;
+        if (token && typeof token === 'string' && token.trim().length > 10) {
+          return token.trim();
+        }
       }
     }
   } catch (err) {
@@ -277,7 +284,7 @@ export async function resolveCustomerFcmToken(order: Partial<OrderData> & { uid?
 }
 
 export async function sendOrderStatusPush(
-  order: Partial<OrderData> & { uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string; id?: string },
+  order: Partial<OrderData> & { uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string; id?: string; fcmToken?: string },
   newStatus: string
 ): Promise<boolean> {
   const token = await resolveCustomerFcmToken(order);
@@ -294,14 +301,11 @@ export async function sendOrderStatusPush(
       notification: { title: copy.pushTitle, body: copy.pushBody },
       // F-CHAN (audit 2026-08-11): must match the channel id created
       // client-side in useNativeNotifications.ts (PushNotifications.createChannel).
-      // Without this, Android silently routes the notification to the
-      // manifest default channel (com.google.firebase.messaging.default_notification_channel_id)
-      // instead of the dedicated order_status channel, meaning the customer
-      // has no way to control sound/vibration/importance for order updates
-      // separately from any other notification type the app may add later.
       android: {
         notification: {
           channelId: 'order_status',
+          sound: 'default',
+          priority: 'high',
         },
       },
       data: {
@@ -309,6 +313,7 @@ export async function sendOrderStatusPush(
         status: String(newStatus || ""),
         orderId: String(order.id || ""),
         invoiceNo: String(order.invoiceNo || ""),
+        timestamp: new Date().toISOString(),
       },
     });
     console.log(`[StatusNotify] Status push (${newStatus}) sent to customer:`, response);

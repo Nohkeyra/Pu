@@ -59,21 +59,31 @@ export function useNativeNotifications() {
             visibility: 1, // PUBLIC — full content on lockscreen
             vibration: true,
           });
+
+          await PushNotifications.createChannel({
+            id: 'new_orders',
+            name: 'Tempahan Baharu (Admin) / New Orders',
+            description: 'Notifikasi tempahan baharu dan permintaan pembatalan bagi pentadbir.',
+            importance: 4, // HIGH
+            visibility: 1,
+            vibration: true,
+          });
         } catch (channelErr) {
           // Never let channel setup block registration — worst case the
           // notification falls back to the manifest default channel.
-          console.warn('Error creating order_status notification channel:', channelErr);
+          console.warn('Error creating notification channels:', channelErr);
         }
 
         await PushNotifications.addListener('registration', async (token) => {
           console.log('Push registration successful, token:', token.value);
           
+          try {
+            localStorage.setItem('wawasan_device_token', token.value);
+          } catch {
+            // Ignore localStorage errors
+          }
+
           // Subscribe to the "new_orders" topic ONLY for an active admin session.
-          // This hook runs for every native install (admin and customers alike),
-          // and "new_orders" broadcasts every incoming order/cancellation with the
-          // customer's name and pax count. Without this guard, any customer with
-          // the APK installed would silently receive other customers' order
-          // notifications. See wawasan_admin_token in AdminPage.tsx / preferences.ts.
           try {
             const adminToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
             if (adminToken) {
@@ -98,6 +108,18 @@ export function useNativeNotifications() {
             const fcmTokenResult = await FCM.getToken();
             const fcmToken = fcmTokenResult.token;
             tokenRef.current = fcmToken;
+            try {
+              localStorage.setItem('wawasan_fcm_token', fcmToken);
+            } catch {
+              // Ignore localStorage errors
+            }
+
+            // Sync with backend API
+            fetch(getApiUrl('/api/user/fcm-token'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fcmToken })
+            }).catch(err => console.warn('[FCM] Server token sync failed:', err));
 
             const currentUser = auth.currentUser;
             if (currentUser) {
@@ -112,6 +134,7 @@ export function useNativeNotifications() {
 
         await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push received in foreground: ', notification);
+          window.dispatchEvent(new CustomEvent('wawasan:push_received', { detail: notification }));
         });
 
         await PushNotifications.addListener('registrationError', (error) => {
@@ -121,9 +144,9 @@ export function useNativeNotifications() {
         await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('Push notification action performed:', action);
           const data = action.notification.data;
+          window.dispatchEvent(new CustomEvent('wawasan:push_action', { detail: data }));
           if (data && data.orderId) {
             console.log('Notification has orderId payload:', data.orderId);
-            // In a complete implementation, this can deep-link or alert the user.
           }
         });
 

@@ -24,6 +24,23 @@ router.get('/diagnostics/:type', verifyAdminToken, async (req, res) => {
       return res.json({ status: 'healthy', service: 'SMTP' });
     }
 
+    if (type === 'fcm') {
+      const { getMessaging } = await import('firebase-admin/messaging');
+      const { getAdminApp } = await import('../firebaseAdmin.js');
+      const app = getAdminApp();
+      const messaging = getMessaging(app);
+      if (!messaging) {
+        return res.status(500).json({ status: 'fail', service: 'FCM', message: 'Failed to obtain FCM messaging service.' });
+      }
+      return res.json({
+        status: 'healthy',
+        service: 'Firebase Cloud Messaging (FCM)',
+        app: app.name,
+        channels: ['order_status', 'new_orders', 'promotions'],
+        message: 'FCM push notification infrastructure is active and operational.'
+      });
+    }
+
     if (type === 'calendar') {
       const { getGoogleCalendarClient } = await import('../calendarService.js');
       

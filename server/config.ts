@@ -23,9 +23,6 @@ export const firebaseConfig: FirebaseConfig = {
 export const STRICT_FIREBASE_ADMIN =
   (process.env.STRICT_FIREBASE_ADMIN || "false").toLowerCase() === "true";
 
-export const ENABLE_DEBUG_ENDPOINTS =
-  (process.env.ENABLE_DEBUG_ENDPOINTS || "false").toLowerCase() === "true";
-
 export function clean(value?: string): string {
   return (value ?? "").trim();
 }
