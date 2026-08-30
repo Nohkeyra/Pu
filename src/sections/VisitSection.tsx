@@ -1,9 +1,10 @@
+import React from 'react';
 import { motion } from 'motion/react';
 import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ResponsiveImage from '@/components/ResponsiveImage';
 
-export default function VisitSection() {
+const VisitSection = React.memo(() => {
   const { language } = useLanguage();
   const isBm = language === 'bm';
 
@@ -180,4 +181,6 @@ export default function VisitSection() {
       </div>
     </section>
   );
-}
+});
+
+export default VisitSection;

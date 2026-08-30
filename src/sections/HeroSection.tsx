@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, UtensilsCrossed } from 'lucide-react';
@@ -6,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
 
-export default function HeroSection() {
+const HeroSection = React.memo(() => {
   const { t } = useLanguage();
   const { scrollY } = useScroll();
   
@@ -144,5 +145,7 @@ export default function HeroSection() {
       </motion.div>
     </section>
   );
-}
+});
+
+export default HeroSection;
 

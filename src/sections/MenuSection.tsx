@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
@@ -8,7 +8,7 @@ import ResponsiveImage from '@/components/ResponsiveImage';
 import { HungryButton } from '@/components/ui/HungryButton';
 
 // 3D Parallax Tilt Card for Menu Items
-function TiltCard({ item, isBm, idx, cardVariants }: any) {
+const TiltCard = React.memo(({ item, isBm, idx, cardVariants }: any) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -105,7 +105,7 @@ function TiltCard({ item, isBm, idx, cardVariants }: any) {
       </motion.div>
     </div>
   );
-}
+});
 
 export default function MenuSection() {
   const navigate = useNavigate();

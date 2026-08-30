@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReviewCard from '@/components/ReviewCard';
 import { useCarousel } from '@/hooks/useCarousel';
@@ -72,7 +72,7 @@ const REVIEWS = [
   },
 ];
 
-export default function ReviewsSection() {
+const ReviewsSection = React.memo(() => {
   const { t } = useLanguage();
   const [slidesToShow, setSlidesToShow] = useState(3);
 
@@ -206,4 +206,6 @@ export default function ReviewsSection() {
       </div>
     </section>
   );
-}
+});
+
+export default ReviewsSection;

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Sparkles, Heart, Flame, HandHeart } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'motion/react';
@@ -33,7 +34,7 @@ const PRINCIPLES = [
   },
 ];
 
-export default function ExperienceSection() {
+const ExperienceSection = React.memo(() => {
   const { language, t } = useLanguage();
 
   const headerVariants = {
@@ -128,4 +129,6 @@ export default function ExperienceSection() {
       </div>
     </section>
   );
-}
+});
+
+export default ExperienceSection;

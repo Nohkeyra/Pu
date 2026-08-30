@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
@@ -18,6 +18,17 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
+
+  // Use refs for callbacks to prevent infinite re-renders
+  const onLogoutRef = useRef(onLogout);
+  const toastRef = useRef(toast);
+  const tRef = useRef(t);
+
+  useEffect(() => {
+    onLogoutRef.current = onLogout;
+    toastRef.current = toast;
+    tRef.current = t;
+  }, [onLogout, toast, t]);
 
   const authHeaders = useCallback((): HeadersInit => ({
     'Content-Type': 'application/json',
@@ -39,14 +50,14 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
           setOrders(data.orders);
         }
       } else if (response.status === 401 || response.status === 403) {
-        onLogout?.();
+        onLogoutRef.current?.();
       }
     } catch (err) {
       console.error('Error fetching admin orders via API:', err);
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [adminToken, authHeaders, onLogout]);
+  }, [adminToken, authHeaders]);
 
   useEffect(() => {
     if (!adminToken) {
@@ -114,8 +125,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
 
       if (response.ok) {
         if (successMsg) {
-          toast({
-            title: t('success'),
+          toastRef.current({
+            title: tRef.current('success'),
             description: successMsg,
             variant: 'success'
           });
@@ -125,9 +136,9 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       throw new Error('Failed to update order');
     } catch (error) {
       console.error('Error updating order:', error);
-      toast({
-        title: t('error'),
-        description: t('error_updating') || 'Failed to update order.',
+      toastRef.current({
+        title: tRef.current('error'),
+        description: tRef.current('error_updating') || 'Failed to update order.',
         variant: 'error'
       });
       return false;
@@ -138,8 +149,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
 
   const handleDeleteOrder = async (orderId: string) => {
     const isConfirmed = await showConfirm({
-      title: t('confirm_action') || 'Confirm Action',
-      message: t('delete_order_confirm') || 'Are you sure you want to delete this order?'
+      title: tRef.current('confirm_action') || 'Confirm Action',
+      message: tRef.current('delete_order_confirm') || 'Are you sure you want to delete this order?'
     });
     if (!isConfirmed) return;
     
@@ -153,9 +164,9 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
         })
       });
       if (response.ok) {
-        toast({
-          title: t('success'),
-          description: t('order_deleted'),
+        toastRef.current({
+          title: tRef.current('success'),
+          description: tRef.current('order_deleted'),
           variant: 'success'
         });
       } else {
@@ -163,8 +174,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       }
     } catch (error) {
       console.error('Error deleting order:', error);
-      toast({
-        title: t('error'),
+      toastRef.current({
+        title: tRef.current('error'),
         description: 'Failed to delete order.',
         variant: 'error'
       });

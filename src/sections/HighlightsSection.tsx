@@ -1,8 +1,9 @@
+import React from 'react';
 import { Coffee, MapPin, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'motion/react';
 
-export default function HighlightsSection() {
+const HighlightsSection = React.memo(() => {
   const { language } = useLanguage();
   const isBm = language === 'bm';
 
@@ -109,4 +110,6 @@ export default function HighlightsSection() {
       </div>
     </section>
   );
-}
+});
+
+export default HighlightsSection;

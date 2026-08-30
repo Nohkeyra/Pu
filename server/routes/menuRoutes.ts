@@ -61,6 +61,22 @@ function validateMenuItem(body: any): { valid: false; error: string } | { valid:
   };
 }
 
+async function seedMenuIfEmpty(db: any) {
+  const snap = await db.collection('menu').limit(1).get();
+  if (snap.empty) {
+    const batch = db.batch();
+    DEFAULT_MENU_ITEMS.forEach(item => {
+      const docRef = db.collection('menu').doc(item.id);
+      batch.set(docRef, {
+        ...item,
+        available: item.available !== undefined ? item.available : true,
+        updatedAt: new Date().toISOString()
+      });
+    });
+    await batch.commit();
+  }
+}
+
 router.get('/menu', async (_req, res) => {
   try {
     const db = getFirestore();
@@ -88,6 +104,7 @@ router.get('/menu', async (_req, res) => {
 router.post('/admin/menu', verifyAdminToken, async (req, res) => {
   try {
     const db = getFirestore();
+    await seedMenuIfEmpty(db);
 
     // Bulk replace mode
     if (Array.isArray(req.body.items)) {
@@ -146,12 +163,9 @@ router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getFirestore();
+    await seedMenuIfEmpty(db);
     const docRef = db.collection('menu').doc(id);
     const existing = await docRef.get();
-
-    if (!existing.exists) {
-      return res.status(404).json({ error: 'Menu item not found' });
-    }
 
     const validation = validateMenuItem(req.body);
     if (!validation.valid) {
@@ -163,7 +177,19 @@ router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    await docRef.update(updatedData);
+    if (!existing.exists) {
+      const defaultItem = DEFAULT_MENU_ITEMS.find(i => i.id === id);
+      if (!defaultItem) {
+        return res.status(404).json({ error: 'Menu item not found' });
+      }
+      await docRef.set({
+        ...defaultItem,
+        ...updatedData
+      });
+    } else {
+      await docRef.update(updatedData);
+    }
+
     return res.json({ success: true, item: { id, ...updatedData } });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
@@ -177,11 +203,22 @@ router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
     const { available } = req.body;
 
     const db = getFirestore();
+    await seedMenuIfEmpty(db);
     const docRef = db.collection('menu').doc(id);
     const existing = await docRef.get();
 
     if (!existing.exists) {
-      return res.status(404).json({ error: 'Menu item not found' });
+      const defaultItem = DEFAULT_MENU_ITEMS.find(i => i.id === id);
+      if (!defaultItem) {
+        return res.status(404).json({ error: 'Menu item not found' });
+      }
+      const newAvailable = available !== undefined ? Boolean(available) : !(defaultItem.available ?? true);
+      await docRef.set({
+        ...defaultItem,
+        available: newAvailable,
+        updatedAt: new Date().toISOString()
+      });
+      return res.json({ success: true, id, available: newAvailable });
     }
 
     const newAvailable = available !== undefined ? Boolean(available) : !existing.data()?.available;
@@ -201,6 +238,7 @@ router.delete('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     const db = getFirestore();
+    await seedMenuIfEmpty(db);
     await db.collection('menu').doc(id).delete();
     return res.json({ success: true, id });
   } catch (err) {

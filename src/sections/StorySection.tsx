@@ -1,9 +1,10 @@
+import React from 'react';
 import { Award } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ResponsiveImage from '@/components/ResponsiveImage';
 import { motion } from 'motion/react';
 
-export default function StorySection() {
+const StorySection = React.memo(() => {
   const { t, language } = useLanguage();
   
   const STATS = [
@@ -126,4 +127,6 @@ export default function StorySection() {
       </div>
     </section>
   );
-}
+});
+
+export default StorySection;
