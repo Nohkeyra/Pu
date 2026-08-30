@@ -5,7 +5,7 @@ import { auth } from '@/firebaseConfig';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, User as UserIcon, Shield, ExternalLink, LogIn, UserPlus, ArrowRight } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
 import WawasanLoader from '@/components/WawasanLoader';
 import { TransparentLogo } from '@/components/TransparentLogo';
@@ -35,8 +35,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
   return (
     <div className="min-h-screen bg-cream dark:bg-background pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative">
@@ -82,31 +80,6 @@ export default function ProfilePage() {
       </header>
 
       <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
-        {isAdmin && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-deep-forest dark:text-white">
-                  {language === 'bm' ? 'Akaun Pentadbir Sesi Aktif' : 'Active System Administrator Account'}
-                </p>
-                <p className="microcopy-14 text-stone dark:text-stone/75">
-                  {language === 'bm' ? 'Anda dilog masuk sebagai Admin Wawasan Pak Usop.' : 'You are currently logged in as Wawasan Pak Usop.'}
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => navigate('/admin')}
-              className="btn-cta rounded-2xl px-5 py-2.5 min-h-[44px] flex items-center gap-2 text-xs font-bold"
-            >
-              <span>{language === 'bm' ? 'Buka Panel Admin' : 'Open Admin Panel'}</span>
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-
         {!currentUser ? (
           <div className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">

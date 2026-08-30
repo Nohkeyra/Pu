@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { randomUUID, createHash, timingSafeEqual } from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, getAdminApp, verifyCustomerIdToken } from '../firebaseAdmin.js';
@@ -104,15 +103,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
       { expiresIn: '12h', jwtid: randomUUID() }
     );
 
-    let firebaseCustomToken: string | null = null;
-    try {
-      const auth = getAuth(getAdminApp());
-      firebaseCustomToken = await auth.createCustomToken('admin_hq_user', { admin: true });
-    } catch (err) {
-      console.warn('[Admin Auth] Firebase custom token creation failed:', err);
-    }
-
-    return res.json({ success: true, token, firebaseCustomToken });
+    return res.json({ success: true, token });
   } else {
     return res.status(401).json({ success: false, error: 'Invalid password' });
   }

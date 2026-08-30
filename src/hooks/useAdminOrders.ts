@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '@/firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from '@/firebaseConfig';
 
 interface UseAdminOrdersProps {
   adminToken?: string;
@@ -20,23 +19,34 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
   const [loading, setLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
 
-  const authHeaders = (): HeadersInit => ({
+  const authHeaders = useCallback((): HeadersInit => ({
     'Content-Type': 'application/json',
     ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-  });
+  }), [adminToken]);
 
-  const fetchOrders = async (silent?: boolean) => {
-    // Left for backwards compatibility with parts of the app that may call it directly.
-    // Orders are kept live via the Firestore onSnapshot listener below, so this is
-    // intentionally a no-op; the optional param exists only so callers (e.g. pull-to-refresh)
-    // can pass a "silent" flag without a TypeScript signature mismatch.
-    void silent;
-  };
-
-  const onLogoutRef = useRef(onLogout);
-  useEffect(() => {
-    onLogoutRef.current = onLogout;
-  }, [onLogout]);
+  const fetchOrders = useCallback(async (silent?: boolean) => {
+    if (!adminToken) return;
+    if (!silent) setLoading(true);
+    try {
+      const response = await fetch(getApiUrl('/api/admin/orders'), {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ action: 'fetch', pageSize: 100 })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.orders)) {
+          setOrders(data.orders);
+        }
+      } else if (response.status === 401 || response.status === 403) {
+        onLogout?.();
+      }
+    } catch (err) {
+      console.error('Error fetching admin orders via API:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [adminToken, authHeaders, onLogout]);
 
   useEffect(() => {
     if (!adminToken) {
@@ -44,63 +54,50 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       return;
     }
 
-    setLoading(true);
-    let unsubscribeSnapshot: (() => void) | undefined;
+    // Always fetch initial order data via Admin API using JWT authorization
+    fetchOrders(false);
 
-    const unsubscribeAuth = onAuthStateChanged(auth, () => {
-      if (unsubscribeSnapshot) {
-        unsubscribeSnapshot();
-      }
-
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
-      
-      unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
-        const fetchedOrders: Order[] = [];
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data.deletedByAdmin) {
-            return;
-          }
-          let createdAtObj = data.createdAt;
-          if (data.createdAt) {
-            const sec = typeof data.createdAt.seconds === 'number'
-              ? data.createdAt.seconds
-              : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
-            const nanosec = typeof data.createdAt.nanoseconds === 'number'
-              ? data.createdAt.nanoseconds
-              : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
-                
-            if (sec !== null) {
-              createdAtObj = { seconds: sec, nanoseconds: nanosec };
-            }
-          }
-          
-          fetchedOrders.push({ 
-            id: docSnap.id, 
-            ...data,
-            createdAt: createdAtObj 
-          } as Order);
-        });
-        setOrders(fetchedOrders);
-        setLoading(false);
-      }, (error) => {
-        console.error('Error fetching admin orders in real-time:', error);
-        // If permission is denied even after Auth initialized, the custom token might be expired.
-        // In that case, we should log out.
-        if (error.code === 'permission-denied') {
-          onLogoutRef.current?.();
+    // Optional real-time listener if Firestore rules allow; falls back silently to API mode on permission check failure
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    
+    const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
+      const fetchedOrders: Order[] = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.deletedByAdmin) {
+          return;
         }
-        setLoading(false);
+        let createdAtObj = data.createdAt;
+        if (data.createdAt) {
+          const sec = typeof data.createdAt.seconds === 'number'
+            ? data.createdAt.seconds
+            : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
+          const nanosec = typeof data.createdAt.nanoseconds === 'number'
+            ? data.createdAt.nanoseconds
+            : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
+              
+          if (sec !== null) {
+            createdAtObj = { seconds: sec, nanoseconds: nanosec };
+          }
+        }
+        
+        fetchedOrders.push({ 
+          id: docSnap.id, 
+          ...data,
+          createdAt: createdAtObj 
+        } as Order);
       });
+      setOrders(fetchedOrders);
+      setLoading(false);
+    }, (error) => {
+      console.warn('[Admin Orders] Real-time Firestore snapshot inactive (decoupled admin mode, using Admin API):', error.message);
+      setLoading(false);
     });
 
     return () => {
-      unsubscribeAuth();
-      if (unsubscribeSnapshot) {
-        unsubscribeSnapshot();
-      }
+      unsubscribeSnapshot();
     };
-  }, [adminToken]); // Removed onLogout to prevent infinite loops from inline functions
+  }, [adminToken, fetchOrders]);
 
   const handleUpdateOrderStatus = async (orderId: string, data: Partial<Order>, successMsg?: string) => {
     setIsApproving(true);
