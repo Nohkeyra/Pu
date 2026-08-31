@@ -23,6 +23,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve("./src"),
+      "@capacitor-community/native-biometric": path.resolve("./node_modules/capacitor-native-biometric"),
     },
     dedupe: ["react", "react-dom", "react-router-dom", "react-router"],
   },

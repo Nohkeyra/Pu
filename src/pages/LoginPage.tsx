@@ -8,7 +8,7 @@ import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
-import { NativeBiometric } from 'capacitor-native-biometric';
+import { authService } from '../services/authService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -20,20 +20,24 @@ export default function LoginPage() {
 
   const handleAdminAccess = async () => {
     try {
-      const { isAvailable } = await NativeBiometric.isAvailable();
-      if (isAvailable) {
-        await NativeBiometric.verifyIdentity({
-          reason: 'Admin access required',
-          title: 'Fingerprint Authentication',
-          subtitle: 'Please scan your fingerprint to access the admin panel.',
-          negativeButtonText: 'Cancel',
+      const availability = await authService.checkBiometricAvailability();
+      if (availability.isAvailable) {
+        const result = await authService.authenticateAdminWithBiometrics({
+          reason: tLocal('Admin access required', 'Akses pentadbir diperlukan'),
+          title: tLocal('Fingerprint Authentication', 'Pengesahan Cap Jari Admin'),
+          subtitle: tLocal('Please scan your fingerprint to access the admin panel.', 'Sila imbas cap jari untuk mengakses panel admin.'),
+          negativeButtonText: tLocal('Cancel', 'Batal'),
         });
-        navigate('/admin');
-      } else {
-        alert(tLocal('Biometric authentication not available.', 'Pengesahan biometrik tidak tersedia.'));
+        if (result.success) {
+          navigate('/admin');
+          return;
+        }
       }
+      // If biometrics unavailable or cancelled, route to password screen
+      navigate('/admin');
     } catch (error) {
-      console.error('Biometric authentication failed', error);
+      console.error('Admin authentication failed', error);
+      navigate('/admin');
     }
   };
 

@@ -17,7 +17,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@capacitor-community/native-biometric": ["./node_modules/capacitor-native-biometric"]
     },
     "types": ["vite/client"]
   },
