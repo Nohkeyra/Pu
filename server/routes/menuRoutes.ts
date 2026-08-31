@@ -145,11 +145,14 @@ router.post('/admin/menu', verifyAdminToken, async (req, res) => {
     }
 
     const docRef = req.body.id ? db.collection('menu').doc(String(req.body.id)) : db.collection('menu').doc();
-    const newItem = {
+    const newItem: any = {
       id: docRef.id,
       ...validation.data,
       updatedAt: new Date().toISOString()
     };
+    
+    // Remove undefined values to avoid Firestore errors
+    Object.keys(newItem).forEach(key => newItem[key] === undefined && delete newItem[key]);
 
     await docRef.set(newItem, { merge: true });
     return res.json({ success: true, item: newItem });
@@ -172,10 +175,13 @@ router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
-    const updatedData = {
+    const updatedData: any = {
       ...validation.data,
       updatedAt: new Date().toISOString()
     };
+    
+    // Remove undefined values to avoid Firestore errors
+    Object.keys(updatedData).forEach(key => updatedData[key] === undefined && delete updatedData[key]);
 
     if (!existing.exists) {
       const defaultItem = DEFAULT_MENU_ITEMS.find(i => i.id === id);
