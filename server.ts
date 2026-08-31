@@ -6,6 +6,7 @@ import path from 'path';
 import helmet from 'helmet';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { platformOptimizerMiddleware, detectServerPlatform } from './server/platformDetector.js';
 import { getFirestore } from './server/firebaseAdmin.js';
 
@@ -104,6 +105,17 @@ async function startServer() {
     })
   );
 
+  const apiLimiter = rateLimit({ windowMs: 60_000, max: 120 });
+  app.use('/api/', apiLimiter);
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60_000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/auth', authLimiter);
+
   // SECURITY FIX: Reduced from 50mb to 5mb general limit.
   app.use(express.json({ limit: '5mb' }));
 
@@ -122,7 +134,7 @@ async function startServer() {
       if (db) {
         await Promise.race([
           db.collection('meta').limit(1).get(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Database response timeout')), 2500))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database response timeout')), 2000))
         ]);
         dbStatus = 'connected';
       }
@@ -131,38 +143,35 @@ async function startServer() {
       dbError = err?.message || String(err);
     }
 
-    let diskStatus = {
-      status: 'ok',
-      totalBytes: 0,
-      freeBytes: 0,
-      usedBytes: 0,
-      usedPercentage: 0,
-      error: undefined as string | undefined
-    };
-    try {
-      const stats = fs.statfsSync('/');
-      const totalBytes = stats.blocks * stats.bsize;
-      const freeBytes = stats.bavail * stats.bsize;
-      const usedBytes = totalBytes - freeBytes;
-      const usedPercentage = totalBytes > 0 ? Number(((usedBytes / totalBytes) * 100).toFixed(2)) : 0;
-      diskStatus = {
-        status: usedPercentage > 98 ? 'critical' : usedPercentage > 85 ? 'warning' : 'ok',
-        totalBytes,
-        freeBytes,
-        usedBytes,
-        usedPercentage,
-        error: undefined
-      };
-    } catch (err: any) {
-      diskStatus = {
-        status: 'unknown',
-        totalBytes: 0,
-        freeBytes: 0,
-        usedBytes: 0,
-        usedPercentage: 0,
-        error: err?.message || String(err)
-      };
+    function getDiskStatus() {
+      try {
+        if (process.platform === 'win32') {
+          return { status: 'unsupported', platform: 'win32' };
+        }
+        const stats = fs.statfsSync('/');
+        const total = Number(stats.blocks) * Number(stats.bsize);
+        const free  = Number(stats.bavail)  * Number(stats.bsize);
+        const used  = total - free;
+
+        if (!Number.isFinite(total) || total <= 0) {
+          return { status: 'unavailable' };
+        }
+
+        const usedPercentage = Number(((used / total) * 100).toFixed(1));
+
+        return {
+          status: usedPercentage > 98 ? 'critical' : usedPercentage > 85 ? 'warning' : 'ok',
+          totalBytes: total,
+          freeBytes: free,
+          usedBytes: used,
+          usedPercentage: usedPercentage,
+          error: undefined
+        };
+      } catch (err) {
+        return { status: 'error', error: (err as Error).message };
+      }
     }
+    const diskStatus = getDiskStatus();
 
     res.status(200).json({
       status: 'ok',
@@ -267,9 +276,11 @@ async function startServer() {
     });
   });
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
+
+  process.on('SIGTERM', () => server.close(() => process.exit(0)));
 }
 
 startServer();
