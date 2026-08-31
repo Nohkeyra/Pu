@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bottom-sheet style overlay for price entry.
+  Parent is transparent (AppTheme.Transparent), so the home screen is visible
+  behind this dialog. The inner card anchors to the bottom.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#99000000">
+
+    <!-- Bottom card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:background="#1B221E"
+        android:padding="20dp"
+        android:paddingBottom="28dp">
+
+        <!-- Drag handle -->
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="#37473F" />
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TETAPKAN HARGA"
+            android:textColor="#F59E0B"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Order summary (company + pax) -->
+        <TextView
+            android:id="@+id/price_input_order_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Memuatkan..."
+            android:textColor="#94A3B8"
+            android:textSize="11sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Menu preview -->
+        <TextView
+            android:id="@+id/price_input_menu_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#2D3A33"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Price header row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="HIDANGAN"
+                android:textColor="#64748B"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:text="HARGA / PAX"
+                android:textColor="#64748B"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+        </LinearLayout>
+
+        <!-- Breakfast row -->
+        <LinearLayout
+            android:id="@+id/price_row_breakfast"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="☕  Sarapan"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RM"
+                android:textColor="#F59E0B"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp" />
+
+            <EditText
+                android:id="@+id/price_input_breakfast"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:inputType="numberDecimal"
+                android:hint="0.00"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="end|center_vertical"
+                android:background="#222A26"
+                android:padding="8dp"
+                android:imeOptions="actionNext" />
+        </LinearLayout>
+
+        <!-- Lunch row -->
+        <LinearLayout
+            android:id="@+id/price_row_lunch"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🍛  Tengahari"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RM"
+                android:textColor="#F59E0B"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp" />
+
+            <EditText
+                android:id="@+id/price_input_lunch"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:inputType="numberDecimal"
+                android:hint="0.00"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="end|center_vertical"
+                android:background="#222A26"
+                android:padding="8dp"
+                android:imeOptions="actionNext" />
+        </LinearLayout>
+
+        <!-- Hi-Tea row -->
+        <LinearLayout
+            android:id="@+id/price_row_hitea"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🍰  Hi-Tea"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RM"
+                android:textColor="#F59E0B"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp" />
+
+            <EditText
+                android:id="@+id/price_input_hitea"
+                android:layout_width="80dp"
+                android:layout_height="match_parent"
+                android:inputType="numberDecimal"
+                android:hint="0.00"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#64748B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="end|center_vertical"
+                android:background="#222A26"
+                android:padding="8dp"
+                android:imeOptions="actionDone" />
+        </LinearLayout>
+
+        <!-- Live total preview -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#121614"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="JUMLAH KESELURUHAN"
+                android:textColor="#64748B"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+
+            <TextView
+                android:id="@+id/price_input_total_preview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RM 0.00"
+                android:textColor="#10B981"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Pax reminder -->
+        <TextView
+            android:id="@+id/price_input_pax_reminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="* Jumlah dikira: harga/pax × kuantiti pax"
+            android:textColor="#64748B"
+            android:textSize="9.5sp"
+            android:fontStyle="italic"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Action buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/price_input_cancel_btn"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Batal"
+                android:textColor="#94A3B8"
+                android:textSize="13sp"
+                android:backgroundTint="#222A26" />
+
+            <Button
+                android:id="@+id/price_input_submit_btn"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="2"
+                android:text="Simpan &amp; Hantar Invois →"
+                android:textColor="#000000"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:backgroundTint="#F59E0B" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</FrameLayout>

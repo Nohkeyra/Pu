@@ -83,6 +83,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           npm run build || npm run build:prod
           if [ ! -d "dist" ]; then
@@ -236,6 +237,8 @@ jobs:
 
       - name: Build debug APK
         working-directory: ./android
+        env:
+          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace || {
             echo "❌ Debug build failed. Check logs above."
@@ -244,6 +247,8 @@ jobs:
 
       - name: Build release APK (signed)
         working-directory: ./android
+        env:
+          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace || {
             echo "❌ Release build failed. Check logs above."
@@ -252,6 +257,8 @@ jobs:
 
       - name: Build Bundle (AAB for Play Store)
         working-directory: ./android
+        env:
+          WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew bundleRelease --no-daemon --stacktrace || {
             echo "⚠️ Bundle build failed (continuing)"

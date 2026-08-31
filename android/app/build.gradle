@@ -37,6 +37,15 @@ android {
         versionCode appVersionCode
         versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Pricing widget's shared-secret key — must match WIDGET_API_KEY on
+        // Render.  Read from CI env var (GitHub Actions secret), same pattern
+        // as RELEASE_STORE_PASSWORD above.  Falls back to empty string if
+        // unset, which makes the widget's checkWidgetKey() reject all
+        // requests server-side (fail-closed) rather than silently working
+        // with a blank key.
+        buildConfigField "String", "WIDGET_API_KEY", "\"${System.getenv('WIDGET_API_KEY') ?: ''}\""
+
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61

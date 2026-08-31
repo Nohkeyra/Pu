@@ -1,58 +1,90 @@
 import { Router } from 'express';
-import { getFirestore } from '../firebaseAdmin.js';
+import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
+import { createBrevoTransporter } from '../emailService.js';
+import { generateServerInvoicePdf } from '../services/serverPdfService.js';
+import { FieldValue } from 'firebase-admin/firestore';
+import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
-function getMalaysiaTodayString(): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
+// Consistent with the rest of the codebase's distributed rate limiting
+// (orderRoutes.ts, authRoutes.ts, invoiceRoutes.ts all use this pattern).
+const widgetPricingLimiter = createDistributedRateLimiter({
+  prefix: 'widget_pricing',
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  message: { success: false, error: 'Too many widget requests. Please try again later.' },
+});
+
+// ─── Auth helper for widget-keyed endpoints ──────────────────────────────────
+// Widget endpoints that trigger side-effects (set prices, send invoice) need
+// a lightweight pre-shared key so they cannot be called by arbitrary clients.
+// The key is stored as env var WIDGET_API_KEY on Render and hardcoded in the
+// Android APK (self-distributed, Noh is sole user). This is deliberately NOT
+// a JWT — the widget is not a browser; it runs as a background Android service.
+function checkWidgetKey(req: any, res: any): boolean {
+  const key = process.env.WIDGET_API_KEY;
+  if (!key) {
+    // If env var is not set, fail-closed: don't allow any access.
+    res.status(503).json({ success: false, error: 'Widget API not configured.' });
+    return false;
+  }
+  const provided = req.headers['x-widget-key'];
+  if (!provided || provided !== key) {
+    res.status(401).json({ success: false, error: 'Unauthorized.' });
+    return false;
+  }
+  return true;
 }
 
-// Upcoming orders widget (public) — today's orders only, PII stripped for security
+// ─── 1. Upcoming orders widget (public, no PII) ───────────────────────────────
+// NOTE: 'eventDate' is the canonical, authoritative date field as of the
+// dual-write fix in orderRoutes.ts (deriveEventDate) + scripts/backfill-event-date.cjs.
+// Every order document now has both 'date' and 'eventDate' kept in sync, so this
+// query (unchanged from before) is correct — no fix needed here anymore.
 router.get('/widget/upcoming-orders', async (_req, res) => {
   try {
     const db = getFirestore();
-    const todayStr = getMalaysiaTodayString();
+    // Render's server clock is UTC, not Malaysia time — use the same
+    // Asia/Kuala_Lumpur-aware formatting as orderRoutes.ts deriveEventDate()
+    // so "today" here always matches "today" as the business understands it.
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
 
     const snapshot = await db.collection('orders')
-      .where('eventDate', '==', todayStr)
+      .where('eventDate', '>=', todayStr)
       .where('status', 'in', ['pending', 'approved'])
       .orderBy('eventDate', 'asc')
       .limit(10)
       .get();
 
-    // SECURITY FIX: Strip all PII from public widget response
     const orders = snapshot.docs.map(doc => {
       const d = doc.data();
       return {
         id: doc.id,
-        eventDate: d.eventDate || null,
+        eventDate: d.eventDate || d.date || null,
+        time: d.time || null,
         meals: d.meals || [],
-        guests: d.guests || d.quantity || 0,
+        quantity: d.quantity || d.guests || d.pax || 0,
         status: d.status || 'pending',
-        // INTENTIONALLY EXCLUDED: name, email, contact, phone, location, address, 
-        // menu, dishes, veggies, customMenu, notes, to, attn, customerName
+        // Intentionally excluded: name, email, contact, location, menu, to, attn
       };
     });
 
-    return res.json({
-      success: true,
-      orders,
-      date: todayStr,
-    });
+    return res.json({ success: true, orders, date: todayStr });
   } catch (err) {
-    console.error('[Widget Error]:', err);
+    console.error('[Widget upcoming-orders Error]:', err);
     return res.status(500).json({ success: false, error: String(err) });
   }
 });
 
-// Daily summary widget (public) — no PII, just aggregate counts for today
+// ─── 2. Daily summary (public, aggregate only) ────────────────────────────────
 router.get('/widget/daily-summary', async (_req, res) => {
   try {
     const db = getFirestore();
-    const todayStr = getMalaysiaTodayString();
+    const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
 
     const snapshot = await db.collection('orders')
-      .where('eventDate', '==', todayStr)
+      .where('eventDate', '==', dateStr)
       .where('status', 'in', ['pending', 'approved'])
       .get();
 
@@ -63,8 +95,7 @@ router.get('/widget/daily-summary', async (_req, res) => {
     snapshot.docs.forEach(doc => {
       const d = doc.data();
       totalOrders++;
-      totalGuests += Number(d.guests || d.quantity || 0);
-
+      totalGuests += Number(d.quantity || d.guests || d.pax || 0);
       if (Array.isArray(d.meals)) {
         d.meals.forEach((meal: string) => {
           sessionCounts[meal] = (sessionCounts[meal] || 0) + 1;
@@ -72,15 +103,217 @@ router.get('/widget/daily-summary', async (_req, res) => {
       }
     });
 
+    return res.json({ success: true, date: dateStr, totalOrders, totalGuests, sessionCounts });
+  } catch (err) {
+    console.error('[Widget daily-summary Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// ─── 3. Today's orders for the PRICING widget (widget-key protected) ──────────
+// Returns today's orders with enough detail to display the pricing widget rows,
+// but WITHOUT customer PII (phone, location, notes). Menu is included because
+// Noh needs to see what was ordered before setting the price.
+router.get('/widget/today-pricing-orders', widgetPricingLimiter, async (req, res) => {
+  if (!checkWidgetKey(req, res)) return;
+
+  try {
+    const db = getFirestore();
+    const now = new Date();
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(now);
+
+    const snapshot = await db.collection('orders')
+      .where('eventDate', '==', todayStr)
+      .where('status', 'in', ['pending', 'approved'])
+      .orderBy('eventDate', 'asc')
+      .get();
+
+    const orders = snapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        to: d.to || 'Pelanggan',              // Company/ministry name — needed for display
+        attn: d.attn || d.name || '-',         // Contact name — needed for display
+        meals: d.meals || [],
+        quantity: Number(d.quantity || d.guests || d.pax || 0),
+        menu: d.menu || '',                     // Menu string — needed to see what was ordered
+        preparationType: d.preparationType || 'buffet',
+        time: d.time || '',
+        status: d.status || 'pending',
+        // Current prices if admin already set some
+        prices: d.prices || {},
+        totalAmount: d.totalAmount || null,
+        invoiceNo: d.invoiceNo || null,
+      };
+    });
+
+    return res.json({ success: true, orders, date: todayStr, count: orders.length });
+  } catch (err) {
+    console.error('[Widget today-pricing-orders Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// ─── 4. Set pricing + auto-generate & email final invoice (widget-key protected) ─
+// This is the core action of the pricing widget:
+//   1. Receive pricePerPax per meal type from widget input
+//   2. Calculate totalAmount
+//   3. Generate sequential invoice number
+//   4. Generate full PDF (server-side, same design as app)
+//   5. Email PDF to customer
+//   6. Update Firestore order to status: 'billed'
+router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
+  if (!checkWidgetKey(req, res)) return;
+
+  const { orderId, prices } = req.body as {
+    orderId: string;
+    // prices: { breakfast?: number, lunch?: number, hi_tea?: number }
+    prices: Record<string, number>;
+  };
+
+  if (!orderId || typeof orderId !== 'string') {
+    return res.status(400).json({ success: false, error: 'orderId required.' });
+  }
+  if (!prices || typeof prices !== 'object' || Object.keys(prices).length === 0) {
+    return res.status(400).json({ success: false, error: 'prices object required.' });
+  }
+
+  // Validate: all price values must be positive numbers
+  for (const [meal, price] of Object.entries(prices)) {
+    if (typeof price !== 'number' || price <= 0) {
+      return res.status(400).json({ success: false, error: `Invalid price for ${meal}: must be a positive number.` });
+    }
+  }
+
+  try {
+    const db = getFirestore();
+    const orderRef = db.collection('orders').doc(orderId);
+    const orderSnap = await orderRef.get();
+
+    if (!orderSnap.exists) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    const order = orderSnap.data()!;
+
+    // Guard: only price pending/approved orders; don't re-bill a billed order accidentally
+    if (order.status === 'billed' || order.status === 'cancelled' || order.status === 'rejected') {
+      return res.status(409).json({
+        success: false,
+        error: `Order is already '${order.status}'. Cannot re-price.`,
+        invoiceNo: order.invoiceNo || null
+      });
+    }
+
+    // Calculate totalAmount: sum of (price * quantity) for each meal in the order
+    const quantity = Number(order.quantity || order.guests || 0);
+    const orderMeals: string[] = Array.isArray(order.meals) ? order.meals : [];
+
+    let totalAmount = 0;
+    const finalPrices: Record<string, number> = {};
+
+    for (const meal of orderMeals) {
+      // Accept prices keyed by 'breakfast', 'lunch', 'hi_tea' (server canonical form)
+      const priceForMeal = prices[meal] ?? prices[meal.replace('_', '')] ?? null;
+      if (priceForMeal !== null && priceForMeal > 0) {
+        finalPrices[meal] = priceForMeal;
+        totalAmount += priceForMeal * quantity;
+      }
+    }
+
+    // If no meal matched (e.g. order has no meals array), fall back to a single 'default' price
+    if (Object.keys(finalPrices).length === 0 && prices['default']) {
+      finalPrices['default'] = prices['default'];
+      totalAmount = prices['default'] * quantity;
+    }
+
+    if (totalAmount <= 0) {
+      return res.status(400).json({ success: false, error: 'Could not compute a valid total. Check that meal types in the order match the prices provided.' });
+    }
+
+    // Generate sequential invoice number (Firestore transaction, same as existing flow)
+    const invoiceNo = await generateSequentialInvoiceNo();
+
+    // Build order object for PDF generation
+    const orderForPdf = {
+      ...order,
+      id: orderId,
+      prices: finalPrices,
+      totalAmount,
+      invoiceNo,
+      invoiceGeneratedAt: new Date().toISOString(),
+    };
+
+    // Generate PDF server-side
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
+    } catch (pdfErr) {
+      console.error('[Widget set-pricing] PDF generation failed:', pdfErr);
+      return res.status(500).json({ success: false, error: 'PDF generation failed. Prices NOT saved yet.' });
+    }
+
+    // Email PDF to customer
+    const recipientEmail = order.email;
+    if (!recipientEmail || typeof recipientEmail !== 'string' || !recipientEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Order has no valid customer email. Cannot send invoice.' });
+    }
+
+    try {
+      const transporter = createBrevoTransporter();
+      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
+      const companyName = order.to || 'Pelanggan';
+      const lang = (order.lang === 'en') ? 'en' : 'bm';
+
+      await transporter.sendMail({
+        from: `"Restoran Wawasan Pak Usop" <${senderEmail}>`,
+        to: recipientEmail.trim(),
+        subject: lang === 'bm'
+          ? `[Restoran Wawasan] Invois Rasmi ${invoiceNo} - ${companyName}`
+          : `[Restoran Wawasan] Official Invoice ${invoiceNo} - ${companyName}`,
+        text: lang === 'bm'
+          ? `Salam hormat,\n\nSila rujuk invois rasmi kami ${invoiceNo} yang dilampirkan bersama emel ini.\n\nJumlah: RM ${totalAmount.toFixed(2)}\n\nTerima kasih atas kepercayaan anda.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`
+          : `Dear ${order.attn || companyName},\n\nPlease find our official invoice ${invoiceNo} attached to this email.\n\nTotal: RM ${totalAmount.toFixed(2)}\n\nThank you for your continued trust.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`,
+        attachments: [{
+          filename: `Invoice_${invoiceNo}.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }]
+      });
+    } catch (emailErr) {
+      // EMAIL FAILED: Do NOT update Firestore yet — caller should retry.
+      // (If we saved 'billed' first then email failed, order would be stuck billed
+      // but customer never received the invoice.)
+      console.error('[Widget set-pricing] Email failed:', emailErr);
+      return res.status(500).json({
+        success: false,
+        error: 'Invoice generated but email delivery failed. Prices NOT saved. Please retry.',
+        invoiceNo
+      });
+    }
+
+    // Both PDF and email succeeded — now commit the Firestore update atomically
+    await orderRef.update({
+      status: 'billed',
+      prices: finalPrices,
+      totalAmount,
+      invoiceNo,
+      invoiceGeneratedAt: new Date().toISOString(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    console.log(`[Widget set-pricing] Order ${orderId} billed. Invoice ${invoiceNo} sent to ${recipientEmail}.`);
+
     return res.json({
       success: true,
-      date: todayStr,
-      totalOrders,
-      totalGuests,
-      sessionCounts,
+      orderId,
+      invoiceNo,
+      totalAmount,
+      message: `Invoice ${invoiceNo} emailed to ${recipientEmail}.`
     });
+
   } catch (err) {
-    console.error('[Widget Daily Summary Error]:', err);
+    console.error('[Widget set-pricing Error]:', err);
     return res.status(500).json({ success: false, error: String(err) });
   }
 });

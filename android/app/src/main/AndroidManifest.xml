@@ -66,6 +66,28 @@
             android:exported="false"
         />
 
+        <!-- ── Pricing Widget (second, separate widget) ─────────────────── -->
+        <receiver android:name=".widget.PricingWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.wawasanpakusop.app.widget.PRICING_ACTION_REFRESH" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/pricing_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".widget.PricingWidgetRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false"
+        />
+
+        <activity
+            android:name=".widget.PricingInputActivity"
+            android:theme="@style/AppTheme.Transparent"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:exported="false" />
+
         <!-- Firebase Cloud Messaging Default Notification Icon & Channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
