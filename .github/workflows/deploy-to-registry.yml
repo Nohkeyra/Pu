@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +16,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/1019707766959/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-          service_account: 'github-deployer@restoran-wawasan.iam.gserviceaccount.com'
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -27,8 +25,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: asia-southeast1-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
