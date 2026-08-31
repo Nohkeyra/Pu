@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
-import { SplashScreen as NativeSplashScreen } from '@capacitor/splash-screen';
 
 // F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
@@ -155,7 +154,6 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   };
 
   const isRiding = stage === 'ride';
-  const isSettling = stage === 'settle';
   const isImpacted = stage === 'impact';
   const isFading = stage === 'logoZoom';
   const isFlipped = stage === 'flip' || stage === 'hold';
