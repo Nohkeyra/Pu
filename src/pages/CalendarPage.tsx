@@ -638,18 +638,18 @@ export default function CalendarPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-stone-900 dark:bg-stone-100 border border-stone-800 dark:border-stone-300 rounded-2xl shadow-sm overflow-hidden transition-colors duration-300">
               
               {/* Clean Weekdays Header */}
-              <div className="grid grid-cols-7 border-b border-stone-100 dark:border-stone-850 bg-stone-50/70 dark:bg-stone-900/40">
+              <div className="grid grid-cols-7 border-b border-stone-800 dark:border-stone-300 bg-stone-850/80 dark:bg-stone-200/60">
                 {weekdays.map((day, idx) => (
                   <div 
                     key={idx} 
                     className={cn(
-                      "py-2.5 text-center text-[11px] font-semibold tracking-wider",
+                      "py-3 text-center text-[11px] font-bold tracking-widest uppercase",
                       day.weekend 
-                        ? "text-stone-400 dark:text-stone-500" 
-                        : "text-stone-600 dark:text-stone-400"
+                        ? "text-rose-400 dark:text-rose-600" 
+                        : "text-stone-300 dark:text-stone-700"
                     )}
                   >
                     <span className="hidden sm:inline">{day.full}</span>
@@ -659,15 +659,15 @@ export default function CalendarPage() {
               </div>
 
               {/* Days Matrix - Clean, breathable layout */}
-              <div className="grid grid-cols-7 divide-x divide-y divide-stone-100 dark:divide-stone-850">
+              <div className="grid grid-cols-7 divide-x divide-y divide-stone-800 dark:divide-stone-300">
                 
                 {/* 1. Leading Prev Month Days */}
                 {prevMonthDays.map((pDay) => (
                   <div
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[75px] sm:min-h-[95px] p-2 bg-stone-50/30 dark:bg-stone-950/20 text-stone-300 dark:text-stone-700 select-none text-xs"
+                    className="min-h-[80px] sm:min-h-[100px] p-2 bg-stone-950/40 dark:bg-stone-100/50 text-stone-600 dark:text-stone-400 select-none text-xs"
                   >
-                    <span>{format(pDay, 'd')}</span>
+                    <span className="opacity-40">{format(pDay, 'd')}</span>
                   </div>
                 ))}
 
@@ -686,22 +686,24 @@ export default function CalendarPage() {
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[75px] sm:min-h-[95px] p-2 sm:p-2.5 flex flex-col justify-between transition-colors text-left relative cursor-pointer group",
+                        "min-h-[80px] sm:min-h-[100px] p-2 sm:p-3 flex flex-col justify-between transition-all text-left relative cursor-pointer group",
                         isDaySelected 
-                          ? "bg-amber-500/5 dark:bg-amber-500/10 ring-2 ring-inset ring-crisp-carrot/80 z-10" 
-                          : "hover:bg-stone-50 dark:hover:bg-stone-900/60 bg-white dark:bg-card"
+                          ? "bg-amber-500/10 dark:bg-amber-500/5 ring-2 ring-inset ring-crisp-carrot z-10" 
+                          : "hover:bg-stone-850 dark:hover:bg-stone-200 bg-stone-900 dark:bg-stone-100"
                       )}
                     >
                       {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="w-6 h-6 rounded-full bg-crisp-carrot text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                          <span className="w-7 h-7 rounded-full bg-crisp-carrot text-white text-xs font-black flex items-center justify-center shadow-md">
                             {format(day, 'd')}
                           </span>
                         ) : (
                           <span className={cn(
-                            "text-xs font-semibold transition-colors",
-                            isDaySelected ? "text-crisp-carrot font-bold" : "text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white"
+                            "text-xs font-bold transition-colors",
+                            isDaySelected 
+                              ? "text-crisp-carrot scale-110" 
+                              : "text-stone-200 dark:text-stone-900 group-hover:text-white dark:group-hover:text-black"
                           )}>
                             {format(day, 'd')}
                           </span>
@@ -709,14 +711,14 @@ export default function CalendarPage() {
 
                         {/* Subtle Note / Heavy Indicator */}
                         {dayNotes.length > 0 && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title={tl('Has note', 'Ada nota')} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-stone-100" title={tl('Has note', 'Ada nota')} />
                         )}
                       </div>
 
                       {/* Bottom Info: Clean, uncluttered indicator */}
                       <div className="mt-auto pt-1">
                         {hasOrders ? (
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {/* Color dots for meals */}
                             <div className="flex items-center gap-1">
                               {sessions.breakfast.count > 0 && (
@@ -731,11 +733,11 @@ export default function CalendarPage() {
                             </div>
 
                             {/* Clean summary line */}
-                            <div className="text-[10px] font-semibold text-stone-600 dark:text-stone-400 truncate">
-                              <span className="text-stone-900 dark:text-stone-200 font-bold tabular-nums">
+                            <div className="text-[10px] font-black tracking-tight text-stone-400 dark:text-stone-600 truncate">
+                              <span className="text-stone-100 dark:text-stone-900 font-black tabular-nums">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
-                              <span className="hidden sm:inline text-stone-400 font-normal ml-1">
+                              <span className="hidden sm:inline opacity-60 ml-1">
                                 ({dayOrders.length})
                               </span>
                             </div>
@@ -752,9 +754,9 @@ export default function CalendarPage() {
                 {nextMonthDays.map((nDay) => (
                   <div
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[75px] sm:min-h-[95px] p-2 bg-stone-50/30 dark:bg-stone-950/20 text-stone-300 dark:text-stone-700 select-none text-xs"
+                    className="min-h-[80px] sm:min-h-[100px] p-2 bg-stone-950/40 dark:bg-stone-100/50 text-stone-600 dark:text-stone-400 select-none text-xs"
                   >
-                    <span>{format(nDay, 'd')}</span>
+                    <span className="opacity-40">{format(nDay, 'd')}</span>
                   </div>
                 ))}
 

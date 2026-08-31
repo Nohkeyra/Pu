@@ -249,11 +249,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener('storage', handleSessionEvent);
-    window.addEventListener('admin:session-changed', handleSessionEvent);
+    window.addEventListener('admin:login-state-change', handleSessionEvent);
 
     return () => {
       window.removeEventListener('storage', handleSessionEvent);
-      window.removeEventListener('admin:session-changed', handleSessionEvent);
+      window.removeEventListener('admin:login-state-change', handleSessionEvent);
     };
   }, [checkAdminStatus]);
 

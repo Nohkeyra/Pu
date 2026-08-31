@@ -386,7 +386,14 @@ export default function SettingsPage() {
     () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
   );
 
-  const adminToken = typeof localStorage !== 'undefined' ? localStorage.getItem('wawasan_admin_token') || '' : '';
+  const [adminToken, setAdminToken] = useState(() => 
+    typeof localStorage !== 'undefined' ? localStorage.getItem('wawasan_admin_token') || '' : ''
+  );
+
+  useEffect(() => {
+    const token = localStorage.getItem('wawasan_admin_token') || '';
+    setAdminToken(token);
+  }, [isAdmin]);
 
   const authHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
@@ -820,7 +827,7 @@ export default function SettingsPage() {
           </div>
 
           {/* ADMIN MANAGEMENT CARD (If Logged In) */}
-          {isAdmin && (
+          {(isAdmin || currentUser?.uid === 'admin' || currentUser?.email === 'admin@wawasanpakusop.my') && (
             <div className="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
