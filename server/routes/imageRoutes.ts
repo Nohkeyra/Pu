@@ -6,7 +6,7 @@ import dns from 'dns';
 import net from 'net';
 import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
-import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
+import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.ts';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();

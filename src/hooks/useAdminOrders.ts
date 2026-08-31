@@ -9,7 +9,7 @@ import { db } from '@/firebaseConfig';
 interface UseAdminOrdersProps {
   adminToken?: string;
   onLogout?: () => void;
-  toast: (opts: { title: string; description?: string; variant?: ToastVariant; duration?: number }) => void;
+  toast: (opts: { title?: string; description?: string; variant?: ToastVariant; duration?: number }) => void;
   t: (key: string) => string;
   language?: string;
 }

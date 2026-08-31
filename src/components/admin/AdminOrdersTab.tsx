@@ -96,7 +96,7 @@ export function AdminOrdersTab({
   authHeaders: () => HeadersInit;
   getApiUrl: (path: string) => string;
   fetchOrders: () => void;
-  toast: (opts: { title: string; description?: string; variant?: ToastVariant }) => void;
+  toast: (opts: { title?: string; description?: string; variant?: ToastVariant }) => void;
   setIsApproving: (v: boolean) => void;
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);

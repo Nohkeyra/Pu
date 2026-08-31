@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
-import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.js';
+import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.ts';
 
 const router = Router();
 
