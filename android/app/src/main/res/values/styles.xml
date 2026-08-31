@@ -23,7 +23,7 @@
     <!-- Transparent full-screen theme for PricingInputActivity's bottom-sheet
          overlay — lets the home screen (and the widget) stay visible behind
          the price-entry dialog.  -->
-    <style name="AppTheme.Transparent" parent="Theme.AppCompat.Translucent.NoTitleBar">
+    <style name="AppTheme.Transparent" parent="AppTheme.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>
