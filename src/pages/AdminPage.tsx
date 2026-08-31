@@ -3,7 +3,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2 } from 'lucide-react';
+import { Lock, ArrowLeft, Shield, Sun, Moon, Loader2, Fingerprint } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';
@@ -13,6 +13,7 @@ import { getApiUrl } from '@/lib/api';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
+import { authService, isBiometricAvailable } from '@/services/authService';
 
 // NOTE: the admin password itself is never stored anywhere on the device
 // (not localStorage, not Preferences). It is sent to the server exactly
@@ -22,7 +23,7 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 const ADMIN_TOKEN_STORAGE_KEY = 'wawasan_admin_token';
 
 export default function AdminPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -31,6 +32,8 @@ export default function AdminPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -59,10 +62,73 @@ export default function AdminPage() {
       } catch (secureItemErr) {
         console.warn('[Admin Auth] Failed to read stored admin token:', secureItemErr);
       }
+
+      // Check biometric availability on mount
+      try {
+        const available = await isBiometricAvailable();
+        setBiometricAvailable(available);
+      } catch (bioErr) {
+        console.warn('[Admin Auth] Biometric check failed:', bioErr);
+        setBiometricAvailable(false);
+      }
+
       setIsInitializing(false);
     };
     init();
   }, []);
+
+  const handleBiometricLogin = async () => {
+    setError('');
+    setIsBiometricLoading(true);
+    try {
+      const isMalay = language === 'bm';
+      const result = await authService.authenticateAdminWithBiometrics({
+        title: isMalay ? 'Log Masuk Cap Jari Admin' : 'Admin Fingerprint Login',
+        subtitle: isMalay ? 'Imbas cap jari anda untuk akses segera' : 'Scan your fingerprint for instant access',
+        description: isMalay ? 'Kakitangan dan pentadbir Restoran Wawasan sahaja.' : 'Restoran Wawasan staff and administrators only.',
+        negativeButtonText: isMalay ? 'Guna Kata Laluan' : 'Use Password',
+      });
+
+      if (result.success && result.token) {
+        setToken(result.token);
+        await setSecureItem(ADMIN_TOKEN_STORAGE_KEY, result.token);
+        setIsAuthenticated(true);
+        try {
+          window.dispatchEvent(new CustomEvent('admin:login-state-change'));
+        } catch (e) {
+          console.warn('Failed to dispatch login event:', e);
+        }
+      } else if (result.success) {
+        // Biometrics succeeded on hardware level; check stored session
+        const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+        if (storedToken) {
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          try {
+            window.dispatchEvent(new CustomEvent('admin:login-state-change'));
+          } catch (e) {
+            console.warn('Failed to dispatch login event:', e);
+          }
+        } else {
+          setError(
+            language === 'bm'
+              ? 'Sila log masuk dengan kata laluan sekali terlebih dahulu untuk mengaktifkan imbasan cap jari.'
+              : 'Please log in with your password once to register fingerprint access on this device.'
+          );
+        }
+      } else {
+        if (result.error) {
+          setError(result.error);
+        }
+      }
+    } catch (err) {
+      console.error('Biometric authentication exception:', err);
+      const detail = err instanceof Error ? err.message : String(err);
+      setError(`Biometric error: ${detail}`);
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +157,15 @@ export default function AdminPage() {
       if (response.ok && data.success && data.token) {
         setToken(data.token);
         await setSecureItem(ADMIN_TOKEN_STORAGE_KEY, data.token);
+
+        // If biometrics are available on device, securely cache credentials for future fingerprint login
+        if (biometricAvailable) {
+          try {
+            await authService.storeAdminBiometricCredentials(data.token, password);
+          } catch (bioStoreErr) {
+            console.warn('[Admin Auth] Biometric credential storage note:', bioStoreErr);
+          }
+        }
 
         setIsAuthenticated(true);
         try {
@@ -235,7 +310,7 @@ export default function AdminPage() {
                   <div className="space-y-3">
                     <Button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || isBiometricLoading}
                       className="w-full h-12 bg-[var(--color-sunshine-cta)] text-white font-bold hover:bg-crisp-carrot transition-colors duration-300 disabled:opacity-50 flex items-center justify-center gap-2 rounded-xl shadow-sm"
                     >
                       {isLoading ? (
@@ -247,6 +322,38 @@ export default function AdminPage() {
                         <>
                           <Shield className="w-4 h-4" />
                           {t('login')}
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Fingerprint / Biometric scan button */}
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white dark:bg-card px-2 text-stone font-semibold tracking-wider">
+                          {language === 'bm' ? 'Atau Imbas Biometrik' : 'Or Scan Biometric'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleBiometricLogin}
+                      disabled={isLoading || isBiometricLoading}
+                      className="w-full h-12 border-2 border-[var(--color-sunshine-cta)]/30 hover:border-[var(--color-sunshine-cta)] text-deep-forest dark:text-white font-bold hover:bg-[var(--color-sunshine-cta)]/10 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 rounded-xl shadow-sm"
+                    >
+                      {isBiometricLoading ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 text-[var(--color-sunshine-cta)]" />
+                          <span>{language === 'bm' ? 'Mengesahkan Cap Jari...' : 'Verifying Fingerprint...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Fingerprint className="w-5 h-5 text-[var(--color-sunshine-cta)] animate-pulse" />
+                          <span>{language === 'bm' ? 'Imbas Cap Jari Admin' : 'Scan Admin Fingerprint'}</span>
                         </>
                       )}
                     </Button>
