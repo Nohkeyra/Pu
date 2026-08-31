@@ -113,9 +113,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [soundEffectsEnabled, setSoundEffectsEnabledState] = useState<boolean>(() => {
     try {
       const val = localStorage.getItem('wawasan_sound_effects_enabled');
-      return val === null ? false : val === 'true';
+      return val === null ? true : val === 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 

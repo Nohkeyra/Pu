@@ -122,7 +122,7 @@ function Calendar({
           defaultClassNames.today
         ),
         outside: cn(
-          "text-stone/50 aria-selected:text-stone/50",
+          "text-stone-400/70 dark:text-stone-600 aria-selected:text-stone-400/70 rounded-md bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.035)_4px,rgba(0,0,0,0.035)_8px)] dark:bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(255,255,255,0.025)_4px,rgba(255,255,255,0.025)_8px)]",
           defaultClassNames.outside
         ),
         disabled: cn(

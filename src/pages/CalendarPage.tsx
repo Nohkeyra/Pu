@@ -34,6 +34,7 @@ import {
   getDay, 
   isSameDay, 
   isToday,
+  isWeekend,
   parseISO
 } from 'date-fns';
 import { ms, enUS } from 'date-fns/locale';
@@ -54,8 +55,6 @@ interface CalendarNote {
   updatedAt: string;
 }
 
-type MealFilter = 'all' | 'breakfast' | 'lunch' | 'hi_tea';
-
 export default function CalendarPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -73,10 +72,9 @@ export default function CalendarPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // Active Selected Day & Filter states
+  // Active Selected Day
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [mealFilter, setMealFilter] = useState<MealFilter>('all');
   const [noteText, setNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
 
@@ -272,16 +270,7 @@ export default function CalendarPage() {
   // Retrieve active orders on a given date
   const getOrdersForDay = (date: Date) => {
     const targetDateStr = format(date, 'yyyy-MM-dd');
-    let dayOrders = activeOrders.filter((order) => getOrderDateString(order) === targetDateStr);
-
-    if (mealFilter === 'breakfast') {
-      dayOrders = dayOrders.filter((o) => o.meals?.includes('breakfast'));
-    } else if (mealFilter === 'lunch') {
-      dayOrders = dayOrders.filter((o) => o.meals?.includes('lunch'));
-    } else if (mealFilter === 'hi_tea') {
-      dayOrders = dayOrders.filter((o) => o.meals?.some((m) => m === 'hi_tea' || m === 'hi-tea' || m === 'tea_break'));
-    }
-    return dayOrders;
+    return activeOrders.filter((order) => getOrderDateString(order) === targetDateStr);
   };
 
   // For aggregate counters on the grid cells
@@ -328,35 +317,6 @@ export default function CalendarPage() {
       return n.userId === currentUser?.uid;
     });
   };
-
-  // Monthly Overview Statistics
-  const monthStats = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(monthStart);
-    const daysInCurrentMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    
-    let totalBookings = 0;
-    let totalPax = 0;
-    let operatingDays = 0;
-    let totalNotes = 0;
-
-    daysInCurrentMonth.forEach((day) => {
-      const dStr = format(day, 'yyyy-MM-dd');
-      const dayOrders = activeOrders.filter((o) => getOrderDateString(o) === dStr);
-      const dayNotes = calendarNotes.filter((n) => n.date === dStr);
-
-      if (dayOrders.length > 0) {
-        operatingDays += 1;
-        totalBookings += dayOrders.length;
-        dayOrders.forEach((o) => {
-          totalPax += o.guests || o.quantity || 0;
-        });
-      }
-      totalNotes += dayNotes.length;
-    });
-
-    return { totalBookings, totalPax, operatingDays, totalNotes };
-  }, [currentDate, activeOrders, calendarNotes]);
 
   // Handle click on a calendar cell
   const handleDayClick = async (date: Date) => {
@@ -516,140 +476,54 @@ export default function CalendarPage() {
       >
         <div className="w-full space-y-5 pb-20">
 
-          {/* 1. MINIMALIST MONTH HEADER & CLEAN FILTER BAR */}
-          <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl p-4 sm:p-5 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-              
-              {/* Left: Month Nav & Clean Title */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/60 dark:border-stone-800">
-                  <button
-                    onClick={handlePrevMonth}
-                    className="p-1.5 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer"
-                    aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleNextMonth}
-                    className="p-1.5 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-white dark:hover:bg-stone-800 transition-all cursor-pointer"
-                    aria-label={tl('Next Month', 'Bulan Seterusnya')}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+          {/* 1. CALENDAR CONTROLS & RECENTERED HEADER */}
+          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={handlePrevMonth}
+                className="p-2 sm:p-2.5 rounded-xl bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/70 dark:border-stone-800 transition-all cursor-pointer shrink-0"
+                aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
 
-                <div>
-                  <h2 className="font-display font-bold text-xl sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
-                    {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
-                  </h2>
-                </div>
+              <div className="text-center flex-1">
+                <h2 className="font-display font-bold text-lg sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
+                  {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
+                </h2>
               </div>
 
-              {/* Right: Refined Segmented Meal Filters */}
-              <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-900 p-1 rounded-xl border border-stone-200/60 dark:border-stone-800 self-start sm:self-auto overflow-x-auto max-w-full">
-                <button
-                  onClick={() => setMealFilter('all')}
-                  className={cn(
-                    "text-xs font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap",
-                    mealFilter === 'all'
-                      ? "bg-white dark:bg-stone-800 text-stone-900 dark:text-white shadow-xs"
-                      : "text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200"
-                  )}
-                >
-                  {tl('All Meals', 'Semua')}
-                </button>
-
-                <button
-                  onClick={() => setMealFilter('breakfast')}
-                  className={cn(
-                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
-                    mealFilter === 'breakfast'
-                      ? "bg-white dark:bg-stone-800 text-amber-700 dark:text-amber-300 shadow-xs"
-                      : "text-stone-500 dark:text-stone-400 hover:text-amber-600"
-                  )}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  {tl('Breakfast', 'Sarapan')}
-                </button>
-
-                <button
-                  onClick={() => setMealFilter('lunch')}
-                  className={cn(
-                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
-                    mealFilter === 'lunch'
-                      ? "bg-white dark:bg-stone-800 text-emerald-700 dark:text-emerald-300 shadow-xs"
-                      : "text-stone-500 dark:text-stone-400 hover:text-emerald-600"
-                  )}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {tl('Lunch', 'Tengah Hari')}
-                </button>
-
-                <button
-                  onClick={() => setMealFilter('hi_tea')}
-                  className={cn(
-                    "text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap",
-                    mealFilter === 'hi_tea'
-                      ? "bg-white dark:bg-stone-800 text-purple-700 dark:text-purple-300 shadow-xs"
-                      : "text-stone-500 dark:text-stone-400 hover:text-purple-600"
-                  )}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  {tl('Hi-Tea', 'Petang')}
-                </button>
-              </div>
-            </div>
-
-            {/* Subtle month summary strip */}
-            <div className="flex items-center gap-4 sm:gap-6 mt-3.5 pt-3 border-t border-stone-100 dark:border-stone-850/60 text-xs text-stone-500 dark:text-stone-400 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalBookings}</span>
-                <span>{tl('Events', 'Acara')}</span>
-              </div>
-              <span className="text-stone-300 dark:text-stone-700">•</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalPax}</span>
-                <span>{tl('Total Pax', 'Jumlah Pax')}</span>
-              </div>
-              <span className="text-stone-300 dark:text-stone-700">•</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.operatingDays}</span>
-                <span>{tl('Active Days', 'Hari Beroperasi')}</span>
-              </div>
-              {monthStats.totalNotes > 0 && (
-                <>
-                  <span className="text-stone-300 dark:text-stone-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-stone-900 dark:text-white tabular-nums">{monthStats.totalNotes}</span>
-                    <span>{tl('Notes', 'Nota')}</span>
-                  </div>
-                </>
-              )}
+              <button
+                onClick={handleNextMonth}
+                className="p-2 sm:p-2.5 rounded-xl bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/70 dark:border-stone-800 transition-all cursor-pointer shrink-0"
+                aria-label={tl('Next Month', 'Bulan Seterusnya')}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
-          {/* 2. AIRY, SIMPLE CALENDAR GRID */}
+          {/* 2. SWAPPED CALENDAR GRID (Dark in Light Mode, Light in Dark Mode) */}
           {loading ? (
-            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl p-16 text-center shadow-xs">
-              <Clock className="w-7 h-7 text-stone-400 animate-spin mx-auto mb-3" />
-              <p className="text-xs font-semibold text-stone-500">
+            <div className="bg-stone-900 dark:bg-white border border-stone-800 dark:border-stone-200/80 rounded-2xl p-16 text-center shadow-sm">
+              <Clock className="w-7 h-7 text-stone-400 dark:text-stone-500 animate-spin mx-auto mb-3" />
+              <p className="text-xs font-semibold text-stone-400 dark:text-stone-500">
                 {tl('Loading kitchen calendar...', 'Memuatkan jadual dapur...')}
               </p>
             </div>
           ) : (
-            <div className="bg-stone-900 dark:bg-stone-100 border border-stone-800 dark:border-stone-300 rounded-2xl shadow-sm overflow-hidden transition-colors duration-300">
+            <div className="bg-stone-900 dark:bg-white border border-stone-800 dark:border-stone-200/80 rounded-2xl shadow-sm overflow-hidden transition-colors duration-200">
               
-              {/* Clean Weekdays Header */}
-              <div className="grid grid-cols-7 border-b border-stone-800 dark:border-stone-300 bg-stone-850/80 dark:bg-stone-200/60">
+              {/* Weekdays Header */}
+              <div className="grid grid-cols-7 border-b border-stone-800 dark:border-stone-200 bg-stone-950/80 dark:bg-stone-50/90">
                 {weekdays.map((day, idx) => (
                   <div 
                     key={idx} 
                     className={cn(
-                      "py-3 text-center text-[11px] font-bold tracking-widest uppercase",
+                      "py-3 text-center text-[11px] font-extrabold tracking-wider uppercase select-none",
                       day.weekend 
-                        ? "text-rose-400 dark:text-rose-600" 
-                        : "text-stone-300 dark:text-stone-700"
+                        ? "text-rose-400 dark:text-rose-600 font-extrabold" 
+                        : "text-stone-400 dark:text-stone-600"
                     )}
                   >
                     <span className="hidden sm:inline">{day.full}</span>
@@ -658,16 +532,18 @@ export default function CalendarPage() {
                 ))}
               </div>
 
-              {/* Days Matrix - Clean, breathable layout */}
-              <div className="grid grid-cols-7 divide-x divide-y divide-stone-800 dark:divide-stone-300">
+              {/* Days Matrix - Swapped Mode Grid */}
+              <div className="grid grid-cols-7 divide-x divide-y divide-stone-800 dark:divide-stone-200/80">
                 
-                {/* 1. Leading Prev Month Days */}
+                {/* 1. Leading Prev Month Days (Diagonal Striped) */}
                 {prevMonthDays.map((pDay) => (
                   <div
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[80px] sm:min-h-[100px] p-2 bg-stone-950/40 dark:bg-stone-100/50 text-stone-600 dark:text-stone-400 select-none text-xs"
+                    className="min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start"
                   >
-                    <span className="opacity-40">{format(pDay, 'd')}</span>
+                    <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 tabular-nums">
+                      {format(pDay, 'd')}
+                    </span>
                   </div>
                 ))}
 
@@ -680,83 +556,94 @@ export default function CalendarPage() {
                   const sessions = getDailySessions(day);
                   const totalPax = sessions.breakfast.pax + sessions.lunch.pax + sessions.hi_tea.pax;
                   const hasOrders = dayOrders.length > 0;
+                  const isWeekendDay = isWeekend(day);
 
                   return (
                     <button
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[80px] sm:min-h-[100px] p-2 sm:p-3 flex flex-col justify-between transition-all text-left relative cursor-pointer group",
+                        "min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-stone-900 hover:bg-stone-850 dark:bg-white dark:hover:bg-stone-50",
                         isDaySelected 
-                          ? "bg-amber-500/10 dark:bg-amber-500/5 ring-2 ring-inset ring-crisp-carrot z-10" 
-                          : "hover:bg-stone-850 dark:hover:bg-stone-200 bg-stone-900 dark:bg-stone-100"
+                          ? "ring-2 ring-inset ring-crisp-carrot bg-stone-800/90 dark:bg-orange-100/70 z-10" 
+                          : ""
                       )}
                     >
                       {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="w-7 h-7 rounded-full bg-crisp-carrot text-white text-xs font-black flex items-center justify-center shadow-md">
+                          <span className="w-7 h-7 rounded-full bg-crisp-carrot text-white text-xs font-black flex items-center justify-center shadow-xs">
                             {format(day, 'd')}
                           </span>
                         ) : (
                           <span className={cn(
-                            "text-xs font-bold transition-colors",
+                            "text-sm font-bold tabular-nums transition-colors",
                             isDaySelected 
                               ? "text-crisp-carrot scale-110" 
-                              : "text-stone-200 dark:text-stone-900 group-hover:text-white dark:group-hover:text-black"
+                              : isWeekendDay 
+                              ? "text-rose-400 dark:text-rose-600"
+                              : "text-stone-100 dark:text-stone-900 group-hover:text-crisp-carrot"
                           )}>
                             {format(day, 'd')}
                           </span>
                         )}
 
-                        {/* Subtle Note / Heavy Indicator */}
+                        {/* Note Indicator */}
                         {dayNotes.length > 0 && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-stone-100" title={tl('Has note', 'Ada nota')} />
+                          <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-white" title={tl('Has note', 'Ada nota')} />
                         )}
                       </div>
 
-                      {/* Bottom Info: Clean, uncluttered indicator */}
-                      <div className="mt-auto pt-1">
+                      {/* Bottom Info: Meal Badges */}
+                      <div className="mt-auto pt-1 w-full">
                         {hasOrders ? (
-                          <div className="space-y-1.5">
-                            {/* Color dots for meals */}
-                            <div className="flex items-center gap-1">
+                          <div className="space-y-1">
+                            {/* Meal Badges */}
+                            <div className="flex items-center gap-1 flex-wrap">
                               {sessions.breakfast.count > 0 && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Breakfast" />
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500 text-stone-950 dark:text-white shadow-2xs leading-none">
+                                  B
+                                </span>
                               )}
                               {sessions.lunch.count > 0 && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Lunch" />
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-stone-950 dark:text-white shadow-2xs leading-none">
+                                  L
+                                </span>
                               )}
                               {sessions.hi_tea.count > 0 && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Hi-Tea" />
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-pink-500 dark:bg-purple-600 text-white shadow-2xs leading-none">
+                                  T
+                                </span>
                               )}
                             </div>
 
-                            {/* Clean summary line */}
-                            <div className="text-[10px] font-black tracking-tight text-stone-400 dark:text-stone-600 truncate">
-                              <span className="text-stone-100 dark:text-stone-900 font-black tabular-nums">
+                            {/* Pax summary line */}
+                            <div className="text-[10px] font-bold tracking-tight text-stone-400 dark:text-stone-600 truncate flex items-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-100 dark:bg-stone-900 dark:text-white font-extrabold tabular-nums text-[9px] leading-none">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
-                              <span className="hidden sm:inline opacity-60 ml-1">
+                              <span className="hidden sm:inline opacity-75 font-medium text-[10px]">
                                 ({dayOrders.length})
                               </span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-transparent select-none">·</span>
+                          <span className="text-[10px] text-transparent select-none leading-none">·</span>
                         )}
                       </div>
                     </button>
                   );
                 })}
 
-                {/* 3. Trailing Next Month Days */}
+                {/* 3. Trailing Next Month Days (Diagonal Striped) */}
                 {nextMonthDays.map((nDay) => (
                   <div
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[80px] sm:min-h-[100px] p-2 bg-stone-950/40 dark:bg-stone-100/50 text-stone-600 dark:text-stone-400 select-none text-xs"
+                    className="min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start"
                   >
-                    <span className="opacity-40">{format(nDay, 'd')}</span>
+                    <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 tabular-nums">
+                      {format(nDay, 'd')}
+                    </span>
                   </div>
                 ))}
 
@@ -797,21 +684,21 @@ export default function CalendarPage() {
                 {selectedDaySessions && selectedDayTotalPax > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {selectedDaySessions.breakfast.pax > 0 && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                        <Coffee className="w-3 h-3 text-amber-600" />
-                        <span>{selectedDaySessions.breakfast.pax}p</span>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500 text-white flex items-center gap-1.5 shadow-xs">
+                        <Coffee className="w-3.5 h-3.5" />
+                        <span>Breakfast: {selectedDaySessions.breakfast.pax}p</span>
                       </span>
                     )}
                     {selectedDaySessions.lunch.pax > 0 && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                        <Sun className="w-3 h-3 text-emerald-600" />
-                        <span>{selectedDaySessions.lunch.pax}p</span>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600 text-white flex items-center gap-1.5 shadow-xs">
+                        <Sun className="w-3.5 h-3.5" />
+                        <span>Lunch: {selectedDaySessions.lunch.pax}p</span>
                       </span>
                     )}
                     {selectedDaySessions.hi_tea.pax > 0 && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-800 dark:text-purple-300 flex items-center gap-1.5">
-                        <UtensilsCrossed className="w-3 h-3 text-purple-600" />
-                        <span>{selectedDaySessions.hi_tea.pax}p</span>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-600 text-white flex items-center gap-1.5 shadow-xs">
+                        <UtensilsCrossed className="w-3.5 h-3.5" />
+                        <span>Hi-Tea: {selectedDaySessions.hi_tea.pax}p</span>
                       </span>
                     )}
                   </div>
@@ -824,21 +711,21 @@ export default function CalendarPage() {
                 {/* Left: Orders (7 cols) */}
                 <div className="lg:col-span-7 space-y-3">
                   <div className="flex items-center justify-between pb-1">
-                    <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-stone-600 dark:text-stone-300 uppercase tracking-wider">
                       {tl('Bookings for this day', 'Tempahan hari ini')} ({getOrdersForDay(selectedDay).length})
                     </span>
                   </div>
 
                   {getOrdersForDay(selectedDay).length === 0 ? (
-                    <div className="p-8 text-center rounded-xl bg-stone-50/50 dark:bg-stone-900/20 border border-dashed border-stone-200 dark:border-stone-800 space-y-2.5">
+                    <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
                       <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
                         {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
                       </p>
                       <button
                         onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-4 h-4" />
                         {tl('Book for this date', 'Tempah untuk tarikh ini')}
                       </button>
                     </div>
@@ -851,18 +738,18 @@ export default function CalendarPage() {
                         return (
                           <div 
                             key={ord.id}
-                            className="p-3.5 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/40 hover:border-stone-300 dark:hover:border-stone-700 transition-all space-y-2.5"
+                            className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-stone-400">
+                              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
                                 #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
                               </span>
                               <span className={cn(
-                                "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize",
-                                ord.status === 'approved' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-                                ord.status === 'pending' && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                                ord.status === 'billed' && "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-                                (ord.status as string) === 'completed' && "bg-stone-500/10 text-stone-700 dark:text-stone-300"
+                                "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full capitalize",
+                                ord.status === 'approved' && "bg-emerald-500 text-white",
+                                ord.status === 'pending' && "bg-amber-500 text-white",
+                                ord.status === 'billed' && "bg-blue-600 text-white",
+                                (ord.status as string) === 'completed' && "bg-stone-600 text-white"
                               )}>
                                 {ord.status}
                               </span>
@@ -870,20 +757,20 @@ export default function CalendarPage() {
 
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <h5 className="font-semibold text-sm text-stone-900 dark:text-stone-100">
+                                <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100">
                                   {isAdmin ? (ord.to || ord.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
                                 </h5>
                                 {ord.company && ord.company !== ord.to && (
-                                  <p className="text-xs text-stone-400 mt-0.5">{ord.company}</p>
+                                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{ord.company}</p>
                                 )}
                               </div>
 
-                              <span className="text-xs font-bold text-stone-800 dark:text-stone-200 tabular-nums shrink-0 px-2 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
+                              <span className="text-xs font-black text-stone-900 dark:text-stone-100 tabular-nums shrink-0 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
                                 {totalPax} {tl('Pax', 'Orang')}
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-4 text-xs text-stone-500 dark:text-stone-400">
+                            <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
                               <div className="flex items-center gap-1.5">
                                 <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
                                 <span>{eventDeliveryTime}</span>
@@ -896,16 +783,16 @@ export default function CalendarPage() {
                               )}
                             </div>
 
-                            <div className="pt-2 border-t border-stone-100 dark:border-stone-800/80 flex justify-end">
+                            <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-end">
                               <button
                                 onClick={async () => {
                                   await triggerLightImpact();
                                   setSelectedOrder(ord);
                                 }}
-                                className="text-xs font-semibold text-crisp-carrot hover:underline flex items-center gap-1 cursor-pointer"
+                                className="text-xs font-bold text-crisp-carrot hover:underline flex items-center gap-1 cursor-pointer"
                               >
                                 {tl('View Details', 'Lihat Butiran')}
-                                <ArrowRight className="w-3 h-3" />
+                                <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>

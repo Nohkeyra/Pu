@@ -7,6 +7,7 @@ const MAX_DEBOUNCE_KEYS = 20;
 
 // Web Audio API Sound Synthesizer for Touch & Click Sound Effects
 let audioCtx: AudioContext | null = null;
+let isUnlocked = false;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -17,13 +18,31 @@ function getAudioContext(): AudioContext | null {
         audioCtx = new AudioCtxClass();
       }
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
   } catch (e) {
     console.debug('Failed to initialize AudioContext:', e);
   }
   return audioCtx;
+}
+
+// Automatically unlock AudioContext on the first user interaction
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    if (isUnlocked) return;
+    const ctx = getAudioContext();
+    if (ctx) {
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          isUnlocked = true;
+        }).catch(() => {});
+      } else {
+        isUnlocked = true;
+      }
+    }
+  };
+
+  window.addEventListener('pointerdown', unlockAudio, { once: false, passive: true });
+  window.addEventListener('touchstart', unlockAudio, { once: false, passive: true });
+  window.addEventListener('click', unlockAudio, { once: false, passive: true });
 }
 
 /**
@@ -32,55 +51,64 @@ function getAudioContext(): AudioContext | null {
  */
 export function playClickSound(soundType: 'light' | 'medium' | 'heavy' | 'notification' | 'force' = 'light') {
   try {
-    const isSoundEnabled = localStorage.getItem('wawasan_sound_effects_enabled') === 'true';
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('wawasan_sound_effects_enabled') : null;
+    const isSoundEnabled = stored === null ? true : stored === 'true';
     if (!isSoundEnabled && soundType !== 'force') return;
 
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const playSound = () => {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    if (soundType === 'light' || soundType === 'force') {
-      // High crisp snap sound (850Hz -> 320Hz pop in 35ms)
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(850, now);
-      osc.frequency.exponentialRampToValueAtTime(320, now + 0.035);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
-      osc.start(now);
-      osc.stop(now + 0.035);
-    } else if (soundType === 'medium') {
-      // Warm wood-tap tone (650Hz -> 200Hz in 50ms)
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(650, now);
-      osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-      osc.start(now);
-      osc.stop(now + 0.05);
-    } else if (soundType === 'heavy') {
-      // Deeper tactile thud tone
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(400, now);
-      osc.frequency.exponentialRampToValueAtTime(120, now + 0.07);
-      gain.gain.setValueAtTime(0.35, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-      osc.start(now);
-      osc.stop(now + 0.07);
-    } else if (soundType === 'notification') {
-      // Pleasant dual chime (C5 to E5)
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.05);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      osc.start(now);
-      osc.stop(now + 0.15);
+      if (soundType === 'light' || soundType === 'force') {
+        // High crisp snap sound (950Hz -> 360Hz pop in 40ms)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(950, now);
+        osc.frequency.exponentialRampToValueAtTime(360, now + 0.04);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } else if (soundType === 'medium') {
+        // Warm wood-tap tone (720Hz -> 240Hz in 55ms)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(240, now + 0.055);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      } else if (soundType === 'heavy') {
+        // Deeper tactile thud tone
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.075);
+        gain.gain.setValueAtTime(0.45, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+        osc.start(now);
+        osc.stop(now + 0.075);
+      } else if (soundType === 'notification') {
+        // Pleasant dual chime (C5 to E5)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.06);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+    };
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(playSound).catch(() => {});
+    } else {
+      playSound();
     }
   } catch (err) {
     console.debug('Audio click sound error:', err);

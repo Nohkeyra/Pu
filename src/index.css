@@ -412,6 +412,28 @@
     z-index: 25;
   }
 
+  /* Calendar Extra / Outside Days Diagonal Stripe Pattern */
+  .cal-striped-outside {
+    background-color: rgba(0, 0, 0, 0.035);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgba(0, 0, 0, 0.075),
+      rgba(0, 0, 0, 0.075) 4px,
+      transparent 4px,
+      transparent 12px
+    );
+  }
+  .dark .cal-striped-outside {
+    background-color: rgba(255, 255, 255, 0.02);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.06) 4px,
+      transparent 4px,
+      transparent 12px
+    );
+  }
+
   .pattern-dots {
     background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l2.5 12.5L35 15l-10 7.5L28 35 20 25l-8 10 3-12.5-10-7.5 12.5-2.5L20 0z' fill='%23e96212' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
     background-size: 40px 40px;

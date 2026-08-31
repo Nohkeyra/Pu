@@ -4,6 +4,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { playClickSound } from "@/lib/haptics"
 
 /**
  * Button — P0/P2 height system + AA colour tokens.
@@ -54,9 +55,15 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, isLoading = false, disabled, children, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, isLoading = false, disabled, onClick, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     const isBlocked = disabled || isLoading
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (isBlocked) return;
+      playClickSound('light');
+      onClick?.(e);
+    };
 
     return (
       <Comp
@@ -64,6 +71,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isBlocked}
         aria-busy={isLoading}
+        onClick={handleClick}
         {...props}
       >
         {isLoading && (
