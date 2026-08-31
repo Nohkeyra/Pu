@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
+import { SplashScreen as NativeSplashScreen } from '@capacitor/splash-screen';
 
 // F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
@@ -9,7 +10,48 @@ export interface SplashScreenProps {
   onComplete?: () => void;
 }
 
-type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'logoZoom' | 'exit';
+type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'impact' | 'logoZoom' | 'exit';
+
+// F-CRACK: Dramatic shatter geometry for the impact beat.
+// Centered on a 400x400 viewBox so it can cover the FULL splash (not just the rider box).
+// Hand-jagged (not straight lines) so it reads as broken glass, not an asterisk.
+const CRACK_MAIN: string[] = [
+  'M200,200 L215,140 L195,80 L205,25',
+  'M200,200 L255,165 L300,140 L345,110',
+  'M200,200 L265,205 L330,195 L385,205',
+  'M200,200 L250,245 L290,300 L330,345',
+  'M200,200 L210,260 L190,320 L200,375',
+  'M200,200 L150,250 L105,290 L60,330',
+  'M200,200 L135,195 L70,205 L15,195',
+  'M200,200 L150,150 L110,100 L65,55',
+];
+
+const CRACK_BRANCHES: string[] = [
+  'M215,140 L250,120 L270,90',
+  'M255,165 L280,200 L310,220',
+  'M265,205 L280,240 L275,275',
+  'M250,245 L215,270 L200,300',
+  'M190,320 L155,335 L140,315',
+  'M150,250 L120,220 L90,225',
+  'M135,195 L110,160 L80,150',
+  'M150,150 L180,120 L175,85',
+];
+
+const CRACK_RINGS: string[] = [
+  'M235,190 L225,155 L195,150 L165,165 L160,200 L175,230 L205,240 L230,225 Z',
+  'M260,180 L235,120 L180,105 L130,140 L120,200 L145,255 L200,275 L250,255 L265,215 Z',
+];
+
+const CRACK_SHARDS: string[] = [
+  '200,200 235,190 225,155',
+  '200,200 225,155 195,150',
+  '200,200 195,150 165,165',
+  '200,200 165,165 160,200',
+  '200,200 160,200 175,230',
+  '200,200 175,230 205,240',
+  '200,200 205,240 230,225',
+  '200,200 230,225 235,190',
+];
 
 let isLowEndDevice = false;
 if (typeof window !== 'undefined') {
@@ -60,24 +102,18 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     }
 
     setStage('ride');
-
-    if (isLowEnd) {
-      addTimer(() => setStage('settle'), 1100);
-      addTimer(() => setStage('lift'), 1350);
-      addTimer(() => setStage('flip'), 1600);
-      addTimer(() => {
-        setStage('hold');
-        reachedHoldRef.current = true;
-      }, 2000);
-    } else {
-      addTimer(() => setStage('settle'), 1400);
-      addTimer(() => setStage('lift'), 1900);
-      addTimer(() => setStage('flip'), 2200);
-      addTimer(() => {
-        setStage('hold');
-        reachedHoldRef.current = true;
-      }, 2800);
-    }
+    // 1. Rider zooms in rapidly from the right and hits center at exactly 800ms
+    // 2. AT EXACTLY 800ms: IMPACT happens! Logo slams in, Screen cracks, Flash & shake trigger together
+    addTimer(() => setStage('impact'), 800);
+    // 3. Shockwave & recoil: Rider is pushed / lifted from impact
+    addTimer(() => setStage('lift'), 1400);
+    // 4. Rider begins fading / disintegrating
+    addTimer(() => setStage('flip'), 1800);
+    // 5. Hold before transitioning to final logo zoom
+    addTimer(() => {
+      setStage('hold');
+      reachedHoldRef.current = true;
+    }, 2400);
   }, [isLowEnd]);
 
   useEffect(() => {
@@ -119,10 +155,15 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   };
 
   const isRiding = stage === 'ride';
-  const isSettling = stage === 'settle' || stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
-  const isLifting = stage === 'lift' || stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
-  const isFlipped = stage === 'flip' || stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  const isSettling = stage === 'settle';
+  const isImpacted = stage === 'impact';
+  const isFading = stage === 'logoZoom';
+  const isFlipped = stage === 'flip' || stage === 'hold';
+  const isLifting = stage === 'lift' || isFlipped;
   const showTitle = stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
+  // Crack appears on impact and stays put through the rest of the ride-out,
+  // instead of vanishing the instant the 'impact' stage ends.
+  const crackVisible = isImpacted || isLifting;
 
   return (
     <AnimatePresence>
@@ -135,9 +176,17 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             "bg-gradient-to-b from-[#fde047] via-[#f59e0b] to-[#d97706]"
           )}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{
+            opacity: 1,
+            x: isImpacted ? [0, -7, 6, -4, 3, 0] : 0,
+            y: isImpacted ? [0, 4, -5, 3, -2, 0] : 0,
+          }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
+          transition={{
+            opacity: { duration: 0.25, ease: 'easeOut' },
+            x: isImpacted ? { duration: 0.42, ease: 'easeOut' } : { duration: 0.2 },
+            y: isImpacted ? { duration: 0.42, ease: 'easeOut' } : { duration: 0.2 },
+          }}
         >
           {/* Putrajaya Sticker Wallpaper Background */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -206,28 +255,46 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
           {/* ── RIDER ANIMATION SCENE ──────────────────────────────────────── */}
           <div className="absolute inset-x-4 top-[25%] bottom-[32%] flex items-center justify-center z-20">
-            <motion.div
-              className="relative w-full max-w-sm aspect-square flex items-center justify-center"
-              initial={{ x: '-110vw', opacity: 0, rotate: -8 }}
+            {/* Logo - Back Layer slamming in right from behind on impact */}
+            <motion.img
+              src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
+              alt="Logo"
+              className="absolute w-44 h-44 object-contain z-10"
+              initial={{ scale: 0.1, opacity: 0 }}
               animate={
-                isFlipped
-                  ? { x: 0, y: [0, -12, 0], opacity: 1, rotate: [0, 4, 0], scale: [1, 1.03, 1] }
+                isImpacted || isLifting || isFlipped || showTitle
+                  ? { scale: [0.2, 1.15, 1], opacity: 1 }
+                  : { scale: 0.1, opacity: 0 }
+              }
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              draggable={false}
+            />
+
+            {/* Rider - Middle Layer rushing in and crashing at center */}
+            <motion.div
+              className="relative w-full max-w-sm aspect-square flex items-center justify-center z-20"
+              initial={{ x: '100vw', scale: 0.95, opacity: 0, rotate: 6 }}
+              animate={
+                isFading
+                  ? { x: 0, opacity: 0, scale: 0.8, filter: 'blur(4px)' }
+                  : isFlipped
+                  ? { x: 0, y: [0, -10, 0], opacity: 0.4, rotate: [0, 4, 0], scale: 0.95 }
                   : isLifting
-                  ? { x: 0, y: [0, -18, -4], opacity: 1, rotate: [0, -4, 2] }
-                  : isSettling
-                  ? { x: 0, y: [0, 6, 0], opacity: 1, rotate: [0, 2, 0] }
-                  : { x: 0, opacity: 1, rotate: 0 }
+                  ? { x: 0, y: [0, -20, -6], opacity: 0.8, rotate: [0, -6, 3], scale: 1.05 }
+                  : isImpacted
+                  ? { x: 0, y: 0, opacity: 1, rotate: [-4, 4, -2, 0], scale: [1.2, 1.05] }
+                  : { x: '100vw', opacity: 1, scale: 1, rotate: 6 }
               }
               transition={
-                isFlipped
-                  ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+                isFading
+                  ? { duration: 0.4, ease: 'easeOut' }
+                  : isFlipped
+                  ? { duration: 0.4, ease: 'easeOut' }
                   : isLifting
-                  ? { duration: 0.45, ease: 'easeOut' }
-                  : isSettling
-                  ? { duration: 0.35, ease: 'easeInOut' }
-                  : isLowEnd
-                  ? { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
-                  : { type: 'spring', stiffness: 90, damping: 14 }
+                  ? { duration: 0.35, ease: 'easeOut' }
+                  : isImpacted
+                  ? { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
+                  : { duration: 0.78, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <img
@@ -239,6 +306,116 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               />
             </motion.div>
           </div>
+
+          {/* ── SCREEN CRACK IMPACT — dramatic full-screen shatter, not the tiny asterisk ── */}
+          <AnimatePresence>
+            {crackVisible && (
+              <motion.div
+                key="crack-overlay"
+                className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.28, ease: 'easeOut' } }}
+              >
+                {/* Impact flash */}
+                <motion.div
+                  className="absolute inset-0 bg-white"
+                  style={{ mixBlendMode: 'screen' }}
+                  initial={{ opacity: 0.9 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+
+                <motion.svg
+                  viewBox="0 0 400 400"
+                  className="absolute w-[240%] h-[240%] max-w-none sm:w-[190%] sm:h-[190%]"
+                  style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.55))' }}
+                >
+                  <defs>
+                    <radialGradient id="sp-crack-flash" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                      <stop offset="40%" stopColor="#ffffff" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Shockwave burst at impact point */}
+                  <motion.circle
+                    cx={200}
+                    cy={200}
+                    r={10}
+                    fill="url(#sp-crack-flash)"
+                    initial={{ scale: 0, opacity: 1 }}
+                    animate={{ scale: 13, opacity: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    style={{ transformOrigin: '200px 200px' }}
+                  />
+
+                  {/* Glass shards near the impact point, for depth */}
+                  {CRACK_SHARDS.map((points, i) => (
+                    <motion.polygon
+                      key={`shard-${i}`}
+                      points={points}
+                      fill="rgba(255,255,255,0.07)"
+                      stroke="rgba(255,255,255,0.4)"
+                      strokeWidth={0.6}
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: [0, 1, 0.45], scale: [0.85, 1.05, 1] }}
+                      transition={{ duration: 0.5, delay: 0.03 + i * 0.012, ease: 'easeOut' }}
+                      style={{ transformOrigin: '200px 200px' }}
+                    />
+                  ))}
+
+                  {/* Inner web rings around the impact point */}
+                  {CRACK_RINGS.map((d, i) => (
+                    <motion.path
+                      key={`ring-${i}`}
+                      d={d}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.55)"
+                      strokeWidth={1}
+                      strokeLinecap="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ duration: 0.22, delay: 0.05 + i * 0.03, ease: 'easeOut' }}
+                    />
+                  ))}
+
+                  {/* Main jagged crack fissures - instantaneous sharp shatter */}
+                  {CRACK_MAIN.map((d, i) => (
+                    <motion.path
+                      key={`main-${i}`}
+                      d={d}
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ duration: 0.12, delay: i * 0.005, ease: 'easeOut' }}
+                    />
+                  ))}
+
+                  {/* Secondary branch fissures */}
+                  {CRACK_BRANCHES.map((d, i) => (
+                    <motion.path
+                      key={`branch-${i}`}
+                      d={d}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.85)"
+                      strokeWidth={1.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ duration: 0.15, delay: 0.02 + i * 0.008, ease: 'easeOut' }}
+                    />
+                  ))}
+                </motion.svg>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Motion trail */}
           {isRiding && (
@@ -302,8 +479,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           )}
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          exit={{ y: '-100%', opacity: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Sticker bomb background layer */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">

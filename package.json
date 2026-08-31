@@ -52,6 +52,7 @@
     "autoprefixer": "^10.4.19",
     "bcryptjs": "^2.4.3",
     "canvas-confetti": "^1.9.4",
+    "capacitor-native-biometric": "4.2.2",
     "capacitor-plugin-safe-area": "^5.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

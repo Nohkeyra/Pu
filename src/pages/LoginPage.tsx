@@ -8,6 +8,7 @@ import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
+import { NativeBiometric } from 'capacitor-native-biometric';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -16,6 +17,25 @@ export default function LoginPage() {
   const { theme, toggleTheme } = useTheme();
 
   const tLocal = (en: string, bm: string) => (language === 'bm' ? bm : en);
+
+  const handleAdminAccess = async () => {
+    try {
+      const { isAvailable } = await NativeBiometric.isAvailable();
+      if (isAvailable) {
+        await NativeBiometric.verifyIdentity({
+          reason: 'Admin access required',
+          title: 'Fingerprint Authentication',
+          subtitle: 'Please scan your fingerprint to access the admin panel.',
+          negativeButtonText: 'Cancel',
+        });
+        navigate('/admin');
+      } else {
+        alert(tLocal('Biometric authentication not available.', 'Pengesahan biometrik tidak tersedia.'));
+      }
+    } catch (error) {
+      console.error('Biometric authentication failed', error);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cream px-6 py-10 dark:bg-background">
@@ -30,7 +50,7 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={() => navigate('/admin')}
+            onClick={handleAdminAccess}
             className="icon-button-soft touch-target h-11 w-11 text-deep-forest/50 hover:text-[var(--color-sunshine-cta)]"
             aria-label="Admin Access"
             id="admin-secret-trigger"
