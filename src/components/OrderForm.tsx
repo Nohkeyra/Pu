@@ -113,6 +113,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
     return 1;
   });
+
+  // Automatically scroll page to top whenever step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // C-03 (2026-08-06): stable per-attempt key so a retried/duplicate submit
   // (network timeout + retry, offline-queue replay) can't create a second

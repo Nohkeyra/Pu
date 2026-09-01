@@ -104,10 +104,10 @@ function PageTransition({ children }: { children: ReactNode }) {
   const isNative = Capacitor.isNativePlatform();
   return (
     <motion.div
-      initial={isNative ? { opacity: 0.95 } : { opacity: 0.88, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={isNative ? undefined : { opacity: 0.94 }}
-      transition={{ duration: isNative ? 0.08 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: isNative ? 4 : 8, scale: 0.995 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: isNative ? -4 : -6, scale: 0.995 }}
+      transition={{ duration: isNative ? 0.12 : 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="flex-grow flex flex-col w-full h-full relative"
     >
       {children}
@@ -207,13 +207,9 @@ export default function AppContent() {
             Web keeps AnimatePresence since it has a real exit animation to
             sequence.
           */}
-          {Capacitor.isNativePlatform() ? (
-            <AppRoutes location={location} />
-          ) : (
-            <AnimatePresence mode="wait">
-              <AppRoutes location={location} />
-            </AnimatePresence>
-          )}
+          <AnimatePresence mode="wait">
+            <AppRoutes location={location} key={location.pathname} />
+          </AnimatePresence>
         </Suspense>
       </main>
       <BottomNavigation />
