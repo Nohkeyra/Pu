@@ -86,7 +86,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
     const token = jwt.sign(
       { role: 'admin', admin: true, timestamp: Date.now() },
       effectiveJwtSecret,
-      { expiresIn: '12h', jwtid: randomUUID() }
+      { expiresIn: '30d', jwtid: randomUUID() }
     );
 
     return res.json({ success: true, token });

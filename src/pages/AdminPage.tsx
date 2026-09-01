@@ -56,8 +56,28 @@ export default function AdminPage() {
       try {
         const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
         if (storedToken) {
-          setToken(storedToken);
-          setIsAuthenticated(true);
+          try {
+            const response = await fetch(getApiUrl('/api/admin/verify'), {
+              headers: { 'Authorization': `Bearer ${storedToken}` }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.success) {
+                setToken(storedToken);
+                setIsAuthenticated(true);
+              } else {
+                await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+              }
+            } else {
+              // Token invalid or expired (e.g. 401)
+              await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+            }
+          } catch (verifyErr) {
+            console.warn('[Admin Auth] Token verification network/fetch failed, falling back to local session:', verifyErr);
+            // Offline/network failure fallback: keep the session active locally
+            setToken(storedToken);
+            setIsAuthenticated(true);
+          }
         }
       } catch (secureItemErr) {
         console.warn('[Admin Auth] Failed to read stored admin token:', secureItemErr);
