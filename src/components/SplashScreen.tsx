@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
+import { triggerDramaticImpact } from '@/lib/haptics';
 
 // F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
@@ -9,36 +10,34 @@ export interface SplashScreenProps {
   onComplete?: () => void;
 }
 
-type Stage = 'ride' | 'settle' | 'lift' | 'flip' | 'hold' | 'impact' | 'logoZoom' | 'exit';
+type Stage = 'ride' | 'impact' | 'slide' | 'hold' | 'logoZoom' | 'exit';
 
-// F-CRACK: Dramatic shatter geometry for the impact beat.
-// Centered on a 400x400 viewBox so it can cover the FULL splash (not just the rider box).
-// Hand-jagged (not straight lines) so it reads as broken glass, not an asterisk.
+// F-CRACK: High-performance vector shatter & spiderweb fracture geometry for glass impact
 const CRACK_MAIN: string[] = [
-  'M200,200 L215,140 L195,80 L205,25',
-  'M200,200 L255,165 L300,140 L345,110',
-  'M200,200 L265,205 L330,195 L385,205',
-  'M200,200 L250,245 L290,300 L330,345',
-  'M200,200 L210,260 L190,320 L200,375',
-  'M200,200 L150,250 L105,290 L60,330',
-  'M200,200 L135,195 L70,205 L15,195',
-  'M200,200 L150,150 L110,100 L65,55',
+  'M200,200 L215,135 L195,75 L205,15',
+  'M200,200 L260,160 L310,135 L360,100',
+  'M200,200 L275,205 L340,195 L395,205',
+  'M200,200 L255,250 L300,310 L345,360',
+  'M200,200 L210,265 L190,330 L200,390',
+  'M200,200 L145,255 L95,300 L45,345',
+  'M200,200 L130,195 L60,205 L5,195',
+  'M200,200 L145,145 L100,95 L50,45',
 ];
 
 const CRACK_BRANCHES: string[] = [
-  'M215,140 L250,120 L270,90',
-  'M255,165 L280,200 L310,220',
-  'M265,205 L280,240 L275,275',
-  'M250,245 L215,270 L200,300',
-  'M190,320 L155,335 L140,315',
-  'M150,250 L120,220 L90,225',
-  'M135,195 L110,160 L80,150',
-  'M150,150 L180,120 L175,85',
+  'M215,135 L255,115 L275,80',
+  'M260,160 L285,200 L320,225',
+  'M275,205 L290,245 L285,285',
+  'M255,250 L220,275 L205,310',
+  'M190,330 L150,345 L135,320',
+  'M145,255 L115,225 L80,230',
+  'M130,195 L105,155 L70,145',
+  'M145,145 L180,110 L170,75',
 ];
 
 const CRACK_RINGS: string[] = [
   'M235,190 L225,155 L195,150 L165,165 L160,200 L175,230 L205,240 L230,225 Z',
-  'M260,180 L235,120 L180,105 L130,140 L120,200 L145,255 L200,275 L250,255 L265,215 Z',
+  'M265,180 L235,120 L180,105 L130,140 L120,200 L145,255 L200,280 L255,255 L270,215 Z',
 ];
 
 const CRACK_SHARDS: string[] = [
@@ -70,7 +69,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
   useEffect(() => {
     if (isReducedRef.current) return;
-    const id = setTimeout(() => setSkipFaded(true), 1500);
+    const id = setTimeout(() => setSkipFaded(true), 1200);
     return () => clearTimeout(id);
   }, []);
 
@@ -101,19 +100,26 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     }
 
     setStage('ride');
-    // 1. Rider zooms in rapidly from the right and hits center at exactly 800ms
-    // 2. AT EXACTLY 800ms: IMPACT happens! Logo slams in, Screen cracks, Flash & shake trigger together
-    addTimer(() => setStage('impact'), 800);
-    // 3. Shockwave & recoil: Rider is pushed / lifted from impact
-    addTimer(() => setStage('lift'), 1400);
-    // 4. Rider begins fading / disintegrating
-    addTimer(() => setStage('flip'), 1800);
-    // 5. Hold before transitioning to final logo zoom
+
+    // ── SLAPSTICK TIMING SEQUENCE ──
+    // 1. Rider memecut laju dari kanan (0ms -> 650ms)
+    // 2. 650ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass)
+    addTimer(() => {
+      setStage('impact');
+      triggerDramaticImpact().catch(() => {});
+    }, 650);
+
+    // 3. 1300ms (selepas 650ms melekat dazed): Rider mula meluncur gelongsor perlahan-lahan ke bawah (Slow slide down)
+    addTimer(() => {
+      setStage('slide');
+    }, 1300);
+
+    // 4. 2350ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
     addTimer(() => {
       setStage('hold');
       reachedHoldRef.current = true;
-    }, 2400);
-  }, [isLowEnd]);
+    }, 2350);
+  }, []);
 
   useEffect(() => {
     runSequence();
@@ -123,16 +129,16 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   useEffect(() => {
     if (!isLoading && reachedHoldRef.current && stage === 'hold') {
       if (isReducedRef.current) {
-        addTimer(() => setStage('exit'), 150);
+        addTimer(() => setStage('exit'), 100);
       } else {
-        addTimer(() => setStage('logoZoom'), 400);
+        addTimer(() => setStage('logoZoom'), 350);
       }
     }
   }, [isLoading, stage]);
 
   useEffect(() => {
     if (stage === 'logoZoom') {
-      addTimer(() => setStage('exit'), 950);
+      addTimer(() => setStage('exit'), 850);
     }
   }, [stage]);
 
@@ -142,7 +148,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         if (onComplete) {
           onComplete();
         }
-      }, 500);
+      }, 450);
     }
   }, [stage, onComplete]);
 
@@ -155,13 +161,11 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
   const isRiding = stage === 'ride';
   const isImpacted = stage === 'impact';
+  const isSliding = stage === 'slide';
   const isFading = stage === 'logoZoom';
-  const isFlipped = stage === 'flip' || stage === 'hold';
-  const isLifting = stage === 'lift' || isFlipped;
   const showTitle = stage === 'hold' || stage === 'logoZoom' || stage === 'exit';
-  // Crack appears on impact and stays put through the rest of the ride-out,
-  // instead of vanishing the instant the 'impact' stage ends.
-  const crackVisible = isImpacted || isLifting;
+  const showSlideSmear = isImpacted || isSliding || stage === 'hold';
+  const crackVisible = isImpacted || isSliding;
 
   return (
     <AnimatePresence>
@@ -170,34 +174,26 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         <motion.div
           key="splash-bg"
           className={cn(
-            "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden select-none transition-colors duration-700",
+            "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden select-none",
             "bg-gradient-to-b from-[#fde047] via-[#f59e0b] to-[#d97706]"
           )}
           initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            x: isImpacted ? [0, -7, 6, -4, 3, 0] : 0,
-            y: isImpacted ? [0, 4, -5, 3, -2, 0] : 0,
-          }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{
-            opacity: { duration: 0.25, ease: 'easeOut' },
-            x: isImpacted ? { duration: 0.42, ease: 'easeOut' } : { duration: 0.2 },
-            y: isImpacted ? { duration: 0.42, ease: 'easeOut' } : { duration: 0.2 },
-          }}
+          transition={{ opacity: { duration: 0.2, ease: 'easeOut' } }}
         >
-          {/* Putrajaya Sticker Wallpaper Background */}
+          {/* Putrajaya Sticker Wallpaper Background - GPU Optimized without expensive blend-modes/filters */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <img
               src={getAssetUrl('/assets/heritage/putrajaya_stickerbomb.jpg')}
               alt="Putrajaya Sticker Wallpaper"
-              className="w-full h-full object-cover object-center opacity-35 mix-blend-multiply scale-105"
+              className="w-full h-full object-cover object-center opacity-20"
               draggable={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/60 via-[#f59e0b]/50 to-[#d97706]/70" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(254,240,138,0.35)_0%,transparent_80%)]" />
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] bg-[#fef08a]/50 rounded-full blur-[110px]" />
-            <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[420px] h-[420px] bg-[#ea580c]/35 rounded-full blur-[90px]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/70 via-[#f59e0b]/60 to-[#d97706]/80" />
+            {/* Pure CSS Radial Gradients instead of heavy GPU Gaussian blur passes */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(254,240,138,0.5)_0%,transparent_65%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_80%,rgba(234,88,12,0.3)_0%,transparent_60%)]" />
           </div>
 
           {/* Batik Dots Pattern */}
@@ -220,23 +216,23 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             type="button"
             onClick={handleSkip}
             aria-label="Langkau skrin percikan"
-            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-black/20 active:scale-95 border border-white/30 text-[10px] font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-black/30 pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0c453c]"
+            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-black/25 active:scale-95 border border-white/30 text-[10px] font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-black/40 pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0c453c]"
             style={{
               top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))',
-              opacity: skipFaded ? 0.3 : 1,
+              opacity: skipFaded ? 0.35 : 1,
             }}
           >
             Langkau
           </button>
 
-          {/* Loading Indicator */}
+          {/* Loading / Ready Indicator */}
           {showTitle && (
             <div
               className="absolute left-0 right-0 flex justify-center pointer-events-none z-20"
               style={{ bottom: 'calc(5% + var(--safe-area-inset-bottom, 0px))' }}
               aria-live="polite"
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/25 backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 border border-white/25 backdrop-blur-md shadow-xl">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fde047] opacity-80" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#fde047]" />
@@ -252,114 +248,191 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           <div className="absolute bottom-[30%] left-8 right-8 h-px bg-black/20" />
 
           {/* ── RIDER ANIMATION SCENE ──────────────────────────────────────── */}
-          <div className="absolute inset-x-4 top-[25%] bottom-[32%] flex items-center justify-center z-20">
-            {/* Logo - Back Layer slamming in right from behind on impact */}
+          <motion.div
+            className="absolute inset-x-4 top-[25%] bottom-[30%] flex items-center justify-center z-20 transform-gpu"
+            animate={{
+              x: isImpacted ? [0, -12, 10, -8, 6, -3, 0] : 0,
+              y: isImpacted ? [0, 9, -10, 7, -4, 2, 0] : 0,
+            }}
+            transition={{ duration: 0.42, ease: 'easeOut' }}
+          >
+            {/* Logo - Back Layer revealed behind rider as he slides down */}
             <motion.img
               src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
               alt="Logo"
-              className="absolute w-44 h-44 object-contain z-10"
-              initial={{ scale: 0.1, opacity: 0 }}
+              className="absolute w-44 h-44 object-contain z-10 drop-shadow-lg transform-gpu"
+              style={{ willChange: 'transform, opacity' }}
+              initial={{ scale: 0.2, opacity: 0 }}
               animate={
-                isImpacted || isLifting || isFlipped || showTitle
-                  ? { scale: [0.2, 1.15, 1], opacity: 1 }
-                  : { scale: 0.1, opacity: 0 }
+                stage === 'slide' || stage === 'hold' || showTitle
+                  ? { scale: [0.85, 1.05, 1], opacity: 1 }
+                  : isImpacted
+                  ? { scale: 0.7, opacity: 0.4 }
+                  : { scale: 0.2, opacity: 0 }
               }
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               draggable={false}
             />
 
-            {/* Rider - Middle Layer rushing in and crashing at center */}
+            {/* ── COMIC GLASS SMUDGE & SLIDE STREAK ── */}
+            <AnimatePresence>
+              {showSlideSmear && (
+                <motion.div
+                  key="slide-smudge-layer"
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none z-15 overflow-hidden transform-gpu"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0.5 } }}
+                >
+                  {/* Top Impact Fog Smear */}
+                  <motion.div
+                    className="absolute rounded-[50%] bg-white/35"
+                    style={{ width: 170, height: 75, top: '42%', willChange: 'transform, opacity' }}
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={
+                      isImpacted
+                        ? { opacity: [0, 0.75, 0.5], scaleX: [0.6, 1.35, 1.15], scaleY: [0.4, 0.75, 0.65] }
+                        : isSliding
+                        ? { opacity: 0.3, scaleX: 1.05, scaleY: 0.55 }
+                        : { opacity: [0.3, 0] }
+                    }
+                    transition={{ duration: 0.75, ease: 'easeOut' }}
+                  />
+
+                  {/* Vertical Squeegee Slide Streak (GPU scaleY instead of height to prevent reflows) */}
+                  {(isSliding || stage === 'hold') && (
+                    <motion.div
+                      className="absolute flex flex-col items-center transform-gpu"
+                      style={{
+                        top: '44%',
+                        width: 130,
+                        height: 260,
+                        transformOrigin: 'top center',
+                        willChange: 'transform, opacity',
+                      }}
+                      initial={{ scaleY: 0, opacity: 0 }}
+                      animate={{
+                        scaleY: isSliding ? [0, 0.35, 0.7, 1] : 1,
+                        opacity: isSliding ? [0, 0.55, 0.4] : [0.4, 0],
+                      }}
+                      transition={{ duration: isSliding ? 0.95 : 0.75, ease: 'easeOut' }}
+                    >
+                      {/* Translucent smear body */}
+                      <div className="w-full h-full bg-gradient-to-b from-white/30 via-white/15 to-transparent rounded-b-2xl" />
+                      
+                      {/* Vertical cartoon friction wipe lines */}
+                      <div className="absolute inset-y-0 left-4 w-0.5 bg-white/35" />
+                      <div className="absolute inset-y-2 left-10 w-0.5 bg-white/25" />
+                      <div className="absolute inset-y-1 right-8 w-0.5 bg-white/30" />
+                      <div className="absolute inset-y-4 right-4 w-0.5 bg-white/20" />
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Dazed Dizzy Cartoon Stars when hitting the glass */}
+            {isImpacted && (
+              <motion.div
+                className="absolute z-30 pointer-events-none transform-gpu"
+                style={{ top: '28%', willChange: 'transform, opacity' }}
+                initial={{ opacity: 0, scale: 0.2 }}
+                animate={{ opacity: [0, 1, 0.9], scale: [0.2, 1.15, 1], rotate: [0, 180] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+              >
+                <div className="relative flex items-center justify-center w-28 h-10">
+                  <span className="absolute left-1 top-0 text-amber-200 text-lg drop-shadow font-black animate-bounce">⭐</span>
+                  <span className="absolute right-2 top-1 text-yellow-100 text-sm drop-shadow font-black animate-pulse">✨</span>
+                  <span className="absolute left-8 -top-3 text-amber-300 text-xs drop-shadow font-black animate-spin">💫</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Rider - Middle Layer: Slams on glass then slowly slides down */}
             <motion.div
-              className="relative w-full max-w-sm aspect-square flex items-center justify-center z-20"
-              initial={{ x: '100vw', scale: 0.95, opacity: 0, rotate: 6 }}
+              className="relative w-full max-w-sm aspect-square flex items-center justify-center z-25 pointer-events-none transform-gpu"
+              style={{ willChange: 'transform, opacity' }}
+              initial={{ x: '100vw', y: 0, scale: 0.95, opacity: 0, rotate: 6 }}
               animate={
                 isFading
-                  ? { x: 0, opacity: 0, scale: 0.8, filter: 'blur(4px)' }
-                  : isFlipped
-                  ? { x: 0, y: [0, -10, 0], opacity: 0.4, rotate: [0, 4, 0], scale: 0.95 }
-                  : isLifting
-                  ? { x: 0, y: [0, -20, -6], opacity: 0.8, rotate: [0, -6, 3], scale: 1.05 }
+                  ? { x: 0, y: 500, opacity: 0 }
+                  : stage === 'hold'
+                  ? { x: 0, y: 500, opacity: 0 }
+                  : isSliding
+                  ? {
+                      x: 0,
+                      y: [0, 35, 95, 185, 310, 480],
+                      rotate: [-4, 6, -5, 9, 14, 18],
+                      scale: [1, 1, 0.98, 0.95, 0.9, 0.85],
+                      opacity: [1, 1, 0.95, 0.8, 0.4, 0],
+                    }
                   : isImpacted
-                  ? { x: 0, y: 0, opacity: 1, rotate: [-4, 4, -2, 0], scale: [1.2, 1.05] }
-                  : { x: '100vw', opacity: 1, scale: 1, rotate: 6 }
+                  ? {
+                      x: 0,
+                      y: 0,
+                      opacity: 1,
+                      rotate: [-6, 5, -2, 0],
+                      scale: [1, 1.08, 1],
+                    }
+                  : { x: '100vw', y: 0, opacity: 1, scale: 1, rotate: 6 }
               }
               transition={
-                isFading
-                  ? { duration: 0.4, ease: 'easeOut' }
-                  : isFlipped
-                  ? { duration: 0.4, ease: 'easeOut' }
-                  : isLifting
-                  ? { duration: 0.35, ease: 'easeOut' }
+                isSliding
+                  ? {
+                      duration: 1.05,
+                      ease: [0.4, 0, 0.6, 1],
+                      times: [0, 0.18, 0.4, 0.65, 0.88, 1],
+                    }
                   : isImpacted
-                  ? { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
-                  : { duration: 0.78, ease: [0.22, 1, 0.36, 1] }
+                  ? { duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }
+                  : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <img
                 src={getAssetUrl('/assets/ui/rider-grouped.svg')}
                 alt="Restoran Wawasan Delivery Rider"
-                className="w-full h-full object-contain pointer-events-none drop-shadow-2xl bg-transparent"
+                className="w-full h-full object-contain drop-shadow-md bg-transparent"
                 style={{ background: 'transparent' }}
                 draggable={false}
               />
             </motion.div>
-          </div>
+          </motion.div>
 
-          {/* ── SCREEN CRACK IMPACT — dramatic full-screen shatter, not the tiny asterisk ── */}
+          {/* ── SCREEN CRACK IMPACT — vector glass crack overlay ── */}
           <AnimatePresence>
             {crackVisible && (
               <motion.div
                 key="crack-overlay"
-                className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden"
+                className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden transform-gpu"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.28, ease: 'easeOut' } }}
+                exit={{ opacity: 0, transition: { duration: 0.45, ease: 'easeOut' } }}
               >
                 {/* Impact flash */}
                 <motion.div
-                  className="absolute inset-0 bg-white"
-                  style={{ mixBlendMode: 'screen' }}
-                  initial={{ opacity: 0.9 }}
+                  className="absolute inset-0 bg-white pointer-events-none"
+                  initial={{ opacity: 0.75 }}
                   animate={{ opacity: 0 }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                 />
 
                 <motion.svg
                   viewBox="0 0 400 400"
                   className="absolute w-[240%] h-[240%] max-w-none sm:w-[190%] sm:h-[190%]"
-                  style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.55))' }}
+                  style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }}
                 >
-                  <defs>
-                    <radialGradient id="sp-crack-flash" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-                      <stop offset="40%" stopColor="#ffffff" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
-
-                  {/* Shockwave burst at impact point */}
-                  <motion.circle
-                    cx={200}
-                    cy={200}
-                    r={10}
-                    fill="url(#sp-crack-flash)"
-                    initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 13, opacity: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    style={{ transformOrigin: '200px 200px' }}
-                  />
-
-                  {/* Glass shards near the impact point, for depth */}
+                  {/* Glass shards near the impact point */}
                   {CRACK_SHARDS.map((points, i) => (
                     <motion.polygon
                       key={`shard-${i}`}
                       points={points}
-                      fill="rgba(255,255,255,0.07)"
-                      stroke="rgba(255,255,255,0.4)"
-                      strokeWidth={0.6}
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: [0, 1, 0.45], scale: [0.85, 1.05, 1] }}
-                      transition={{ duration: 0.5, delay: 0.03 + i * 0.012, ease: 'easeOut' }}
+                      fill="rgba(255,255,255,0.12)"
+                      stroke="rgba(255,255,255,0.65)"
+                      strokeWidth={0.8}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: [0, 1, 0.6], scale: [0.8, 1.08, 1] }}
+                      transition={{ duration: 0.4, delay: 0.02 + i * 0.01, ease: 'easeOut' }}
                       style={{ transformOrigin: '200px 200px' }}
                     />
                   ))}
@@ -370,28 +443,28 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       key={`ring-${i}`}
                       d={d}
                       fill="none"
-                      stroke="rgba(255,255,255,0.55)"
-                      strokeWidth={1}
+                      stroke="rgba(255,255,255,0.7)"
+                      strokeWidth={1.2}
                       strokeLinecap="round"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 0.22, delay: 0.05 + i * 0.03, ease: 'easeOut' }}
+                      transition={{ duration: 0.18, delay: 0.03 + i * 0.025, ease: 'easeOut' }}
                     />
                   ))}
 
-                  {/* Main jagged crack fissures - instantaneous sharp shatter */}
+                  {/* Main jagged crack fissures */}
                   {CRACK_MAIN.map((d, i) => (
                     <motion.path
                       key={`main-${i}`}
                       d={d}
                       fill="none"
                       stroke="#ffffff"
-                      strokeWidth={2.2}
+                      strokeWidth={2.4}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 0.12, delay: i * 0.005, ease: 'easeOut' }}
+                      transition={{ duration: 0.1, delay: i * 0.006, ease: 'easeOut' }}
                     />
                   ))}
 
@@ -401,13 +474,13 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       key={`branch-${i}`}
                       d={d}
                       fill="none"
-                      stroke="rgba(255,255,255,0.85)"
-                      strokeWidth={1.2}
+                      stroke="rgba(255,255,255,0.9)"
+                      strokeWidth={1.4}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 0.15, delay: 0.02 + i * 0.008, ease: 'easeOut' }}
+                      transition={{ duration: 0.14, delay: 0.02 + i * 0.008, ease: 'easeOut' }}
                     />
                   ))}
                 </motion.svg>
@@ -415,19 +488,19 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             )}
           </AnimatePresence>
 
-          {/* Motion trail */}
+          {/* Motion trail behind speeding rider */}
           {isRiding && (
             <motion.div
               className="absolute bottom-[38%] flex flex-col gap-1.5 z-10"
-              style={{ right: '55%' }}
+              style={{ right: '50%' }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.7, 0.7, 0] }}
-              transition={{ duration: 1.1, times: [0, 0.15, 0.75, 1] }}
+              animate={{ opacity: [0, 0.85, 0.85, 0] }}
+              transition={{ duration: 0.72, times: [0, 0.15, 0.75, 1] }}
             >
-              {[52, 36, 22].map((w, i) => (
+              {[58, 40, 24].map((w, i) => (
                 <div
                   key={i}
-                  className="h-0.5 rounded-full bg-white/20"
+                  className="h-0.5 rounded-full bg-white/30"
                   style={{ width: w }}
                 />
               ))}
@@ -460,14 +533,14 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               />
             </div>
 
-            <p className="text-[10px] font-medium tracking-widest text-white/70 uppercase mt-1.5">
+            <p className="text-[10px] font-medium tracking-widest text-white/75 uppercase mt-1.5">
               Sistem Tempahan Katering Putrajaya
             </p>
           </motion.div>
         </motion.div>
       )}
 
-      {/* ── LOGO ZOOM FRAME (closing beat) ────────────────────────────────── */}
+      {/* ── LOGO ZOOM FRAME (closing transition beat) ────────────────────────── */}
       {(stage === 'logoZoom' || stage === 'exit') && (
         <motion.div
           key="logo-zoom"
@@ -478,35 +551,37 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ y: '-100%', opacity: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Sticker bomb background layer */}
+          {/* Sticker bomb background layer - lightweight */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <img
               src={getAssetUrl('/assets/heritage/putrajaya_stickerbomb.jpg')}
               alt="Putrajaya Sticker Bomb Wallpaper"
-              className="w-full h-full object-cover object-center opacity-35 mix-blend-multiply scale-105"
+              className="w-full h-full object-cover object-center opacity-20"
               draggable={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/60 via-[#f59e0b]/50 to-[#d97706]/70" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#fde047]/70 via-[#f59e0b]/60 to-[#d97706]/80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(254,240,138,0.5)_0%,transparent_65%)]" />
           </div>
-          <motion.img
-            src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
-            alt="Restoran Wawasan"
-            className="w-60 h-60 object-contain drop-shadow-2xl"
-            draggable={false}
-            initial={{ scale: 0.2, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{
-              scale: isLowEnd
-                ? { duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.06 }
-                : { type: 'spring', stiffness: 260, damping: 18, delay: 0.06 },
-              opacity: { duration: 0.22, ease: 'easeOut', delay: 0.06 },
-            }}
-            onError={() => setBadgeError(true)}
-            style={badgeError ? { display: 'none' } : {}}
-          />
-          {badgeError && (
+          {!badgeError ? (
+            <motion.img
+              src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
+              alt="Restoran Wawasan"
+              className="w-60 h-60 object-contain drop-shadow-xl transform-gpu"
+              style={{ willChange: 'transform, opacity' }}
+              draggable={false}
+              initial={{ scale: 0.2, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                scale: isLowEnd
+                  ? { duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.05 }
+                  : { type: 'spring', stiffness: 260, damping: 18, delay: 0.05 },
+                opacity: { duration: 0.2, ease: 'easeOut', delay: 0.05 },
+              }}
+              onError={() => setBadgeError(true)}
+            />
+          ) : (
             <div className="text-center">
               <p className="text-2xl font-black text-[#e96212] tracking-tight">RESTORAN</p>
               <p className="text-3xl font-black text-white tracking-tight">WAWASAN</p>
@@ -518,3 +593,4 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     </AnimatePresence>
   );
 }
+

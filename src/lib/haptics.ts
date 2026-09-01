@@ -115,6 +115,18 @@ export function playClickSound(soundType: 'light' | 'medium' | 'heavy' | 'notifi
   }
 }
 
+/**
+ * Triggers a dramatic cinematic impact with haptic heavy punch (no audio)
+ */
+export async function triggerDramaticImpact(): Promise<void> {
+  if (!shouldTrigger('dramatic_impact')) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Heavy });
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
 function cleanupHapticKeys() {
   const keys = Object.keys(lastHapticTime);
   if (keys.length > MAX_DEBOUNCE_KEYS) {
