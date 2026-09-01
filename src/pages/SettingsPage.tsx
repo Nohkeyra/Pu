@@ -156,6 +156,7 @@ export default function SettingsPage() {
     statusBarColor,
     setStatusBarColor,
     isAdmin,
+    adminToken,
     customMainColor,
     setCustomMainColor,
     customFontSizePx,
@@ -385,15 +386,6 @@ export default function SettingsPage() {
   const [erudaEnabled, setErudaEnabled] = useState(
     () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
   );
-
-  const [adminToken, setAdminToken] = useState(() => 
-    typeof localStorage !== 'undefined' ? localStorage.getItem('wawasan_admin_token') || '' : ''
-  );
-
-  useEffect(() => {
-    const token = localStorage.getItem('wawasan_admin_token') || '';
-    setAdminToken(token);
-  }, [isAdmin]);
 
   const authHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',

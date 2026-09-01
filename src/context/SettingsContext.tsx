@@ -35,6 +35,7 @@ interface SettingsContextType {
 
   // Admin & Hardware Diagnostics UI
   isAdmin: boolean;
+  adminToken: string;
   checkAdminStatus: () => Promise<boolean>;
   customMainColor: string;
   setCustomMainColor: (color: string) => void;
@@ -146,6 +147,29 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  // F-AUTH-UNIFY (audit 2026-09-01): single source of truth for the actual
+  // admin token string (not just the isAdmin boolean). Previously,
+  // SettingsPage.tsx kept its own independent copy of this token, read
+  // directly from localStorage and only re-synced when isAdmin's boolean
+  // value changed. That copy could silently go stale (e.g. left holding an
+  // old/invalid token) without isAdmin ever flipping to reveal the problem,
+  // causing admin-authenticated calls from that page (diagnostics) to fail
+  // with 401 even though login itself had succeeded and other admin screens
+  // — which read the token from their own fresh in-memory state instead —
+  // kept working fine. Seeded here optimistically from localStorage (same
+  // pattern as isAdmin above), then corrected by checkAdminStatus(), which
+  // reads the authoritative value from native Capacitor Preferences on
+  // mount and on every admin login/logout event. Any screen that needs to
+  // call authenticated admin endpoints should read this from context
+  // instead of independently re-deriving its own copy.
+  const [adminToken, setAdminToken] = useState<string>(() => {
+    try {
+      return localStorage.getItem('wawasan_admin_token') || '';
+    } catch {
+      return '';
+    }
+  });
+
   // Admin Customize UI States
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   
@@ -186,9 +210,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const token = await getSecureItem('wawasan_admin_token');
       const active = Boolean(token && token.trim().length > 0);
       setIsAdmin(active);
+      setAdminToken(active && token ? token : '');
       return active;
     } catch {
       setIsAdmin(false);
+      setAdminToken('');
       return false;
     }
   }, []);
@@ -426,6 +452,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         soundEffectsEnabled,
         setSoundEffectsEnabled,
         isAdmin,
+        adminToken,
         checkAdminStatus,
         customMainColor,
         setCustomMainColor,
