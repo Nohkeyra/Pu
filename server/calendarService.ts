@@ -93,16 +93,31 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
     // Per-status event key ensures every status transition auto-syncs to Google Calendar with its own separate event
     const statusEventKey = `${calendarId}_${currentStatus}`;
     const statusKey = currentStatus;
+    const statusLabel = currentStatus.toUpperCase();
 
     const existingEventId =
       orderData.calendarEventIds?.[statusEventKey] ||
       orderData.calendarEventIds?.[statusKey];
 
-    const statusLabel = currentStatus.toUpperCase();
     const mealList = Array.isArray(orderData.meals) ? orderData.meals.join(", ") : (orderData.meals || "");
-    const invPrefix = orderData.invoiceNo ? `[${orderData.invoiceNo}] ` : '';
-    const summary = `[${statusLabel}] ${invPrefix}${orderData.quantity || orderData.pax || ""} Pax | ${mealList || "N/A"} | ${orderData.location || "N/A"}`;
-    const description = `Status: ${statusLabel}\nCustomer: ${orderData.name || orderData.customerName || "N/A"}\nCompany: ${orderData.to || "N/A"}\nMenu: ${orderData.menu || "N/A"}\nNotes: ${orderData.notes || "N/A"}`;
+    const customerName = orderData.name || orderData.customerName || "";
+    const paxQty = orderData.quantity || orderData.pax || "";
+    const contactNo = orderData.contact || orderData.phone || "";
+
+    const summaryParts: string[] = [];
+    if (paxQty) summaryParts.push(`${paxQty} Pax`);
+    if (mealList) summaryParts.push(mealList);
+    if (customerName) summaryParts.push(customerName);
+    const summary = summaryParts.length > 0 ? summaryParts.join(" | ") : "Tempahan Katering";
+
+    const descLines: string[] = [];
+    descLines.push(`Customer: ${customerName || "N/A"}`);
+    if (contactNo) {
+      descLines.push(`Contact: ${contactNo}`);
+    }
+    descLines.push(`Menu: ${orderData.menu || "N/A"}`);
+    descLines.push(`Notes: ${orderData.notes || "N/A"}`);
+    const description = descLines.join("\n");
 
     if (existingEventId) {
       try {

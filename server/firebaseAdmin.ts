@@ -104,6 +104,7 @@ export interface OrderData {
   to?: string;
   attn?: string;
   contact?: string;
+  phone?: string;
   calendarEventIds?: Record<string, string>;
   customerEmail?: string;
   customerName?: string;
@@ -207,7 +208,7 @@ export async function generateSequentialInvoiceNo(): Promise<string> {
         next = data.count + 1;
       }
     }
-    const invoiceNo = `RW-${String(next).padStart(4, "0")}`;
+    const invoiceNo = `RW ${String(next).padStart(5, "0")}`;
     tx.set(
       counterRef,
       { count: next, updatedAt: FieldValue.serverTimestamp() },

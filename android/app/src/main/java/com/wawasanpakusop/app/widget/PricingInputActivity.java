@@ -79,7 +79,7 @@ public class PricingInputActivity extends Activity {
             return;
         }
 
-        orderSummaryText.setText((companyName != null ? companyName : "Pelanggan") + "  •  " + quantity + " pax  •  " + (mealsLabel != null ? mealsLabel : ""));
+        orderSummaryText.setText(quantity + " pax  •  " + (mealsLabel != null ? mealsLabel : ""));
         menuPreviewText.setText(menu != null && !menu.isEmpty() ? "Menu: " + menu : "");
 
         // Show only the meal-type rows actually present in this order.
@@ -183,7 +183,7 @@ public class PricingInputActivity extends Activity {
         } catch (JSONException e) {
             Toast.makeText(this, "Ralat membina permintaan.", Toast.LENGTH_SHORT).show();
             submitBtn.setEnabled(true);
-            submitBtn.setText("Simpan & Hantar Invois →");
+            submitBtn.setText("Simpan Harga →");
         }
     }
 
@@ -243,7 +243,7 @@ public class PricingInputActivity extends Activity {
         @Override
         protected void onPostExecute(TaskResult result) {
             submitBtn.setEnabled(true);
-            submitBtn.setText("Simpan & Hantar Invois →");
+            submitBtn.setText("Simpan Harga →");
 
             if (result.success) {
                 Toast.makeText(PricingInputActivity.this,

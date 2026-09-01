@@ -118,7 +118,7 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         view.setTextViewText(R.id.pricing_item_meals, row.mealsLabel);
 
         boolean isBilled = "billed".equals(row.status);
-        view.setTextViewText(R.id.pricing_item_action_btn, isBilled ? "✓ Sudah Dibil" : "⚡ Tetapkan Harga");
+        view.setTextViewText(R.id.pricing_item_action_btn, isBilled ? "✓ Harga Ditetapkan" : "⚡ Tetapkan Harga");
 
         // Fill-in intent: carries this specific order's ID to PricingInputActivity
         // via the PendingIntentTemplate set on the ListView in PricingWidgetFetchService.
@@ -130,7 +130,7 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         fillInIntent.putExtra("meals_label", row.mealsLabel);
         fillInIntent.putExtra("is_billed", isBilled);
         view.setOnClickFillInIntent(R.id.pricing_item_action_btn, fillInIntent);
-        view.setOnClickFillInIntent(R.id.pricing_item_company, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_meals, fillInIntent);
 
         return view;
     }

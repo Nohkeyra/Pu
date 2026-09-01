@@ -16,9 +16,7 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 3000,
-    hmr: {
-      overlay: false,
-    },
+    hmr: process.env.DISABLE_HMR === 'true' ? false : { overlay: false },
   },
   resolve: {
     alias: {
