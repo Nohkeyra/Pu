@@ -4,7 +4,6 @@ import { HashRouter as Router, useLocation } from 'react-router-dom';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
-import { syncPreferencesToLocalStorage } from './lib/preferences';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
 import { AlertTriangle } from 'lucide-react';
@@ -126,7 +125,23 @@ function App() {
       console.warn('Session storage init error:', err);
     }
 
-    syncPreferencesToLocalStorage();
+    // F-AUTH-RACE (audit 2026-09-01): syncPreferencesToLocalStorage() used to
+    // be fired here, unawaited, on every app boot. It reads the admin token
+    // from native Capacitor Preferences and overwrites localStorage with
+    // whatever it finds. Because the native bridge call it makes is not
+    // instant, it can still be in flight when a user logs in a few seconds
+    // later — setSecureItem() writes the fresh, valid token to both stores
+    // immediately, but this call (dispatched earlier, resolving later) then
+    // overwrites localStorage right back with the stale value it read before
+    // login. Every screen that re-reads the token from localStorage after
+    // that point (e.g. SettingsPage's diagnostics) ends up sending a stale/
+    // invalid token to the server ("Unauthorized: Invalid or expired admin
+    // session token"), even though the login itself succeeded and screens
+    // that use the in-memory token (e.g. AdminPanel via AdminPage's own
+    // `token` state) keep working fine. setSecureItem()/removeSecureItem()
+    // already keep Preferences and localStorage in lockstep on every actual
+    // login/logout, so this boot-time sync was redundant as well as unsafe.
+    // Removed rather than awaited/reordered to eliminate the race outright.
 
     // Fire-and-forget background ping to wake up Render (or any sleeping backend) 
     // immediately on app launch so it is ready by the time the user logs in.
