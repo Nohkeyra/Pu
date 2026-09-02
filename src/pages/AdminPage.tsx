@@ -14,6 +14,8 @@ import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { authService, isBiometricAvailable } from '@/services/authService';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { auth } from '@/firebaseConfig';
 
 // NOTE: the admin password itself is never stored anywhere on the device
 // (not localStorage, not Preferences). It is sent to the server exactly
@@ -63,14 +65,33 @@ export default function AdminPage() {
             if (response.ok) {
               const data = await response.json();
               if (data && data.success) {
+                if (data.firebaseCustomToken) {
+                  try {
+                    await signInWithCustomToken(auth, data.firebaseCustomToken);
+                    console.log('[Admin Auth] Session restored: Logged into Firebase Auth as admin');
+                  } catch (fbAuthErr) {
+                    console.error('[Admin Auth] Session restore: Failed Firebase Auth sign-in:', fbAuthErr);
+                  }
+                }
                 setToken(storedToken);
                 setIsAuthenticated(true);
               } else {
                 await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
               }
-            } else {
-              // Token invalid or expired (e.g. 401)
+            } else if (response.status === 401 || response.status === 403) {
+              // Server has definitively confirmed this token is invalid —
+              // safe to clear it.
               await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+            } else {
+              // Some other failure (5xx, 429, proxy/cold-start hiccup, etc.)
+              // — this is NOT proof the token is invalid, just that this one
+              // verification request didn't succeed. Keep the session active
+              // locally rather than logging the admin out over a transient
+              // server issue; the token will be re-verified next time a real
+              // admin-authenticated request is made.
+              console.warn(`[Admin Auth] Token verification returned ${response.status} (not a definitive auth failure) — keeping local session.`);
+              setToken(storedToken);
+              setIsAuthenticated(true);
             }
           } catch (verifyErr) {
             console.warn('[Admin Auth] Token verification network/fetch failed, falling back to local session:', verifyErr);
@@ -110,6 +131,21 @@ export default function AdminPage() {
       });
 
       if (result.success && result.token) {
+        try {
+          const response = await fetch(getApiUrl('/api/admin/verify'), {
+            headers: { 'Authorization': `Bearer ${result.token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.success && data.firebaseCustomToken) {
+              await signInWithCustomToken(auth, data.firebaseCustomToken);
+              console.log('[Admin Auth] Biometric Login: Logged into Firebase Auth as admin');
+            }
+          }
+        } catch (verifyErr) {
+          console.warn('[Admin Auth] Biometric Login: Firebase Auth sync fetch failed:', verifyErr);
+        }
+
         setToken(result.token);
         await setSecureItem(ADMIN_TOKEN_STORAGE_KEY, result.token);
         setIsAuthenticated(true);
@@ -122,6 +158,21 @@ export default function AdminPage() {
         // Biometrics succeeded on hardware level; check stored session
         const storedToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
         if (storedToken) {
+          try {
+            const response = await fetch(getApiUrl('/api/admin/verify'), {
+              headers: { 'Authorization': `Bearer ${storedToken}` }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.success && data.firebaseCustomToken) {
+                await signInWithCustomToken(auth, data.firebaseCustomToken);
+                console.log('[Admin Auth] Biometric Session Restore: Logged into Firebase Auth as admin');
+              }
+            }
+          } catch (verifyErr) {
+            console.warn('[Admin Auth] Biometric Session Restore: Firebase Auth sync fetch failed:', verifyErr);
+          }
+
           setToken(storedToken);
           setIsAuthenticated(true);
           try {
@@ -175,6 +226,15 @@ export default function AdminPage() {
       }
 
       if (response.ok && data.success && data.token) {
+        if (data.firebaseCustomToken) {
+          try {
+            await signInWithCustomToken(auth, data.firebaseCustomToken);
+            console.log('[Admin Auth] Login: Logged into Firebase Auth as admin');
+          } catch (fbAuthErr) {
+            console.error('[Admin Auth] Login: Failed Firebase Auth sign-in:', fbAuthErr);
+          }
+        }
+
         setToken(data.token);
         await setSecureItem(ADMIN_TOKEN_STORAGE_KEY, data.token);
 
@@ -417,6 +477,12 @@ export default function AdminPage() {
             } catch (err) {
               console.warn('[Admin Auth] Server logout token revocation failed (non-fatal):', err);
             }
+          }
+          try {
+            await signOut(auth);
+            console.log('[Admin Auth] Logged out of Firebase Auth successfully');
+          } catch (fbSignOutErr) {
+            console.warn('[Admin Auth] Firebase Auth sign out failed:', fbSignOutErr);
           }
           await removeSecureItem(ADMIN_TOKEN_STORAGE_KEY);
           // Ensure all possible admin flags are flushed to prevent UI state leakage

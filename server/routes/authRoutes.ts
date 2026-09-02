@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, getAdminApp, verifyCustomerIdToken } from '../firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
@@ -89,15 +90,35 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
       { expiresIn: '30d', jwtid: randomUUID() }
     );
 
-    return res.json({ success: true, token });
+    // F-AUTH-DIAG (audit 2026-09-02): logged alongside the rejection log in
+    // verifyAdminToken's catch block (server/adminAuth.ts) so the two can be
+    // cross-referenced in Render logs — same prefix at issuance and at
+    // rejection points to a server-side verification problem; a mismatched
+    // prefix points to the client sending a different/stale token.
+    console.log(`[Admin Auth] Issued admin token (prefix: ${token.slice(0, 12)}…, len ${token.length})`);
+
+    let firebaseCustomToken: string | undefined;
+    try {
+      firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
+    } catch (fbAuthErr) {
+      console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+    }
+
+    return res.json({ success: true, token, firebaseCustomToken });
   } else {
     return res.status(401).json({ success: false, error: 'Invalid password' });
   }
 });
 
 // Admin Verify Token Endpoint
-router.get('/admin/verify', verifyAdminToken, (_req, res) => {
-  return res.json({ success: true, verified: true });
+router.get('/admin/verify', verifyAdminToken, async (_req, res) => {
+  let firebaseCustomToken: string | undefined;
+  try {
+    firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
+  } catch (fbAuthErr) {
+    console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+  }
+  return res.json({ success: true, verified: true, firebaseCustomToken });
 });
 
 // Admin Logout Endpoint

@@ -89,7 +89,24 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
     }
     (req as express.Request & { adminPayload?: typeof adminPayload }).adminPayload = adminPayload;
     next();
-  } catch {
+  } catch (err) {
+    // F-AUTH-DIAG (audit 2026-09-02): this catch previously swallowed the
+    // real reason jwt.verify() failed and returned only a generic message.
+    // That made it impossible to tell, after the fact, whether a given 401
+    // was a genuinely expired token, a secret/signature mismatch (e.g. the
+    // token was signed by a different ADMIN_JWT_SECRET value than the one
+    // currently loaded), a malformed/truncated token, or something else.
+    // Logging the specific error here (server-side only, in Render logs)
+    // lets that be checked directly instead of guessed at client-side.
+    // Token itself is never logged in full — only a short, non-reusable
+    // prefix, enough to correlate log lines without exposing a usable
+    // credential in logs.
+    const jwtErr = err as { name?: string; message?: string };
+    console.error(
+      `[Admin Auth] verifyAdminToken rejected token on ${req.method} ${req.originalUrl}: ` +
+      `${jwtErr?.name || "UnknownError"} — ${jwtErr?.message || String(err)} ` +
+      `(token prefix: ${token.slice(0, 12)}…, len ${token.length})`
+    );
     return res.status(401).json({ error: "Unauthorized: Invalid or expired admin session token" });
   }
 }

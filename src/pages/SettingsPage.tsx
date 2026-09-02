@@ -45,7 +45,7 @@ import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Device } from '@capacitor/device';
 import { useToast } from '@/components/ui/Toast';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from '@/services/updateService';
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
@@ -389,6 +389,16 @@ export default function SettingsPage() {
     () => localStorage.getItem('wawasan_eruda_enabled') === 'true'
   );
 
+  // F-AUTH-TOAST-DEDUP (audit 2026-09-02): runAllDiagnostics() fires several
+  // admin-authenticated checks in parallel (Firebase, FCM, Calendar). If the
+  // admin session is invalid, each of them independently calls
+  // handleUnauthorized(), which used to show its own "Admin Session Expired"
+  // toast every time — stacking 2-3 identical toasts on screen from a single
+  // logical event. This ref debounces the toast (not the cleanup) so only
+  // one shows per burst; a later, genuinely separate expiry (e.g. minutes
+  // later, after a fresh login) will show the toast again as normal.
+  const lastUnauthorizedToastAtRef = useRef(0);
+
   const authHeaders = (): HeadersInit => ({
     'Content-Type': 'application/json',
     ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
@@ -398,13 +408,17 @@ export default function SettingsPage() {
     if (response.status === 401) {
       await removeSecureItem('wawasan_admin_token');
       await checkAdminStatus();
-      toast({
-        title: language === 'bm' ? 'Sesi Admin Tamat' : 'Admin Session Expired',
-        description: language === 'bm' 
-          ? 'Sesi pentadbir anda tidak sah atau telah tamat. Sila log masuk semula di Tab Admin.' 
-          : 'Your admin session is invalid or has expired. Please log in again in the Admin Tab.',
-        variant: 'error'
-      });
+      const now = Date.now();
+      if (now - lastUnauthorizedToastAtRef.current > 3000) {
+        lastUnauthorizedToastAtRef.current = now;
+        toast({
+          title: language === 'bm' ? 'Sesi Admin Tamat' : 'Admin Session Expired',
+          description: language === 'bm' 
+            ? 'Sesi pentadbir anda tidak sah atau telah tamat. Sila log masuk semula di Tab Admin.' 
+            : 'Your admin session is invalid or has expired. Please log in again in the Admin Tab.',
+          variant: 'error'
+        });
+      }
       return true;
     }
     return false;
