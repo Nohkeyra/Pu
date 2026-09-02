@@ -241,7 +241,7 @@ export default function AdminPage() {
         // If biometrics are available on device, securely cache credentials for future fingerprint login
         if (biometricAvailable) {
           try {
-            await authService.storeAdminBiometricCredentials(data.token, password);
+            await authService.storeAdminBiometricCredentials('admin', data.token);
           } catch (bioStoreErr) {
             console.warn('[Admin Auth] Biometric credential storage note:', bioStoreErr);
           }
