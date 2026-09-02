@@ -25,8 +25,8 @@ import {
  * AND its own separate total, not shared with any other page.
  */
 const generateRandomInvoiceNo = (): string => {
-  const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4-digit random
-  return `RW-${randomDigits}`;
+  const randomDigits = String(Math.floor(Math.random() * 100000)).padStart(5, '0'); // 5-digit random
+  return `RW ${randomDigits}`;
 };
 
 /**

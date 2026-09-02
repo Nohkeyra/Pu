@@ -159,7 +159,7 @@ router.get('/admin/next-invoice-number', verifyAdminToken, async (_req, res) => 
         next = data.count + 1;
       }
     }
-    const formatted = `RW-${String(next).padStart(4, '0')}`;
+    const formatted = `RW ${String(next).padStart(5, '0')}`;
     return res.json({ nextInvoiceNo: formatted, next: formatted });
   } catch {
     return res.status(500).json({ error: 'Failed to fetch counter' });

@@ -4,6 +4,7 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, query, where } from 'fi
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
+import { getApiUrl } from '@/lib/api';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { 
   Calendar as CalendarIcon, 
@@ -97,8 +98,8 @@ export default function CalendarPage() {
     const fetchCalendarData = async () => {
       try {
         const [sessionsRes, ordersRes] = await Promise.all([
-          fetch('/api/calendar-sessions', { signal: controller.signal }),
-          fetch('/api/calendar-orders', { signal: controller.signal })
+          fetch(getApiUrl('/api/calendar-sessions'), { signal: controller.signal }),
+          fetch(getApiUrl('/api/calendar-orders'), { signal: controller.signal })
         ]);
         const sessionsData = await sessionsRes.json();
         if (sessionsData.success && sessionsData.sessions) {

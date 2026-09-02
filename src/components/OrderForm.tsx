@@ -34,7 +34,7 @@ import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib
 import { addPendingOrder } from '@/lib/pendingOrdersQueue';
 import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
-import { calculateOrderPricing, getPricePerPax as computePricePerPax, SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
+import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
 import type { SavedLocation, Order } from '@/types';
 
 // FOOD MENU CONSTANTS FROM KIMI HTML
@@ -514,21 +514,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   };
 
-  // REALTIME CALCULATIONS FOR STEP 2 BUDGET PREVIEW
-  const getPricePerPax = () => {
-    return computePricePerPax(orderState.dishes, orderState.veggies, orderState.customMenu);
-  };
-
-  const getGrandTotal = () => {
-    return calculateOrderPricing({
-      dishes: orderState.dishes,
-      veggies: orderState.veggies,
-      customMenu: orderState.customMenu,
-      guests: orderState.guests,
-      meals: orderState.mealTypes,
-    }).totalAmount;
-  };
-
   // HANDLERS FOR FIELD UPDATES
   const handleToggleDish = async (dish: any) => {
     await triggerLightImpact();
@@ -753,12 +738,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       }
 
       const formattedDateStr = orderState.date; // YYYY-MM-DD
-      const pricePerPax = getPricePerPax();
-
       const pricesRecord: Record<string, number> = {};
-      mappedMeals.forEach(m => {
-        pricesRecord[m] = pricePerPax;
-      });
 
       const orderData = {
         to: billingCompany || 'Majlis Persendirian',
@@ -779,7 +759,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         lang: language,
         status: 'pending', // Pending status inside database
         prices: pricesRecord,
-        totalAmount: getGrandTotal(),
+        totalAmount: 0,
         dishes: orderState.dishes,
         veggies: orderState.veggies,
         customMenu: orderState.customMenu,

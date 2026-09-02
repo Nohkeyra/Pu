@@ -6,7 +6,7 @@ import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransport
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { calculateOrderPricing, SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.ts';
+import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.ts';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
@@ -84,18 +84,11 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
     const mappedMeals = Array.isArray(rawBody.meals) ? rawBody.meals : (rawBody.mealType ? [rawBody.mealType] : ['default']);
 
     // Authoritative Server Pricing Calculation via shared module
-    const { prices, totalAmount } = calculateOrderPricing({
-      dishes: rawBody.dishes,
-      veggies: rawBody.veggies,
-      customMenu: rawBody.customMenu,
-      quantity: qty,
-      meals: mappedMeals,
-      menu: rawBody.menu,
-    });
-
-    if (rawBody.totalAmount !== undefined && Number(rawBody.totalAmount) !== totalAmount) {
-      console.warn(`[Order Pricing Warning] Client submitted totalAmount (${rawBody.totalAmount}) differs from server calculated totalAmount (${totalAmount})`);
-    }
+    // PRICING - CRITICAL: Guest and Client MUST NEVER determine the actual/final price.
+    // If an order has no Admin-defined price yet, do NOT invent or accept a client price.
+    // Keep it awaiting Admin pricing.
+    const prices = {};
+    const totalAmount = 0;
 
     let processedDishes: string[] = [];
     if (Array.isArray(rawBody.dishes)) {
@@ -360,6 +353,63 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
     });
 
     return res.json({ success: true, invoiceNo: updates.invoiceNo });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
+  }
+});
+
+// Customer Update Request
+router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
+  const { orderId, notes, time } = req.body;
+  if (!orderId) return res.status(400).json({ error: 'orderId is required' });
+  const db = getFirestore();
+
+  try {
+    const orderRef = db.collection('orders').doc(orderId);
+    const oldSnap = await orderRef.get();
+    if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
+
+    const oldData = oldSnap.data() as OrderData;
+    const ownerUid = oldData.userId || oldData.uid || null;
+
+    const callerUid = await verifyCustomerIdToken(req);
+    if (!ownerUid || !callerUid || callerUid !== ownerUid) {
+      return res.status(403).json({ error: 'Not authorized to update this order' });
+    }
+
+    if (oldData.status !== 'pending') {
+      return res.status(400).json({
+        error: `Cannot update order in '${oldData.status}' status. Only pending orders can be updated.`,
+      });
+    }
+
+    const updates: Partial<OrderData> = {
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (typeof notes === 'string') {
+      updates.notes = notes.slice(0, 5000);
+    }
+    
+    if (typeof time === 'string') {
+      updates.time = time.slice(0, 20);
+      
+      const dateVal = (oldData as any).eventDate || oldData.date;
+      if (dateVal && typeof dateVal === 'string') {
+        updates.dateTime = `${dateVal}T${updates.time}:00+08:00`;
+      }
+    }
+
+    await orderRef.update(updates);
+    const mergedOrderData = { ...oldData, ...updates, id: orderId };
+
+    invalidateCalendarSessionsCache();
+
+    syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
+      console.error('[Calendar] Failed to auto-sync calendar event on update request:', err);
+    });
+
+    return res.json({ success: true, message: 'Order updated successfully' });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }

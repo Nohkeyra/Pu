@@ -7,8 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
+import { auth } from '@/firebaseConfig';
+import { getApiUrl } from '@/lib/api';
 import { 
   History, 
   RotateCcw, 
@@ -354,12 +354,26 @@ export function ProfileOrdersTab({
     if (!editingOrder || !editingOrder.id) return;
     setIsSavingEdit(true);
     try {
-      const orderRef = doc(db, 'orders', editingOrder.id);
-      await updateDoc(orderRef, {
-        notes: editNotes,
-        time: editTime,
-        updatedAt: new Date().toISOString()
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(getApiUrl('/api/orders/update'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          orderId: editingOrder.id,
+          notes: editNotes,
+          time: editTime
+        })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update order');
+      }
 
       toast({
         title: t('Order Updated', 'Pesanan Dikemas Kini'),
@@ -367,11 +381,11 @@ export function ProfileOrdersTab({
         variant: 'success'
       });
       setEditingOrder(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update pending order:', err);
       toast({
         title: t('Update Failed', 'Gagal Dikemas Kini'),
-        description: t('Could not update order details.', 'Gagal mengemas kini pesanan.'),
+        description: err.message || t('Could not update order details.', 'Gagal mengemas kini pesanan.'),
         variant: 'error'
       });
     } finally {

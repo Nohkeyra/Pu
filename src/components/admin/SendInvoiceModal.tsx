@@ -29,8 +29,8 @@ interface SendInvoiceModalProps {
 
 const getDisplayInvoiceNo = (order: Order): string => {
   if (order.invoiceNo) return order.invoiceNo;
-  if (order.id) return `RW-${order.id.substring(0, 6).toUpperCase()}`;
-  return 'RW-------';
+  if (order.id) return `RW ${order.id.substring(0, 5).toUpperCase()}`;
+  return 'RW -----';
 };
 
 export function SendInvoiceModal({

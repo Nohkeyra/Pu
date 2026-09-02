@@ -53,7 +53,7 @@ export function CustomerInvoicePreviewModal({
 
   if (!isOpen) return null;
 
-  const invoiceNo = order?.invoiceNo || order?.officialInvoiceNo || order?.orderId || `RW-PREVIEW`;
+  const invoiceNo = order?.invoiceNo || order?.officialInvoiceNo || order?.orderId || `RW PREVIEW`;
   const dateStr = formatDateDisplay(order?.eventDate || order?.dateTime || order?.date || new Date());
 
   const totalAmount = order?.totalAmount || (order?.quantity ? order.quantity * 15 : 150);

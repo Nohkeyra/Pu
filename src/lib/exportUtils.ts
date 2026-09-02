@@ -125,14 +125,14 @@ export async function exportOrdersAsExcelTemplate(
     };
 
     const populateOrderSheet = (o: any, sheet: any) => {
-      const rawName = o.invoiceNo || (o.id ? `RW-${o.id.substring(0, 6).toUpperCase()}` : 'Invoice');
+      const rawName = o.invoiceNo || (o.id ? `RW ${o.id.substring(0, 5).toUpperCase()}` : 'Invoice');
       let safeName = rawName.replace(/[\\/?*:[\]]/g, '_');
       if (safeName.length > 30) safeName = safeName.substring(0, 30);
       sheet.name = safeName;
 
       sheet.getCell('C8').value = o.to || 'Majlis Persendirian';
       sheet.getCell('C9').value = o.name || o.attn || '';
-      sheet.getCell('I8').value = o.invoiceNo || (o.id ? `RW-${o.id.substring(0, 6).toUpperCase()}` : '-');
+      sheet.getCell('I8').value = o.invoiceNo || (o.id ? `RW ${o.id.substring(0, 5).toUpperCase()}` : '-');
 
       const formattedDate = formatDateDisplay(o.dateTime || o.eventDate || o.date);
       sheet.getCell('I9').value = formattedDate;

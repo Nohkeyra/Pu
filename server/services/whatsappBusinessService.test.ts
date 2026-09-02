@@ -37,7 +37,7 @@ describe('WhatsAppBusinessService', () => {
     it('includes Bank Muamalat payment details and invoice number in BM', () => {
       const msg = service.formatInvoiceMessage({
         customerName: 'Ahmad Faiz',
-        invoiceNo: 'RW-2026-001',
+        invoiceNo: 'RW 20261',
         eventDate: '2026-09-15',
         pax: 100,
         totalAmount: 1500,
@@ -46,7 +46,7 @@ describe('WhatsAppBusinessService', () => {
       });
 
       expect(msg).toContain('Ahmad Faiz');
-      expect(msg).toContain('RW-2026-001');
+      expect(msg).toContain('RW 20261');
       expect(msg).toContain('Bank Muamalat');
       expect(msg).toContain('16010000-405710');
       expect(msg).toContain('RM 1500.00');
@@ -56,7 +56,7 @@ describe('WhatsAppBusinessService', () => {
     it('formats invoice message in English when lang is en', () => {
       const msg = service.formatInvoiceMessage({
         customerName: 'Sarah Jenkins',
-        invoiceNo: 'RW-2026-002',
+        invoiceNo: 'RW 20262',
         eventDate: '2026-10-01',
         pax: 50,
         totalAmount: 850,
@@ -65,7 +65,7 @@ describe('WhatsAppBusinessService', () => {
       });
 
       expect(msg).toContain('Hello *Sarah Jenkins*');
-      expect(msg).toContain('Invoice No:* RW-2026-002');
+      expect(msg).toContain('Invoice No:* RW 20262');
       expect(msg).toContain('Total Amount:* RM 850.00');
       expect(msg).toContain('Bank Muamalat');
     });
@@ -74,7 +74,7 @@ describe('WhatsAppBusinessService', () => {
   describe('formatOrderForwardMessage', () => {
     it('formats an order forward summary for restaurant admins', () => {
       const msg = service.formatOrderForwardMessage({
-        orderId: 'RW-ORD-999',
+        orderId: 'RW ORD999',
         customerName: 'Encik Razak',
         contactNumber: '0198765432',
         eventDate: '2026-09-20',

@@ -34,8 +34,8 @@ const DeliveryMap = lazy(() => import('./delivery/DeliveryMap').then(m => ({ def
 
 const getDisplayInvoiceNo = (order: Order): string => {
   if (order.invoiceNo) return order.invoiceNo;
-  if (order.id) return `RW-${order.id.substring(0, 6).toUpperCase()}`;
-  return 'RW-------';
+  if (order.id) return `RW ${order.id.substring(0, 5).toUpperCase()}`;
+  return 'RW -----';
 };
 
 export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void | Promise<void> }) {
@@ -118,7 +118,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       total += roundedPrice * order.quantity;
     });
 
-    const invoiceNo = order.invoiceNo || `RW-${orderId.substring(0, 6).toUpperCase()}`;
+    const invoiceNo = order.invoiceNo || `RW ${orderId.substring(0, 5).toUpperCase()}`;
     const success = await handleUpdateOrderStatus(orderId, {
       prices: mealPrices,
       totalAmount: Math.round(total * 100) / 100,

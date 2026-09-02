@@ -33,7 +33,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       let invoiceNo = order.invoiceNo;
       
       if (!isFinal) {
-        invoiceNo = `RW-${order.id.substring(0, 6).toUpperCase()}-PRE`;
+        invoiceNo = `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
         pdfData = { ...order, invoiceNo };
       }
 
@@ -66,7 +66,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       let pdfData = order;
       let invoiceNo = order.invoiceNo;
       if (!isFinal) {
-        invoiceNo = `RW-${order.id.substring(0, 6).toUpperCase()}-PRE`;
+        invoiceNo = `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
         pdfData = { ...order, invoiceNo };
       }
 
@@ -96,12 +96,12 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        setConsolidatedInvoiceNo(data.nextInvoiceNo || `RW-${Math.floor(1000 + Math.random() * 9000)}`);
+        setConsolidatedInvoiceNo(data.nextInvoiceNo || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
       } else {
-        setConsolidatedInvoiceNo(`RW-${Math.floor(1000 + Math.random() * 9000)}`);
+        setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
       }
     } catch {
-      setConsolidatedInvoiceNo(`RW-${Math.floor(1000 + Math.random() * 9000)}`);
+      setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
     }
     setShowConsolidateModal(true);
   };
@@ -112,7 +112,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
 
     try {
       await preloadLogoForPDF();
-      const finalInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim() || `RW-${Math.floor(1000 + Math.random() * 9000)}`;
+      const finalInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim() || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
       const pdfDoc = generateConsolidatedInvoicePDF(
         { orders, includeNotes: withNotes, invoiceNo: finalInvoiceNo, lang: language as 'bm' | 'en' },

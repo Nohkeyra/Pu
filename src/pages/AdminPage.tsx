@@ -126,7 +126,7 @@ export default function AdminPage() {
       const result = await authService.authenticateAdminWithBiometrics({
         title: isMalay ? 'Log Masuk Cap Jari Admin' : 'Admin Fingerprint Login',
         subtitle: isMalay ? 'Imbas cap jari anda untuk akses segera' : 'Scan your fingerprint for instant access',
-        description: isMalay ? 'Kakitangan dan pentadbir Restoran Wawasan sahaja.' : 'Restoran Wawasan staff and administrators only.',
+        description: isMalay ? 'Pentadbir Restoran Wawasan sahaja.' : 'Restoran Wawasan administrators only.',
         negativeButtonText: isMalay ? 'Guna Kata Laluan' : 'Use Password',
       });
 
@@ -364,7 +364,7 @@ export default function AdminPage() {
                   {t('admin_login')}
                 </h2>
                 <p className="text-stone text-center text-sm font-medium mb-8 uppercase tracking-widest microcopy-12-upper">
-                  Restricted Access • Staff Only
+                  Restricted Access • Admin Only
                 </p>
 
                 <form onSubmit={handleLogin} className="space-y-5">

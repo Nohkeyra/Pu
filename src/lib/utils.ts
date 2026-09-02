@@ -54,7 +54,7 @@ export function getDisplayInvoiceNo(order?: { invoiceNo?: string; officialInvoic
   if (order.officialInvoiceNo) return order.officialInvoiceNo;
   if (order.id) {
     if (order.id.length > 12) {
-      return `RW-${order.id.substring(0, 6).toUpperCase()}`;
+      return `RW ${order.id.substring(0, 5).toUpperCase()}`;
     }
     return order.id;
   }

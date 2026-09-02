@@ -659,7 +659,7 @@ export function AdminOrdersTab({
               <Input
                 value={consolidatedInvoiceNo}
                 onChange={(e) => setConsolidatedInvoiceNo && setConsolidatedInvoiceNo(e.target.value)}
-                placeholder="RW-0015"
+                placeholder="RW 00015"
                 className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-[var(--color-sunshine-cta)] text-sm font-bold text-deep-forest dark:text-white"
               />
               <p className="microcopy-12 text-stone dark:text-stone/70">
