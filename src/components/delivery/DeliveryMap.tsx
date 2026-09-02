@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Truck, MapPin, Navigation, Clock, X, Info, Sliders, Compass, AlertTriangle, MessageSquare, Check, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import type { Order } from '@/types';
-import L from 'leaflet';
+import * as L from 'leaflet';
+import type { Map as LeafletMap, Polyline as LeafletPolyline, Marker as LeafletMarker, Circle as LeafletCircle } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { launchMaps } from '@/lib/nativeService';
 import { Capacitor } from '@capacitor/core';
@@ -54,10 +55,10 @@ function LeafletMapContainer({
   onRouteCoordsLoaded?: (coords: [number, number][]) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const routePolylineRef = useRef<L.Polyline | null>(null);
-  const vehicleMarkerRef = useRef<L.Marker | null>(null);
-  const geofenceCircleRef = useRef<L.Circle | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const routePolylineRef = useRef<LeafletPolyline | null>(null);
+  const vehicleMarkerRef = useRef<LeafletMarker | null>(null);
+  const geofenceCircleRef = useRef<LeafletCircle | null>(null);
   const [destLatLng, setDestLatLng] = useState<{ lat: number; lng: number } | null>(null);
 
   const onRouteCoordsLoadedRef = useRef(onRouteCoordsLoaded);

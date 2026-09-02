@@ -1,11 +1,5 @@
 /// <reference types="vite/client" />
 
-declare module 'leaflet' {
-  const L: any;
-  export default L;
-  export * from 'leaflet';
-}
-
 declare module 'semver' {
   const semver: any;
   export default semver;
