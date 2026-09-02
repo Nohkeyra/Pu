@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { getMessaging } from "firebase-admin/messaging";
-import { getAdminApp, getFirestore, type OrderData } from "./firebaseAdmin.js";
+import { getAdminApp, getFirestore, hasAdminCredentials, type OrderData } from "./firebaseAdmin.js";
 
 export function createBrevoTransporter(): nodemailer.Transporter {
   const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
@@ -290,6 +290,10 @@ export async function sendOrderStatusPush(
   const token = await resolveCustomerFcmToken(order);
   if (!token) {
     console.log("[StatusNotify] No FCM token for customer; skipping push (email still sent).");
+    return false;
+  }
+  if (!hasAdminCredentials()) {
+    console.log("[StatusNotify] Service account credentials not configured; skipping push.");
     return false;
   }
   const lang: NotifyLang = order.lang === "bm" ? "bm" : "en";

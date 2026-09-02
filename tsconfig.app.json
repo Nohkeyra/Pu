@@ -20,7 +20,7 @@
       "@/*": ["./src/*"],
       "@capacitor-community/native-biometric": ["./node_modules/capacitor-native-biometric"]
     },
-    "types": ["vite/client", "vitest/globals", "leaflet"]
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }

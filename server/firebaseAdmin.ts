@@ -116,6 +116,26 @@ class MemoryFirestore {
   }
 }
 
+export function hasAdminCredentials(): boolean {
+  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+    ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
+    : undefined;
+  if (email && email.startsWith('"') && email.endsWith('"')) {
+    email = email.slice(1, -1).trim();
+  }
+
+  let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+    ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
+    : undefined;
+  if (privateKey) {
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1).trim();
+    }
+  }
+
+  return Boolean((email && privateKey) || process.env.GOOGLE_APPLICATION_CREDENTIALS);
+}
+
 export function getAdminApp(): App {
   if (!adminApp) {
     const apps = getApps();
@@ -167,6 +187,11 @@ export async function verifyCustomerIdToken(req: express.Request): Promise<strin
   const authHeader = req.headers.authorization;
   const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
   if (!idToken) return null;
+
+  if (!hasAdminCredentials()) {
+    console.warn("[Auth] Service account credentials not configured. Skipping token verification.");
+    return null;
+  }
 
   try {
     const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken);
@@ -252,6 +277,10 @@ export async function sendNotificationToTopic(
   body: string,
   data?: Record<string, string>
 ) {
+  if (!hasAdminCredentials()) {
+    console.log(`[FCM] Service account credentials not configured; skipping topic notification (${topic}).`);
+    return null;
+  }
   try {
     const app = getAdminApp();
     const cleanTopic = (topic || 'new_orders').trim();

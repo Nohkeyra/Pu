@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, getAdminApp, verifyCustomerIdToken } from '../firebaseAdmin.js';
+import { getFirestore, getAdminApp, verifyCustomerIdToken, hasAdminCredentials } from '../firebaseAdmin.js';
 import { verifyAdminToken, effectiveJwtSecret, adminLoginLimiter, revokeJti } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
@@ -98,10 +98,12 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
     console.log(`[Admin Auth] Issued admin token (prefix: ${token.slice(0, 12)}…, len ${token.length})`);
 
     let firebaseCustomToken: string | undefined;
-    try {
-      firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
-    } catch (fbAuthErr) {
-      console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+    if (hasAdminCredentials()) {
+      try {
+        firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
+      } catch (fbAuthErr) {
+        console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+      }
     }
 
     return res.json({ success: true, token, firebaseCustomToken });
@@ -113,10 +115,12 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
 // Admin Verify Token Endpoint
 router.get('/admin/verify', verifyAdminToken, async (_req, res) => {
   let firebaseCustomToken: string | undefined;
-  try {
-    firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
-  } catch (fbAuthErr) {
-    console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+  if (hasAdminCredentials()) {
+    try {
+      firebaseCustomToken = await getAuth(getAdminApp()).createCustomToken("admin", { admin: true });
+    } catch (fbAuthErr) {
+      console.warn("[Admin Auth] Failed to generate Firebase custom token:", fbAuthErr);
+    }
   }
   return res.json({ success: true, verified: true, firebaseCustomToken });
 });
@@ -173,6 +177,9 @@ router.post('/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
     if (!token || typeof token !== 'string' || !topic || typeof topic !== 'string') {
       return res.status(400).json({ success: false, error: 'Valid token and topic strings are required' });
     }
+    if (!hasAdminCredentials()) {
+      return res.status(503).json({ success: false, error: 'Firebase Admin credentials not configured on server' });
+    }
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.subscribeToTopic([token.trim()], topic.trim());
@@ -191,6 +198,9 @@ router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) 
     if (!token || typeof token !== 'string' || !topic || typeof topic !== 'string') {
       return res.status(400).json({ success: false, error: 'Valid token and topic strings are required' });
     }
+    if (!hasAdminCredentials()) {
+      return res.status(503).json({ success: false, error: 'Firebase Admin credentials not configured on server' });
+    }
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.unsubscribeFromTopic([token.trim()], topic.trim());
@@ -206,6 +216,9 @@ router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) 
 router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
   try {
     const { target, topic = 'new_orders', token, title, body } = req.body;
+    if (!hasAdminCredentials()) {
+      return res.status(503).json({ success: false, error: 'Firebase Admin credentials not configured on server' });
+    }
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const pushTitle = title || '🔔 Ujian Notifikasi FCM / FCM Test Push';
