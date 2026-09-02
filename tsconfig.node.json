@@ -26,5 +26,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["vite.config.ts", "server.ts", "server/**/*.ts"]
+  "include": ["vite.config.ts", "server.ts", "server/**/*.ts"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "node_modules", "dist"]
 }

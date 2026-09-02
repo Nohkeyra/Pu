@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { verifyAdminToken } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
@@ -93,7 +93,7 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
   }
 });
 
-router.post('/send-invoice', verifyAdminToken, async (req, res) => {
+router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Response) => {
   const { orderId, email, subject, body, pdfBase64 } = req.body || {};
 
   try {

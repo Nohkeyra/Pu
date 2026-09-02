@@ -103,7 +103,7 @@ async function startServer() {
 
   app.use(
     cors({
-      origin: (origin, callback) => {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
         if (!origin || isAllowedOrigin(origin)) {
           return callback(null, true);
         }
@@ -257,13 +257,13 @@ async function startServer() {
     app.use(express.static(distPath, {
       maxAge: '1y',
       immutable: true,
-      setHeaders: (res, filePath) => {
+      setHeaders: (res: any, filePath: string) => {
         if (filePath.endsWith('.html')) {
           res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
         }
       }
     }));
-    app.get('*', (req, res) => {
+    app.get('*', (req: any, res: any) => {
       if (req.path.startsWith('/api')) {
         return res.status(404).json({ error: 'API endpoint not found' });
       }
