@@ -1,1 +1,25 @@
 /// <reference types="vite/client" />
+
+declare module 'leaflet' {
+  const L: any;
+  export default L;
+  export * from 'leaflet';
+}
+
+declare module 'semver' {
+  const semver: any;
+  export default semver;
+  export * from 'semver';
+}
+
+declare module 'vitest' {
+  export const describe: (name: string, fn: () => void) => void;
+  export const it: (name: string, fn: () => void | Promise<void>) => void;
+  export const test: (name: string, fn: () => void | Promise<void>) => void;
+  export const expect: (actual: any) => any;
+  export const vi: any;
+  export const beforeEach: (fn: () => void | Promise<void>) => void;
+  export const afterEach: (fn: () => void | Promise<void>) => void;
+  export const beforeAll: (fn: () => void | Promise<void>) => void;
+  export const afterAll: (fn: () => void | Promise<void>) => void;
+}

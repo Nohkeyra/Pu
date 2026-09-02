@@ -21,5 +21,6 @@
       "@capacitor-community/native-biometric": ["./node_modules/capacitor-native-biometric"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.test.tsx", "src/**/*.spec.tsx"]
 }
