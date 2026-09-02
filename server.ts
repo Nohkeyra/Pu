@@ -21,6 +21,14 @@ import imageRoutes, { antiHotlinkGuard } from './server/routes/imageRoutes.js';
 
 dotenv.config();
 
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Server] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught Exception:', err);
+});
+
 const ALLOWED_ORIGINS = [
   'https://restoran-wawasan-bio.onrender.com',
   'https://restoran-wawasan.pxxl.click',

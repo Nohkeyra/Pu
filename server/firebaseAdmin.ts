@@ -6,6 +6,115 @@ import { getMessaging } from "firebase-admin/messaging";
 import { firebaseConfig, STRICT_FIREBASE_ADMIN } from "./config.js";
 
 let adminApp: App | undefined;
+let memoryFirestoreInstance: any = null;
+
+class MemoryFirestore {
+  private collections = new Map<string, Map<string, any>>();
+
+  private getCol(name: string): Map<string, any> {
+    if (!this.collections.has(name)) {
+      this.collections.set(name, new Map());
+    }
+    return this.collections.get(name)!;
+  }
+
+  collection(name: string) {
+    const col = this.getCol(name);
+    const createDocRef = (id?: string) => {
+      const docId = id || `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      return {
+        id: docId,
+        _colName: name,
+        get: async () => {
+          const data = col.get(docId);
+          return {
+            exists: data !== undefined,
+            id: docId,
+            data: () => (data ? { ...data } : undefined),
+          };
+        },
+        set: async (data: any, options?: { merge?: boolean }) => {
+          if (options?.merge && col.has(docId)) {
+            col.set(docId, { ...col.get(docId), ...data });
+          } else {
+            col.set(docId, { ...data });
+          }
+        },
+        update: async (data: any) => {
+          const existing = col.get(docId) || {};
+          col.set(docId, { ...existing, ...data });
+        },
+        delete: async () => {
+          col.delete(docId);
+        },
+      };
+    };
+
+    const colRef = {
+      doc: (id?: string) => createDocRef(id),
+      add: async (data: any) => {
+        const ref = createDocRef();
+        col.set(ref.id, { ...data });
+        return ref;
+      },
+      get: async () => {
+        const docs = Array.from(col.entries()).map(([id, data]) => ({
+          id,
+          data: () => ({ ...data }),
+          exists: true,
+        }));
+        return { docs, empty: docs.length === 0, size: docs.length };
+      },
+      orderBy: () => colRef,
+      limit: () => colRef,
+      where: () => colRef,
+      startAfter: () => colRef,
+    };
+    return colRef;
+  }
+
+  batch() {
+    const operations: Array<() => void> = [];
+    return {
+      set: (ref: any, data: any, options?: { merge?: boolean }) => {
+        operations.push(() => {
+          const col = this.getCol(ref._colName || 'orders');
+          if (options?.merge && col.has(ref.id)) {
+            col.set(ref.id, { ...col.get(ref.id), ...data });
+          } else {
+            col.set(ref.id, { ...data });
+          }
+        });
+      },
+      update: (ref: any, data: any) => {
+        operations.push(() => {
+          const col = this.getCol(ref._colName || 'orders');
+          const existing = col.get(ref.id) || {};
+          col.set(ref.id, { ...existing, ...data });
+        });
+      },
+      delete: (ref: any) => {
+        operations.push(() => {
+          const col = this.getCol(ref._colName || 'orders');
+          col.delete(ref.id);
+        });
+      },
+      commit: async () => {
+        for (const op of operations) op();
+      },
+    };
+  }
+
+  async runTransaction<T>(updateFunction: (tx: any) => Promise<T>): Promise<T> {
+    const tx = {
+      get: async (ref: any) => ref.get(),
+      set: async (ref: any, data: any, options?: any) => ref.set(data, options),
+      update: async (ref: any, data: any) => ref.update(data),
+      delete: async (ref: any) => ref.delete(),
+    };
+    return await updateFunction(tx);
+  }
+}
 
 export function getAdminApp(): App {
   if (!adminApp) {
@@ -68,7 +177,16 @@ export async function verifyCustomerIdToken(req: express.Request): Promise<strin
   }
 }
 
-export function getFirestore() {
+export function getFirestore(): FirebaseFirestore.Firestore {
+  if (process.env.CI || process.env.NODE_ENV === 'test' || process.env.USE_MEMORY_FIRESTORE === 'true') {
+    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      if (!memoryFirestoreInstance) {
+        memoryFirestoreInstance = new MemoryFirestore();
+      }
+      return memoryFirestoreInstance as unknown as FirebaseFirestore.Firestore;
+    }
+  }
+
   const app = getAdminApp();
   const dbId = firebaseConfig.firestoreDatabaseId;
 
