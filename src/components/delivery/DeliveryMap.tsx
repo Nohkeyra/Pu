@@ -3,7 +3,6 @@ import { Truck, MapPin, Navigation, Clock, X, Info, Sliders, Compass, AlertTrian
 import { useLanguage } from '@/context/LanguageContext';
 import type { Order } from '@/types';
 import * as L from 'leaflet';
-import type { Map as LeafletMap, Polyline as LeafletPolyline, Marker as LeafletMarker, Circle as LeafletCircle } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { launchMaps } from '@/lib/nativeService';
 import { Capacitor } from '@capacitor/core';
@@ -55,10 +54,10 @@ function LeafletMapContainer({
   onRouteCoordsLoaded?: (coords: [number, number][]) => void;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
-  const routePolylineRef = useRef<LeafletPolyline | null>(null);
-  const vehicleMarkerRef = useRef<LeafletMarker | null>(null);
-  const geofenceCircleRef = useRef<LeafletCircle | null>(null);
+  const mapRef = useRef<any>(null);
+  const routePolylineRef = useRef<any>(null);
+  const vehicleMarkerRef = useRef<any>(null);
+  const geofenceCircleRef = useRef<any>(null);
   const [destLatLng, setDestLatLng] = useState<{ lat: number; lng: number } | null>(null);
 
   const onRouteCoordsLoadedRef = useRef(onRouteCoordsLoaded);
