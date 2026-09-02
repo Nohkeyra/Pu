@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
 public class WidgetUpdateService {
 
     private static final String API_BASE_URL = "https://restoran-wawasan-bio.onrender.com";
-    private static final String ENDPOINT = "/api/widget/upcoming-orders?limit=5";
+    private static final String ENDPOINT = "/api/widget/upcoming-orders?limit=50";
     private static final int TIMEOUT_MS = 15000;
 
     static final String PREFS_NAME = "wawasan_widget_prefs";
@@ -103,7 +103,7 @@ public class WidgetUpdateService {
                 context, 0, openIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
             views.setOnClickPendingIntent(R.id.widget_title, openPendingIntent);
-            views.setOnClickPendingIntent(R.id.widget_header_clickable, openPendingIntent);
+            views.setOnClickPendingIntent(R.id.widget_header_bar, openPendingIntent);
             views.setOnClickPendingIntent(R.id.widget_today_summary, openPendingIntent);
             views.setOnClickPendingIntent(R.id.widget_empty_view, openPendingIntent);
 

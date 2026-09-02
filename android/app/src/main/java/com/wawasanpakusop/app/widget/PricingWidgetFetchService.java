@@ -120,7 +120,7 @@ public class PricingWidgetFetchService {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
             views.setOnClickPendingIntent(R.id.pricing_widget_refresh_button, refreshPendingIntent);
-            views.setOnClickPendingIntent(R.id.pricing_widget_header_clickable, refreshPendingIntent);
+            views.setOnClickPendingIntent(R.id.pricing_widget_header_bar, refreshPendingIntent);
             views.setOnClickPendingIntent(R.id.pricing_widget_empty_view, refreshPendingIntent);
 
             Intent listIntent = new Intent(context, PricingWidgetRemoteViewsService.class);
@@ -144,13 +144,14 @@ public class PricingWidgetFetchService {
                 if (!fetchSucceeded) {
                     emptyMsg = (errorReason != null ? errorReason : "Gagal memuatkan data") + "\nKetik untuk cuba semula";
                 } else {
-                    emptyMsg = "Tiada tempahan aktif hari ini\nSemua sudah dibil, atau belum ada order";
+                    emptyMsg = "✓ Tiada tempahan tertunggak harga\nSemua tempahan telah dikey-in harga";
                 }
                 views.setTextViewText(R.id.pricing_widget_empty_view, emptyMsg);
             }
 
-            // Summary pill: count of orders still needing a price
+            // Summary pill: count of orders still needing a price (past & new)
             int pendingCount = 0;
+            int pastCount = 0;
             int totalPax = 0;
             try {
                 JSONArray arr = new JSONArray(cachedJson != null ? cachedJson : "[]");
@@ -159,13 +160,21 @@ public class PricingWidgetFetchService {
                     totalPax += o.optInt("quantity", 0);
                     if (!"billed".equals(o.optString("status", ""))) {
                         pendingCount++;
+                        if (o.optBoolean("isPast", false)) {
+                            pastCount++;
+                        }
                     }
                 }
             } catch (Exception ignored) {}
 
-            String summaryText = pendingCount > 0
-                ? "⚡ " + pendingCount + " tempahan perlu harga  •  " + totalPax + " pax"
-                : (hasData ? "✓ Semua tempahan hari ini sudah dibil" : "Memuatkan...");
+            String summaryText;
+            if (pendingCount > 0) {
+                summaryText = "⚡ " + pendingCount + " belum key-in harga" + (pastCount > 0 ? " (" + pastCount + " lalu)" : "") + "  •  " + totalPax + " pax";
+            } else if (hasData || fetchSucceeded) {
+                summaryText = "✓ Semua tempahan telah dikey-in harga";
+            } else {
+                summaryText = "Memuatkan...";
+            }
             views.setTextViewText(R.id.pricing_widget_summary, summaryText);
 
             manager.updateAppWidget(appWidgetId, views);

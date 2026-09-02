@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_header_clickable"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_background"
-    android:padding="10dp"
-    android:clickable="true"
-    android:focusable="true">
+    android:padding="10dp">
 
     <!-- Top Branding & Action Bar (2x1 Optimized) -->
     <LinearLayout
+        android:id="@+id/widget_header_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -57,17 +55,18 @@
 
     </LinearLayout>
 
-    <!-- Today Summary Metrics Pill (2x1 Compact) -->
+    <!-- Today Summary Metrics Pill (Compact) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:background="@drawable/widget_summary_pill_bg"
         android:gravity="center"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
         android:layout_marginTop="2dp"
-        android:layout_marginBottom="2dp">
+        android:layout_marginBottom="4dp">
 
         <TextView
             android:id="@+id/widget_today_summary"
@@ -82,19 +81,26 @@
             android:text="Memuatkan..." />
     </LinearLayout>
 
-    <!-- Optional Compact ListView / Empty View placeholder for 2x1 -->
+    <!-- Scrollable ListView for Upcoming Orders -->
     <ListView
         android:id="@+id/widget_orders_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.001"
-        android:visibility="gone" />
+        android:layout_weight="1"
+        android:scrollbars="vertical"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="6dp"
+        android:nestedScrollingEnabled="true"
+        android:visibility="visible" />
 
     <TextView
         android:id="@+id/widget_empty_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.001"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textColor="@color/widget_muted_text"
+        android:textSize="11sp"
         android:visibility="gone" />
 
 </LinearLayout>

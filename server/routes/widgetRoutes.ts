@@ -37,40 +37,59 @@ function checkWidgetKey(req: any, res: any): boolean {
   return true;
 }
 
+// Helper to format meal types into clean Malay labels
+function formatMealTypeBM(meals: any): string {
+  if (!meals) return 'Katering';
+  const arr = Array.isArray(meals) ? meals : [String(meals)];
+  if (arr.length === 0) return 'Katering';
+  const map: Record<string, string> = {
+    breakfast: 'Sarapan',
+    lunch: 'Tengahari',
+    hi_tea: 'Hi-Tea',
+    dinner: 'Makan Malam',
+  };
+  return arr.map(m => map[m] || m).join(' + ');
+}
+
 // ─── 1. Upcoming orders widget (public, no PII) ───────────────────────────────
-// NOTE: 'eventDate' is the canonical, authoritative date field as of the
-// dual-write fix in orderRoutes.ts (deriveEventDate) + scripts/backfill-event-date.cjs.
-// Every order document now has both 'date' and 'eventDate' kept in sync, so this
-// query (unchanged from before) is correct — no fix needed here anymore.
-router.get('/widget/upcoming-orders', async (_req, res) => {
+// Returns upcoming orders with: meal type, quantity, lokasi, time
+// Enables scroll with configurable limit (default 50)
+router.get('/widget/upcoming-orders', async (req, res) => {
   try {
     const db = getFirestore();
-    // Render's server clock is UTC, not Malaysia time — use the same
-    // Asia/Kuala_Lumpur-aware formatting as orderRoutes.ts deriveEventDate()
-    // so "today" here always matches "today" as the business understands it.
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
+    const limitNum = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
 
     const snapshot = await db.collection('orders')
       .where('eventDate', '>=', todayStr)
       .where('status', 'in', ['pending', 'approved'])
       .orderBy('eventDate', 'asc')
-      .limit(10)
+      .limit(limitNum)
       .get();
 
     const orders = snapshot.docs.map(doc => {
       const d = doc.data();
+      const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
+      const mealTypeStr = formatMealTypeBM(mealsArr);
+      const locStr = d.location || d.deliveryLocation || d.address || d.venue || 'Lokasi Belum Dinyatakan';
+      const eventDateVal = d.eventDate || d.date || null;
+
       return {
         id: doc.id,
-        eventDate: d.eventDate || d.date || null,
+        eventDate: eventDateVal,
+        date: eventDateVal,
         time: d.time || null,
-        meals: d.meals || [],
+        meals: mealsArr,
+        mealType: mealTypeStr,
         quantity: d.quantity || d.guests || d.pax || 0,
+        location: locStr,
+        to: d.to || d.company || d.attn || d.name || '',
+        menu: d.menu || '',
         status: d.status || 'pending',
-        // Intentionally excluded: name, email, contact, location, menu, to, attn
       };
     });
 
-    return res.json({ success: true, orders, date: todayStr });
+    return res.json({ success: true, orders, date: todayStr, count: orders.length });
   } catch (err) {
     console.error('[Widget upcoming-orders Error]:', err);
     return res.status(500).json({ success: false, error: String(err) });
@@ -110,11 +129,10 @@ router.get('/widget/daily-summary', async (_req, res) => {
   }
 });
 
-// ─── 3. Today's orders for the PRICING widget (widget-key protected) ──────────
-// Returns today's orders with enough detail to display the pricing widget rows,
-// but WITHOUT customer PII (phone, location, notes). Menu is included because
-// Noh needs to see what was ordered before setting the price.
-router.get('/widget/today-pricing-orders', widgetPricingLimiter, async (req, res) => {
+// ─── 3. Orders for the PRICING widget (widget-key protected) ──────────────────
+// Returns orders (both past and new/upcoming) that have not had their prices keyed in yet.
+// Query checks status in ['pending', 'approved'] and filters out any already billed.
+router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPricingLimiter, async (req, res) => {
   if (!checkWidgetKey(req, res)) return;
 
   try {
@@ -122,32 +140,81 @@ router.get('/widget/today-pricing-orders', widgetPricingLimiter, async (req, res
     const now = new Date();
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(now);
 
+    // Fetch all pending / approved orders across past, today, and future
     const snapshot = await db.collection('orders')
-      .where('eventDate', '==', todayStr)
       .where('status', 'in', ['pending', 'approved'])
-      .orderBy('eventDate', 'asc')
       .get();
 
-    const orders = snapshot.docs.map(doc => {
-      const d = doc.data();
-      return {
-        id: doc.id,
-        to: d.to || 'Pelanggan',              // Company/ministry name — needed for display
-        attn: d.attn || d.name || '-',         // Contact name — needed for display
-        meals: d.meals || [],
-        quantity: Number(d.quantity || d.guests || d.pax || 0),
-        menu: d.menu || '',                     // Menu string — needed to see what was ordered
-        preparationType: d.preparationType || 'buffet',
-        time: d.time || '',
-        status: d.status || 'pending',
-        // Current prices if admin already set some
-        prices: d.prices || {},
-        totalAmount: d.totalAmount || null,
-        invoiceNo: d.invoiceNo || null,
-      };
+    let pastCount = 0;
+    let todayCount = 0;
+    let upcomingCount = 0;
+
+    const unpricedOrders = snapshot.docs
+      .map(doc => {
+        const d = doc.data();
+        const eventDateVal = d.eventDate || d.date || '';
+        const isBilled = d.status === 'billed';
+        const hasPrices = d.prices && Object.keys(d.prices).length > 0 && Number(d.totalAmount) > 0;
+
+        // Skip orders that are already billed or priced
+        if (isBilled || (hasPrices && d.status !== 'pending' && d.status !== 'approved')) {
+          return null;
+        }
+
+        const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
+        const mealTypeStr = formatMealTypeBM(mealsArr);
+
+        const isPast = Boolean(eventDateVal && eventDateVal < todayStr);
+        const isToday = Boolean(eventDateVal && eventDateVal === todayStr);
+        const isUpcoming = Boolean(eventDateVal && eventDateVal > todayStr);
+
+        if (isPast) pastCount++;
+        else if (isToday) todayCount++;
+        else upcomingCount++;
+
+        return {
+          id: doc.id,
+          to: d.to || d.company || 'Pelanggan',
+          attn: d.attn || d.name || '-',
+          meals: mealsArr,
+          mealType: mealTypeStr,
+          quantity: Number(d.quantity || d.guests || d.pax || 0),
+          menu: d.menu || '',
+          preparationType: d.preparationType || 'buffet',
+          time: d.time || '',
+          location: d.location || d.deliveryLocation || d.address || '',
+          eventDate: eventDateVal,
+          date: eventDateVal,
+          status: d.status || 'pending',
+          isPast,
+          isToday,
+          isUpcoming,
+          dateCategory: isPast ? 'past' : (isToday ? 'today' : 'upcoming'),
+          prices: d.prices || {},
+          totalAmount: d.totalAmount || null,
+          invoiceNo: d.invoiceNo || null,
+        };
+      })
+      .filter((o): o is NonNullable<typeof o> => o !== null);
+
+    // Sort: past unpriced orders first (oldest first so overdue orders get resolved),
+    // followed by today's orders, followed by upcoming orders
+    unpricedOrders.sort((a, b) => {
+      const dateA = a.eventDate || '';
+      const dateB = b.eventDate || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      return (a.time || '').localeCompare(b.time || '');
     });
 
-    return res.json({ success: true, orders, date: todayStr, count: orders.length });
+    return res.json({
+      success: true,
+      orders: unpricedOrders,
+      date: todayStr,
+      count: unpricedOrders.length,
+      pastCount,
+      todayCount,
+      upcomingCount,
+    });
   } catch (err) {
     console.error('[Widget today-pricing-orders Error]:', err);
     return res.status(500).json({ success: false, error: String(err) });

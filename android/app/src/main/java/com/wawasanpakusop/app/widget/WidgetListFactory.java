@@ -68,15 +68,60 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                 Date parsed = parseDateAndTime(rawDate, rawTime);
                 String dayLabel = formatDayLabel(parsed);
                 String timeLabel = formatTime(parsed);
+                if (timeLabel.isEmpty() && !rawTime.isEmpty()) {
+                    timeLabel = rawTime;
+                }
+                if (timeLabel.isEmpty()) {
+                    timeLabel = "--:--";
+                }
+
+                // Extract & translate meal type into clean Malay
+                String mealType = o.optString("mealType", "");
+                if (mealType.isEmpty() || mealType.equals("N/A")) {
+                    JSONArray mealsArr = o.optJSONArray("meals");
+                    if (mealsArr != null && mealsArr.length() > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int m = 0; m < mealsArr.length(); m++) {
+                            String val = mealsArr.optString(m);
+                            if ("breakfast".equalsIgnoreCase(val)) val = "Sarapan";
+                            else if ("lunch".equalsIgnoreCase(val)) val = "Tengahari";
+                            else if ("hi_tea".equalsIgnoreCase(val)) val = "Hi-Tea";
+                            else if ("dinner".equalsIgnoreCase(val)) val = "Makan Malam";
+                            if (sb.length() > 0) sb.append(" + ");
+                            sb.append(val);
+                        }
+                        mealType = sb.toString();
+                    } else {
+                        String mStr = o.optString("meals", "Katering");
+                        if ("breakfast".equalsIgnoreCase(mStr)) mealType = "Sarapan";
+                        else if ("lunch".equalsIgnoreCase(mStr)) mealType = "Tengahari";
+                        else if ("hi_tea".equalsIgnoreCase(mStr)) mealType = "Hi-Tea";
+                        else mealType = mStr;
+                    }
+                }
+                if (mealType.isEmpty()) mealType = "Katering";
+
+                String loc = o.optString("location", "");
+                if (loc.isEmpty() || loc.equals("N/A")) {
+                    loc = o.optString("deliveryLocation", "Lokasi Belum Dinyatakan");
+                }
+                if (loc.isEmpty() || loc.equals("N/A")) {
+                    loc = "Lokasi Belum Dinyatakan";
+                }
+
+                String client = o.optString("to", "");
+                if (client.isEmpty() || client.equals("N/A")) {
+                    client = o.optString("name", "");
+                }
 
                 OrderRow item = new OrderRow(
                     o.optString("id", ""),
                     o.optInt("quantity", 0),
-                    o.optString("meals", "N/A"),
-                    o.optString("location", "N/A"),
-                    o.optString("menu", "N/A"),
+                    mealType,
+                    loc,
+                    o.optString("menu", ""),
                     timeLabel,
-                    o.optString("to", "N/A"),
+                    client,
                     o.optString("status", "pending")
                 );
 
@@ -117,18 +162,14 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         RemoteViews itemView = new RemoteViews(context.getPackageName(), R.layout.widget_order_item);
         OrderRow item = row.order;
 
-        itemView.setTextViewText(R.id.item_client_name, item.clientName);
+        // "meal type | Quantity | lokasi | time" display ONLY
+        // Line 1: Meal Type & Quantity (Pax)
+        itemView.setTextViewText(R.id.item_meal_type, item.meals);
         itemView.setTextViewText(R.id.item_pax_badge, item.quantity + " PAX");
 
-        String timeAndMeals = "⏰ " + (item.time != null && !item.time.isEmpty() ? item.time : "--:--") 
-            + (item.meals != null && !item.meals.isEmpty() && !item.meals.equals("N/A") ? "  •  " + item.meals : "");
-        itemView.setTextViewText(R.id.item_time_pax, timeAndMeals);
-
-        String locationStr = "📍 " + (item.location != null && !item.location.isEmpty() && !item.location.equals("N/A") ? item.location : "Lokasi Belum Dinyatakan");
-        itemView.setTextViewText(R.id.item_meal_location, locationStr);
-
-        String menuStr = "🍽️ " + (item.menu != null && !item.menu.isEmpty() && !item.menu.equals("N/A") ? item.menu : "Pakej Katering Wawasan");
-        itemView.setTextViewText(R.id.item_menu, menuStr);
+        // Line 2: Lokasi & Time
+        itemView.setTextViewText(R.id.item_meal_location, "📍 " + item.location);
+        itemView.setTextViewText(R.id.item_time, "⏰ " + item.time);
         
         // Status stripe color with refined palette
         int stripeColor;

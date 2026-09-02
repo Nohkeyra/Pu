@@ -1,49 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Each row in the pricing widget list.
-
-  Layout (top to bottom):
-    Company name  |  Pax badge
-    Menu (truncated, 1 line)
-    Meal types  +  "Tetapkan Harga" / "Sudah Dibil" button
-
-  Tapping the row's main area, or specifically the "Tetapkan Harga" button,
-  opens PricingInputActivity via the ListView's PendingIntentTemplate
-  (orderId is passed as fillInIntent extra).
+  Logically simple layout (3 clean rows):
+    1. Date & Status badge  |  Pax badge
+    2. Pelanggan / Syarikat
+    3. Meal types  |  "⚡ Tetapkan Harga" action button
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pricing_item_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/widget_card_background"
-    android:padding="10dp">
+    android:padding="9dp">
 
-    <!-- Row 1: Meal Type + Pax (Company name hidden per user request) -->
+    <!-- Row 1: Date & Urgency badge + Pax badge -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="4dp">
+        android:layout_marginBottom="6dp">
 
         <TextView
-            android:id="@+id/pricing_item_company"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:text="Syarikat" />
-
-        <TextView
-            android:id="@+id/pricing_item_meals"
+            android:id="@+id/pricing_item_date_badge"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textColor="@color/widget_primary_text"
-            android:textSize="12sp"
+            android:textColor="@color/widget_title_accent"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:singleLine="true"
             android:ellipsize="end"
-            android:text="Sarapan" />
+            android:text="⚠️ LALU • 31 Ogos" />
 
         <TextView
             android:id="@+id/pricing_item_pax"
@@ -60,37 +49,50 @@
             android:text="-- pax" />
     </LinearLayout>
 
-    <!-- Row 2: Menu (truncated) -->
+    <!-- Row 2: Customer / Company name (Hidden per user request) -->
     <TextView
-        android:id="@+id/pricing_item_menu"
+        android:id="@+id/pricing_item_company"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/widget_tertiary_text"
-        android:textSize="10sp"
+        android:visibility="gone"
+        android:textColor="@color/widget_primary_text"
+        android:textSize="13sp"
+        android:textStyle="bold"
         android:singleLine="true"
         android:ellipsize="end"
-        android:layout_marginBottom="6dp"
-        android:text="Menu: -" />
+        android:text="Syarikat / Pelanggan" />
 
-    <!-- Row 3: Action button -->
+    <!-- Row 3: Meal types & Action button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="end|center_vertical">
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/pricing_item_meals"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/widget_secondary_text"
+            android:textSize="11sp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="Sarapan + Tengahari" />
 
         <!-- Action button — tap triggers PricingInputActivity via fillInIntent -->
         <TextView
             android:id="@+id/pricing_item_action_btn"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
+            android:layout_height="26dp"
             android:gravity="center"
             android:background="@drawable/widget_summary_pill_bg"
             android:textColor="@color/widget_title_text"
             android:textSize="10sp"
             android:textStyle="bold"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginStart="8dp"
             android:text="⚡ Tetapkan Harga" />
 
     </LinearLayout>

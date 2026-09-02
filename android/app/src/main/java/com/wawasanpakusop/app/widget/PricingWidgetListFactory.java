@@ -31,14 +31,18 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         int quantity;
         String mealsLabel;
         String status;
+        String dateBadge;
+        boolean isPast;
 
-        PricingOrderRow(String id, String companyName, String menu, int quantity, String mealsLabel, String status) {
+        PricingOrderRow(String id, String companyName, String menu, int quantity, String mealsLabel, String status, String dateBadge, boolean isPast) {
             this.id = id;
             this.companyName = companyName;
             this.menu = menu;
             this.quantity = quantity;
             this.mealsLabel = mealsLabel;
             this.status = status;
+            this.dateBadge = dateBadge;
+            this.isPast = isPast;
         }
     }
 
@@ -67,16 +71,45 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
                 String mealsLabel = buildMealsLabel(o.optJSONArray("meals"));
+                boolean isPast = o.optBoolean("isPast", false);
+                boolean isToday = o.optBoolean("isToday", false);
+                String rawDate = o.optString("eventDate", o.optString("date", ""));
+                String formattedDate = formatDateShort(rawDate);
+
+                String dateBadge;
+                if (isPast) {
+                    dateBadge = "⚠️ LALU • " + formattedDate;
+                } else if (isToday) {
+                    dateBadge = "⭐ HARI INI • " + formattedDate;
+                } else {
+                    dateBadge = "📅 " + (formattedDate.isEmpty() ? "AKAN DATANG" : formattedDate);
+                }
+
                 rows.add(new PricingOrderRow(
                     o.optString("id", ""),
                     o.optString("to", "Pelanggan"),
                     o.optString("menu", "-"),
                     o.optInt("quantity", 0),
                     mealsLabel,
-                    o.optString("status", "pending")
+                    o.optString("status", "pending"),
+                    dateBadge,
+                    isPast
                 ));
             }
         } catch (Exception ignored) {}
+    }
+
+    private String formatDateShort(String rawDate) {
+        if (rawDate == null || rawDate.isEmpty()) return "";
+        try {
+            java.text.SimpleDateFormat inFmt = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            java.util.Date d = inFmt.parse(rawDate);
+            if (d != null) {
+                java.text.SimpleDateFormat outFmt = new java.text.SimpleDateFormat("d MMM", java.util.Locale.getDefault());
+                return outFmt.format(d);
+            }
+        } catch (Exception ignored) {}
+        return rawDate;
     }
 
     private String buildMealsLabel(JSONArray meals) {
@@ -112,13 +145,19 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         RemoteViews view = new RemoteViews(context.getPackageName(), R.layout.widget_pricing_order_item);
         PricingOrderRow row = rows.get(position);
 
-        view.setTextViewText(R.id.pricing_item_company, row.companyName);
-        view.setTextViewText(R.id.pricing_item_pax, row.quantity + " pax");
-        view.setTextViewText(R.id.pricing_item_menu, "Menu: " + row.menu);
+        view.setTextViewText(R.id.pricing_item_date_badge, row.dateBadge);
+        if (row.isPast) {
+            view.setTextColor(R.id.pricing_item_date_badge, 0xFFEF4444); // Urgent red for past overdue unpriced
+        } else {
+            view.setTextColor(R.id.pricing_item_date_badge, 0xFFF59E0B); // Amber gold for today/upcoming
+        }
+
+        view.setViewVisibility(R.id.pricing_item_company, android.view.View.GONE);
+        view.setTextViewText(R.id.pricing_item_pax, row.quantity + " PAX");
         view.setTextViewText(R.id.pricing_item_meals, row.mealsLabel);
 
         boolean isBilled = "billed".equals(row.status);
-        view.setTextViewText(R.id.pricing_item_action_btn, isBilled ? "✓ Harga Ditetapkan" : "⚡ Tetapkan Harga");
+        view.setTextViewText(R.id.pricing_item_action_btn, isBilled ? "✓ Dibil" : "⚡ Tetapkan Harga");
 
         // Fill-in intent: carries this specific order's ID to PricingInputActivity
         // via the PendingIntentTemplate set on the ListView in PricingWidgetFetchService.
@@ -129,8 +168,11 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         fillInIntent.putExtra("quantity", row.quantity);
         fillInIntent.putExtra("meals_label", row.mealsLabel);
         fillInIntent.putExtra("is_billed", isBilled);
+        view.setOnClickFillInIntent(R.id.pricing_item_root, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_action_btn, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_meals, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_date_badge, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_pax, fillInIntent);
 
         return view;
     }

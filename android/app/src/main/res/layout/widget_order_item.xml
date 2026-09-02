@@ -13,17 +13,17 @@
         android:layout_height="match_parent"
         android:background="#D4A853" />
 
-    <!-- Order Details Container -->
+    <!-- Order Details Container: meal type | Quantity | lokasi | time -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:paddingTop="9dp"
-        android:paddingBottom="9dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
-        <!-- Client Title & Pax Chip -->
+        <!-- Line 1: Meal Type & Quantity -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -31,7 +31,7 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/item_client_name"
+                android:id="@+id/item_meal_type"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -47,49 +47,45 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/widget_badge_text"
-                android:textSize="10sp"
+                android:textSize="10.5sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.04"
                 android:background="@drawable/widget_badge_background"
-                android:paddingStart="6dp"
-                android:paddingEnd="6dp"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
                 android:paddingTop="2dp"
                 android:paddingBottom="2dp"
                 android:layout_marginStart="6dp" />
         </LinearLayout>
 
-        <!-- Time & Session Category -->
-        <TextView
-            android:id="@+id/item_time_pax"
+        <!-- Line 2: Lokasi & Time -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/widget_secondary_text"
-            android:textSize="11.5sp"
-            android:textStyle="bold"
-            android:paddingTop="3dp"
-            android:letterSpacing="0.01" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="3dp">
 
-        <!-- Location & Destination -->
-        <TextView
-            android:id="@+id/item_meal_location"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="11sp"
-            android:paddingTop="2dp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            <TextView
+                android:id="@+id/item_meal_location"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/widget_secondary_text"
+                android:textSize="11sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-        <!-- Menu Highlights Preview -->
-        <TextView
-            android:id="@+id/item_menu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/widget_muted_text"
-            android:textSize="10sp"
-            android:paddingTop="2dp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            <TextView
+                android:id="@+id/item_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/widget_title_accent"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp"
+                android:maxLines="1" />
+        </LinearLayout>
 
     </LinearLayout>
 
