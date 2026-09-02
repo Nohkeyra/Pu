@@ -1,6 +1,5 @@
 import type express from "express";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
 import { getFirestore } from "./firebaseAdmin.js";
 import { Timestamp } from "firebase-admin/firestore";
 import { createDistributedRateLimiter } from "./distributedRateLimit.js";
@@ -37,10 +36,11 @@ if (!ADMIN_JWT_SECRET || ADMIN_JWT_SECRET.trim() === "") {
     );
   }
   console.warn(
-    "[Admin Auth] ADMIN_JWT_SECRET is not set. Generating a temporary random secret for this dev/local session only. " +
+    "[Admin Auth] ADMIN_JWT_SECRET is not set. Using a stable development secret for this dev/local session. " +
+    "This prevents admin sessions from expiring on every local hot-reload/server restart. " +
     "This will NOT work in production (NODE_ENV=production) — the server will refuse to start instead."
   );
-  ADMIN_JWT_SECRET = crypto.randomBytes(32).toString("hex");
+  ADMIN_JWT_SECRET = "wawasan_pak_usop_stable_development_jwt_secret_key_2026";
 }
 export const effectiveJwtSecret: string = ADMIN_JWT_SECRET;
 

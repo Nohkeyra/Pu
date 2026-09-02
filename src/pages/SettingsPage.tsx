@@ -52,6 +52,7 @@ import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { generateInvoicePDF } from '@/services/pdfService';
 import { getApiUrl } from '@/lib/api';
+import { removeSecureItem } from '@/lib/preferences';
 import { DiagnosticConsole } from '@/components/DiagnosticConsole';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -157,6 +158,7 @@ export default function SettingsPage() {
     setStatusBarColor,
     isAdmin,
     adminToken,
+    checkAdminStatus,
     customMainColor,
     setCustomMainColor,
     customFontSizePx,
@@ -392,6 +394,22 @@ export default function SettingsPage() {
     ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
   });
 
+  const handleUnauthorized = async (response: Response): Promise<boolean> => {
+    if (response.status === 401) {
+      await removeSecureItem('wawasan_admin_token');
+      await checkAdminStatus();
+      toast({
+        title: language === 'bm' ? 'Sesi Admin Tamat' : 'Admin Session Expired',
+        description: language === 'bm' 
+          ? 'Sesi pentadbir anda tidak sah atau telah tamat. Sila log masuk semula di Tab Admin.' 
+          : 'Your admin session is invalid or has expired. Please log in again in the Admin Tab.',
+        variant: 'error'
+      });
+      return true;
+    }
+    return false;
+  };
+
   const toggleEruda = async () => {
     const nextState = !erudaEnabled;
     setErudaEnabled(nextState);
@@ -449,6 +467,13 @@ export default function SettingsPage() {
     setDiagFirebase({ status: 'running' });
     try {
       const response = await fetch(getApiUrl('/api/diagnostics/firebase'), { headers: authHeaders() });
+      if (await handleUnauthorized(response)) {
+        setDiagFirebase({ 
+          status: 'fail', 
+          message: language === 'bm' ? 'Sesi pentadbir telah tamat' : 'Admin session expired' 
+        });
+        return;
+      }
       const data = await response.json();
       if (response.ok) {
         setDiagFirebase({ 
@@ -471,6 +496,13 @@ export default function SettingsPage() {
     setDiagFcm({ status: 'running' });
     try {
       const response = await fetch(getApiUrl('/api/diagnostics/fcm'), { headers: authHeaders() });
+      if (await handleUnauthorized(response)) {
+        setDiagFcm({
+          status: 'fail',
+          message: language === 'bm' ? 'Sesi pentadbir telah tamat' : 'Admin session expired'
+        });
+        return;
+      }
       const data = await response.json();
       if (response.ok && data.status === 'healthy') {
         setDiagFcm({
@@ -492,6 +524,13 @@ export default function SettingsPage() {
     setDiagCalendar({ status: 'running' });
     try {
       const response = await fetch(getApiUrl('/api/diagnostics/calendar'), { headers: authHeaders() });
+      if (await handleUnauthorized(response)) {
+        setDiagCalendar({
+          status: 'fail',
+          message: language === 'bm' ? 'Sesi pentadbir telah tamat' : 'Admin session expired'
+        });
+        return;
+      }
       const data = await response.json();
       if (response.ok && data.status === 'healthy') {
         setDiagCalendar({ 
@@ -617,6 +656,14 @@ export default function SettingsPage() {
         body: JSON.stringify({ testEmail: testEmailAddress })
       });
 
+      if (await handleUnauthorized(response)) {
+        setDiagEmail({
+          status: 'fail',
+          message: language === 'bm' ? 'Sesi pentadbir telah tamat' : 'Admin session expired'
+        });
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         setDiagEmail({ status: 'pass', message: `Email sent (ID: ${data.messageId})` });
@@ -661,6 +708,10 @@ export default function SettingsPage() {
           body: testPushBody
         })
       });
+
+      if (await handleUnauthorized(response)) {
+        return;
+      }
 
       if (response.ok) {
         toast({

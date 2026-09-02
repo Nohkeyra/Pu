@@ -8,7 +8,6 @@ import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
-import { authService } from '../services/authService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -18,27 +17,19 @@ export default function LoginPage() {
 
   const tLocal = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
-  const handleAdminAccess = async () => {
-    try {
-      const availability = await authService.checkBiometricAvailability();
-      if (availability.isAvailable) {
-        const result = await authService.authenticateAdminWithBiometrics({
-          reason: tLocal('Admin access required', 'Akses pentadbir diperlukan'),
-          title: tLocal('Fingerprint Authentication', 'Pengesahan Cap Jari Admin'),
-          subtitle: tLocal('Please scan your fingerprint to access the admin panel.', 'Sila imbas cap jari untuk mengakses panel admin.'),
-          negativeButtonText: tLocal('Cancel', 'Batal'),
-        });
-        if (result.success) {
-          navigate('/admin');
-          return;
-        }
-      }
-      // If biometrics unavailable or cancelled, route to password screen
-      navigate('/admin');
-    } catch (error) {
-      console.error('Admin authentication failed', error);
-      navigate('/admin');
-    }
+  // F-BIO-DUP (audit 2026-09-01): this used to trigger a NativeBiometric
+  // fingerprint prompt right here before navigating, but its result was
+  // never actually used for anything — every branch (success, failure,
+  // biometrics unavailable, or a thrown error) ended in the same
+  // navigate('/admin') call, and no token or session state was ever set
+  // from it. The real login (password or fingerprint) happens on the Admin
+  // Login screen itself via AdminPage.tsx's handleBiometricLogin, which
+  // does properly store the resulting token. Keeping both meant an admin
+  // had to scan their fingerprint twice in a row for one login. Removed
+  // the dead biometric call here so tapping this icon just opens the Admin
+  // Login screen, where the single real fingerprint scan lives.
+  const handleAdminAccess = () => {
+    navigate('/admin');
   };
 
   return (
