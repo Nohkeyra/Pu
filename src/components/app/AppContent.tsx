@@ -116,15 +116,84 @@ function PageTransition({ children }: { children: ReactNode }) {
 }
 
 // Actual AppContent component
-import React from 'react';
+import React, { Component } from 'react';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const LoginPageComp = React.lazy(() => import('@/pages/LoginPage'));
-const LandingPageComp = React.lazy(() => import('@/pages/LandingPage'));
-const OrderPageComp = React.lazy(() => import('@/pages/OrderPage'));
-const AdminPageComp = React.lazy(() => import('@/pages/AdminPage'));
-const ProfilePageComp = React.lazy(() => import('@/pages/ProfilePage'));
-const SettingsPageComp = React.lazy(() => import('@/pages/SettingsPage'));
-const CalendarPageComp = React.lazy(() => import('@/pages/CalendarPage'));
+interface RouteErrorBoundaryProps {
+  children: ReactNode;
+  resetKey: string;
+}
+
+interface RouteErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBoundaryState> {
+  public state: RouteErrorBoundaryState = {
+    hasError: false,
+    error: null,
+  };
+
+  static getDerivedStateFromError(error: Error): RouteErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[RouteErrorBoundary] Route module failed to load:', error, errorInfo);
+  }
+
+  componentDidUpdate(prevProps: RouteErrorBoundaryProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white dark:bg-card border border-amber-500/20 shadow-lg rounded-2xl p-6 max-w-md w-full space-y-4">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg text-foreground">Gagal Memuatkan Halaman</h3>
+              <p className="text-sm text-stone mt-1">
+                Sambungan rangkaian atau pembaharuan aplikasi terganggu. Sila cuba muat semula modul ini.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => this.setState({ hasError: false, error: null })}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm transition-colors cursor-pointer"
+              >
+                Cuba Lagi
+              </button>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border hover:bg-black/5 dark:hover:bg-white/5 text-foreground font-medium text-sm transition-colors cursor-pointer"
+              >
+                Muat Semula
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const LoginPageComp = lazyWithRetry(() => import('@/pages/LoginPage'), 'LoginPage');
+const LandingPageComp = lazyWithRetry(() => import('@/pages/LandingPage'), 'LandingPage');
+const OrderPageComp = lazyWithRetry(() => import('@/pages/OrderPage'), 'OrderPage');
+const AdminPageComp = lazyWithRetry(() => import('@/pages/AdminPage'), 'AdminPage');
+const ProfilePageComp = lazyWithRetry(() => import('@/pages/ProfilePage'), 'ProfilePage');
+const SettingsPageComp = lazyWithRetry(() => import('@/pages/SettingsPage'), 'SettingsPage');
+const CalendarPageComp = lazyWithRetry(() => import('@/pages/CalendarPage'), 'CalendarPage');
 
 function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
   return (
@@ -185,32 +254,34 @@ export default function AppContent() {
       )}
 
       <main className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]">
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
-          {/*
-            BUG FIX (audit 2026-08-28): AnimatePresence mode="wait" defers
-            mounting the new route until the outgoing route's exit animation
-            reports completion. PageTransition sets exit={undefined} on
-            native builds (Capacitor.isNativePlatform()) since no exit
-            animation is used there — so on native, AnimatePresence was
-            waiting on an exit signal that never meaningfully fires,
-            combined with `key` living on a non-motion <Routes> wrapper and
-            a single shared Suspense boundary for every lazy page. Confirmed
-            on-device: tapping Home/Calendar/Settings while on /admin
-            updated the URL and bottom-nav highlight, flashed the loading
-            screen, then silently reverted to the old (admin) screen and
-            stayed there — navigation looked like it worked but never
-            actually completed. Since native never had a real exit
-            animation to sequence in the first place, AnimatePresence's
-            "wait" behavior provided no benefit there — only risk. Skipping
-            it entirely on native (routes swap immediately, matching what
-            the disabled exit already implied) removes that race outright.
-            Web keeps AnimatePresence since it has a real exit animation to
-            sequence.
-          */}
-          <AnimatePresence mode="wait">
-            <AppRoutes location={location} key={location.pathname} />
-          </AnimatePresence>
-        </Suspense>
+        <RouteErrorBoundary resetKey={location.pathname}>
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
+            {/*
+              BUG FIX (audit 2026-08-28): AnimatePresence mode="wait" defers
+              mounting the new route until the outgoing route's exit animation
+              reports completion. PageTransition sets exit={undefined} on
+              native builds (Capacitor.isNativePlatform()) since no exit
+              animation is used there — so on native, AnimatePresence was
+              waiting on an exit signal that never meaningfully fires,
+              combined with `key` living on a non-motion <Routes> wrapper and
+              a single shared Suspense boundary for every lazy page. Confirmed
+              on-device: tapping Home/Calendar/Settings while on /admin
+              updated the URL and bottom-nav highlight, flashed the loading
+              screen, then silently reverted to the old (admin) screen and
+              stayed there — navigation looked like it worked but never
+              actually completed. Since native never had a real exit
+              animation to sequence in the first place, AnimatePresence's
+              "wait" behavior provided no benefit there — only risk. Skipping
+              it entirely on native (routes swap immediately, matching what
+              the disabled exit already implied) removes that race outright.
+              Web keeps AnimatePresence since it has a real exit animation to
+              sequence.
+            */}
+            <AnimatePresence mode="wait">
+              <AppRoutes location={location} key={location.pathname} />
+            </AnimatePresence>
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
       <BottomNavigation />
     </div>

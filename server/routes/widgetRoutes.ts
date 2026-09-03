@@ -72,6 +72,16 @@ router.get('/widget/upcoming-orders', async (req, res) => {
       .map(doc => {
         const d = doc.data();
         const status = d.status || 'pending';
+        // Admin "delete" is a soft-delete when the order has an owning
+        // customer account (see POST /admin/orders action=delete in
+        // orderRoutes.ts): the doc stays in `orders` with deletedByAdmin:
+        // true instead of being removed. Every other consumer of this
+        // collection (orderRoutes.ts lines ~633/716/781) already filters
+        // this flag out; the widget endpoints previously didn't, which
+        // let admin-deleted orders keep showing as ghost records in the
+        // home-screen widget until the customer separately hard-deleted
+        // their own copy.
+        if (d.deletedByAdmin) return null;
         if (excludedStatuses.has(status)) return null;
 
         const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
@@ -103,41 +113,7 @@ router.get('/widget/upcoming-orders', async (req, res) => {
   }
 });
 
-// ─── 2. Daily summary (public, aggregate only) ────────────────────────────────
-router.get('/widget/daily-summary', async (_req, res) => {
-  try {
-    const db = getFirestore();
-    const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
-
-    const snapshot = await db.collection('orders')
-      .where('eventDate', '==', dateStr)
-      .get();
-
-    const excludedStatuses = new Set(['cancelled', 'rejected', 'cancel_requested']);
-    let totalOrders = 0;
-    let totalGuests = 0;
-    const sessionCounts: Record<string, number> = {};
-
-    snapshot.docs.forEach(doc => {
-      const d = doc.data();
-      if (excludedStatuses.has(d.status)) return;
-      totalOrders++;
-      totalGuests += Number(d.quantity || d.guests || d.pax || 0);
-      if (Array.isArray(d.meals)) {
-        d.meals.forEach((meal: string) => {
-          sessionCounts[meal] = (sessionCounts[meal] || 0) + 1;
-        });
-      }
-    });
-
-    return res.json({ success: true, date: dateStr, totalOrders, totalGuests, sessionCounts });
-  } catch (err) {
-    console.error('[Widget daily-summary Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
-  }
-});
-
-// ─── 3. Orders for the PRICING widget (widget-key protected) ──────────────────
+// ─── 2. Orders for the PRICING widget (widget-key protected) ──────────────────
 // Returns orders (both past and new/upcoming) that have not had their prices keyed in yet.
 // Query checks status in ['pending', 'approved'] and filters out any already billed.
 router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPricingLimiter, async (req, res) => {
@@ -160,6 +136,9 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
     const unpricedOrders = snapshot.docs
       .map(doc => {
         const d = doc.data();
+        // Same soft-delete gap as /widget/upcoming-orders — see comment there.
+        if (d.deletedByAdmin) return null;
+
         const eventDateVal = d.eventDate || d.date || '';
         const isBilled = d.status === 'billed';
         const hasPrices = d.prices && Object.keys(d.prices).length > 0 && Number(d.totalAmount) > 0;
@@ -229,7 +208,7 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
   }
 });
 
-// ─── 4. Set pricing + auto-generate & email final invoice (widget-key protected) ─
+// ─── 3. Set pricing + auto-generate & email final invoice (widget-key protected) ─
 // This is the core action of the pricing widget:
 //   1. Receive pricePerPax per meal type from widget input
 //   2. Calculate totalAmount

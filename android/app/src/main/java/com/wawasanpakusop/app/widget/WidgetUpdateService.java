@@ -40,6 +40,14 @@ public class WidgetUpdateService {
 
     static final String PREFS_NAME = "wawasan_widget_prefs";
     static final String PREF_ORDERS_JSON = "cached_orders_json";
+    static final String PREF_LAST_SUCCESS_AT = "cached_orders_last_success_at";
+
+    // If a refresh fails and the cache hasn't been successfully updated in
+    // this long, the cache is treated as stale rather than silently shown
+    // as if it were current. updatePeriodMillis is 30 min, so 2 hours means
+    // several refresh cycles in a row have failed — a real signal, not one
+    // transient network blip.
+    private static final long STALE_THRESHOLD_MS = 2L * 60 * 60 * 1000;
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -75,7 +83,10 @@ public class WidgetUpdateService {
 
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             if (success && ordersJson != null) {
-                prefs.edit().putString(PREF_ORDERS_JSON, ordersJson).apply();
+                prefs.edit()
+                    .putString(PREF_ORDERS_JSON, ordersJson)
+                    .putLong(PREF_LAST_SUCCESS_AT, System.currentTimeMillis())
+                    .apply();
             }
 
             final boolean finalSuccess = success;
@@ -93,6 +104,12 @@ public class WidgetUpdateService {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String cachedJson = prefs.getString(PREF_ORDERS_JSON, null);
         boolean hasData = cachedJson != null && !cachedJson.equals("[]");
+
+        // Only relevant when this refresh attempt itself failed — a
+        // successful refresh always means the cache is fresh as of now.
+        long lastSuccessAt = prefs.getLong(PREF_LAST_SUCCESS_AT, 0);
+        boolean isStale = !fetchSucceeded && hasData
+            && (lastSuccessAt == 0 || System.currentTimeMillis() - lastSuccessAt > STALE_THRESHOLD_MS);
 
         for (int appWidgetId : appWidgetIds) {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
@@ -186,6 +203,14 @@ public class WidgetUpdateService {
                 summaryText = "📅 Terdekat: " + formattedNearest + "  •  " + futureOrders + " Tempahan Hadapan";
             } else {
                 summaryText = "✓ Tiada tempahan aktif buat masa ini";
+            }
+
+            if (isStale) {
+                // Data hasn't refreshed successfully in a while — say so
+                // instead of quietly presenting a possibly-outdated list
+                // (e.g. orders deleted server-side since the last good fetch)
+                // as if it were current.
+                summaryText = "⚠️ Data lapuk — cuba semula";
             }
 
             views.setTextViewText(R.id.widget_today_summary, summaryText);

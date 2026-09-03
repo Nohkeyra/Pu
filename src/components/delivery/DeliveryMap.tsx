@@ -1,12 +1,35 @@
-import { useEffect, useState, useRef } from 'react';
-import { Truck, MapPin, Navigation, Clock, X, Info, Sliders, Compass, AlertTriangle, MessageSquare, Check, Sparkles } from 'lucide-react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  Truck,
+  MapPin,
+  Navigation,
+  Clock,
+  X,
+  Info,
+  Sliders,
+  Compass,
+  AlertTriangle,
+  MessageSquare,
+  Check,
+  Sparkles,
+  Smartphone,
+  Phone,
+  Lock,
+} from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import type { Order } from '@/types';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { launchMaps } from '@/lib/nativeService';
-import { Capacitor } from '@capacitor/core';
+import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
 import { triggerHeavyImpact, triggerNotification, NotificationType } from '@/lib/haptics';
+import { useToast } from '@/components/ui/Toast';
+import {
+  enableRiderLockScreenWidget,
+  updateRiderLockScreenGeofence,
+  disableRiderLockScreenWidget,
+  buildArrivalMessage,
+} from '@/services/riderLockScreenService';
+import { LockScreenWidgetModal } from './LockScreenWidgetModal';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
 
@@ -312,6 +335,7 @@ function LeafletMapContainer({
 // ==========================================
 export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps) {
   const { language } = useLanguage();
+  const { toast } = useToast();
   const [eta, setEta] = useState<string>('-- mins');
   const [distance, setDistance] = useState<string>('-- km');
   const [routeLoaded, setRouteLoaded] = useState<boolean>(false);
@@ -327,6 +351,10 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
   const [geofenceBreached, setGeofenceBreached] = useState<boolean>(false);
   const [exactDistanceMeters, setExactDistanceMeters] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+
+  // Lock Screen Widget states
+  const [lockScreenWidgetActive, setLockScreenWidgetActive] = useState<boolean>(true);
+  const [showLockScreenPreview, setShowLockScreenPreview] = useState<boolean>(false);
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -374,7 +402,42 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     };
   }, [isRiderMode, trackingSource, language]);
 
-  // Geofence breaching monitor
+  // Direct delivery completion trigger
+  const handleMarkAsDelivered = useCallback(async () => {
+    if (!onUpdateStatus || !order.id) return;
+    setUpdatingStatus(true);
+    try {
+      await onUpdateStatus(order.id, 'delivered');
+      triggerNotification(NotificationType.Success);
+      toast({
+        title: language === 'bm' ? 'Pesanan Selesai Dihantar' : 'Order Marked Delivered',
+        description: language === 'bm' ? `Penghantaran #${order.invoiceNo || order.id} selesai.` : 'Delivery completed.',
+        variant: 'success',
+      });
+      await disableRiderLockScreenWidget();
+    } catch (err) {
+      console.error('Failed to mark delivered:', err);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }, [onUpdateStatus, order.id, order.invoiceNo, language, toast]);
+
+  // Synchronize Sticky Lock Screen Widget for Android / Riders
+  useEffect(() => {
+    if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
+      enableRiderLockScreenWidget(order, coords, {
+        onDelivered: handleMarkAsDelivered,
+      });
+    } else {
+      disableRiderLockScreenWidget();
+    }
+
+    return () => {
+      disableRiderLockScreenWidget();
+    };
+  }, [isRiderMode, lockScreenWidgetActive, coords, order, handleMarkAsDelivered]);
+
+  // Geofence breaching monitor and Lock Screen sync
   useEffect(() => {
     if (!riderCoords || !coords) return;
 
@@ -382,7 +445,8 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     const distMeters = Math.round(distKm * 1000);
     setExactDistanceMeters(distMeters);
 
-    if (distMeters <= 200) {
+    const isBreached = distMeters <= 200;
+    if (isBreached) {
       if (!geofenceBreached) {
         setGeofenceBreached(true);
         // Fire haptic vibration alert!
@@ -392,37 +456,64 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     } else {
       setGeofenceBreached(false);
     }
-  }, [riderCoords, coords, geofenceBreached]);
+
+    if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
+      updateRiderLockScreenGeofence(order, coords, distMeters, isBreached);
+    }
+  }, [riderCoords, coords, geofenceBreached, isRiderMode, lockScreenWidgetActive, order]);
 
   // Pre-formatted WhatsApp Direct Send
-  const handleSendArrivalAlert = () => {
+  const handleSendArrivalAlert = async () => {
     const formattedPhone = order.contact?.replace(/\D/g, '').replace(/^0/, '60') || '';
-    const isBm = language === 'bm';
-    const msg = isBm
-      ? `Salam ${order.name},\n\nSaya rider dari *Restoran Wawasan Pak Usop* sedang menghantar hidangan katering anda.\n\nSaya kini berada dalam lingkungan *200 meter* (hampir sampai) ke lokasi majlis:\n📍 *${order.location}*\n\nSila bersiap sedia untuk menerima penghantaran. Terima kasih! 🚚`
-      : `Hello ${order.name},\n\nI am the delivery rider from *Restoran Wawasan Pak Usop* bringing your catering feast.\n\nI have just entered the *200-meter* radius of your event location:\n📍 *${order.location}*\n\nKindly prepare to receive the delivery. Thank you! 🚚`;
+    const msg = buildArrivalMessage(order, language === 'bm' ? 'bm' : 'en');
 
-    const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
+    await launchWhatsApp({
+      phone: formattedPhone || '60173157731',
+      message: msg,
+    });
 
-    if (Capacitor.isNativePlatform()) {
-      window.location.assign(url);
+    toast({
+      title: language === 'bm' ? 'Alert WhatsApp Dibuka' : 'WhatsApp Alert Opened',
+      description: language === 'bm' ? 'Mesej ketibaan telah disiapkan untuk dihantar.' : 'Arrival message prepared.',
+      variant: 'success',
+    });
+  };
+
+  // Direct Phone Call Shortcut
+  const handleCallCustomer = () => {
+    const rawPhone = order.contact?.replace(/\D/g, '') || '';
+    if (rawPhone) {
+      window.open(`tel:${rawPhone}`, '_system');
     } else {
-      window.open(url, '_blank');
+      toast({
+        title: language === 'bm' ? 'Nombor Telefon Tiada' : 'No Phone Number',
+        variant: 'destructive',
+      });
     }
   };
 
-  // Direct delivery completion trigger
-  const handleMarkAsDelivered = async () => {
-    if (!onUpdateStatus || !order.id) return;
-    setUpdatingStatus(true);
-    try {
-      await onUpdateStatus(order.id, 'delivered');
-      triggerNotification(NotificationType.Success);
-    } catch (err) {
-      console.error('Failed to mark delivered:', err);
-    } finally {
-      setUpdatingStatus(false);
+  // Direct Maps Navigation Shortcut
+  const handleOpenNavigation = () => {
+    if (coords) {
+      launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'best' });
     }
+  };
+
+  // Trigger Lock Screen Test Notification
+  const handleTestLockScreen = async () => {
+    await enableRiderLockScreenWidget(order, coords, {
+      onDelivered: handleMarkAsDelivered,
+    });
+    await updateRiderLockScreenGeofence(order, coords, exactDistanceMeters || 180, true);
+    triggerHeavyImpact();
+    toast({
+      title: language === 'bm' ? 'Widget Skrin Kunci Aktif' : 'Lock Screen Widget Active',
+      description:
+        language === 'bm'
+          ? 'Notifikasi kini aktif pada skrin kunci peranti anda. Tekan butang pratonton untuk semak.'
+          : 'Notification is active on lock screen. Tap preview to inspect.',
+      variant: 'success',
+    });
   };
 
   return (
@@ -594,6 +685,54 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                     )}
                   </div>
 
+                  {/* Rider Lock Screen Widget Controls */}
+                  <div className="p-3.5 bg-gradient-to-br from-stone-900 via-stone-950 to-black text-white rounded-2xl border border-stone-800 shadow-md space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-bold text-white">
+                          {t('Lock Screen Widget', 'Widget Skrin Kunci')}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLockScreenWidgetActive(!lockScreenWidgetActive)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all border ${
+                          lockScreenWidgetActive
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {lockScreenWidgetActive ? 'AKTIF 🟢' : 'TIDAK AKTIF ⚪'}
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-stone-300 leading-relaxed">
+                      {t(
+                        'Displays a sticky arrival alert button directly on your phone lock screen so you do not have to unlock your phone while riding.',
+                        'Memaparkan butang alert ketibaan terus pada skrin kunci telefon agar anda tidak perlu membuka kunci telefon semasa menunggang.'
+                      )}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowLockScreenPreview(true)}
+                        className="py-1.5 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all"
+                      >
+                        <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{t('Preview Widget', 'Pratonton Skrin')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTestLockScreen}
+                        className="py-1.5 px-2 bg-amber-500 hover:bg-amber-600 text-stone-950 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all shadow-sm"
+                      >
+                        <span>{t('Test Alert', 'Uji Alert')}</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Smart Arrival WhatsApp trigger */}
                   {geofenceBreached && (
                     <button
@@ -719,20 +858,103 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
           </div>
 
           {/* Map Canvas */}
-          <div className="flex-1 h-full min-h-[350px] relative">
-            <LeafletMapContainer
-              locationString={order.location}
-              orderStatus={order.status || ''}
-              setEta={setEta}
-              setDistance={setDistance}
-              setRouteLoaded={setRouteLoaded}
-              onCoordinatesLoaded={setCoords}
-              riderPosition={isRiderMode ? riderCoords : null}
-              onRouteCoordsLoaded={setRouteCoords}
-            />
+          <div className="flex-1 h-full min-h-[350px] relative flex flex-col">
+            <div className="flex-1 relative w-full h-full">
+              <LeafletMapContainer
+                locationString={order.location}
+                orderStatus={order.status || ''}
+                setEta={setEta}
+                setDistance={setDistance}
+                setRouteLoaded={setRouteLoaded}
+                onCoordinatesLoaded={setCoords}
+                riderPosition={isRiderMode ? riderCoords : null}
+                onRouteCoordsLoaded={setRouteCoords}
+              />
+
+              {/* Glove-Friendly Safe-Riding Floating Action Bar for Riders */}
+              <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-auto">
+                <div className="max-w-xl mx-auto p-2.5 bg-stone-950/90 dark:bg-stone-900/95 backdrop-blur-md rounded-2xl border border-stone-700/60 shadow-2xl flex items-center gap-2">
+                  {/* Giant 1-Tap WhatsApp Arrival Button */}
+                  <button
+                    type="button"
+                    onClick={handleSendArrivalAlert}
+                    className={`flex-1 h-12 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${
+                      geofenceBreached
+                        ? 'bg-emerald-500 hover:bg-emerald-400 text-white animate-pulse shadow-emerald-500/30'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                    }`}
+                    title={t('Send WhatsApp Arrival (1-Tap Safe)', 'Hantar WhatsApp Sampai (1-Tekan Selamat)')}
+                  >
+                    <MessageSquare className="w-5 h-5 shrink-0" />
+                    <div className="text-left leading-tight">
+                      <span className="block text-[11px] font-black uppercase tracking-wider">
+                        {geofenceBreached
+                          ? t('🚨 Arrived! Tap WhatsApp', '🚨 Tiba! Hantar WhatsApp')
+                          : t('WhatsApp Arrival Alert', 'WhatsApp Sampai')}
+                      </span>
+                      <span className="block text-[9px] opacity-80 font-normal">
+                        {order.contact || '017-315 7731'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Quick Call */}
+                  <button
+                    type="button"
+                    onClick={handleCallCustomer}
+                    className="h-12 w-12 rounded-xl bg-stone-800 hover:bg-stone-700 text-sky-400 flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm"
+                    title={t('Call Customer', 'Telefon Pelanggan')}
+                    aria-label="Call Customer"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+
+                  {/* Quick Navigation */}
+                  <button
+                    type="button"
+                    onClick={handleOpenNavigation}
+                    className="h-12 w-12 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-400 flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm"
+                    title={t('Navigation Maps / Waze', 'Navigasi Maps / Waze')}
+                    aria-label="Navigation Maps / Waze"
+                  >
+                    <Navigation className="w-5 h-5" />
+                  </button>
+
+                  {/* Lock Screen Preview / Widget Control */}
+                  <button
+                    type="button"
+                    onClick={() => setShowLockScreenPreview(true)}
+                    className={`h-12 px-2.5 rounded-xl border flex flex-col items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm ${
+                      lockScreenWidgetActive
+                        ? 'bg-stone-800 border-emerald-500/40 text-emerald-400'
+                        : 'bg-stone-800/60 border-stone-700 text-stone-400'
+                    }`}
+                    title={t('Lock Screen Widget Preview', 'Pratonton Widget Skrin Kunci')}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-bold mt-0.5">
+                      {lockScreenWidgetActive ? 'Lock OK' : 'Lock OFF'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Interactive Android Lock Screen Simulation Modal */}
+      <LockScreenWidgetModal
+        isOpen={showLockScreenPreview}
+        onClose={() => setShowLockScreenPreview(false)}
+        order={order}
+        exactDistanceMeters={exactDistanceMeters}
+        geofenceBreached={geofenceBreached}
+        onSendWhatsApp={handleSendArrivalAlert}
+        onCallCustomer={handleCallCustomer}
+        onOpenNavigation={handleOpenNavigation}
+        onMarkDelivered={order.status !== 'delivered' && onUpdateStatus ? handleMarkAsDelivered : undefined}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
@@ -129,9 +129,10 @@ export default function CalendarPage() {
     let unsubscribeOrders2 = () => {};
     let unsubscribeNotes = () => {};
 
-    if (isAdmin || !currentUser) {
+    if (isAdmin) {
       const ordersCol = collection(db, 'orders');
-      unsubscribeOrders1 = onSnapshot(ordersCol, (snapshot) => {
+      const qOrders = query(ordersCol, orderBy('createdAt', 'desc'), limit(150));
+      unsubscribeOrders1 = onSnapshot(qOrders, (snapshot) => {
         const list: Order[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Order;
@@ -141,6 +142,7 @@ export default function CalendarPage() {
         setLoading(false);
       }, (err) => {
         console.warn("Order stream permission note:", err);
+        setLoading(false);
       });
 
       const notesCol = collection(db, 'calendar_notes');
@@ -154,7 +156,7 @@ export default function CalendarPage() {
       }, (err) => {
         console.warn("Notes stream permission note:", err);
       });
-    } else {
+    } else if (currentUser) {
       const ordersCol = collection(db, 'orders');
       const q1 = query(ordersCol, where('userId', '==', currentUser.uid));
       const q2 = query(ordersCol, where('uid', '==', currentUser.uid));
@@ -196,6 +198,11 @@ export default function CalendarPage() {
       }, (err) => {
         console.warn("Member notes stream permission note:", err);
       });
+    } else {
+      // Unauthenticated visitor
+      setOrders([]);
+      setCalendarNotes([]);
+      setLoading(false);
     }
 
     return () => {

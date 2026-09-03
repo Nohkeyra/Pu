@@ -231,8 +231,9 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       }
 
       const snapshot = await query.get();
-      const orders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      return res.json({ success: true, orders, hasMore: orders.length === pageSize });
+      const allOrders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const orders = allOrders.filter((o: any) => o.deletedByAdmin !== true);
+      return res.json({ success: true, orders, hasMore: allOrders.length === pageSize });
     }
 
     if (action === 'update' && orderId) {

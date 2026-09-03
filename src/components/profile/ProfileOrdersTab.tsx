@@ -26,6 +26,8 @@ import WawasanLoader from '@/components/WawasanLoader';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import type { Order } from '@/types';
 import { getDisplayInvoiceNo, formatDateDisplay } from '@/lib/utils';
+import { RESTORAN_CONTACT } from '@/constants/contact';
+import { launchWhatsApp } from '@/lib/nativeService';
 
 interface ProfileOrdersTabProps {
   orders: Order[];
@@ -231,10 +233,11 @@ function OrderItem({
               e.stopPropagation();
               const invNo = getDisplayInvoiceNo(order);
               const formattedDateStr = formatDateDisplay(order.date || order.eventDate || order.dateTime);
-              const text = encodeURIComponent(
-                `Salam Restoran Wawasan Pak Usop, saya ingin bertanyakan tentang pesanan #${invNo} (${order.eventType === 'pejabat' ? 'Jamuan Pejabat' : 'Majlis Katering'}, ${order.guests} pax, Tarikh: ${formattedDateStr}).`
-              );
-              window.open(`https://wa.me/60123456789?text=${text}`, '_blank');
+              const message = `Salam Restoran Wawasan Pak Usop, saya ingin bertanyakan tentang pesanan #${invNo} (${order.eventType === 'pejabat' ? 'Jamuan Pejabat' : 'Majlis Katering'}, ${order.guests} pax, Tarikh: ${formattedDateStr}).`;
+              launchWhatsApp({
+                phone: RESTORAN_CONTACT.whatsappRaw,
+                message,
+              });
             }}
             variant="outline"
             size="sm"

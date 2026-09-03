@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -26,11 +26,12 @@ import { filterAdminOrders } from '@/lib/adminOrderFilters';
 import { useAdminOrders } from '@/hooks/useAdminOrders';
 import { useAdminPdf } from '@/hooks/useAdminPdf';
 import { useAdminMessaging } from '@/hooks/useAdminMessaging';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const OrderDetailModal = lazy(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })));
-const SendInvoiceModal = lazy(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })));
-const AdminPdfShareModal = lazy(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })));
-const DeliveryMap = lazy(() => import('./delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })));
+const OrderDetailModal = lazyWithRetry(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })), 'OrderDetailModal');
+const SendInvoiceModal = lazyWithRetry(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })), 'SendInvoiceModal');
+const AdminPdfShareModal = lazyWithRetry(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })), 'AdminPdfShareModal');
+const DeliveryMap = lazyWithRetry(() => import('./delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMap');
 
 const getDisplayInvoiceNo = (order: Order): string => {
   if (order.invoiceNo) return order.invoiceNo;

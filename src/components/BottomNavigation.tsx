@@ -22,12 +22,19 @@ function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
 // Prefetch chunk on hover / touchstart for instant navigation
 function prefetchTabModule(path: string) {
   try {
-    if (path.includes('order')) import('../pages/OrderPage');
-    else if (path.includes('calendar')) import('../pages/CalendarPage');
-    else if (path.includes('profile')) import('../pages/ProfilePage');
-    else if (path.includes('settings')) import('../pages/SettingsPage');
-    else if (path.includes('admin')) import('../pages/AdminPage');
-    else if (path.includes('home') || path.includes('main')) import('../pages/LandingPage');
+    if (path.includes('order')) {
+      import('../pages/OrderPage').catch(() => {});
+    } else if (path.includes('calendar')) {
+      import('../pages/CalendarPage').catch(() => {});
+    } else if (path.includes('profile')) {
+      import('../pages/ProfilePage').catch(() => {});
+    } else if (path.includes('settings')) {
+      import('../pages/SettingsPage').catch(() => {});
+    } else if (path.includes('admin')) {
+      import('../pages/AdminPage').catch(() => {});
+    } else if (path.includes('home') || path.includes('main')) {
+      import('../pages/LandingPage').catch(() => {});
+    }
   } catch {
     // Best-effort prefetch
   }

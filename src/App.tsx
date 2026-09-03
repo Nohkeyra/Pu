@@ -19,6 +19,7 @@ import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import FallbackDashboard from './components/app/FallbackDashboard';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
+import { BatikMotionProvider } from './components/BatikMotionProvider';
 
 // Speed Insights wrapper
 function VercelSpeedInsights() {
@@ -149,20 +150,6 @@ function App() {
       // Ignore network errors on background ping
     });
 
-    const runWhenIdle = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1000));
-    runWhenIdle(() => {
-      import('./services/pdfService').then(({ preloadLogoForPDF, preloadBatikHeaderForPDF }) => {
-        preloadLogoForPDF().catch((err) => {
-          console.warn('Logo preloading failed:', err);
-        });
-        preloadBatikHeaderForPDF().catch((err) => {
-          console.warn('Batik header preloading failed:', err);
-        });
-      }).catch((err) => {
-        console.warn('pdfService preload import failed:', err);
-      });
-    });
-
     const hideSplash = async () => {
       try {
         if (Capacitor.isPluginAvailable('SplashScreen')) await SplashScreen.hide();
@@ -224,18 +211,20 @@ function App() {
       )}
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
-          <PrivacyPolicyModal
-            isOpen={showPrivacyPolicy && isSplashFinished}
-            onUnderstood={handlePrivacyUnderstood}
-          />
-          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <VercelSpeedInsights />
-            <PushNotificationHandler />
-            <NativeBackButtonHandler />
-            <NativeAppListeners />
-            <GlobalInAppUpdateHandler />
-            <AppContent />
-          </Router>
+          <BatikMotionProvider>
+            <PrivacyPolicyModal
+              isOpen={showPrivacyPolicy && isSplashFinished}
+              onUnderstood={handlePrivacyUnderstood}
+            />
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <VercelSpeedInsights />
+              <PushNotificationHandler />
+              <NativeBackButtonHandler />
+              <NativeAppListeners />
+              <GlobalInAppUpdateHandler />
+              <AppContent />
+            </Router>
+          </BatikMotionProvider>
         </ToastProvider>
       </TooltipProvider>
     </>

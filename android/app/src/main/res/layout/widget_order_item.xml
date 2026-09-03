@@ -7,10 +7,11 @@
     android:background="@drawable/widget_card_background">
 
     <!-- Status accent stripe with rounded outer profile -->
-    <View
+    <ImageView
         android:id="@+id/item_status_stripe"
         android:layout_width="4dp"
-        android:layout_height="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="center_vertical"
         android:background="#D4A853" />
 
     <!-- Order Details Container: meal type | Quantity | lokasi | time -->
@@ -38,8 +39,7 @@
                 android:textColor="@color/widget_primary_text"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.01"
-                android:maxLines="1"
+                android:singleLine="true"
                 android:ellipsize="end" />
 
             <TextView
@@ -49,7 +49,6 @@
                 android:textColor="@color/widget_badge_text"
                 android:textSize="10.5sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.04"
                 android:background="@drawable/widget_badge_background"
                 android:paddingStart="7dp"
                 android:paddingEnd="7dp"
@@ -74,7 +73,7 @@
                 android:textColor="@color/widget_title_accent"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:maxLines="1"
+                android:singleLine="true"
                 android:ellipsize="end" />
 
             <TextView
@@ -85,7 +84,7 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:layout_marginStart="8dp"
-                android:maxLines="1" />
+                android:singleLine="true" />
         </LinearLayout>
 
         <!-- Line 3: Lokasi -->
@@ -96,7 +95,7 @@
             android:textColor="@color/widget_secondary_text"
             android:textSize="11sp"
             android:paddingTop="2dp"
-            android:maxLines="1"
+            android:singleLine="true"
             android:ellipsize="end" />
 
     </LinearLayout>

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -30,9 +30,10 @@ import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
 import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTab';
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const CustomerInvoicePreviewModal = lazy(() => import('@/components/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })));
-const DeliveryMap = lazy(() => import('@/components/delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })));
+const CustomerInvoicePreviewModal = lazyWithRetry(() => import('@/components/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })), 'CustomerInvoicePreviewModal');
+const DeliveryMap = lazyWithRetry(() => import('@/components/delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMapCustomer');
 
 interface UserProfileDashboardProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, useTransform } from 'motion/react';
-import { useDeviceMotion3D } from '@/hooks/useDeviceMotion3D';
+import { useDeviceMotion3D, useBatikVisibilityRef } from '@/hooks/useDeviceMotion3D';
 import { getAssetUrl } from '@/lib/utils';
 
 interface Batik3DMotionProps {
@@ -34,7 +34,29 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
   alt = 'Batik Pattern Background',
   src,
 }) => {
-  const { rotateX, rotateY } = useDeviceMotion3D(maxRotation);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useBatikVisibilityRef();
+
+  // F-DUP: freeze this instance's tilt output at 0 while it's off-screen or
+  // hidden behind another element (e.g. a page's batik layer sitting behind
+  // an open AuthModal, or the footer's layer before the user scrolls down).
+  // The shared listener in BatikMotionProvider keeps running either way
+  // (that's the point — one listener for the whole app), but an invisible
+  // instance no longer spends work animating a transform nobody can see.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+      },
+      { rootMargin: '200px' } // start animating slightly before it enters view
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isVisibleRef]);
+
+  const { rotateX, rotateY } = useDeviceMotion3D(maxRotation, isVisibleRef);
   
   // Subtle translation parallax for extra 3D depth
   const moveX = useTransform(rotateY, (rY) => rY * 0.65);
@@ -44,6 +66,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
 
   return (
     <div 
+      ref={containerRef}
       className={`absolute inset-0 overflow-hidden pointer-events-none [perspective:1200px] z-0 ${className}`}
       style={{ transformStyle: 'preserve-3d' }}
     >
