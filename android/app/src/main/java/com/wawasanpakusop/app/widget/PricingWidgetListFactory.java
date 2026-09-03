@@ -33,8 +33,9 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         String status;
         String dateBadge;
         boolean isPast;
+        String location;
 
-        PricingOrderRow(String id, String companyName, String menu, int quantity, String mealsLabel, String status, String dateBadge, boolean isPast) {
+        PricingOrderRow(String id, String companyName, String menu, int quantity, String mealsLabel, String status, String dateBadge, boolean isPast, String location) {
             this.id = id;
             this.companyName = companyName;
             this.menu = menu;
@@ -43,6 +44,7 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
             this.status = status;
             this.dateBadge = dateBadge;
             this.isPast = isPast;
+            this.location = location;
         }
     }
 
@@ -93,7 +95,8 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
                     mealsLabel,
                     o.optString("status", "pending"),
                     dateBadge,
-                    isPast
+                    isPast,
+                    o.optString("location", "-")
                 ));
             }
         } catch (Exception ignored) {}
@@ -152,7 +155,15 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
             view.setTextColor(R.id.pricing_item_date_badge, 0xFFF59E0B); // Amber gold for today/upcoming
         }
 
-        view.setViewVisibility(R.id.pricing_item_company, android.view.View.GONE);
+        view.setTextViewText(R.id.pricing_item_company, row.companyName);
+        view.setViewVisibility(R.id.pricing_item_company, android.view.View.VISIBLE);
+
+        view.setTextViewText(R.id.pricing_item_menu, "🍽️ " + row.menu);
+        view.setViewVisibility(R.id.pricing_item_menu, android.view.View.VISIBLE);
+
+        view.setTextViewText(R.id.pricing_item_location, "📍 " + row.location);
+        view.setViewVisibility(R.id.pricing_item_location, android.view.View.VISIBLE);
+
         view.setTextViewText(R.id.pricing_item_pax, row.quantity + " PAX");
         view.setTextViewText(R.id.pricing_item_meals, row.mealsLabel);
 
@@ -173,6 +184,9 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         view.setOnClickFillInIntent(R.id.pricing_item_meals, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_date_badge, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_pax, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_company, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_menu, fillInIntent);
+        view.setOnClickFillInIntent(R.id.pricing_item_location, fillInIntent);
 
         return view;
     }

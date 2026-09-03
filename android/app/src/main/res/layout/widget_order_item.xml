@@ -58,7 +58,7 @@
                 android:layout_marginStart="6dp" />
         </LinearLayout>
 
-        <!-- Line 2: Lokasi & Time -->
+        <!-- Line 2: Tarikh & Masa -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -67,12 +67,13 @@
             android:paddingTop="3dp">
 
             <TextView
-                android:id="@+id/item_meal_location"
+                android:id="@+id/item_date"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/widget_secondary_text"
+                android:textColor="@color/widget_title_accent"
                 android:textSize="11sp"
+                android:textStyle="bold"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -86,6 +87,17 @@
                 android:layout_marginStart="8dp"
                 android:maxLines="1" />
         </LinearLayout>
+
+        <!-- Line 3: Lokasi -->
+        <TextView
+            android:id="@+id/item_meal_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/widget_secondary_text"
+            android:textSize="11sp"
+            android:paddingTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
     </LinearLayout>
 

@@ -49,18 +49,45 @@
             android:text="-- pax" />
     </LinearLayout>
 
-    <!-- Row 2: Customer / Company name (Hidden per user request) -->
+    <!-- Row 2: Customer / Company name -->
     <TextView
         android:id="@+id/pricing_item_company"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone"
+        android:visibility="visible"
         android:textColor="@color/widget_primary_text"
         android:textSize="13sp"
         android:textStyle="bold"
         android:singleLine="true"
         android:ellipsize="end"
+        android:layout_marginBottom="4dp"
         android:text="Syarikat / Pelanggan" />
+
+    <!-- Row 2b: Menu Details -->
+    <TextView
+        android:id="@+id/pricing_item_menu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:textColor="@color/widget_secondary_text"
+        android:textSize="11sp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_marginBottom="3dp"
+        android:text="🍽️ Menu" />
+
+    <!-- Row 2c: Location Details -->
+    <TextView
+        android:id="@+id/pricing_item_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        android:textColor="@color/widget_secondary_text"
+        android:textSize="11sp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_marginBottom="6dp"
+        android:text="📍 Lokasi" />
 
     <!-- Row 3: Meal types & Action button -->
     <LinearLayout

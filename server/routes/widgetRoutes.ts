@@ -62,32 +62,39 @@ router.get('/widget/upcoming-orders', async (req, res) => {
 
     const snapshot = await db.collection('orders')
       .where('eventDate', '>=', todayStr)
-      .where('status', 'in', ['pending', 'approved'])
       .orderBy('eventDate', 'asc')
-      .limit(limitNum)
+      .limit(limitNum * 2)
       .get();
 
-    const orders = snapshot.docs.map(doc => {
-      const d = doc.data();
-      const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
-      const mealTypeStr = formatMealTypeBM(mealsArr);
-      const locStr = d.location || d.deliveryLocation || d.address || d.venue || 'Lokasi Belum Dinyatakan';
-      const eventDateVal = d.eventDate || d.date || null;
+    const excludedStatuses = new Set(['cancelled', 'rejected', 'cancel_requested']);
 
-      return {
-        id: doc.id,
-        eventDate: eventDateVal,
-        date: eventDateVal,
-        time: d.time || null,
-        meals: mealsArr,
-        mealType: mealTypeStr,
-        quantity: d.quantity || d.guests || d.pax || 0,
-        location: locStr,
-        to: d.to || d.company || d.attn || d.name || '',
-        menu: d.menu || '',
-        status: d.status || 'pending',
-      };
-    });
+    const orders = snapshot.docs
+      .map(doc => {
+        const d = doc.data();
+        const status = d.status || 'pending';
+        if (excludedStatuses.has(status)) return null;
+
+        const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
+        const mealTypeStr = formatMealTypeBM(mealsArr);
+        const locStr = d.location || d.deliveryLocation || d.address || d.venue || 'Lokasi Belum Dinyatakan';
+        const eventDateVal = d.eventDate || d.date || null;
+
+        return {
+          id: doc.id,
+          eventDate: eventDateVal,
+          date: eventDateVal,
+          time: d.time || null,
+          meals: mealsArr,
+          mealType: mealTypeStr,
+          quantity: d.quantity || d.guests || d.pax || 0,
+          location: locStr,
+          to: d.to || d.company || d.attn || d.name || '',
+          menu: d.menu || '',
+          status: status,
+        };
+      })
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+      .slice(0, limitNum);
 
     return res.json({ success: true, orders, date: todayStr, count: orders.length });
   } catch (err) {
@@ -104,15 +111,16 @@ router.get('/widget/daily-summary', async (_req, res) => {
 
     const snapshot = await db.collection('orders')
       .where('eventDate', '==', dateStr)
-      .where('status', 'in', ['pending', 'approved'])
       .get();
 
+    const excludedStatuses = new Set(['cancelled', 'rejected', 'cancel_requested']);
     let totalOrders = 0;
     let totalGuests = 0;
     const sessionCounts: Record<string, number> = {};
 
     snapshot.docs.forEach(doc => {
       const d = doc.data();
+      if (excludedStatuses.has(d.status)) return;
       totalOrders++;
       totalGuests += Number(d.quantity || d.guests || d.pax || 0);
       if (Array.isArray(d.meals)) {

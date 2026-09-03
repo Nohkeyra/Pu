@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -141,25 +142,51 @@ public class WidgetUpdateService {
                 );
             }
 
-            // Today's summary calculation
-            String todayStr = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+            // Calculate today & future orders summary
+            String todayStr = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
             int todayOrders = 0;
             int todayPax = 0;
+            int futureOrders = 0;
+            String earliestFutureDate = null;
+
             try {
                 JSONArray arr = new JSONArray(cachedJson != null ? cachedJson : "[]");
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject o = arr.getJSONObject(i);
                     String orderDate = o.optString("date", "");
-                    if (orderDate.startsWith(todayStr)) {
+                    if (orderDate.isEmpty()) {
+                        orderDate = o.optString("eventDate", "");
+                    }
+                    if (orderDate.length() >= 10 && orderDate.charAt(4) == '-' && orderDate.charAt(7) == '-') {
+                        orderDate = orderDate.substring(0, 10);
+                    }
+                    int qty = o.optInt("quantity", 0);
+
+                    if (orderDate.equals(todayStr)) {
                         todayOrders++;
-                        todayPax += o.optInt("quantity", 0);
+                        todayPax += qty;
+                    } else if (orderDate.compareTo(todayStr) > 0) {
+                        futureOrders++;
+                        if (earliestFutureDate == null || orderDate.compareTo(earliestFutureDate) < 0) {
+                            earliestFutureDate = orderDate;
+                        }
                     }
                 }
             } catch (Exception ignored) {}
 
-            String summaryText = todayOrders > 0
-                ? "⚡ Hari Ini: " + todayPax + " Pax  •  " + todayOrders + " Tempahan"
-                : "✓ Tiada tempahan aktif hari ini";
+            String summaryText;
+            if (todayOrders > 0) {
+                if (futureOrders > 0) {
+                    summaryText = "⚡ Hari Ini: " + todayPax + " Pax (" + todayOrders + ")  •  📅 Akan Datang: " + futureOrders;
+                } else {
+                    summaryText = "⚡ Hari Ini: " + todayPax + " Pax  •  " + todayOrders + " Tempahan";
+                }
+            } else if (futureOrders > 0 && earliestFutureDate != null) {
+                String formattedNearest = formatShortDate(earliestFutureDate);
+                summaryText = "📅 Terdekat: " + formattedNearest + "  •  " + futureOrders + " Tempahan Hadapan";
+            } else {
+                summaryText = "✓ Tiada tempahan aktif buat masa ini";
+            }
 
             views.setTextViewText(R.id.widget_today_summary, summaryText);
 
@@ -167,5 +194,22 @@ public class WidgetUpdateService {
         }
 
         manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_orders_list);
+    }
+
+    private static String formatShortDate(String dateStr) {
+        if (dateStr == null || dateStr.length() < 10) return dateStr;
+        try {
+            SimpleDateFormat inFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            Date d = inFmt.parse(dateStr.substring(0, 10));
+            if (d == null) return dateStr;
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(d);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
+            int m = cal.get(Calendar.MONTH);
+            String[] months = {"Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"};
+            return day + " " + months[m];
+        } catch (Exception e) {
+            return dateStr;
+        }
     }
 }

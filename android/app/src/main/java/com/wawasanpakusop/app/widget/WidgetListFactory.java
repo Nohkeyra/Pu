@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,16 +58,14 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
 
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                // F-WIDGET (audit 2026-08-06): the backend (/api/widget/upcoming-orders
-                // in server.ts) sends 'date' as YYYY-MM-DD and 'time' as HH:mm — two
-                // separate plain fields, never a combined ISO datetime string. This
-                // used to call parseIso(o.optString("date")) alone, expecting
-                // "yyyy-MM-dd'T'HH:mm:ss", which never matched real data and made
-                // every row silently fall back to "Unknown date" with a blank time.
                 String rawDate = o.optString("date", "");
+                if (rawDate.isEmpty()) {
+                    rawDate = o.optString("eventDate", "");
+                }
                 String rawTime = o.optString("time", "");
                 Date parsed = parseDateAndTime(rawDate, rawTime);
-                String dayLabel = formatDayLabel(parsed);
+                String dayLabel = formatDayLabel(parsed, rawDate);
+                String dateLabel = formatItemDate(parsed, rawDate);
                 String timeLabel = formatTime(parsed);
                 if (timeLabel.isEmpty() && !rawTime.isEmpty()) {
                     timeLabel = rawTime;
@@ -121,6 +120,7 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                     loc,
                     o.optString("menu", ""),
                     timeLabel,
+                    dateLabel,
                     client,
                     o.optString("status", "pending")
                 );
@@ -162,14 +162,16 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         RemoteViews itemView = new RemoteViews(context.getPackageName(), R.layout.widget_order_item);
         OrderRow item = row.order;
 
-        // "meal type | Quantity | lokasi | time" display ONLY
         // Line 1: Meal Type & Quantity (Pax)
         itemView.setTextViewText(R.id.item_meal_type, item.meals);
         itemView.setTextViewText(R.id.item_pax_badge, item.quantity + " PAX");
 
-        // Line 2: Lokasi & Time
-        itemView.setTextViewText(R.id.item_meal_location, "📍 " + item.location);
+        // Line 2: Tarikh & Masa
+        itemView.setTextViewText(R.id.item_date, item.formattedDate);
         itemView.setTextViewText(R.id.item_time, "⏰ " + item.time);
+
+        // Line 3: Lokasi
+        itemView.setTextViewText(R.id.item_meal_location, "📍 " + item.location);
         
         // Status stripe color with refined palette
         int stripeColor;
@@ -188,8 +190,7 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         }
         itemView.setInt(R.id.item_status_stripe, "setBackgroundColor", stripeColor);
 
-        // Tapping an individual order card opens the app directly to /admin,
-        // consistent with tapping the widget title.
+        // Tapping an individual order card opens the app directly to /admin
         Intent fillInIntent = new Intent();
         fillInIntent.putExtra("open_admin_panel", true);
         fillInIntent.putExtra("order_id", item.id);
@@ -219,42 +220,112 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
     }
 
     /**
-     * Combines the backend's separate 'date' (YYYY-MM-DD) and 'time' (HH:mm,
-     * optional) fields into a single Date. Falls back to midnight if time is
-     * missing/unparseable, and to null if date itself is missing/unparseable
-     * (caller already handles a null Date as "Unknown date").
+     * Combines the backend's separate 'date' (YYYY-MM-DD) and 'time' (HH:mm) fields.
      */
     private Date parseDateAndTime(String rawDate, String rawTime) {
         if (rawDate == null || rawDate.isEmpty()) return null;
-        String safeTime = (rawTime == null || rawTime.isEmpty()) ? "00:00" : rawTime;
+        String cleanDate = rawDate.trim();
+        if (cleanDate.length() >= 10 && cleanDate.charAt(4) == '-' && cleanDate.charAt(7) == '-') {
+            cleanDate = cleanDate.substring(0, 10);
+        }
+        String safeTime = (rawTime == null || rawTime.isEmpty()) ? "00:00" : rawTime.trim();
         try {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-            return format.parse(rawDate + " " + safeTime);
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+            return format.parse(cleanDate + " " + safeTime);
         } catch (Exception e) {
-            // Fall back to date-only parsing in case 'time' was present but malformed.
             try {
-                SimpleDateFormat dateOnlyFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                return dateOnlyFormat.parse(rawDate);
+                SimpleDateFormat dateOnlyFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                return dateOnlyFormat.parse(cleanDate);
             } catch (Exception e2) {
                 return null;
             }
         }
     }
 
-    private String formatDayLabel(Date date) {
-        if (date == null) return "Unknown date";
-        try {
-            SimpleDateFormat dayFormat = new SimpleDateFormat("EEE, d MMM", Locale.getDefault());
-            return dayFormat.format(date);
-        } catch (Exception e) {
-            return "Unknown date";
+    private static final String[] DAYS_BM = {
+        "Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"
+    };
+    private static final String[] MONTHS_BM = {
+        "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"
+    };
+
+    private String formatDayLabel(Date date, String rawDateStr) {
+        if (date == null) {
+            return (rawDateStr != null && !rawDateStr.isEmpty()) ? "📅 " + rawDateStr : "TEMPAHAN";
+        }
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        Calendar target = Calendar.getInstance();
+        target.setTime(date);
+        target.set(Calendar.HOUR_OF_DAY, 0);
+        target.set(Calendar.MINUTE, 0);
+        target.set(Calendar.SECOND, 0);
+        target.set(Calendar.MILLISECOND, 0);
+
+        long diffMillis = target.getTimeInMillis() - today.getTimeInMillis();
+        long diffDays = Math.round((double) diffMillis / (24 * 60 * 60 * 1000));
+
+        int dayOfWeek = target.get(Calendar.DAY_OF_WEEK);
+        String dayName = DAYS_BM[dayOfWeek - 1].toUpperCase();
+        int dayOfMonth = target.get(Calendar.DAY_OF_MONTH);
+        int month = target.get(Calendar.MONTH);
+        String monthName = MONTHS_BM[month].toUpperCase();
+        int year = target.get(Calendar.YEAR);
+
+        if (diffDays == 0) {
+            return "⭐ HARI INI — " + dayName + ", " + dayOfMonth + " " + monthName;
+        } else if (diffDays == 1) {
+            return "⚡ ESOK — " + dayName + ", " + dayOfMonth + " " + monthName;
+        } else if (diffDays > 1) {
+            return "📅 " + dayName + ", " + dayOfMonth + " " + monthName + " " + year;
+        } else {
+            return "⚠️ SEBELUM INI — " + dayName + ", " + dayOfMonth + " " + monthName;
+        }
+    }
+
+    private String formatItemDate(Date date, String rawDateStr) {
+        if (date == null) {
+            return (rawDateStr != null && !rawDateStr.isEmpty()) ? "📅 " + rawDateStr : "📅 -";
+        }
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        Calendar target = Calendar.getInstance();
+        target.setTime(date);
+        target.set(Calendar.HOUR_OF_DAY, 0);
+        target.set(Calendar.MINUTE, 0);
+        target.set(Calendar.SECOND, 0);
+        target.set(Calendar.MILLISECOND, 0);
+
+        long diffMillis = target.getTimeInMillis() - today.getTimeInMillis();
+        long diffDays = Math.round((double) diffMillis / (24 * 60 * 60 * 1000));
+
+        int dayOfWeek = target.get(Calendar.DAY_OF_WEEK);
+        String dayName = DAYS_BM[dayOfWeek - 1];
+        int dayOfMonth = target.get(Calendar.DAY_OF_MONTH);
+        int month = target.get(Calendar.MONTH);
+        String monthName = MONTHS_BM[month];
+
+        if (diffDays == 0) {
+            return "⭐ Hari Ini (" + dayOfMonth + " " + monthName + ")";
+        } else if (diffDays == 1) {
+            return "⚡ Esok (" + dayOfMonth + " " + monthName + ")";
+        } else {
+            return "📅 " + dayName + ", " + dayOfMonth + " " + monthName;
         }
     }
 
     private String formatTime(Date date) {
         if (date == null) return "";
         try {
-            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+            SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.US);
             return timeFormat.format(date);
         } catch (Exception e) {
             return "";
@@ -289,16 +360,18 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         final String location;
         final String menu;
         final String time;
+        final String formattedDate;
         final String clientName;
         final String status;
 
-        OrderRow(String id, int quantity, String meals, String location, String menu, String time, String clientName, String status) {
+        OrderRow(String id, int quantity, String meals, String location, String menu, String time, String formattedDate, String clientName, String status) {
             this.id = id;
             this.quantity = quantity;
             this.meals = meals;
             this.location = location;
             this.menu = menu;
             this.time = time;
+            this.formattedDate = formattedDate;
             this.clientName = clientName;
             this.status = status;
         }
