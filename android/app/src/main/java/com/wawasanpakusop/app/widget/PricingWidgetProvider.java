@@ -2,6 +2,7 @@ package com.wawasanpakusop.app.widget;
 
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
@@ -16,7 +17,7 @@ public class PricingWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        PendingResult pendingResult = goAsync();
+        BroadcastReceiver.PendingResult pendingResult = goAsync();
         PricingWidgetFetchService.fetchAndUpdate(context, appWidgetIds, pendingResult);
     }
 
@@ -28,7 +29,7 @@ public class PricingWidgetProvider extends AppWidgetProvider {
             int[] ids = manager.getAppWidgetIds(
                 new android.content.ComponentName(context, PricingWidgetProvider.class)
             );
-            PendingResult pendingResult = goAsync();
+            BroadcastReceiver.PendingResult pendingResult = goAsync();
             PricingWidgetFetchService.fetchAndUpdate(context, ids, pendingResult);
         }
     }

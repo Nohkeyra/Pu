@@ -3,6 +3,7 @@ package com.wawasanpakusop.app.widget;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
@@ -32,7 +33,7 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
         
-        PendingResult pendingResult = goAsync();
+        BroadcastReceiver.PendingResult pendingResult = goAsync();
         WidgetUpdateService.fetchAndUpdate(context, appWidgetIds, pendingResult);
     }
 
@@ -67,7 +68,7 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             int[] ids = manager.getAppWidgetIds(
                 new android.content.ComponentName(context, WawasanWidgetProvider.class)
             );
-            PendingResult pendingResult = goAsync();
+            BroadcastReceiver.PendingResult pendingResult = goAsync();
             WidgetUpdateService.fetchAndUpdate(context, ids, pendingResult);
         }
     }
