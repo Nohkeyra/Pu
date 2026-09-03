@@ -45,7 +45,7 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
         views.setOnClickPendingIntent(R.id.widget_title, pendingIntent);
-        views.setOnClickPendingIntent(R.id.widget_header_clickable, pendingIntent);
+        views.setOnClickPendingIntent(R.id.widget_header_bar, pendingIntent);
         views.setOnClickPendingIntent(R.id.widget_today_summary, pendingIntent);
         views.setOnClickPendingIntent(R.id.widget_empty_view, pendingIntent);
     }
