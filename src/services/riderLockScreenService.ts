@@ -1,4 +1,5 @@
-import { LocalNotifications, type ActionPerformed, type PluginListenerHandle } from '@capacitor/local-notifications';
+import { LocalNotifications, type ActionPerformed } from '@capacitor/local-notifications';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import { isAndroidApk } from '@/lib/platform';
 import { launchWhatsApp, launchMaps } from '@/lib/nativeService';

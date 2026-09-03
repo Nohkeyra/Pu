@@ -38,8 +38,10 @@ import {
   Cloud,
   CheckCircle2,
   AlertTriangle,
+  Sparkles,
+  Play,
 } from 'lucide-react';
-import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
+import { triggerLightImpact, triggerMediumImpact, playClickSound, type SoundProfile } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -165,8 +167,10 @@ export default function SettingsPage() {
     setCustomFontSizePx,
     hapticsEnabled,
     soundEffectsEnabled,
+    soundProfile,
     setHapticsEnabled,
     setSoundEffectsEnabled,
+    setSoundProfile,
     resetUiToDefault,
   } = useSettings();
   const navigate = useNavigate();
@@ -1370,17 +1374,18 @@ export default function SettingsPage() {
               iconBg="bg-violet-500/10"
               iconColor="text-violet-600 dark:text-violet-400"
               title={language === 'bm' ? 'Kesan Bunyi Sentuhan (Sound FX)' : 'Touch & Click Sound Effects'}
-              isLast={true}
+              isLast={!soundEffectsEnabled}
               action={
                 <div className="flex items-center gap-2">
                   {soundEffectsEnabled && (
                     <button
                       type="button"
                       onClick={() => playClickSound('force')}
-                      className="px-2.5 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-bold text-[11px] transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 text-violet-700 dark:text-violet-300 font-bold text-[11px] transition-colors flex items-center gap-1"
                       title="Uji Bunyi Klik"
                     >
-                      {language === 'bm' ? 'Uji Bunyi' : 'Test Sound'}
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>{language === 'bm' ? 'Uji Bunyi' : 'Test Sound'}</span>
                     </button>
                   )}
                   <Switch
@@ -1397,6 +1402,147 @@ export default function SettingsPage() {
                 </div>
               }
             />
+
+            {/* SOUND PROFILE SELECTOR (SUB-BASS OG, ALUMINUM, TEAKWOOD, CRISP) */}
+            {soundEffectsEnabled && (
+              <div className="p-4 bg-stone-50/80 dark:bg-stone-900/60 border-t border-stone-200/70 dark:border-stone-800/70 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                      {language === 'bm' ? 'Gaya Profil Akustik (Acoustic Sound Profile)' : 'Acoustic Sound Profile'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/20">
+                    {soundProfile === 'sub_bass' ? 'OG SUB-BASS' : soundProfile.toUpperCase()}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+                  {language === 'bm'
+                    ? 'Pilih watak akustik untuk setiap sentuhan butang dan interaksi aplikasi.'
+                    : 'Select the tactile acoustic character for every button tap and app interaction.'}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {[
+                    {
+                      id: 'thock' as SoundProfile,
+                      nameEn: 'Mechanical "Thock"',
+                      nameBm: 'Thock Mekanikal Krimi',
+                      descEn: 'ASMR lubricated switch bottom-out with deep cavity resonance (Top Pick)',
+                      descBm: 'Ketukan suis mekanikal berkrim & padu dengan resonansi ASMR (Pilihan Utama)',
+                      badge: '★ BEST / ASMR',
+                      badgeBg: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30',
+                    },
+                    {
+                      id: 'taptic' as SoundProfile,
+                      nameEn: 'Taptic Glass Impulse',
+                      nameBm: 'Impuls Kaca Taptik',
+                      descEn: 'Ultra-precise zero-delay glass deflection click (Apple Force Touch style)',
+                      descBm: 'Klik kaca ultra-tepat tanpa lengah seakan Force Touch perkakasan sebenar',
+                      badge: 'PRECISION',
+                      badgeBg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border-indigo-500/30',
+                    },
+                    {
+                      id: 'sub_bass' as SoundProfile,
+                      nameEn: 'Sub-Bass Luxury',
+                      nameBm: 'Sub-Bass Mewah',
+                      descEn: 'Damped low-frequency tock with boosted speaker punch (Porsche console)',
+                      descBm: 'Ketukan sub-bass frekuensi rendah berbobot & mantap pada pembesar suara',
+                      badge: 'OG SUB',
+                      badgeBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+                    },
+                    {
+                      id: 'aluminum' as SoundProfile,
+                      nameEn: 'Anodized Aluminum Rotary',
+                      nameBm: 'Rotari Aluminium Anodized',
+                      descEn: 'Metallic micro-click with weighted acoustic body (Hi-Fi dial)',
+                      descBm: 'Klik mikro metalik dengan resonansi berbobot audio mewah',
+                      badge: 'HI-FI',
+                      badgeBg: 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30',
+                    },
+                    {
+                      id: 'wood' as SoundProfile,
+                      nameEn: 'Resonant Teakwood',
+                      nameBm: 'Kayu Jati Akustik',
+                      descEn: 'Warm organic timber tap with acoustic bandpass',
+                      descBm: 'Ketukan kayu jati tradisional yang hangat & organik',
+                      badge: 'WARM',
+                      badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+                    },
+                    {
+                      id: 'crisp' as SoundProfile,
+                      nameEn: 'Modern Crisp Snap',
+                      nameBm: 'Snap Moden',
+                      descEn: 'Original high-frequency tactile pop',
+                      descBm: 'Pop sentuhan frekuensi tinggi klasik',
+                      badge: 'CLASSIC',
+                      badgeBg: 'bg-stone-500/15 text-stone-700 dark:text-stone-400 border-stone-500/30',
+                    },
+                  ].map((item) => {
+                    const isSelected = soundProfile === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setSoundProfile(item.id);
+                          playClickSound('force', item.id);
+                        }}
+                        className={`group relative p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between text-left ${
+                          isSelected
+                            ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-500/60 dark:border-amber-500/50 shadow-sm ring-1 ring-amber-500/30'
+                            : 'bg-white dark:bg-stone-800/80 border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                isSelected ? 'bg-amber-500 ring-2 ring-amber-500/30 animate-pulse' : 'bg-stone-300 dark:bg-stone-600'
+                              }`}
+                            />
+                            <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                              {language === 'bm' ? item.nameBm : item.nameEn}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${item.badgeBg}`}
+                          >
+                            {item.badge}
+                          </span>
+                        </div>
+
+                        <p className="text-[10px] text-stone-500 dark:text-stone-400 leading-snug mb-2.5 line-clamp-2">
+                          {language === 'bm' ? item.descBm : item.descEn}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-700/60">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playClickSound('force', item.id);
+                            }}
+                            className="px-2 py-1 rounded-md bg-stone-100 hover:bg-stone-200 dark:bg-stone-700/60 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-[10px] font-semibold flex items-center gap-1 transition-colors"
+                            title={language === 'bm' ? 'Dengar pratonton' : 'Preview sound'}
+                          >
+                            <Play className="w-2.5 h-2.5 fill-current text-amber-600 dark:text-amber-400" />
+                            <span>{language === 'bm' ? 'Dengar' : 'Listen'}</span>
+                          </button>
+
+                          {isSelected && (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                              {language === 'bm' ? '✓ Aktif' : '✓ Active'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </SettingsSection>
 
           {/* SECTION 5: DEVICE & DISPLAY */}

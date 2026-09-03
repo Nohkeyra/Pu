@@ -487,7 +487,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     } else {
       toast({
         title: language === 'bm' ? 'Nombor Telefon Tiada' : 'No Phone Number',
-        variant: 'destructive',
+        variant: 'error',
       });
     }
   };

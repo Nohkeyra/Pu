@@ -4,6 +4,7 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { getSoundProfile, setSoundProfile as persistSoundProfile, type SoundProfile } from '@/lib/haptics';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -32,6 +33,8 @@ interface SettingsContextType {
   setHapticsEnabled: (enabled: boolean) => void;
   soundEffectsEnabled: boolean;
   setSoundEffectsEnabled: (enabled: boolean) => void;
+  soundProfile: SoundProfile;
+  setSoundProfile: (profile: SoundProfile) => void;
 
   // Admin & Hardware Diagnostics UI
   isAdmin: boolean;
@@ -136,6 +139,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
+  };
+
+  const [soundProfile, setSoundProfileState] = useState<SoundProfile>(() => {
+    return getSoundProfile();
+  });
+
+  const setSoundProfile = (profile: SoundProfile) => {
+    setSoundProfileState(profile);
+    persistSoundProfile(profile);
   };
 
   // Admin Status State
@@ -451,6 +463,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         setHapticsEnabled,
         soundEffectsEnabled,
         setSoundEffectsEnabled,
+        soundProfile,
+        setSoundProfile,
         isAdmin,
         adminToken,
         checkAdminStatus,

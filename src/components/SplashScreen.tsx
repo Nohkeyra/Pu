@@ -412,26 +412,26 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 {/* Impact flash */}
                 <motion.div
                   className="absolute inset-0 bg-white pointer-events-none"
-                  initial={{ opacity: 0.75 }}
+                  initial={{ opacity: 0.5 }}
                   animate={{ opacity: 0 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  transition={{ duration: 0.28, ease: 'easeOut' }}
                 />
 
                 <motion.svg
                   viewBox="0 0 400 400"
                   className="absolute w-[240%] h-[240%] max-w-none sm:w-[190%] sm:h-[190%]"
-                  style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }}
+                  style={{ filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.35))' }}
                 >
                   {/* Glass shards near the impact point */}
                   {CRACK_SHARDS.map((points, i) => (
                     <motion.polygon
                       key={`shard-${i}`}
                       points={points}
-                      fill="rgba(255,255,255,0.12)"
-                      stroke="rgba(255,255,255,0.65)"
-                      strokeWidth={0.8}
+                      fill="rgba(255,255,255,0.06)"
+                      stroke="rgba(255,255,255,0.45)"
+                      strokeWidth={0.5}
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: [0, 1, 0.6], scale: [0.8, 1.08, 1] }}
+                      animate={{ opacity: [0, 1, 0.5], scale: [0.8, 1.08, 1] }}
                       transition={{ duration: 0.4, delay: 0.02 + i * 0.01, ease: 'easeOut' }}
                       style={{ transformOrigin: '200px 200px' }}
                     />
@@ -443,8 +443,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       key={`ring-${i}`}
                       d={d}
                       fill="none"
-                      stroke="rgba(255,255,255,0.7)"
-                      strokeWidth={1.2}
+                      stroke="rgba(255,255,255,0.55)"
+                      strokeWidth={0.7}
                       strokeLinecap="round"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
@@ -458,8 +458,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       key={`main-${i}`}
                       d={d}
                       fill="none"
-                      stroke="#ffffff"
-                      strokeWidth={2.4}
+                      stroke="rgba(255,255,255,0.85)"
+                      strokeWidth={1.1}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0, opacity: 0 }}
@@ -474,8 +474,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                       key={`branch-${i}`}
                       d={d}
                       fill="none"
-                      stroke="rgba(255,255,255,0.9)"
-                      strokeWidth={1.4}
+                      stroke="rgba(255,255,255,0.65)"
+                      strokeWidth={0.65}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       initial={{ pathLength: 0, opacity: 0 }}
