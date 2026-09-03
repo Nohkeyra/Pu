@@ -140,6 +140,10 @@ android {
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 tasks.register("printFingerprint") {
     doLast {
         def javaHome = System.getProperty("java.home")
