@@ -208,16 +208,39 @@ function LeafletMapContainer({
       .addTo(map)
       .bindPopup('<b>Restoran Wawasan</b><br>Putrajaya Holdings');
 
-    // Customer marker
+    // Customer marker - draggable for custom pin positioning
     const destIcon = L.divIcon({
-      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300">🏠</div>`,
+      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300 cursor-grab active:cursor-grabbing">🏠</div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 20],
     });
-    const destMarker = L.marker([destLatLng.lat, destLatLng.lng], { icon: destIcon })
+    const destMarker = L.marker([destLatLng.lat, destLatLng.lng], { 
+      icon: destIcon,
+      draggable: true,
+      autoPan: true,
+    })
       .addTo(map)
-      .bindPopup(`<b>Catering Delivery Point</b><br>${locationString}`);
+      .bindPopup(`<b>📍 ${locationString || 'Lokasi Tersuai'}</b><br><span style="font-size: 11px; color: #059669; font-weight: 600;">(Tarik pin atau klik pada peta untuk ubah titik penghantaran)</span>`);
+
+    destMarker.on('dragend', (e: { target: any }) => {
+      const target = e.target;
+      if (target && typeof target.getLatLng === 'function') {
+        const newLatLng = target.getLatLng();
+        const newCoords = { lat: newLatLng.lat, lng: newLatLng.lng };
+        setDestLatLng(newCoords);
+        onCoordinatesLoaded?.(newCoords);
+      }
+    });
+
+    // Allow tapping/clicking anywhere on the map to reposition pin
+    map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
+      if (e && e.latlng) {
+        const newCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
+        setDestLatLng(newCoords);
+        onCoordinatesLoaded?.(newCoords);
+      }
+    });
 
     // Draw the 200m geofence circle ring around the destination
     if (geofenceCircleRef.current) {
@@ -325,7 +348,7 @@ function LeafletMapContainer({
         clearInterval(animationInterval);
       }
     };
-  }, [destLatLng, orderStatus, locationString, setDistance, setEta, setRouteLoaded]);
+  }, [destLatLng, orderStatus, locationString, setDistance, setEta, setRouteLoaded, onCoordinatesLoaded]);
 
   return <div ref={mapContainerRef} className="w-full h-full animate-fade-in" style={{ zIndex: 1 }} />;
 }
