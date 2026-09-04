@@ -3,16 +3,14 @@ import { getFirestore, type OrderData } from "./firebaseAdmin.js";
 import { getLocalOrders, saveLocalOrders } from "./localOrdersStore.js";
 
 export function getGoogleCalendarClient() {
-  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-    ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
-    : undefined;
+  const rawEmail = process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL;
+  let email = rawEmail ? rawEmail.trim() : undefined;
   if (email && email.startsWith('"') && email.endsWith('"')) {
     email = email.slice(1, -1).trim();
   }
 
-  let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-    ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
-    : undefined;
+  const rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY;
+  let privateKey = rawPrivateKey ? rawPrivateKey.trim() : undefined;
   if (privateKey) {
     if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
       privateKey = privateKey.slice(1, -1).trim();
@@ -21,7 +19,7 @@ export function getGoogleCalendarClient() {
   }
 
   if (!email || !privateKey) {
-    console.warn("GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY not configured. Google Calendar event creation will be skipped.");
+    console.warn("Google Calendar credentials (GOOGLE_CLIENT_EMAIL/GOOGLE_PRIVATE_KEY) not configured. Google Calendar event creation will be skipped.");
     return null;
   }
 

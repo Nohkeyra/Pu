@@ -7,7 +7,7 @@ import type { Order } from '@/types';
 
 export const RIDER_NOTIFICATION_ID = 9901;
 export const RIDER_ARRIVAL_NOTIFICATION_ID = 9902;
-export const RIDER_CHANNEL_ID = 'rw_rider_lockscreen_channel';
+export const RIDER_CHANNEL_ID = 'rw_rider_delivery_channel';
 export const RIDER_ACTION_TYPE_ID = 'RW_RIDER_DELIVERY_ACTIONS';
 
 let isRiderServiceInitialized = false;
@@ -32,9 +32,9 @@ export function buildArrivalMessage(order: Order, lang: 'en' | 'bm' = 'bm'): str
 }
 
 /**
- * Initialize notification channel and lock screen action buttons for Android
+ * Initialize notification channel and action buttons for Android
  */
-export async function initializeRiderLockScreen(): Promise<boolean> {
+export async function initializeRiderDeliveryService(): Promise<boolean> {
   if (isRiderServiceInitialized) return true;
 
   if (isAndroidApk()) {
@@ -44,40 +44,40 @@ export async function initializeRiderLockScreen(): Promise<boolean> {
       if (perm.display !== 'granted') {
         const req = await LocalNotifications.requestPermissions();
         if (req.display !== 'granted') {
-          console.warn('[RiderLockScreen] Permission denied for lockscreen notifications');
+          console.warn('[RiderDeliveryWidget] Permission denied for delivery notifications');
           return false;
         }
       }
 
-      // 2. Create High-Priority Notification Channel with Lock Screen Visibility
+      // 2. Create High-Priority Notification Channel
       await LocalNotifications.createChannel({
         id: RIDER_CHANNEL_ID,
-        name: 'Rider Lock Screen & Arrival Alert',
-        description: 'Kawalan pantas dan butang ketibaan rider pada skrin kunci (Lock Screen)',
+        name: 'Rider Delivery & Arrival Alert',
+        description: 'Kawalan pantas dan butang ketibaan rider penghantaran',
         importance: 5, // IMPORTANCE_HIGH / MAX
-        visibility: 1, // VISIBILITY_PUBLIC (Shows full content & buttons on lockscreen!)
+        visibility: 1, // VISIBILITY_PUBLIC
         sound: 'default',
         vibration: true,
         lights: true,
       });
 
-      // 3. Register Action Types (Buttons on the Lock Screen Notification)
+      // 3. Register Action Types (Delivered, WhatsApp, Call)
       await LocalNotifications.registerActionTypes({
         types: [
           {
             id: RIDER_ACTION_TYPE_ID,
             actions: [
               {
+                id: 'ACTION_COMPLETE_DELIVERY',
+                title: '✅ Selesai Hantar (Delivered)',
+              },
+              {
                 id: 'ACTION_WHATSAPP_ARRIVAL',
-                title: '💬 WhatsApp Sampai',
+                title: '💬 WhatsApp',
               },
               {
                 id: 'ACTION_CALL_CUSTOMER',
-                title: '📞 Hubungi Pelanggan',
-              },
-              {
-                id: 'ACTION_OPEN_MAPS',
-                title: '📍 Navigasi Maps',
+                title: '📞 Telefon',
               },
             ],
           },
@@ -89,8 +89,8 @@ export async function initializeRiderLockScreen(): Promise<boolean> {
         actionListenerHandle = await LocalNotifications.addListener(
           'localNotificationActionPerformed',
           async (action: ActionPerformed) => {
-            console.log('[RiderLockScreen] Action performed from lockscreen:', action.actionId);
-            await handleRiderLockScreenAction(action.actionId);
+            console.log('[RiderDeliveryWidget] Action performed:', action.actionId);
+            await handleRiderWidgetAction(action.actionId);
           }
         );
       }
@@ -98,7 +98,7 @@ export async function initializeRiderLockScreen(): Promise<boolean> {
       isRiderServiceInitialized = true;
       return true;
     } catch (err) {
-      console.error('[RiderLockScreen] Initialization error:', err);
+      console.error('[RiderDeliveryWidget] Initialization error:', err);
       return false;
     }
   }
@@ -108,11 +108,11 @@ export async function initializeRiderLockScreen(): Promise<boolean> {
 }
 
 /**
- * Handle actions tapped by the rider directly from the Lock Screen
+ * Handle actions tapped by the rider
  */
-export async function handleRiderLockScreenAction(actionId: string): Promise<void> {
+export async function handleRiderWidgetAction(actionId: string): Promise<void> {
   if (!currentActiveOrder) {
-    console.warn('[RiderLockScreen] No active order registered for lockscreen action');
+    console.warn('[RiderDeliveryWidget] No active order registered for action');
     return;
   }
 
@@ -121,6 +121,13 @@ export async function handleRiderLockScreenAction(actionId: string): Promise<voi
   const formattedPhone = rawPhone.replace(/^0/, '60');
 
   switch (actionId) {
+    case 'ACTION_COMPLETE_DELIVERY': {
+      if (onDeliveredCallback) {
+        onDeliveredCallback();
+      }
+      break;
+    }
+
     case 'ACTION_WHATSAPP_ARRIVAL': {
       const msg = buildArrivalMessage(order, 'bm');
       await launchWhatsApp({
@@ -148,23 +155,16 @@ export async function handleRiderLockScreenAction(actionId: string): Promise<voi
       break;
     }
 
-    case 'ACTION_COMPLETE_DELIVERY': {
-      if (onDeliveredCallback) {
-        onDeliveredCallback();
-      }
-      break;
-    }
-
     default:
-      console.log('[RiderLockScreen] Tap on notification body, bringing app to foreground');
+      console.log('[RiderDeliveryWidget] Tap on notification body, bringing app to foreground');
       break;
   }
 }
 
 /**
- * Start/Update Sticky Lock Screen Notification for Delivery
+ * Start/Update Active Delivery Tracking Notification
  */
-export async function enableRiderLockScreenWidget(
+export async function enableRiderDeliveryWidget(
   order: Order,
   targetCoords: { lat: number; lng: number } | null,
   callbacks?: { onDelivered?: () => void }
@@ -175,18 +175,17 @@ export async function enableRiderLockScreenWidget(
     onDeliveredCallback = callbacks.onDelivered;
   }
 
-  await initializeRiderLockScreen();
+  await initializeRiderDeliveryService();
 
-  // Prevent phone from going to sleep if mounted on motorcycle/car handlebar
+  // Prevent phone from sleeping if mounted on motorcycle/car
   if (isAndroidApk()) {
     try {
       await KeepAwake.keepAwake();
     } catch (err) {
-      console.warn('[RiderLockScreen] KeepAwake warning:', err);
+      console.warn('[RiderDeliveryWidget] KeepAwake warning:', err);
     }
   }
 
-  const invoiceNo = order.invoiceNo || order.id?.substring(0, 8).toUpperCase() || 'ORDER';
   const customerName = order.name || 'Pelanggan';
   const locationShort = (order.location || 'Destinasi').substring(0, 35);
 
@@ -197,9 +196,9 @@ export async function enableRiderLockScreenWidget(
           {
             id: RIDER_NOTIFICATION_ID,
             channelId: RIDER_CHANNEL_ID,
-            title: `🚚 Penghantaran #${invoiceNo} — ${customerName}`,
-            body: `📍 ${locationShort}... | Tekan 'WhatsApp Sampai' pada skrin kunci bila tiba`,
-            ongoing: true, // Cannot be swiped away while driving
+            title: `🚚 Penghantaran: ${customerName}`,
+            body: `📍 ${locationShort}... | Tekan 'Selesai Hantar' bila pesanan diserahkan`,
+            ongoing: true,
             autoCancel: false,
             actionTypeId: RIDER_ACTION_TYPE_ID,
             sound: 'default',
@@ -214,19 +213,19 @@ export async function enableRiderLockScreenWidget(
       });
       return true;
     } catch (err) {
-      console.error('[RiderLockScreen] Failed to schedule lock screen notification:', err);
+      console.error('[RiderDeliveryWidget] Failed to schedule notification:', err);
       return false;
     }
   }
 
-  console.log(`[RiderLockScreen Web Fallback] Active for #${invoiceNo} to ${customerName}`);
+  console.log(`[RiderDeliveryWidget Web Fallback] Active for ${customerName}`);
   return true;
 }
 
 /**
- * Update Geofence status on the Lock Screen Widget (Heads-up alert if <= 200m)
+ * Update Geofence status on the Delivery Widget (Heads-up alert if <= 200m)
  */
-export async function updateRiderLockScreenGeofence(
+export async function updateRiderDeliveryWidgetGeofence(
   order: Order,
   targetCoords: { lat: number; lng: number } | null,
   distMeters: number | null,
@@ -237,7 +236,6 @@ export async function updateRiderLockScreenGeofence(
 
   if (!isAndroidApk()) return;
 
-  const invoiceNo = order.invoiceNo || order.id?.substring(0, 8).toUpperCase() || 'ORDER';
   const customerName = order.name || 'Pelanggan';
 
   try {
@@ -249,7 +247,7 @@ export async function updateRiderLockScreenGeofence(
             id: RIDER_ARRIVAL_NOTIFICATION_ID,
             channelId: RIDER_CHANNEL_ID,
             title: `🚨 ANDA DAH SAMPAI! (Lingkungan 200m)`,
-            body: `Tekan 'WhatsApp Sampai' di bawah untuk maklumkan ${customerName} segera!`,
+            body: `Tekan 'Selesai Hantar (Delivered)' untuk maklumkan ${customerName} melalui notifikasi aplikasi!`,
             ongoing: false,
             autoCancel: true,
             actionTypeId: RIDER_ACTION_TYPE_ID,
@@ -271,8 +269,8 @@ export async function updateRiderLockScreenGeofence(
           {
             id: RIDER_NOTIFICATION_ID,
             channelId: RIDER_CHANNEL_ID,
-            title: `🚚 #${invoiceNo} (${distText} lagi) — ${customerName}`,
-            body: `📍 ${order.location?.substring(0, 35)}... | Tekan 'WhatsApp Sampai' bila tiba`,
+            title: `🚚 ${customerName} (${distText} lagi)`,
+            body: `📍 ${order.location?.substring(0, 35)}... | Tekan 'Selesai Hantar' bila pesanan diserahkan`,
             ongoing: true,
             autoCancel: false,
             actionTypeId: RIDER_ACTION_TYPE_ID,
@@ -287,14 +285,14 @@ export async function updateRiderLockScreenGeofence(
       });
     }
   } catch (err) {
-    console.warn('[RiderLockScreen] Failed to update geofence notification:', err);
+    console.warn('[RiderDeliveryWidget] Failed to update geofence notification:', err);
   }
 }
 
 /**
- * Disable Rider Lock Screen Widget when delivery completes or modal is closed
+ * Disable Rider Delivery Widget when delivery completes or modal is closed
  */
-export async function disableRiderLockScreenWidget(): Promise<void> {
+export async function disableRiderDeliveryWidget(): Promise<void> {
   currentActiveOrder = null;
   currentTargetCoords = null;
   onDeliveredCallback = null;
@@ -314,7 +312,14 @@ export async function disableRiderLockScreenWidget(): Promise<void> {
         ],
       });
     } catch (err) {
-      console.warn('[RiderLockScreen] Cancel error:', err);
+      console.warn('[RiderDeliveryWidget] Cancel error:', err);
     }
   }
 }
+
+// Backwards compatibility aliases
+export const enableRiderLockScreenWidget = enableRiderDeliveryWidget;
+export const disableRiderLockScreenWidget = disableRiderDeliveryWidget;
+export const updateRiderLockScreenGeofence = updateRiderDeliveryWidgetGeofence;
+export const initializeRiderLockScreen = initializeRiderDeliveryService;
+export const handleRiderLockScreenAction = handleRiderWidgetAction;

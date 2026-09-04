@@ -6,7 +6,7 @@ import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransport
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.ts';
+import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();

@@ -25,9 +25,6 @@ This is a Full-Stack React/Vite + Express application wrapped in Capacitor for A
 ## 🛡️ Must-Follow Directives
 Before performing tasks related to these areas, you MUST read the corresponding specification files:
 
-- **Verification Routine on Feature Changes**:
-  - Whenever new features or code changes are implemented, you MUST run `npm run typecheck` to verify TypeScript types across frontend and backend.
-  - You MUST also run `npx cap sync android` to keep the native Android project in sync with web assets and plugins.
 - **Android Builds/Releases**: Read `/docs/BUILD.md` and `/docs/CI_CD_COMPLETE.md` before starting.
 - **Server Integrations (WhatsApp, Email, Calendar)**: Read `/docs/AGENTS.md` for integration-specific procedures.
 - **Security-Sensitive Code (Auth, Firebase)**: Read `/docs/SECURITY_SPEC.md` before making any changes.

@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { setSecureItem, getSecureItem } from '@/lib/preferences';
 import { db } from '@/firebaseConfig';
@@ -76,13 +77,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Sync Capacitor Status Bar style on Android / iOS
     if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('StatusBar')) {
-      import('@capacitor/status-bar')
-        .then(({ StatusBar, Style }) => {
-          StatusBar.setStyle({
-            style: theme === 'dark' ? Style.Dark : Style.Light,
-          }).catch(() => {});
-        })
-        .catch(() => {});
+      StatusBar.setStyle({
+        style: theme === 'dark' ? Style.Dark : Style.Light,
+      }).catch(() => {});
     }
   }, [theme]);
 

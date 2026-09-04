@@ -25,9 +25,10 @@ if (isDevSandbox) {
   const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
-    '/src/main.tsx',
-    '/assets/wawasan_logo.png',
-    '/assets/batik_pattern.jpg'
+    '/manifest.webmanifest',
+    '/assets/brand/wawasan_logo.png',
+    '/assets/heritage/batik_pattern.jpg',
+    '/assets/icons/icon-192.webp'
   ];
 
   // Install Event

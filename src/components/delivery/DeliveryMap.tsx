@@ -14,7 +14,7 @@ import {
   Sparkles,
   Smartphone,
   Phone,
-  Lock,
+  LayoutGrid,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import type { Order } from '@/types';
@@ -24,12 +24,12 @@ import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
 import { triggerHeavyImpact, triggerNotification, NotificationType } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import {
-  enableRiderLockScreenWidget,
-  updateRiderLockScreenGeofence,
-  disableRiderLockScreenWidget,
+  enableRiderDeliveryWidget,
+  updateRiderDeliveryWidgetGeofence,
+  disableRiderDeliveryWidget,
   buildArrivalMessage,
-} from '@/services/riderLockScreenService';
-import { LockScreenWidgetModal } from './LockScreenWidgetModal';
+} from '@/services/riderDeliveryWidgetService';
+import { DeliveryWidgetModal } from './DeliveryWidgetModal';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
 
@@ -414,7 +414,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
         description: language === 'bm' ? `Penghantaran #${order.invoiceNo || order.id} selesai.` : 'Delivery completed.',
         variant: 'success',
       });
-      await disableRiderLockScreenWidget();
+      await disableRiderDeliveryWidget();
     } catch (err) {
       console.error('Failed to mark delivered:', err);
     } finally {
@@ -422,18 +422,18 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     }
   }, [onUpdateStatus, order.id, order.invoiceNo, language, toast]);
 
-  // Synchronize Sticky Lock Screen Widget for Android / Riders
+  // Synchronize Sticky Delivery Widget for Android / Riders
   useEffect(() => {
     if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
-      enableRiderLockScreenWidget(order, coords, {
+      enableRiderDeliveryWidget(order, coords, {
         onDelivered: handleMarkAsDelivered,
       });
     } else {
-      disableRiderLockScreenWidget();
+      disableRiderDeliveryWidget();
     }
 
     return () => {
-      disableRiderLockScreenWidget();
+      disableRiderDeliveryWidget();
     };
   }, [isRiderMode, lockScreenWidgetActive, coords, order, handleMarkAsDelivered]);
 
@@ -499,19 +499,19 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     }
   };
 
-  // Trigger Lock Screen Test Notification
+  // Trigger Delivery Widget Test Notification
   const handleTestLockScreen = async () => {
-    await enableRiderLockScreenWidget(order, coords, {
+    await enableRiderDeliveryWidget(order, coords, {
       onDelivered: handleMarkAsDelivered,
     });
-    await updateRiderLockScreenGeofence(order, coords, exactDistanceMeters || 180, true);
+    await updateRiderDeliveryWidgetGeofence(order, coords, exactDistanceMeters || 180, true);
     triggerHeavyImpact();
     toast({
-      title: language === 'bm' ? 'Widget Skrin Kunci Aktif' : 'Lock Screen Widget Active',
+      title: language === 'bm' ? 'Widget Pesanan Aktif' : 'Delivery Widget Active',
       description:
         language === 'bm'
-          ? 'Notifikasi kini aktif pada skrin kunci peranti anda. Tekan butang pratonton untuk semak.'
-          : 'Notification is active on lock screen. Tap preview to inspect.',
+          ? 'Notifikasi kini aktif pada peranti anda. Tekan butang pratonton untuk semak.'
+          : 'Notification is active on your device. Tap preview to inspect.',
       variant: 'success',
     });
   };
@@ -689,9 +689,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                   <div className="p-3.5 bg-gradient-to-br from-stone-900 via-stone-950 to-black text-white rounded-2xl border border-stone-800 shadow-md space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
                         <span className="text-xs font-bold text-white">
-                          {t('Lock Screen Widget', 'Widget Skrin Kunci')}
+                          {t('App Tracker Widget', 'Widget Skrin Utama')}
                         </span>
                       </div>
                       <button
@@ -709,8 +709,8 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
 
                     <p className="text-[10px] text-stone-300 leading-relaxed">
                       {t(
-                        'Displays a sticky arrival alert button directly on your phone lock screen so you do not have to unlock your phone while riding.',
-                        'Memaparkan butang alert ketibaan terus pada skrin kunci telefon agar anda tidak perlu membuka kunci telefon semasa menunggang.'
+                        'Displays a quick order tracking & arrival action card directly on your device home screen and notification tray.',
+                        'Memaparkan kad tindakan dan status tempahan terus pada skrin utama dan ruang notifikasi peranti anda.'
                       )}
                     </p>
 
@@ -721,7 +721,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                         className="py-1.5 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all"
                       >
                         <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{t('Preview Widget', 'Pratonton Skrin')}</span>
+                        <span>{t('Preview Widget', 'Pratonton Widget')}</span>
                       </button>
                       <button
                         type="button"
@@ -920,20 +920,20 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                     <Navigation className="w-5 h-5" />
                   </button>
 
-                  {/* Lock Screen Preview / Widget Control */}
+                  {/* App Widget Preview / Control */}
                   <button
                     type="button"
                     onClick={() => setShowLockScreenPreview(true)}
                     className={`h-12 px-2.5 rounded-xl border flex flex-col items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm ${
                       lockScreenWidgetActive
-                        ? 'bg-stone-800 border-emerald-500/40 text-emerald-400'
+                        ? 'bg-stone-800 border-amber-500/40 text-amber-400'
                         : 'bg-stone-800/60 border-stone-700 text-stone-400'
                     }`}
-                    title={t('Lock Screen Widget Preview', 'Pratonton Widget Skrin Kunci')}
+                    title={t('App Widget Preview', 'Pratonton Widget')}
                   >
-                    <Lock className="w-3.5 h-3.5" />
+                    <LayoutGrid className="w-3.5 h-3.5" />
                     <span className="text-[9px] font-bold mt-0.5">
-                      {lockScreenWidgetActive ? 'Lock OK' : 'Lock OFF'}
+                      {lockScreenWidgetActive ? 'Widget' : 'Widget Off'}
                     </span>
                   </button>
                 </div>
@@ -943,8 +943,8 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
         </div>
       </div>
 
-      {/* Interactive Android Lock Screen Simulation Modal */}
-      <LockScreenWidgetModal
+      {/* Interactive Delivery Tracker Widget Simulation Modal */}
+      <DeliveryWidgetModal
         isOpen={showLockScreenPreview}
         onClose={() => setShowLockScreenPreview(false)}
         order={order}

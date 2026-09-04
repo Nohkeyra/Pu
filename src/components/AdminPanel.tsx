@@ -228,7 +228,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           <p className="hidden lg:block text-[10px] font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider mb-3">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
-          <div className="flex flex-row lg:flex-col gap-2 p-1 lg:p-0 bg-white dark:bg-card lg:bg-transparent rounded-2xl lg:rounded-none border border-stone-200/80 lg:border-0 dark:border-white/10 shadow-sm lg:shadow-none overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
+          <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-2 p-1 lg:p-0 bg-white dark:bg-card lg:bg-transparent rounded-2xl lg:rounded-none border border-stone-200/80 lg:border-0 dark:border-white/10 shadow-sm lg:shadow-none overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
             {[
               { id: 'orders' as const, label: t('orders'), icon: FileText, onClick: () => setActiveTab('orders'), badge: cancelRequests.length > 0 ? <Badge className="ml-auto bg-amber-500 text-stone-950 px-1.5 py-0.5 text-[10px] font-bold">{cancelRequests.length}</Badge> : null },
               { id: 'tables' as const, label: 'Tables View', icon: Table, onClick: () => setActiveTab('tables') },
