@@ -458,7 +458,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     }
 
     if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
-      updateRiderLockScreenGeofence(order, coords, distMeters, isBreached);
+      updateRiderDeliveryWidgetGeofence(order, coords, distMeters, isBreached);
     }
   }, [riderCoords, coords, geofenceBreached, isRiderMode, lockScreenWidgetActive, order]);
 
