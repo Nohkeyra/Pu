@@ -54,5 +54,28 @@
       "sizes": "512x512",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Menu & Order",
+      "short_name": "Menu",
+      "description": "Browse Malaysian heritage dishes and order online",
+      "url": "/?tab=order",
+      "icons": [{ "src": "assets/icons/icon-96.webp", "sizes": "96x96" }]
+    },
+    {
+      "name": "Track Live Delivery",
+      "short_name": "Track",
+      "description": "Live GPS tracking and delivery map",
+      "url": "/?tab=delivery",
+      "icons": [{ "src": "assets/icons/icon-96.webp", "sizes": "96x96" }]
+    },
+    {
+      "name": "Customer Reviews",
+      "short_name": "Reviews",
+      "description": "Read and share customer feedback",
+      "url": "/?tab=reviews",
+      "icons": [{ "src": "assets/icons/icon-96.webp", "sizes": "96x96" }]
+    }
   ]
 }

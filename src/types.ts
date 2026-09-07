@@ -65,6 +65,18 @@ export interface ExportColumnOptions {
   notes: boolean;
 }
 
+export interface RiderLocation {
+  lat: number;
+  lng: number;
+  heading?: number;
+  speed?: number;
+  updatedAt: string;
+  active?: boolean;
+  riderName?: string;
+  riderPhone?: string;
+  accuracy?: number;
+}
+
 export interface Order {
   id?: string;
   userId?: string;
@@ -96,6 +108,7 @@ export interface Order {
   lang?: 'en' | 'bm';
   status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected' | 'in_transit' | 'delivered';
   rejectionReason?: string;
+  riderLocation?: RiderLocation;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
   updatedAt?: { seconds: number; nanoseconds: number } | string | Date;
   approvedAt?: string;

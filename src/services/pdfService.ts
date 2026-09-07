@@ -76,9 +76,7 @@ export const preloadBatikHeaderForPDF = (): Promise<string> => {
     };
 
     tryLoad([
-      getAssetUrl('/assets/heritage/Jawi.jpg'),
-      getAssetUrl('/assets/heritage/batik_vector_pattern.jpg'),
-      getAssetUrl('/assets/heritage/batik_pattern.jpg')
+      getAssetUrl('/assets/heritage/Jawi.jpg')
     ], 0);
   });
 };

@@ -20,11 +20,15 @@ const config: CapacitorConfig = {
       backgroundColor: '#00000000'
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 1200,
       launchAutoHide: true,
+      launchFadeOutDuration: 400,
       backgroundColor: '#0c453c',
+      androidScaleType: 'CENTER_CROP',
+      splashFullScreen: true,
+      splashImmersive: true,
       androidSpinnerStyle: 'large',
-      showSpinner: true,
+      showSpinner: false,
       spinnerColor: '#f69913'
     },
     PushNotifications: {

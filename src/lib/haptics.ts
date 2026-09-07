@@ -582,4 +582,81 @@ export async function triggerNotification(type: NotificationType): Promise<void>
   }
 }
 
+/**
+ * Dynamic Haptic Profile: Selection Tick
+ * Ultra-short, crisp tactile impulse for chip filters, tab switching, and carousel scrolling.
+ */
+export async function triggerSelectionTick(): Promise<void> {
+  playClickSound('light');
+  if (!shouldTrigger('selection_tick')) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Light });
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
+/**
+ * Dynamic Haptic Profile: Cart Bounce Impulse
+ * Dual-beat spring pulse (Light -> 50ms -> Medium) for adding items to the basket.
+ */
+export async function triggerCartBounceHaptic(): Promise<void> {
+  playClickSound('medium');
+  if (!shouldTrigger('cart_bounce')) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Light });
+    setTimeout(async () => {
+      try {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } catch {
+        /* ignore */
+      }
+    }, 60);
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
+/**
+ * Dynamic Haptic Profile: Modal / Sheet Snap Detent
+ * Subtle tactile snap when modal bottom sheets open, dismiss, or snap to height detents.
+ */
+export async function triggerSheetSnapHaptic(): Promise<void> {
+  playClickSound('light');
+  if (!shouldTrigger('sheet_snap')) return;
+  try {
+    await Haptics.impact({ style: ImpactStyle.Light });
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
+/**
+ * Dynamic Haptic Profile: Success Chime & Confirmation
+ * Positive confirmation haptic pattern with low-frequency mechanical resonance.
+ */
+export async function triggerSuccessChimeHaptic(): Promise<void> {
+  playClickSound('force', 'thock');
+  if (!shouldTrigger('success_chime')) return;
+  try {
+    await Haptics.notification({ type: NotificationType.Success });
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
+/**
+ * Dynamic Haptic Profile: Warning & Validation Alert
+ * Alert double-pulse for input validation errors or network warnings.
+ */
+export async function triggerWarningHaptic(): Promise<void> {
+  playClickSound('heavy');
+  if (!shouldTrigger('warning_alert')) return;
+  try {
+    await Haptics.notification({ type: NotificationType.Warning });
+  } catch (error) {
+    console.debug('Haptic feedback not available:', error);
+  }
+}
+
 export { NotificationType };

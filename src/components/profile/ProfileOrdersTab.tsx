@@ -271,14 +271,14 @@ function OrderItem({
             </Button>
           )}
 
-          {order.id && (order.status === 'in_transit' || order.status === 'delivered') && setTrackingOrder && (
+          {order.id && (order.status === 'in_transit' || order.status === 'delivered' || order.status === 'billed' || order.status === 'approved') && setTrackingOrder && (
             <Button
               onClick={(e) => {
                 e.stopPropagation();
                 setTrackingOrder(order);
               }}
               size="sm"
-              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3"
+              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3 shadow-sm"
             >
               <span>🚚 {t('Track Delivery', 'Jejak Penghantaran')}</span>
             </Button>

@@ -154,7 +154,7 @@ export function Step4ReviewSubmit({
                       <div key={d.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
                         {dishImg && (
                           <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
-                            <img src={getAssetUrl(dishImg)} alt="" className="w-full h-full object-cover" />
+                            <img src={getAssetUrl(dishImg)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                           </div>
                         )}
                         <span className="text-white font-medium flex-1 leading-tight">{tText(d.nameEn, d.nameBm)}</span>
@@ -175,7 +175,7 @@ export function Step4ReviewSubmit({
                       <div key={v.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
                         {dishImg && (
                           <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
-                            <img src={getAssetUrl(dishImg)} alt="" className="w-full h-full object-cover" />
+                            <img src={getAssetUrl(dishImg)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                           </div>
                         )}
                         <span className="text-white font-medium flex-1 leading-tight">{tText(v.nameEn, v.nameBm)}</span>

@@ -20,6 +20,8 @@ import FallbackDashboard from './components/app/FallbackDashboard';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/BatikMotionProvider';
+import { useBackgroundSync } from './hooks/useBackgroundSync';
+import { initInteractiveNotifications } from './services/interactiveNotifications';
 
 // Speed Insights wrapper
 function VercelSpeedInsights() {
@@ -61,10 +63,15 @@ function GlobalInAppUpdateHandler() {
 
 function App() {
   useBatikScrollOpacity();
+  useBackgroundSync();
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isSplashFinished, setIsSplashFinished] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+
+  useEffect(() => {
+    initInteractiveNotifications().catch(() => {});
+  }, []);
   const [useFallbackUi, setUseFallbackUi] = useState(() => {
     try {
       return localStorage.getItem('wawasan_fallback_ui') === 'true' || 

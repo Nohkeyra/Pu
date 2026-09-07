@@ -32,6 +32,21 @@
         "billedAt": { "type": "string", "description": "Timestamp when billing/invoice email was sent" },
         "cancelledAt": { "type": "string", "description": "Timestamp when order was cancelled" },
         "rejectedAt": { "type": "string", "description": "Timestamp when order was rejected" },
+        "riderLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number", "description": "Latitude of live rider GPS" },
+            "lng": { "type": "number", "description": "Longitude of live rider GPS" },
+            "heading": { "type": "number", "description": "Direction/heading angle in degrees" },
+            "speed": { "type": "number", "description": "Current speed in m/s or km/h" },
+            "updatedAt": { "type": "string", "description": "ISO timestamp of GPS packet" },
+            "active": { "type": "boolean", "description": "Whether live streaming is currently active" },
+            "riderName": { "type": "string", "description": "Name of assigned rider" },
+            "riderPhone": { "type": "string", "description": "Contact phone of assigned rider" },
+            "accuracy": { "type": "number", "description": "GPS accuracy radius in meters" }
+          },
+          "description": "Live rider GPS streaming telemetry"
+        },
         "updatedAt": { "type": "string", "description": "Timestamp when order was last updated" }
       },
       "required": ["name", "email", "contact", "location", "quantity", "meals", "preparationType", "status"]

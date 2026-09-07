@@ -186,7 +186,7 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'New Update',
     body: 'There are updates to your orders.',
-    icon: '/assets/wawasan_logo.png'
+    icon: '/assets/brand/wawasan_logo.png'
   };
 
   if (event.data) {
@@ -196,15 +196,15 @@ self.addEventListener('push', (event) => {
       notificationData = {
         title: 'Restoran Wawasan Pak Usop',
         body: event.data.text(),
-        icon: '/assets/wawasan_logo.png'
+        icon: '/assets/brand/wawasan_logo.png'
       };
     }
   }
 
   const options = {
     body: notificationData.body,
-    icon: notificationData.icon || '/assets/wawasan_logo.png',
-    badge: '/assets/wawasan_logo.png',
+    icon: notificationData.icon || '/assets/brand/wawasan_logo.png',
+    badge: '/assets/brand/wawasan_logo.png',
     vibrate: [100, 50, 100],
     data: {
       url: '/admin',

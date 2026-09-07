@@ -48,16 +48,10 @@ async function regenerateIcons() {
       .webp({ quality: 90 })
       .toFile(webpDest);
 
-    // Also save as png just in case
-    const pngDest = path.join(iconsDir, `icon-${size}.png`);
-    await sharp(compositeIcon)
-      .png({ quality: 100 })
-      .toFile(pngDest);
-
-    console.log(`✓ Generated icon-${size}.webp & icon-${size}.png`);
+    console.log(`✓ Generated icon-${size}.webp`);
   }
 
-  console.log('🎉 Successfully regenerated all PWA pop icons in public/assets/icons/!');
+  console.log('🎉 Successfully regenerated all PWA icons (.webp) in public/assets/icons/!');
 }
 
 regenerateIcons().catch(err => {

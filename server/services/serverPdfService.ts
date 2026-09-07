@@ -53,7 +53,7 @@ function loadImageBase64(relativePaths: string[]): string | null {
 // Cache loaded images in module scope (persists for lifetime of the Node process,
 // which is what we want — no need to re-read from disk on every invoice).
 let cachedLogoBase64: string | null = null;
-let cachedBatikBase64: string | null = null;
+let cachedJawiBase64: string | null = null;
 let imagesLoaded = false;
 
 function ensureImagesLoaded() {
@@ -62,14 +62,12 @@ function ensureImagesLoaded() {
     'assets/brand/wawasan_logo.png',
     'assets/brand/wawasan_logo_fallback.png',
   ]);
-  cachedBatikBase64 = loadImageBase64([
-    'assets/heritage/batik_pattern.jpg',
-    'assets/heritage/batik_vector_pattern.jpg',
+  cachedJawiBase64 = loadImageBase64([
     'assets/heritage/Jawi.jpg',
   ]);
   imagesLoaded = true;
   if (!cachedLogoBase64)  console.warn('[serverPdfService] Logo image not found — PDF will render without logo.');
-  if (!cachedBatikBase64) console.warn('[serverPdfService] Batik image not found — PDF will render without batik header.');
+  if (!cachedJawiBase64)  console.warn('[serverPdfService] Jawi image not found — PDF will render with clean header background.');
 }
 
 // ─── Amount-in-words (inlined from src/services/numberToWordsBM.ts) ───────────
@@ -177,22 +175,23 @@ const mealLabels: Record<string, string> = {
 };
 
 // ─── PDF drawing helpers (same coordinates as browser pdfService.ts) ──────────
-function drawBatikHeader(doc: jsPDF, headerHeight = 36) {
-  // Dark charcoal background fallback
-  doc.setFillColor(26, 24, 22); // #1A1816 charcoal
+function drawHeaderBackground(doc: jsPDF, headerHeight = 36) {
+  // Light cream background matching client PDF (252, 249, 242)
+  doc.setFillColor(252, 249, 242);
   doc.rect(0, 0, 210, headerHeight, 'F');
 
-  if (cachedBatikBase64) {
+  if (cachedJawiBase64) {
     try {
-      doc.addImage(cachedBatikBase64, 'JPEG', 0, 0, 210, headerHeight, undefined, 'MEDIUM');
+      doc.setGState(doc.GState({ opacity: 0.12 }));
+      doc.addImage(cachedJawiBase64, 'JPEG', 0, 0, 210, headerHeight, undefined, 'MEDIUM');
+      doc.setGState(doc.GState({ opacity: 1 }));
     } catch { /* continue without image */ }
   }
 
-  // Semi-transparent overlay (simulate by drawing a dark semi-transparent rect)
-  doc.setFillColor(26, 24, 22);
-  doc.setGState(doc.GState({ opacity: 0.55 }));
-  doc.rect(0, 0, 210, headerHeight, 'F');
-  doc.setGState(doc.GState({ opacity: 1 }));
+  // Gold dividing line at bottom of header matching client PDF
+  doc.setDrawColor(194, 147, 45);
+  doc.setLineWidth(0.4);
+  doc.line(15, headerHeight, 195, headerHeight);
 }
 
 function drawCreamBox(
@@ -238,35 +237,38 @@ export async function generateServerInvoicePdf(
 
   // ── PAGE 1: Full invoice with header, client block, table, totals ───────────
   const headerHeight = 36;
-  drawBatikHeader(doc, headerHeight);
+  drawHeaderBackground(doc, headerHeight);
 
-  // Logo
+  // Logo (matching client PDF position: x=15, y=8, w=20, h=20)
   if (cachedLogoBase64) {
     try {
-      doc.addImage(cachedLogoBase64, 'PNG', 5, 3, 28, 28);
+      doc.addImage(cachedLogoBase64, 'PNG', 15, 8, 20, 20);
     } catch { /* continue */ }
   }
 
-  // Restaurant name & address (white text over batik)
-  doc.setTextColor(255, 255, 255);
+  // Restoran details in Gold (#A67C1E / 166, 124, 30) and Charcoal (26, 24, 22)
+  doc.setTextColor(166, 124, 30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.text('RESTORAN WAWASAN', 39, 16);
+  doc.setTextColor(26, 24, 22);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.text('Unit 3, Level B3, Menara PjH', 39, 21);
   doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 39, 25);
   doc.text('W.P Putrajaya', 39, 29);
 
-  // INVOICE title
+  // INVOICE title in Gold (#A67C1E / 166, 124, 30)
+  doc.setTextColor(166, 124, 30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(26);
   doc.text('INVOICE', 195, 20, { align: 'right' });
 
-  // Invoice metadata (right side)
-  const formattedInvoiceDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  // Invoice metadata (right side) in Charcoal (26, 24, 22)
+  doc.setTextColor(26, 24, 22);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
+  const formattedInvoiceDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const invoiceNoVal = order.invoiceNo || (isFinal ? 'PENDING' : 'SEBUT HARGA');
   doc.text(`No. Invois / Invoice No: ${invoiceNoVal}`, 195, 27, { align: 'right' });
   doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 32, { align: 'right' });

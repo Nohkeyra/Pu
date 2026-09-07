@@ -15,9 +15,10 @@ import {
   Smartphone,
   Phone,
   LayoutGrid,
+  Radio,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import type { Order } from '@/types';
+import type { Order, RiderLocation } from '@/types';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
@@ -30,6 +31,9 @@ import {
   buildArrivalMessage,
 } from '@/services/riderDeliveryWidgetService';
 import { DeliveryWidgetModal } from './DeliveryWidgetModal';
+import { db } from '@/firebaseConfig';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { getApiUrl } from '@/lib/api';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
 
@@ -66,6 +70,7 @@ function LeafletMapContainer({
   onCoordinatesLoaded,
   riderPosition,
   onRouteCoordsLoaded,
+  isLiveStreaming,
 }: {
   locationString: string;
   orderStatus: string;
@@ -75,6 +80,7 @@ function LeafletMapContainer({
   onCoordinatesLoaded?: (coords: { lat: number; lng: number }) => void;
   riderPosition: { lat: number; lng: number } | null;
   onRouteCoordsLoaded?: (coords: [number, number][]) => void;
+  isLiveStreaming?: boolean;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -92,6 +98,9 @@ function LeafletMapContainer({
 
   useEffect(() => {
     riderPositionRef.current = riderPosition;
+    if (riderPosition && vehicleMarkerRef.current) {
+      vehicleMarkerRef.current.setLatLng([riderPosition.lat, riderPosition.lng]);
+    }
   }, [riderPosition]);
 
   // 1. Geocode location with Nominatim (OpenStreetMap)
@@ -294,9 +303,19 @@ function LeafletMapContainer({
           setEta(`${durationMin} mins`);
           setRouteLoaded(true);
 
-          // Render vehicle marker
+          // Render vehicle marker with live streaming radar indicator
           const truckIcon = L.divIcon({
-            html: `<div class="bg-sky-500 hover:bg-sky-600 border-2 border-white text-white p-2.5 rounded-full shadow-premium flex items-center justify-center animate-bounce transition-all duration-300"><svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></div>`,
+            html: `<div class="relative flex items-center justify-center">
+              ${isLiveStreaming ? '<div class="absolute -inset-2 bg-emerald-500/40 rounded-full animate-ping"></div>' : ''}
+              <div class="relative ${isLiveStreaming ? 'bg-emerald-600' : 'bg-sky-500'} hover:opacity-90 border-2 border-white text-white p-2.5 rounded-full shadow-premium flex items-center justify-center transition-all duration-300">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1" y="3" width="15" height="13"></rect>
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                  <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                  <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+              </div>
+            </div>`,
             className: '',
             iconSize: [44, 44],
             iconAnchor: [22, 22],
@@ -348,7 +367,7 @@ function LeafletMapContainer({
         clearInterval(animationInterval);
       }
     };
-  }, [destLatLng, orderStatus, locationString, setDistance, setEta, setRouteLoaded, onCoordinatesLoaded]);
+  }, [destLatLng, orderStatus, locationString, setDistance, setEta, setRouteLoaded, onCoordinatesLoaded, isLiveStreaming]);
 
   return <div ref={mapContainerRef} className="w-full h-full animate-fade-in" style={{ zIndex: 1 }} />;
 }
@@ -370,6 +389,11 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
   const [simPercent, setSimPercent] = useState<number>(0);
   const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
   const [riderCoords, setRiderCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLiveStreaming, setIsLiveStreaming] = useState<boolean>(false);
+  const [riderSpeed, setRiderSpeed] = useState<number>(0);
+  const [riderHeading, setRiderHeading] = useState<number>(0);
+  const [lastStreamTime, setLastStreamTime] = useState<string | null>(null);
+  const [broadcastEnabled, setBroadcastEnabled] = useState<boolean>(true);
 
   const [geofenceBreached, setGeofenceBreached] = useState<boolean>(false);
   const [exactDistanceMeters, setExactDistanceMeters] = useState<number | null>(null);
@@ -379,23 +403,95 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
   const [lockScreenWidgetActive, setLockScreenWidgetActive] = useState<boolean>(true);
   const [showLockScreenPreview, setShowLockScreenPreview] = useState<boolean>(false);
 
+  const lastBroadcastRef = useRef<number>(0);
+  const orderId = order.id;
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
-  // Setup default riderCoords once OSRM route is loaded
+  // Setup default riderCoords once OSRM route is loaded if not streaming
   useEffect(() => {
-    if (routeCoords.length > 0 && !riderCoords) {
+    if (routeCoords.length > 0 && !riderCoords && !isLiveStreaming) {
       setRiderCoords({ lat: routeCoords[0][0], lng: routeCoords[0][1] });
     }
-  }, [routeCoords, riderCoords]);
+  }, [routeCoords, riderCoords, isLiveStreaming]);
+
+  // Real-time Firestore Telemetry Listener for Live Stream
+  useEffect(() => {
+    if (!orderId) return;
+
+    const unsub = onSnapshot(
+      doc(db, 'orders', orderId),
+      (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        const telemetry = data?.riderLocation as RiderLocation | undefined;
+
+        if (telemetry && telemetry.active !== false) {
+          setIsLiveStreaming(true);
+          // If not actively driving in Rider Mode, adopt the streamed coordinates
+          if (!isRiderMode) {
+            setRiderCoords({ lat: telemetry.lat, lng: telemetry.lng });
+          }
+          if (typeof telemetry.speed === 'number') {
+            setRiderSpeed(telemetry.speed);
+          }
+          if (typeof telemetry.heading === 'number') {
+            setRiderHeading(telemetry.heading);
+          }
+          if (telemetry.updatedAt) {
+            setLastStreamTime(telemetry.updatedAt);
+          }
+        } else {
+          setIsLiveStreaming(false);
+        }
+      },
+      (err) => {
+        console.warn('[DeliveryMap] Firestore stream snapshot warning:', err);
+      }
+    );
+
+    return () => unsub();
+  }, [orderId, isRiderMode]);
+
+  // Throttled Broadcast to Backend Streaming API
+  const broadcastLocation = useCallback(
+    async (coordsToBroadcast: { lat: number; lng: number }, speed = 0, heading = 0) => {
+      if (!orderId || !broadcastEnabled) return;
+      const now = Date.now();
+      if (now - lastBroadcastRef.current < 2000) return; // 2s throttle
+      lastBroadcastRef.current = now;
+
+      try {
+        await fetch(getApiUrl(`/api/orders/${orderId}/rider-location`), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lat: coordsToBroadcast.lat,
+            lng: coordsToBroadcast.lng,
+            speed,
+            heading,
+            active: true,
+            riderName: 'Restoran Wawasan Rider',
+          }),
+        });
+      } catch (err) {
+        console.warn('[DeliveryMap] Broadcast telemetry error:', err);
+      }
+    },
+    [orderId, broadcastEnabled]
+  );
 
   // Handle Manual Simulator Slider Changes
   useEffect(() => {
     if (isRiderMode && trackingSource === 'simulation' && routeCoords.length > 0) {
       const idx = Math.floor((simPercent / 100) * (routeCoords.length - 1));
       const targetPt = routeCoords[idx];
-      setRiderCoords({ lat: targetPt[0], lng: targetPt[1] });
+      const newPos = { lat: targetPt[0], lng: targetPt[1] };
+      setRiderCoords(newPos);
+      const simulatedSpeed = simPercent > 0 && simPercent < 100 ? 35 : 0;
+      setRiderSpeed(simulatedSpeed);
+      broadcastLocation(newPos, simulatedSpeed, 0);
     }
-  }, [simPercent, trackingSource, isRiderMode, routeCoords]);
+  }, [simPercent, trackingSource, isRiderMode, routeCoords, broadcastLocation]);
 
   // Handle Real-time Geolocation GPS Tracking
   useEffect(() => {
@@ -412,7 +508,13 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        setRiderCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setRiderCoords(newCoords);
+        const speedKmh = pos.coords.speed !== null && !isNaN(pos.coords.speed) ? Math.round(pos.coords.speed * 3.6) : 0;
+        const headingDeg = pos.coords.heading !== null && !isNaN(pos.coords.heading) ? Math.round(pos.coords.heading) : 0;
+        setRiderSpeed(speedKmh);
+        setRiderHeading(headingDeg);
+        broadcastLocation(newCoords, speedKmh, headingDeg);
       },
       (err) => {
         console.warn('GPS Error:', err);
@@ -423,7 +525,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isRiderMode, trackingSource, language]);
+  }, [isRiderMode, trackingSource, language, broadcastLocation]);
 
   // Direct delivery completion trigger
   const handleMarkAsDelivered = useCallback(async () => {
@@ -645,6 +747,32 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                     </div>
                   </div>
 
+                  {/* Live GPS Broadcast Indicator & Toggle */}
+                  <div className="flex items-center justify-between p-2.5 bg-stone-100 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800">
+                    <div className="flex items-center gap-2">
+                      <Radio className={`w-4 h-4 ${broadcastEnabled ? 'text-emerald-500 animate-pulse' : 'text-stone-400'}`} />
+                      <div>
+                        <span className="text-xs font-bold text-deep-forest dark:text-white block">
+                          {t('Live Customer Stream', 'Penstriman ke Pelanggan')}
+                        </span>
+                        <span className="text-[10px] text-stone-500">
+                          {broadcastEnabled ? t('Broadcasting coordinates', 'Menyiarkan lokasi langsung') : t('Broadcast paused', 'Siaran dijeda')}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastEnabled(!broadcastEnabled)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                        broadcastEnabled
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : 'bg-stone-200 dark:bg-stone-800 text-stone-500'
+                      }`}
+                    >
+                      {broadcastEnabled ? 'ON 🟢' : 'OFF ⚪'}
+                    </button>
+                  </div>
+
                   {/* Manual route progress slider */}
                   {trackingSource === 'simulation' && (
                     <div className="space-y-2">
@@ -709,18 +837,18 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                   </div>
 
                   {/* Rider Lock Screen Widget Controls */}
-                  <div className="p-3.5 bg-gradient-to-br from-stone-900 via-stone-950 to-black text-white rounded-2xl border border-stone-800 shadow-md space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-stone-900 via-stone-950 to-black text-white rounded-2xl border border-stone-800 shadow-md space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-bold text-white">
+                      <div className="flex items-center gap-2">
+                        <LayoutGrid className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-white tracking-wide">
                           {t('App Tracker Widget', 'Widget Skrin Utama')}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setLockScreenWidgetActive(!lockScreenWidgetActive)}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all border ${
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
                           lockScreenWidgetActive
                             ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                             : 'bg-stone-800 text-stone-400 border-stone-700'
@@ -730,26 +858,26 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                       </button>
                     </div>
 
-                    <p className="text-[10px] text-stone-300 leading-relaxed">
+                    <p className="text-xs text-stone-300 leading-relaxed">
                       {t(
                         'Displays a quick order tracking & arrival action card directly on your device home screen and notification tray.',
                         'Memaparkan kad tindakan dan status tempahan terus pada skrin utama dan ruang notifikasi peranti anda.'
                       )}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
                       <button
                         type="button"
                         onClick={() => setShowLockScreenPreview(true)}
-                        className="py-1.5 px-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all"
+                        className="min-h-[40px] py-2 px-3 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all border border-stone-700/60"
                       >
-                        <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                        <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span>{t('Preview Widget', 'Pratonton Widget')}</span>
                       </button>
                       <button
                         type="button"
                         onClick={handleTestLockScreen}
-                        className="py-1.5 px-2 bg-amber-500 hover:bg-amber-600 text-stone-950 text-[11px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all shadow-sm"
+                        className="min-h-[40px] py-2 px-3 bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
                       >
                         <span>{t('Test Alert', 'Uji Alert')}</span>
                       </button>
@@ -783,6 +911,61 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Live GPS Telemetry Card (Customer View) */}
+                  {isLiveStreaming && (
+                    <div className="p-4 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 rounded-2xl space-y-3 animate-fade-in shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                          <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                            {t('Live GPS Streaming', 'Penstriman GPS Langsung')}
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                          LIVE
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-2 bg-white/70 dark:bg-stone-900/70 rounded-xl border border-emerald-500/20 text-center">
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium">
+                            {t('Rider Speed', 'Kelajuan Rider')}
+                          </span>
+                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 font-mono">
+                            {riderSpeed > 0 ? `${riderSpeed} km/h` : t('Stationary', 'Berhenti')}
+                          </span>
+                        </div>
+                        <div className="p-2 bg-white/70 dark:bg-stone-900/70 rounded-xl border border-emerald-500/20 text-center">
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium">
+                            {t('Geofence (200m)', 'Zon Geofence')}
+                          </span>
+                          <span className="text-xs font-bold text-deep-forest dark:text-white font-mono">
+                            {exactDistanceMeters !== null ? `${exactDistanceMeters} m` : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {riderHeading > 0 && (
+                        <div className="flex items-center justify-between text-[10px] text-stone-500 px-1">
+                          <span>{t('Compass Heading:', 'Arah Kompas:')} {riderHeading}°</span>
+                          {lastStreamTime && (
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                              {t('Live Update', 'Kemaskini Langsung')}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {geofenceBreached && (
+                        <div className="p-2 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-800 dark:text-amber-200 text-xs font-bold text-center animate-pulse flex items-center justify-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>{t('Rider is within 200m! Please prepare to receive.', 'Rider berhampiran (200m)! Sila bersedia untuk menerima hidangan.')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Delivery Target */}
                   <div className="space-y-4">
                     <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block opacity-90">
@@ -890,8 +1073,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                 setDistance={setDistance}
                 setRouteLoaded={setRouteLoaded}
                 onCoordinatesLoaded={setCoords}
-                riderPosition={isRiderMode ? riderCoords : null}
+                riderPosition={isRiderMode ? riderCoords : (isLiveStreaming ? riderCoords : null)}
                 onRouteCoordsLoaded={setRouteCoords}
+                isLiveStreaming={isLiveStreaming || (isRiderMode && broadcastEnabled)}
               />
 
               {/* Glove-Friendly Safe-Riding Floating Action Bar for Riders */}

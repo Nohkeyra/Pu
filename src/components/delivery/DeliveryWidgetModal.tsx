@@ -94,55 +94,55 @@ export function DeliveryWidgetModal({
         </button>
 
         {/* Home Screen Header */}
-        <div className="text-center space-y-1 mt-1">
-          <div className="flex items-center justify-center gap-1.5 text-stone-400 text-xs font-medium">
+        <div className="text-center space-y-1.5 mt-2 mb-2">
+          <div className="flex items-center justify-center gap-1.5 text-stone-400 text-xs font-medium tracking-wide">
             <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
             <span>{language === 'bm' ? 'Widget Skrin Utama' : 'Home Screen Widget'}</span>
           </div>
-          <div className="text-4xl font-light tracking-tight font-sans text-stone-100">
+          <div className="text-5xl font-light tracking-tight font-sans text-stone-100 py-1">
             {currentTime || '12:00'}
           </div>
-          <div className="text-xs text-stone-400 font-medium capitalize">
+          <div className="text-xs text-stone-400 font-medium capitalize tracking-wide">
             {currentDate}
           </div>
         </div>
 
         {/* Normal App Widget Card */}
-        <div className="my-auto space-y-3">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-stone-800/95 to-stone-900/95 border border-stone-700/70 shadow-xl shadow-black/50 backdrop-blur-xl space-y-3">
+        <div className="my-auto space-y-4 py-2">
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-stone-800/95 to-stone-900/95 border border-stone-700/60 shadow-xl shadow-black/50 backdrop-blur-xl space-y-4">
             {/* Widget Banner Header */}
-            <div className="flex items-center justify-between text-[11px] text-stone-400">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-lg bg-amber-500 text-stone-950 flex items-center justify-center text-[10px] font-black shadow-sm">
+            <div className="flex items-center justify-between text-xs text-stone-400">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-lg bg-amber-500 text-stone-950 flex items-center justify-center text-xs font-black shadow-sm">
                   W
                 </span>
                 <div>
-                  <span className="font-bold text-stone-100">Restoran Wawasan</span>
-                  <span className="text-[10px] text-amber-400 block font-medium">Live Order Tracker</span>
+                  <span className="font-bold text-stone-100 text-xs block">Restoran Wawasan</span>
+                  <span className="text-[11px] text-amber-400 block font-medium">Live Order Tracker</span>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono font-bold">
+              <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono font-bold tracking-wide">
                 {geofenceBreached ? '🚨 TIBA (200m)' : distanceLabel}
               </span>
             </div>
 
             {/* Customer & Delivery Details */}
-            <div className="space-y-1 bg-stone-950/60 p-3 rounded-xl border border-stone-800/80">
-              <div className="flex items-center justify-between">
+            <div className="space-y-2 bg-stone-950/50 p-3.5 rounded-xl border border-stone-800/80">
+              <div className="flex items-center justify-between gap-2">
                 <h4 className="text-sm font-bold text-white truncate">{customerName}</h4>
                 {orderSummary && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold uppercase">
+                  <span className="text-[10px] px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-300 font-semibold uppercase tracking-wider shrink-0">
                     {orderSummary}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-stone-300 leading-snug line-clamp-2">
+              <p className="text-xs text-stone-300 leading-relaxed line-clamp-2">
                 📍 {order.location || 'Destinasi Pelanggan'}
               </p>
             </div>
 
             {/* Widget Action Buttons */}
-            <div className="pt-1 space-y-2">
+            <div className="space-y-2.5 pt-1">
               {/* Primary 1-Tap 'Delivered' Button */}
               {onMarkDelivered && (
                 <button
@@ -151,7 +151,7 @@ export function DeliveryWidgetModal({
                     onMarkDelivered();
                     onClose();
                   }}
-                  className="w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg bg-emerald-500 hover:bg-emerald-400 text-white active:scale-95 border border-emerald-400/40"
+                  className="w-full py-3.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/15 bg-emerald-500 hover:bg-emerald-400 text-white active:scale-[0.98] border border-emerald-400/30 min-h-[46px]"
                 >
                   <Check className="w-4 h-4 shrink-0" />
                   <span>{language === 'bm' ? 'Selesai Hantar (Delivered)' : 'Delivered'}</span>
@@ -160,16 +160,16 @@ export function DeliveryWidgetModal({
               )}
 
               {/* Quick Communication Buttons */}
-              <div className="grid grid-cols-3 gap-1.5 pt-1">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     onSendWhatsApp();
                     onClose();
                   }}
-                  className="py-2 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95"
+                  className="min-h-[42px] py-2.5 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
                 >
-                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>WhatsApp</span>
                 </button>
 
@@ -179,9 +179,9 @@ export function DeliveryWidgetModal({
                     onCallCustomer();
                     onClose();
                   }}
-                  className="py-2 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95"
+                  className="min-h-[42px] py-2.5 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
                 >
-                  <Phone className="w-3.5 h-3.5 text-sky-400" />
+                  <Phone className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                   <span>{language === 'bm' ? 'Telefon' : 'Call'}</span>
                 </button>
 
@@ -191,9 +191,9 @@ export function DeliveryWidgetModal({
                     onOpenNavigation();
                     onClose();
                   }}
-                  className="py-2 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95"
+                  className="min-h-[42px] py-2.5 px-2 rounded-xl bg-stone-800/90 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
                 >
-                  <Navigation className="w-3.5 h-3.5 text-amber-400" />
+                  <Navigation className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>Maps</span>
                 </button>
               </div>
@@ -201,9 +201,9 @@ export function DeliveryWidgetModal({
           </div>
 
           {/* Customer Push Notification Explanation Banner */}
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-2.5 text-[11px] text-emerald-300">
+          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-3 text-xs text-emerald-300">
             <BellRing className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <p className="leading-relaxed">
+            <p className="leading-relaxed text-xs">
               {language === 'bm'
                 ? 'Menekan butang "Delivered" akan menghantar notifikasi segera kepada pelanggan yang memuat turun dan menggunakan aplikasi.'
                 : 'Pressing "Delivered" immediately sends a push notification to the customer who downloaded and uses the app.'}

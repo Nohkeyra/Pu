@@ -236,6 +236,14 @@ export default function AppContent() {
 
   return (
     <div className="min-h-screen bg-cream dark:bg-background flex flex-col relative overflow-x-hidden">
+      {/* Accessible Skip Link for Screen Readers and Keyboard Navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-amber-600 focus:text-white focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-amber-300 focus:outline-none transition-all"
+      >
+        Skip to main content / Langkau ke kandungan utama
+      </a>
+
       <OfflineBanner />
       <ScrollToTop />
       <SmoothScrollHandler />
@@ -253,7 +261,7 @@ export default function AppContent() {
         </div>
       )}
 
-      <main className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]">
+      <main id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
         <RouteErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
             {/*

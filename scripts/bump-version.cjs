@@ -21,6 +21,7 @@ const propsPaths = [
 ];
 const packageJsonPath = path.join(root, 'package.json');
 const updateServicePath = path.join(root, 'src', 'services', 'updateService.ts');
+const updateRoutesPath = path.join(root, 'server', 'routes', 'updateRoutes.ts');
 const serverPath = path.join(root, 'server.ts');
 
 function readProps(filePath) {
@@ -132,6 +133,24 @@ function main() {
     }
   } catch (e) {
     console.warn('Could not update updateService.ts version:', e.message);
+  }
+
+  // Keep server/routes/updateRoutes.ts in sync (DEFAULT_VERSION_CONFIG)
+  try {
+    if (fs.existsSync(updateRoutesPath)) {
+      let content = fs.readFileSync(updateRoutesPath, 'utf8');
+      content = content.replace(
+        /latestVersion:\s*'[^']*'/,
+        `latestVersion: '${nextName}'`
+      );
+      content = content.replace(
+        /buildNumber:\s*\d+/,
+        `buildNumber: ${nextCode}`
+      );
+      fs.writeFileSync(updateRoutesPath, content, 'utf8');
+    }
+  } catch (e) {
+    console.warn('Could not update updateRoutes.ts version:', e.message);
   }
 
   // Keep server.ts version in sync

@@ -53,6 +53,8 @@ export function Step2DishSelection({
     return dynamicMenu.filter(item => item.available !== false);
   }, [dynamicMenu]);
 
+  const totalSelectedDishes = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
+
   const validateAndNext = async () => {
     const dishCount = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
     const hasCustom = Boolean(orderState.customMenu?.trim());
@@ -74,17 +76,17 @@ export function Step2DishSelection({
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
+        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2.5 sticky top-[72px] z-30 bg-cream/95 dark:bg-stone-950/95 backdrop-blur-md -mx-2 px-2 py-1">
           <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block shrink-0`}>
             {icon} {title}
           </Label>
           {selectedCount > 0 && (
-            <span className="microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full transition-colors text-white bg-crisp-carrot shadow-sm shrink-0 whitespace-nowrap">
+            <span className="microcopy-12-upper font-bold px-3 py-1 rounded-full transition-colors text-white bg-amber-600 shadow-xs shrink-0 whitespace-nowrap">
               {selectedCount} / {categoryDishes.length} {tText('Selected', 'Dipilih')}
             </span>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-2">
           {categoryDishes.map(item => (
             <MenuItemCard
               key={item.id}
@@ -272,19 +274,39 @@ export function Step2DishSelection({
         <Button
           onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
           variant="outline"
-          className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-stone cursor-pointer"
+          className="flex-1 border-stone-300 dark:border-stone-700 min-h-[48px] rounded-2xl font-bold text-sm text-stone-700 dark:text-stone-200 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 mr-1.5" />
           {t('back')}
         </Button>
         <Button
           onClick={validateAndNext}
-          className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
+          className="flex-1 bg-amber-600 hover:bg-amber-700 text-white min-h-[48px] rounded-2xl font-bold text-sm shadow-md"
         >
           {tText('Next: Details', 'Seterusnya: Butiran')}
           <ArrowRight className="w-4 h-4 ml-1.5" />
         </Button>
       </ResponsiveButtonGroup>
+
+      {/* Floating Bottom Quick Action Bar for Mobile Ergonomics */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 md:hidden flex items-center justify-between gap-3 shadow-xl">
+        <div className="flex flex-col text-left">
+          <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-none">
+            {tText('Selection', 'Pilihan')}
+          </span>
+          <span className="text-sm font-black text-stone-900 dark:text-white leading-tight mt-0.5">
+            {totalSelectedDishes} {tText('dishes', 'lauk')} ({orderState.guests} pax)
+          </span>
+        </div>
+        <Button
+          onClick={validateAndNext}
+          size="sm"
+          className="bg-amber-600 hover:bg-amber-700 text-white min-h-[44px] px-5 rounded-xl font-bold text-xs shadow-md shrink-0 flex items-center gap-1.5"
+        >
+          <span>{tText('Next', 'Seterusnya')}</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
     </motion.div>
   );
 }

@@ -798,4 +798,79 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
   }
 });
 
+// Live Rider Location Streaming Endpoints
+router.post('/orders/:id/rider-location', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string' || id.length > 100) {
+      return res.status(400).json({ success: false, error: 'Invalid order ID' });
+    }
+
+    const { lat, lng, heading, speed, active, riderName, riderPhone, accuracy } = req.body || {};
+
+    if (typeof lat !== 'number' || isNaN(lat) || lat < -90 || lat > 90) {
+      return res.status(400).json({ success: false, error: 'Invalid latitude value (-90 to 90)' });
+    }
+    if (typeof lng !== 'number' || isNaN(lng) || lng < -180 || lng > 180) {
+      return res.status(400).json({ success: false, error: 'Invalid longitude value (-180 to 180)' });
+    }
+
+    const riderLocationData = {
+      lat: Number(lat.toFixed(6)),
+      lng: Number(lng.toFixed(6)),
+      heading: typeof heading === 'number' && !isNaN(heading) ? Math.round(heading) : 0,
+      speed: typeof speed === 'number' && !isNaN(speed) ? Number(speed.toFixed(1)) : 0,
+      accuracy: typeof accuracy === 'number' && !isNaN(accuracy) ? Number(accuracy.toFixed(1)) : 0,
+      active: active !== false,
+      updatedAt: new Date().toISOString(),
+      ...(riderName && typeof riderName === 'string' ? { riderName: riderName.slice(0, 50) } : {}),
+      ...(riderPhone && typeof riderPhone === 'string' ? { riderPhone: riderPhone.slice(0, 30) } : {}),
+    };
+
+    const db = getFirestore();
+    const orderRef = db.collection('orders').doc(id);
+    const orderSnap = await orderRef.get();
+
+    if (!orderSnap.exists) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    await orderRef.update({
+      riderLocation: riderLocationData,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return res.json({ success: true, riderLocation: riderLocationData });
+  } catch (err) {
+    console.error('[Rider Location Streaming API Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+router.get('/orders/:id/rider-location', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ success: false, error: 'Invalid order ID' });
+    }
+
+    const db = getFirestore();
+    const orderSnap = await db.collection('orders').doc(id).get();
+
+    if (!orderSnap.exists) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const data = orderSnap.data();
+    return res.json({
+      success: true,
+      riderLocation: data?.riderLocation || null,
+      status: data?.status || 'pending',
+    });
+  } catch (err) {
+    console.error('[Get Rider Location API Error]:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
 export default router;

@@ -201,6 +201,29 @@ async function startServer() {
   app.get('/health', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
+  // Digital Asset Links for Android App Links & Deep Linking verification
+  app.get(['/.well-known/assetlinks.json', '/api/.well-known/assetlinks.json'], (_req: express.Request, res: express.Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    const assetLinksPath = path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json');
+    if (fs.existsSync(assetLinksPath)) {
+      return res.sendFile(assetLinksPath);
+    }
+    return res.json([
+      {
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: {
+          namespace: 'android_app',
+          package_name: 'com.wawasanpakusop.app',
+          sha256_cert_fingerprints: [
+            '14:6D:E9:7C:1E:51:B2:7D:66:6A:11:DA:26:FA:F8:78:E8:B8:31:8B:25:A8:1A:EB:6E:CE:C4:4E:91:DE:30:FE',
+            'E6:61:C4:6E:47:5D:80:5C:DE:FE:0C:BF:A1:75:E6:E5:5D:69:B3:26:E9:80:FF:99:99:90:7E:AA:C1:25:9A:8F',
+          ],
+        },
+      },
+    ]);
+  });
+
   app.get('/', (_req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
