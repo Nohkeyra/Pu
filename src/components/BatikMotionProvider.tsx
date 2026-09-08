@@ -57,6 +57,21 @@ export function BatikMotionProvider({ children }: { children: ReactNode }) {
       y.set(0);
     };
 
+    let isScrolling = false;
+    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const handleScroll = () => {
+      isScrolling = true;
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 150);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
     // Track tab/app visibility so we do not burn CPU/battery when in background
     const handleVisibilityChange = () => {
       if (typeof document !== 'undefined' && document.hidden) {
@@ -88,7 +103,7 @@ export function BatikMotionProvider({ children }: { children: ReactNode }) {
 
           // Native Capacitor platform accelerometer / motion
           const handle = await Motion.addListener('accel', (event) => {
-            if (!isActive || !isAppInForeground) return;
+            if (!isActive || !isAppInForeground || isScrolling) return;
             const accel = event.accelerationIncludingGravity;
             if (!accel) return;
 
@@ -111,7 +126,7 @@ export function BatikMotionProvider({ children }: { children: ReactNode }) {
           let hasGyroscope = false;
 
           const handleOrientation = (e: DeviceOrientationEvent) => {
-            if (!isActive || !isAppInForeground || e.beta === null || e.gamma === null) return;
+            if (!isActive || !isAppInForeground || isScrolling || e.beta === null || e.gamma === null) return;
             hasGyroscope = true;
 
             // beta is front-back tilt [-180, 180]

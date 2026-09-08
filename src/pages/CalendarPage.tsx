@@ -23,7 +23,8 @@ import {
   ArrowRight,
   Coffee,
   Sun,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { 
   format, 
@@ -39,6 +40,7 @@ import {
   parseISO
 } from 'date-fns';
 import { ms, enUS } from 'date-fns/locale';
+import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import PageShell from '@/components/PageShell';
@@ -565,6 +567,8 @@ export default function CalendarPage() {
                   const totalPax = sessions.breakfast.pax + sessions.lunch.pax + sessions.hi_tea.pax;
                   const hasOrders = dayOrders.length > 0;
                   const isWeekendDay = isWeekend(day);
+                  const dateIso = format(day, 'yyyy-MM-dd');
+                  const holiday = getMalaysiaHolidayInfo(dateIso);
 
                   return (
                     <button
@@ -574,6 +578,8 @@ export default function CalendarPage() {
                         "min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-stone-900 hover:bg-stone-850 dark:bg-white dark:hover:bg-stone-50",
                         isDaySelected 
                           ? "ring-2 ring-inset ring-crisp-carrot bg-stone-800/90 dark:bg-orange-100/70 z-10" 
+                          : holiday
+                          ? "bg-amber-950/40 dark:bg-amber-50/60"
                           : ""
                       )}
                     >
@@ -585,9 +591,11 @@ export default function CalendarPage() {
                           </span>
                         ) : (
                           <span className={cn(
-                            "text-sm font-bold tabular-nums transition-colors",
+                            "text-sm font-bold tabular-nums transition-colors flex items-center gap-1",
                             isDaySelected 
                               ? "text-crisp-carrot scale-110" 
+                              : holiday
+                              ? "text-amber-400 dark:text-amber-600 font-black"
                               : isWeekendDay 
                               ? "text-rose-400 dark:text-rose-600"
                               : "text-stone-100 dark:text-stone-900 group-hover:text-crisp-carrot"
@@ -596,11 +604,25 @@ export default function CalendarPage() {
                           </span>
                         )}
 
-                        {/* Note Indicator */}
-                        {dayNotes.length > 0 && (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-white" title={tl('Has note', 'Ada nota')} />
-                        )}
+                        {/* Holiday / Note Indicators */}
+                        <div className="flex items-center gap-1">
+                          {holiday && (
+                            <span className="text-[10px] text-amber-400 dark:text-amber-600 font-bold" title={holiday.nameBm}>
+                              ✨
+                            </span>
+                          )}
+                          {dayNotes.length > 0 && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-white" title={tl('Has note', 'Ada nota')} />
+                          )}
+                        </div>
                       </div>
+
+                      {/* Holiday Micro-label */}
+                      {holiday && (
+                        <div className="text-[9px] font-extrabold text-amber-300 dark:text-amber-700 truncate max-w-full my-0.5" title={holiday.nameBm}>
+                          {holiday.nameBm}
+                        </div>
+                      )}
 
                       {/* Bottom Info: Meal Badges */}
                       <div className="mt-auto pt-1 w-full">

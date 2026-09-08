@@ -7,7 +7,10 @@ import {
   Truck, 
   Store, 
   ArrowLeft, 
-  ArrowRight 
+  ArrowRight,
+  Calendar,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
@@ -24,6 +27,7 @@ import {
   SelectItem 
 } from '@/components/ui/select';
 import { SAVED_COMPANIES } from '@/constants/companies';
+import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn, getAssetUrl } from '@/lib/utils';
 import type { OrderState } from '@/components/OrderForm';
 
@@ -233,29 +237,65 @@ export function Step3ContactDetails({
         </div>
 
         {/* Date & Time Inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Event Date', 'Tarikh Majlis *')}</Label>
-            <input
-              id="event-date"
-              type="date"
-              value={orderState.date}
-              min={format(new Date(), 'yyyy-MM-dd')}
-              onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Serving Time', 'Masa Majlis *')}</Label>
-            <input
-              id="event-time"
-              type="time"
-              value={orderState.time}
-              onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
-              className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
-            />
-          </div>
-        </div>
+        {(() => {
+          const holidayInfo = getMalaysiaHolidayInfo(orderState.date);
+          const minBookingDate = getMinCateringBookingDate(2);
+          return (
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                      {tText('Event Date', 'Tarikh Majlis *')}
+                    </Label>
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                      {tText('Min. 2 days notice', 'Min. 2 hari awal')}
+                    </span>
+                  </div>
+                  <input
+                    id="event-date"
+                    type="date"
+                    value={orderState.date}
+                    min={minBookingDate}
+                    onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                    {tText('Serving Time', 'Masa Majlis *')}
+                  </Label>
+                  <input
+                    id="event-time"
+                    type="time"
+                    value={orderState.time}
+                    onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
+                    className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
+                  />
+                </div>
+              </div>
+
+              {/* Smart Holiday / Peak Day Banner */}
+              {holidayInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex items-start gap-2.5 text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 text-xs">
+                    <p className="font-bold text-amber-800 dark:text-amber-300">
+                      🎉 {tText('Public Holiday Detected:', 'Cuti Umum Diimbas:')} {holidayInfo.nameBm} ({holidayInfo.nameEn})
+                    </p>
+                    <p className="text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
+                      {holidayInfo.noticeBm || tText('High demand day. Your slot is prioritized once confirmed with kitchen admin.', 'Musim tempahan puncak. Slot anda diberi keutamaan selepas pengesahan dapur.')}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Geolocation Autocomplete Venue Location */}
         <div className="space-y-1.5">

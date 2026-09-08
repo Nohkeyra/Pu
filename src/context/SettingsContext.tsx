@@ -355,6 +355,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const setCustomFontSizePx = (size: number) => {
     setCustomFontSizePxState(size);
+    if (size <= 14) setFontSizeState('sm');
+    else if (size <= 16) setFontSizeState('base');
+    else if (size <= 18) setFontSizeState('lg');
+    else setFontSizeState('xl');
   };
 
   const setCustomCardSizeScale = (scale: number) => {
