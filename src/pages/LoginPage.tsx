@@ -88,12 +88,11 @@ export default function LoginPage() {
                 <p className="font-accent text-sm font-bold uppercase tracking-[0.24em] text-[var(--color-sunshine-cta)]">
                   Pak Usop
                 </p>
-                <p className="mx-auto max-w-sm text-sm leading-relaxed text-deep-forest/72 dark:text-white/72">
-                  {tLocal(
-                    'Catering, signature dishes, and a smoother ordering flow in one place.',
-                    'Katering, hidangan istimewa, dan aliran tempahan yang lebih kemas dalam satu aplikasi.'
-                  )}
-                </p>
+                <div className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-deep-forest/80 dark:text-white/80 space-y-0.5">
+                  <p>Tak nak serabut campur</p>
+                  <p>urusan personal &amp; kerja ?</p>
+                  <p className="font-bold text-[var(--color-sunshine-cta)] pt-1">Register 👇🏻😎</p>
+                </div>
               </div>
 
               <div className="w-full space-y-3">
