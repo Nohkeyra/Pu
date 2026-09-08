@@ -1130,7 +1130,11 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={async () => {
                         await triggerLightImpact();
-                        navigate('/profile');
+                        if (isAdmin || currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null) {
+                          navigate('/admin');
+                        } else {
+                          navigate('/profile');
+                        }
                       }}
                       className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
                     >

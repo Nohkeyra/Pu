@@ -91,7 +91,12 @@ export default function PageShell({
   const handleAuth = useCallback(async () => {
     await triggerLightImpact();
     if (currentUser) {
-      navigate('/profile');
+      const isAdmin = currentUser.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/profile');
+      }
     } else {
       setAuthOpen(true);
     }

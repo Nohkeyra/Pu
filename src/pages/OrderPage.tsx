@@ -134,7 +134,12 @@ export default function OrderPage() {
                 onClick={async () => {
                   await triggerLightImpact();
                   if (currentUser) {
-                    setProfileDashboardOpen(true);
+                    const isAdmin = currentUser.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
+                    if (isAdmin) {
+                      navigate('/admin');
+                    } else {
+                      setProfileDashboardOpen(true);
+                    }
                   } else {
                     setAuthModalOpen(true);
                   }

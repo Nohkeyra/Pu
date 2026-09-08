@@ -23,9 +23,13 @@ export default function ProfilePage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
+      const isAdmin = user?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   if (loading) {
     return (
