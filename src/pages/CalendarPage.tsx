@@ -23,8 +23,7 @@ import {
   ArrowRight,
   Coffee,
   Sun,
-  CheckCircle2,
-  Sparkles
+  CheckCircle2
 } from 'lucide-react';
 import { 
   format, 

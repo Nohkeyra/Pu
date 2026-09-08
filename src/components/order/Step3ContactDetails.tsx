@@ -1,6 +1,5 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'motion/react';
-import { format } from 'date-fns';
 import { 
   Loader2, 
   MapPin, 
@@ -8,9 +7,7 @@ import {
   Store, 
   ArrowLeft, 
   ArrowRight,
-  Calendar,
-  Sparkles,
-  AlertCircle
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
