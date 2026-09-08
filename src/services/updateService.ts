@@ -6,8 +6,8 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import semver from 'semver';
 
-export const CURRENT_APP_VERSION = '1.3.43';
-export const CURRENT_BUILD_NUMBER = 173;
+export const CURRENT_APP_VERSION = '1.3.44';
+export const CURRENT_BUILD_NUMBER = 174;
 export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk';
 
 export interface AppVersionConfig {
