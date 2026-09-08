@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertTriangle, XCircle, X, Info } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Toast as NativeToast } from '@capacitor/toast';
 import { cn } from '@/lib/utils';
 
 /**
@@ -55,6 +57,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => [...prev, { id, title, description, variant, duration }]);
     if (duration > 0) {
       timersRef.current[id] = setTimeout(() => dismiss(id), duration);
+    }
+    if (Capacitor.isNativePlatform()) {
+      const msg = [title, description].filter(Boolean).join(' - ');
+      if (msg) {
+        NativeToast.show({
+          text: msg,
+          duration: duration > 2000 ? 'long' : 'short',
+          position: 'bottom'
+        }).catch(() => {});
+      }
     }
   }, [dismiss]);
 

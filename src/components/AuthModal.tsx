@@ -193,7 +193,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           role="dialog"
           aria-modal="true"
           aria-label={mode === 'signin' ? t('Sign In', 'Log Masuk') : mode === 'signup' ? t('Register Account', 'Daftar Akaun Baru') : t('Reset Password', 'Set Semula Kata Laluan')}
-          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden"
+          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden max-h-[90vh] flex flex-col"
         >
           {/* Batik Pattern Overlay */}
           <Batik3DMotion
@@ -205,7 +205,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           />
 
           {/* Accent Gold Line */}
-          <div className="relative h-[3px] bg-gradient-to-r from-sunshine-cta via-honey to-sunshine-cta z-10" />
+          <div className="relative h-[3px] bg-gradient-to-r from-sunshine-cta via-honey to-sunshine-cta z-10 shrink-0" />
 
           {/* Close button */}
           <button
@@ -216,7 +216,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
             <X className="w-5 h-5" />
           </button>
 
-          <div className="relative p-6 sm:p-8 z-10">
+          <div className="relative p-6 sm:p-8 z-10 overflow-y-auto flex-1">
             {/* Header */}
             <div className="text-center mb-6">
               <h2 className="font-display text-2xl font-bold text-foreground tracking-wide">
