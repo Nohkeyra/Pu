@@ -6,9 +6,9 @@ import { secureCompare } from './authRoutes.js';
 const router = Router();
 
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.47',
+  latestVersion: '1.3.48',
   minVersion: '1.2.0',
-  buildNumber: 177,
+  buildNumber: 178,
   apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk',
   bundleUrl: '',
   releaseNotes: [

@@ -149,8 +149,6 @@ export default function SettingsPage() {
     setNotificationsEnabled,
     developerMode,
     setDeveloperMode,
-    fontSize,
-    setFontSize,
     keepAwakeEnabled,
     setKeepAwakeEnabled,
     statusBarHidden,
@@ -999,28 +997,6 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* UI Scale / Font Size Slider */}
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs font-semibold text-deep-forest dark:text-stone-200 flex items-center gap-1.5">
-                      <Type className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      {language === 'bm' ? 'Skala Tipografi' : 'Type Scale'}
-                    </span>
-                    <div className="flex items-center gap-3 w-44">
-                      <input
-                        type="range"
-                        min={12}
-                        max={20}
-                        step={1}
-                        value={customFontSizePx}
-                        onChange={(e) => setCustomFontSizePx(Number(e.target.value))}
-                        className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                      />
-                      <span className="font-mono text-xs text-stone-500 shrink-0 w-8 text-right">
-                        {customFontSizePx}px
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Reset Defaults */}
                   <div className="flex justify-end pt-1">
                     <button
@@ -1297,7 +1273,7 @@ export default function SettingsPage() {
               }
             />
 
-            {/* Text Sizing */}
+            {/* Text Sizing Slider */}
             <SettingsRow
               icon={Type}
               iconBg="bg-emerald-500/10"
@@ -1305,27 +1281,23 @@ export default function SettingsPage() {
               title={language === 'bm' ? 'Saiz Tulisan' : 'Text Size'}
               isLast={true}
               action={
-                <div className="flex items-center p-1 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs font-semibold">
-                  {(['sm', 'base', 'lg', 'xl'] as const).map((size) => {
-                    const label = size === 'sm' ? 'S' : size === 'base' ? 'M' : size === 'lg' ? 'L' : 'XL';
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={async () => {
-                          await triggerLightImpact();
-                          setFontSize(size);
-                        }}
-                        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all ${
-                          fontSize === size
-                            ? 'bg-white dark:bg-card text-deep-forest dark:text-white font-bold shadow-2xs'
-                            : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center gap-2.5 w-36 sm:w-44">
+                  <input
+                    type="range"
+                    min={12}
+                    max={20}
+                    step={1}
+                    value={customFontSizePx}
+                    onChange={async (e) => {
+                      const newSize = Number(e.target.value);
+                      setCustomFontSizePx(newSize);
+                    }}
+                    className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 dark:accent-emerald-400"
+                    aria-label={language === 'bm' ? 'Saiz Tulisan' : 'Text Size'}
+                  />
+                  <span className="font-mono text-xs text-stone-600 dark:text-stone-300 shrink-0 w-8 text-right font-medium">
+                    {customFontSizePx}px
+                  </span>
                 </div>
               }
             />
