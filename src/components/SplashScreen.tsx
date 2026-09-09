@@ -101,23 +101,23 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     setStage('ride');
 
     // ── SLAPSTICK TIMING SEQUENCE ──
-    // 1. Rider memecut laju dari kanan (0ms -> 650ms)
-    // 2. 650ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass)
+    // 1. Rider memecut laju dari kanan (0ms -> 1100ms) - ample time to see him zooming in
+    // 2. 1100ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass with cracks)
     addTimer(() => {
       setStage('impact');
       triggerDramaticImpact().catch(() => {});
-    }, 650);
+    }, 1100);
 
-    // 3. 1300ms (selepas 650ms melekat dazed): Rider mula meluncur gelongsor perlahan-lahan ke bawah (Slow slide down)
+    // 3. 2700ms (selepas 1600ms melekat dazed dengan bintang & retak skrin): Rider mula meluncur gelongsor perlahan-lahan ke bawah (Slow comic slide down)
     addTimer(() => {
       setStage('slide');
-    }, 1300);
+    }, 2700);
 
-    // 4. 2350ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
+    // 4. 4700ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
     addTimer(() => {
       setStage('hold');
       reachedHoldRef.current = true;
-    }, 2350);
+    }, 4700);
   }, []);
 
   useEffect(() => {
@@ -127,8 +127,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
   useEffect(() => {
     if (!isLoading && reachedHoldRef.current && stage === 'hold') {
-      // Hold the logo freeze at the same spot for a few seconds so the user can enjoy the brand badge
-      const holdTime = isReducedRef.current ? 200 : 2500;
+      // Hold the logo freeze at the same spot for a comfortable time so user can enjoy the brand badge
+      const holdTime = isReducedRef.current ? 200 : 1800;
       addTimer(() => setStage('exit'), holdTime);
     }
   }, [isLoading, stage]);
@@ -261,7 +261,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                   ? { scale: 0.7, opacity: 0.4 }
                   : { scale: 0.2, opacity: 0 }
               }
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: stage === 'slide' ? 0.95 : 0.45, ease: [0.16, 1, 0.3, 1] }}
               draggable={false}
             />
 
@@ -306,7 +306,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                         scaleY: isSliding ? [0, 0.35, 0.7, 1] : 1,
                         opacity: isSliding ? [0, 0.55, 0.4] : [0.4, 0],
                       }}
-                      transition={{ duration: isSliding ? 0.95 : 0.75, ease: 'easeOut' }}
+                      transition={{ duration: isSliding ? 1.8 : 0.75, ease: 'easeOut' }}
                     >
                       {/* Translucent smear body */}
                       <div className="w-full h-full bg-gradient-to-b from-white/30 via-white/15 to-transparent rounded-b-2xl" />
@@ -328,9 +328,9 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 className="absolute z-30 pointer-events-none transform-gpu"
                 style={{ top: '28%', willChange: 'transform, opacity' }}
                 initial={{ opacity: 0, scale: 0.2 }}
-                animate={{ opacity: [0, 1, 0.9], scale: [0.2, 1.15, 1], rotate: [0, 180] }}
+                animate={{ opacity: [0, 1, 1, 0.9], scale: [0.2, 1.15, 1, 1.05], rotate: [0, 90, 180, 270] }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: 'easeOut' }}
+                transition={{ duration: 1.5, ease: 'easeOut' }}
               >
                 <div className="relative flex items-center justify-center w-28 h-10">
                   <span className="absolute left-1 top-0 text-amber-200 text-lg drop-shadow font-black animate-bounce">⭐</span>
@@ -369,13 +369,13 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               transition={
                 isSliding
                   ? {
-                      duration: 1.05,
+                      duration: 1.95,
                       ease: [0.4, 0, 0.6, 1],
                       times: [0, 0.18, 0.4, 0.65, 0.88, 1],
                     }
                   : isImpacted
                   ? { duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }
-                  : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
+                  : { duration: 1.1, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <img
@@ -484,7 +484,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               style={{ right: '50%' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 0.85, 0.85, 0] }}
-              transition={{ duration: 0.72, times: [0, 0.15, 0.75, 1] }}
+              transition={{ duration: 1.1, times: [0, 0.15, 0.75, 1] }}
             >
               {[58, 40, 24].map((w, i) => (
                 <div

@@ -485,14 +485,43 @@ export function playClickSound(
 }
 
 /**
- * Triggers a dramatic cinematic impact with haptic heavy punch (no audio)
+ * Triggers a dramatic cinematic impact with real hardware vibration punch & recoil aftershock.
+ * Uses Haptics.vibrate() to ensure physical vibration fires reliably across 100% of Android devices
+ * (including devices without haptic amplitude actuators or where touch haptics are muted in settings).
  */
 export async function triggerDramaticImpact(): Promise<void> {
-  if (!shouldTrigger('dramatic_impact')) return;
+  lastHapticTime['dramatic_impact'] = Date.now();
+
+  // 1. Direct Hardware Motor Vibration (250ms solid punch)
+  try {
+    await Haptics.vibrate({ duration: 250 });
+  } catch (err) {
+    console.debug('Haptics.vibrate unavailable:', err);
+  }
+
+  // 2. Also trigger ImpactStyle.Heavy for refined LRA actuators
   try {
     await Haptics.impact({ style: ImpactStyle.Heavy });
-  } catch (error) {
-    console.debug('Haptic feedback not available:', error);
+  } catch (err) {
+    console.debug('Haptics.impact unavailable:', err);
+  }
+
+  // 3. Secondary aftershock shudder (100ms recoil tremor as glass cracks settle)
+  setTimeout(async () => {
+    try {
+      await Haptics.vibrate({ duration: 100 });
+    } catch {
+      /* ignore */
+    }
+  }, 150);
+
+  // 4. Web Vibration API fallback (for browser/PWA)
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate([250, 60, 100]);
+    }
+  } catch {
+    /* ignore */
   }
 }
 
