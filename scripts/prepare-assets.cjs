@@ -9,14 +9,18 @@ async function run() {
     fs.mkdirSync(assetsDir, { recursive: true });
   }
 
-  const logoPath = path.join(__dirname, '..', 'public', 'assets', 'wawasan_logo.png');
-  const batikPath = path.join(__dirname, '..', 'public', 'assets', 'batik_pattern_hd.jpg');
+  const logoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'apk_logo_clean.png');
+  const fallbackLogoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'wawasan_logo.png');
+  const activeLogoPath = fs.existsSync(logoPath) ? logoPath : fallbackLogoPath;
+  const batikPath = path.join(__dirname, '..', 'public', 'assets', 'heritage', 'batik_pattern_hd.jpg');
 
   console.log('Generating master assets for Capacitor Asset tool...');
+  console.log('Using logo source:', activeLogoPath);
 
-  // 1. icon-only.png (1024x1024, logo centered on a solid white background)
-  await sharp(logoPath)
-    .resize(600, 600, { fit: 'inside' })
+  // 1. icon-only.png (1024x1024, logo sized to fill icon prominently on a solid white background)
+  // Sizing: 920 width fills ~90% of the canvas width, leaving clean breathing room
+  await sharp(activeLogoPath)
+    .resize(920, 460, { fit: 'inside' })
     .toBuffer()
     .then(async (logoBuffer) => {
       await sharp({
@@ -32,9 +36,11 @@ async function run() {
       .toFile(path.join(assetsDir, 'icon-only.png'));
     });
 
-  // 2. icon-foreground.png (1024x1024, smaller centered transparent logo for adaptive icons)
-  await sharp(logoPath)
-    .resize(400, 400, { fit: 'inside' })
+  // 2. icon-foreground.png (1024x1024, transparent background with full-fill logo for adaptive icons)
+  // When Android applies the 16.7% adaptive icon inset, 920px width maps to 613px in the 682px safe circle,
+  // ensuring the logo looks full and prominent on all launchers without any clipping.
+  await sharp(activeLogoPath)
+    .resize(920, 460, { fit: 'inside' })
     .toBuffer()
     .then(async (logoBuffer) => {
       await sharp({
@@ -67,7 +73,7 @@ async function run() {
     .resize(2048, 2048, { fit: 'cover' })
     .toBuffer()
     .then(async (bgBuffer) => {
-      const logoBuffer = await sharp(logoPath)
+      const logoBuffer = await sharp(activeLogoPath)
         .resize(700, 700, { fit: 'inside' })
         .toBuffer();
 

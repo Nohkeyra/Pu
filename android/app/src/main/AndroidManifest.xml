@@ -96,7 +96,8 @@
             android:theme="@style/AppTheme.Transparent"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:exported="false" />
+            android:exported="false"
+        />
 
         <!-- Firebase Cloud Messaging Default Notification Icon & Channel -->
         <meta-data
