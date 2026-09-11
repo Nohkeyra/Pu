@@ -364,6 +364,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           {trackingOrder && (
             <DeliveryMap
               order={trackingOrder}
+              isAdmin={true}
               onClose={() => setTrackingOrder(null)}
               onUpdateStatus={async (id, status) => {
                 await handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`);

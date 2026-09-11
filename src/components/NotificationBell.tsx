@@ -254,7 +254,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                   <button
                     type="button"
                     onClick={markAllAsRead}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 transition-colors"
+                    className="flex min-h-[44px] items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 transition-colors"
                   >
                     <CheckCheck className="h-3.5 w-3.5" />
                     <span>{t('Baca semua', 'Mark read')}</span>
@@ -263,7 +263,8 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-lg p-1 text-stone-400 hover:text-stone-600 dark:hover:text-white"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg p-2 text-stone-400 hover:text-stone-600 dark:hover:text-white"
+                  aria-label={t('Tutup', 'Close')}
                 >
                   <X className="h-4 w-4" />
                 </button>

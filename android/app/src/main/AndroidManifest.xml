@@ -139,10 +139,10 @@
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
 
-    <!-- Notifications & Background (@capacitor/push-notifications) -->
+    <!-- Notifications & Feedback (@capacitor/push-notifications) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Pre-build audit: WAKE_LOCK removed to prevent Play Store rejection. Screen wake uses FLAG_KEEP_SCREEN_ON. -->
 
     <!-- Background & Reliability Optimizations -->
     <!-- F-10: RECEIVE_BOOT_COMPLETED removed; no BOOT_COMPLETED receiver registered. -->

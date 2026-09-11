@@ -16,13 +16,16 @@ if (keyPropertiesFile.exists()) {
 }
 
 def versionPropertiesFile = rootProject.file('version.properties')
+if (!versionPropertiesFile.exists()) {
+    versionPropertiesFile = file('version.properties')
+}
 def versionProperties = new Properties()
 if (versionPropertiesFile.exists()) {
     versionProperties.load(new FileInputStream(versionPropertiesFile))
 }
 
-def appVersionCode = versionProperties['versionCode'] ? versionProperties['versionCode'].toInteger() : 125
-def appVersionName = versionProperties['versionName'] ?: "1.2.5"
+def appVersionCode = versionProperties['versionCode'] ? versionProperties['versionCode'].toInteger() : 178
+def appVersionName = versionProperties['versionName'] ?: "1.3.48"
 
 android {
     namespace "com.wawasanpakusop.app"

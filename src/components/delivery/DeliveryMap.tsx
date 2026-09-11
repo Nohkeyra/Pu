@@ -5,19 +5,20 @@ import {
   Navigation,
   Clock,
   X,
-  Info,
   Sliders,
   Compass,
   AlertTriangle,
   MessageSquare,
   Check,
-  Sparkles,
-  Smartphone,
   Phone,
-  LayoutGrid,
   Radio,
+  Shield,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSettings } from '@/context/SettingsContext';
+import { auth } from '@/firebaseConfig';
 import type { Order, RiderLocation } from '@/types';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -56,10 +57,11 @@ interface DeliveryMapProps {
   order: Order;
   onClose: () => void;
   onUpdateStatus?: (orderId: string, status: string) => void | Promise<void>;
+  isAdmin?: boolean;
 }
 
 // ==========================================
-// Leaflet Map Engine (Exclusively OpenStreetMap)
+// Leaflet Map Engine (Standard OpenStreetMap - No Watermark)
 // ==========================================
 function LeafletMapContainer({
   locationString,
@@ -83,10 +85,10 @@ function LeafletMapContainer({
   isLiveStreaming?: boolean;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const routePolylineRef = useRef<any>(null);
-  const vehicleMarkerRef = useRef<any>(null);
-  const geofenceCircleRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const routePolylineRef = useRef<L.Polyline | null>(null);
+  const vehicleMarkerRef = useRef<L.Marker | null>(null);
+  const geofenceCircleRef = useRef<L.Circle | null>(null);
   const [destLatLng, setDestLatLng] = useState<{ lat: number; lng: number } | null>(null);
 
   const onRouteCoordsLoadedRef = useRef(onRouteCoordsLoaded);
@@ -139,9 +141,8 @@ function LeafletMapContainer({
         }
       } catch (err) {
         if ((err as Error)?.name === 'AbortError') return;
-        console.warn('Nominatim geocoding failed, using localized offset:', err);
+        console.warn('Nominatim geocoding fallback:', err);
         if (isMounted) {
-          // Putrajaya offset fallback
           const randomOffsetLat = (Math.random() - 0.5) * 0.02 + 0.01;
           const randomOffsetLng = (Math.random() - 0.5) * 0.02 + 0.01;
           const coords = {
@@ -162,75 +163,73 @@ function LeafletMapContainer({
     };
   }, [locationString, onCoordinatesLoaded]);
 
-  // 2. Initialize Leaflet Map
+  // 2. Initialize Leaflet Map with Clean OpenStreetMap Tiles
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      zoomControl: true,
+      zoomControl: false,
       scrollWheelZoom: true,
     }).setView([RESTORAN_WAWASAN_COORDS.lat, RESTORAN_WAWASAN_COORDS.lng], 13);
 
-    // Elegant light grey tile theme from CartoDB
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      maxZoom: 20,
+    // Standard OpenStreetMap tiles (100% clean, no watermark, fast delivery)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
     }).addTo(map);
+
+    // Reposition zoom control to top-right to prevent overlap with bottom action cards
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     mapRef.current = map;
 
-    // Recalculate dimensions on initial render
-    setTimeout(() => {
+    const resizeTimer = setTimeout(() => {
       map.invalidateSize();
     }, 250);
 
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleResize);
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // 3. Listen for manual riderPosition updates and move the vehicle marker
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !riderPosition) return;
-
-    if (vehicleMarkerRef.current) {
-      vehicleMarkerRef.current.setLatLng([riderPosition.lat, riderPosition.lng]);
-    }
-  }, [riderPosition]);
-
-  // 4. Setup route, geofence ring, and animate truck
+  // 3. Setup route, geofence ring, and animate marker
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !destLatLng) return;
 
     // Restaurant marker
     const restIcon = L.divIcon({
-      html: `<div class="w-10 h-10 bg-orange-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300">🍽️</div>`,
+      html: `<div class="w-9 h-9 bg-orange-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-md font-bold text-base hover:scale-110 transition-transform">🍽️</div>`,
       className: '',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
     });
     const restMarker = L.marker([RESTORAN_WAWASAN_COORDS.lat, RESTORAN_WAWASAN_COORDS.lng], { icon: restIcon })
       .addTo(map)
       .bindPopup('<b>Restoran Wawasan</b><br>Putrajaya Holdings');
 
-    // Customer marker - draggable for custom pin positioning
+    // Customer destination marker
     const destIcon = L.divIcon({
-      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-all duration-300 cursor-grab active:cursor-grabbing">🏠</div>`,
+      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing">🏠</div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 20],
     });
-    const destMarker = L.marker([destLatLng.lat, destLatLng.lng], { 
+    const destMarker = L.marker([destLatLng.lat, destLatLng.lng], {
       icon: destIcon,
       draggable: true,
       autoPan: true,
     })
       .addTo(map)
-      .bindPopup(`<b>📍 ${locationString || 'Lokasi Tersuai'}</b><br><span style="font-size: 11px; color: #059669; font-weight: 600;">(Tarik pin atau klik pada peta untuk ubah titik penghantaran)</span>`);
+      .bindPopup(`<b>📍 ${locationString || 'Lokasi Penghantaran'}</b><br><span style="font-size: 11px; color: #059669; font-weight: 600;">(Tarik pin untuk laras titik tepat)</span>`);
 
     destMarker.on('dragend', (e: { target: any }) => {
       const target = e.target;
@@ -242,7 +241,7 @@ function LeafletMapContainer({
       }
     });
 
-    // Allow tapping/clicking anywhere on the map to reposition pin
+    // Tap anywhere on map to reposition destination pin
     map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
       if (e && e.latlng) {
         const newCoords = { lat: e.latlng.lat, lng: e.latlng.lng };
@@ -251,17 +250,17 @@ function LeafletMapContainer({
       }
     });
 
-    // Draw the 200m geofence circle ring around the destination
+    // Draw the 200m geofence circle ring around destination
     if (geofenceCircleRef.current) {
       geofenceCircleRef.current.remove();
     }
     const geofenceCircle = L.circle([destLatLng.lat, destLatLng.lng], {
-      radius: 200, // 200 meters
-      color: '#10b981', // emerald green
+      radius: 200,
+      color: '#10b981',
       fillColor: '#10b981',
-      fillOpacity: 0.12,
-      weight: 1.5,
-      dashArray: '5, 5',
+      fillOpacity: 0.15,
+      weight: 2,
+      dashArray: '6, 6',
     }).addTo(map);
     geofenceCircleRef.current = geofenceCircle;
 
@@ -278,24 +277,21 @@ function LeafletMapContainer({
           const route = data.routes[0];
           const pathCoords = route.geometry.coordinates.map((pt: [number, number]) => [pt[1], pt[0]] as [number, number]);
 
-          // Notify the parent component of route coordinates for simulation
           if (onRouteCoordsLoadedRef.current) {
             onRouteCoordsLoadedRef.current(pathCoords);
           }
 
-          // Draw the polyline
           if (routePolylineRef.current) {
             routePolylineRef.current.remove();
           }
           const polyline = L.polyline(pathCoords, {
             color: '#e03f14',
-            weight: 6,
+            weight: 5,
             opacity: 0.85,
           }).addTo(map);
           routePolylineRef.current = polyline;
 
-          // Adjust map boundaries to contain the entire route with padding
-          map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+          map.fitBounds(polyline.getBounds(), { padding: [60, 60] });
 
           const distKm = (route.distance || 0) / 1000;
           const durationMin = Math.round((route.duration || 0) / 60);
@@ -303,12 +299,12 @@ function LeafletMapContainer({
           setEta(`${durationMin} mins`);
           setRouteLoaded(true);
 
-          // Render vehicle marker with live streaming radar indicator
+          // Vehicle marker icon
           const truckIcon = L.divIcon({
             html: `<div class="relative flex items-center justify-center">
               ${isLiveStreaming ? '<div class="absolute -inset-2 bg-emerald-500/40 rounded-full animate-ping"></div>' : ''}
-              <div class="relative ${isLiveStreaming ? 'bg-emerald-600' : 'bg-sky-500'} hover:opacity-90 border-2 border-white text-white p-2.5 rounded-full shadow-premium flex items-center justify-center transition-all duration-300">
-                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <div class="relative ${isLiveStreaming ? 'bg-emerald-600' : 'bg-sky-500'} border-2 border-white text-white p-2 rounded-full shadow-lg flex items-center justify-center transition-all">
+                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="1" y="3" width="15" height="13"></rect>
                   <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
                   <circle cx="5.5" cy="18.5" r="2.5"></circle>
@@ -317,8 +313,8 @@ function LeafletMapContainer({
               </div>
             </div>`,
             className: '',
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
+            iconSize: [38, 38],
+            iconAnchor: [19, 19],
           });
 
           if (vehicleMarkerRef.current) {
@@ -329,10 +325,8 @@ function LeafletMapContainer({
             const finalPos = pathCoords[pathCoords.length - 1];
             vehicleMarkerRef.current = L.marker(finalPos, { icon: truckIcon }).addTo(map);
           } else if (riderPositionRef.current) {
-            // Bind directly to the externally managed state (Rider Mode / Simulation)
             vehicleMarkerRef.current = L.marker([riderPositionRef.current.lat, riderPositionRef.current.lng], { icon: truckIcon }).addTo(map);
           } else {
-            // Passive auto-interval animation for customer tracking view
             let index = 0;
             vehicleMarkerRef.current = L.marker(pathCoords[0], { icon: truckIcon }).addTo(map);
 
@@ -346,7 +340,7 @@ function LeafletMapContainer({
           }
         }
       } catch (err) {
-        console.error('OSRM path request failed:', err);
+        console.error('OSRM route calculation failed:', err);
       }
     };
 
@@ -369,52 +363,67 @@ function LeafletMapContainer({
     };
   }, [destLatLng, orderStatus, locationString, setDistance, setEta, setRouteLoaded, onCoordinatesLoaded, isLiveStreaming]);
 
-  return <div ref={mapContainerRef} className="w-full h-full animate-fade-in" style={{ zIndex: 1 }} />;
+  return <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />;
 }
 
 // ==========================================
-// Main Delivery Map Layout Component
+// Main Responsive Delivery Map Layout
 // ==========================================
-export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps) {
+export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminProp }: DeliveryMapProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { isAdmin: isContextAdmin } = useSettings();
+
+  // Role resolution: Admin is the sole delivery rider
+  const isAdmin = isAdminProp !== undefined
+    ? isAdminProp
+    : Boolean(
+        isContextAdmin ||
+        auth.currentUser?.uid === 'admin' ||
+        auth.currentUser?.email === 'admin@wawasanpakusop.my' ||
+        localStorage.getItem('wawasan_admin_token') !== null
+      );
+
   const [eta, setEta] = useState<string>('-- mins');
   const [distance, setDistance] = useState<string>('-- km');
-  const [routeLoaded, setRouteLoaded] = useState<boolean>(false);
+  const [, setRouteLoaded] = useState<boolean>(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Rider/Geofence specific states
-  const [isRiderMode, setIsRiderMode] = useState<boolean>(false);
+  const [isRiderMode, setIsRiderMode] = useState<boolean>(() => Boolean(isAdmin));
   const [trackingSource, setTrackingSource] = useState<'simulation' | 'gps'>('simulation');
   const [simPercent, setSimPercent] = useState<number>(0);
   const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
   const [riderCoords, setRiderCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [isLiveStreaming, setIsLiveStreaming] = useState<boolean>(false);
   const [riderSpeed, setRiderSpeed] = useState<number>(0);
-  const [riderHeading, setRiderHeading] = useState<number>(0);
-  const [lastStreamTime, setLastStreamTime] = useState<string | null>(null);
   const [broadcastEnabled, setBroadcastEnabled] = useState<boolean>(true);
 
   const [geofenceBreached, setGeofenceBreached] = useState<boolean>(false);
   const [exactDistanceMeters, setExactDistanceMeters] = useState<number | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
-
-  // Lock Screen Widget states
-  const [lockScreenWidgetActive, setLockScreenWidgetActive] = useState<boolean>(true);
-  const [showLockScreenPreview, setShowLockScreenPreview] = useState<boolean>(false);
+  const [showRiderControls, setShowRiderControls] = useState<boolean>(true);
+  const [showWidgetPreview, setShowWidgetPreview] = useState<boolean>(false);
 
   const lastBroadcastRef = useRef<number>(0);
   const orderId = order.id;
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
-  // Setup default riderCoords once OSRM route is loaded if not streaming
+  // Force isRiderMode off for non-admins
+  useEffect(() => {
+    if (!isAdmin && isRiderMode) {
+      setIsRiderMode(false);
+    }
+  }, [isAdmin, isRiderMode]);
+
+  // Setup default riderCoords once route is loaded
   useEffect(() => {
     if (routeCoords.length > 0 && !riderCoords && !isLiveStreaming) {
       setRiderCoords({ lat: routeCoords[0][0], lng: routeCoords[0][1] });
     }
   }, [routeCoords, riderCoords, isLiveStreaming]);
 
-  // Real-time Firestore Telemetry Listener for Live Stream
+  // Real-time Firestore Telemetry Listener
   useEffect(() => {
     if (!orderId) return;
 
@@ -427,37 +436,30 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
 
         if (telemetry && telemetry.active !== false) {
           setIsLiveStreaming(true);
-          // If not actively driving in Rider Mode, adopt the streamed coordinates
           if (!isRiderMode) {
             setRiderCoords({ lat: telemetry.lat, lng: telemetry.lng });
           }
           if (typeof telemetry.speed === 'number') {
             setRiderSpeed(telemetry.speed);
           }
-          if (typeof telemetry.heading === 'number') {
-            setRiderHeading(telemetry.heading);
-          }
-          if (telemetry.updatedAt) {
-            setLastStreamTime(telemetry.updatedAt);
-          }
         } else {
           setIsLiveStreaming(false);
         }
       },
       (err) => {
-        console.warn('[DeliveryMap] Firestore stream snapshot warning:', err);
+        console.warn('[DeliveryMap] Stream snapshot warning:', err);
       }
     );
 
     return () => unsub();
   }, [orderId, isRiderMode]);
 
-  // Throttled Broadcast to Backend Streaming API
+  // Throttled Broadcast to Backend Streaming API (Admin Rider Only)
   const broadcastLocation = useCallback(
     async (coordsToBroadcast: { lat: number; lng: number }, speed = 0, heading = 0) => {
-      if (!orderId || !broadcastEnabled) return;
+      if (!orderId || !broadcastEnabled || !isAdmin) return;
       const now = Date.now();
-      if (now - lastBroadcastRef.current < 2000) return; // 2s throttle
+      if (now - lastBroadcastRef.current < 2000) return;
       lastBroadcastRef.current = now;
 
       try {
@@ -470,19 +472,19 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
             speed,
             heading,
             active: true,
-            riderName: 'Restoran Wawasan Rider',
+            riderName: 'Restoran Wawasan Rider (Admin)',
           }),
         });
       } catch (err) {
-        console.warn('[DeliveryMap] Broadcast telemetry error:', err);
+        console.warn('[DeliveryMap] Broadcast error:', err);
       }
     },
-    [orderId, broadcastEnabled]
+    [orderId, broadcastEnabled, isAdmin]
   );
 
-  // Handle Manual Simulator Slider Changes
+  // Handle Simulation Slider (Admin Rider)
   useEffect(() => {
-    if (isRiderMode && trackingSource === 'simulation' && routeCoords.length > 0) {
+    if (isAdmin && isRiderMode && trackingSource === 'simulation' && routeCoords.length > 0) {
       const idx = Math.floor((simPercent / 100) * (routeCoords.length - 1));
       const targetPt = routeCoords[idx];
       const newPos = { lat: targetPt[0], lng: targetPt[1] };
@@ -491,17 +493,14 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
       setRiderSpeed(simulatedSpeed);
       broadcastLocation(newPos, simulatedSpeed, 0);
     }
-  }, [simPercent, trackingSource, isRiderMode, routeCoords, broadcastLocation]);
+  }, [simPercent, trackingSource, isRiderMode, isAdmin, routeCoords, broadcastLocation]);
 
-  // Handle Real-time Geolocation GPS Tracking
+  // Handle Real-time Geolocation (Admin Rider)
   useEffect(() => {
-    if (!isRiderMode || trackingSource !== 'gps') return;
+    if (!isAdmin || !isRiderMode || trackingSource !== 'gps') return;
 
     if (!navigator.geolocation) {
-      const errorMsg = language === 'bm'
-        ? 'Sistem GPS tidak disokong oleh peranti anda'
-        : 'Geolocation is not supported by your device';
-      alert(errorMsg);
+      alert(language === 'bm' ? 'Sistem GPS tidak disokong pada peranti ini' : 'Geolocation not supported');
       setTrackingSource('simulation');
       return;
     }
@@ -513,7 +512,6 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
         const speedKmh = pos.coords.speed !== null && !isNaN(pos.coords.speed) ? Math.round(pos.coords.speed * 3.6) : 0;
         const headingDeg = pos.coords.heading !== null && !isNaN(pos.coords.heading) ? Math.round(pos.coords.heading) : 0;
         setRiderSpeed(speedKmh);
-        setRiderHeading(headingDeg);
         broadcastLocation(newCoords, speedKmh, headingDeg);
       },
       (err) => {
@@ -525,9 +523,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isRiderMode, trackingSource, language, broadcastLocation]);
+  }, [isAdmin, isRiderMode, trackingSource, language, broadcastLocation]);
 
-  // Direct delivery completion trigger
+  // Mark as Delivered
   const handleMarkAsDelivered = useCallback(async () => {
     if (!onUpdateStatus || !order.id) return;
     setUpdatingStatus(true);
@@ -547,9 +545,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     }
   }, [onUpdateStatus, order.id, order.invoiceNo, language, toast]);
 
-  // Synchronize Sticky Delivery Widget for Android / Riders
+  // Synchronize Sticky Delivery Widget for Android Background
   useEffect(() => {
-    if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
+    if (isAdmin && isRiderMode && order.status !== 'delivered') {
       enableRiderDeliveryWidget(order, coords, {
         onDelivered: handleMarkAsDelivered,
       });
@@ -560,9 +558,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     return () => {
       disableRiderDeliveryWidget();
     };
-  }, [isRiderMode, lockScreenWidgetActive, coords, order, handleMarkAsDelivered]);
+  }, [isAdmin, isRiderMode, coords, order, handleMarkAsDelivered]);
 
-  // Geofence breaching monitor and Lock Screen sync
+  // Geofence monitoring
   useEffect(() => {
     if (!riderCoords || !coords) return;
 
@@ -574,7 +572,6 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     if (isBreached) {
       if (!geofenceBreached) {
         setGeofenceBreached(true);
-        // Fire haptic vibration alert!
         triggerHeavyImpact();
         triggerNotification(NotificationType.Warning);
       }
@@ -582,12 +579,12 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
       setGeofenceBreached(false);
     }
 
-    if (isRiderMode && lockScreenWidgetActive && order.status !== 'delivered') {
+    if (isAdmin && isRiderMode && order.status !== 'delivered') {
       updateRiderDeliveryWidgetGeofence(order, coords, distMeters, isBreached);
     }
-  }, [riderCoords, coords, geofenceBreached, isRiderMode, lockScreenWidgetActive, order]);
+  }, [riderCoords, coords, geofenceBreached, isAdmin, isRiderMode, order]);
 
-  // Pre-formatted WhatsApp Direct Send
+  // Direct WhatsApp Alert
   const handleSendArrivalAlert = async () => {
     const formattedPhone = order.contact?.replace(/\D/g, '').replace(/^0/, '60') || '';
     const msg = buildArrivalMessage(order, language === 'bm' ? 'bm' : 'en');
@@ -598,13 +595,13 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     });
 
     toast({
-      title: language === 'bm' ? 'Alert WhatsApp Dibuka' : 'WhatsApp Alert Opened',
+      title: language === 'bm' ? 'WhatsApp Dibuka' : 'WhatsApp Alert Opened',
       description: language === 'bm' ? 'Mesej ketibaan telah disiapkan untuk dihantar.' : 'Arrival message prepared.',
       variant: 'success',
     });
   };
 
-  // Direct Phone Call Shortcut
+  // Direct Phone Call
   const handleCallCustomer = () => {
     const rawPhone = order.contact?.replace(/\D/g, '') || '';
     if (rawPhone) {
@@ -617,471 +614,406 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
     }
   };
 
-  // Direct Maps Navigation Shortcut
-  const handleOpenNavigation = () => {
+  // External Navigation Launchers
+  const handleOpenGoogleMaps = () => {
     if (coords) {
-      launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'best' });
+      launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'google' });
     }
   };
 
-  // Trigger Delivery Widget Test Notification
-  const handleTestLockScreen = async () => {
-    await enableRiderDeliveryWidget(order, coords, {
-      onDelivered: handleMarkAsDelivered,
-    });
-    await updateRiderDeliveryWidgetGeofence(order, coords, exactDistanceMeters || 180, true);
-    triggerHeavyImpact();
-    toast({
-      title: language === 'bm' ? 'Widget Pesanan Aktif' : 'Delivery Widget Active',
-      description:
-        language === 'bm'
-          ? 'Notifikasi kini aktif pada peranti anda. Tekan butang pratonton untuk semak.'
-          : 'Notification is active on your device. Tap preview to inspect.',
-      variant: 'success',
-    });
+  const handleOpenWaze = () => {
+    if (coords) {
+      launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'waze' });
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4 sm:p-6 animate-fade-in" id="delivery-tracking-modal">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-deep-forest/85 backdrop-blur-md" onClick={onClose} />
-
-      {/* Modal Container */}
-      <div className="relative w-full h-[92vh] max-w-6xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[2500] flex items-center justify-center p-0 md:p-4 lg:p-6 bg-stone-950/80 backdrop-blur-sm animate-fade-in" id="delivery-tracking-modal">
+      
+      {/* Main Container */}
+      <div className="relative w-full h-full md:max-w-6xl md:h-[92vh] bg-stone-900 md:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
         
-        {/* Header */}
-        <div className="p-4 sm:p-6 bg-white/40 dark:bg-background/40 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-sky-500/10 text-sky-600 rounded-full flex items-center justify-center shrink-0">
-              <Truck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2 font-display">
-                <span>{t('Live Order Tracker & Geofence', 'Penjejak & Geofence Pesanan')}</span>
-                <span className="font-mono text-xs px-2 py-0.5 bg-sky-500/10 text-sky-600 rounded-full">
-                  {order.invoiceNo || order.id?.substring(0, 8).toUpperCase() || '—'}
-                </span>
-              </h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                {order.status === 'delivered'
-                  ? t('Your order has been successfully delivered.', 'Pesanan anda telah berjaya dihantar.')
-                  : t('Catering crew is in transit with your feast.', 'Krew katering sedang dalam perjalanan membawa hidangan anda.')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Rider Simulation Toggle Switch */}
-            <button
-              onClick={() => setIsRiderMode(!isRiderMode)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                isRiderMode
-                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/30 shadow-sm'
-                  : 'bg-stone-100 text-stone-600 border-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>{isRiderMode ? t('Rider Dashboard Active', 'Simulasi Rider Aktif') : t('Enter Rider Mode', 'Mod Rider & Simulasi')}</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-stone/10 text-stone-500 dark:text-stone-400 transition-all touch-target"
-              aria-label="Close modal"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content Body */}
-        <div className="flex-1 min-h-0 relative flex flex-col lg:flex-row">
-          
-          {/* Status Metrics Panel */}
-          <div className="w-full lg:w-[360px] p-5 bg-white/60 dark:bg-background/60 border-b lg:border-b-0 lg:border-r border-[var(--color-sunshine-cta)]/10 flex flex-col justify-between space-y-6 z-10 overflow-y-auto">
-            <div className="space-y-6">
-              
-              {/* Rider Dashboard Integration */}
-              {isRiderMode ? (
-                <div className="p-4 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl border border-amber-500/20 space-y-4 animate-fade-in">
-                  <div className="flex items-center justify-between border-b border-amber-500/10 pb-2">
-                    <span className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1 uppercase tracking-wider">
-                      <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                      {t('Rider & Geofence Simulator', 'Simulator Rider & Geofence')}
-                    </span>
-                    <span className="text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-md">
-                      ADMIN / RIDER
-                    </span>
-                  </div>
-
-                  {/* Tracking Source Selector */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                      {t('Tracking Source', 'Punca Penjejakan')}
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5 bg-stone-100 dark:bg-stone-900 p-1 rounded-xl">
-                      <button
-                        type="button"
-                        onClick={() => setTrackingSource('simulation')}
-                        className={`py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
-                          trackingSource === 'simulation'
-                            ? 'bg-white dark:bg-card text-deep-forest dark:text-white shadow-sm'
-                            : 'text-stone-500'
-                        }`}
-                      >
-                        <Sliders className="w-3.5 h-3.5" />
-                        <span>{t('Simulate', 'Simulasi')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTrackingSource('gps')}
-                        className={`py-1.5 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
-                          trackingSource === 'gps'
-                            ? 'bg-white dark:bg-card text-deep-forest dark:text-white shadow-sm'
-                            : 'text-stone-500'
-                        }`}
-                      >
-                        <Compass className="w-3.5 h-3.5" />
-                        <span>{t('🛰️ Live GPS', '🛰️ GPS Telefon')}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Live GPS Broadcast Indicator & Toggle */}
-                  <div className="flex items-center justify-between p-2.5 bg-stone-100 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800">
-                    <div className="flex items-center gap-2">
-                      <Radio className={`w-4 h-4 ${broadcastEnabled ? 'text-emerald-500 animate-pulse' : 'text-stone-400'}`} />
-                      <div>
-                        <span className="text-xs font-bold text-deep-forest dark:text-white block">
-                          {t('Live Customer Stream', 'Penstriman ke Pelanggan')}
-                        </span>
-                        <span className="text-[10px] text-stone-500">
-                          {broadcastEnabled ? t('Broadcasting coordinates', 'Menyiarkan lokasi langsung') : t('Broadcast paused', 'Siaran dijeda')}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setBroadcastEnabled(!broadcastEnabled)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                        broadcastEnabled
-                          ? 'bg-emerald-500 text-white shadow-xs'
-                          : 'bg-stone-200 dark:bg-stone-800 text-stone-500'
-                      }`}
-                    >
-                      {broadcastEnabled ? 'ON 🟢' : 'OFF ⚪'}
-                    </button>
-                  </div>
-
-                  {/* Manual route progress slider */}
-                  {trackingSource === 'simulation' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-[10px] font-bold text-stone-500">
-                        <span>{t('Route Progress', 'Perkembangan Laluan')}</span>
-                        <span className="font-mono text-amber-600">{simPercent}%</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm">🍽️</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={simPercent}
-                          onChange={(e) => setSimPercent(parseInt(e.target.value))}
-                          className="flex-1 accent-amber-500 cursor-pointer"
-                        />
-                        <span className="text-sm">🏠</span>
-                      </div>
-                      <p className="text-[10px] text-stone-500 leading-normal italic">
-                        {t('Slide from left to right to simulate the rider driving along the road.', 'Gelongsor dari kiri ke kanan untuk mensimulasikan pemanduan di jalan raya.')}
-                      </p>
-                    </div>
-                  )}
-
-                  {trackingSource === 'gps' && (
-                    <div className="p-3 bg-stone-100 dark:bg-stone-900 rounded-xl space-y-1 text-center">
-                      <div className="inline-block w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping mr-1.5" />
-                      <span className="text-xs font-bold text-deep-forest dark:text-white block">
-                        {t('Active GPS Tracking', 'Penjejakan GPS Aktif')}
-                      </span>
-                      <p className="text-[10px] text-stone-500">
-                        {t('Listening directly to Android location telemetry.', 'Membaca telemetri lokasi peranti Android anda.')}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Live Geofence Monitoring status card */}
-                  <div className="p-3 bg-stone-100 dark:bg-stone-900 rounded-xl space-y-2.5">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-stone-500 border-b border-stone-200 dark:border-stone-800 pb-1.5">
-                      <span>{t('Geofence Area (200m)', 'Zon Geofence (200m)')}</span>
-                      <span>{geofenceBreached ? '🚨 BREACHED' : '🟢 SAFE'}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-stone-500">{t('Distance Left', 'Jarak Berbaki')}</span>
-                      <span className="text-sm font-mono font-black text-deep-forest dark:text-white">
-                        {exactDistanceMeters !== null ? `${exactDistanceMeters} m` : t('Calculating...', 'Mengira...')}
-                      </span>
-                    </div>
-
-                    {geofenceBreached ? (
-                      <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-center font-bold text-xs flex items-center justify-center gap-1 animate-pulse">
-                        <AlertTriangle className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{t('Entered Delivery Geofence!', 'Rider Berada Dalam Geofence!')}</span>
-                      </div>
-                    ) : (
-                      <div className="p-2 bg-stone-200/50 dark:bg-stone-800 rounded-xl text-center text-[10px] text-stone-500">
-                        {t('Drive closer than 200m to trigger alert', 'Sila pandu rapat 200m ke rumah untuk hantar mesej')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Rider Lock Screen Widget Controls */}
-                  <div className="p-4 bg-gradient-to-br from-stone-900 via-stone-950 to-black text-white rounded-2xl border border-stone-800 shadow-md space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <LayoutGrid className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span className="text-xs font-bold text-white tracking-wide">
-                          {t('App Tracker Widget', 'Widget Skrin Utama')}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setLockScreenWidgetActive(!lockScreenWidgetActive)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                          lockScreenWidgetActive
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                            : 'bg-stone-800 text-stone-400 border-stone-700'
-                        }`}
-                      >
-                        {lockScreenWidgetActive ? 'AKTIF 🟢' : 'TIDAK AKTIF ⚪'}
-                      </button>
-                    </div>
-
-                    <p className="text-xs text-stone-300 leading-relaxed">
-                      {t(
-                        'Displays a quick order tracking & arrival action card directly on your device home screen and notification tray.',
-                        'Memaparkan kad tindakan dan status tempahan terus pada skrin utama dan ruang notifikasi peranti anda.'
-                      )}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowLockScreenPreview(true)}
-                        className="min-h-[40px] py-2 px-3 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all border border-stone-700/60"
-                      >
-                        <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span>{t('Preview Widget', 'Pratonton Widget')}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleTestLockScreen}
-                        className="min-h-[40px] py-2 px-3 bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                      >
-                        <span>{t('Test Alert', 'Uji Alert')}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Smart Arrival WhatsApp trigger */}
-                  {geofenceBreached && (
-                    <button
-                      type="button"
-                      onClick={handleSendArrivalAlert}
-                      className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all text-center uppercase tracking-wider"
-                    >
-                      <MessageSquare className="w-4 h-4 text-white" />
-                      <span>{t('Send WhatsApp Arrival Msg', 'Hantar WhatsApp Sampai')}</span>
-                    </button>
-                  )}
-
-                  {/* Rider completion action */}
-                  {onUpdateStatus && order.status !== 'delivered' && (
-                    <button
-                      type="button"
-                      disabled={updatingStatus}
-                      onClick={handleMarkAsDelivered}
-                      className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all uppercase tracking-wider"
-                    >
-                      {updatingStatus ? <Clock className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      <span>{t('Mark as Delivered', 'Selesai Dihantar')}</span>
-                    </button>
-                  )}
+        {/* ========================================================= */}
+        {/* DESKTOP SIDEBAR PANEL (Visible on lg screens >= 1024px)   */}
+        {/* ========================================================= */}
+        <div className="hidden lg:flex w-[380px] min-w-[380px] bg-stone-900 border-r border-stone-800 flex-col justify-between p-6 z-20 overflow-y-auto custom-scrollbar">
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-stone-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+                  {isAdmin ? <Shield className="w-5 h-5 text-amber-400" /> : <Truck className="w-5 h-5 text-sky-400" />}
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Live GPS Telemetry Card (Customer View) */}
-                  {isLiveStreaming && (
-                    <div className="p-4 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 rounded-2xl space-y-3 animate-fade-in shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
-                          <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
-                            {t('Live GPS Streaming', 'Penstriman GPS Langsung')}
-                          </span>
-                        </div>
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                          LIVE
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="p-2 bg-white/70 dark:bg-stone-900/70 rounded-xl border border-emerald-500/20 text-center">
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium">
-                            {t('Rider Speed', 'Kelajuan Rider')}
-                          </span>
-                          <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 font-mono">
-                            {riderSpeed > 0 ? `${riderSpeed} km/h` : t('Stationary', 'Berhenti')}
-                          </span>
-                        </div>
-                        <div className="p-2 bg-white/70 dark:bg-stone-900/70 rounded-xl border border-emerald-500/20 text-center">
-                          <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-medium">
-                            {t('Geofence (200m)', 'Zon Geofence')}
-                          </span>
-                          <span className="text-xs font-bold text-deep-forest dark:text-white font-mono">
-                            {exactDistanceMeters !== null ? `${exactDistanceMeters} m` : '—'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {riderHeading > 0 && (
-                        <div className="flex items-center justify-between text-[10px] text-stone-500 px-1">
-                          <span>{t('Compass Heading:', 'Arah Kompas:')} {riderHeading}°</span>
-                          {lastStreamTime && (
-                            <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                              {t('Live Update', 'Kemaskini Langsung')}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {geofenceBreached && (
-                        <div className="p-2 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-800 dark:text-amber-200 text-xs font-bold text-center animate-pulse flex items-center justify-center gap-1.5">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>{t('Rider is within 200m! Please prepare to receive.', 'Rider berhampiran (200m)! Sila bersedia untuk menerima hidangan.')}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Delivery Target */}
-                  <div className="space-y-4">
-                    <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block opacity-90">
-                      {t('Delivery Target', 'Destinasi Penghantaran')}
-                    </span>
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-8 h-8 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-deep-forest dark:text-white font-sans">
-                          {order.name || t('Catering Customer', 'Pelanggan Katering')}
-                        </h4>
-                        <p className="text-xs text-stone-500 dark:text-stone-400 break-words mt-0.5 leading-relaxed font-sans">
-                          {order.location || '—'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="space-y-3">
-                    <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block opacity-90">
-                      {t('Status Copy', 'Status Pesanan')}
-                    </span>
-                    <div className="p-3 bg-cream/50 dark:bg-card/40 rounded-2xl border border-stone-200/50 flex items-center gap-3">
-                      <div className={`w-3.5 h-3.5 rounded-full ${order.status === 'delivered' ? 'bg-emerald-500' : 'bg-sky-500 animate-ping'}`} />
-                      <span className="text-sm font-bold text-deep-forest dark:text-white uppercase tracking-wider font-sans">
-                        {order.status === 'delivered'
-                          ? t('Delivered ✅', 'Selesai Dihantar ✅')
-                          : t('In Transit 🚚', 'Dalam Perjalanan 🚚')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Transit Estimations */}
-                  {routeLoaded && (
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="p-3 bg-sky-500/5 rounded-2xl border border-sky-500/10 text-center">
-                        <Clock className="w-4 h-4 text-sky-500 mx-auto mb-1.5" />
-                        <span className="text-xs text-stone-500 dark:text-stone-400 block font-sans">{t('ETA', 'Tiba Dalam')}</span>
-                        <span className="text-sm font-black text-sky-600 dark:text-sky-400 block mt-0.5 font-sans">
-                          {order.status === 'delivered' ? t('Delivered', 'Sampai') : eta}
-                        </span>
-                      </div>
-                      <div className="p-3 bg-sky-500/5 rounded-2xl border border-sky-500/10 text-center">
-                        <Navigation className="w-4 h-4 text-sky-500 mx-auto mb-1.5" />
-                        <span className="text-xs text-stone-500 dark:text-stone-400 block font-sans">{t('Distance', 'Jarak')}</span>
-                        <span className="text-sm font-black text-sky-600 dark:text-sky-400 block mt-0.5 font-sans">
-                          {distance}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Native Navigation Shortcuts */}
-                  {coords && (
-                    <div className="space-y-3 pt-2">
-                      <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-widest block opacity-90">
-                        {t('External Navigation', 'Navigasi Luaran')}
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'google' })}
-                          className="touch-target-row text-xs font-bold bg-white dark:bg-card border border-stone-200 dark:border-stone-700 rounded-xl py-2.5 px-3 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-center gap-1 text-deep-forest dark:text-white transition-all shadow-sm"
-                        >
-                          🗺️ Google Maps
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => launchMaps({ lat: coords.lat, lng: coords.lng, label: order.location, provider: 'waze' })}
-                          className="touch-target-row text-xs font-bold bg-white dark:bg-card border border-stone-200 dark:border-stone-700 rounded-xl py-2.5 px-3 hover:bg-stone-50 dark:hover:bg-stone-800 flex items-center justify-center gap-1 text-deep-forest dark:text-white transition-all shadow-sm"
-                        >
-                          🚙 Waze Navigation
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <h3 className="text-base font-bold text-white font-display">
+                    {isAdmin ? t('Admin Rider Console', 'Konsol Pentadbir Rider') : t('Live Order Tracker', 'Penjejak Pesanan Langsung')}
+                  </h3>
+                  <span className="font-mono text-xs text-stone-400">
+                    #{order.invoiceNo || order.id?.substring(0, 8).toUpperCase()}
+                  </span>
                 </div>
+              </div>
+
+              {/* Close Button inside Sidebar for easy access on Desktop */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-8 h-8 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white flex items-center justify-center transition-colors"
+                title={t('Close', 'Tutup')}
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target Destination */}
+            <div className="p-4 bg-stone-950/60 rounded-2xl border border-stone-800/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{t('Destination', 'Destinasi')}</span>
+                </div>
+                {order.contact && (
+                  <button
+                    type="button"
+                    onClick={handleCallCustomer}
+                    className="text-xs text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>{t('Call', 'Telefon')}</span>
+                  </button>
+                )}
+              </div>
+              <p className="text-sm font-bold text-white">{order.name || t('Customer', 'Pelanggan')}</p>
+              <p className="text-xs text-stone-400 leading-relaxed">{order.location || 'Putrajaya, Malaysia'}</p>
+              {order.contact && (
+                <p className="text-xs text-stone-500 font-mono flex items-center gap-1.5 pt-0.5">
+                  <Phone className="w-3 h-3 text-stone-400" />
+                  <span>{order.contact}</span>
+                </p>
               )}
             </div>
 
-            {/* Map Engine Indicator */}
-            <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 flex items-start gap-2">
-              <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="text-[10px] text-stone-500 dark:text-stone-400 leading-normal">
-                <span>
-                  {t(
-                    'Powered by OpenStreetMap (Leaflet) live tracking engine. 100% Free & Open Source.',
-                    'Dikuasakan oleh enjin penjejakan OpenStreetMap (Leaflet). 100% Percuma & Sumber Terbuka.'
-                  )}
-                </span>
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-stone-950/60 rounded-xl border border-stone-800 text-center">
+                <Clock className="w-4 h-4 text-sky-400 mx-auto mb-1" />
+                <span className="text-[10px] uppercase font-bold text-stone-400 block">{t('ETA', 'Anggaran Masa')}</span>
+                <span className="text-sm font-bold text-white mt-0.5 block">{order.status === 'delivered' ? t('Delivered', 'Sampai') : eta}</span>
+              </div>
+              <div className="p-3 bg-stone-950/60 rounded-xl border border-stone-800 text-center">
+                <Navigation className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+                <span className="text-[10px] uppercase font-bold text-stone-400 block">{t('Distance', 'Jarak')}</span>
+                <span className="text-sm font-bold text-white mt-0.5 block">{exactDistanceMeters !== null ? `${exactDistanceMeters} m` : distance}</span>
+              </div>
+            </div>
+
+            {/* Admin Rider Controls */}
+            {isAdmin && isRiderMode && (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                    {t('Live GPS Broadcast', 'Siaran Lokasi GPS')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setBroadcastEnabled(!broadcastEnabled)}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${
+                      broadcastEnabled ? 'bg-emerald-500 text-white shadow-sm' : 'bg-stone-800 text-stone-400'
+                    }`}
+                  >
+                    {broadcastEnabled ? 'LIVE ON' : 'PAUSED'}
+                  </button>
+                </div>
+
+                {/* Source Selection */}
+                <div className="grid grid-cols-2 gap-2 bg-stone-950/60 p-1 rounded-xl border border-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => setTrackingSource('simulation')}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
+                      trackingSource === 'simulation' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-white'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>{t('Simulate', 'Simulasi')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrackingSource('gps')}
+                    className={`py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
+                      trackingSource === 'gps' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-white'
+                    }`}
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>{t('Phone GPS', 'GPS Telefon')}</span>
+                  </button>
+                </div>
+
+                {/* Simulation Slider */}
+                {trackingSource === 'simulation' && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-bold text-stone-400">
+                      <span>{t('Route Progress', 'Perjalanan')}</span>
+                      <span className="font-mono text-amber-400">{simPercent}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={simPercent}
+                      onChange={(e) => setSimPercent(parseInt(e.target.value))}
+                      className="w-full accent-amber-500 cursor-pointer h-2 bg-stone-800 rounded-lg"
+                    />
+                  </div>
+                )}
+
+                {/* Geofence Status */}
+                <div className="p-2.5 bg-stone-950/80 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
+                  <span className="text-stone-400">{t('Geofence (200m)', 'Zon 200m')}</span>
+                  <span className={`font-bold ${geofenceBreached ? 'text-emerald-400 animate-pulse' : 'text-stone-400'}`}>
+                    {geofenceBreached ? '🚨 REACHED' : 'IN TRANSIT'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* External Map Navigation */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
+                {t('Navigation Apps', 'Aplikasi Navigasi')}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenGoogleMaps}
+                  className="py-2.5 px-3 bg-stone-950 hover:bg-stone-800 border border-stone-800 text-xs font-bold text-stone-200 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                >
+                  🗺️ Google Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenWaze}
+                  className="py-2.5 px-3 bg-stone-950 hover:bg-stone-800 border border-stone-800 text-xs font-bold text-stone-200 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                >
+                  🚙 Waze
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Map Canvas */}
-          <div className="flex-1 h-full min-h-[350px] relative flex flex-col">
-            <div className="flex-1 relative w-full h-full">
-              <LeafletMapContainer
-                locationString={order.location}
-                orderStatus={order.status || ''}
-                setEta={setEta}
-                setDistance={setDistance}
-                setRouteLoaded={setRouteLoaded}
-                onCoordinatesLoaded={setCoords}
-                riderPosition={isRiderMode ? riderCoords : (isLiveStreaming ? riderCoords : null)}
-                onRouteCoordsLoaded={setRouteCoords}
-                isLiveStreaming={isLiveStreaming || (isRiderMode && broadcastEnabled)}
-              />
+          {/* Desktop Footer Actions */}
+          <div className="pt-4 border-t border-stone-800 space-y-2">
+            {isAdmin && isRiderMode && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSendArrivalAlert}
+                  className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md ${
+                    geofenceBreached
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-white animate-pulse'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{t('Send WhatsApp Arrival', 'Hantar WhatsApp Sampai')}</span>
+                </button>
 
-              {/* Glove-Friendly Safe-Riding Floating Action Bar for Riders */}
-              <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-auto">
-                <div className="max-w-xl mx-auto p-2.5 bg-stone-950/90 dark:bg-stone-900/95 backdrop-blur-md rounded-2xl border border-stone-700/60 shadow-2xl flex items-center gap-2">
-                  {/* Giant 1-Tap WhatsApp Arrival Button */}
+                {onUpdateStatus && order.status !== 'delivered' && (
+                  <button
+                    type="button"
+                    disabled={updatingStatus}
+                    onClick={handleMarkAsDelivered}
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                  >
+                    {updatingStatus ? <Clock className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    <span>{t('Mark as Delivered', 'Selesai Dihantar')}</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ========================================================= */}
+        {/* FULL-BLEED INTERACTIVE MAP CANVAS (Mobile, Tablet, Desktop) */}
+        {/* ========================================================= */}
+        <div className="flex-1 relative w-full h-full min-h-[320px]">
+          
+          {/* Map Engine */}
+          <div className="absolute inset-0 w-full h-full">
+            <LeafletMapContainer
+              locationString={order.location}
+              orderStatus={order.status || ''}
+              setEta={setEta}
+              setDistance={setDistance}
+              setRouteLoaded={setRouteLoaded}
+              onCoordinatesLoaded={setCoords}
+              riderPosition={isRiderMode ? riderCoords : (isLiveStreaming ? riderCoords : null)}
+              onRouteCoordsLoaded={setRouteCoords}
+              isLiveStreaming={isLiveStreaming || (isRiderMode && broadcastEnabled)}
+            />
+          </div>
+
+          {/* ========================================================= */}
+          {/* FLOATING TOP BAR (Compact, Modern, Glassmorphic)          */}
+          {/* ========================================================= */}
+          <div className="absolute top-[calc(0.75rem+env(safe-area-inset-top,0px))] left-3 right-3 sm:left-6 sm:right-6 lg:left-6 lg:right-6 z-[1000] pointer-events-auto flex items-center justify-between gap-2">
+            
+            {/* Left Status Pill */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2 bg-stone-900/90 backdrop-blur-md rounded-2xl border border-stone-700/60 shadow-lg text-white min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                {isAdmin ? <Shield className="w-4 h-4 text-amber-400" /> : <Truck className="w-4 h-4 text-sky-400" />}
+              </div>
+              <div className="leading-tight min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[200px]">
+                    {order.name || t('Catering Order', 'Pesanan Katering')}
+                  </span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.2 bg-stone-800 text-stone-300 rounded shrink-0">
+                    #{order.invoiceNo || order.id?.substring(0, 6).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-stone-400 mt-0.5 truncate">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${order.status === 'delivered' ? 'bg-emerald-400' : 'bg-sky-400 animate-ping'}`} />
+                  <span className="truncate">{order.status === 'delivered' ? t('Delivered', 'Sampai') : `${distance} • ${eta}${riderSpeed > 0 ? ` • ${riderSpeed} km/h` : ''}`}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Action Controls */}
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsRiderMode(!isRiderMode)}
+                    className={`h-10 px-3 rounded-2xl text-xs font-bold transition-all border backdrop-blur-md shadow-lg flex items-center gap-1.5 ${
+                      isRiderMode
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-stone-900/90 text-stone-300 border-stone-700/60'
+                    }`}
+                    title={t('Toggle Rider Terminal', 'Tukar Mod Rider')}
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isRiderMode ? t('Rider Mode', 'Mod Rider') : t('Enter Rider Mode', 'Buka Mod Rider')}</span>
+                  </button>
+
+                  {isRiderMode && (
+                    <button
+                      type="button"
+                      onClick={() => setShowWidgetPreview(true)}
+                      className="h-10 px-3 rounded-2xl text-xs font-bold transition-all border backdrop-blur-md shadow-lg flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                      title={t('Preview Arrival Alert Widget', 'Pralihat Widget Ketibaan')}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">{t('Preview Widget', 'Pralihat Widget')}</span>
+                    </button>
+                  )}
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-10 w-10 rounded-2xl bg-stone-900/90 hover:bg-stone-800 text-stone-300 border border-stone-700/60 flex items-center justify-center backdrop-blur-md shadow-lg transition-all"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* FLOATING BOTTOM PANEL (Mobile & Tablet < lg)               */}
+          {/* ========================================================= */}
+          <div className="lg:hidden absolute bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 sm:bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:left-6 sm:right-6 md:left-1/2 md:-translate-x-1/2 md:w-[580px] md:max-w-[calc(100vw-3rem)] z-[1000] pointer-events-auto flex flex-col gap-2">
+            
+            {/* Geofence Alert Banner (When Rider Approaches within 200m) */}
+            {geofenceBreached && (
+              <div className="p-3 bg-emerald-600/95 text-white backdrop-blur-md rounded-2xl border border-emerald-400/40 shadow-xl flex items-center justify-between gap-3 animate-pulse">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-white shrink-0" />
+                  <span className="text-xs font-bold leading-tight">
+                    {t('Rider is within 200m! Please prepare to receive.', 'Rider berhampiran (200m)! Sila bersedia.')}
+                  </span>
+                </div>
+                {isAdmin && isRiderMode && (
+                  <button
+                    type="button"
+                    onClick={handleSendArrivalAlert}
+                    className="px-2.5 py-1 bg-white text-emerald-800 text-[11px] font-black rounded-xl shrink-0 uppercase tracking-wider"
+                  >
+                    WhatsApp
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Collapsible Rider Controls (Admin Only) */}
+            {isAdmin && isRiderMode && showRiderControls && (
+              <div className="p-3 bg-stone-900/95 backdrop-blur-md rounded-2xl border border-stone-700/60 shadow-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Radio className={`w-3.5 h-3.5 ${broadcastEnabled ? 'text-emerald-400 animate-pulse' : 'text-stone-500'}`} />
+                    <span className="text-xs font-bold text-stone-200">
+                      {broadcastEnabled ? t('Live GPS Streaming Active', 'Siaran Lokasi GPS Aktif') : t('GPS Paused', 'GPS Dijeda')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTrackingSource('simulation')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                        trackingSource === 'simulation' ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-400'
+                      }`}
+                    >
+                      {t('Simulate', 'Simulasi')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTrackingSource('gps')}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                        trackingSource === 'gps' ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-400'
+                      }`}
+                    >
+                      {t('GPS', 'GPS')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress Slider in Simulation Mode */}
+                {trackingSource === 'simulation' && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold text-stone-400">
+                      <span>{t('Route Simulation Progress', 'Perjalanan Simulasi')}</span>
+                      <span className="font-mono text-amber-400">{simPercent}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs">🍽️</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={simPercent}
+                        onChange={(e) => setSimPercent(parseInt(e.target.value))}
+                        className="flex-1 accent-amber-500 h-2 bg-stone-800 rounded-lg cursor-pointer"
+                      />
+                      <span className="text-xs">🏠</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Main Action Bar */}
+            <div className="p-2.5 bg-stone-950/95 dark:bg-stone-900/95 backdrop-blur-md rounded-2xl border border-stone-700/60 shadow-2xl flex items-center gap-2">
+              
+              {/* Admin Rider Actions */}
+              {isAdmin && isRiderMode ? (
+                <>
+                  {/* Giant 1-Tap WhatsApp Arrival Alert Button */}
                   <button
                     type="button"
                     onClick={handleSendArrivalAlert}
@@ -1090,14 +1022,11 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                         ? 'bg-emerald-500 hover:bg-emerald-400 text-white animate-pulse shadow-emerald-500/30'
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
                     }`}
-                    title={t('Send WhatsApp Arrival (1-Tap Safe)', 'Hantar WhatsApp Sampai (1-Tekan Selamat)')}
                   >
-                    <MessageSquare className="w-5 h-5 shrink-0" />
+                    <MessageSquare className="w-4 h-4 shrink-0" />
                     <div className="text-left leading-tight">
                       <span className="block text-[11px] font-black uppercase tracking-wider">
-                        {geofenceBreached
-                          ? t('🚨 Arrived! Tap WhatsApp', '🚨 Tiba! Hantar WhatsApp')
-                          : t('WhatsApp Arrival Alert', 'WhatsApp Sampai')}
+                        {geofenceBreached ? t('🚨 Arrived! WhatsApp', '🚨 Tiba! Hantar WhatsApp') : t('WhatsApp Arrival', 'WhatsApp Sampai')}
                       </span>
                       <span className="block text-[9px] opacity-80 font-normal">
                         {order.contact || '017-315 7731'}
@@ -1105,7 +1034,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                     </div>
                   </button>
 
-                  {/* Quick Call */}
+                  {/* Direct Phone Call */}
                   <button
                     type="button"
                     onClick={handleCallCustomer}
@@ -1116,52 +1045,73 @@ export function DeliveryMap({ order, onClose, onUpdateStatus }: DeliveryMapProps
                     <Phone className="w-5 h-5" />
                   </button>
 
-                  {/* Quick Navigation */}
+                  {/* Google Maps / Waze Launcher */}
                   <button
                     type="button"
-                    onClick={handleOpenNavigation}
+                    onClick={handleOpenGoogleMaps}
                     className="h-12 w-12 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-400 flex items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm"
-                    title={t('Navigation Maps / Waze', 'Navigasi Maps / Waze')}
-                    aria-label="Navigation Maps / Waze"
+                    title={t('Open Maps Navigation', 'Buka Navigasi Maps')}
+                    aria-label="Open Maps Navigation"
                   >
                     <Navigation className="w-5 h-5" />
                   </button>
 
-                  {/* App Widget Preview / Control */}
+                  {/* Toggle Simulation Drawer */}
                   <button
                     type="button"
-                    onClick={() => setShowLockScreenPreview(true)}
-                    className={`h-12 px-2.5 rounded-xl border flex flex-col items-center justify-center shrink-0 active:scale-95 transition-all shadow-sm ${
-                      lockScreenWidgetActive
-                        ? 'bg-stone-800 border-amber-500/40 text-amber-400'
-                        : 'bg-stone-800/60 border-stone-700 text-stone-400'
-                    }`}
-                    title={t('App Widget Preview', 'Pratonton Widget')}
+                    onClick={() => setShowRiderControls(!showRiderControls)}
+                    className="h-12 w-10 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-stone-300 flex items-center justify-center shrink-0 active:scale-95 transition-all"
+                    title={t('Toggle Controls', 'Buka/Tutup Kawalan')}
                   >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-bold mt-0.5">
-                      {lockScreenWidgetActive ? 'Widget' : 'Widget Off'}
-                    </span>
+                    {showRiderControls ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                   </button>
+                </>
+              ) : (
+                /* Customer View Action Card */
+                <div className="w-full flex items-center justify-between gap-3 px-2 py-1">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                      <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        {order.status === 'delivered' ? t('Delivered Successfully', 'Selamat Sampai') : t('Rider In Transit', 'Rider Dalam Perjalanan')}
+                      </span>
+                      <span className="text-[10px] text-stone-400 block">
+                        {exactDistanceMeters !== null ? `${exactDistanceMeters} m ${t('to your doorstep', 'ke lokasi anda')}` : `${distance} • ${eta}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleOpenGoogleMaps}
+                      className="h-10 px-3 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+                    >
+                      <Navigation className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Maps</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Interactive Delivery Tracker Widget Simulation Modal */}
-      <DeliveryWidgetModal
-        isOpen={showLockScreenPreview}
-        onClose={() => setShowLockScreenPreview(false)}
-        order={order}
-        exactDistanceMeters={exactDistanceMeters}
-        geofenceBreached={geofenceBreached}
-        onSendWhatsApp={handleSendArrivalAlert}
-        onCallCustomer={handleCallCustomer}
-        onOpenNavigation={handleOpenNavigation}
-        onMarkDelivered={order.status !== 'delivered' && onUpdateStatus ? handleMarkAsDelivered : undefined}
-      />
+      {/* Rider Delivery Alert Preview Modal */}
+      {showWidgetPreview && (
+        <DeliveryWidgetModal
+          isOpen={showWidgetPreview}
+          onClose={() => setShowWidgetPreview(false)}
+          order={order}
+          exactDistanceMeters={exactDistanceMeters}
+          onSendWhatsApp={handleSendArrivalAlert}
+          language={language as 'en' | 'bm'}
+        />
+      )}
     </div>
   );
 }
+

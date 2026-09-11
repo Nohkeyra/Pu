@@ -28,7 +28,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-tomato-burst to-amber-400 origin-left z-[100]"
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-tomato-burst to-amber-400 origin-left z-[1002]"
         style={{ scaleX }}
       />
       <Header />

@@ -67,18 +67,18 @@ export function SendInvoiceModal({
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="w-full h-auto max-h-[95vh] max-w-xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/30 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
+        className="w-full h-auto max-h-[95vh] max-w-xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/30 rounded-2xl sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
         onClick={(e) => e.stopPropagation()}
         id="send-invoice-dialog-container"
       >
         {/* Header */}
-        <div className="px-8 py-6 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-md flex-shrink-0" id="send-invoice-header">
+        <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-md flex-shrink-0" id="send-invoice-header">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[var(--color-sunshine-cta)]/10 rounded-2xl">
-              <Send className="w-6 h-6 text-[var(--color-sunshine-cta)]" />
+            <div className="p-2.5 sm:p-3 bg-[var(--color-sunshine-cta)]/10 rounded-2xl">
+              <Send className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-sunshine-cta)]" />
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
                 {t('send_invoice_pdf')}
               </h2>
               <p className="text-xs text-deep-forest/50 font-medium">
@@ -92,15 +92,15 @@ export function SendInvoiceModal({
             aria-label="Close"
             id="send-invoice-close-btn"
           >
-            <X className="w-6 h-6 text-deep-forest/40" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-deep-forest/40" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8" id="send-invoice-body">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8" id="send-invoice-body">
           {sendOrder && (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Summary Box */}
-              <div className="p-6 bg-white/60 dark:bg-background/20 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
+              <div className="p-4 sm:p-6 bg-white/60 dark:bg-background/20 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
                   <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('invoice_no_label')}</span>
                   <span className="font-mono font-bold text-deep-forest dark:text-white">
@@ -123,9 +123,9 @@ export function SendInvoiceModal({
               </div>
 
               {/* Options */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Email Option */}
-                <div className="p-6 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-5">
+                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-4 sm:space-y-5">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl">
                       <Mail className="w-5 h-5 text-indigo-600" />
@@ -175,7 +175,7 @@ export function SendInvoiceModal({
                 </div>
 
                 {/* WhatsApp Option */}
-                <div className="p-6 rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-5">
+                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-4 sm:space-y-5">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl">
                       <MessageSquare className="w-5 h-5 text-emerald-600" />
@@ -215,7 +215,7 @@ export function SendInvoiceModal({
           )}
         </div>
 
-        <div className="px-8 py-6 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-md flex justify-end flex-shrink-0" id="send-invoice-footer">
+        <div className="px-5 py-4 sm:px-8 sm:py-6 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-md flex justify-end flex-shrink-0" id="send-invoice-footer">
           <Button
             id="btn-send-invoice-cancel"
             variant="ghost"

@@ -163,7 +163,7 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
                     onClick={() => handleSend(item)}
                     disabled={status === 'sending' || status === 'sent'}
                     className={cn(
-                      'flex-1 h-10 rounded-xl text-xs font-bold',
+                      'flex-1 min-h-[44px] h-11 rounded-xl text-xs font-bold',
                       stale ? 'bg-stone/40 hover:bg-stone/50 text-white' : 'bg-crisp-carrot hover:bg-crisp-carrot/90 text-white'
                     )}
                   >
@@ -181,7 +181,8 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
                     onClick={() => handleDiscard(item)}
                     disabled={status === 'sending'}
                     variant="outline"
-                    className="h-10 rounded-xl text-xs font-bold border-stone/20 text-stone"
+                    className="min-h-[44px] min-w-[44px] h-11 rounded-xl text-xs font-bold border-stone/20 text-stone flex items-center justify-center"
+                    aria-label={tText('Discard', 'Buang')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -192,7 +193,7 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl min-h-[44px]">
             {tText('Close', 'Tutup')}
           </Button>
         </DialogFooter>

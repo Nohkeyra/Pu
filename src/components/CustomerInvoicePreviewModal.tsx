@@ -148,7 +148,7 @@ export function CustomerInvoicePreviewModal({
                 triggerLightImpact();
                 setIsFolded(!isFolded);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border border-stone-600/50 backdrop-blur-md transition-all shadow-md active:scale-95"
+              className="inline-flex min-h-[44px] items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border border-stone-600/50 backdrop-blur-md transition-all shadow-md active:scale-95"
               title={isFolded ? 'Buka Kertas Lipatan' : 'Lipat Semula Kertas'}
             >
               <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFolded ? 'rotate-180 text-amber-400' : 'text-stone-300'}`} />
@@ -158,7 +158,7 @@ export function CustomerInvoicePreviewModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-600/50 backdrop-blur-md transition-colors shadow-md"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-600/50 backdrop-blur-md transition-colors shadow-md"
               aria-label="Tutup Paparan"
             >
               <X className="w-4 h-4" />
@@ -520,16 +520,18 @@ export function CustomerInvoicePreviewModal({
               
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-750 transition-all shadow-xs active:scale-95"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-750 transition-all shadow-xs active:scale-95"
                 >
                   <Printer className="w-3.5 h-3.5 text-stone-500" />
                   <span>{language === 'bm' ? 'Cetak' : 'Print'}</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleWhatsAppShare}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-emerald-950 dark:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all shadow-xs active:scale-95"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-950 dark:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all shadow-xs active:scale-95"
                 >
                   <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{language === 'bm' ? 'WhatsApp Invois' : 'WhatsApp Share'}</span>
@@ -539,12 +541,13 @@ export function CustomerInvoicePreviewModal({
               <div className="flex items-center gap-2">
                 {onDownload && (
                   <button
+                    type="button"
                     onClick={() => {
                       triggerLightImpact();
                       onDownload();
                       if (onClose) onClose();
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>{language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}</span>
@@ -552,8 +555,9 @@ export function CustomerInvoicePreviewModal({
                 )}
 
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="px-3 py-2 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors"
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors flex items-center justify-center"
                 >
                   {language === 'bm' ? 'Tutup' : 'Close'}
                 </button>

@@ -206,8 +206,8 @@ export function AdminOrdersTab({
           </div>
 
           {/* Date range picker group */}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex-1 sm:flex-none flex items-center gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-3.5 h-11 min-h-[44px]">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-none flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-2.5 sm:px-3.5 py-1 sm:py-0 min-h-[44px]">
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
                 {language === 'bm' ? 'Dari' : 'From'}
               </span>
@@ -217,9 +217,9 @@ export function AdminOrdersTab({
                 aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                 value={dateFromFilter}
                 onChange={(e) => setDateFromFilter(e.target.value)}
-                className="w-full sm:w-[8.2rem] min-w-0 bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
               />
-              <span className="text-stone-300 dark:text-stone-600 shrink-0">–</span>
+              <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
                 {language === 'bm' ? 'Hingga' : 'To'}
               </span>
@@ -229,7 +229,7 @@ export function AdminOrdersTab({
                 aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                 value={dateToFilter}
                 onChange={(e) => setDateToFilter(e.target.value)}
-                className="w-full sm:w-[8.2rem] min-w-0 bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
               />
             </div>
             {(dateFromFilter || dateToFilter) && (
@@ -413,7 +413,7 @@ export function AdminOrdersTab({
           />
         ) : (
           (() => {
-            const rowHeight = typeof window !== 'undefined' && window.innerWidth < 768 ? 134 : 118;
+            const rowHeight = typeof window !== 'undefined' && window.innerWidth < 420 ? 146 : typeof window !== 'undefined' && window.innerWidth < 768 ? 134 : 118;
             const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 620);
 
             return (

@@ -7,6 +7,13 @@ import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
+// Strip/disable console.log and debug statements for production builds
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.debug = () => {};
+  console.info = () => {};
+}
+
 // Auto-initialize Eruda in workspace preview environment for immediate console diagnostics
 // Eruda debug console: only in AI Studio preview or when manually enabled via localStorage.
 // Deliberately excludes 'localhost' to avoid loading in Capacitor native WebView

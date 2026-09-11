@@ -628,7 +628,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <button
             onClick={() => setActiveTab('orders')}
             className={cn(
-              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'orders'
                 ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
@@ -649,7 +649,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <button
             onClick={() => setActiveTab('profile')}
             className={cn(
-              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'profile'
                 ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
@@ -662,7 +662,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <button
             onClick={() => setActiveTab('locations')}
             className={cn(
-              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'locations'
                 ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
@@ -683,7 +683,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <button
             onClick={() => setActiveTab('preferences')}
             className={cn(
-              "py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all min-h-[42px] cursor-pointer select-none",
+              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
               activeTab === 'preferences'
                 ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
                 : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
@@ -909,6 +909,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         {trackingOrder && (
           <DeliveryMap
             order={trackingOrder}
+            isAdmin={false}
             onClose={() => setTrackingOrder(null)}
           />
         )}
@@ -957,6 +958,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         <Suspense fallback={null}>
           <DeliveryMap
             order={trackingOrder}
+            isAdmin={false}
             onClose={() => setTrackingOrder(null)}
           />
         </Suspense>

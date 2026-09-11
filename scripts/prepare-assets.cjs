@@ -17,10 +17,10 @@ async function run() {
   console.log('Generating master assets for Capacitor Asset tool...');
   console.log('Using logo source:', activeLogoPath);
 
-  // 1. icon-only.png (1024x1024, logo sized to fill icon prominently on a solid white background)
-  // Sizing: 920 width fills ~90% of the canvas width, leaving clean breathing room
+  // 1. icon-only.png (1024x1024, full logo centered on a 100% transparent background)
+  // Sizing: 880x880 fit inside ensures a prominent, bold logo with no surrounding card or background
   await sharp(activeLogoPath)
-    .resize(920, 460, { fit: 'inside' })
+    .resize(880, 880, { fit: 'inside' })
     .toBuffer()
     .then(async (logoBuffer) => {
       await sharp({
@@ -28,7 +28,7 @@ async function run() {
           width: 1024,
           height: 1024,
           channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 }
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
         }
       })
       .composite([{ input: logoBuffer, gravity: 'center' }])
@@ -37,10 +37,9 @@ async function run() {
     });
 
   // 2. icon-foreground.png (1024x1024, transparent background with full-fill logo for adaptive icons)
-  // When Android applies the 16.7% adaptive icon inset, 920px width maps to 613px in the 682px safe circle,
-  // ensuring the logo looks full and prominent on all launchers without any clipping.
+  // Scaled to fit within the Android adaptive icon safe zone (760x760) so no floral motifs or text get clipped
   await sharp(activeLogoPath)
-    .resize(920, 460, { fit: 'inside' })
+    .resize(760, 760, { fit: 'inside' })
     .toBuffer()
     .then(async (logoBuffer) => {
       await sharp({
@@ -56,13 +55,13 @@ async function run() {
       .toFile(path.join(assetsDir, 'icon-foreground.png'));
     });
 
-  // 3. icon-background.png (1024x1024, solid white background for adaptive icons)
+  // 3. icon-background.png (1024x1024, 100% transparent background)
   await sharp({
     create: {
       width: 1024,
       height: 1024,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
     }
   })
   .toColorspace('srgb').png()

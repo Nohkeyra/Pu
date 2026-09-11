@@ -512,27 +512,27 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* 2. SWAPPED CALENDAR GRID (Dark in Light Mode, Light in Dark Mode) */}
+          {/* 2. CALENDAR GRID (Consistent Light & Dark Mode) */}
           {loading ? (
-            <div className="bg-stone-900 dark:bg-white border border-stone-800 dark:border-stone-200/80 rounded-2xl p-16 text-center shadow-sm">
+            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs">
               <Clock className="w-7 h-7 text-stone-400 dark:text-stone-500 animate-spin mx-auto mb-3" />
               <p className="text-xs font-semibold text-stone-400 dark:text-stone-500">
                 {tl('Loading kitchen calendar...', 'Memuatkan jadual dapur...')}
               </p>
             </div>
           ) : (
-            <div className="bg-stone-900 dark:bg-white border border-stone-800 dark:border-stone-200/80 rounded-2xl shadow-sm overflow-hidden transition-colors duration-200">
+            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden transition-colors duration-200">
               
               {/* Weekdays Header */}
-              <div className="grid grid-cols-7 border-b border-stone-800 dark:border-stone-200 bg-stone-950/80 dark:bg-stone-50/90">
+              <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/90 dark:bg-stone-900/50">
                 {weekdays.map((day, idx) => (
                   <div 
                     key={idx} 
                     className={cn(
-                      "py-3 text-center text-[11px] font-extrabold tracking-wider uppercase select-none",
+                      "py-2.5 sm:py-3 text-center text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase select-none",
                       day.weekend 
-                        ? "text-rose-400 dark:text-rose-600 font-extrabold" 
-                        : "text-stone-400 dark:text-stone-600"
+                        ? "text-rose-500 dark:text-rose-400 font-extrabold" 
+                        : "text-stone-500 dark:text-stone-400"
                     )}
                   >
                     <span className="hidden sm:inline">{day.full}</span>
@@ -541,16 +541,16 @@ export default function CalendarPage() {
                 ))}
               </div>
 
-              {/* Days Matrix - Swapped Mode Grid */}
-              <div className="grid grid-cols-7 divide-x divide-y divide-stone-800 dark:divide-stone-200/80">
+              {/* Days Matrix */}
+              <div className="grid grid-cols-7 divide-x divide-y divide-stone-200/80 dark:divide-stone-800">
                 
                 {/* 1. Leading Prev Month Days (Diagonal Striped) */}
                 {prevMonthDays.map((pDay) => (
                   <div
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start"
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
                   >
-                    <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 tabular-nums">
+                    <span className="text-[11px] sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
                       {format(pDay, 'd')}
                     </span>
                   </div>
@@ -574,51 +574,51 @@ export default function CalendarPage() {
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-stone-900 hover:bg-stone-850 dark:bg-white dark:hover:bg-stone-50",
+                        "min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60",
                         isDaySelected 
-                          ? "ring-2 ring-inset ring-crisp-carrot bg-stone-800/90 dark:bg-orange-100/70 z-10" 
+                          ? "ring-2 ring-inset ring-crisp-carrot bg-orange-50/70 dark:bg-orange-950/30 z-10" 
                           : holiday
-                          ? "bg-amber-950/40 dark:bg-amber-50/60"
+                          ? "bg-amber-50/60 dark:bg-amber-950/20"
                           : ""
                       )}
                     >
                       {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="w-7 h-7 rounded-full bg-crisp-carrot text-white text-xs font-black flex items-center justify-center shadow-xs">
+                          <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-crisp-carrot text-white text-[11px] sm:text-xs font-black flex items-center justify-center shadow-xs">
                             {format(day, 'd')}
                           </span>
                         ) : (
                           <span className={cn(
-                            "text-sm font-bold tabular-nums transition-colors flex items-center gap-1",
+                            "text-xs sm:text-sm font-bold tabular-nums transition-colors flex items-center gap-1",
                             isDaySelected 
-                              ? "text-crisp-carrot scale-110" 
+                              ? "text-crisp-carrot scale-105" 
                               : holiday
-                              ? "text-amber-400 dark:text-amber-600 font-black"
+                              ? "text-amber-600 dark:text-amber-400 font-black"
                               : isWeekendDay 
-                              ? "text-rose-400 dark:text-rose-600"
-                              : "text-stone-100 dark:text-stone-900 group-hover:text-crisp-carrot"
+                              ? "text-rose-500 dark:text-rose-400"
+                              : "text-stone-700 dark:text-stone-200 group-hover:text-crisp-carrot"
                           )}>
                             {format(day, 'd')}
                           </span>
                         )}
 
                         {/* Holiday / Note Indicators */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1">
                           {holiday && (
-                            <span className="text-[10px] text-amber-400 dark:text-amber-600 font-bold" title={holiday.nameBm}>
+                            <span className="text-[9px] sm:text-[10px] text-amber-500 dark:text-amber-400 font-bold" title={holiday.nameBm}>
                               ✨
                             </span>
                           )}
                           {dayNotes.length > 0 && (
-                            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-stone-900 dark:ring-white" title={tl('Has note', 'Ada nota')} />
+                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-stone-900" title={tl('Has note', 'Ada nota')} />
                           )}
                         </div>
                       </div>
 
                       {/* Holiday Micro-label */}
                       {holiday && (
-                        <div className="text-[9px] font-extrabold text-amber-300 dark:text-amber-700 truncate max-w-full my-0.5" title={holiday.nameBm}>
+                        <div className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 truncate max-w-full my-0.5" title={holiday.nameBm}>
                           {holiday.nameBm}
                         </div>
                       )}
@@ -647,8 +647,8 @@ export default function CalendarPage() {
                             </div>
 
                             {/* Pax summary line */}
-                            <div className="text-[10px] font-bold tracking-tight text-stone-400 dark:text-stone-600 truncate flex items-center gap-1">
-                              <span className="px-1.5 py-0.5 rounded bg-stone-800 text-stone-100 dark:bg-stone-900 dark:text-white font-extrabold tabular-nums text-[9px] leading-none">
+                            <div className="text-[10px] font-bold tracking-tight text-stone-500 dark:text-stone-400 truncate flex items-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums text-[9px] leading-none">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
                               <span className="hidden sm:inline opacity-75 font-medium text-[10px]">
@@ -668,9 +668,9 @@ export default function CalendarPage() {
                 {nextMonthDays.map((nDay) => (
                   <div
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start"
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
                   >
-                    <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 tabular-nums">
+                    <span className="text-[11px] sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
                       {format(nDay, 'd')}
                     </span>
                   </div>
@@ -952,7 +952,7 @@ export default function CalendarPage() {
 
           {/* 4. MODAL: ORDER DETAILS */}
           {selectedOrder && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
               <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
                 
                 {/* Banner Header */}

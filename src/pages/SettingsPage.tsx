@@ -1068,7 +1068,73 @@ export default function SettingsPage() {
 
           {/* SECTION 1: ACCOUNT & SECURITY */}
           <SettingsSection title={language === 'bm' ? 'Akaun & Keselamatan' : 'Account & Security'}>
-            {currentUser || isAdmin ? (
+            {isAdmin ? (
+              <>
+                <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-stone-200/70 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold font-display text-base shrink-0">
+                      W
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-deep-forest dark:text-white truncate">
+                        {language === 'bm' ? 'Pentadbir Wawasan' : 'Wawasan Administrator'}
+                      </p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate font-mono">
+                        {currentUser?.email || 'admin@wawasanpakusop.my'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {language === 'bm' ? 'Aktif' : 'Active'}
+                  </span>
+                </div>
+
+                <SettingsRow
+                  icon={Shield}
+                  iconBg="bg-amber-500/10"
+                  iconColor="text-amber-600 dark:text-amber-400"
+                  title={language === 'bm' ? 'Konsol Pentadbir' : 'Admin Operations Console'}
+                  action={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        navigate('/admin');
+                      }}
+                      className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
+                    >
+                      <span>{language === 'bm' ? 'Buka' : 'Open'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                    </Button>
+                  }
+                />
+
+                <SettingsRow
+                  icon={LogOut}
+                  iconBg="bg-rose-500/10"
+                  iconColor="text-rose-600 dark:text-rose-400"
+                  title={language === 'bm' ? 'Log Keluar Sesi Pentadbir' : 'Sign Out Admin Session'}
+                  isLast={true}
+                  action={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        setSignOutConfirmOpen(true);
+                      }}
+                      className="h-8 px-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl"
+                    >
+                      {language === 'bm' ? 'Keluar' : 'Sign Out'}
+                    </Button>
+                  }
+                />
+              </>
+            ) : currentUser ? (
               <>
                 <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-stone-200/70 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]">
                   <div className="flex items-center gap-3 min-w-0">
@@ -1077,14 +1143,14 @@ export default function SettingsPage() {
                         ? currentUser.displayName.charAt(0).toUpperCase()
                         : currentUser?.email
                         ? currentUser.email.charAt(0).toUpperCase()
-                        : 'W'}
+                        : 'U'}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-deep-forest dark:text-white truncate">
-                        {currentUser?.displayName || (isAdmin ? 'Pentadbir Wawasan' : 'Pelanggan Wawasan')}
+                        {currentUser?.displayName || (language === 'bm' ? 'Pelanggan Wawasan' : 'Wawasan Customer')}
                       </p>
                       <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
-                        {currentUser?.email || (isAdmin ? 'admin@wawasanpakusop.my' : 'Sesi Aktif')}
+                        {currentUser?.email || (language === 'bm' ? 'Sesi Aktif' : 'Active Session')}
                       </p>
                     </div>
                   </div>
@@ -1106,11 +1172,7 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={async () => {
                         await triggerLightImpact();
-                        if (isAdmin || currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null) {
-                          navigate('/admin');
-                        } else {
-                          navigate('/profile');
-                        }
+                        navigate('/profile');
                       }}
                       className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
                     >

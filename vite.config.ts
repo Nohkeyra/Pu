@@ -3,11 +3,17 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/',
-  define: {
-    'process.env.GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || '')
-  },
+export default defineConfig(({ mode }) => {
+  const isProd = mode === 'production' || process.env.NODE_ENV === 'production';
+
+  return {
+    base: '/',
+    esbuild: {
+      drop: isProd ? ['console', 'debugger'] : [],
+    },
+    define: {
+      'process.env.GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || '')
+    },
   plugins: [
     react({
       jsxRuntime: 'automatic'
@@ -89,4 +95,5 @@ export default defineConfig({
       },
     },
   },
+};
 });

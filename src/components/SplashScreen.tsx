@@ -58,13 +58,21 @@ if (typeof window !== 'undefined') {
   isLowEndDevice = Boolean(lowEnd);
 }
 
+const MIN_SPLASH_DURATION = 3500; // Guaranteed minimum duration of exactly 3,500ms
+
 export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const reachedHoldRef = useRef(false);
+  const minDurationPassedRef = useRef(false);
+  const isLoadingRef = useRef(isLoading);
   const isReducedRef = useRef(false);
   const [isLowEnd] = useState(isLowEndDevice);
   const [skipFaded, setSkipFaded] = useState(false);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   useEffect(() => {
     if (isReducedRef.current) return;
@@ -85,6 +93,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   const runSequence = useCallback(() => {
     clearTimers();
     reachedHoldRef.current = false;
+    minDurationPassedRef.current = false;
 
     const reduced =
       typeof window !== 'undefined' &&
@@ -95,29 +104,43 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     if (reduced) {
       setStage('hold');
       reachedHoldRef.current = true;
+      addTimer(() => {
+        minDurationPassedRef.current = true;
+        if (!isLoadingRef.current) {
+          setStage('exit');
+        }
+      }, MIN_SPLASH_DURATION);
       return;
     }
 
     setStage('ride');
 
-    // ── SLAPSTICK TIMING SEQUENCE ──
-    // 1. Rider memecut laju dari kanan (0ms -> 1100ms) - ample time to see him zooming in
-    // 2. 1100ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass with cracks)
+    // ── SLAPSTICK TIMING SEQUENCE (Guaranteed 3,500ms minimum duration) ──
+    // 1. Rider memecut laju dari kanan (0ms -> 750ms)
+    // 2. 750ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass with cracks)
     addTimer(() => {
       setStage('impact');
       triggerDramaticImpact().catch(() => {});
-    }, 1100);
+    }, 750);
 
-    // 3. 2700ms (selepas 1600ms melekat dazed dengan bintang & retak skrin): Rider mula meluncur gelongsor perlahan-lahan ke bawah (Slow comic slide down)
+    // 3. 1800ms: Rider mula meluncur gelongsor perlahan ke bawah (comic slide down: 1,000ms)
     addTimer(() => {
       setStage('slide');
-    }, 2700);
+    }, 1800);
 
-    // 4. 4700ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
+    // 4. 2800ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
     addTimer(() => {
       setStage('hold');
       reachedHoldRef.current = true;
-    }, 4700);
+    }, 2800);
+
+    // 5. 3500ms: Exactly 3,500ms minimum duration elapsed
+    addTimer(() => {
+      minDurationPassedRef.current = true;
+      if (!isLoadingRef.current) {
+        setStage('exit');
+      }
+    }, MIN_SPLASH_DURATION);
   }, []);
 
   useEffect(() => {
@@ -126,10 +149,8 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
   }, [runSequence]);
 
   useEffect(() => {
-    if (!isLoading && reachedHoldRef.current && stage === 'hold') {
-      // Hold the logo freeze at the same spot for a comfortable time so user can enjoy the brand badge
-      const holdTime = isReducedRef.current ? 200 : 1800;
-      addTimer(() => setStage('exit'), holdTime);
+    if (!isLoading && reachedHoldRef.current && minDurationPassedRef.current && stage === 'hold') {
+      setStage('exit');
     }
   }, [isLoading, stage]);
 
@@ -139,9 +160,19 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         if (onComplete) {
           onComplete();
         }
-      }, 550);
+      }, 350);
     }
   }, [stage, onComplete]);
+
+  // Failsafe watchdog: unconditionally dismiss splash screen after 4.8s
+  useEffect(() => {
+    const failsafe = setTimeout(() => {
+      if (onComplete) {
+        onComplete();
+      }
+    }, 4800);
+    return () => clearTimeout(failsafe);
+  }, [onComplete]);
 
   const handleSkip = () => {
     clearTimers();
@@ -306,7 +337,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                         scaleY: isSliding ? [0, 0.35, 0.7, 1] : 1,
                         opacity: isSliding ? [0, 0.55, 0.4] : [0.4, 0],
                       }}
-                      transition={{ duration: isSliding ? 1.8 : 0.75, ease: 'easeOut' }}
+                      transition={{ duration: isSliding ? 1.0 : 0.4, ease: 'easeOut' }}
                     >
                       {/* Translucent smear body */}
                       <div className="w-full h-full bg-gradient-to-b from-white/30 via-white/15 to-transparent rounded-b-2xl" />
@@ -330,7 +361,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 initial={{ opacity: 0, scale: 0.2 }}
                 animate={{ opacity: [0, 1, 1, 0.9], scale: [0.2, 1.15, 1, 1.05], rotate: [0, 90, 180, 270] }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeOut' }}
+                transition={{ duration: 1.0, ease: 'easeOut' }}
               >
                 <div className="relative flex items-center justify-center w-28 h-10">
                   <span className="absolute left-1 top-0 text-amber-200 text-lg drop-shadow font-black animate-bounce">⭐</span>
@@ -369,13 +400,13 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               transition={
                 isSliding
                   ? {
-                      duration: 1.95,
+                      duration: 1.0,
                       ease: [0.4, 0, 0.6, 1],
                       times: [0, 0.18, 0.4, 0.65, 0.88, 1],
                     }
                   : isImpacted
-                  ? { duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }
-                  : { duration: 1.1, ease: [0.22, 1, 0.36, 1] }
+                  ? { duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }
+                  : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <img

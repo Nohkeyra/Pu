@@ -6,7 +6,6 @@ import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
-import { AlertTriangle } from 'lucide-react';
 import PushNotificationHandler from './components/PushNotificationHandler';
 import NativeBackButtonHandler from './components/NativeBackButtonHandler';
 import NativeAppListeners from './components/NativeAppListeners';
@@ -72,19 +71,25 @@ function App() {
   useEffect(() => {
     initInteractiveNotifications().catch(() => {});
   }, []);
+
   const [useFallbackUi, setUseFallbackUi] = useState(() => {
     try {
-      return localStorage.getItem('wawasan_fallback_ui') === 'true' || 
-             window.location.search.includes('fallback=true');
+      if (typeof window !== 'undefined' && window.location.search.includes('fallback=true')) {
+        return true;
+      }
+      localStorage.removeItem('wawasan_fallback_ui');
+      return false;
     } catch {
       return false;
     }
   });
-  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowTroubleshoot(true), 3000);
-    return () => clearTimeout(timer);
+    // Failsafe safety watchdog: guarantees main interface mounts within 5.0s
+    const watchdog = setTimeout(() => {
+      setIsSplashFinished(true);
+    }, 5000);
+    return () => clearTimeout(watchdog);
   }, []);
 
   useEffect(() => {
@@ -197,24 +202,6 @@ function App() {
           isLoading={isAppLoading} 
           onComplete={handleSplashComplete} 
         />
-      )}
-      {!isSplashFinished && showTroubleshoot && (
-        <div className="fixed bottom-24 left-0 right-0 z-[110] flex flex-col items-center justify-center px-6">
-          <button
-            onClick={() => {
-              try { localStorage.setItem('wawasan_fallback_ui', 'true'); } catch (err) {
-                console.warn('Failed to set fallback UI preference:', err);
-              }
-              setUseFallbackUi(true);
-              setIsAppLoading(false);
-              setIsSplashFinished(true);
-            }}
-            className="btn-cta touch-target-row min-h-[44px] px-6 py-3.5 font-bold rounded-2xl shadow-xl flex items-center gap-2 text-sm"
-          >
-            <AlertTriangle className="w-4 h-4 animate-bounce" />
-            Gunakan Fallback UI
-          </button>
-        </div>
       )}
       <TooltipProvider delayDuration={500}>
         <ToastProvider>

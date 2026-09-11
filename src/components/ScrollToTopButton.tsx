@@ -41,11 +41,12 @@ export default function ScrollToTopButton() {
     <AnimatePresence>
       {isVisible && (
         <motion.button
+          type="button"
           initial={{ opacity: 0, y: 20, scale: 0.8 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.8 }}
           onClick={scrollToTop}
-          className={`fixed right-4 md:right-6 z-[110] p-3 md:p-3.5 bg-gradient-to-tr from-sunshine to-crisp-carrot text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-sunshine-glow hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center ${
+          className={`fixed right-4 md:right-6 z-[110] min-h-[44px] min-w-[44px] p-3 md:p-3.5 bg-gradient-to-tr from-sunshine to-crisp-carrot text-white rounded-full shadow-lg hover:shadow-xl hover:shadow-sunshine-glow hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center ${
             isOrderPage
               ? 'bottom-[calc(156px+env(safe-area-inset-bottom,12px))] lg:bottom-[calc(88px+env(safe-area-inset-bottom,12px))]'
               : 'bottom-[calc(88px+env(safe-area-inset-bottom,12px))]'

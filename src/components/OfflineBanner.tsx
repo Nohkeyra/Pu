@@ -35,12 +35,12 @@ export function OfflineBanner({ className }: { className?: string }) {
         role="status"
         aria-live="polite"
         className={cn(
-          "sticky top-0 z-[200] w-full bg-sky-600 text-white px-4 pt-[calc(var(--sat)+10px)] pb-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
+          "sticky top-0 z-[1005] w-full bg-sky-600 text-white px-3 sm:px-4 pt-[calc(var(--sat)+8px)] pb-2 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold shadow-sm",
           className
         )}
       >
-        <Send className="w-4 h-4 shrink-0" aria-hidden />
-        <span>
+        <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+        <span className="truncate max-w-[85vw] text-center">
           {pendingCount} pending order{pendingCount > 1 ? "s" : ""} ready to send
           <span className="hidden sm:inline"> · {pendingCount} pesanan menunggu hantar</span>
         </span>
@@ -55,15 +55,15 @@ export function OfflineBanner({ className }: { className?: string }) {
       role="status"
       aria-live="assertive"
       className={cn(
-        "sticky top-0 z-[200] w-full bg-amber-500 text-amber-950 px-4 pt-[calc(var(--sat)+10px)] pb-2.5 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm",
+        "sticky top-0 z-[1005] w-full bg-amber-500 text-amber-950 px-3 sm:px-4 pt-[calc(var(--sat)+8px)] pb-2 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold shadow-sm",
         className
       )}
     >
-      <WifiOff className="w-4 h-4 shrink-0" aria-hidden />
-      <span>
-        You’re offline — orders will be saved for later
+      <WifiOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" aria-hidden />
+      <span className="truncate max-w-[85vw] text-center">
+        You’re offline — orders saved for later
         {pendingCount > 0 ? ` (${pendingCount} queued)` : ""}
-        <span className="hidden sm:inline"> · Anda luar talian</span>
+        <span className="hidden sm:inline"> · Mod luar talian</span>
       </span>
     </div>
   )
