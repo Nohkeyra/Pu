@@ -20,7 +20,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
 import { auth } from '@/firebaseConfig';
 import type { Order, RiderLocation } from '@/types';
-import * as L from 'leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
 import { triggerHeavyImpact, triggerNotification, NotificationType } from '@/lib/haptics';
@@ -60,6 +60,11 @@ interface DeliveryMapProps {
   isAdmin?: boolean;
 }
 
+type LeafletMap = ReturnType<typeof L.map>;
+type LeafletPolyline = ReturnType<typeof L.polyline>;
+type LeafletMarker = ReturnType<typeof L.marker>;
+type LeafletCircle = ReturnType<typeof L.circle>;
+
 // ==========================================
 // Leaflet Map Engine (Standard OpenStreetMap - No Watermark)
 // ==========================================
@@ -85,10 +90,10 @@ function LeafletMapContainer({
   isLiveStreaming?: boolean;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const routePolylineRef = useRef<L.Polyline | null>(null);
-  const vehicleMarkerRef = useRef<L.Marker | null>(null);
-  const geofenceCircleRef = useRef<L.Circle | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const routePolylineRef = useRef<LeafletPolyline | null>(null);
+  const vehicleMarkerRef = useRef<LeafletMarker | null>(null);
+  const geofenceCircleRef = useRef<LeafletCircle | null>(null);
   const [destLatLng, setDestLatLng] = useState<{ lat: number; lng: number } | null>(null);
 
   const onRouteCoordsLoadedRef = useRef(onRouteCoordsLoaded);

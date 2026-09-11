@@ -8,11 +8,12 @@ export interface DeliveryWidgetModalProps {
   onClose: () => void;
   order: Order;
   exactDistanceMeters: number | null;
-  geofenceBreached: boolean;
-  onSendWhatsApp: () => void;
-  onCallCustomer: () => void;
-  onOpenNavigation: () => void;
+  geofenceBreached?: boolean;
+  onSendWhatsApp: () => void | Promise<void>;
+  onCallCustomer?: () => void;
+  onOpenNavigation?: () => void;
   onMarkDelivered?: () => void;
+  language?: 'en' | 'bm';
 }
 
 export function DeliveryWidgetModal({
@@ -20,13 +21,15 @@ export function DeliveryWidgetModal({
   onClose,
   order,
   exactDistanceMeters,
-  geofenceBreached,
+  geofenceBreached = false,
   onSendWhatsApp,
   onCallCustomer,
   onOpenNavigation,
   onMarkDelivered,
+  language: propLanguage,
 }: DeliveryWidgetModalProps) {
-  const { language } = useLanguage();
+  const { language: contextLanguage } = useLanguage();
+  const language = propLanguage || contextLanguage;
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
 
@@ -176,29 +179,33 @@ export function DeliveryWidgetModal({
                 <span>WhatsApp</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  onCallCustomer();
-                  onClose();
-                }}
-                className="min-h-[44px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
-              >
-                <Phone className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span>{language === 'bm' ? 'Telefon' : 'Call'}</span>
-              </button>
+              {onCallCustomer ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCallCustomer();
+                    onClose();
+                  }}
+                  className="min-h-[44px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
+                >
+                  <Phone className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>{language === 'bm' ? 'Telefon' : 'Call'}</span>
+                </button>
+              ) : null}
 
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenNavigation();
-                  onClose();
-                }}
-                className="min-h-[44px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
-              >
-                <Navigation className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Maps</span>
-              </button>
+              {onOpenNavigation ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenNavigation();
+                    onClose();
+                  }}
+                  className="min-h-[44px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/50"
+                >
+                  <Navigation className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Maps</span>
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
