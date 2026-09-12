@@ -211,10 +211,30 @@ jobs:
           ALIAS="${KEY_ALIAS:-${RELEASE_KEY_ALIAS:-wawasan-key-alias}}"
           
           mkdir -p android/app
-          
-          # ALWAYS generate a pristine, valid keystore and key.properties to guarantee 100% success
-          echo "⚙️ Generating clean release keystore on the fly..."
-          keytool -genkey -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias "$ALIAS" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Restoran Wawasan, OU=Engineering, O=Restoran Wawasan, L=Kuala Lumpur, C=MY"
+
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            # Restore the persisted release keystore so every build is signed
+            # with the SAME certificate. This is required for in-place app
+            # updates and for the in-app live-update flow — Android refuses
+            # to install an "update" signed with a different key.
+            echo "🔑 Restoring persisted release keystore from ANDROID_KEYSTORE_BASE64..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
+            if ! keytool -list -keystore android/app/release-key.jks -storepass "$STORE_PASS" >/dev/null 2>&1; then
+              echo "❌ ERROR: Restored keystore is invalid or STORE_PASS is wrong for it."
+              echo "   Check the ANDROID_KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets."
+              exit 1
+            fi
+            echo "✅ Persisted keystore restored and verified."
+          else
+            # No persisted keystore configured — generate a throwaway one so
+            # the build still succeeds, but this path must never be used for
+            # a real release: each run would mint a new certificate, breaking
+            # updates for anyone who already installed the app.
+            echo "⚠️ ANDROID_KEYSTORE_BASE64 is not set — generating a TEMPORARY keystore."
+            echo "⚠️ This build's signature will NOT match any previous release."
+            echo "⚠️ Configure ANDROID_KEYSTORE_BASE64 as a repo secret before shipping to real users."
+            keytool -genkey -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias "$ALIAS" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Restoran Wawasan, OU=Engineering, O=Restoran Wawasan, L=Kuala Lumpur, C=MY"
+          fi
 
           echo "storePassword=$STORE_PASS" > android/app/key.properties
           echo "keyPassword=$KEY_PASS" >> android/app/key.properties
