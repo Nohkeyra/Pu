@@ -19,7 +19,7 @@
         "notes": { "type": "string", "description": "Special instructions or notes" },
         "dateTime": { "type": "string", "description": "Event date time string ISO format" },
         "lang": { "type": "string", "description": "Preferred language 'en' or 'bm'" },
-        "status": { "type": "string", "description": "Order status", "enum": ["pending", "approved", "billed", "cancel_requested", "cancelled", "rejected"] },
+        "status": { "type": "string", "description": "Order status", "enum": ["pending", "approved", "billed", "delivered", "cancel_requested", "cancelled", "rejected", "completed"] },
         "preparationType": { "type": "string", "description": "Preparation style 'meal_box' or 'buffet'", "enum": ["meal_box", "buffet"] },
         "presetId": { "type": "string", "description": "ID of saved company preset used" },
         "department": { "type": "string", "description": "Department within organization" },

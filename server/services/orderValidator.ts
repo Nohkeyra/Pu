@@ -59,9 +59,9 @@ export function validateOrderPayload(body: any): { valid: boolean; errors: Valid
 }
 
 export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
-  pending: ['approved', 'rejected', 'cancelled', 'cancel_requested'],
-  approved: ['billed', 'in_transit', 'cancelled', 'cancel_requested'],
-  billed: ['in_transit', 'delivered', 'completed', 'cancelled', 'cancel_requested'],
+  pending: ['approved', 'billed', 'rejected', 'cancelled', 'cancel_requested'],
+  approved: ['billed', 'in_transit', 'delivered', 'cancelled', 'cancel_requested'],
+  billed: ['approved', 'in_transit', 'delivered', 'completed', 'cancelled', 'cancel_requested'],
   in_transit: ['delivered', 'completed', 'cancelled'],
   delivered: ['completed'],
   cancel_requested: ['cancelled', 'approved', 'billed', 'rejected'],

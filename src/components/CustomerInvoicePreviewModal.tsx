@@ -57,7 +57,7 @@ export function CustomerInvoicePreviewModal({
   const dateStr = formatDateDisplay(order?.eventDate || order?.dateTime || order?.date || new Date());
 
   const totalAmount = order?.totalAmount || (order?.quantity ? order.quantity * 15 : 150);
-  const isOrderFinal = isFinal || ['approved', 'billed', 'in_transit', 'delivered'].includes(order?.status?.toLowerCase() || '');
+  const isOrderFinal = isFinal || ['approved', 'billed', 'delivered'].includes(order?.status?.toLowerCase() || '');
   
   const mealCount = order?.meals?.length || 1;
   const qty = order?.quantity || order?.guests || 1;

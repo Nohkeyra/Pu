@@ -13,6 +13,7 @@ describe('Order Validator & Status State Machine', () => {
 
     expect(isValidStatusTransition('approved', 'billed')).toBe(true);
     expect(isValidStatusTransition('approved', 'in_transit')).toBe(true);
+    expect(isValidStatusTransition('approved', 'delivered')).toBe(true);
     expect(isValidStatusTransition('approved', 'cancel_requested')).toBe(true);
 
     expect(isValidStatusTransition('billed', 'in_transit')).toBe(true);
@@ -43,7 +44,7 @@ describe('Order Validator & Status State Machine', () => {
     expect(isValidStatusTransition('completed', 'pending')).toBe(false);
     expect(isValidStatusTransition('rejected', 'approved')).toBe(false);
     expect(isValidStatusTransition('cancelled', 'pending')).toBe(false);
-    expect(isValidStatusTransition('delivered', 'in_transit')).toBe(false);
+    expect(isValidStatusTransition('delivered', 'pending')).toBe(false);
   });
 
   it('strictly rejects unknown or unmapped statuses', () => {

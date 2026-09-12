@@ -124,12 +124,13 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       prices: mealPrices,
       totalAmount: Math.round(total * 100) / 100,
       invoiceNo,
-      status: order.status === 'billed' ? 'billed' : 'approved',
+      status: 'billed',
       approvedAt: order.approvedAt || new Date().toISOString(),
-    }, t('order_approved'));
+      billedAt: order.billedAt || new Date().toISOString(),
+    }, language === 'bm' ? 'Harga Ditetapkan & Invois Dihasilkan' : 'Pricing Set & Order Billed');
 
     if (success) {
-      handleDownloadPDF({ ...order, prices: mealPrices, totalAmount: total, invoiceNo }, true);
+      handleDownloadPDF({ ...order, prices: mealPrices, totalAmount: total, invoiceNo, status: 'billed' }, true);
       setPrices({});
       setSelectedOrder(null);
       setIsDetailOpen(false);
@@ -138,7 +139,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
 
   const openOrderDetail = (order: Order) => {
     setSelectedOrder(order);
-    if (order.status === 'approved' && order.prices) {
+    if (order.prices && Object.keys(order.prices).length > 0) {
       const priceStrings = Object.keys(order.prices).reduce((acc, key) => {
         acc[key] = order.prices![key].toString();
         return acc;

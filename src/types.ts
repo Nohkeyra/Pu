@@ -116,7 +116,7 @@ export interface Order {
   orderId?: string;
   officialInvoiceNo?: string;
   lang?: 'en' | 'bm';
-  status?: 'pending' | 'approved' | 'billed' | 'cancel_requested' | 'cancelled' | 'rejected' | 'in_transit' | 'delivered';
+  status?: 'pending' | 'approved' | 'billed' | 'in_transit' | 'cancel_requested' | 'cancelled' | 'rejected' | 'delivered' | 'completed';
   rejectionReason?: string;
   riderLocation?: RiderLocation;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;

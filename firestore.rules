@@ -79,19 +79,21 @@ service cloud.firestore {
         && request.resource.data.meals    == resource.data.meals
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.status in [
-             'pending','approved','billed','cancelled','rejected','cancel_requested','completed'
+             'pending','approved','billed','in_transit','delivered','cancelled','rejected','cancel_requested','completed'
            ]
         && (
           (resource.data.status == 'pending'          && request.resource.data.status in ['pending','approved','billed','cancelled','rejected','cancel_requested']) ||
-          (resource.data.status == 'approved'         && request.resource.data.status in ['approved','billed','cancelled','rejected','cancel_requested']) ||
-          (resource.data.status == 'billed'           && request.resource.data.status in ['billed','completed','cancel_requested']) ||
+          (resource.data.status == 'approved'         && request.resource.data.status in ['approved','billed','in_transit','cancelled','rejected','cancel_requested']) ||
+          (resource.data.status == 'billed'           && request.resource.data.status in ['billed','in_transit','delivered','completed','cancelled','cancel_requested']) ||
+          (resource.data.status == 'in_transit'       && request.resource.data.status in ['in_transit','delivered','completed','cancelled']) ||
+          (resource.data.status == 'delivered'        && request.resource.data.status in ['delivered','completed']) ||
           (resource.data.status == 'cancel_requested' && request.resource.data.status in ['cancel_requested','cancelled','approved','pending']) ||
           (resource.data.status == 'cancelled'        && request.resource.data.status == 'cancelled') ||
           (resource.data.status == 'rejected'         && request.resource.data.status == 'rejected') ||
           (resource.data.status == 'completed'        && request.resource.data.status == 'completed')
         )
         && (
-          !(request.resource.data.status in ['approved','billed']) ||
+          !(request.resource.data.status in ['approved','billed','delivered','in_transit']) ||
           (
             request.resource.data.prices is map &&
             request.resource.data.prices.keys().size() == request.resource.data.meals.size()

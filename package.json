@@ -116,5 +116,8 @@
     "sharp": "^0.35.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "eslint-visitor-keys": "4.2.0"
   }
 }

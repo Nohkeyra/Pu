@@ -30,6 +30,7 @@ import {
   updateRiderDeliveryWidgetGeofence,
   disableRiderDeliveryWidget,
   buildArrivalMessage,
+  checkAutoDepartureGeofence,
 } from '@/services/riderDeliveryWidgetService';
 import { DeliveryWidgetModal } from './DeliveryWidgetModal';
 import { db } from '@/firebaseConfig';
@@ -518,6 +519,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
         const headingDeg = pos.coords.heading !== null && !isNaN(pos.coords.heading) ? Math.round(pos.coords.heading) : 0;
         setRiderSpeed(speedKmh);
         broadcastLocation(newCoords, speedKmh, headingDeg);
+
+        // Check 100m Auto-Departure Geofence
+        checkAutoDepartureGeofence(newCoords, order, onUpdateStatus);
       },
       (err) => {
         console.warn('GPS Error:', err);
@@ -528,7 +532,18 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [isAdmin, isRiderMode, trackingSource, language, broadcastLocation]);
+  }, [isAdmin, isRiderMode, trackingSource, language, broadcastLocation, order, onUpdateStatus]);
+
+  // Monitor auto-departure geofence when in rider mode
+  useEffect(() => {
+    if (isAdmin && isRiderMode && riderCoords && order) {
+      checkAutoDepartureGeofence(
+        { lat: riderCoords.lat, lng: riderCoords.lng },
+        order,
+        onUpdateStatus
+      );
+    }
+  }, [isAdmin, isRiderMode, riderCoords, order, onUpdateStatus]);
 
   // Mark as Delivered
   const handleMarkAsDelivered = useCallback(async () => {

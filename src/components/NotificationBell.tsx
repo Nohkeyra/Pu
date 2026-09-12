@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCheck, Clock, Truck, CheckCircle2, AlertCircle, Utensils, X, ChevronRight } from 'lucide-react';
+import { Bell, CheckCheck, Clock, CheckCircle2, AlertCircle, Utensils, Truck, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
@@ -110,10 +110,10 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                 `Catering dishes for #${invoiceNo} are being prepared in kitchen.`
               );
             } else if (status === 'in_transit') {
-              title = t('Penghantar Dalam Perjalanan', 'Out for Delivery');
+              title = t('Pesanan Dalam Perjalanan 🚚', 'Order In Transit 🚚');
               message = t(
-                `Pesanan #${invoiceNo} sedang dihantar oleh kru katering Wawasan Pak Usop.`,
-                `Order #${invoiceNo} is on the way with Pak Usop catering team.`
+                `Penghantaran #${invoiceNo} sedang dalam perjalanan ke lokasi anda.`,
+                `Delivery #${invoiceNo} is on the way to your location.`
               );
             } else if (status === 'delivered') {
               title = t('Sajian Selesai Dihantar', 'Catering Delivered');
@@ -298,7 +298,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                     iconBg = 'bg-blue-500/10 text-blue-500';
                   } else if (notif.status === 'in_transit') {
                     StatusIcon = Truck;
-                    iconBg = 'bg-purple-500/10 text-purple-500';
+                    iconBg = 'bg-sky-500/10 text-sky-500';
                   } else if (notif.status === 'delivered') {
                     StatusIcon = CheckCircle2;
                     iconBg = 'bg-emerald-500/10 text-emerald-500';

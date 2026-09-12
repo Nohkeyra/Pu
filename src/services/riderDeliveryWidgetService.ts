@@ -3,7 +3,72 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { KeepAwake } from '@capacitor-community/keep-awake';
 import { isAndroidApk } from '@/lib/platform';
 import { launchWhatsApp, launchMaps } from '@/lib/nativeService';
+import { triggerNotification, NotificationType } from '@/lib/haptics';
 import type { Order } from '@/types';
+
+// Koordinat Restoran Wawasan Pak Usop
+export const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
+export const DEPARTURE_RADIUS_KM = 0.1; // 100 Meter
+
+let hasAutoTriggeredDeparture = false;
+
+/**
+ * Kira jarak Haversine (km) antara dua koordinat
+ */
+export function calculateHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * 100m Auto-Departure Geofence Check
+ */
+export async function checkAutoDepartureGeofence(
+  currentCoords: { lat: number; lng: number },
+  order: Order,
+  onStatusUpdate?: (orderId: string, status: string) => Promise<void> | void
+) {
+  if (hasAutoTriggeredDeparture) return;
+
+  const status = (order.status || '').toLowerCase();
+  const eligibleStatuses = ['approved', 'billed'];
+
+  if (eligibleStatuses.includes(status)) {
+    const distanceFromRestoran = calculateHaversineKm(
+      RESTORAN_WAWASAN_COORDS.lat,
+      RESTORAN_WAWASAN_COORDS.lng,
+      currentCoords.lat,
+      currentCoords.lng
+    );
+
+    // Jika telah bergerak keluar melebihi 100m dari restoran
+    if (distanceFromRestoran >= DEPARTURE_RADIUS_KM) {
+      hasAutoTriggeredDeparture = true;
+
+      // 1. Kemas kini status ke 'in_transit' secara automatik
+      if (onStatusUpdate && order.id) {
+        await onStatusUpdate(order.id, 'in_transit');
+      }
+
+      // 2. Beri getaran feedback pada telefon rider
+      await triggerNotification(NotificationType.Success);
+      console.log(`[Auto-Departure] Rider moved ${distanceFromRestoran.toFixed(2)}km from restaurant. Status updated to in_transit.`);
+    }
+  }
+}
+
+export function resetAutoDepartureGeofence() {
+  hasAutoTriggeredDeparture = false;
+}
 
 export const RIDER_NOTIFICATION_ID = 9901;
 export const RIDER_ARRIVAL_NOTIFICATION_ID = 9902;
@@ -171,6 +236,7 @@ export async function enableRiderDeliveryWidget(
 ): Promise<boolean> {
   currentActiveOrder = order;
   currentTargetCoords = targetCoords;
+  resetAutoDepartureGeofence();
   if (callbacks?.onDelivered) {
     onDeliveredCallback = callbacks.onDelivered;
   }
