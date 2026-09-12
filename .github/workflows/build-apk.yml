@@ -216,11 +216,17 @@ jobs:
           KEY_PASS="${RELEASE_KEY_PASSWORD:-${KEY_PASSWORD:-wawasan86}}"
           ALIAS="${RELEASE_KEY_ALIAS:-${KEY_ALIAS:-wawasan-key-alias}}"
           
+          echo "📊 Diagnostics (lengths of resolved variables):"
+          echo "  - Keystore Base64 length: ${#COMBINED_BASE64}"
+          echo "  - Store Password length: ${#STORE_PASS}"
+          echo "  - Key Password length: ${#KEY_PASS}"
+          echo "  - Key Alias length: ${#ALIAS}"
+          
           mkdir -p android/app
           
           if [ -n "$COMBINED_BASE64" ]; then
             echo "🔐 Found base64 encoded keystore secret. Restoring..."
-            echo "$COMBINED_BASE64" | base64 -d > android/app/release-key.jks
+            printf '%s' "$COMBINED_BASE64" | base64 --decode > android/app/release-key.jks
             echo "✅ Keystore restored from GitHub secrets."
           else
             echo "⚠️ WARNING: No RELEASE_KEYSTORE_BASE64 or ANDROID_KEYSTORE_BASE64 found in GitHub secrets!"
