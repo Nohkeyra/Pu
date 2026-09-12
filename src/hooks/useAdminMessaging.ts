@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Order } from '@/types';
-import { generateInvoicePDF } from '@/services/pdfService';
+
 import { getApiUrl } from '@/lib/api';
 import { formatDateDisplay } from '@/lib/utils';
 import { Capacitor } from '@capacitor/core';
@@ -34,8 +34,7 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
 
     try {
       const invoiceNo = getDisplayInvoiceNo(sendOrder);
-      const pdfDoc = generateInvoicePDF(sendOrder, sendOrder.status === 'approved', sendOrder.lang);
-      const pdfBase64 = pdfDoc.output('datauristring');
+
 
       const response = await fetch(getApiUrl('/api/send-invoice'), {
         method: 'POST',
@@ -70,52 +69,47 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
     }
   };
 
-  const handleSendWhatsApp = () => {
+  const handleSendWhatsApp = async () => {
     if (!sendOrder) return;
 
-    const invoiceNo = getDisplayInvoiceNo(sendOrder);
-    const total = sendOrder.totalAmount || 0;
-    const formattedPhone = recipientPhone.replace(/\D/g, '').replace(/^0/, '60');
-    const isBm = sendOrder.lang !== 'en';
-    
-    const eventDateDisplay = formatDateDisplay(sendOrder.dateTime || sendOrder.eventDate || sendOrder.date);
-    
-    const msg = isBm 
-      ? `Salam ${sendOrder.name},\n\nTerima kasih kerana memilih *Restoran Wawasan Pak Usop*.\n\n` +
-        `Berikut adalah butiran invois tempahan katering anda:\n` +
-        `• *No. Invois:* ${invoiceNo}\n` +
-        `• *Tarikh Majlis:* ${eventDateDisplay}\n` +
-        `• *Bilangan Pax:* ${sendOrder.quantity || '-'} orang\n` +
-        `• *Jumlah Bayaran:* RM ${total.toFixed(2)}\n\n` +
-        `*Maklumat Pembayaran (Bank Transfer):*\n` +
-        `• Bank: *Bank Muamalat*\n` +
-        `• Nama Akaun: *RESTORAN WAWASAN*\n` +
-        `• No. Akaun: *16010000-405710*\n\n` +
-        `Sila hantarkan resit bayaran di sini setelah pembayaran dibuat. Sekiranya ada sebarang pertanyaan, sila hubungi kami di talian *017-3157731*.\n\n` +
-        `Terima kasih!`
-      : `Hello ${sendOrder.name},\n\nThank you for choosing *Restoran Wawasan Pak Usop*.\n\n` +
-        `Here are your catering invoice details:\n` +
-        `• *Invoice No:* ${invoiceNo}\n` +
-        `• *Event Date:* ${eventDateDisplay}\n` +
-        `• *Guest Count:* ${sendOrder.quantity || '-'} pax\n` +
-        `• *Total Amount:* RM ${total.toFixed(2)}\n\n` +
-        `*Bank Payment Details:*\n` +
-        `• Bank: *Bank Muamalat*\n` +
-        `• Account Name: *RESTORAN WAWASAN*\n` +
-        `• Account No: *16010000-405710*\n\n` +
-        `Please share your payment transfer receipt once completed. For any inquiries, feel free to reach us at *017-3157731*.\n\n` +
-        `Thank you!`;
+    try {
+      const invoiceNo = getDisplayInvoiceNo(sendOrder);
+      const total = sendOrder.totalAmount || 0;
+      const formattedPhone = recipientPhone.replace(/\D/g, '').replace(/^0/, '60');
+      const eventDateDisplay = formatDateDisplay(sendOrder.dateTime || sendOrder.eventDate || sendOrder.date);
+      
+      const response = await fetch(getApiUrl('/api/send-invoice-whatsapp'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          recipientPhone: formattedPhone,
+          customerName: sendOrder.name,
+          invoiceNo,
+          eventDate: eventDateDisplay,
+          pax: sendOrder.quantity || '-',
+          totalAmount: total,
+          lang: sendOrder.lang
+        })
+      });
 
-    const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
-    
-    if (Capacitor.isNativePlatform()) {
-      window.location.assign(url);
-    } else {
-      window.open(url, '_blank');
+      if (!response.ok) throw new Error('Failed to generate WhatsApp link from server');
+      const data = await response.json();
+      const url = data.whatsappUrl;
+
+      if (Capacitor.isNativePlatform()) {
+        window.location.assign(url);
+      } else {
+        window.open(url, '_blank');
+      }
+
+      toast({ title: t('whatsapp_opened'), variant: 'success' });
+      setIsSendDialogOpen(false);
+    } catch (err) {
+      toast({ title: t('sending_failed'), description: String(err), variant: 'error' });
     }
-
-    toast({ title: t('whatsapp_opened'), variant: 'success' });
-    setIsSendDialogOpen(false);
   };
 
   return {

@@ -48,13 +48,14 @@ export function formatPrice(price: number) {
 }
 
 // Clean display helper for order reference / invoice number
-export function getDisplayInvoiceNo(order?: { invoiceNo?: string; officialInvoiceNo?: string; id?: string } | null): string {
+export function getDisplayInvoiceNo(order?: { invoiceNo?: string; officialInvoiceNo?: string; id?: string; status?: string } | null): string {
   if (!order) return 'ORDER';
   if (order.invoiceNo) return order.invoiceNo;
   if (order.officialInvoiceNo) return order.officialInvoiceNo;
   if (order.id) {
     if (order.id.length > 12) {
-      return `RW ${order.id.substring(0, 5).toUpperCase()}`;
+      const prefix = order.status === 'pending' ? 'QT' : 'RW';
+      return `${prefix} ${order.id.substring(0, 5).toUpperCase()}`;
     }
     return order.id;
   }

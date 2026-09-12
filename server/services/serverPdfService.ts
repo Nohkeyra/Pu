@@ -63,6 +63,9 @@ function ensureImagesLoaded() {
     'assets/brand/wawasan_logo_fallback.png',
   ]);
   cachedJawiBase64 = loadImageBase64([
+    'assets/heritage/batik_pattern.jpg',
+    'assets/heritage/batik_pattern_hd.jpg',
+    'assets/heritage/batik_vector_pattern.jpg',
     'assets/heritage/Jawi.jpg',
   ]);
   imagesLoaded = true;
@@ -258,20 +261,29 @@ export async function generateServerInvoicePdf(
   doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 39, 25);
   doc.text('W.P Putrajaya', 39, 29);
 
-  // INVOICE title in Gold (#A67C1E / 166, 124, 30)
+  // Determine document type (Quotation vs Invoice)
+  const isQuoteDoc = (order.invoiceNo && order.invoiceNo.startsWith('QT')) || (!isFinal && order.status === 'pending');
+  const docTitle = isQuoteDoc 
+    ? (lang === 'en' ? 'QUOTATION' : 'SEBUT HARGA')
+    : (lang === 'en' ? 'INVOICE' : 'INVOIS');
+  const docNoLabel = isQuoteDoc 
+    ? (lang === 'en' ? 'Quote No' : 'No. Sebut Harga')
+    : (lang === 'en' ? 'Invoice No' : 'No. Invois');
+
+  // Title in Gold (#A67C1E / 166, 124, 30)
   doc.setTextColor(166, 124, 30);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
-  doc.text('INVOICE', 195, 20, { align: 'right' });
+  doc.setFontSize(22);
+  doc.text(docTitle, 195, 20, { align: 'right' });
 
-  // Invoice metadata (right side) in Charcoal (26, 24, 22)
+  // Invoice/Quotation metadata (right side) in Charcoal (26, 24, 22)
   doc.setTextColor(26, 24, 22);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   const formattedInvoiceDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const invoiceNoVal = order.invoiceNo || (isFinal ? 'PENDING' : 'SEBUT HARGA');
-  doc.text(`No. Invois / Invoice No: ${invoiceNoVal}`, 195, 27, { align: 'right' });
-  doc.text(`Tarikh / Date: ${formattedInvoiceDate}`, 195, 32, { align: 'right' });
+  doc.text(`${docNoLabel}: ${invoiceNoVal}`, 195, 27, { align: 'right' });
+  doc.text(`${lang === 'en' ? 'Date' : 'Tarikh'}: ${formattedInvoiceDate}`, 195, 32, { align: 'right' });
 
   // ── Client block ──────────────────────────────────────────────────────────
   doc.setTextColor(40, 35, 30);
@@ -284,18 +296,31 @@ export async function generateServerInvoicePdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(60, 100, 60);
-  doc.text('KEPADA / TO:', 9, clientBlockY + 5);
+  doc.text(lang === 'en' ? 'TO:' : 'KEPADA / TO:', 9, clientBlockY + 5);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 20);
   const companyLines = doc.splitTextToSize(order.to || 'Pelanggan', 98);
   doc.text(companyLines, 9, clientBlockY + 11);
+
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
-  doc.text(`u/p: ${order.attn || order.name || '-'}`, 9, clientBlockY + 22);
-  doc.text(`Tel: ${order.contact || '-'}`, 9, clientBlockY + 27);
-  doc.text(`E-mel: ${order.email || '-'}`, 9, clientBlockY + 32);
+
+  const deptVal = order.department || order.division;
+  let curClientY = clientBlockY + 18;
+  if (deptVal && deptVal.trim() !== '') {
+    const deptLabel = lang === 'en' ? 'Div/Dept' : 'Bahagian/Jabatan';
+    doc.text(`${deptLabel}: ${deptVal.trim()}`, 9, curClientY);
+    curClientY += 4.5;
+  }
+  if (order.attn && order.attn.trim() !== '') {
+    doc.text(`Attn / U.P: ${order.attn.trim()}`, 9, curClientY);
+    curClientY += 4.5;
+  }
+  doc.text(`Tel: ${order.contact || '-'}`, 9, curClientY);
+  curClientY += 4.5;
+  doc.text(`Email: ${order.email || '-'}`, 9, curClientY);
 
   // Order detail boxes (right side of client block)
   const boxY = clientBlockY;
@@ -485,3 +510,220 @@ export async function generateServerInvoicePdf(
   const arrayBuffer = doc.output('arraybuffer');
   return Buffer.from(arrayBuffer);
 }
+
+/**
+ * Generates a consolidated PDF invoice for multiple orders and returns a Buffer.
+ */
+export async function generateServerConsolidatedInvoicePdf(
+  orders: Record<string, any>[],
+  invoiceNo?: string,
+  includeNotes: boolean = false,
+  lang: 'bm' | 'en' = 'bm'
+): Promise<Buffer> {
+  ensureImagesLoaded();
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const cCreamBg = [250, 247, 240];
+  const cGoldBorder = [194, 147, 45];
+  const cHeaderGold = [166, 124, 30];
+  const cDarkBrown = [96, 64, 8];
+  const cCharcoal = [26, 24, 22];
+
+  const drawPageHeader = (pageNumber: number) => {
+    drawHeaderBackground(doc, 38);
+
+    if (cachedLogoBase64) {
+      try {
+        doc.addImage(cachedLogoBase64, 'PNG', 15, 12, 21, 21);
+      } catch { /* continue */ }
+    }
+
+    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('RESTORAN WAWASAN', 40, 18);
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
+    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
+    doc.text('W.P Putrajaya', 40, 31);
+
+    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('COMBINED INVOICE', 195, 22, { align: 'right' });
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`${lang === 'en' ? 'Invoice No' : 'No. Invois'}: ${invoiceNo || 'COMBINED'}`, 195, 27, { align: 'right' });
+    doc.text(`Tarikh / Date: ${formatDate(new Date().toISOString())}`, 195, 32, { align: 'right' });
+    if (pageNumber > 1) {
+      doc.text(`Page ${pageNumber}`, 195, 36, { align: 'right' });
+    }
+  };
+
+  let pageNumber = 1;
+  drawPageHeader(pageNumber);
+
+  const firstOrder = orders[0] || {};
+  const recipientText = (firstOrder.to || 'Pelanggan') + (firstOrder.attn ? ` (Attn: ${firstOrder.attn})` : '');
+  drawCreamBox(doc, 'KEPADA / TO', recipientText, 15, 42, 180, 15, true);
+
+  const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
+  const activeMeals = allPossibleMeals.filter(m => orders.some(o => Array.isArray(o.meals) && o.meals.includes(m)));
+
+  const startX = 15;
+  const colDate = 22;
+  const colQty = 12;
+  const colNotes = includeNotes ? 28 : 0;
+  const colMealsWidth = Math.max(activeMeals.length * 15, 30);
+  const colRM = 20;
+  const colMenu = 180 - colDate - colQty - colNotes - colMealsWidth - colRM;
+
+  const xDate = startX;
+  const xQty = xDate + colDate;
+  const xNotes = xQty + colQty;
+  const xMenu = includeNotes ? xNotes + colNotes : xNotes;
+  const xMealsStart = xMenu + colMenu;
+  const xRM = xMealsStart + colMealsWidth;
+
+  const drawMatrixHeader = (y: number) => {
+    doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
+    doc.rect(15, y, 180, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+
+    doc.text('ORDER DETAILS', xDate + (xMealsStart - xDate) / 2, y + 4.8, { align: 'center' });
+
+    if (activeMeals.length > 0) {
+      doc.line(xMealsStart, y, xMealsStart, y + 7);
+      doc.text('PRICE / PAX (RM)', xMealsStart + colMealsWidth / 2, y + 4.8, { align: 'center' });
+    }
+
+    doc.line(xRM, y, xRM, y + 7);
+    doc.text('TOTAL', xRM + colRM / 2, y + 4.8, { align: 'center' });
+
+    const r2Y = y + 7;
+    doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+    doc.rect(15, r2Y, 180, 7, 'F');
+
+    doc.setFontSize(7.5);
+    const centerText = (txt: string, x: number, w: number) => {
+      doc.text(txt, x + w / 2, r2Y + 4.8, { align: 'center' });
+    };
+
+    centerText('Date', xDate, colDate);
+    centerText('QTY', xQty, colQty);
+    if (includeNotes) centerText('Notes', xNotes, colNotes);
+    centerText('Menu', xMenu, colMenu);
+
+    activeMeals.forEach((meal, i) => {
+      const shortLabel = mealLabels[meal] || meal;
+      centerText(shortLabel.split('/')[0].trim(), xMealsStart + (i * 15), 15);
+    });
+
+    centerText('RM', xRM, colRM);
+
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.1);
+    [xQty, xNotes, xMenu, xMealsStart, ...activeMeals.map((_, i) => xMealsStart + i * 15), xRM].forEach(x => {
+      if (x > xDate && x < xRM + colRM) {
+        doc.line(x, r2Y, x, r2Y + 7);
+      }
+    });
+
+    return r2Y + 7;
+  };
+
+  let currentY = 62;
+  currentY = drawMatrixHeader(currentY);
+  let grandTotal = 0;
+
+  orders.forEach(order => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+
+    const formattedDateVal = formatDate(order.eventDate || order.date);
+    const splitDate = doc.splitTextToSize(formattedDateVal, colDate - 2);
+    const splitNotes = includeNotes ? doc.splitTextToSize(order.notes || '-', colNotes - 2) : [];
+    const splitMenu = doc.splitTextToSize(order.menu || 'Set Box', colMenu - 2);
+    const qtyStr = (order.quantity || order.guests || 0).toString();
+
+    const maxLines = Math.max(splitDate.length, splitNotes.length, splitMenu.length, 1);
+    const rowHeight = Math.max(7, maxLines * 4 + 3);
+
+    if (currentY + rowHeight > 265) {
+      doc.addPage();
+      pageNumber++;
+      drawPageHeader(pageNumber);
+      currentY = 42;
+      currentY = drawMatrixHeader(currentY);
+    }
+
+    doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
+    doc.rect(15, currentY, 180, rowHeight, 'F');
+
+    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+    doc.setLineWidth(0.35);
+    doc.rect(15, currentY, 180, rowHeight, 'S');
+
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    const textY = currentY + 5;
+
+    doc.text(splitDate, xDate + colDate / 2, textY, { align: 'center' });
+    doc.text(qtyStr, xQty + colQty / 2, textY, { align: 'center' });
+    if (includeNotes) doc.text(splitNotes, xNotes + colNotes / 2, textY, { align: 'center' });
+    doc.text(splitMenu, xMenu + colMenu / 2, textY, { align: 'center' });
+
+    activeMeals.forEach((meal, i) => {
+      if (Array.isArray(order.meals) && order.meals.includes(meal) && order.prices && order.prices[meal] !== undefined) {
+        const val = Number(order.prices[meal]) || 0;
+        doc.text(val.toFixed(2), xMealsStart + (i * 15) + 7.5, textY, { align: 'center' });
+      } else {
+        doc.text('-', xMealsStart + (i * 15) + 7.5, textY, { align: 'center' });
+      }
+    });
+
+    const totalNum = Number(order.totalAmount) || 0;
+    doc.text(totalNum.toFixed(2), xRM + colRM - 2, textY, { align: 'right' });
+    grandTotal += totalNum;
+    currentY += rowHeight;
+  });
+
+  // Grand total row
+  doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
+  doc.rect(15, currentY, 180, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('JUMLAH KESELURUHAN / GRAND TOTAL', 18, currentY + 4.8);
+  doc.text(`RM ${grandTotal.toFixed(2)}`, xRM + colRM - 2, currentY + 4.8, { align: 'right' });
+  currentY += 12;
+
+  // Amount in words
+  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(8);
+  const bilingual = bilingualWords(grandTotal);
+  doc.text(bilingual.bm, 15, currentY);
+  doc.text(bilingual.en, 15, currentY + 4);
+
+  // Footer on all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(130, 130, 130);
+    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+  }
+
+  const arrayBuffer = doc.output('arraybuffer');
+  return Buffer.from(arrayBuffer);
+}
+

@@ -19,6 +19,10 @@ interface ProfileInfoTabProps {
   setSelectedCompany: (val: string) => void;
   editAttn: string;
   setEditAttn: (val: string) => void;
+  editDepartment: string;
+  setEditDepartment: (val: string) => void;
+  editInitials?: string;
+  setEditInitials?: (val: string) => void;
   isEditing: boolean;
   setIsEditing: (val: boolean) => void;
   isSaving: boolean;
@@ -38,6 +42,8 @@ export function ProfileInfoTab({
   setSelectedCompany,
   editAttn,
   setEditAttn,
+  editDepartment,
+  setEditDepartment,
   isEditing,
   setIsEditing,
   isSaving,
@@ -178,18 +184,39 @@ export function ProfileInfoTab({
           )}
         </div>
 
-        {/* Attn / Department */}
+        {/* Division / Department */}
+        <div className="space-y-1.5">
+          <Label htmlFor="profile-department" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
+            <Briefcase className="w-3.5 h-3.5 text-primary" />
+            <span>{t('Division / Department', 'Bahagian / Jabatan (Billing)')}</span>
+          </Label>
+          {isEditing ? (
+            <Input
+              id="profile-department"
+              value={editDepartment}
+              onChange={(e) => setEditDepartment(e.target.value)}
+              placeholder={t('e.g. IT Department / Bahagian Sumber Manusia', 'Cth: Bahagian Teknologi Maklumat & Komunikasi')}
+              className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
+            />
+          ) : (
+            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+              {profile?.department || profile?.division || '—'}
+            </p>
+          )}
+        </div>
+
+        {/* Attn / Attention */}
         <div className="space-y-1.5">
           <Label htmlFor="profile-attn" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
-            <Briefcase className="w-3.5 h-3.5 text-primary" />
-            <span>{t('Attention / Unit / Jabatan', 'Untuk Perhatian (Attn) / Unit')}</span>
+            <UserIcon className="w-3.5 h-3.5 text-primary" />
+            <span>{t('Attn / U.P', 'Attn / U.P')}</span>
           </Label>
           {isEditing ? (
             <Input
               id="profile-attn"
               value={editAttn}
               onChange={(e) => setEditAttn(e.target.value)}
-              placeholder={t('e.g. Unit Latihan, Tingkat 4', 'Cth: Jabatan Sumber Manusia')}
+              placeholder={t('e.g. Encik Ahmad / Puan Siti', 'Cth: Encik Ahmad / Puan Siti')}
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (

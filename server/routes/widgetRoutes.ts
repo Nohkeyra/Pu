@@ -285,8 +285,10 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Could not compute a valid total. Check that meal types in the order match the prices provided.' });
     }
 
-    // Generate sequential invoice number (Firestore transaction, same as existing flow)
-    const invoiceNo = await generateSequentialInvoiceNo();
+    // Generate sequential invoice number (RW) or transition QT prefix to RW
+    const invoiceNo = (order.invoiceNo && order.invoiceNo.startsWith('QT'))
+      ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
+      : (order.invoiceNo || await generateSequentialInvoiceNo(false));
 
     // Build order object for PDF generation
     const orderForPdf = {

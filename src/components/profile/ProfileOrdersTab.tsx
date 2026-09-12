@@ -413,8 +413,9 @@ export function ProfileOrdersTab({
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
-      case 'approved':
       case 'billed':
+        return <Badge className="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 text-xs font-bold">{t('Billed', 'Telah Diinvois')}</Badge>;
+      case 'approved':
         return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Approved', 'Diluluskan')}</Badge>;
       case 'in_transit':
         return <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold animate-pulse">{t('In Transit 🚚', 'Dalam Perjalanan 🚚')}</Badge>;

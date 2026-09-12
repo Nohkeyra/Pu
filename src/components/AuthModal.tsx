@@ -14,7 +14,7 @@ import {
   User, 
   Phone, 
   Building, 
-  Briefcase, 
+  Briefcase,
   X, 
   ArrowRight, 
   Loader2,
@@ -52,6 +52,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const [to, setTo] = useState(''); // Organization
   const [selectedCompany, setSelectedCompany] = useState('');
   const [attn, setAttn] = useState(''); // Attn
+  const [department, setDepartment] = useState(''); // Corporate Billing Details (Division / Department)
+  const [initials, setInitials] = useState(''); // Initial Identifier
 
   // Translation helpers - DECLARED EARLY
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
@@ -70,6 +72,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setTo('');
     setSelectedCompany('');
     setAttn('');
+    setDepartment('');
+    setInitials('');
   };
 
   const handleModeChange = (newMode: AuthMode) => {
@@ -122,6 +126,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           contact,
           to,
           attn,
+          department,
+          division: department,
+          initials,
+          initialIdentifier: initials,
           updatedAt: new Date().toISOString()
         };
 
@@ -318,18 +326,37 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                     )}
                   </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label htmlFor="signup-department" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
+                        {t('Division / Department', 'Bahagian / Jabatan')}
+                      </label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          id="signup-department"
+                          type="text"
+                          value={department}
+                          onChange={(e) => setDepartment(e.target.value)}
+                          placeholder="cth: Bahagian Kewangan"
+                          className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
                     <label htmlFor="signup-attn" className="microcopy-12-upper uppercase tracking-wider font-bold text-muted-foreground">
-                      {t('Department / Attention (Attn)', 'Bahagian / Untuk Perhatian')}
+                      {t('Attn / U.P', 'Attn / U.P')}
                     </label>
                     <div className="relative">
-                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         id="signup-attn"
                         type="text"
                         value={attn}
                         onChange={(e) => setAttn(e.target.value)}
-                        placeholder="e.g. Unit Kewangan"
+                        placeholder="cth: Encik Ahmad / Puan Siti"
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                       />
                     </div>

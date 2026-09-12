@@ -2,35 +2,21 @@ import { Router, type Request, type Response } from 'express';
 import { verifyAdminToken } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
+import { getFirestore } from '../firebaseAdmin.js';
+import { generateServerInvoicePdf, generateServerConsolidatedInvoicePdf } from '../services/serverPdfService.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_PDF_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
-// SECURITY FIX (audit 2026-08-28): every other public write endpoint in this
-// app (order submission, cancel/delete/poke, preliminary invoice)
-// has a rate limiter; this one didn't, so an unauthenticated caller could
-// spam-call it to flood the admin's WhatsApp Business number and burn
-// message-sending quota/cost. Mirrors the customerOrderActionLimiter used
-// for the other unauthenticated customer-facing endpoints in orderRoutes.ts.
+// Rate limiter for order forwarding
 const forwardOrderLimiter = createDistributedRateLimiter({
   prefix: 'forward_order',
   windowMs: 15 * 60 * 1000,
   limit: 30,
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
-
-/**
- * Validate that a Buffer contains a valid PDF by checking magic bytes.
- * PDF files start with "%PDF-1.x" where x is 0-7.
- */
-function isValidPdf(buffer: Buffer): boolean {
-  if (buffer.length < 5) return false;
-  const header = buffer.toString('ascii', 0, 5);
-  return header.startsWith('%PDF-');
-}
 
 // WhatsApp API Endpoint for Admin Invoice Sharing
 router.post('/send-invoice-whatsapp', verifyAdminToken, async (req, res) => {
@@ -94,7 +80,7 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
 });
 
 router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Response) => {
-  const { orderId, email, subject, body, pdfBase64 } = req.body || {};
+  const { orderId, email, subject, body } = req.body || {};
 
   try {
     if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
@@ -106,14 +92,15 @@ router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Respons
     }
 
     let pdfBuffer: Buffer | null = null;
-    if (pdfBase64 && typeof pdfBase64 === 'string') {
-      pdfBuffer = Buffer.from(pdfBase64, 'base64');
-      if (pdfBuffer.length > MAX_PDF_ATTACHMENT_BYTES) {
-        return res.status(400).json({ success: false, error: 'PDF attachment size exceeds 10MB limit.' });
-      }
-      // SECURITY FIX: Validate PDF magic bytes to prevent executable injection
-      if (!isValidPdf(pdfBuffer)) {
-        return res.status(400).json({ success: false, error: 'Invalid PDF format. File does not start with valid PDF header.' });
+    if (orderId) {
+      const db = getFirestore();
+      const orderSnap = await db.collection('orders').doc(orderId).get();
+      if (orderSnap.exists) {
+        const { generateServerInvoicePdf } = await import('../services/serverPdfService.js');
+        const orderForPdf = { ...orderSnap.data(), id: orderSnap.id };
+        // We do not have lang in body, assume 'bm' or read from order
+        const lang = orderForPdf.lang === 'en' ? 'en' : 'bm';
+        pdfBuffer = await generateServerInvoicePdf(orderForPdf, true, lang);
       }
     }
 
@@ -139,6 +126,123 @@ router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Respons
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
+  }
+});
+
+// GET Endpoint for Server-Generated Single Invoice PDF
+router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId || typeof orderId !== 'string') {
+      return res.status(400).json({ success: false, error: 'orderId parameter is required' });
+    }
+
+    const db = getFirestore();
+    const docSnap = await db.collection('orders').doc(orderId).get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ success: false, error: 'Order document not found' });
+    }
+
+    const orderData = { id: docSnap.id, ...docSnap.data() } as Record<string, any>;
+    const isFinal = req.query.final === 'true' || (orderData.status !== 'pending' && orderData.status !== 'rejected' && orderData.status !== 'cancelled');
+    const pdfBuffer = await generateServerInvoicePdf(orderData, isFinal);
+
+    const invoiceNo = orderData.invoiceNo || `RW_${orderId.substring(0, 5).toUpperCase()}`;
+    const filename = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('[Invoice API] Failed to render server invoice PDF:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// POST Endpoint for Server-Generated Consolidated Invoice PDF (Admin Only)
+router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req: Request, res: Response) => {
+  try {
+    const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
+    }
+
+    const db = getFirestore();
+    const orderDocs: Record<string, any>[] = [];
+
+    for (const id of orderIds) {
+      if (typeof id === 'string' && id.trim()) {
+        const snap = await db.collection('orders').doc(id.trim()).get();
+        if (snap.exists) {
+          orderDocs.push({ id: snap.id, ...snap.data() });
+        }
+      }
+    }
+
+    if (orderDocs.length === 0) {
+      return res.status(404).json({ success: false, error: 'No matching order documents found for provided orderIds' });
+    }
+
+    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
+      orderDocs,
+      invoiceNo,
+      Boolean(includeNotes),
+      lang === 'en' ? 'en' : 'bm'
+    );
+
+    const filename = `Invois_Konsolidasi_${invoiceNo || 'COMBINED'}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error('[Invoice API] Failed to render consolidated PDF:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+
+router.post('/invoice/combined/pdf', async (req, res) => {
+  try {
+    const { orderIds, includeNotes, lang } = req.body || {};
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
+    }
+
+    const db = getFirestore();
+    const orderDocs = [];
+    const customInvoiceNo = 'RW COMBINED';
+
+    for (const id of orderIds) {
+      if (typeof id === 'string' && id.trim()) {
+        const snap = await db.collection('orders').doc(id.trim()).get();
+        if (snap.exists) {
+          orderDocs.push({ id: snap.id, ...snap.data() });
+        }
+      }
+    }
+
+    if (orderDocs.length === 0) {
+      return res.status(404).json({ success: false, error: 'No matching order documents found' });
+    }
+
+    const { generateServerConsolidatedInvoicePdf } = await import('../services/serverPdfService.js');
+    
+    const combinedPayload = {
+      orders: orderDocs,
+      includeNotes: Boolean(includeNotes),
+      lang: lang === 'en' ? 'en' : 'bm',
+      invoiceNo: customInvoiceNo
+    };
+
+    const pdfBuffer = await generateServerConsolidatedInvoicePdf(combinedPayload, true);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Combined_Invoice.pdf"`);
+    return res.end(pdfBuffer);
+  } catch (err) {
+    console.error('[Invoice API] Combined PDF generation error:', err);
+    return res.status(500).json({ success: false, error: String(err?.message || err) });
   }
 });
 

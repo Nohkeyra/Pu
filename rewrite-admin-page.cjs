@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const code = `import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
+import { useTheme } from '@/context/ThemeContext';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import AdminPanel from '@/components/AdminPanel';
@@ -7,9 +11,11 @@ import AuthModal from '@/components/AuthModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getApiUrl } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 export default function AdminPage() {
+  const { t } = useLanguage();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   const [user, setUser] = useState<User | null>(null);
@@ -27,7 +33,7 @@ export default function AdminPage() {
           
           // Verify with server to ensure it has admin claim
           const res = await fetch(getApiUrl('/api/admin/verify'), {
-            headers: { Authorization: `Bearer ${idToken}` }
+            headers: { Authorization: \`Bearer \${idToken}\` }
           });
           
           if (res.ok) {
@@ -36,7 +42,7 @@ export default function AdminPage() {
             setToken('');
             setError('You do not have administrative privileges. Only authorized users may access this panel.');
           }
-        } catch {
+        } catch (err) {
           setToken('');
           setError('Failed to verify admin status.');
         }
@@ -105,3 +111,7 @@ export default function AdminPage() {
     </ErrorBoundary>
   );
 }
+`;
+
+fs.writeFileSync('src/pages/AdminPage.tsx', code);
+console.log("Rewrote AdminPage");

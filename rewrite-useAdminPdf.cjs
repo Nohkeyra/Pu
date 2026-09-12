@@ -1,4 +1,6 @@
-import { useState } from 'react';
+const fs = require('fs');
+
+const code = `import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -26,10 +28,10 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
   const handlePreviewPDF = async (order: Order, isFinal: boolean) => {
     try {
       if (!order.id) throw new Error('Missing database ID');
-      const invoiceNo = order.invoiceNo || `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
-      const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
+      let invoiceNo = order.invoiceNo || \`RW \${order.id.substring(0, 5).toUpperCase()}-PRE\`;
+      const fileName = \`\${isFinal ? 'Invoice' : 'Preliminary'}_\${invoiceNo}.pdf\`;
 
-      const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
+      const serverRes = await fetch(getApiUrl(\`/api/invoice/\${order.id}/pdf?final=\${isFinal}\`), {
         headers: authHeaders()
       });
       if (!serverRes.ok) throw new Error('Failed to generate PDF from server');
@@ -64,10 +66,10 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     setGeneratingInvoice(order.id);
     
     try {
-      const invoiceNo = order.invoiceNo || `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
-      const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
+      let invoiceNo = order.invoiceNo || \`RW \${order.id.substring(0, 5).toUpperCase()}-PRE\`;
+      const fileName = \`\${isFinal ? 'Invoice' : 'Preliminary'}_\${invoiceNo}.pdf\`;
 
-      const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
+      const serverRes = await fetch(getApiUrl(\`/api/invoice/\${order.id}/pdf?final=\${isFinal}\`), {
         headers: authHeaders()
       });
       if (!serverRes.ok) throw new Error('Failed to download PDF from server');
@@ -109,12 +111,12 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
-        setConsolidatedInvoiceNo(data.nextInvoiceNo || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
+        setConsolidatedInvoiceNo(data.nextInvoiceNo || \`RW \${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}\`);
       } else {
-        setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
+        setConsolidatedInvoiceNo(\`RW \${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}\`);
       }
     } catch {
-      setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
+      setConsolidatedInvoiceNo(\`RW \${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}\`);
     }
     setShowConsolidateModal(true);
   };
@@ -126,7 +128,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       const desiredInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim();
       const orderIds = orders.map((o) => o.id).filter(Boolean);
       
-      let finalInvoiceNo = desiredInvoiceNo || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+      let finalInvoiceNo = desiredInvoiceNo || \`RW \${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}\`;
 
       // 1. Commit the consolidated invoice number to Firestore
       try {
@@ -161,7 +163,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       if (!pdfRes.ok) throw new Error('Failed to generate consolidated PDF from server');
       const pdfBlob = await pdfRes.blob();
 
-      const fileName = `Invois_Konsolidasi_${finalInvoiceNo}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
+      const fileName = \`Invois_Konsolidasi_\${finalInvoiceNo}_\${format(new Date(), 'yyyyMMdd_HHmm')}.pdf\`;
 
       if (Capacitor.isNativePlatform()) {
         const pdfDataUri = await new Promise<string>((resolve, reject) => {
@@ -189,7 +191,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       
       toast({
         title: t('success'),
-        description: `Consolidated invoice ${finalInvoiceNo} generated.`,
+        description: \`Consolidated invoice \${finalInvoiceNo} generated.\`,
         variant: 'success'
       });
     } catch (error) {
@@ -216,3 +218,6 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     handleGenerateConsolidatedInvoice
   };
 }
+`;
+fs.writeFileSync('src/hooks/useAdminPdf.ts', code);
+console.log("Rewrote useAdminPdf.ts");

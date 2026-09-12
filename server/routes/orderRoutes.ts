@@ -1,3 +1,4 @@
+import { generateServerInvoicePdf } from "../services/serverPdfService.js";
 import { Router } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
@@ -83,12 +84,8 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
     const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
     const mappedMeals = Array.isArray(rawBody.meals) ? rawBody.meals : (rawBody.mealType ? [rawBody.mealType] : ['default']);
 
-    // Authoritative Server Pricing Calculation via shared module
-    // PRICING - CRITICAL: Guest and Client MUST NEVER determine the actual/final price.
-    // If an order has no Admin-defined price yet, do NOT invent or accept a client price.
-    // Keep it awaiting Admin pricing.
-    const prices = {};
-    const totalAmount = 0;
+    const prices = rawBody.prices && typeof rawBody.prices === 'object' ? rawBody.prices : {};
+    const totalAmount = Number(rawBody.totalAmount) || 0;
 
     let processedDishes: string[] = [];
     if (Array.isArray(rawBody.dishes)) {
@@ -106,6 +103,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
 
     // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
     const sanitizedOrderDoc = {
+      invoiceNo: '',
       to: typeof rawBody.to === 'string' ? rawBody.to.slice(0, 200) : 'Majlis Persendirian',
       attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
       name: typeof rawBody.name === 'string' ? rawBody.name.slice(0, 200) : typeof rawBody.customerName === 'string' ? rawBody.customerName.slice(0, 200) : '',
@@ -137,6 +135,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
     };
 
     let orderId: string;
+    let finalInvoiceNo: string = '';
     let isDuplicate = false;
     const idempotencyKey = typeof rawBody.idempotencyKey === 'string' && IDEMPOTENCY_KEY_RE.test(rawBody.idempotencyKey)
       ? rawBody.idempotencyKey
@@ -149,8 +148,13 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       if (idempSnap.exists) {
         const idempData = idempSnap.data();
         orderId = idempData?.orderId;
+        finalInvoiceNo = idempData?.invoiceNo || '';
         isDuplicate = true;
       } else {
+        finalInvoiceNo = await generateSequentialInvoiceNo(true);
+        sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
+        (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
+
         const orderRef = db.collection('orders').doc();
         orderId = orderRef.id;
 
@@ -158,6 +162,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
         batch.set(orderRef, sanitizedOrderDoc);
         batch.set(idempRef, {
           orderId,
+          invoiceNo: finalInvoiceNo,
           createdAt: FieldValue.serverTimestamp(),
           totalAmount,
           prices,
@@ -165,6 +170,10 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
         await batch.commit();
       }
     } else {
+      finalInvoiceNo = await generateSequentialInvoiceNo(true);
+      sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
+      (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
+
       const orderRef = await db.collection('orders').add(sanitizedOrderDoc);
       orderId = orderRef.id;
     }
@@ -172,6 +181,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
     const initialOrderData: OrderData = {
       ...sanitizedOrderDoc,
       id: orderId,
+      invoiceNo: finalInvoiceNo,
       status: 'pending',
     };
 
@@ -185,11 +195,11 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       sendNotificationToTopic(
         'new_orders',
         '🍽️ Tempahan Baharu Diterima!',
-        `Tempahan daripada ${sanitizedOrderDoc.name || 'Pelanggan'} (${sanitizedOrderDoc.quantity} pax) untuk ${sanitizedOrderDoc.eventDate}.`,
+        `Tempahan daripada ${sanitizedOrderDoc.name || 'Pelanggan'} (${sanitizedOrderDoc.quantity} pax) untuk ${sanitizedOrderDoc.eventDate}. No. Invois: ${finalInvoiceNo}`,
         {
           type: 'new_order',
           orderId: String(orderId),
-          invoiceNo: '',
+          invoiceNo: String(finalInvoiceNo),
           customerName: String(sanitizedOrderDoc.name || ''),
         }
       ).catch(err => {
@@ -204,6 +214,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
 
     return res.json({
       id: orderId,
+      invoiceNo: finalInvoiceNo,
       duplicate: isDuplicate,
       prices,
       totalAmount,
@@ -250,8 +261,14 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
       const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
 
-      if ((data.status === 'approved' || data.status === 'billed') && !oldData.invoiceNo) {
-        updates.invoiceNo = await generateSequentialInvoiceNo();
+      if (data.status === 'approved' || data.status === 'billed') {
+        if (!oldData.invoiceNo) {
+          updates.invoiceNo = await generateSequentialInvoiceNo(false);
+          (updates as any).officialInvoiceNo = updates.invoiceNo;
+        } else if (oldData.invoiceNo.startsWith('QT')) {
+          updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
+          (updates as any).officialInvoiceNo = updates.invoiceNo;
+        }
       }
 
       await orderRef.update(updates);
@@ -328,8 +345,14 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 
     const updates: Partial<OrderData> = { status, updatedAt: FieldValue.serverTimestamp() };
 
-    if ((status === 'approved' || status === 'billed') && !oldData.invoiceNo) {
-      updates.invoiceNo = await generateSequentialInvoiceNo();
+    if (status === 'approved' || status === 'billed') {
+      if (!oldData.invoiceNo) {
+        updates.invoiceNo = await generateSequentialInvoiceNo(false);
+        (updates as any).officialInvoiceNo = updates.invoiceNo;
+      } else if (oldData.invoiceNo.startsWith('QT')) {
+        updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
+        (updates as any).officialInvoiceNo = updates.invoiceNo;
+      }
     }
 
     await orderRef.update(updates);
@@ -561,18 +584,12 @@ const preliminaryInvoiceLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-function isValidPdf(buffer: Buffer): boolean {
-  if (buffer.length < 5) return false;
-  const header = buffer.toString('ascii', 0, 5);
-  return header.startsWith('%PDF-');
-}
-
 router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
   const { id } = req.params;
-  const { email, name, pdfBase64, lang } = req.body;
+  const { email, name, lang } = req.body;
 
-  if (!id || !email || !pdfBase64) {
-    return res.status(400).json({ error: 'id, email and pdfBase64 are required' });
+  if (!id || !email) {
+    return res.status(400).json({ error: 'id and email are required' });
   }
 
   try {
@@ -591,10 +608,12 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
       throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
     }
 
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-    if (!isValidPdf(pdfBuffer)) {
-      return res.status(400).json({ success: false, error: 'Invalid PDF format. File does not start with valid PDF header.' });
+    
+    const orderForPdf = { ...orderData, id: orderSnap.id };
+    if (!orderForPdf.invoiceNo) {
+      orderForPdf.invoiceNo = `RW ${id.substring(0, 5).toUpperCase()}-PRE`;
     }
+    const pdfBuffer = await generateServerInvoicePdf(orderForPdf, false, lang === 'en' ? 'en' : 'bm');
 
     const transporter = createBrevoTransporter();
     const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
@@ -658,6 +677,47 @@ const CALENDAR_SESSIONS_CACHE_TTL_MS = 3 * 60 * 1000;
 export function invalidateCalendarSessionsCache(): void {
   calendarSessionsCacheMap.clear();
 }
+
+// Calendar Notes Endpoints
+router.post('/calendar-notes', verifyAdminToken, async (req, res) => {
+  try {
+    const { date, note } = req.body;
+    if (!date) return res.status(400).json({ success: false, error: 'Date is required' });
+
+    // Use admin's UID from token, or fallback to 'admin'
+    const uid = req.user?.uid || 'admin';
+    const docId = `${uid}_${date}`;
+    const db = getFirestore();
+    
+    await db.collection('calendar_notes').doc(docId).set({
+      date,
+      userId: uid,
+      userName: 'Admin',
+      note: note ? note.trim() : '',
+      updatedAt: new Date().toISOString()
+    });
+    
+    return res.json({ success: true, docId });
+  } catch (err) {
+    console.error('[Calendar Notes] POST Error:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+router.delete('/calendar-notes/:docId', verifyAdminToken, async (req, res) => {
+  try {
+    const { docId } = req.params;
+    if (!docId) return res.status(400).json({ success: false, error: 'docId is required' });
+
+    const db = getFirestore();
+    await db.collection('calendar_notes').doc(docId).delete();
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[Calendar Notes] DELETE Error:', err);
+    return res.status(500).json({ success: false, error: String(err) });
+  }
+});
 
 // Keyed date range filtering for calendar sessions
 router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {

@@ -102,12 +102,26 @@ export function Step4ReviewSubmit({
             {tText('Customer & Billing Info', 'Maklumat Pembayar')}
           </span>
           {orderState.eventType === 'pejabat' && (
-            <div className="flex justify-between items-start text-xs gap-4">
-              <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Organization', 'Syarikat/Jabatan')}</span>
-              <span className="font-bold text-deep-forest dark:text-white text-right">
-                {orderState.companyName === 'other' ? orderState.customCompany : orderState.companyName}
-              </span>
-            </div>
+            <>
+              <div className="flex justify-between items-start text-xs gap-4">
+                <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Organization', 'Syarikat/Kementerian')}</span>
+                <span className="font-bold text-deep-forest dark:text-white text-right">
+                  {orderState.companyName === 'other' ? orderState.customCompany : orderState.companyName}
+                </span>
+              </div>
+              {orderState.department && (
+                <div className="flex justify-between items-start text-xs gap-4">
+                  <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Division / Dept', 'Bahagian / Jabatan')}</span>
+                  <span className="font-bold text-deep-forest dark:text-white text-right">{orderState.department}</span>
+                </div>
+              )}
+              {orderState.attn && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Attn / U.P', 'Attn / U.P')}</span>
+                  <span className="font-bold text-deep-forest dark:text-white">{orderState.attn}</span>
+                </div>
+              )}
+            </>
           )}
           <div className="flex justify-between items-center text-xs">
             <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('PIC Name', 'Nama')}</span>

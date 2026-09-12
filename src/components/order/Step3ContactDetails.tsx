@@ -44,6 +44,8 @@ interface Step3ContactDetailsProps {
   handleStepNext: (step: number) => Promise<void> | void;
   setCurrentStep: Dispatch<SetStateAction<number>>;
   triggerLightImpact: () => Promise<void> | void;
+  currentUser?: any;
+  handleSyncFromActiveProfile?: () => void;
   tText: (en: string, bm: string) => string;
   t: (key: string) => string;
 }
@@ -58,6 +60,8 @@ export function Step3ContactDetails({
   handleStepNext,
   setCurrentStep,
   triggerLightImpact,
+  currentUser,
+  handleSyncFromActiveProfile,
   tText,
   t,
 }: Step3ContactDetailsProps) {
@@ -131,54 +135,109 @@ export function Step3ContactDetails({
       </div>
 
       <div className="space-y-4">
+        {/* Active Profile Session Auto-complete Notice */}
+        {currentUser && (
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-primary font-semibold">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+              <span>{tText('Corporate & billing details auto-filled from your active profile session.', 'Butiran korporat & bil diisi secara automatik daripada profil aktif anda.')}</span>
+            </div>
+            {handleSyncFromActiveProfile && (
+              <Button
+                type="button"
+                onClick={handleSyncFromActiveProfile}
+                variant="outline"
+                size="sm"
+                className="h-8 px-2.5 text-xs font-bold rounded-lg shrink-0 border-primary/30 text-primary hover:bg-primary/15"
+              >
+                {tText('Re-sync Profile', 'Kemaskini daripada Profil')}
+              </Button>
+            )}
+          </div>
+        )}
         
         {/* Conditionally Render Company/Department selection for Office event */}
         {orderState.eventType === 'pejabat' && (
-          <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
-              {tText('Syarikat / Kementerian / Jabatan', 'Syarikat / Kementerian / Jabatan *')}
-            </Label>
-            {isProfileLoading ? (
-              <Skeleton className="h-11 w-full rounded-2xl" />
-            ) : (
-              <>
-                <Select
-                  value={orderState.companyName}
-                  onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
-                  required
-                >
-                  <SelectTrigger className="w-full h-11 rounded-xl border-stone/20 bg-muted text-deep-forest dark:text-[#ede5d8] focus:ring-crisp-carrot/20">
-                    <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-stone/10">
-                    {SAVED_COMPANIES.map((company, idx) => (
-                      <SelectItem key={idx} value={company} className="text-deep-forest dark:text-[#ede5d8] focus:bg-crisp-carrot/10">
-                        {company}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="other" className="text-crisp-carrot font-bold">
-                      {tText('Other Organization / Syarikat Lain', 'Syarikat Lain (Taip Manual)')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="space-y-4 p-4 rounded-xl border border-stone/15 bg-stone-50/50 dark:bg-stone-900/40">
+            <div className="text-xs font-bold text-crisp-carrot uppercase tracking-wider flex items-center gap-1.5">
+              <span>{tText('Corporate Billing Details', 'Maklumat Bil Korporat / Jabatan')}</span>
+            </div>
 
-                {orderState.companyName === 'other' && (
-                  <>
-                    <Label htmlFor="custom-company-input" className="sr-only">
-                      {tText('Custom Organization Name', 'Nama Organisasi Custom')}
-                    </Label>
-                    <Input
-                      id="custom-company-input"
-                      value={orderState.customCompany}
-                      onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
-                      placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
-                      required
-                      className="mt-2 h-11 rounded-xl font-sans"
-                    />
-                  </>
-                )}
-              </>
-            )}
+            {/* Ministry / Main Organization */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                {tText('Company / Ministry / Main Agency *', 'Syarikat / Kementerian / Agensi Utama *')}
+              </Label>
+              {isProfileLoading ? (
+                <Skeleton className="h-11 w-full rounded-2xl" />
+              ) : (
+                <>
+                  <Select
+                    value={orderState.companyName}
+                    onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
+                    required
+                  >
+                    <SelectTrigger className="w-full h-11 rounded-xl border-stone/20 bg-muted text-deep-forest dark:text-[#ede5d8] focus:ring-crisp-carrot/20">
+                      <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-stone/10">
+                      {SAVED_COMPANIES.map((company, idx) => (
+                        <SelectItem key={idx} value={company} className="text-deep-forest dark:text-[#ede5d8] focus:bg-crisp-carrot/10">
+                          {company}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="other" className="text-crisp-carrot font-bold">
+                        {tText('Other Organization', 'Syarikat Lain (Taip Manual)')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {orderState.companyName === 'other' && (
+                    <>
+                      <Label htmlFor="custom-company-input" className="sr-only">
+                        {tText('Custom Organization Name', 'Nama Organisasi Custom')}
+                      </Label>
+                      <Input
+                        id="custom-company-input"
+                        value={orderState.customCompany}
+                        onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
+                        placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
+                        required
+                        className="mt-2 h-11 rounded-xl font-sans"
+                      />
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Division / Department (Optional) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="order-department" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                {tText('Division / Department / Branch (Optional)', 'Bahagian / Jabatan / Cawangan (Pilihan)')}
+              </Label>
+              <Input
+                id="order-department"
+                value={orderState.department || ''}
+                onChange={(e) => setOrderState(prev => ({ ...prev, department: e.target.value }))}
+                placeholder={tText('e.g. Information Technology & Communications (Optional)', 'Contoh: Bahagian Teknologi Maklumat & Komunikasi (Pilihan)')}
+                className="h-11 rounded-xl font-sans"
+              />
+            </div>
+
+            {/* Attention To */}
+            <div className="space-y-1.5">
+              <Label htmlFor="order-attn" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                {tText('Attn / U.P (Optional)', 'Attn / U.P (Pilihan)')}
+              </Label>
+              <Input
+                id="order-attn"
+                value={orderState.attn || ''}
+                onChange={(e) => setOrderState(prev => ({ ...prev, attn: e.target.value }))}
+                placeholder={tText('e.g. Encik Ahmad / Puan Rosnah (Optional)', 'Contoh: Encik Ahmad / Puan Rosnah (Pilihan)')}
+                className="h-11 rounded-xl font-sans"
+              />
+            </div>
           </div>
         )}
 

@@ -1,9 +1,12 @@
-import { Router } from 'express';
-import { createHash, timingSafeEqual } from 'crypto';
+const fs = require('fs');
+
+const code = `import { Router } from 'express';
+import { randomUUID, createHash, timingSafeEqual } from 'crypto';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, getAdminApp, verifyCustomerIdToken, hasAdminCredentials } from '../firebaseAdmin.js';
-import { verifyAdminToken } from '../adminAuth.js';
+import { verifyAdminToken, adminLoginLimiter } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
@@ -44,7 +47,7 @@ router.post('/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.subscribeToTopic([token.trim()], topic.trim());
-    console.log(`[FCM] Subscribed device token to topic '${topic}':`, response);
+    console.log(\`[FCM] Subscribed device token to topic '\${topic}':\`, response);
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error subscribing token to topic:', err);
@@ -66,7 +69,7 @@ router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) 
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.unsubscribeFromTopic([token.trim()], topic.trim());
-    console.log(`[FCM] Unsubscribed device token from topic '${topic}':`, response);
+    console.log(\`[FCM] Unsubscribed device token from topic '\${topic}':\`, response);
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error unsubscribing token from topic:', err);
@@ -209,3 +212,7 @@ router.post('/user/fcm-token', fcmTokenLimiter, async (req, res) => {
 });
 
 export default router;
+`;
+
+fs.writeFileSync('server/routes/authRoutes.ts', code);
+console.log("Rewrote authRoutes.ts perfectly");

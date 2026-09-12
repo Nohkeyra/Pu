@@ -1,5 +1,5 @@
 import { NativeBiometric, BiometryType } from '@capacitor-community/native-biometric';
-import { isAndroidApk, isAIStudioPreview } from '@/lib/platform';
+import { isAndroidApk } from '@/lib/platform';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { getApiUrl } from '@/lib/api';
 
@@ -204,31 +204,44 @@ export async function verifyAdminMockFallback(fallbackPassword?: string): Promis
     }
   }
 
-  // If an existing token is already stored, validate session
+  // If an existing token is already stored, validate session with server
   const storedToken = await getStoredAdminToken();
   if (storedToken) {
-    return {
-      success: true,
-      method: 'mock_fallback',
-      token: storedToken,
-    };
-  }
-
-  // Simulated fallback for dev/preview environments when explicitly allowed
-  if (isAIStudioPreview() || import.meta.env.DEV) {
-    const mockDevToken = 'mock_dev_admin_token_' + Date.now();
-    await saveAdminToken(mockDevToken);
-    return {
-      success: true,
-      method: 'mock_fallback',
-      token: mockDevToken,
-    };
+    try {
+      const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
+        headers: { Authorization: `Bearer ${storedToken}` }
+      });
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json();
+        if (verifyData.success) {
+          if (verifyData.firebaseCustomToken) {
+            try {
+              await signInWithCustomToken(auth, verifyData.firebaseCustomToken);
+            } catch (fbErr) {
+              console.warn('[Auth] Firebase Auth sync warning:', fbErr);
+            }
+          }
+          return {
+            success: true,
+            method: 'mock_fallback',
+            token: storedToken,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Stored token verification check network issue:', e);
+      return {
+        success: true,
+        method: 'mock_fallback',
+        token: storedToken,
+      };
+    }
   }
 
   return {
     success: false,
     method: 'mock_fallback',
-    error: 'Biometrik tidak disokong pada peranti ini. Sila log masuk dengan kata laluan.',
+    error: 'Log masuk dengan kata laluan admin diperlukan.',
     errorCode: 'FALLBACK_PASSWORD_REQUIRED',
   };
 }

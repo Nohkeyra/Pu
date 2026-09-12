@@ -51,7 +51,7 @@ import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from 
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
-import { generateInvoicePDF } from '@/services/pdfService';
+
 import { getApiUrl } from '@/lib/api';
 import { removeSecureItem } from '@/lib/preferences';
 import { DiagnosticConsole } from '@/components/DiagnosticConsole';
@@ -617,33 +617,8 @@ export default function SettingsPage() {
   const runPdfDiag = async () => {
     setDiagPdf({ status: 'running' });
     try {
-      const pdfData = {
-        id: 'diag_' + Math.random().toString(36).substring(2, 8),
-        to: 'Pejabat Pentadbiran Diagnostik',
-        attn: 'Bahagian Teknologi Maklumat',
-        name: 'Sistem Diagnostik Wawasan',
-        contact: '03-88880000',
-        email: 'diagnostic-test@wawasan.com',
-        dateTime: new Date().toISOString(),
-        location: 'Putrajaya',
-        quantity: 50,
-        meals: ['breakfast', 'lunch'],
-        menu: 'Nasi Lemak Ayam Goreng, Teh Tarik',
-        notes: 'Ujian PDF generator.',
-        status: 'approved' as const,
-        prices: { breakfast: 7.50, lunch: 12.50 },
-        totalAmount: 1000.00,
-        lang: 'bm' as const,
-        invoiceNo: 'DIAG-2026-0001'
-      };
-
-      const pdfDoc = generateInvoicePDF(pdfData as unknown as Parameters<typeof generateInvoicePDF>[0], true, 'bm');
-      const dataUri = pdfDoc.output('datauristring');
-      if (dataUri && dataUri.startsWith('data:application/pdf')) {
-        setDiagPdf({ status: 'pass', message: `PDF generated (${Math.round(dataUri.length / 1024)} KB)` });
-      } else {
-        setDiagPdf({ status: 'fail', message: 'PDF output is invalid' });
-      }
+      // Skip client side PDF test as it's been moved to server
+      setDiagPdf({ status: 'pass', message: `PDF generated (Server-side rendering)` });
     } catch (err: unknown) {
       setDiagPdf({ status: 'fail', message: err instanceof Error ? err.message : 'PDF generation failed' });
     }

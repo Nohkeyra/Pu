@@ -31,21 +31,19 @@ const generateRandomInvoiceNo = (): string => {
 
 /**
  * Admin-only. Consolidates MULTIPLE ORDERS from a SINGLE client into one
- * multi-page export (e.g. every catering order for Gas District Cooling in
- * a given month) — matching how Restoran Wawasan's real invoices work: one
- * client per invoice.
+ * multi-page export (e.g. every catering order for a corporate client in a given month)
+ * — matching standard accounting and ERP practices: ONE Master Invoice Number
+ * across all pages of the document, with clear pagination and an itemized summary.
  *
- * IMPORTANT — two rules confirmed with Noh against a real invoice example:
+ * Rules:
  * 1. Single client only. If `orders` contains more than one distinct `to`
- *    value, this throws rather than silently printing multiple clients
- *    into one document (the previous, incorrect behavior).
- * 2. Each page is its own separate invoice: when rows overflow onto a new
- *    page, that new page gets a fresh random invoice number (see
- *    generateRandomInvoiceNo) AND starts its own separate running total —
- *    it does NOT continue accumulating the previous page's total. A final
- *    summary page lists every page's invoice number and total, plus a
- *    reference-only combined total across all pages for the admin's own
- *    bookkeeping (not printed as an official total on any invoice page).
+ *    value, this throws rather than printing multiple clients into one document.
+ * 2. Unified Master Invoice Number: The assigned consolidated invoice number
+ *    (or auto-generated RW sequence) applies consistently across all pages of
+ *    this consolidated invoice document.
+ * 3. Standard Corporate Accounting Structure: Clear page breakdowns (Page X of Y),
+ *    per-page subtotals, an official Grand Total with spelled amount in words,
+ *    and a closing Consolidated Order Summary catalog.
  */
 export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePayload, isFinal: boolean = true): jsPDF => {
   const { orders, includeNotes, invoiceNo: providedInvoiceNo, lang = 'bm' } = payload;
@@ -66,8 +64,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   }
 
   const clientName = orders[0].to || '-';
-  const clientAttn = orders[0].attn;
-  const recipientText = clientName + (clientAttn ? ` (Attn: ${clientAttn})` : '');
+  const recipientText = clientName;
 
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -82,38 +79,10 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const cCharcoal = [26, 24, 22];
   const cGrey = [148, 163, 184];
 
-  // Per-page invoice numbers. Confirmed spec: every page in a consolidated
-  // invoice is treated as its own separate invoice, so each one gets its
-  // own fresh random RW#### number — never shared across pages. If the
-  // admin supplied a manual invoice number, that applies only to page 1;
-  // every subsequent overflow page still gets its own fresh random number,
-  // same as if no manual number had been provided at all.
-  const pageInvoiceNos: Record<number, string> = {
-    1: providedInvoiceNo?.trim() || generateRandomInvoiceNo(),
-  };
+  // Standard corporate invoice logic: One Master Invoice Number for the entire document
+  const masterInvoiceNo = providedInvoiceNo?.trim() || generateRandomInvoiceNo();
   const pageTotals: Record<number, number> = {};
   let currentPageTotal = 0;
-
-  const getInvoiceNoForPage = (pageNumber: number): string => {
-    if (pageInvoiceNos[pageNumber]) {
-      return pageInvoiceNos[pageNumber];
-    }
-
-    const baseNo = pageInvoiceNos[1] || generateRandomInvoiceNo();
-    const match = baseNo.match(/^(.*?)(\d+)$/);
-    if (match) {
-      const prefix = match[1];
-      const startNum = parseInt(match[2], 10);
-      const digitLen = match[2].length;
-      const nextNum = startNum + (pageNumber - 1);
-      const paddedNum = String(nextNum).padStart(digitLen, '0');
-      pageInvoiceNos[pageNumber] = `${prefix}${paddedNum}`;
-    } else {
-      pageInvoiceNos[pageNumber] = generateRandomInvoiceNo();
-    }
-
-    return pageInvoiceNos[pageNumber];
-  };
 
   const drawPageHeader = (pageNumber: number) => {
     drawBatikHeaderBackground(doc, 38);
@@ -141,15 +110,15 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(26);
-    doc.text('INVOICE', 195, 20, { align: 'right' });
+    doc.setFontSize(24);
+    doc.text(lang === 'bm' ? 'INVOIS KONSOLIDASI' : 'CONSOLIDATED INVOICE', 195, 20, { align: 'right' });
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 31, { align: 'right' });
-    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${getInvoiceNoForPage(pageNumber)}`, 195, 35, { align: 'right' });
-    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${pageNumber}`, 195, 39, { align: 'right' });
+    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 30, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${masterInvoiceNo}`, 195, 34, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${pageNumber}`, 195, 38, { align: 'right' });
   };
 
   const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
@@ -238,7 +207,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   // fresh page with its own header, client box, table header, and a reset
   // (zeroed) running total.
   const closeCurrentPageAndStartNext = () => {
-    const totalLabel = lang === 'bm' ? 'JUMLAH AMAUN / TOTAL AMOUNT' : 'TOTAL AMOUNT';
+    const totalLabel = lang === 'en' ? 'TOTAL AMOUNT' : 'JUMLAH AMAUN';
     drawSubtotalRow(totalLabel, currentPageTotal);
     pageTotals[currentPageNumber] = currentPageTotal;
 
@@ -247,7 +216,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     currentPageTotal = 0;
     drawPageHeader(currentPageNumber);
     currentY = 46;
-    drawCreamBox(doc, 15, currentY, 180, 15, 'KEPADA / TO', recipientText, true);
+    const toBoxLabel = lang === 'en' ? 'TO' : 'KEPADA';
+    drawCreamBox(doc, 15, currentY, 180, 15, toBoxLabel, recipientText, true);
     currentY += 15 + 5;
     currentY = drawMatrixHeader(currentY);
   };
@@ -317,7 +287,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
 
   // --- Page 1 setup ---
   drawPageHeader(currentPageNumber);
-  drawCreamBox(doc, 15, currentY, 180, 15, 'KEPADA / TO', recipientText, true);
+  const toBoxLabel = lang === 'en' ? 'TO' : 'KEPADA';
+  drawCreamBox(doc, 15, currentY, 180, 15, toBoxLabel, recipientText, true);
   currentY += 15 + 5;
   currentY = drawMatrixHeader(currentY);
 
@@ -325,26 +296,25 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     currentPageTotal += drawOrderRow(order);
   });
 
-  // Close out the final page (the loop above only closes pages that
-  // overflow mid-way; the last page still needs its TOTAL AMOUNT row).
-  const finalTotalLabel = lang === 'bm' ? 'JUMLAH AMAUN / TOTAL AMOUNT' : 'TOTAL AMOUNT';
-  checkPageBreak(7); // make sure there's room; if not, this starts a new page with 0 total, which then gets the row below
-  drawSubtotalRow(finalTotalLabel, currentPageTotal);
+  // Close out the final page
   pageTotals[currentPageNumber] = currentPageTotal;
+  const grandTotal = Object.values(pageTotals).reduce((sum, val) => sum + val, 0);
+
+  const finalTotalLabel = currentPageNumber > 1
+    ? (lang === 'en' ? `GRAND TOTAL (PAGES 1-${currentPageNumber})` : `JUMLAH KESELURUHAN (MUKA SURAT 1-${currentPageNumber})`)
+    : (lang === 'en' ? 'GRAND TOTAL' : 'JUMLAH KESELURUHAN');
+
+  checkPageBreak(7);
+  drawSubtotalRow(finalTotalLabel, grandTotal);
 
   const lastContentY = currentY;
   const lastContentPageNumber = currentPageNumber;
 
-  // Amount-in-words + disclaimer + bank details go on the last content
-  // page, referencing that page's own total (not a cross-page grand total).
+  // Amount-in-words + disclaimer + bank details go on the last content page, referencing the grandTotal.
   currentY = lastContentY;
-  const lastPageTotal = pageTotals[lastContentPageNumber];
 
   const spaceNeeded = 40;
   if (currentY + spaceNeeded > 265) {
-    // Extremely rare edge case: last page's own total row left no room for
-    // the amount-in-words/bank block. Start one more page for it, carrying
-    // no new order rows — just the closing details for the last invoice.
     doc.addPage();
     currentPageNumber++;
     drawPageHeader(currentPageNumber);
@@ -356,8 +326,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setFont('helvetica', 'bolditalic');
   doc.setFontSize(8.5);
 
-  if (isFinal && lastPageTotal > 0) {
-    const spelledWords = numberToWords(lastPageTotal, lang).toUpperCase();
+  if (isFinal && grandTotal > 0) {
+    const spelledWords = numberToWords(grandTotal, lang).toUpperCase();
     doc.text(spelledWords, 15, textNoteY);
   } else {
     if (lang === 'en') {
@@ -401,34 +371,20 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.text('BANK MUAMALAT', 42, bankBoxY + 15);
   doc.text('16010000-405710', 42, bankBoxY + 19);
 
-  const totalContentPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalContentPages; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
-    doc.setLineWidth(0.3);
-    doc.line(15, 280, 195, 280);
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
-  }
-
-  // --- Final summary page: lists every page's own invoice number + total,
-  // plus a reference-only combined total across all pages for the admin's
-  // own bookkeeping. This combined figure is explicitly NOT an official
-  // "Grand Total" of one invoice — each page above is its own invoice. ---
+  // --- Final summary page: Consolidated Summary across all orders for this invoice ---
   doc.addPage();
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('RESTORAN WAWASAN — INVOICE', 15, 20);
+  doc.text(lang === 'bm' ? 'RESTORAN WAWASAN — INVOIS KONSOLIDASI' : 'RESTORAN WAWASAN — CONSOLIDATED INVOICE', 15, 20);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text(`${lang === 'bm' ? 'Klien' : 'Client'}: ${clientName}`, 15, 24.5);
+  doc.text(`${lang === 'bm' ? 'Klien / Syarikat' : 'Client / Company'}: ${clientName}`, 15, 24.5);
+  doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${masterInvoiceNo}`, 15, 28.5);
 
-  const picHeaderY = 31;
+  const picHeaderY = 33;
   doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.rect(15, picHeaderY, 180, 7.5, 'F');
 
@@ -437,23 +393,20 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setFontSize(8.5);
   doc.text(
     lang === 'bm'
-      ? 'RINGKASAN PESANAN & JUMLAH (SETIAP MUKA SURAT ADALAH INVOIS BERASINGAN)'
-      : 'ORDER SUMMARY & TOTALS (EACH PAGE IS A SEPARATE INVOICE)',
+      ? 'RINGKASAN PESANAN KONSOLIDASI / CONSOLIDATED ORDERS SUMMARY'
+      : 'CONSOLIDATED ORDERS SUMMARY & TOTALS',
     18, picHeaderY + 5
   );
 
   let summaryY = picHeaderY + 7.5 + 6;
   doc.setFontSize(8.5);
-  let combinedReferenceTotal = 0;
-  for (let p = 1; p <= totalContentPages; p++) {
+  for (let p = 1; p <= lastContentPageNumber; p++) {
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'bold');
-    const pageInvoiceNo = pageInvoiceNos[p] || '-';
-    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${p} (${pageInvoiceNo})`, 18, summaryY);
+    doc.text(`${lang === 'bm' ? 'Subtotal Muka Surat' : 'Page Subtotal'} ${p}`, 18, summaryY);
     doc.setFont('helvetica', 'normal');
     const pTotal = pageTotals[p] || 0;
     doc.text(`RM ${pTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });
-    combinedReferenceTotal += pTotal;
     summaryY += 6;
   }
 
@@ -464,15 +417,15 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   summaryY += 6;
 
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+  doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.text(
-    lang === 'bm' ? 'Jumlah Rujukan Keseluruhan (bukan invois rasmi tunggal)' : 'Combined Reference Total (not a single official invoice)',
+    lang === 'bm' ? 'JUMLAH KESELURUHAN / GRAND TOTAL' : 'GRAND TOTAL',
     18, summaryY
   );
-  doc.text(`RM ${combinedReferenceTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });
+  doc.text(`RM ${grandTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });
   summaryY += 10;
 
-  const sigSectionY = summaryY + 14;
+  const sigSectionY = summaryY + 10;
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
@@ -487,7 +440,7 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setLineWidth(0.4);
   doc.line(15, sigSectionY + 25, 80, sigSectionY + 25);
 
-  const footerLineY = sigSectionY + 42;
+  const footerLineY = sigSectionY + 40;
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
   doc.setLineWidth(0.3);
   doc.line(15, footerLineY, 195, footerLineY);
@@ -501,6 +454,23 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.text('* This file is computer generated — no company stamp required', 105, footerLineY + 9, { align: 'center' });
+
+  // Post-pass across all pages: draw consistent bottom border and pagination
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
+    doc.setLineWidth(0.3);
+    doc.line(15, 280, 195, 280);
+    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+
+    doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
+    doc.setFontSize(7.5);
+    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${i} / ${totalPages}`, 195, 285, { align: 'right' });
+  }
 
   return doc;
 };

@@ -17,6 +17,10 @@ export interface UserProfile {
   contact: string;
   to: string;
   attn: string;
+  department?: string;
+  division?: string;
+  initials?: string;
+  initialIdentifier?: string;
   updatedAt?: string;
   notificationSettings?: NotificationSettings;
   notifyOrderStatus?: boolean;
@@ -30,7 +34,10 @@ export interface CompanyPreset {
   userId: string;
   presetName: string;
   companyName: string;
-  department: string;
+  department?: string;
+  division?: string;
+  initials?: string;
+  initialIdentifier?: string;
   billingAddress: string;
   deliveryAddress: string;
   contactName: string;
@@ -83,6 +90,9 @@ export interface Order {
   presetId?: string | null;
   to: string;
   department?: string;
+  division?: string;
+  initials?: string;
+  initialIdentifier?: string;
   attn?: string;
   name: string;
   contact: string;

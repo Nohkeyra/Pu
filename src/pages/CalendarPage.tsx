@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
@@ -339,7 +339,7 @@ export default function CalendarPage() {
     setNoteText(existingUserNote ? existingUserNote.note : '');
   };
 
-  // Save/Update note in Firestore
+  // Save/Update note in Firestore via Express API
   const handleSaveNote = async () => {
     if (!currentUser || !selectedDay) return;
     setIsSavingNote(true);
@@ -349,35 +349,56 @@ export default function CalendarPage() {
       const uid = isAdmin ? 'admin' : currentUser.uid;
       const docId = `${uid}_${dateStr}`;
 
+      const token = localStorage.getItem('wawasan_admin_token') || '';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
       if (!noteText.trim()) {
-        await deleteDoc(doc(db, 'calendar_notes', docId));
-      } else {
-        await setDoc(doc(db, 'calendar_notes', docId), {
-          date: dateStr,
-          userId: uid,
-          userName: isAdmin ? 'Admin' : (currentUser.displayName || currentUser.email?.split('@')[0] || 'Member'),
-          note: noteText.trim(),
-          updatedAt: new Date().toISOString()
+        const res = await fetch(getApiUrl(`/api/calendar-notes/${docId}`), {
+          method: 'DELETE',
+          headers
         });
+        if (!res.ok) throw new Error('Failed to delete note');
+      } else {
+        const res = await fetch(getApiUrl('/api/calendar-notes'), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            date: dateStr,
+            note: noteText.trim()
+          })
+        });
+        if (!res.ok) throw new Error('Failed to save note');
       }
 
       await triggerMediumImpact();
       setIsSavingNote(false);
     } catch (error) {
-      console.error("Failed to save calendar note:", error);
+      console.error("Failed to save calendar note via API:", error);
       setIsSavingNote(false);
     }
   };
 
-  // Delete note from Firestore
+  // Delete note from Firestore via Express API
   const handleDeleteNote = async (noteId: string) => {
     await triggerLightImpact();
     try {
-      await deleteDoc(doc(db, 'calendar_notes', noteId));
+      const token = localStorage.getItem('wawasan_admin_token') || '';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+      const res = await fetch(getApiUrl(`/api/calendar-notes/${noteId}`), {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) throw new Error('Failed to delete note');
       await triggerMediumImpact();
       setNoteText('');
     } catch (error) {
-      console.error("Failed to delete note:", error);
+      console.error("Failed to delete note via API:", error);
     }
   };
 

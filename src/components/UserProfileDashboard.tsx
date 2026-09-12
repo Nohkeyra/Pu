@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
-import type { Order, CombinedInvoicePayload, UserProfile, SavedLocation } from '@/types';
+import type { Order, UserProfile, SavedLocation } from '@/types';
 import { cn, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Capacitor } from '@capacitor/core';
@@ -61,6 +61,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [editContact, setEditContact] = useState('');
   const [editTo, setEditTo] = useState('');
   const [editAttn, setEditAttn] = useState('');
+  const [editDepartment, setEditDepartment] = useState('');
+  const [editInitials, setEditInitials] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -98,6 +100,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         setEditContact(data.contact || user.phoneNumber || '');
         setEditTo(data.to || '');
         setEditAttn(data.attn || '');
+        setEditDepartment(data.department || data.division || '');
+        setEditInitials(data.initials || data.initialIdentifier || '');
         setSelectedCompany(data.to || '');
         setNotifyOrderStatus(data.notifyOrderStatus ?? true);
         setNotifyBilledUpdates(data.notifyBilledUpdates ?? true);
@@ -180,6 +184,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         contact: editContact,
         to: editTo,
         attn: editAttn,
+        department: editDepartment,
+        division: editDepartment,
+        initials: editInitials,
+        initialIdentifier: editInitials,
         notifyOrderStatus,
         notifyBilledUpdates,
         notifyCancelApproval,
@@ -349,14 +357,20 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'info'
       });
 
-      const { generateInvoicePDF, preloadLogoForPDF } = await import('@/services/pdfService');
-      await preloadLogoForPDF();
-      const pdfDoc = generateInvoicePDF(order, true, language);
       const fileName = `Invois_Wawasan_${getDisplayInvoiceNo(order)}.pdf`;
+      
+      const res = await fetch(`/api/invoice/${order.id}/pdf?final=true`);
+      if (!res.ok) throw new Error('Failed to fetch invoice');
+      const blob = await res.blob();
 
       if (Capacitor.isNativePlatform()) {
         try {
-          const base64Data = pdfDoc.output('datauristring').split(',')[1];
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
           const savedFile = await Filesystem.writeFile({
             path: fileName,
             data: base64Data,
@@ -370,7 +384,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           console.error('Error sharing PDF on mobile:', shareErr);
         }
       } else {
-        pdfDoc.save(fileName);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
       }
     } catch (err) {
       console.error('Failed to generate PDF:', err);
@@ -484,21 +503,27 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         variant: 'info'
       });
 
-      const { generateCombinedInvoicePDF, preloadLogoForPDF } = await import('@/services/pdfService');
-      await preloadLogoForPDF();
       const selectedOrderData = orders.filter(o => selectedOrders.has(o.id!));
-      const payload: CombinedInvoicePayload = {
-        orders: selectedOrderData,
-        includeNotes: withNotes,
-        lang: language
-      };
-
-      const pdfDoc = generateCombinedInvoicePDF(payload, true);
+      const orderIds = selectedOrderData.map(o => o.id);
+      
+      const res = await fetch('/api/invoice/combined/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds, includeNotes: withNotes, lang: language })
+      });
+      if (!res.ok) throw new Error('Failed to fetch combined PDF');
+      const blob = await res.blob();
+      
       const fileName = `Invois_Gabungan_Wawasan_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         try {
-          const base64Data = pdfDoc.output('datauristring').split(',')[1];
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
           const savedFile = await Filesystem.writeFile({
             path: fileName,
             data: base64Data,
@@ -740,6 +765,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             setEditTo={setEditTo}
             editAttn={editAttn}
             setEditAttn={setEditAttn}
+            editDepartment={editDepartment}
+            setEditDepartment={setEditDepartment}
+            editInitials={editInitials}
+            setEditInitials={setEditInitials}
             selectedCompany={selectedCompany}
             setSelectedCompany={setSelectedCompany}
             handleSaveProfile={handleSaveProfile}

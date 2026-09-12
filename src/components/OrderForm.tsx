@@ -74,6 +74,9 @@ export interface OrderState {
   notes: string;
   companyName: string;
   customCompany: string;
+  department: string;
+  initials: string;
+  attn: string;
   customMenu: string;
 }
 
@@ -226,6 +229,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      department: '',
+      initials: '',
+      attn: '',
       customMenu: ''
     };
 
@@ -280,6 +286,46 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   // Sync Logged-In User Profile details
+  const syncProfileDataToState = (profile: any) => {
+    const userTo = profile.to || '';
+    const isKnownCompany = userTo && SAVED_COMPANIES.includes(userTo);
+    
+    setOrderState(prev => ({
+      ...prev,
+      companyName: isKnownCompany ? userTo : (userTo ? 'other' : prev.companyName),
+      customCompany: !isKnownCompany && userTo ? userTo : prev.customCompany,
+      department: profile.department || profile.division || prev.department,
+      initials: profile.initials || profile.initialIdentifier || prev.initials,
+      attn: profile.attn || prev.attn,
+      name: profile.name || prev.name,
+      contact: profile.contact || prev.contact,
+      email: profile.email || prev.email,
+      confirmEmail: profile.email || prev.confirmEmail,
+    }));
+  };
+
+  const handleSyncFromActiveProfile = async () => {
+    if (!currentUser) return;
+    try {
+      setIsProfileLoading(true);
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const profile = userSnap.data();
+        syncProfileDataToState(profile);
+        toast({
+          title: tText('Profile Details Synced', 'Profil Disegerakkan'),
+          description: tText('Corporate billing details auto-filled from active session.', 'Butiran bil korporat diisi daripada sesi profil aktif.'),
+          variant: 'success'
+        });
+      }
+    } catch (err) {
+      console.error('Error syncing profile details:', err);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
   useEffect(() => {
     setIsProfileLoading(true);
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -290,18 +336,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const profile = userSnap.data();
-            const userTo = profile.to || '';
-            const isKnownCompany = userTo && SAVED_COMPANIES.includes(userTo);
-            
-            setOrderState(prev => ({
-              ...prev,
-              companyName: isKnownCompany ? userTo : (userTo ? 'other' : prev.companyName),
-              customCompany: !isKnownCompany && userTo ? userTo : prev.customCompany,
-              name: profile.name || prev.name,
-              contact: profile.contact || prev.contact,
-              email: profile.email || prev.email,
-              confirmEmail: profile.email || prev.confirmEmail,
-            }));
+            syncProfileDataToState(profile);
             if (profile.savedLocations) {
               setSavedLocations(profile.savedLocations);
             } else {
@@ -384,6 +419,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         notes: asString(initialData.notes),
         companyName: asString(initialData.to),
         customCompany: '',
+        department: asString(initialData.department),
+        initials: asString(initialData.initials),
+        attn: asString(initialData.attn),
         customMenu: ''
       });
     }
@@ -428,7 +466,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               // String fields
               const fields = [
                 'name', 'contact', 'email', 'confirmEmail', 'date', 'time', 
-                'location', 'delivery', 'notes', 'companyName', 'customCompany', 'customMenu'
+                'location', 'delivery', 'notes', 'companyName', 'customCompany', 'department', 'initials', 'attn', 'customMenu'
               ];
               fields.forEach(f => {
                 if (typeof parsed[f] === 'string') {
@@ -572,6 +610,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      department: '',
+      initials: '',
+      attn: '',
       customMenu: ''
     });
   };
@@ -742,7 +783,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       const orderData = {
         to: billingCompany || 'Majlis Persendirian',
-        attn: orderState.name,
+        attn: orderState.attn || orderState.name,
+        department: orderState.department || '',
+        division: orderState.department || '',
+        initials: orderState.initials || '',
+        initialIdentifier: orderState.initials || '',
         name: orderState.name,
         contact: orderState.contact,
         email: orderState.email,
@@ -854,9 +899,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         // customer's OrderForm bundle even if they never reached this point.
         // Loading it here, only once an order is actually submitted, keeps
         // that weight out of the initial order-form chunk for everyone else.
-        const { generateInvoicePDF } = await import('@/services/pdfService');
-        const pdfDoc = generateInvoicePDF(createdOrder, false, language);
-        const pdfBase64 = (pdfDoc as any).output('datauristring').split(',')[1];
+
 
         // F-INV (audit 2026-08-06): this used to call /api/send-invoice, which
         // requires an admin JWT (verifyAdminToken). OrderForm is customer-facing
@@ -876,7 +919,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             body: safeJsonStringify({
               email: orderData.email,
               name: orderData.name,
-              pdfBase64: pdfBase64,
+              
               lang: language
             }),
             signal: emailController.signal
@@ -981,6 +1024,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      department: '',
+      initials: '',
+      attn: '',
       customMenu: ''
     });
     setReferenceNumber('');
@@ -1244,6 +1290,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 handleStepNext={handleStepNext}
                 setCurrentStep={setCurrentStep}
                 triggerLightImpact={triggerLightImpact}
+                currentUser={currentUser}
+                handleSyncFromActiveProfile={handleSyncFromActiveProfile}
                 tText={tText}
                 t={t}
               />

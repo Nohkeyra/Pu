@@ -343,7 +343,7 @@ export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | nul
   }
 }
 
-export async function generateSequentialInvoiceNo(): Promise<string> {
+export async function generateSequentialInvoiceNo(isQuote = false): Promise<string> {
   const db = getFirestore();
   const counterRef = db.collection("meta").doc("invoiceCounter");
   return await db.runTransaction(async (tx) => {
@@ -355,7 +355,8 @@ export async function generateSequentialInvoiceNo(): Promise<string> {
         next = data.count + 1;
       }
     }
-    const invoiceNo = `RW ${String(next).padStart(5, "0")}`;
+    const prefix = isQuote ? "QT" : "RW";
+    const invoiceNo = `${prefix} ${String(next).padStart(5, "0")}`;
     tx.set(
       counterRef,
       { count: next, updatedAt: FieldValue.serverTimestamp() },
