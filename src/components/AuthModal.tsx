@@ -108,7 +108,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         toast({
           title: t('Biometric Failed', 'Biometrik Gagal'),
           description: t('Fingerprint / Face ID verification failed.', 'Pengesahan cap jari / wajah gagal.'),
-          variant: 'destructive'
+          variant: 'error'
         });
       }
     }
