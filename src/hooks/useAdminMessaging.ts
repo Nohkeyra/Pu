@@ -47,7 +47,6 @@ export function useAdminMessaging({ t, toast, authHeaders, getDisplayInvoiceNo }
           email: recipientEmail,
           name: sendOrder.name,
           invoiceNo,
-          pdfBase64,
           isFinal: true,
           lang: sendOrder.lang
         })

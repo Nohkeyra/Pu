@@ -609,11 +609,12 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
     }
 
     
-    const orderForPdf = { ...orderData, id: orderSnap.id };
+    const orderForPdf: any = { ...orderData, id: orderSnap.id };
+    orderForPdf.lang = lang === 'en' ? 'en' : 'bm';
     if (!orderForPdf.invoiceNo) {
       orderForPdf.invoiceNo = `RW ${id.substring(0, 5).toUpperCase()}-PRE`;
     }
-    const pdfBuffer = await generateServerInvoicePdf(orderForPdf, false, lang === 'en' ? 'en' : 'bm');
+    const pdfBuffer = await generateServerInvoicePdf(orderForPdf, false);
 
     const transporter = createBrevoTransporter();
     const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
@@ -685,7 +686,7 @@ router.post('/calendar-notes', verifyAdminToken, async (req, res) => {
     if (!date) return res.status(400).json({ success: false, error: 'Date is required' });
 
     // Use admin's UID from token, or fallback to 'admin'
-    const uid = req.user?.uid || 'admin';
+    const uid = (req as any).user?.uid || 'admin';
     const docId = `${uid}_${date}`;
     const db = getFirestore();
     

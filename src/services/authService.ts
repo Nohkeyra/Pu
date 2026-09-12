@@ -2,6 +2,8 @@ import { NativeBiometric, BiometryType } from '@capacitor-community/native-biome
 import { isAndroidApk } from '@/lib/platform';
 import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preferences';
 import { getApiUrl } from '@/lib/api';
+import { auth } from '@/firebaseConfig';
+import { signInWithCustomToken } from 'firebase/auth';
 
 /**
  * Storage keys and server identifiers

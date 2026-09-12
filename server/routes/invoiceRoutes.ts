@@ -97,10 +97,8 @@ router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Respons
       const orderSnap = await db.collection('orders').doc(orderId).get();
       if (orderSnap.exists) {
         const { generateServerInvoicePdf } = await import('../services/serverPdfService.js');
-        const orderForPdf = { ...orderSnap.data(), id: orderSnap.id };
-        // We do not have lang in body, assume 'bm' or read from order
-        const lang = orderForPdf.lang === 'en' ? 'en' : 'bm';
-        pdfBuffer = await generateServerInvoicePdf(orderForPdf, true, lang);
+        const orderForPdf: any = { ...orderSnap.data(), id: orderSnap.id };
+        pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
       }
     }
 
@@ -228,21 +226,20 @@ router.post('/invoice/combined/pdf', async (req, res) => {
 
     const { generateServerConsolidatedInvoicePdf } = await import('../services/serverPdfService.js');
     
-    const combinedPayload = {
-      orders: orderDocs,
-      includeNotes: Boolean(includeNotes),
-      lang: lang === 'en' ? 'en' : 'bm',
-      invoiceNo: customInvoiceNo
-    };
-
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(combinedPayload, true);
+    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
+      orderDocs,
+      customInvoiceNo,
+      Boolean(includeNotes),
+      lang === 'en' ? 'en' : 'bm'
+    );
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Combined_Invoice.pdf"`);
     return res.end(pdfBuffer);
   } catch (err) {
     console.error('[Invoice API] Combined PDF generation error:', err);
-    return res.status(500).json({ success: false, error: String(err?.message || err) });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: errMsg });
   }
 });
 

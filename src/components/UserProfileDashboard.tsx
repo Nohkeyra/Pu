@@ -365,9 +365,16 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       if (Capacitor.isNativePlatform()) {
         try {
-          const base64Data = await new Promise((resolve, reject) => {
+          const base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onloadend = () => {
+              const res = reader.result;
+              if (typeof res === 'string') {
+                resolve(res.split(',')[1]);
+              } else {
+                reject(new Error('Failed to read file as data URL'));
+              }
+            };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
@@ -518,9 +525,16 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       if (Capacitor.isNativePlatform()) {
         try {
-          const base64Data = await new Promise((resolve, reject) => {
+          const base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onloadend = () => {
+              const res = reader.result;
+              if (typeof res === 'string') {
+                resolve(res.split(',')[1]);
+              } else {
+                reject(new Error('Failed to read file as data URL'));
+              }
+            };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
@@ -537,7 +551,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           console.error('Error sharing PDF on mobile:', shareErr);
         }
       } else {
-        pdfDoc.save(fileName);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
       }
       
       setSelectedOrders(new Set());
