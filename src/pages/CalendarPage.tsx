@@ -6,6 +6,7 @@ import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { getApiUrl } from '@/lib/api';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
+import WawasanLoader from '@/components/WawasanLoader';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -535,9 +536,9 @@ export default function CalendarPage() {
 
           {/* 2. CALENDAR GRID (Consistent Light & Dark Mode) */}
           {loading ? (
-            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs">
-              <Clock className="w-7 h-7 text-stone-400 dark:text-stone-500 animate-spin mx-auto mb-3" />
-              <p className="text-xs font-semibold text-stone-400 dark:text-stone-500">
+            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs flex flex-col items-center justify-center space-y-4">
+              <WawasanLoader size={64} />
+              <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">
                 {tl('Loading kitchen calendar...', 'Memuatkan jadual dapur...')}
               </p>
             </div>

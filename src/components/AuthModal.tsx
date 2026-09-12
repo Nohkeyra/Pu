@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -18,24 +18,32 @@ import {
   X, 
   ArrowRight, 
   Loader2,
-  ChevronDown
+  ChevronDown,
+  Fingerprint
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
+import { getSecureItem } from '@/lib/preferences';
+import { 
+  checkBiometricAvailability, 
+  getCustomerBiometricCredentials, 
+  storeCustomerBiometricCredentials 
+} from '@/services/authService';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   initialMode?: 'signin' | 'signup' | 'forgot';
+  isAdminAuth?: boolean;
 }
 
 type AuthMode = 'signin' | 'signup' | 'forgot';
 
-export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin', isAdminAuth = false }: AuthModalProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -55,16 +63,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const [department, setDepartment] = useState(''); // Corporate Billing Details (Division / Department)
   const [initials, setInitials] = useState(''); // Initial Identifier
 
+  // Biometric States
+  const [rememberBiometrics, setRememberBiometrics] = useState(true);
+  const [isBiometricHardwareAvailable, setIsBiometricHardwareAvailable] = useState(false);
+  const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
+
   // Translation helpers - DECLARED EARLY
-  const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
+  const t = useCallback((en: string, bm: string) => (language === 'bm' ? bm : en), [language]);
 
-  useEffect(() => {
-    if (isOpen && initialMode) {
-      setMode(initialMode);
-    }
-  }, [isOpen, initialMode]);
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setEmail('');
     setPassword('');
     setName('');
@@ -74,7 +81,73 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setAttn('');
     setDepartment('');
     setInitials('');
-  };
+  }, []);
+
+  const handleBiometricLogin = useCallback(async () => {
+    try {
+      const creds = await getCustomerBiometricCredentials();
+      if (creds && creds.email && creds.password) {
+        setIsLoading(true);
+        await signInWithEmailAndPassword(auth, creds.email, creds.password);
+        triggerNotification(NotificationType.Success);
+        toast({
+          title: t('Success', 'Berjaya'),
+          description: t('Successfully logged in with Biometrics!', 'Berjaya log masuk dengan Biometrik!'),
+          variant: 'success'
+        });
+        resetForm();
+        onSuccess?.();
+        onClose();
+      }
+    } catch (err: any) {
+      console.warn('Biometric login failed:', err);
+      setIsLoading(false);
+      // Only show error toast if the user did not cancel the native popup dialog
+      const errMsg = err.message || '';
+      if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('user cancel')) {
+        toast({
+          title: t('Biometric Failed', 'Biometrik Gagal'),
+          description: t('Fingerprint / Face ID verification failed.', 'Pengesahan cap jari / wajah gagal.'),
+          variant: 'destructive'
+        });
+      }
+    }
+  }, [t, toast, onSuccess, onClose, resetForm]);
+
+  useEffect(() => {
+    async function initBiometrics() {
+      if (isAdminAuth) {
+        return;
+      }
+      try {
+        const avail = await checkBiometricAvailability();
+        setIsBiometricHardwareAvailable(avail.isAvailable);
+        
+        const enabled = await getSecureItem('wawasan_customer_biometrics_enabled');
+        if (enabled === 'true') {
+          setHasStoredBiometrics(true);
+          // Auto-trigger on initial modal load if we are in signin mode and user is not already logged in
+          if (mode === 'signin' && isOpen && !auth.currentUser) {
+            // Short timeout to let the modal fully transition-in before triggering native OS popup
+            setTimeout(() => {
+              handleBiometricLogin();
+            }, 300);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to initialize customer biometrics:', err);
+      }
+    }
+    if (isOpen) {
+      initBiometrics();
+    }
+  }, [mode, isOpen, isAdminAuth, handleBiometricLogin]);
+
+  useEffect(() => {
+    if (isOpen && initialMode) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   const handleModeChange = (newMode: AuthMode) => {
     setMode(newMode);
@@ -98,6 +171,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
       if (mode === 'signin') {
         if (!password) throw new Error(t('Password is required', 'Kata laluan diperlukan'));
         await signInWithEmailAndPassword(auth, email, password);
+
+        if (rememberBiometrics) {
+          try {
+            await storeCustomerBiometricCredentials(email, password);
+          } catch (bioErr) {
+            console.warn('Failed to store customer biometric credentials:', bioErr);
+          }
+        }
 
         triggerNotification(NotificationType.Success);
         toast({
@@ -134,6 +215,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         };
 
         await setDoc(doc(db, 'users', user.uid), profileData);
+
+        if (rememberBiometrics) {
+          try {
+            await storeCustomerBiometricCredentials(email, password);
+          } catch (bioErr) {
+            console.warn('Failed to store customer biometric credentials during signup:', bioErr);
+          }
+        }
 
         triggerNotification(NotificationType.Success);
         toast({
@@ -412,6 +501,23 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       required
                     />
                   </div>
+
+                  {/* Remember Me with Biometrics Checkbox */}
+                  {!isAdminAuth && isBiometricHardwareAvailable && (
+                    <div className="flex items-center gap-2 pt-2 pb-1">
+                      <input
+                        id="remember-biometrics"
+                        type="checkbox"
+                        checked={rememberBiometrics}
+                        onChange={(e) => setRememberBiometrics(e.target.checked)}
+                        className="h-4 w-4 rounded border-stone-300 dark:border-white/10 text-primary focus:ring-primary/40 focus:ring-1 cursor-pointer"
+                      />
+                      <label htmlFor="remember-biometrics" className="text-xs font-semibold text-stone-600 dark:text-stone-400 cursor-pointer flex items-center gap-1.5">
+                        <Fingerprint className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] animate-pulse shrink-0" />
+                        <span>{t('Remember with Fingerprint / Face ID', 'Ingat dengan Cap Jari / Face ID')}</span>
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -432,6 +538,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </>
                 )}
               </button>
+
+              {/* Quick Biometric Access Button */}
+              {!isAdminAuth && mode === 'signin' && hasStoredBiometrics && (
+                <button
+                  type="button"
+                  onClick={handleBiometricLogin}
+                  disabled={isLoading}
+                  className="w-full h-12 bg-stone-50 dark:bg-stone-900/40 hover:bg-stone-100 dark:hover:bg-stone-900 border border-stone-200 dark:border-white/10 text-stone-700 dark:text-stone-300 font-semibold rounded-lg active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-3 disabled:opacity-50"
+                >
+                  <Fingerprint className="w-5 h-5 text-[var(--color-sunshine-cta)] shrink-0" />
+                  <span>{t('Sign In with Fingerprint / Face ID', 'Log Masuk dengan Cap Jari / Wajah')}</span>
+                </button>
+              )}
 
               {/* Toggle modes */}
               <div className="text-center mt-6 pt-4 border-t border-border text-xs">

@@ -3,13 +3,13 @@ import { motion } from 'motion/react';
 import { 
   X, 
   FileText, 
-  Loader2, 
   FileDown 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import WawasanLoader from '@/components/WawasanLoader';
 
 interface AdminPdfShareModalProps {
   isOpen: boolean;
@@ -154,8 +154,8 @@ export function AdminPdfShareModal({
             )
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 text-stone-400">
-              <Loader2 className="w-12 h-12 animate-spin text-[var(--color-sunshine-cta)]" />
-              <p className="font-bold tracking-widest uppercase text-xs">{t('loading') || 'Generating Document'}</p>
+              <WawasanLoader size={64} />
+              <p className="font-bold tracking-widest uppercase text-xs text-stone-500 dark:text-stone-400 animate-pulse">{t('loading') || 'Generating Document'}</p>
             </div>
           )}
         </div>

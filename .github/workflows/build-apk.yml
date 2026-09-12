@@ -212,16 +212,20 @@ jobs:
           
           mkdir -p android/app
           
-          # ALWAYS generate a pristine, valid keystore and key.properties to guarantee 100% success
-          echo "⚙️ Generating clean release keystore on the fly..."
-          keytool -genkey -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias "$ALIAS" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Restoran Wawasan, OU=Engineering, O=Restoran Wawasan, L=Kuala Lumpur, C=MY"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "🔑 Decoding existing production signing keystore from secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
+          else
+            echo "⚙️ Generating clean release keystore on the fly (Fallback)..."
+            keytool -genkey -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias "$ALIAS" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Restoran Wawasan, OU=Engineering, O=Restoran Wawasan, L=Kuala Lumpur, C=MY"
+          fi
 
           echo "storePassword=$STORE_PASS" > android/app/key.properties
           echo "keyPassword=$KEY_PASS" >> android/app/key.properties
           echo "keyAlias=$ALIAS" >> android/app/key.properties
           echo "storeFile=release-key.jks" >> android/app/key.properties
           cp android/app/key.properties android/key.properties
-          echo "✅ Keystore successfully created and configured for release signing!"
+          echo "✅ Keystore successfully configured for release signing!"
 
       - name: Setup Gradle permissions and wrapper integrity
         run: |

@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
+import WawasanLoader from '@/components/WawasanLoader';
 import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
@@ -337,8 +338,8 @@ export function OrderDetailModal({
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center space-y-4 text-stone-400">
-              <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
-              <p className="font-medium text-sm">Loading order details...</p>
+              <WawasanLoader size={64} />
+              <p className="font-semibold text-xs tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Loading order details...</p>
             </div>
           )}
         </div>

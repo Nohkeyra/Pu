@@ -12,6 +12,9 @@ export const ADMIN_TOKEN_KEY = 'wawasan_admin_token';
 export const ADMIN_BIOMETRIC_SERVER_ID = 'com.wawasanpakusop.app.admin';
 export const ADMIN_BIOMETRIC_PREF_KEY = 'wawasan_admin_biometrics_enabled';
 
+export const CUSTOMER_BIOMETRIC_SERVER_ID = 'com.wawasanpakusop.app.customer';
+export const CUSTOMER_BIOMETRIC_PREF_KEY = 'wawasan_customer_biometrics_enabled';
+
 /**
  * Types and Interfaces for Authentication & Biometric states
  */
@@ -358,6 +361,90 @@ export async function deleteAdminBiometricCredentials(): Promise<boolean> {
 }
 
 /**
+ * Store customer credentials securely in hardware keychain.
+ */
+export async function storeCustomerBiometricCredentials(
+  email: string,
+  password: string
+): Promise<boolean> {
+  const isNative = isAndroidApk();
+  if (!isNative) {
+    await setSecureItem('wawasan_customer_email', email);
+    await setSecureItem('wawasan_customer_password', password);
+    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
+    return true;
+  }
+
+  try {
+    await NativeBiometric.setCredentials({
+      server: CUSTOMER_BIOMETRIC_SERVER_ID,
+      username: email,
+      password: password,
+    });
+    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
+    return true;
+  } catch (error) {
+    console.warn('[AuthService] Failed to set native customer biometric credentials:', error);
+    await setSecureItem('wawasan_customer_email', email);
+    await setSecureItem('wawasan_customer_password', password);
+    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
+    return false;
+  }
+}
+
+/**
+ * Retrieve customer credentials securely from hardware keychain.
+ */
+export async function getCustomerBiometricCredentials(): Promise<{ email: string; password: string } | null> {
+  const isNative = isAndroidApk();
+  if (!isNative) {
+    const email = await getSecureItem('wawasan_customer_email');
+    const password = await getSecureItem('wawasan_customer_password');
+    return email && password ? { email, password } : null;
+  }
+
+  try {
+    const creds = await NativeBiometric.getCredentials({
+      server: CUSTOMER_BIOMETRIC_SERVER_ID,
+    });
+    if (creds && creds.password) {
+      return { email: creds.username, password: creds.password };
+    }
+    return null;
+  } catch (error) {
+    console.warn('[AuthService] Failed to retrieve native customer biometric credentials:', error);
+    const fallbackEmail = await getSecureItem('wawasan_customer_email');
+    const fallbackPassword = await getSecureItem('wawasan_customer_password');
+    return fallbackEmail && fallbackPassword ? { email: fallbackEmail, password: fallbackPassword } : null;
+  }
+}
+
+/**
+ * Delete stored customer credentials from hardware keychain.
+ */
+export async function deleteCustomerBiometricCredentials(): Promise<boolean> {
+  const isNative = isAndroidApk();
+  try {
+    if (isNative) {
+      try {
+        await NativeBiometric.deleteCredentials({
+          server: CUSTOMER_BIOMETRIC_SERVER_ID,
+        });
+      } catch (err) {
+        console.warn('[AuthService] NativeBiometric deleteCredentials failed:', err);
+      }
+    }
+    await removeSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY);
+    await removeSecureItem('wawasan_customer_email');
+    await removeSecureItem('wawasan_customer_password');
+    return true;
+  } catch (error) {
+    console.warn('[AuthService] Failed to delete customer biometric credentials:', error);
+    return false;
+  }
+}
+
+/**
  * Retrieve the active admin session token.
  */
 export async function getStoredAdminToken(): Promise<string | null> {
@@ -446,6 +533,9 @@ export const authService = {
   storeAdminBiometricCredentials,
   getAdminBiometricCredentials,
   deleteAdminBiometricCredentials,
+  storeCustomerBiometricCredentials,
+  getCustomerBiometricCredentials,
+  deleteCustomerBiometricCredentials,
   getStoredAdminToken,
   saveAdminToken,
   clearAdminSession,

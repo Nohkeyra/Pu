@@ -6,7 +6,7 @@ import AdminPanel from '@/components/AdminPanel';
 import AuthModal from '@/components/AuthModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getApiUrl } from '@/lib/api';
-import { Loader2 } from 'lucide-react';
+import WawasanLoader from '@/components/WawasanLoader';
 import { Button } from '@/components/ui/button';
 import { saveAdminToken, clearAdminSession } from '@/services/authService';
 
@@ -55,8 +55,8 @@ export default function AdminPage() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
-        <Loader2 className="animate-spin h-10 w-10 text-[var(--color-sunshine-cta)]" />
+      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-4">
+        <WawasanLoader size={80} />
         <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Memuatkan...</p>
       </div>
     );
@@ -92,6 +92,7 @@ export default function AdminPage() {
           isOpen={authOpen}
           onClose={() => setAuthOpen(false)}
           onSuccess={() => setAuthOpen(false)}
+          isAdminAuth={true}
         />
       </div>
     );
