@@ -28,7 +28,7 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
     }
     const decodedToken = await getAuth(getAdminApp()).verifyIdToken(token);
     
-    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+    const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
     const userEmail = decodedToken.email?.toLowerCase();
     
     if (decodedToken.admin !== true) {
