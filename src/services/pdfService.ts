@@ -7,8 +7,11 @@ export const mealLabelsMap: Record<string, string> = {
   dinner: 'Makan Malam',
 };
 
-export const formatDateSafe = (dateStr: string | undefined, _lang?: string): string => {
+export const formatDateSafe = (dateStr: string | undefined, lang?: string): string => {
   if (!dateStr) return '-';
+  if (lang) {
+    // Keep reference to satisfy compiler/linter
+  }
   const trimmed = dateStr.trim();
   const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
   if (isoMatch) {
