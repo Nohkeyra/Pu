@@ -59,7 +59,7 @@ The agent is expected to handle problems well outside typical "fix the build" sc
   - **Export & PDF**: `jspdf` (3.x) + `jspdf-autotable` (5.x), `html2canvas`, `exceljs`.
   - **Notifications & Email**: Nodemailer, FCM / Capacitor Push Notifications.
 - **Core Business Logic & Workflows**:
-  - **Invoicing**: Sequential invoice generation format `RW-XXXX` (e.g. `RW-0001`, `RW-0002`).
+  - **Invoicing**: Sequential invoice generation format `RW-XXXX` (e.g. `RW-0001`, `RW-0002`). The standardized 2-page luxury invoice layout is strictly for **Individual Invoices** (`generateServerInvoicePdf`), while consolidated multi-order invoices (`generateServerConsolidatedInvoicePdf`) maintain their own summary format (see Section 15 in root `AGENTS.md`).
   - **Admin Security**: Admin login with rate limiting (`adminLoginLimiter`), JWT verification (`verifyAdminToken`), and explicit server token revocation on logout (`POST /api/admin/logout`).
   - **Capacitor Android**: Native sync command `npm run sync:android` to deploy web assets from `dist/` to Android assets.
   - **Build Pipeline**: `npm run build` (Vite build + esbuild server bundle) followed by `npm run sync:android`.

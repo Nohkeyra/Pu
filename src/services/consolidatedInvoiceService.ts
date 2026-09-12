@@ -67,17 +67,17 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const recipientText = clientName;
 
   const doc = new jsPDF({
-    orientation: 'portrait',
+    orientation: 'landscape',
     unit: 'mm',
     format: 'a4',
   });
 
-  const cCreamBg = [250, 247, 240];
-  const cGoldBorder = [194, 147, 45];
-  const cHeaderGold = [166, 124, 30];
-  const cDarkBrown = [96, 64, 8];
-  const cCharcoal = [26, 24, 22];
-  const cGrey = [148, 163, 184];
+  const cCreamBg = [253, 252, 250]; // Clean warm ivory (#FDFCFA)
+  const cGoldBorder = [194, 147, 45]; // Gold border (#C2932D)
+  const cHeaderGold = [166, 124, 30]; // Royal Gold (#A67C1E)
+  const cDeepGold = [114, 80, 20]; // Deep Royal Bronze-Gold (#725014)
+  const cCharcoal = [26, 24, 22]; // Warm charcoal (#1A1816)
+  const cGrey = [135, 125, 115]; // Warm muted stone
 
   // Standard corporate invoice logic: One Master Invoice Number for the entire document
   const masterInvoiceNo = providedInvoiceNo?.trim() || generateRandomInvoiceNo();
@@ -85,12 +85,12 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   let currentPageTotal = 0;
 
   const drawPageHeader = (pageNumber: number) => {
-    drawBatikHeaderBackground(doc, 38);
+    drawBatikHeaderBackground(doc, 36, 297);
 
     const logoBase64 = getCachedLogoBase64();
     if (logoBase64) {
       try {
-        doc.addImage(logoBase64, 'PNG', 15, 12, 21, 21);
+        doc.addImage(logoBase64, 'PNG', 15, 8, 20, 20);
       } catch (err) {
         console.warn('Error adding logo to consolidated PDF header:', err);
       }
@@ -99,38 +99,37 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN', 40, 18);
+    doc.text('RESTORAN WAWASAN', 39, 16);
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text('Unit 3, Level B3, Menara PjH', 40, 23);
-    doc.text('Jalan P2a, Presint 2, 62100 Putrajaya', 40, 27);
-    doc.text('W.P Putrajaya', 40, 31);
+    doc.text('Unit 3, Level B3, Menara PjH, Jalan P2a, Presint 2, 62100 Putrajaya, W.P Putrajaya', 39, 23);
 
     doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.text(lang === 'bm' ? 'INVOIS KONSOLIDASI' : 'CONSOLIDATED INVOICE', 195, 20, { align: 'right' });
+    doc.setFontSize(22);
+    doc.text(lang === 'bm' ? 'INVOIS KONSOLIDASI' : 'CONSOLIDATED INVOICE', 282, 20, { align: 'right' });
 
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.text(`Tarikh / Date: ${formatDateSafe(new Date().toISOString(), lang)}`, 195, 30, { align: 'right' });
-    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${masterInvoiceNo}`, 195, 34, { align: 'right' });
-    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${pageNumber}`, 195, 38, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'Tarikh' : 'Date'}: ${formatDateSafe(new Date().toISOString(), lang)}`, 282, 26, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'No. Invois' : 'Invoice No'}: ${masterInvoiceNo}`, 282, 30, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${pageNumber}`, 282, 34, { align: 'right' });
   };
 
   const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
   const activeMeals = allPossibleMeals.filter(m => orders.some(o => (o.meals || []).includes(m)));
 
   const startX = 15;
-  const colDate = 20;
-  const colQty = 10;
-  const colNotes = includeNotes ? 30 : 0;
-  const colMealsWidth = activeMeals.length * 15;
-  const colRM = 16;
-  const colMenu = 180 - colDate - colQty - colNotes - colMealsWidth - colRM;
+  const colDate = 26;
+  const colQty = 16;
+  const colNotes = includeNotes ? 38 : 0;
+  const mealColWidth = 24;
+  const colMealsWidth = Math.max(activeMeals.length * mealColWidth, 48);
+  const colRM = 25;
+  const colMenu = 267 - colDate - colQty - colNotes - colMealsWidth - colRM;
 
   const xDate = startX;
   const xQty = xDate + colDate;
@@ -139,50 +138,53 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const xMealsStartActual = xMenu + colMenu;
   const xRM = xMealsStartActual + colMealsWidth;
 
-  let currentY = 46;
+  let currentY = 40;
   let currentPageNumber = 1;
 
   const drawMatrixHeader = (y: number) => {
+    // Row 1: ORDER DETAILS, PRICE / PAX (RM), TOTAL
     doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.rect(15, y, 180, 7, 'F');
+    doc.rect(15, y, 267, 7, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
 
-    doc.text('ORDER DETAILS', xDate + (xMealsStartActual - xDate) / 2, y + 4.8, { align: 'center' });
+    doc.text(lang === 'bm' ? 'BUTIRAN PESANAN' : 'ORDER DETAILS', xDate + (xMealsStartActual - xDate) / 2, y + 4.8, { align: 'center' });
 
     if (activeMeals.length > 0) {
       doc.line(xMealsStartActual, y, xMealsStartActual, y + 7);
-      doc.text('PRICE PER UNIT (RM)', xMealsStartActual + colMealsWidth / 2, y + 4.8, { align: 'center' });
+      doc.text(lang === 'bm' ? 'HARGA / PAX (RM)' : 'PRICE / PAX (RM)', xMealsStartActual + colMealsWidth / 2, y + 4.8, { align: 'center' });
     }
 
     doc.line(xRM, y, xRM, y + 7);
-    doc.text('TOTAL', xRM + colRM / 2, y + 4.8, { align: 'center' });
+    doc.text(lang === 'bm' ? 'JUMLAH' : 'TOTAL', xRM + colRM / 2, y + 4.8, { align: 'center' });
 
+    // Row 2: Sub-columns
     const r2Y = y + 7;
-    doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
-    doc.rect(15, r2Y, 180, 7, 'F');
+    doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
+    doc.rect(15, r2Y, 267, 7, 'F');
 
     doc.setFontSize(7.5);
     const centerText = (txt: string, x: number, w: number) => {
       doc.text(txt, x + w / 2, r2Y + 4.8, { align: 'center' });
     };
 
-    centerText('Date', xDate, colDate);
-    centerText('QTY', xQty, colQty);
-    if (includeNotes) centerText('Notes', xNotes, colNotes);
+    centerText(lang === 'bm' ? 'Tarikh' : 'Date', xDate, colDate);
+    centerText(lang === 'bm' ? 'Kuantiti' : 'QTY', xQty, colQty);
+    if (includeNotes) centerText(lang === 'bm' ? 'Catatan' : 'Notes', xNotes, colNotes);
     centerText('Menu', xMenu, colMenu);
 
     activeMeals.forEach((meal, i) => {
-      const shortLabel = mealLabelsMap[meal] || meal;
-      centerText(shortLabel, xMealsStartActual + (i * 15), 15);
+      const raw = mealLabelsMap[meal] || meal;
+      const shortLabel = lang === 'bm' ? (raw.split('/')[0] || raw).trim() : (raw.split('/')[1] || raw).trim();
+      centerText(shortLabel, xMealsStartActual + (i * mealColWidth), mealColWidth);
     });
 
     centerText('RM', xRM, colRM);
 
     doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.1);
-    [xQty, xNotes, xMenu, xMealsStartActual, ...activeMeals.map((_, i) => xMealsStartActual + i * 15), xRM].forEach(x => {
+    doc.setLineWidth(0.15);
+    [xQty, xNotes, xMenu, xMealsStartActual, ...activeMeals.map((_, i) => xMealsStartActual + i * mealColWidth), xRM].forEach(x => {
       if (x > xDate && x < xRM + colRM) {
         doc.line(x, r2Y, x, r2Y + 7);
       }
@@ -192,8 +194,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   };
 
   const drawSubtotalRow = (label: string, amount: number) => {
-    doc.setFillColor(cDarkBrown[0], cDarkBrown[1], cDarkBrown[2]);
-    doc.rect(15, currentY, 180, 7, 'F');
+    doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
+    doc.rect(15, currentY, 267, 7, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
@@ -215,17 +217,16 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     currentPageNumber++;
     currentPageTotal = 0;
     drawPageHeader(currentPageNumber);
-    currentY = 46;
+    currentY = 40;
     const toBoxLabel = lang === 'en' ? 'TO' : 'KEPADA';
-    drawCreamBox(doc, 15, currentY, 180, 15, toBoxLabel, recipientText, true);
-    currentY += 15 + 5;
+    drawCreamBox(doc, 15, currentY, 267, 13, toBoxLabel, recipientText, true);
+    currentY += 13 + 4;
     currentY = drawMatrixHeader(currentY);
   };
 
   const checkPageBreak = (neededHeight: number) => {
-    // Reserve room for this page's own TOTAL AMOUNT row (7mm) so it never
-    // gets pushed onto the page after the one it belongs to.
-    if (currentY + neededHeight + 7 > 265) {
+    // Reserve room for this page's own TOTAL AMOUNT row (7mm) in landscape A4 (height 210mm)
+    if (currentY + neededHeight + 7 > 180) {
       closeCurrentPageAndStartNext();
     }
   };
@@ -246,13 +247,13 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     checkPageBreak(rowHeight);
 
     doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
-    doc.rect(15, currentY, 180, rowHeight, 'F');
+    doc.rect(15, currentY, 267, rowHeight, 'F');
 
     doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
     doc.setLineWidth(0.35);
-    doc.rect(15, currentY, 180, rowHeight, 'S');
+    doc.rect(15, currentY, 267, rowHeight, 'S');
 
-    [xQty, xNotes, xMenu, xMealsStartActual, ...activeMeals.map((_, i) => xMealsStartActual + i * 15), xRM].forEach(x => {
+    [xQty, xNotes, xMenu, xMealsStartActual, ...activeMeals.map((_, i) => xMealsStartActual + i * mealColWidth), xRM].forEach(x => {
       if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
         doc.line(x, currentY, x, currentY + rowHeight);
       }
@@ -270,10 +271,10 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
       if (order.meals.includes(meal) && order.prices && order.prices[meal] !== undefined) {
         const p = order.prices[meal];
         const val = typeof p === 'number' ? p : parseFloat(p as string);
-        doc.text(val.toFixed(2), xMealsStartActual + (i * 15) + 7.5, textY, { align: 'center' });
+        doc.text(val.toFixed(2), xMealsStartActual + (i * mealColWidth) + mealColWidth / 2, textY, { align: 'center' });
       } else {
         doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
-        doc.text('-', xMealsStartActual + (i * 15) + 7.5, textY, { align: 'center' });
+        doc.text('-', xMealsStartActual + (i * mealColWidth) + mealColWidth / 2, textY, { align: 'center' });
         doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
       }
     });
@@ -288,8 +289,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   // --- Page 1 setup ---
   drawPageHeader(currentPageNumber);
   const toBoxLabel = lang === 'en' ? 'TO' : 'KEPADA';
-  drawCreamBox(doc, 15, currentY, 180, 15, toBoxLabel, recipientText, true);
-  currentY += 15 + 5;
+  drawCreamBox(doc, 15, currentY, 267, 13, toBoxLabel, recipientText, true);
+  currentY += 13 + 4;
   currentY = drawMatrixHeader(currentY);
 
   orders.forEach(order => {
@@ -314,11 +315,11 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   currentY = lastContentY;
 
   const spaceNeeded = 40;
-  if (currentY + spaceNeeded > 265) {
+  if (currentY + spaceNeeded > 180) {
     doc.addPage();
     currentPageNumber++;
     drawPageHeader(currentPageNumber);
-    currentY = 46;
+    currentY = 40;
   }
 
   const textNoteY = currentY + 7;
@@ -344,20 +345,22 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  doc.text('* Harga yang diberikan termasuk caj perkhidmatan & set pembungkusan biodegradable.', 18, disclaimerY + 3);
-  doc.text('* The price given includes service charge & biodegradable packaging sets.', 18, disclaimerY + 6.5);
+  const disclaimerText = lang === 'en'
+    ? '* The price given includes service charge & biodegradable packaging sets.'
+    : '* Harga yang diberikan termasuk caj perkhidmatan & set pembungkusan mesra alam.';
+  doc.text(disclaimerText, 18, disclaimerY + 5);
 
   const bankBoxY = disclaimerY + 11;
   doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
-  doc.rect(15, bankBoxY, 180, 22, 'F');
+  doc.rect(15, bankBoxY, 267, 22, 'F');
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
   doc.setLineWidth(0.35);
-  doc.rect(15, bankBoxY, 180, 22, 'S');
+  doc.rect(15, bankBoxY, 267, 22, 'S');
 
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('MAKLUMAT AKAUN BANK / BANK ACCOUNT DETAILS', 18, bankBoxY + 5);
+  doc.text(lang === 'en' ? 'BANK ACCOUNT DETAILS' : 'MAKLUMAT AKAUN BANK', 18, bankBoxY + 5);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
@@ -386,15 +389,15 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
 
   const picHeaderY = 33;
   doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-  doc.rect(15, picHeaderY, 180, 7.5, 'F');
+  doc.rect(15, picHeaderY, 267, 7.5, 'F');
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.text(
     lang === 'bm'
-      ? 'RINGKASAN PESANAN KONSOLIDASI / CONSOLIDATED ORDERS SUMMARY'
-      : 'CONSOLIDATED ORDERS SUMMARY & TOTALS',
+      ? 'RINGKASAN PESANAN KONSOLIDASI'
+      : 'CONSOLIDATED ORDERS SUMMARY',
     18, picHeaderY + 5
   );
 
@@ -406,30 +409,30 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.text(`${lang === 'bm' ? 'Subtotal Muka Surat' : 'Page Subtotal'} ${p}`, 18, summaryY);
     doc.setFont('helvetica', 'normal');
     const pTotal = pageTotals[p] || 0;
-    doc.text(`RM ${pTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });
+    doc.text(`RM ${pTotal.toFixed(2)}`, 280, summaryY, { align: 'right' });
     summaryY += 6;
   }
 
   summaryY += 3;
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
   doc.setLineWidth(0.3);
-  doc.line(15, summaryY, 195, summaryY);
+  doc.line(15, summaryY, 282, summaryY);
   summaryY += 6;
 
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.text(
-    lang === 'bm' ? 'JUMLAH KESELURUHAN / GRAND TOTAL' : 'GRAND TOTAL',
+    lang === 'bm' ? 'JUMLAH KESELURUHAN' : 'GRAND TOTAL',
     18, summaryY
   );
-  doc.text(`RM ${grandTotal.toFixed(2)}`, 160, summaryY, { align: 'right' });
+  doc.text(`RM ${grandTotal.toFixed(2)}`, 280, summaryY, { align: 'right' });
   summaryY += 10;
 
   const sigSectionY = summaryY + 10;
   doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('DISEDIAKAN OLEH / PREPARED BY', 15, sigSectionY);
+  doc.text(lang === 'en' ? 'PREPARED BY' : 'DISEDIAKAN OLEH', 15, sigSectionY);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
@@ -443,17 +446,27 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
   const footerLineY = sigSectionY + 40;
   doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
   doc.setLineWidth(0.3);
-  doc.line(15, footerLineY, 195, footerLineY);
+  doc.line(15, footerLineY, 282, footerLineY);
 
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Terima kasih di atas kepercayaan anda  |  ON BEHALF OF RESTORAN WAWASAN', 105, footerLineY + 5, { align: 'center' });
+  doc.text(
+    lang === 'en'
+      ? 'Thank you for your trust  |  ON BEHALF OF RESTORAN WAWASAN'
+      : 'Terima kasih di atas kepercayaan anda  |  BAGI PIHAK RESTORAN WAWASAN',
+    148.5, footerLineY + 5, { align: 'center' }
+  );
 
   doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  doc.text('* This file is computer generated — no company stamp required', 105, footerLineY + 9, { align: 'center' });
+  doc.text(
+    lang === 'en'
+      ? '* This file is computer generated — no company stamp required'
+      : '* Fail ini dijana oleh komputer — tiada cop syarikat diperlukan',
+    148.5, footerLineY + 9, { align: 'center' }
+  );
 
   // Post-pass across all pages: draw consistent bottom border and pagination
   const totalPages = doc.getNumberOfPages();
@@ -461,15 +474,15 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
     doc.setPage(i);
     doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
     doc.setLineWidth(0.3);
-    doc.line(15, 280, 195, 280);
+    doc.line(15, 198, 282, 198);
     doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 105, 285, { align: 'center' });
+    doc.text('Restoran Wawasan  |  Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya', 148.5, 203, { align: 'center' });
 
     doc.setTextColor(cGrey[0], cGrey[1], cGrey[2]);
     doc.setFontSize(7.5);
-    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${i} / ${totalPages}`, 195, 285, { align: 'right' });
+    doc.text(`${lang === 'bm' ? 'Muka Surat' : 'Page'} ${i} / ${totalPages}`, 282, 203, { align: 'right' });
   }
 
   return doc;

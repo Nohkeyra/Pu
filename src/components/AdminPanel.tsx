@@ -283,14 +283,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             setIsSelectMode={setIsSelectMode}
             filterBySameEmail={filterBySameEmail}
             setFilterBySameEmail={setFilterBySameEmail}
-            consolidatedInvoiceNo={consolidatedInvoiceNo}
-            setConsolidatedInvoiceNo={setConsolidatedInvoiceNo}
-            prepareConsolidateModal={prepareConsolidateModal}
             selectedOrderIds={selectedOrderIds}
             setSelectedOrderIds={setSelectedOrderIds}
-            showConsolidateModal={showConsolidateModal}
-            setShowConsolidateModal={setShowConsolidateModal}
-            isGeneratingConsolidated={isGeneratingConsolidated}
             generatingInvoice={generatingInvoice}
             getStatusBadge={getStatusBadge}
             handleToggleOrderSelect={(id) => {
@@ -307,7 +301,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             handleDownloadPDF={handleDownloadPDF}
             handleDelete={handleDeleteOrder}
             handleRejectCancellation={(id) => handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected')}
-            handleGenerateConsolidatedInvoice={(notes, inv) => handleGenerateConsolidatedInvoice(orders.filter(o => o.id && selectedOrderIds.has(o.id)), notes, inv)}
             authHeaders={authHeaders}
             getApiUrl={getApiUrl}
             fetchOrders={() => fetchOrders(true)}
@@ -328,6 +321,13 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             authHeaders={authHeaders}
             getApiUrl={getApiUrl}
             toast={toast}
+            prepareConsolidateModal={prepareConsolidateModal}
+            consolidatedInvoiceNo={consolidatedInvoiceNo}
+            setConsolidatedInvoiceNo={setConsolidatedInvoiceNo}
+            showConsolidateModal={showConsolidateModal}
+            setShowConsolidateModal={setShowConsolidateModal}
+            isGeneratingConsolidated={isGeneratingConsolidated}
+            handleGenerateConsolidatedInvoice={handleGenerateConsolidatedInvoice}
           />
         )}
         {activeTab === 'menu' && (

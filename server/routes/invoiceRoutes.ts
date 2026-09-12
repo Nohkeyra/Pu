@@ -143,6 +143,9 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     }
 
     const orderData = { id: docSnap.id, ...docSnap.data() } as Record<string, any>;
+    if (req.query.lang && (req.query.lang === 'en' || req.query.lang === 'bm')) {
+      orderData.lang = req.query.lang;
+    }
     const isFinal = req.query.final === 'true' || (orderData.status !== 'pending' && orderData.status !== 'rejected' && orderData.status !== 'cancelled');
     const pdfBuffer = await generateServerInvoicePdf(orderData, isFinal);
 

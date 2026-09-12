@@ -71,7 +71,7 @@ export function CustomerInvoicePreviewModal({
 
   const handleCopyBank = async () => {
     try {
-      const text = `Bank: Bank Muamalat Malaysia Berhad\nNama: RESTORAN WAWASAN\nNo Akaun: 16010000405710\nJumlah: ${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}`;
+      const text = `Bank: Bank Muamalat Malaysia Berhad\nNama: RESTORAN WAWASAN\nNo Akaun: 16010000-405710\nJumlah: ${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}`;
       await navigator.clipboard.writeText(text);
       setCopiedBank(true);
       triggerNotification(NotificationType.Success);
@@ -209,12 +209,12 @@ export function CustomerInvoicePreviewModal({
                 <div className="flex items-center gap-3.5">
                   <div className="relative">
                     <img 
-                      src={getAssetUrl('/assets/brand/wawasan_logo.svg')} 
+                      src={getAssetUrl('/assets/brand/apk_logo_clean.png')} 
                       alt="Restoran Wawasan" 
-                      className="w-16 h-16 object-contain rounded-xl bg-white dark:bg-stone-900 p-1.5 shadow-sm border border-amber-500/20"
+                      className="w-16 h-16 object-contain rounded-xl p-1 shadow-sm border border-amber-500/10"
                       onError={(e) => {
                         const target = e.currentTarget;
-                        if (!target.src.includes('.png')) {
+                        if (!target.src.includes('wawasan_logo.png')) {
                           target.src = getAssetUrl('/assets/brand/wawasan_logo.png');
                         } else {
                           target.style.display = 'none';
@@ -483,7 +483,7 @@ export function CustomerInvoicePreviewModal({
                       RESTORAN WAWASAN
                     </div>
                     <div className="text-[11px] font-black tracking-widest text-red-600 dark:text-red-400 uppercase my-0.5">
-                      ★ {isOrderFinal ? 'DISAHKAN / APPROVED' : 'SEBUT HARGA / QUOTE'} ★
+                      ★ {isOrderFinal ? (language === 'bm' ? 'DISAHKAN' : 'APPROVED') : (language === 'bm' ? 'SEBUT HARGA' : 'QUOTATION')} ★
                     </div>
                     <div className="text-[8px] font-semibold text-red-700/80 dark:text-red-400/80">
                       PUTRAJAYA • BAHAGIAN KATERING

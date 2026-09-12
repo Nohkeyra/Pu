@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, 
-  Download, 
+  Download,
   Eye, 
   FileText, 
+  FileSpreadsheet,
+  Loader2,
   Trash2, 
   ArrowUpDown, 
   ChevronLeft, 
@@ -21,7 +24,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
-import { exportOrdersAsExcelTemplate } from '@/lib/exportUtils';
+import { Input } from '@/components/ui/input';
+import { exportOrdersAsExcelStandard } from '@/lib/exportUtils';
 import { getDisplayInvoiceNo, formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 
 interface AdminTablesTabProps {
@@ -35,6 +39,13 @@ interface AdminTablesTabProps {
   authHeaders: () => HeadersInit;
   getApiUrl: (endpoint: string) => string;
   toast: (options: Omit<ToastMessage, 'id'>) => void;
+  prepareConsolidateModal?: () => void;
+  consolidatedInvoiceNo?: string;
+  setConsolidatedInvoiceNo?: (v: string) => void;
+  showConsolidateModal?: boolean;
+  setShowConsolidateModal?: (v: boolean) => void;
+  isGeneratingConsolidated?: boolean;
+  handleGenerateConsolidatedInvoice?: (orders: Order[], withNotes: boolean, invoiceNo?: string) => Promise<void> | void;
 }
 
 type SortField = 'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt' | 'pricePerPax';
@@ -78,6 +89,13 @@ export function AdminTablesTab({
   authHeaders,
   getApiUrl,
   toast,
+  prepareConsolidateModal,
+  consolidatedInvoiceNo = '',
+  setConsolidatedInvoiceNo,
+  showConsolidateModal,
+  setShowConsolidateModal,
+  isGeneratingConsolidated = false,
+  handleGenerateConsolidatedInvoice,
 }: AdminTablesTabProps) {
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,7 +124,18 @@ export function AdminTablesTab({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [openActionRowId, setOpenActionRowId] = useState<string | null>(null);
 
+  // Consolidation state (with local fallback if parent does not provide)
+  const [localShowConsolidateModal, setLocalShowConsolidateModal] = useState(false);
+  const [localConsolidatedInvoiceNo, setLocalConsolidatedInvoiceNo] = useState('');
+  const [localIsGenerating, setLocalIsGenerating] = useState(false);
+
   const isBm = language === 'bm';
+
+  const isModalOpen = showConsolidateModal !== undefined ? showConsolidateModal : localShowConsolidateModal;
+  const setIsModalOpen = setShowConsolidateModal || setLocalShowConsolidateModal;
+  const currentInvoiceNo = consolidatedInvoiceNo || localConsolidatedInvoiceNo;
+  const setCurrentInvoiceNo = setConsolidatedInvoiceNo || setLocalConsolidatedInvoiceNo;
+  const isGenerating = isGeneratingConsolidated || localIsGenerating;
 
   // Extract distinct client options
   const clientOptions = useMemo(() => {
@@ -311,12 +340,117 @@ export function AdminTablesTab({
     }
   };
 
-  // Export Filtered/Selected Table to Excel using the provided RW_Invoice_v3_Blank.xlsx template
-  const handleExportExcel = async () => {
-    const targetOrders = selectedIds.size > 0
-      ? filteredAndSortedOrders.filter(o => o.id && selectedIds.has(o.id))
-      : filteredAndSortedOrders;
-    await exportOrdersAsExcelTemplate(targetOrders, toast, isBm);
+  // Download all orders into one excel file (Standard tabular export)
+  const handleDownloadAllExcel = async () => {
+    const targetOrders = filteredAndSortedOrders.length > 0 ? filteredAndSortedOrders : orders;
+    if (targetOrders.length === 0) {
+      toast({
+        title: isBm ? 'Tiada Rekod' : 'No Records',
+        description: isBm ? 'Tiada pesanan untuk dieksport' : 'There are no orders to export',
+        variant: 'warning',
+      });
+      return;
+    }
+    await exportOrdersAsExcelStandard(targetOrders, toast, isBm);
+  };
+
+  // Open Consolidated Invoice Modal (PDF only)
+  const handleOpenConsolidateModal = () => {
+    if (selectedIds.size === 0) {
+      toast({
+        title: isBm ? 'Tiada Rekod' : 'No Records',
+        description: isBm ? 'Sila pilih sekurang-kurangnya satu pesanan' : 'Please select at least one order',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    const selectedOrders = orders.filter(o => o.id && selectedIds.has(o.id));
+
+    // Mandatory Rule 16 single-client validation
+    const clients = new Set(
+      selectedOrders.map(o => (o.to || o.name || 'Majlis Persendirian').trim().toLowerCase())
+    );
+    if (clients.size > 1) {
+      toast({
+        title: isBm ? 'Klien Berbeza Dikesan' : 'Different Clients Detected',
+        description: isBm
+          ? 'Invois konsolidasi mestilah untuk klien/kementerian yang sama. Sila pilih pesanan untuk klien yang sama sahaja.'
+          : 'Consolidated invoices must be for a single client/ministry only. Please select orders for the same client.',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    if (prepareConsolidateModal) {
+      prepareConsolidateModal();
+    } else {
+      if (!currentInvoiceNo) {
+        setCurrentInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
+      }
+      setIsModalOpen(true);
+    }
+  };
+
+  // Confirm and Generate Consolidated Invoice PDF
+  const handleConfirmConsolidate = async (withNotes: boolean) => {
+    const selectedOrders = orders.filter(o => o.id && selectedIds.has(o.id));
+    if (selectedOrders.length === 0) return;
+
+    setIsModalOpen(false);
+
+    if (handleGenerateConsolidatedInvoice) {
+      await handleGenerateConsolidatedInvoice(selectedOrders, withNotes, currentInvoiceNo);
+      setSelectedIds(new Set());
+    } else {
+      setLocalIsGenerating(true);
+      try {
+        const orderIds = selectedOrders.map(o => o.id).filter(Boolean);
+        const pdfRes = await fetch(getApiUrl('/api/admin/consolidated-invoice/pdf'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            orderIds,
+            invoiceNo: currentInvoiceNo,
+            includeNotes: withNotes,
+            lang: language,
+          }),
+        });
+
+        if (!pdfRes.ok) {
+          const errData = await pdfRes.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to generate PDF');
+        }
+
+        const pdfBlob = await pdfRes.blob();
+        const fileName = `Invois_Konsolidasi_${currentInvoiceNo || 'RW'}.pdf`;
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: isBm ? 'Berjaya' : 'Success',
+          description: isBm ? `Invois konsolidasi ${currentInvoiceNo} berjaya dimuat turun.` : `Consolidated invoice ${currentInvoiceNo} downloaded.`,
+          variant: 'success',
+        });
+        setSelectedIds(new Set());
+      } catch (err: any) {
+        console.error('Consolidated invoice PDF error:', err);
+        toast({
+          title: isBm ? 'Ralat' : 'Error',
+          description: err.message || (isBm ? 'Gagal menjana invois konsolidasi' : 'Failed to generate consolidated invoice'),
+          variant: 'error',
+        });
+      } finally {
+        setLocalIsGenerating(false);
+      }
+    }
   };
 
   // Density classes
@@ -542,14 +676,15 @@ export function AdminTablesTab({
               </button>
             </div>
 
-            {/* Export Excel Button */}
+            {/* Shrunk Excel Download Button: Exports all orders in one Excel file */}
             <button
-              onClick={handleExportExcel}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[var(--color-sunshine-cta)]/15 hover:bg-[var(--color-sunshine-cta)]/25 text-deep-forest dark:text-[var(--color-sunshine-cta)] font-semibold rounded-xl text-xs transition-all border border-[var(--color-sunshine-cta)]/30"
-              title="Export visible table rows to Excel"
+              onClick={handleDownloadAllExcel}
+              className="h-8 px-2.5 bg-cream/60 dark:bg-background/40 hover:bg-stone/10 border border-stone/15 dark:border-white/10 rounded-xl text-deep-forest dark:text-white transition-all text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+              title={isBm ? 'Muat turun semua pesanan dalam satu fail Excel' : 'Download all orders in one Excel file'}
+              aria-label={isBm ? 'Eksport semua pesanan ke fail Excel' : 'Export all orders to Excel'}
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Excel</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline text-xs font-semibold">Excel</span>
             </button>
 
             {/* Refresh Button */}
@@ -607,10 +742,16 @@ export function AdminTablesTab({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={handleExportExcel}
-                className="px-3 py-1 bg-[var(--color-sunshine-cta)] text-charcoal font-bold rounded-lg hover:bg-[var(--color-sunshine-cta)]/90 transition-all"
+                onClick={handleOpenConsolidateModal}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 px-3 py-1 bg-[var(--color-sunshine-cta)] text-charcoal font-bold rounded-lg hover:bg-[var(--color-sunshine-cta)]/90 transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
-                Export Selected Excel
+                {isGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
+                )}
+                <span>{isBm ? 'Jana Invois Konsolidasi (PDF)' : 'Consolidate Invoice (PDF)'}</span>
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
@@ -1078,6 +1219,72 @@ export function AdminTablesTab({
           </div>
         </div>
       </div>
+
+      {/* Consolidated Invoice Modal (PDF only) */}
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+          <div
+            onClick={() => setIsModalOpen(false)}
+            className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
+          />
+          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-xl p-6 shadow-2xl space-y-5">
+            <div className="space-y-1.5">
+              <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
+                <span>{isBm ? 'Invois Konsolidasi (PDF)' : 'Consolidated Invoice (PDF)'}</span>
+              </h3>
+              <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
+                {isBm
+                  ? 'Sila sahkan nombor invois dan tetapan lajur nota untuk penjanaan dokumen PDF. Pilihan konsolidasi hanya menghasilkan fail PDF.'
+                  : 'Confirm invoice number and notes layout for PDF generation. Consolidated generation produces PDF only.'}
+              </p>
+            </div>
+
+            <div className="space-y-1.5 text-left">
+              <label className="text-xs font-bold text-deep-forest dark:text-white">
+                {isBm ? 'Nombor Invois Konsolidasi (Auto / Boleh Diubah)' : 'Consolidated Invoice Number (Auto / Editable)'}
+              </label>
+              <Input
+                value={currentInvoiceNo}
+                onChange={(e) => setCurrentInvoiceNo(e.target.value)}
+                placeholder="RW 00015"
+                className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-[var(--color-sunshine-cta)] text-sm font-bold text-deep-forest dark:text-white"
+              />
+              <p className="text-[11px] text-stone dark:text-stone/70">
+                {isBm
+                  ? 'Nombor ini akan digunakan pada dokumen PDF yang dijana.'
+                  : 'This invoice number will be applied to the generated PDF document.'}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => handleConfirmConsolidate(true)}
+                disabled={isGenerating}
+                className="w-full h-11 bg-[var(--color-sunshine-cta)] text-charcoal rounded-xl text-sm font-bold hover:bg-[var(--color-sunshine-cta)]/90 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>{isBm ? 'Sertakan Lajur Nota (PDF)' : 'Yes, include Notes (PDF)'}</span>
+              </button>
+              <button
+                onClick={() => handleConfirmConsolidate(false)}
+                disabled={isGenerating}
+                className="w-full h-11 bg-cream dark:bg-white/10 border border-stone/15 dark:border-white/10 text-deep-forest dark:text-white rounded-xl text-sm font-bold hover:bg-black/5 dark:hover:bg-white/15 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <span>{isBm ? 'Tanpa Lajur Nota (PDF)' : 'No, hide Notes (PDF)'}</span>
+              </button>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                disabled={isGenerating}
+                className="w-full py-2 text-xs font-semibold text-stone hover:text-deep-forest dark:text-stone/70 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                {isBm ? 'Batal' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

@@ -55,15 +55,15 @@ export const drawCreamBox = (
   });
 };
 
-export const drawBatikHeaderBackground = (doc: jsPDF, headerHeight = 36) => {
+export const drawBatikHeaderBackground = (doc: jsPDF, headerHeight = 36, pageWidth = 210) => {
   // Light cream background matching client PDF (252, 249, 242)
   doc.setFillColor(252, 249, 242);
-  doc.rect(0, 0, 210, headerHeight, 'F');
+  doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
   // Gold dividing line at bottom of header matching client PDF
   doc.setDrawColor(194, 147, 45);
   doc.setLineWidth(0.4);
-  doc.line(15, headerHeight, 195, headerHeight);
+  doc.line(15, headerHeight, pageWidth - 15, headerHeight);
 };
 
 export const getCachedLogoBase64 = (): string | null => {

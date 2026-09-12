@@ -156,13 +156,30 @@ export function ProfileInfoTab({
                 <SelectTrigger id="profile-company-select" className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]">
                   <SelectValue placeholder={t('Select organization', 'Pilih organisasi')} />
                 </SelectTrigger>
-                <SelectContent>
-                  {SAVED_COMPANIES.map((comp) => (
-                    <SelectItem key={comp} value={comp}>
-                      {comp}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="other">{t('Other (Custom Entry)', 'Lain-lain (Taip Sendiri)')}</SelectItem>
+                <SelectContent className="w-[var(--radix-select-trigger-width)] max-h-64 sm:max-h-72 overflow-y-auto rounded-xl p-1.5 z-[100]">
+                  {SAVED_COMPANIES.map((comp) => {
+                    const parts = comp.split(', ');
+                    const mainTitle = parts[0];
+                    const subAddress = parts.slice(1).join(', ');
+                    return (
+                      <SelectItem key={comp} value={comp} className="py-2 px-2.5 my-0.5 rounded-lg text-left">
+                        <div className="flex flex-col text-left pr-2 max-w-full overflow-hidden">
+                          <span className="font-semibold text-xs sm:text-sm text-stone-900 dark:text-stone-100 leading-snug truncate">
+                            {mainTitle}
+                          </span>
+                          {subAddress ? (
+                            <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5 leading-tight">
+                              {subAddress}
+                            </span>
+                          ) : null}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                  <div className="h-px bg-stone-200/80 dark:bg-stone-800 my-1" />
+                  <SelectItem value="other" className="text-amber-600 dark:text-amber-400 font-semibold py-2 px-2.5 rounded-lg">
+                    {t('Other (Custom Entry)', 'Lain-lain (Taip Sendiri)')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 

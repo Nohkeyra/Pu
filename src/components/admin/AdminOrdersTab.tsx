@@ -1,10 +1,9 @@
-import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import {
-  AlertTriangle, Check, Eye, FileDown, Send, Loader2, FileSpreadsheet, X, Star, Search, Inbox, Trash2
+  AlertTriangle, Check, Eye, Send, FileSpreadsheet, X, Star, Search, Inbox, Trash2,
+  SlidersHorizontal, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
 import { formatDateTimeDisplay } from '@/lib/utils';
@@ -39,21 +38,14 @@ export function AdminOrdersTab({
   setIsSelectMode,
   filterBySameEmail = true,
   setFilterBySameEmail,
-  consolidatedInvoiceNo = '',
-  setConsolidatedInvoiceNo,
-  prepareConsolidateModal,
   selectedOrderIds,
   setSelectedOrderIds,
-  showConsolidateModal,
-  setShowConsolidateModal,
-  isGeneratingConsolidated,
   getStatusBadge,
   handleToggleOrderSelect,
   openOrderDetail,
   openSendDialog,
   handleDelete,
   handleRejectCancellation,
-  handleGenerateConsolidatedInvoice,
   authHeaders,
   getApiUrl,
   fetchOrders,
@@ -75,14 +67,8 @@ export function AdminOrdersTab({
   setIsSelectMode: (v: boolean) => void;
   filterBySameEmail?: boolean;
   setFilterBySameEmail?: (v: boolean) => void;
-  consolidatedInvoiceNo?: string;
-  setConsolidatedInvoiceNo?: (v: string) => void;
-  prepareConsolidateModal?: () => void;
   selectedOrderIds: Set<string>;
   setSelectedOrderIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  showConsolidateModal: boolean;
-  setShowConsolidateModal: (v: boolean) => void;
-  isGeneratingConsolidated: boolean;
   generatingInvoice: string | null;
   getStatusBadge: (status?: string) => React.ReactNode;
   handleToggleOrderSelect: (id?: string) => void;
@@ -92,7 +78,6 @@ export function AdminOrdersTab({
   handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (orderId: string) => void;
   handleRejectCancellation: (orderId: string) => void;
-  handleGenerateConsolidatedInvoice: (withNotes: boolean, invoiceNo?: string) => void;
   authHeaders: () => HeadersInit;
   getApiUrl: (path: string) => string;
   fetchOrders: () => void;
@@ -100,8 +85,13 @@ export function AdminOrdersTab({
   setIsApproving: (v: boolean) => void;
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+
+  const hasActiveDate = Boolean(dateFromFilter || dateToFilter);
+  const hasActiveStatus = Boolean(statusFilter && statusFilter !== 'all');
+  const activeFilterCount = (hasActiveDate ? 1 : 0) + (hasActiveStatus ? 1 : 0) + (isSelectMode ? 1 : 0);
 
   // Local search over already-filtered orders (name, email, phone, invoice, client)
   const searchedOrders = searchQuery.trim()
@@ -189,10 +179,10 @@ export function AdminOrdersTab({
 
       {/* Balanced toolbar */}
       <div className="mb-4 bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 rounded-xl p-3 sm:p-4 shadow-xs space-y-3">
-        {/* Row 1: Search, Date range, and Primary action buttons */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Row 1: Search Input & Dropdown Toggle Button */}
+        <div className="flex items-center gap-2">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" aria-hidden />
             <input
               id="admin-order-search"
@@ -205,134 +195,232 @@ export function AdminOrdersTab({
             />
           </div>
 
-          {/* Date range picker group */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-none flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-2.5 sm:px-3.5 py-1 sm:py-0 min-h-[44px]">
-              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                {language === 'bm' ? 'Dari' : 'From'}
+          {/* Filter Dropdown Toggle Button */}
+          <button
+            id="admin-filter-dropdown-toggle"
+            type="button"
+            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+            aria-expanded={isFilterDropdownOpen}
+            aria-label={language === 'bm' ? 'Buka atau tutup penapis' : 'Toggle filters dropdown'}
+            className={`h-11 min-h-[44px] px-3 sm:px-4 flex items-center justify-center gap-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all cursor-pointer shrink-0 select-none ${
+              isFilterDropdownOpen
+                ? 'bg-[#0c453c] text-white border-[#0c453c] shadow-xs dark:bg-emerald-600 dark:border-emerald-600'
+                : activeFilterCount > 0
+                  ? 'bg-[#0c453c]/10 text-[#0c453c] border-[#0c453c]/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
+                  : 'bg-[var(--color-cream-dark)] hover:bg-[var(--color-cream)] dark:bg-background/60 dark:hover:bg-background border-[var(--color-light-forest)] dark:border-stone-800 text-[#0c453c] dark:text-stone-200'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 shrink-0" />
+            <span className="inline">
+              {language === 'bm' ? 'Penapis' : 'Filter'}
+            </span>
+            {activeFilterCount > 0 && (
+              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
+                isFilterDropdownOpen
+                  ? 'bg-[#f69913] text-white'
+                  : 'bg-[#0c453c] text-white dark:bg-emerald-400 dark:text-stone-900'
+              }`}>
+                {activeFilterCount}
               </span>
-              <input
-                id="admin-date-from"
-                type="date"
-                aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
-                value={dateFromFilter}
-                onChange={(e) => setDateFromFilter(e.target.value)}
-                className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
-              />
-              <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
-              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                {language === 'bm' ? 'Hingga' : 'To'}
-              </span>
-              <input
-                id="admin-date-to"
-                type="date"
-                aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
-                value={dateToFilter}
-                onChange={(e) => setDateToFilter(e.target.value)}
-                className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
-              />
-            </div>
-            {(dateFromFilter || dateToFilter) && (
-              <button
-                id="admin-clear-date-filter"
-                onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
-                className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-lg border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
-                title={language === 'bm' ? 'Reset' : 'Reset'}
-              >
-                <X className="w-4 h-4" />
-              </button>
             )}
-          </div>
-
-          {/* Primary actions toolbar */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg h-11 min-h-[44px]">
-              <Switch
-                id="select-mode-toggle"
-                checked={isSelectMode}
-                onCheckedChange={(checked) => {
-                  setIsSelectMode(checked);
-                  if (!checked) setSelectedOrderIds(new Set());
-                }}
-              />
-              <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
-                {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
-              </label>
-            </div>
-
-            <Button
-              id="admin-export-btn"
-              variant="default"
-              size="default"
-              onClick={() => setIsExportOpen(true)}
-              className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
-            </Button>
-          </div>
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
-        {/* Row 2: Status filter chips with live counts */}
-        {setStatusFilter && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-2 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
-            {[
-              { 
-                id: 'all', 
-                label: language === 'bm' ? 'Semua' : 'All',
-                count: orders.length 
-              },
-              { 
-                id: 'pending', 
-                label: language === 'bm' ? 'Menunggu' : 'Pending',
-                count: orders.filter(o => o.status === 'pending').length 
-              },
-              { 
-                id: 'approved', 
-                label: language === 'bm' ? 'Diluluskan' : 'Approved',
-                count: orders.filter((o: Order) => o.status === 'approved' || (o.status as string) === 'confirmed').length 
-              },
-              { 
-                id: 'billed', 
-                label: language === 'bm' ? 'Dibilkan' : 'Billed',
-                count: orders.filter(o => o.status === 'billed').length 
-              },
-              { 
-                id: 'cancel_requested', 
-                label: language === 'bm' ? 'Minta Batal' : 'Cancel req.',
-                count: cancelRequests.length 
-              },
-              { 
-                id: 'cancelled', 
-                label: language === 'bm' ? 'Dibatalkan' : 'Cancelled',
-                count: orders.filter(o => o.status === 'cancelled').length 
-              },
-            ].map((chip) => {
-              const active = statusFilter === chip.id;
-              return (
+        {/* Compact Active Filter Chips when Dropdown is collapsed */}
+        {!isFilterDropdownOpen && activeFilterCount > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-xs">
+            <span className="text-stone-500 dark:text-stone-400 text-[11px] font-medium">
+              {language === 'bm' ? 'Penapis aktif:' : 'Active:'}
+            </span>
+            {hasActiveStatus && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f69913]/15 text-[#b06300] dark:text-amber-300 font-semibold text-[11px]">
+                {statusFilter === 'pending' ? (language === 'bm' ? 'Menunggu' : 'Pending')
+                  : statusFilter === 'approved' ? (language === 'bm' ? 'Diluluskan' : 'Approved')
+                  : statusFilter === 'billed' ? (language === 'bm' ? 'Dibilkan' : 'Billed')
+                  : statusFilter === 'cancel_requested' ? (language === 'bm' ? 'Minta Batal' : 'Cancel req.')
+                  : statusFilter === 'cancelled' ? (language === 'bm' ? 'Dibatalkan' : 'Cancelled')
+                  : statusFilter}
                 <button
-                  key={chip.id}
-                  id={`admin-filter-status-${chip.id}`}
                   type="button"
-                  onClick={() => setStatusFilter(chip.id)}
-                  aria-pressed={active}
-                  className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer select-none ${
-                    active
-                      ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
-                      : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
-                  }`}
+                  onClick={() => setStatusFilter?.('all')}
+                  className="hover:opacity-75 cursor-pointer ml-0.5"
+                  title={language === 'bm' ? 'Padam tapisan status' : 'Clear status filter'}
                 >
-                  <span>{chip.label}</span>
-                  <span className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
-                    active 
-                      ? 'bg-white/25 text-white' 
-                      : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
-                  }`}>
-                    {chip.count}
-                  </span>
+                  <X className="w-3 h-3" />
                 </button>
-              );
-            })}
+              </span>
+            )}
+            {hasActiveDate && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0c453c]/10 text-[#0c453c] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-[11px]">
+                {dateFromFilter || '...'} – {dateToFilter || '...'}
+                <button
+                  type="button"
+                  onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
+                  className="hover:opacity-75 cursor-pointer ml-0.5"
+                  title={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {isSelectMode && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px]">
+                {language === 'bm' ? 'Mod Pilih Aktif' : 'Select Mode'}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter?.('all');
+                setDateFromFilter('');
+                setDateToFilter('');
+              }}
+              className="text-[11px] text-[#e03f14] hover:underline font-semibold ml-1 cursor-pointer"
+            >
+              {language === 'bm' ? 'Set Semula' : 'Reset All'}
+            </button>
+          </div>
+        )}
+
+        {/* Dropdown Panel: Date range, Select Mode, Export, and Status chips */}
+        {isFilterDropdownOpen && (
+          <div
+            id="admin-filter-dropdown-panel"
+            className="pt-3 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70 space-y-3"
+          >
+            {/* Row 1 inside dropdown: Date range, Select Mode, and Primary action buttons */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              {/* Date range picker group */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 w-full sm:w-auto">
+                <div className="flex-1 sm:flex-none flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-2.5 sm:px-3.5 py-1 sm:py-0 min-h-[44px]">
+                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                    {language === 'bm' ? 'Dari' : 'From'}
+                  </span>
+                  <input
+                    id="admin-date-from"
+                    type="date"
+                    aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                  />
+                  <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
+                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                    {language === 'bm' ? 'Hingga' : 'To'}
+                  </span>
+                  <input
+                    id="admin-date-to"
+                    type="date"
+                    aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
+                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                  />
+                </div>
+                {(dateFromFilter || dateToFilter) && (
+                  <button
+                    id="admin-clear-date-filter"
+                    onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
+                    className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-lg border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
+                    title={language === 'bm' ? 'Reset' : 'Reset'}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Primary actions toolbar */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg h-11 min-h-[44px]">
+                  <Switch
+                    id="select-mode-toggle"
+                    checked={isSelectMode}
+                    onCheckedChange={(checked) => {
+                      setIsSelectMode(checked);
+                      if (!checked) setSelectedOrderIds(new Set());
+                    }}
+                  />
+                  <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+                    {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
+                  </label>
+                </div>
+
+                <Button
+                  id="admin-export-btn"
+                  variant="default"
+                  size="default"
+                  onClick={() => setIsExportOpen(true)}
+                  className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Row 2 inside dropdown: Status filter chips with live counts */}
+            {setStatusFilter && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-2 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
+                {[
+                  { 
+                    id: 'all', 
+                    label: language === 'bm' ? 'Semua' : 'All',
+                    count: orders.length 
+                  },
+                  { 
+                    id: 'pending', 
+                    label: language === 'bm' ? 'Menunggu' : 'Pending',
+                    count: orders.filter(o => o.status === 'pending').length 
+                  },
+                  { 
+                    id: 'approved', 
+                    label: language === 'bm' ? 'Diluluskan' : 'Approved',
+                    count: orders.filter((o: Order) => o.status === 'approved' || (o.status as string) === 'confirmed').length 
+                  },
+                  { 
+                    id: 'billed', 
+                    label: language === 'bm' ? 'Dibilkan' : 'Billed',
+                    count: orders.filter(o => o.status === 'billed').length 
+                  },
+                  { 
+                    id: 'cancel_requested', 
+                    label: language === 'bm' ? 'Minta Batal' : 'Cancel req.',
+                    count: cancelRequests.length 
+                  },
+                  { 
+                    id: 'cancelled', 
+                    label: language === 'bm' ? 'Dibatalkan' : 'Cancelled',
+                    count: orders.filter(o => o.status === 'cancelled').length 
+                  },
+                ].map((chip) => {
+                  const active = statusFilter === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      id={`admin-filter-status-${chip.id}`}
+                      type="button"
+                      onClick={() => setStatusFilter(chip.id)}
+                      aria-pressed={active}
+                      className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer select-none ${
+                        active
+                          ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
+                          : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
+                      }`}
+                    >
+                      <span>{chip.label}</span>
+                      <span className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
+                        active 
+                          ? 'bg-white/25 text-white' 
+                          : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
+                      }`}>
+                        {chip.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -591,103 +679,6 @@ export function AdminOrdersTab({
     )}
       </div>
 
-      {/*
-        NOTE (root-cause fix): the floating "Consolidate Invoice" bar and the
-        modal below are rendered via createPortal(..., document.body) instead
-        of inline. This tab is rendered inside <motion.main animate={{ y: ... }}>
-        in AdminPanel.tsx (used for the pull-to-refresh effect). Framer Motion
-        applies an inline `transform` for that animation even when y is 0, and
-        per the CSS spec any ancestor with a `transform` becomes the containing
-        block for descendant `position: fixed` elements. That silently trapped
-        this bar inside motion.main's box instead of the real viewport, so it
-        never appeared on screen even though selectedOrderIds.size >= 2 was
-        true. Portaling to document.body sidesteps that containing-block issue
-        without touching the pull-to-refresh animation in AdminPanel.tsx.
-      */}
-      {selectedOrderIds.size >= 2 && createPortal(
-        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-[var(--color-sunshine-cta)] border border-border/10 rounded-xl p-4 shadow-2xl flex items-center justify-between z-[110]">
-          <div className="text-sm font-bold text-white flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-white">{selectedOrderIds.size}</span>
-            </div>
-            {t('orders_selected') || 'Orders Selected'}
-          </div>
-          <Button
-            onClick={() => {
-              if (prepareConsolidateModal) {
-                prepareConsolidateModal();
-              } else {
-                setShowConsolidateModal(true);
-              }
-            }}
-            disabled={isGeneratingConsolidated}
-            className="h-10 px-5 bg-white text-[var(--color-sunshine-cta)] hover:bg-cream rounded-xl text-xs font-bold flex items-center gap-2"
-          >
-            {isGeneratingConsolidated ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <FileDown className="w-4 h-4" />
-            )}
-            {t('consolidate_invoice') || 'Consolidate Invoice'}
-          </Button>
-        </div>,
-        document.body
-      )}
-
-      {showConsolidateModal && createPortal(
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div
-            onClick={() => setShowConsolidateModal(false)}
-            className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
-          />
-          <div className="relative w-full max-w-sm bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-xl p-6 shadow-2xl space-y-5">
-            <div className="space-y-1.5">
-              <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
-                {language === 'bm' ? 'Invois Konsolidasi' : 'Consolidated Invoice'}
-              </h3>
-              <p className="text-xs text-stone dark:text-stone/70 leading-relaxed">
-                {language === 'bm'
-                  ? 'Sila sahkan nombor invois dan tetapan lajur nota. Semakan berasaskan klien dikuatkuasakan secara ketat; penjanaan akan GAGAL jika pesanan merangkumi klien berbeza.'
-                  : 'Confirm invoice number and notes layout. Client-based validation is strictly enforced; generation will FAIL if orders span different clients.'}
-              </p>
-            </div>
-
-            <div className="space-y-1.5 text-left">
-              <label className="text-xs font-bold text-deep-forest dark:text-white">
-                {language === 'bm' ? 'Nombor Invois Konsolidasi (Auto / Boleh Diubah)' : 'Consolidated Invoice Number (Auto / Editable)'}
-              </label>
-              <Input
-                value={consolidatedInvoiceNo}
-                onChange={(e) => setConsolidatedInvoiceNo && setConsolidatedInvoiceNo(e.target.value)}
-                placeholder="RW 00015"
-                className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-[var(--color-sunshine-cta)] text-sm font-bold text-deep-forest dark:text-white"
-              />
-              <p className="microcopy-12 text-stone dark:text-stone/70">
-                {language === 'bm'
-                  ? 'Nombor ini akan digunakan untuk keseluruhan kelompok invois konsolidasi ini.'
-                  : 'This number applies to all pages in this consolidated invoice batch.'}
-              </p>
-            </div>
-
-            <div className="space-y-2.5">
-              <button
-                onClick={() => handleGenerateConsolidatedInvoice(true, consolidatedInvoiceNo)}
-                className="w-full h-11 bg-[var(--color-sunshine-cta)] text-charcoal rounded-xl text-sm font-bold hover:bg-[var(--color-sunshine-cta)]/90 transition-colors"
-              >
-                {t('include_notes') || 'Yes, include Notes'}
-              </button>
-              <button
-                onClick={() => handleGenerateConsolidatedInvoice(false, consolidatedInvoiceNo)}
-                className="w-full h-11 bg-cream dark:bg-white/10 border border-stone/15 dark:border-white/10 text-deep-forest dark:text-white rounded-xl text-sm font-bold hover:bg-black/5 dark:hover:bg-white/15 transition-colors"
-              >
-                {t('exclude_notes') || 'No, hide Notes'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
       <AdminOrdersExportSheet
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
@@ -696,7 +687,6 @@ export function AdminOrdersTab({
         setSelectedOrderIds={setSelectedOrderIds}
         language={language}
         toast={toast}
-        prepareConsolidateModal={prepareConsolidateModal}
       />
     </>
   );

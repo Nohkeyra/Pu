@@ -139,3 +139,72 @@ Strictly do not talk about, suggest, or discuss the following restricted topics 
 - `table number`
 
 Higher-priority system, developer, safety, platform, and explicit user instructions always override this file.
+
+## 15. Standard Individual Invoice Specification (Individual Invoice SAHAJA)
+**CRITICAL RULE**: The 2-page invoice layout specified below is strictly and exclusively for **Individual Invoices** (`generateServerInvoicePdf` in `/server/services/serverPdfService.ts` and `CustomerInvoicePreviewModal.tsx`). It must **NEVER** be applied to Consolidated Invoices (`generateServerConsolidatedInvoicePdf`), which has its own separate multi-order summary structure.
+
+### Template Architecture & Design Specifications:
+1. **Brand Logo**:
+   - Asset path: `/assets/brand/apk_logo_clean.png` (transparent background, strictly without black background or black outline).
+   - Server PDF dimensions & coordinates: `x=15, y=8, w=20, h=20`.
+
+2. **Page 1 (Order Information, Items Table & Account Details)**:
+   - **Header**:
+     - Background: Pure clean white (`doc.setFillColor(255, 255, 255); doc.rect(0, 0, 210, 36, 'F')`).
+     - Divider: Gold line (`#C2932D` / `RGB(194, 147, 45)`, width `0.4`, from `x=15` to `x=195` at `y=36`).
+     - Brand Title: Gold (`#A67C1E` / `RGB(166, 124, 30)`), font size 15 bold at `x=39, y=16`.
+     - Address: Charcoal (`#1A1816` / `RGB(26, 24, 22)`), font size 8.5 normal at `x=39`.
+     - Document Title: Gold (`#A67C1E`), font size 22 bold, right-aligned at `x=195, y=20` (`INVOICE` / `INVOIS` or `QUOTATION` / `SEBUT HARGA`).
+     - Document Date: Right-aligned at `x=195, y=27`.
+   - **Metadata Cards** (`drawInvoiceBox` with `#FDFCFA` fill, `#C2932D` border, Gold `#A67C1E` label, Charcoal `#1A1816` text):
+     - Row 1 (`y=40`): `NO. INVOIS / INVOICE NO.` (width 85), `TARIKH ACARA / EVENT DATE` (width 85).
+     - Row 2 (`y=54`): `KEPADA / TO` (width 180, full width).
+     - Row 3 (`y=68`): `LOKASI ACARA / EVENT LOCATION` (width 85), `JENIS HIDANGAN / MEAL FOR` (width 85).
+     - Row 4 (`y=82`): `BILANGAN PAX / QUANTITY` (width 180, full width).
+   - **Line Items Table** (`y=98`):
+     - Table Header: `#725014` (Deep Royal Bronze-Gold / `RGB(114, 80, 20)`), white bold text for Description, Price / Pax (RM), Amount (RM).
+     - Rows: Alternating `#FDFCFA` / `#FFFFFF` with warm subtle borders at `x=15`, `x=110`, `x=165`, `x=195`.
+     - Description Column Content: Strictly populate with realistic, real-world catering data: Catering service type (e.g. Sarapan Pagi / Makan Tengah Hari / Minum Petang), itemized menu details/dishes, preparation type (e.g. Pek Makanan / Bufet), and pax count. Never omit or distort valid order menu data.
+     - Grand Total Row: `#725014`, white bold text.
+   - **Amount in Words**: Bilingual spelling (Ringgit Malaysia ... sahaja / Ringgit Malaysia ... only).
+   - **Official Bank Account Details Box**:
+     - Bank: Bank Muamalat Malaysia Berhad
+     - Account Name: RESTORAN WAWASAN
+     - Account Number: 16010000-405710
+   - **Page 1 Footer**: Address note at `y=285` in warm stone `#877D73`.
+
+3. **Page 2 (Person in Charge Details & Authorization)**:
+   - **Header**: White background with gold divider line at `y=36`.
+   - **Section Banner**: Unified `#725014` (Deep Royal Bronze-Gold) bar with white bold text `PERSON IN CHARGE DETAILS` (`y=42`).
+   - **PIC Metadata Cards**:
+     - Row 1 (`y=54`): `NAMA / NAME`, `NO. TELEFON / CONTACT NUMBER`.
+     - Row 2 (`y=68`): `JABATAN / DEPARTMENT`, `ATTN`.
+     - Row 3 (`y=82`): `E-MEL / EMAIL` (full width).
+     - Row 4 (`y=96`): `NOTA / NOTES` (full width, height 25).
+   - **Prepared By Section** (`y=135`):
+     - `DISEDIAKAN OLEH / PREPARED BY` in gold `#A67C1E`.
+     - `Restoran Wawasan` in bold charcoal.
+     - Signature rule (`#C2932D` gold line, `x=15` to `x=85` at `y=157`).
+   - **Page 2 Footer**:
+     - `Terima kasih di atas kepercayaan anda | ON BEHALF OF RESTORAN WAWASAN`
+     - Computer generated notice at `y=280` in warm stone `#877D73`.
+
+## 16. Consolidated Invoice & Excel Master Template Specification (Invois Terkumpul)
+**CRITICAL MANDATE**:
+1. **Never Modify or Overwrite `/public/RW_Invoice_v3_Blank.xlsx`**:
+   - The master Excel file `public/RW_Invoice_v3_Blank.xlsx` is the immutable corporate template. Under no circumstances should it be rewritten, overwritten, or modified.
+2. **Consolidated Invoice Layout Alignment**:
+   - All consolidated invoice generation (both Excel export via `exportOrdersAsExcelTemplate` and PDF generation via `generateServerConsolidatedInvoicePdf` / `consolidatedInvoiceService.ts`) must mirror the layout and column matrix defined in `RW_Invoice_v3_Blank.xlsx`:
+     - **Metadata placement**: Client / Ministry (`C8`), Attn / Name (`C9`), Master Invoice No (`I8`), Event / Issue Date (`I9`).
+     - **Itemized Matrix Grid** (Rows 15 to 24):
+       - Column B: Date
+       - Column C: Preparation / Meal Type (Meal Box / Buffet)
+       - Column D: Quantity / Pax
+       - Column E: Notes / Catatan
+       - Column F: Menu Items
+       - Column G: Breakfast price
+       - Column H: Lunch price
+       - Column I: Hi-Tea price
+       - Column Total: Amount (RM)
+     - **Strict Single-Client Rule**: Consolidated invoices group multiple events for a single corporate / ministry client; never mix multiple clients into one document.
+

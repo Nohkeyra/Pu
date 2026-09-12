@@ -3,6 +3,7 @@ import { formatDateDisplay } from './dateUtils';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { getApiUrl } from './api';
 import type { Order } from '@/types';
 import type { ToastVariant } from '@/components/ui/Toast';
 
@@ -24,7 +25,12 @@ async function saveOrShareFile(fileName: string, blob: Blob, base64Data?: string
       data,
       directory: Directory.Cache,
     });
-    await Share.share({ title: fileName, url: savedFile.uri });
+    try {
+      await Share.share({ title: fileName, url: savedFile.uri });
+    } catch (shareErr) {
+      // User closing/cancelling the share sheet on Android is a normal action
+      console.warn('[Export] Share sheet dismissed or not completed:', shareErr);
+    }
   } else {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -66,20 +72,42 @@ export async function exportOrdersAsExcelTemplate(
   isBm: boolean
 ): Promise<void> {
   try {
-    const ExcelJS = await import('exceljs');
-
-    const response = await fetch('/RW_Invoice_v3_Blank.xlsx');
-    if (!response.ok) {
-      throw new Error('Failed to fetch Excel template file');
-    }
-    const arrayBuffer = await response.arrayBuffer();
-
     if (orders.length === 0) {
       toast({
         title: isBm ? 'Tiada Rekod' : 'No Records',
         description: isBm ? 'Tiada rekod untuk dieksport' : 'There are no records to export',
         variant: 'warning',
       });
+      return;
+    }
+
+    const ExcelJS = await import('exceljs');
+
+    // Attempt to load the blank Excel template from multiple candidate locations
+    let arrayBuffer: ArrayBuffer | null = null;
+    const candidateUrls = [
+      '/RW_Invoice_v3_Blank.xlsx',
+      getApiUrl('/RW_Invoice_v3_Blank.xlsx'),
+      'https://restoran-wawasan-bio.onrender.com/RW_Invoice_v3_Blank.xlsx',
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          arrayBuffer = await response.arrayBuffer();
+          break;
+        }
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    // Fallback: If template file is unreachable (e.g. offline on native APK),
+    // export as standard Excel spreadsheet rather than failing completely
+    if (!arrayBuffer) {
+      console.warn('[Export] Template file unreachable, falling back to standard Excel export');
+      await exportOrdersAsExcelStandard(orders, toast, isBm);
       return;
     }
 
