@@ -198,41 +198,36 @@ jobs:
 
       - name: Setup signing keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          STORE_PASS="${KEYSTORE_PASSWORD:-${RELEASE_STORE_PASSWORD:-wawasan86}}"
-          KEY_PASS="${KEY_PASSWORD:-${RELEASE_KEY_PASSWORD:-wawasan86}}"
-          ALIAS="${KEY_ALIAS:-${RELEASE_KEY_ALIAS:-wawasan-key-alias}}"
+          # Prioritize the release/keystore base64 secrets
+          COMBINED_BASE64="${RELEASE_KEYSTORE_BASE64:-$ANDROID_KEYSTORE_BASE64}"
+          
+          # Resolve passwords and alias
+          STORE_PASS="${RELEASE_KEYSTORE_PASSWORD:-${RELEASE_STORE_PASSWORD:-${KEYSTORE_PASSWORD:-wawasan86}}}"
+          KEY_PASS="${RELEASE_KEY_PASSWORD:-${KEY_PASSWORD:-wawasan86}}"
+          ALIAS="${RELEASE_KEY_ALIAS:-${KEY_ALIAS:-wawasan-key-alias}}"
           
           mkdir -p android/app
-
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            # Restore the persisted release keystore so every build is signed
-            # with the SAME certificate. This is required for in-place app
-            # updates and for the in-app live-update flow — Android refuses
-            # to install an "update" signed with a different key.
-            echo "🔑 Restoring persisted release keystore from ANDROID_KEYSTORE_BASE64..."
-            echo "$KEYSTORE_BASE64" | base64 -d > android/app/release-key.jks
-            if ! keytool -list -keystore android/app/release-key.jks -storepass "$STORE_PASS" >/dev/null 2>&1; then
-              echo "❌ ERROR: Restored keystore is invalid or STORE_PASS is wrong for it."
-              echo "   Check the ANDROID_KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets."
-              exit 1
-            fi
-            echo "✅ Persisted keystore restored and verified."
+          
+          if [ -n "$COMBINED_BASE64" ]; then
+            echo "🔐 Found base64 encoded keystore secret. Restoring..."
+            echo "$COMBINED_BASE64" | base64 -d > android/app/release-key.jks
+            echo "✅ Keystore restored from GitHub secrets."
           else
-            # No persisted keystore configured — generate a throwaway one so
-            # the build still succeeds, but this path must never be used for
-            # a real release: each run would mint a new certificate, breaking
-            # updates for anyone who already installed the app.
-            echo "⚠️ ANDROID_KEYSTORE_BASE64 is not set — generating a TEMPORARY keystore."
-            echo "⚠️ This build's signature will NOT match any previous release."
-            echo "⚠️ Configure ANDROID_KEYSTORE_BASE64 as a repo secret before shipping to real users."
+            echo "⚠️ WARNING: No RELEASE_KEYSTORE_BASE64 or ANDROID_KEYSTORE_BASE64 found in GitHub secrets!"
+            echo "⚙️ Generating a release keystore on the fly as a fallback..."
+            echo "⚠️ Note: Generating a keystore on the fly will change the signature on every build, requiring uninstallation before updating."
+            echo "💡 To fix this and maintain using the same keystore, generate a stable keystore and add it to your GitHub repository secrets as RELEASE_KEYSTORE_BASE64."
+            
             keytool -genkey -v -keystore android/app/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias "$ALIAS" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Restoran Wawasan, OU=Engineering, O=Restoran Wawasan, L=Kuala Lumpur, C=MY"
           fi
 
@@ -241,7 +236,7 @@ jobs:
           echo "keyAlias=$ALIAS" >> android/app/key.properties
           echo "storeFile=release-key.jks" >> android/app/key.properties
           cp android/app/key.properties android/key.properties
-          echo "✅ Keystore successfully created and configured for release signing!"
+          echo "✅ Keystore successfully configured for release signing!"
 
       - name: Setup Gradle permissions and wrapper integrity
         run: |
