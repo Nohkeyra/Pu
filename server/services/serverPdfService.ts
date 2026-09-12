@@ -384,8 +384,8 @@ export async function generateServerInvoicePdf(
     doc.setTextColor(26, 24, 22);
 
     const desc = lang === 'bm'
-      ? `Perkhidmatan Katering: ${mealLabel.split(' / ')[0]}`
-      : `Catering Services: ${mealLabel.split(' / ')[1] || mealLabel}`;
+      ? mealLabel.split(' / ')[0]
+      : (mealLabel.split(' / ')[1] || mealLabel);
     doc.text(desc, 18, currentY + 4.8);
 
     // If there is menu content and it's the first row, draw it
@@ -523,20 +523,6 @@ export async function generateServerInvoicePdf(
   doc.setLineWidth(0.4);
   doc.line(15, 36, 195, 36);
 
-  // Title gold
-  doc.setTextColor(166, 124, 30);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  const page2Title = isQuoteDoc
-    ? (lang === 'en' ? 'RESTORAN WAWASAN — QUOTATION' : 'RESTORAN WAWASAN — SEBUT HARGA')
-    : (lang === 'en' ? 'RESTORAN WAWASAN — INVOICE' : 'RESTORAN WAWASAN — INVOIS');
-  doc.text(page2Title, 15, 20);
-  
-  doc.setTextColor(105, 95, 85);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.text(lang === 'en' ? 'Person in Charge Details' : 'Maklumat Pegawai Bertanggungjawab', 15, 26);
-
   // Top Title Bar for Person in Charge (Balanced with Page 1 Table Header)
   doc.setFillColor(114, 80, 20); // Deep Royal Bronze-Gold (#725014)
   doc.rect(15, 42, 180, 8, 'F');
@@ -559,13 +545,13 @@ export async function generateServerInvoicePdf(
 
   // Row 2: Department & ATTN
   drawInvoiceBox(doc, lang === 'en' ? 'DEPARTMENT' : 'JABATAN', picDept, 15, 68, 85, 12, true);
-  drawInvoiceBox(doc, lang === 'en' ? 'ATTENTION (ATTN)' : 'UNTUK PERHATIAN (ATTN)', picAttn, 110, 68, 85, 12, true);
+  drawInvoiceBox(doc, lang === 'en' ? 'ATTENTION' : 'UNTUK PERHATIAN', picAttn, 110, 68, 85, 12, true);
 
   // Row 3: Email (Full width)
   drawInvoiceBox(doc, lang === 'en' ? 'EMAIL' : 'E-MEL', picEmail, 15, 82, 180, 12, true);
 
   // Row 4: Notes (Full width, taller)
-  drawInvoiceBox(doc, lang === 'en' ? 'SPECIAL NOTES' : 'NOTA KHAS', specialNotes, 15, 96, 180, 25, true);
+  drawInvoiceBox(doc, lang === 'en' ? 'NOTES' : 'NOTA', specialNotes, 15, 96, 180, 25, true);
 
   // Prepared By Section (DISEDIAKAN OLEH)
   const preparedByY = 135;
