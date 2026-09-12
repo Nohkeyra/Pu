@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getApiUrl } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { saveAdminToken, clearAdminSession } from '@/services/authService';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -31,9 +32,11 @@ export default function AdminPage() {
           });
           
           if (res.ok) {
+            await saveAdminToken(idToken);
             setToken(idToken);
           } else {
             setToken('');
+            await clearAdminSession();
             setError('You do not have administrative privileges. Only authorized users may access this panel.');
           }
         } catch {
@@ -42,6 +45,7 @@ export default function AdminPage() {
         }
       } else {
         setToken('');
+        await clearAdminSession();
       }
       setIsInitializing(false);
     });
@@ -98,6 +102,7 @@ export default function AdminPage() {
       <AdminPanel
         adminToken={token}
         onLogout={async () => {
+          await clearAdminSession();
           await signOut(auth);
           navigate('/login');
         }}
