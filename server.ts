@@ -18,6 +18,7 @@ import invoiceRoutes from './server/routes/invoiceRoutes.js';
 import diagnosticRoutes from './server/routes/diagnosticRoutes.js';
 import widgetRoutes from './server/routes/widgetRoutes.js';
 import imageRoutes, { antiHotlinkGuard } from './server/routes/imageRoutes.js';
+import { mountWawasanMcp } from './server/mcp/index.js';
 
 dotenv.config();
 
@@ -251,6 +252,9 @@ async function startServer() {
   app.use('/api', diagnosticRoutes);
   app.use('/api', widgetRoutes);
   app.use('/api', imageRoutes);
+
+  // Remote MCP endpoint for Claude and other MCP clients.
+  mountWawasanMcp(app);
 
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];
