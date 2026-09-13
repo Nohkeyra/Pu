@@ -22,7 +22,7 @@ function getBankDetails() {
   return {
     bankName: process.env.BANK_NAME || process.env.VITE_BANK_NAME || 'Bank Muamalat',
     bankAccountName: process.env.BANK_ACCOUNT_NAME || process.env.VITE_BANK_ACCOUNT_NAME || 'RESTORAN WAWASAN',
-    bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER || process.env.VITE_BANK_ACCOUNT_NUMBER || '16010000-405710',
+    bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER || process.env.VITE_BANK_ACCOUNT_NUMBER || '',
   };
 }
 

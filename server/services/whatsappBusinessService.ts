@@ -5,7 +5,7 @@
  * 1. Customer invoice sharing with Bank Muamalat payment details
  * 2. Automated catering order summaries to Pak Usop / Restaurant Admin
  * 
- * Configured for Restoran Wawasan Pak Usop: +60 17-315 7731
+ * Configured for Restoran Wawasan Pak Usop: +60 17-315 7721
  */
 
 export interface WhatsAppConfig {
@@ -84,13 +84,13 @@ export class WhatsAppBusinessService {
 
   constructor(customConfig?: Partial<WhatsAppConfig>) {
     this.config = {
-      defaultAdminPhone: customConfig?.defaultAdminPhone || '60173157731'
+      defaultAdminPhone: customConfig?.defaultAdminPhone || process.env.ADMIN_WHATSAPP_PHONE || process.env.VITE_ADMIN_WHATSAPP_PHONE || '60173157721'
     };
   }
 
   /**
    * Normalize any Malaysian/International phone number into standard international format without '+'.
-   * Example: '017-315 7731' -> '60173157731'
+   * Example: '017-315 7721' -> '60173157721'
    */
   public normalizePhoneNumber(phone: string): string {
     if (!phone) return this.config.defaultAdminPhone;
@@ -119,6 +119,12 @@ export class WhatsAppBusinessService {
     const isBm = payload.lang !== 'en';
     const totalFormatted = payload.totalAmount ? payload.totalAmount.toFixed(2) : '0.00';
     const formattedDate = formatServerDateDisplay(payload.eventDate);
+    // Display form for humans (017-...) derived from configured admin phone
+    const digits = this.normalizePhoneNumber(this.config.defaultAdminPhone);
+    let contactDisplay = digits.startsWith('60') ? '0' + digits.slice(2) : digits;
+    if (/^01\d{8,9}$/.test(contactDisplay)) {
+      contactDisplay = contactDisplay.slice(0, 3) + '-' + contactDisplay.slice(3);
+    }
 
     if (isBm) {
       return (
@@ -134,7 +140,7 @@ export class WhatsAppBusinessService {
         `• Nama Akaun: *RESTORAN WAWASAN*\n` +
         `• No. Akaun: *16010000-405710*\n\n` +
         (payload.pdfDownloadUrl ? `📄 *Pautan Invois PDF:* ${payload.pdfDownloadUrl}\n\n` : '') +
-        `Sila hantarkan resit bayaran di sini setelah pembayaran dibuat. Sekiranya ada sebarang pertanyaan, sila hubungi kami di talian *017-3157731*.\n\n` +
+        `Sila hantarkan resit bayaran di sini setelah pembayaran dibuat. Sekiranya ada sebarang pertanyaan, sila hubungi kami di talian *${contactDisplay}*.\n\n` +
         `Terima kasih!`
       );
     }
@@ -152,7 +158,7 @@ export class WhatsAppBusinessService {
       `• Account Name: *RESTORAN WAWASAN*\n` +
       `• Account No: *16010000-405710*\n\n` +
       (payload.pdfDownloadUrl ? `📄 *PDF Invoice Link:* ${payload.pdfDownloadUrl}\n\n` : '') +
-      `Please share your payment transfer receipt once completed. For any inquiries, feel free to reach us at *017-3157731*.\n\n` +
+      `Please share your payment transfer receipt once completed. For any inquiries, feel free to reach us at *${contactDisplay}*.\n\n` +
       `Thank you!`
     );
   }
@@ -203,7 +209,7 @@ export class WhatsAppBusinessService {
   }
 
   /**
-   * Forward an incoming order directly to the restaurant's WhatsApp number (017-3157731).
+   * Forward an incoming order directly to the restaurant's WhatsApp number (017-3157721).
    */
   public forwardOrderToAdmin(payload: WhatsAppOrderForwardPayload): WhatsAppServiceResponse {
     const targetAdminPhone = payload.adminPhone || this.config.defaultAdminPhone;

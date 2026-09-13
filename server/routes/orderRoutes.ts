@@ -84,8 +84,8 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
     const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
     const mappedMeals = Array.isArray(rawBody.meals) ? rawBody.meals : (rawBody.mealType ? [rawBody.mealType] : ['default']);
 
-    const prices = rawBody.prices && typeof rawBody.prices === 'object' ? rawBody.prices : {};
-    const totalAmount = Number(rawBody.totalAmount) || 0;
+    const prices = {}; // forced empty on create — admin sets later
+    const totalAmount = 0; // forced zero on create — admin sets later
 
     let processedDishes: string[] = [];
     if (Array.isArray(rawBody.dishes)) {
@@ -530,16 +530,21 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this order' });
     }
 
-    // STRICT POLICY: Customers cannot delete an order manually until it has been deleted on the admin side
-    if (!orderData.deletedByAdmin) {
+    // Policy: customer may delete only after admin has set status to 'billed'.
+    // Hard-delete so the order is removed for both customer and admin (synced).
+    const status = (orderData.status || '').toLowerCase();
+    if (status !== 'billed') {
       return res.status(403).json({
-        error: 'Order cannot be deleted manually until it has been deleted or cleared by restaurant management (Admin).',
+        error: 'You can only remove an order from your history after it has been billed by the restaurant.',
       });
     }
 
     await orderRef.delete();
     invalidateCalendarSessionsCache();
-    return res.json({ success: true, message: 'Order successfully removed from history' });
+    return res.json({
+      success: true,
+      message: 'Order removed successfully.',
+    });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }

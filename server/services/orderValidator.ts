@@ -49,7 +49,7 @@ export function validateOrderPayload(body: any): { valid: boolean; errors: Valid
   }
 
   if (body.location && typeof body.location === 'string' && body.location.length > 500) {
-    errors.push({ field: 'location', message: 'Location exceeds maximum length (5000 characters)' });
+    errors.push({ field: 'location', message: 'Location exceeds maximum length (500 characters)' });
   }
 
   return {

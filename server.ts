@@ -79,7 +79,7 @@ function isAllowedOrigin(origin: string): boolean {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const requestId = (req.headers['x-request-id'] as string) || randomUUID();

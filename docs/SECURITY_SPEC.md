@@ -1,7 +1,7 @@
 # Security Specification & zero-trust Test Plan
 
 ## 1. Data Invariants
-* **Orders are permanent**: Orders can be created, viewed, and updated, but they must never be deleted.
+* **Order deletion policy**: Customers may delete an order only after it is `billed`. Deletion is hard-delete and removes the record for both customer and admin (synced). Unbilled orders cannot be deleted by the customer. Admin may still soft/hard-delete as needed.
 * **Customer fields are immutable**: Customer identity and core request details (`name`, `email`, `contact`, `location`, `quantity`, `meals`, `createdAt`) must never be modified once created.
 * **Tighter transition bounds**: Order status transitions can only move from `pending` to `approved` (by admin adding prices) to `billed` (when invoice is sent), or to `cancelled` / `rejected`.
 * **Timestamp enforcement**: `createdAt` must be strictly set to the server-side `request.time`.

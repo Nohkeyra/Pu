@@ -72,7 +72,7 @@ function OrderItem({
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
   
-  const isDeletable = Boolean(order.id && order.deletedByAdmin);
+  const isDeletable = Boolean(order.id && (order.status || '').toLowerCase() === 'billed');
 
   const handleDragEnd = (_: any, info: any) => {
     if (info.offset.x < -80 && isDeletable) {
@@ -145,10 +145,10 @@ function OrderItem({
               {getDisplayInvoiceNo(order)}
             </span>
             {getStatusBadge(order.status)}
-            {order.deletedByAdmin && (
-              <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-xs font-bold gap-1 animate-pulse">
+            {(order.status || '').toLowerCase() === 'billed' && (
+              <Badge className="bg-stone-500/10 text-stone-600 dark:text-stone-300 border-stone-500/20 text-xs font-bold gap-1">
                 <Trash2 className="w-3 h-3" />
-                <span>{t('Cleared by Management · Ready to Delete', 'Dihapuskan Pengurusan · Sedia Dipadam')}</span>
+                <span>{t('Billed · Can remove from history', 'Dibilkan · Boleh padam dari sejarah')}</span>
               </Badge>
             )}
             <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto sm:ml-0">
@@ -165,13 +165,13 @@ function OrderItem({
             </p>
           </div>
 
-          {order.deletedByAdmin && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-800 dark:text-rose-300">
-              <Trash2 className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          {(order.status || '').toLowerCase() === 'billed' && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-stone-50 dark:bg-stone-900/40 border border-stone-200 dark:border-stone-700/50 text-xs text-stone-700 dark:text-stone-300">
+              <Trash2 className="w-4 h-4 shrink-0 text-stone-500" />
               <p className="flex-1">
                 {t(
-                  'This order has been deleted by restaurant management. You can now delete this record from your history.',
-                  'Tempahan ini telah dipadamkan oleh pihak pengurusan. Anda kini boleh memadamkan rekod ini daripada dashboard anda.'
+                  'This order has been billed. You can remove it from your history.',
+                  'Tempahan ini telah dibilkan. Anda boleh memadamkannya daripada sejarah anda.'
                 )}
               </p>
             </div>
@@ -182,7 +182,7 @@ function OrderItem({
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-2 flex-wrap justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-white/5 shrink-0"
         >
-          {order.deletedByAdmin && (
+          {(order.status || '').toLowerCase() === 'billed' && order.id && (
             <Button
               onClick={(e) => {
                 e.stopPropagation();

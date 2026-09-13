@@ -98,7 +98,8 @@ router.get('/widget/upcoming-orders', async (req, res) => {
           mealType: mealTypeStr,
           quantity: d.quantity || d.guests || d.pax || 0,
           location: locStr,
-          to: d.to || d.company || d.attn || d.name || '',
+          // Public endpoint: do not expose customer/company name (PII).
+          to: 'Tempahan',
           menu: d.menu || '',
           status: status,
         };

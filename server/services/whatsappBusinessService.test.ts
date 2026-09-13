@@ -6,30 +6,30 @@ describe('WhatsAppBusinessService', () => {
 
   beforeEach(() => {
     service = new WhatsAppBusinessService({
-      defaultAdminPhone: '60173157731'
+      defaultAdminPhone: '60173157721'
     });
   });
 
   describe('normalizePhoneNumber', () => {
     it('normalizes local Malaysian phone format with 0 prefix', () => {
-      expect(service.normalizePhoneNumber('017-3157731')).toBe('60173157731');
+      expect(service.normalizePhoneNumber('017-3157721')).toBe('60173157721');
       expect(service.normalizePhoneNumber('012 345 6789')).toBe('60123456789');
     });
 
     it('handles already-prefixed numbers', () => {
-      expect(service.normalizePhoneNumber('+60 17-315 7731')).toBe('60173157731');
-      expect(service.normalizePhoneNumber('60173157731')).toBe('60173157731');
+      expect(service.normalizePhoneNumber('+60 17-315 7721')).toBe('60173157721');
+      expect(service.normalizePhoneNumber('60173157721')).toBe('60173157721');
     });
 
     it('falls back to default admin number if empty', () => {
-      expect(service.normalizePhoneNumber('')).toBe('60173157731');
+      expect(service.normalizePhoneNumber('')).toBe('60173157721');
     });
   });
 
   describe('generateWhatsAppUrl', () => {
     it('generates a valid wa.me URL with encoded text', () => {
-      const url = service.generateWhatsAppUrl('017-3157731', 'Hello Pak Usop');
-      expect(url).toBe('https://wa.me/60173157731?text=Hello%20Pak%20Usop');
+      const url = service.generateWhatsAppUrl('017-3157721', 'Hello Pak Usop');
+      expect(url).toBe('https://wa.me/60173157721?text=Hello%20Pak%20Usop');
     });
   });
 
@@ -50,7 +50,7 @@ describe('WhatsAppBusinessService', () => {
       expect(msg).toContain('Bank Muamalat');
       expect(msg).toContain('16010000-405710');
       expect(msg).toContain('RM 1500.00');
-      expect(msg).toContain('017-3157731');
+      expect(msg).toContain('017-3157721');
     });
 
     it('formats invoice message in English when lang is en', () => {
@@ -98,13 +98,13 @@ describe('WhatsAppBusinessService', () => {
   describe('sendTextMessage', () => {
     it('returns wa_link_generated with valid WhatsApp URL', () => {
       const result = service.sendTextMessage({
-        recipientPhone: '017-3157731',
+        recipientPhone: '017-3157721',
         text: 'Test message'
       });
 
       expect(result.success).toBe(true);
       expect(result.mode).toBe('wa_link_generated');
-      expect(result.whatsappUrl).toContain('https://wa.me/60173157731');
+      expect(result.whatsappUrl).toContain('https://wa.me/60173157721');
     });
   });
 });
