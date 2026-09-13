@@ -15,7 +15,7 @@ export function createWawasanMcpHandler() {
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
-      }, async args => executeMcpTool(tool.name, args));
+      }, async (args: Record<string, unknown>) => executeMcpTool(tool.name, args));
     }
     return server;
   });
