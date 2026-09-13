@@ -67,7 +67,13 @@ services:
       - key: VITE_API_URL_ANDROID
         value: https://restoran-wawasan-bio.onrender.com
 
+      # Remote MCP / OAuth
+      - key: MCP_OAUTH_ISSUER
+        value: https://restoran-wawasan-bio.onrender.com
+
       # Admin Configuration
+      - key: ADMIN_EMAILS
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

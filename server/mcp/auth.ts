@@ -3,13 +3,15 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getAuth } from 'firebase-admin/auth';
 import { getAdminApp, getFirestore } from '../firebaseAdmin.js';
 
-export const MCP_SCOPE = 'wawasan.read';
+// One vendor-neutral scope for this private admin connector. The OAuth login
+// itself is restricted to Firebase admin accounts, so a token represents an
+// authenticated Wawasan administrator rather than an arbitrary API client.
+export const MCP_SCOPE = 'wawasan';
 export const MCP_ACCESS_TOKEN_TTL_SECONDS = 3600;
 export const MCP_REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_TRANSACTION_TTL_MS = 10 * 60_000;
 const OAUTH_CODE_TTL_MS = 5 * 60_000;
 const CIMD_TIMEOUT_MS = 5_000;
-const CLAUDE_REDIRECT_URI = 'https://claude.ai/api/mcp/auth_callback';
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -23,27 +25,49 @@ function normalizeIssuer(value: string): string {
   return value.replace(/\/$/, '');
 }
 
-function isHttpsHost(hostname: string, exact: string): boolean {
-  return hostname === exact || hostname.endsWith(`.${exact}`);
+function isPrivateIpv4(host: string): boolean {
+  const parts = host.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+  const [a, b] = parts;
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
 }
 
-function isTrustedClaudeHost(hostname: string): boolean {
-  return isHttpsHost(hostname, 'claude.ai')
-    || isHttpsHost(hostname, 'claude.com')
-    || isHttpsHost(hostname, 'anthropic.com');
+function isPrivateIpv6(host: string): boolean {
+  const value = host.toLowerCase();
+  return value === '::1' || value === '::' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:');
+}
+
+function isSafeClientMetadataUrl(value: string): URL {
+  const url = new URL(value);
+  if (url.protocol !== 'https:') throw new Error('OAuth client_id metadata URL must use HTTPS.');
+  if (url.username || url.password || url.port) throw new Error('OAuth client_id metadata URL must not contain credentials or a port.');
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || isPrivateIpv4(host) || isPrivateIpv6(host)) {
+    throw new Error('OAuth client metadata host is not allowed.');
+  }
+  return url;
 }
 
 function safeRedirectUri(value: string): boolean {
   try {
     const u = new URL(value);
-    return u.protocol === 'https:' && value === CLAUDE_REDIRECT_URI;
+    if (u.username || u.password) return false;
+    if (u.protocol === 'https:') return true;
+    if (u.protocol === 'http:') {
+      const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+      // OAuth native/CLI clients may legitimately use loopback callbacks.
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    }
+    return false;
   } catch {
     return false;
   }
 }
 
 function isAllowedScope(scope: string): boolean {
-  return scope.split(/\s+/).filter(Boolean).every(value => value === MCP_SCOPE);
+  const requested = scope.split(/\s+/).filter(Boolean);
+  return requested.length > 0 && requested.every(value => value === MCP_SCOPE);
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -56,11 +80,8 @@ export function getMcpIssuer(req: Request): string {
   const configured = process.env.MCP_OAUTH_ISSUER?.trim();
   if (configured) return normalizeIssuer(configured);
 
-  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https')
-    .split(',')[0].trim();
-  const host = String(req.headers['x-forwarded-host'] || req.get('host') || '')
-    .split(',')[0].trim();
-
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+  const host = String(req.headers['x-forwarded-host'] || req.get('host') || '').split(',')[0].trim();
   if (!host) throw new Error('MCP OAuth issuer cannot be determined. Set MCP_OAUTH_ISSUER.');
   return normalizeIssuer(`${proto}://${host}`);
 }
@@ -89,6 +110,7 @@ export function authorizationServerMetadata(issuer: string) {
     grant_types_supported: ['authorization_code', 'refresh_token'],
     token_endpoint_auth_methods_supported: ['none'],
     code_challenge_methods_supported: ['S256'],
+    // Preferred by MCP 2026-07-28; DCR remains available as a compatibility fallback.
     client_id_metadata_document_supported: true,
   };
 }
@@ -101,10 +123,7 @@ async function verifyAdminIdToken(idToken: string) {
     .map(value => value.trim().toLowerCase())
     .filter(Boolean);
 
-  if (decoded.admin === true || (!!email && allowed.includes(email))) {
-    return decoded;
-  }
-
+  if (decoded.admin === true || (!!email && allowed.includes(email))) return decoded;
   throw new Error('This Firebase account is not authorized for Wawasan MCP.');
 }
 
@@ -149,11 +168,15 @@ function parseClientMetadata(value: unknown): ClientMetadata {
   if (!Array.isArray(raw.redirect_uris) || raw.redirect_uris.some(item => typeof item !== 'string')) {
     throw new Error('OAuth client metadata is missing redirect_uris.');
   }
+  const redirectUris = raw.redirect_uris as string[];
+  if (redirectUris.length === 0 || redirectUris.some(uri => !safeRedirectUri(uri))) {
+    throw new Error('OAuth client metadata contains an invalid redirect URI.');
+  }
 
   return {
     client_id: raw.client_id,
-    client_name: typeof raw.client_name === 'string' ? raw.client_name : undefined,
-    redirect_uris: raw.redirect_uris as string[],
+    client_name: typeof raw.client_name === 'string' ? raw.client_name.slice(0, 200) : undefined,
+    redirect_uris: redirectUris,
     grant_types: Array.isArray(raw.grant_types) ? raw.grant_types.filter((x): x is string => typeof x === 'string') : undefined,
     response_types: Array.isArray(raw.response_types) ? raw.response_types.filter((x): x is string => typeof x === 'string') : undefined,
     token_endpoint_auth_method: typeof raw.token_endpoint_auth_method === 'string' ? raw.token_endpoint_auth_method : undefined,
@@ -161,17 +184,7 @@ function parseClientMetadata(value: unknown): ClientMetadata {
 }
 
 async function fetchClientMetadata(clientId: string): Promise<ClientMetadata> {
-  let url: URL;
-  try {
-    url = new URL(clientId);
-  } catch {
-    throw new Error('OAuth client_id must be an HTTPS URL.');
-  }
-
-  if (url.protocol !== 'https:' || !url.pathname || !isTrustedClaudeHost(url.hostname)) {
-    throw new Error('Unsupported OAuth client.');
-  }
-
+  const url = isSafeClientMetadataUrl(clientId);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CIMD_TIMEOUT_MS);
   try {
@@ -184,7 +197,6 @@ async function fetchClientMetadata(clientId: string): Promise<ClientMetadata> {
     if (!response.ok) throw new Error(`OAuth client metadata returned HTTP ${response.status}.`);
     const metadata = parseClientMetadata(await response.json());
     if (metadata.client_id !== clientId) throw new Error('OAuth client metadata client_id does not match the requested client_id.');
-    if (!metadata.redirect_uris.includes(CLAUDE_REDIRECT_URI)) throw new Error('OAuth client metadata does not authorize the Claude callback.');
     if (metadata.grant_types && !metadata.grant_types.includes('authorization_code')) throw new Error('OAuth client does not support authorization_code.');
     if (metadata.response_types && !metadata.response_types.includes('code')) throw new Error('OAuth client does not support response_type=code.');
     if (metadata.token_endpoint_auth_method && metadata.token_endpoint_auth_method !== 'none') throw new Error('OAuth client must use public-client token authentication.');
@@ -195,32 +207,43 @@ async function fetchClientMetadata(clientId: string): Promise<ClientMetadata> {
 }
 
 function htmlEscape(value: string): string {
-  return value.replace(/[&<>"']/g, char => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[char] || char);
+  return value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] || char);
+}
+
+function describeScope(scope: string): string {
+  return scope === MCP_SCOPE
+    ? 'read and manage access to your Wawasan data'
+    : 'access to your Wawasan data';
 }
 
 export function createMcpOAuthHelpers() {
   const db = getFirestore();
   const now = () => Date.now();
 
-  async function validateClient(clientId: string, redirectUri: string): Promise<void> {
-    if (!safeRedirectUri(redirectUri)) throw new Error('Invalid redirect_uri.');
-
-    if (clientId.startsWith('https://')) {
-      const metadata = await fetchClientMetadata(clientId);
-      if (!metadata.redirect_uris.includes(redirectUri)) throw new Error('redirect_uri is not registered for this client.');
-      return;
-    }
+  async function resolveClient(clientId: string): Promise<ClientMetadata> {
+    if (clientId.startsWith('https://')) return fetchClientMetadata(clientId);
 
     const snap = await db.collection('mcp_oauth_clients').doc(sha256(clientId)).get();
     if (!snap.exists) throw new Error('Unknown OAuth client.');
     const client = snap.data() as Record<string, unknown>;
-    if (client.redirectUri !== redirectUri) throw new Error('redirect_uri is not registered for this client.');
+    const redirectUris = Array.isArray(client.redirectUris)
+      ? client.redirectUris.filter((value): value is string => typeof value === 'string')
+      : [String(client.redirectUri || '')];
+    return {
+      client_id: clientId,
+      client_name: typeof client.clientName === 'string' ? client.clientName : 'MCP client',
+      redirect_uris: redirectUris,
+      grant_types: ['authorization_code'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'none',
+    };
+  }
+
+  async function validateClient(clientId: string, redirectUri: string): Promise<ClientMetadata> {
+    if (!safeRedirectUri(redirectUri)) throw new Error('Invalid redirect_uri.');
+    const metadata = await resolveClient(clientId);
+    if (!metadata.redirect_uris.includes(redirectUri)) throw new Error('redirect_uri is not registered for this client.');
+    return metadata;
   }
 
   async function createAuthorizationTransaction(params: {
@@ -234,15 +257,15 @@ export function createMcpOAuthHelpers() {
   }) {
     const scope = params.scope?.trim() || MCP_SCOPE;
     const expectedResource = `${normalizeIssuer(params.issuer)}/mcp`;
-
     if (!params.codeChallenge) throw new Error('Missing PKCE code_challenge.');
     if (!isAllowedScope(scope)) throw new Error('Unsupported scope.');
     if (params.resource && normalizeIssuer(params.resource) !== expectedResource) throw new Error('Invalid resource.');
-    await validateClient(params.clientId, params.redirectUri);
+    const client = await validateClient(params.clientId, params.redirectUri);
 
     const id = randomToken();
     await db.collection('mcp_oauth_transactions').doc(sha256(id)).set({
       clientId: params.clientId,
+      clientName: client.client_name || 'MCP client',
       redirectUri: params.redirectUri,
       codeChallenge: params.codeChallenge,
       scope,
@@ -251,7 +274,7 @@ export function createMcpOAuthHelpers() {
       createdAt: new Date(),
       expiresAt: new Date(now() + OAUTH_TRANSACTION_TTL_MS),
     });
-    return id;
+    return { id, clientName: client.client_name || 'MCP client', scope };
   }
 
   async function completeAuthorization(id: string, email: string, uid: string) {
@@ -297,13 +320,7 @@ export function createMcpOAuthHelpers() {
       expiresAt: new Date(now() + MCP_REFRESH_TOKEN_TTL_SECONDS * 1000),
     });
 
-    return {
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: MCP_ACCESS_TOKEN_TTL_SECONDS,
-      refresh_token: refreshToken,
-      scope,
-    };
+    return { access_token: accessToken, token_type: 'Bearer', expires_in: MCP_ACCESS_TOKEN_TTL_SECONDS, refresh_token: refreshToken, scope };
   }
 
   async function exchangeCode(code: string, clientId: string, redirectUri: string, verifier: string, resource: string, issuer: string) {
@@ -324,6 +341,7 @@ export function createMcpOAuthHelpers() {
     const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
     if (normalizeIssuer(resource) !== expectedResource || data.resource !== expectedResource) throw new Error('Invalid resource.');
 
+    await validateClient(clientId, redirectUri);
     return issueTokens(data.uid, data.email, clientId, data.scope || MCP_SCOPE, expectedResource);
   }
 
@@ -340,7 +358,6 @@ export function createMcpOAuthHelpers() {
     }
     if (normalizeIssuer(resource) !== expectedResource) throw new Error('Invalid resource.');
 
-    // Rotate the refresh token after a successful redemption.
     const token = await issueTokens(data.uid, data.email, clientId, data.scope || MCP_SCOPE, expectedResource);
     await ref.delete();
     return token;
@@ -355,7 +372,7 @@ export function createMcpOAuthHelpers() {
     const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
     if (!Number.isFinite(expiresAt) || expiresAt < now()) return null;
     if (data.resource !== expectedResource) return null;
-    if (data.scope !== MCP_SCOPE) return null;
+    if (!isAllowedScope(String(data.scope || ''))) return null;
     return data;
   }
 
@@ -369,8 +386,8 @@ export function createMcpOAuthHelpers() {
     if (!body || typeof body !== 'object') throw new Error('Invalid client registration request.');
     const raw = body as Record<string, unknown>;
     const redirectUris = Array.isArray(raw.redirect_uris) ? raw.redirect_uris : [];
-    if (redirectUris.length !== 1 || typeof redirectUris[0] !== 'string' || !safeRedirectUri(redirectUris[0])) {
-      throw new Error('Only the Claude MCP callback is supported.');
+    if (redirectUris.length < 1 || redirectUris.length > 10 || redirectUris.some(uri => typeof uri !== 'string' || !safeRedirectUri(uri))) {
+      throw new Error('Client registration requires one to ten valid HTTPS or loopback redirect URIs.');
     }
 
     const clientId = `wawasan-${randomToken()}`;
@@ -378,6 +395,7 @@ export function createMcpOAuthHelpers() {
       clientId,
       clientName: typeof raw.client_name === 'string' ? raw.client_name.slice(0, 200) : 'MCP client',
       redirectUri: redirectUris[0],
+      redirectUris,
       issuer: normalizeIssuer(issuer),
       createdAt: new Date(),
     });
@@ -385,25 +403,15 @@ export function createMcpOAuthHelpers() {
     return {
       client_id: clientId,
       client_name: typeof raw.client_name === 'string' ? raw.client_name : 'MCP client',
-      redirect_uris: [redirectUris[0]],
-      grant_types: ['authorization_code'],
+      redirect_uris: redirectUris,
+      grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none',
       client_secret_expires_at: 0,
     };
   }
 
-  return {
-    createAuthorizationTransaction,
-    completeAuthorization,
-    exchangeCode,
-    refresh,
-    verifyAccessToken,
-    revoke,
-    registerClient,
-    firebasePasswordLogin,
-    verifyAdminIdToken,
-  };
+  return { createAuthorizationTransaction, completeAuthorization, exchangeCode, refresh, verifyAccessToken, revoke, registerClient, firebasePasswordLogin, verifyAdminIdToken };
 }
 
 export function mountMcpOAuth(app: import('express').Express): void {
@@ -431,46 +439,16 @@ export function mountMcpOAuth(app: import('express').Express): void {
       const state = String(req.query.state || '');
       const resource = String(req.query.resource || `${issuer}/mcp`);
 
-      if (responseType !== 'code' || method !== 'S256') {
-        return res.status(400).send('OAuth requires response_type=code and PKCE S256.');
-      }
+      if (responseType !== 'code' || method !== 'S256') return res.status(400).send('OAuth requires response_type=code and PKCE S256.');
 
-      const tx = await helpers.createAuthorizationTransaction({
-        clientId,
-        redirectUri,
-        codeChallenge,
-        state,
-        scope,
-        resource,
-        issuer,
-      });
-
-      const clientName = clientId.startsWith('https://') ? 'Claude' : 'MCP client';
+      const tx = await helpers.createAuthorizationTransaction({ clientId, redirectUri, codeChallenge, state, scope, resource, issuer });
+      const clientName = tx.clientName || 'MCP client';
       return res.type('html').send(`<!doctype html>
-<html lang="en">
-<head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<title>Wawasan MCP sign in</title>
-<style>
-body{font-family:system-ui,-apple-system,sans-serif;max-width:440px;margin:0 auto;padding:32px 20px;background:#f7f7f5;color:#1d1d1b}
-main{background:#fff;border:1px solid #ddd;border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
-h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#555}label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}input,button{width:100%;padding:12px;border-radius:10px;box-sizing:border-box;font:inherit}input{border:1px solid #bbb}button{margin-top:18px;border:0;background:#1d1d1b;color:#fff;font-weight:700;cursor:pointer}small{color:#777}
-</style>
-</head>
-<body><main>
-<h1>Sign in to Wawasan</h1>
-<p><strong>${htmlEscape(clientName)}</strong> is requesting read access to your Wawasan data.</p>
-<form method="post" action="/oauth/authorize/login">
-<input type="hidden" name="tx" value="${htmlEscape(tx)}">
-<label for="email">Email</label>
-<input id="email" name="email" type="email" autocomplete="username" required>
-<label for="password">Password</label>
-<input id="password" name="password" type="password" autocomplete="current-password" required>
-<button type="submit">Sign in and authorize</button>
-</form>
-<p><small>Your password is sent over HTTPS to Firebase Authentication and is not stored by Wawasan.</small></p>
-</main></body></html>`);
+<html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Wawasan MCP sign in</title>
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:440px;margin:0 auto;padding:32px 20px;background:#f7f7f5;color:#1d1d1b}main{background:#fff;border:1px solid #ddd;border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.06)}h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#555}label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}input,button{width:100%;padding:12px;border-radius:10px;box-sizing:border-box;font:inherit}input{border:1px solid #bbb}button{margin-top:18px;border:0;background:#1d1d1b;color:#fff;font-weight:700;cursor:pointer}small{color:#777}</style></head>
+<body><main><h1>Sign in to Wawasan</h1><p><strong>${htmlEscape(clientName)}</strong> is requesting ${htmlEscape(describeScope(scope))}.</p>
+<form method="post" action="/oauth/authorize/login"><input type="hidden" name="tx" value="${htmlEscape(tx.id)}"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="submit">Sign in and authorize</button></form>
+<p><small>Your password is sent over HTTPS to Firebase Authentication and is not stored by Wawasan.</small></p></main></body></html>`);
     } catch (err) {
       return res.status(400).send(htmlEscape(err instanceof Error ? err.message : 'OAuth authorization request failed.'));
     }
@@ -493,7 +471,7 @@ h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#555}label{display:bloc
       return res.redirect(url.toString());
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed.';
-      return res.status(401).type('html').send(`<h2>Wawasan sign-in failed</h2><p>${htmlEscape(message)}</p><p>Return to Claude and try again.</p>`);
+      return res.status(401).type('html').send(`<h2>Wawasan sign-in failed</h2><p>${htmlEscape(message)}</p><p>Return to your MCP client and try again.</p>`);
     }
   });
 
@@ -506,28 +484,16 @@ h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#555}label{display:bloc
       if (!clientId) return res.status(400).json({ error: 'invalid_request', error_description: 'client_id is required.' });
 
       if (grantType === 'authorization_code') {
-        const token = await helpers.exchangeCode(
-          String(req.body?.code || ''),
-          clientId,
-          String(req.body?.redirect_uri || ''),
-          String(req.body?.code_verifier || ''),
-          resource,
-          issuer,
-        );
+        const token = await helpers.exchangeCode(String(req.body?.code || ''), clientId, String(req.body?.redirect_uri || ''), String(req.body?.code_verifier || ''), resource, issuer);
         return res.json(token);
       }
-
       if (grantType === 'refresh_token') {
         const token = await helpers.refresh(String(req.body?.refresh_token || ''), clientId, resource, issuer);
         return res.json(token);
       }
-
       return res.status(400).json({ error: 'unsupported_grant_type' });
     } catch (err) {
-      return res.status(400).json({
-        error: 'invalid_grant',
-        error_description: err instanceof Error ? err.message : 'Invalid OAuth request.',
-      });
+      return res.status(400).json({ error: 'invalid_grant', error_description: err instanceof Error ? err.message : 'Invalid OAuth request.' });
     }
   });
 
@@ -536,10 +502,7 @@ h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#555}label{display:bloc
       const registration = await helpers.registerClient(req.body, getMcpIssuer(req));
       return res.status(201).json(registration);
     } catch (err) {
-      return res.status(400).json({
-        error: 'invalid_client_metadata',
-        error_description: err instanceof Error ? err.message : 'Invalid client registration request.',
-      });
+      return res.status(400).json({ error: 'invalid_client_metadata', error_description: err instanceof Error ? err.message : 'Invalid client registration request.' });
     }
   });
 
@@ -568,6 +531,13 @@ export async function mcpBearerAuth(req: Request, res: Response, next: NextFunct
     return;
   }
 
+  const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
   (req as any).mcpUser = data;
+  (req as any).auth = {
+    token: supplied,
+    clientId: String(data.clientId || ''),
+    scopes: String(data.scope || '').split(/\s+/).filter(Boolean),
+    expiresAt: Math.floor(expiresAt / 1000),
+  };
   next();
 }

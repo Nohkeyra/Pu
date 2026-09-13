@@ -127,8 +127,17 @@ async function startServer() {
 
   // SECURITY FIX: Reduced from 50mb to 5mb general limit.
   app.use(express.json({ limit: '5mb' }));
-  // OAuth token and authorization forms use application/x-www-form-urlencoded.
+  // OAuth token requests from MCP clients use application/x-www-form-urlencoded.
   app.use(express.urlencoded({ extended: false, limit: '50kb' }));
+
+  const mcpLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(['/mcp', '/oauth'], mcpLimiter);
+  mountWawasanMcp(app);
 
   // Anti-hotlink protection for static images
   app.use(antiHotlinkGuard);
@@ -254,23 +263,6 @@ async function startServer() {
   app.use('/api', diagnosticRoutes);
   app.use('/api', widgetRoutes);
   app.use('/api', imageRoutes);
-
-  // Remote MCP endpoint for Claude and other MCP clients.
-  const mcpRateLimiter = rateLimit({
-    windowMs: 60_000,
-    max: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  const oauthRateLimiter = rateLimit({
-    windowMs: 15 * 60_000,
-    max: 40,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use('/mcp', mcpRateLimiter);
-  app.use('/oauth', oauthRateLimiter);
-  mountWawasanMcp(app);
 
   app.use('/api/*', (req: express.Request, res: express.Response) => {
     const requestId = (req as any).requestId || req.headers['x-request-id'];
