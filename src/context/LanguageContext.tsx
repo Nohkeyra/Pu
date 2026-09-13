@@ -26,6 +26,7 @@ const translations: Translation = {
   error: { en: 'Error', bm: 'Ralat' },
   
   // Navigation
+  demo: { en: 'Product Demo', bm: 'Demo Produk' },
   story: { en: 'Story', bm: 'Kisah' },
   menu: { en: 'Menu', bm: 'Menu' },
   experience: { en: 'Experience', bm: 'Pengalaman' },

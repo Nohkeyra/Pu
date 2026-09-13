@@ -1203,10 +1203,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                             className={cn(
                               "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border transition-colors duration-300",
                               isCurrent
-                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-crisp"
+                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-[0_0_16px_rgba(233,98,18,0.45)] ring-4 ring-amber-500/25"
                                 : isDone
                                   ? "bg-deep-forest border-deep-forest text-white dark:bg-emerald-600 dark:border-emerald-600"
-                                  : "bg-card dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-400"
+                                  : "bg-card dark:bg-stone-800 border-amber-500/20 dark:border-stone-700 text-stone-400"
                             )}
                           >
                             {isDone ? (

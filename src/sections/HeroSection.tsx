@@ -97,20 +97,20 @@ const HeroSection = React.memo(() => {
         {/* Action Cluster */}
         <motion.div 
           variants={itemVariants} 
-          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-md sm:max-w-none z-30"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-md sm:max-w-none z-30 flex-wrap"
         >
           <a 
             href="#menu" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-xl shadow-[var(--color-sunshine-cta)]/25"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-xl shadow-[var(--color-sunshine-cta)]/25"
           >
             <UtensilsCrossed className="w-5 h-5 transition-transform duration-200 group-hover:rotate-12" />
             <span>{t('explore_menu_btn')}</span>
             <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
           </a>
-          
+
           <Link 
             to="/order" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-[#1c2622] hover:bg-[#26312d] border border-amber-400/40 hover:border-amber-400/70 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-lg"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[#1c2622] hover:bg-[#26312d] border border-amber-400/40 hover:border-amber-400/70 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-lg"
           >
             <span>{t('order_catering_btn')}</span>
           </Link>

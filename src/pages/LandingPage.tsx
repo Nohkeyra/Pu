@@ -34,11 +34,11 @@ export default function LandingPage() {
       <Header />
       <main className="relative">
         <HeroSection />
-        
+
         <div className="content-container py-4">
           <div className="batik-divider" />
         </div>
-        
+
         <div className="section-visibility-auto relative">
           <StorySection />
         </div>

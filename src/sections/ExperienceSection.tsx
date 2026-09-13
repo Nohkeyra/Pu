@@ -111,15 +111,15 @@ const ExperienceSection = React.memo(() => {
               <motion.div 
                 key={p.name} 
                 variants={cardVariants}
-                className="principle-card group bg-cream-dark/60 backdrop-blur-md rounded-3xl p-8 border border-deep-forest/[0.06] dark:border-white/[0.06] hover:border-[var(--color-sunshine-cta)]/30 hover:shadow-[0_20px_50px_rgba(246,153,19,0.12)] hover:-translate-y-1 transition-all duration-500"
+                className="principle-card group bg-white/95 dark:bg-card/40 backdrop-blur-md rounded-3xl p-8 border border-amber-500/20 dark:border-white/[0.06] hover:border-amber-500/50 shadow-[0_10px_30px_-5px_rgba(246,153,19,0.10)] hover:shadow-[0_22px_45px_-8px_rgba(233,98,18,0.20)] hover:-translate-y-1.5 transition-all duration-500"
               >
-                <div className="w-14 h-14 rounded-2xl bg-deep-forest/[0.04] dark:bg-white/5 border border-deep-forest/10 dark:border-white/10 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 group-hover:bg-[var(--color-sunshine-cta)] group-hover:border-[var(--color-sunshine-cta)] transition-all duration-500">
-                  <Icon className="w-6 h-6 text-[var(--color-sunshine-cta)] group-hover:text-deep-forest transition-colors" />
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 dark:bg-white/5 border border-amber-500/25 dark:border-white/10 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 group-hover:bg-[var(--color-sunshine-cta)] group-hover:border-[var(--color-sunshine-cta)] transition-all duration-500">
+                  <Icon className="w-6 h-6 text-[var(--color-sunshine-cta)] group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="font-display font-bold text-xl text-deep-forest mb-1">
+                <h3 className="font-display font-bold text-xl text-deep-forest dark:text-white mb-1">
                   {language === 'bm' ? p.malayName : p.name}
                 </h3>
-                <p className="text-sm font-body font-light text-deep-forest/70 leading-relaxed mt-4">
+                <p className="text-sm font-body font-normal text-deep-forest/80 dark:text-stone-300 leading-relaxed mt-4">
                   {language === 'bm' ? p.descriptionBm : p.descriptionEn}
                 </p>
               </motion.div>

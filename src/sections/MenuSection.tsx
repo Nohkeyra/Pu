@@ -47,15 +47,15 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
   // Determine badge styling based on item characteristics
   const getBadgeInfo = () => {
     if (item.tags?.includes('signature') || item.id === 'asam-pedas') {
-      return { text: isBm ? 'Paling Laris #1' : '#1 Best Seller', icon: '✦', color: 'text-amber-300 border-amber-400/40 bg-stone-950/70' };
+      return { text: isBm ? 'Paling Laris #1' : '#1 Best Seller', icon: '✦', color: 'text-amber-700 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
     if (item.tags?.includes('classic') || item.id === 'nasi-lemak') {
-      return { text: isBm ? 'Sajian Warisan' : 'Heritage Dish', icon: '★', color: 'text-emerald-300 border-emerald-400/40 bg-stone-950/70' };
+      return { text: isBm ? 'Sajian Warisan' : 'Heritage Dish', icon: '★', color: 'text-emerald-800 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
     if (item.category === 'drinks') {
-      return { text: isBm ? 'Minuman Kaw' : 'Signature Drink', icon: '☕', color: 'text-amber-200 border-amber-400/30 bg-stone-950/70' };
+      return { text: isBm ? 'Minuman Kaw' : 'Signature Drink', icon: '☕', color: 'text-amber-800 dark:text-amber-200 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
-    return { text: isBm ? 'Pilihan Ramai' : 'Popular Pick', icon: '✦', color: 'text-amber-300 border-amber-400/30 bg-stone-950/70' };
+    return { text: isBm ? 'Pilihan Ramai' : 'Popular Pick', icon: '✦', color: 'text-amber-800 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
   };
 
   const badge = getBadgeInfo();
@@ -71,10 +71,10 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
           rotateY,
           transformStyle: "preserve-3d",
         }}
-        className="menu-card group relative bg-white dark:bg-stone-900 rounded-[1.75rem] overflow-hidden border border-stone-200/90 dark:border-stone-800 hover:border-amber-500/50 dark:hover:border-amber-500/40 shadow-md hover:shadow-2xl hover:shadow-amber-500/15 transition-all duration-500 z-10 flex flex-col h-full justify-between"
+        className="menu-card group relative bg-white dark:bg-stone-900 rounded-[1.75rem] overflow-hidden border border-amber-500/20 dark:border-stone-800 hover:border-amber-500/60 dark:hover:border-amber-500/50 shadow-[0_10px_30px_-5px_rgba(246,153,19,0.12)] hover:shadow-[0_22px_45px_-8px_rgba(233,98,18,0.22)] transition-all duration-500 z-10 flex flex-col h-full justify-between"
       >
         {/* Subtle background batik watermark */}
-        <div className="absolute inset-0 batik-watermark opacity-20 dark:opacity-[0.04] pointer-events-none" />
+        <div className="absolute inset-0 batik-watermark opacity-25 dark:opacity-[0.04] pointer-events-none" />
 
         {/* Top Image Container with Seamless Dark Gradient Transition */}
         <div>
@@ -222,8 +222,12 @@ export default function MenuSection() {
 
   return (
     <section id="menu" className="section-padding bg-cream dark:bg-stone-950 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-stone-300 dark:via-stone-800 to-transparent" />
-      <div className="content-container">
+      {/* Happening Warm Ambient Spills for Light Mode */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none dark:opacity-20" />
+      <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none dark:opacity-20" />
+
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/40 dark:via-stone-800 to-transparent" />
+      <div className="content-container relative z-10">
         
         {/* Section Header */}
         <motion.div 
@@ -234,7 +238,7 @@ export default function MenuSection() {
           className="text-center mb-10 md:mb-12"
         >
           <motion.div variants={headerItemVariants} className="flex justify-center mb-3">
-            <div className="section-subtitle-artistic">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shadow-xs">
               ✦ {t('our_menu')} • Warisan Tradisi
             </div>
           </motion.div>

@@ -58,7 +58,7 @@ const DialogContent = React.forwardRef<
       role="dialog"
       aria-modal="true"
       className={cn(
-        "bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border border-border p-6 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] duration-200 outline-none sm:max-w-lg",
+        "bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border border-amber-500/25 dark:border-border p-6 shadow-[0_25px_60px_-15px_rgba(246,153,19,0.18)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] duration-200 outline-none sm:max-w-lg overflow-hidden border-t-batik",
         className
       )}
       {...props}

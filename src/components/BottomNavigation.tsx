@@ -97,7 +97,7 @@ export default function BottomNavigation() {
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-        className="pointer-events-auto w-full max-w-xl border-t sm:border-x border-deep-forest/15 bg-white/95 sm:rounded-t-[2rem] shadow-[0_-12px_30px_rgba(12,69,60,0.12)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
+        className="pointer-events-auto w-full max-w-xl border-t sm:border-x border-amber-500/20 bg-white/95 sm:rounded-t-[2rem] shadow-[0_-12px_36px_rgba(246,153,19,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
           isolation: 'isolate',
@@ -130,14 +130,14 @@ export default function BottomNavigation() {
               }}
               className={cn(
                 'relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-1 sm:px-2 select-none cursor-pointer',
-                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-[var(--color-stone)] hover:text-deep-forest dark:hover:text-[#ede5d8]'
+                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-stone-600 dark:text-stone-300 hover:text-deep-forest dark:hover:text-[#ede5d8]'
               )}
             >
               <div className="relative flex h-8 sm:h-9 w-12 sm:w-14 items-center justify-center shrink-0">
                 {isActive && (
                   <motion.div
                     layoutId="activeTabPill"
-                    className="absolute inset-0 rounded-full border border-[var(--color-sunshine-cta)]/25 bg-[var(--color-sunshine-cta)]/12 dark:bg-[var(--color-sunshine-cta)]/18 shadow-[0_2px_12px_rgba(246,153,19,0.15)]"
+                    className="absolute inset-0 rounded-full border border-amber-500/35 bg-amber-500/15 dark:bg-amber-500/20 shadow-[0_2px_14px_rgba(246,153,19,0.25)]"
                     transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -158,8 +158,8 @@ export default function BottomNavigation() {
                 className={cn(
                   'nav-label relative z-10 transition-colors duration-200 text-[10px] sm:text-[11px] leading-tight tracking-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-0.5',
                   isActive
-                    ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
-                    : 'nav-label-inactive text-deep-forest/80 dark:text-[#ede5d8]/80 font-medium'
+                    ? 'nav-label-active text-[var(--color-sunshine-cta)] font-extrabold'
+                    : 'nav-label-inactive text-deep-forest/85 dark:text-[#ede5d8]/80 font-medium'
                 )}
               >
                 {tab.label}

@@ -13,7 +13,7 @@
     /* Logo-Derived Brand Tokens (light) */
     --color-deep-forest: #0c453c;
     --color-forest: #0c453c;
-    --color-light-forest: rgba(12, 69, 60, 0.12);
+    --color-light-forest: rgba(12, 69, 60, 0.10);
     --color-deep-forest-accent: #0c453c;
     --color-sunshine: #f69913;
     --color-honey: #f69913;
@@ -21,11 +21,11 @@
     --color-tomato-burst: #e03f14;
     --color-kiwi: #e96212;
     --color-fern: #e96212;
-    --color-sunshine-cta: #a3310e;
-    --color-sunshine-cta-bg: #a3310e;
+    --color-sunshine-cta: #c2410c;
+    --color-sunshine-cta-bg: #c2410c;
     --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #882709;
-    --color-sunshine-cta-press: #6e1f06;
+    --color-sunshine-cta-hover: #9a3412;
+    --color-sunshine-cta-press: #7c2d12;
     --color-on-sunshine: #0c453c;
     --color-on-crisp-carrot: #ffffff;
     --color-on-tomato-burst: #ffffff;
@@ -45,43 +45,44 @@
     --radius-lg: 1rem;
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
-    --color-cream: #fdfbf7;
-    --color-cream-dark: rgba(246, 153, 19, 0.08);
+    /* Lively & Happening Warm Canvas Foundation */
+    --color-cream: #fffdf9;
+    --color-cream-dark: rgba(246, 153, 19, 0.10);
     --color-charcoal: #0c453c;
-    --color-stone: rgba(12, 69, 60, 0.85);
-    --background: 40 33% 98%;
+    --color-stone: rgba(12, 69, 60, 0.82);
+    --background: 38 60% 98%;
     --foreground: 171 70% 16%;
-    --card: 40 33% 99%;
+    --card: 0 0% 100%;
     --card-foreground: 171 70% 16%;
-    --popover: 40 33% 99%;
+    --popover: 0 0% 100%;
     --popover-foreground: 171 70% 16%;
-    --primary: 13 84% 48%;
+    --primary: 18 88% 44%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 35 93% 52%;
+    --secondary: 38 92% 95%;
     --secondary-foreground: 171 70% 16%;
-    --muted: 38 80% 95%;
-    --muted-foreground: 171 45% 22%;
-    --accent: 22 86% 49%;
+    --muted: 36 60% 95%;
+    --muted-foreground: 171 45% 24%;
+    --accent: 24 94% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 13 84% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 171 25% 88%;
-    --input: 171 25% 88%;
-    --ring: 35 93% 52%;
+    --border: 35 30% 88%;
+    --input: 35 30% 88%;
+    --ring: 24 94% 50%;
     --radius: 1.5rem;
-    --color-selection-bg: rgba(246, 153, 19, 0.28);
+    --color-selection-bg: rgba(246, 153, 19, 0.32);
     --color-selection-text: #0c453c;
-    --color-scrollbar-track: rgba(12, 69, 60, 0.06);
-    --color-scrollbar-thumb: rgba(12, 69, 60, 0.30);
-    --color-scrollbar-hover: #f69913;
+    --color-scrollbar-track: rgba(246, 153, 19, 0.05);
+    --color-scrollbar-thumb: rgba(233, 98, 18, 0.35);
+    --color-scrollbar-hover: #e96212;
     --color-input-bg: #ffffff;
     --color-input-text: #0c453c;
-    --color-input-border: rgba(12, 69, 60, 0.16);
+    --color-input-border: rgba(246, 153, 19, 0.30);
     --color-input-focus-shadow: rgba(224, 63, 20, 0.25);
-    --color-header-bg: rgba(253, 251, 247, 0.94);
-    --color-header-border: rgba(12, 69, 60, 0.10);
+    --color-header-bg: rgba(255, 253, 249, 0.94);
+    --color-header-border: rgba(246, 153, 19, 0.16);
     --color-card-bg: #ffffff;
-    --color-card-border: rgba(12, 69, 60, 0.10);
+    --color-card-border: rgba(246, 153, 19, 0.15);
   }
 
   .dark {
@@ -653,16 +654,44 @@
   }
 
   .panel-surface {
-    background-color: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(12, 69, 60, 0.12);
+    background-color: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(246, 153, 19, 0.18);
     border-radius: 28px;
     backdrop-filter: blur(20px);
-    box-shadow: 0 18px 40px rgba(12, 69, 60, 0.08);
+    box-shadow: 
+      0 18px 40px -10px rgba(246, 153, 19, 0.10),
+      0 6px 18px -4px rgba(12, 69, 60, 0.06);
   }
   .dark .panel-surface {
     background-color: rgba(26, 34, 31, 0.92);
     border-color: rgba(255, 255, 255, 0.08);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Happening Light Mode Card Glow & Vibrant Atmosphere */
+  .card-happening {
+    background: #ffffff;
+    border: 1px solid rgba(246, 153, 19, 0.20);
+    box-shadow: 
+      0 10px 25px -5px rgba(246, 153, 19, 0.10),
+      0 4px 12px -2px rgba(233, 98, 18, 0.06);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card-happening:hover {
+    border-color: rgba(233, 98, 18, 0.40);
+    box-shadow: 
+      0 20px 35px -8px rgba(246, 153, 19, 0.18),
+      0 8px 18px -4px rgba(224, 63, 20, 0.12);
+    transform: translateY(-2px);
+  }
+  .dark .card-happening {
+    background: #1c2622;
+    border-color: rgba(237, 229, 216, 0.10);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+  }
+  .dark .card-happening:hover {
+    border-color: rgba(246, 153, 19, 0.35);
+    box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.50);
   }
 
   .subtle-chip {
