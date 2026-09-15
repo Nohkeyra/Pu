@@ -72,7 +72,7 @@ jobs:
 
       - name: Patch capacitor-updater enum switch cases (Java 21 fix)
         run: |
-          node scripts/patch-capacitor.cjs
+          node scripts/patch-capacitor.js
 
       - name: Build web assets
         env:
