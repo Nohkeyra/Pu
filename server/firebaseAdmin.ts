@@ -204,6 +204,10 @@ export async function verifyCustomerIdToken(req: express.Request): Promise<strin
 
 export function getFirestore(): FirebaseFirestore.Firestore {
   if (process.env.CI || process.env.NODE_ENV === 'test' || process.env.USE_MEMORY_FIRESTORE === 'true') {
+    if (process.env.NODE_ENV === 'production') {
+      // NEVER use memory Firestore in production
+      throw new Error('Memory Firestore disabled in production');
+    }
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       if (!memoryFirestoreInstance) {
         memoryFirestoreInstance = new MemoryFirestore();
