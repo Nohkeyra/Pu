@@ -24,30 +24,8 @@ export async function initCrashlytics(): Promise<void> {
 
   // Register global window error and unhandled rejection hooks
   if (typeof window !== "undefined") {
-    const isBenignNoise = (msg: string): boolean => {
-      const lower = msg.toLowerCase();
-      return (
-        lower.includes("websocket") ||
-        lower.includes("failed to fetch") ||
-        lower.includes("networkerror") ||
-        lower.includes("network error") ||
-        lower.includes("load failed") ||
-        lower.includes("aborterror") ||
-        lower.includes("aborted") ||
-        lower.includes("resizeobserver loop") ||
-        lower.includes("non-error promise rejection") ||
-        lower === "undefined" ||
-        lower === "null" ||
-        lower === ""
-      );
-    };
-
     window.addEventListener("error", (event) => {
-      const msg = event.message || event.error?.message || "";
-      if (isBenignNoise(msg)) {
-        return;
-      }
-      recordException(event.error || new Error(event.message || "Unknown window error"), {
+      recordException(event.error || new Error(event.message), {
         filename: event.filename,
         lineno: event.lineno,
         colno: event.colno,
@@ -57,11 +35,21 @@ export async function initCrashlytics(): Promise<void> {
 
     window.addEventListener("unhandledrejection", (event) => {
       const reason = event.reason;
-      if (!reason) {
-        return;
-      }
       const message = reason?.message || String(reason);
-      if (reason?.name === "AbortError" || isBenignNoise(message)) {
+      // Ignore AbortError / cancelled requests, transient fetch failures, or benign dev WebSocket / HMR closures
+      if (
+        reason?.name === "AbortError" ||
+        message.includes("aborted") ||
+        message.includes("Failed to fetch") ||
+        message.includes("NetworkError") ||
+        message.includes("Load failed") ||
+        message.includes("WebSocket closed without opened") ||
+        message.includes("failed to connect to websocket") ||
+        message.includes("[vite]") ||
+        String(reason).includes("AbortError") ||
+        String(reason).includes("Failed to fetch") ||
+        String(reason).includes("WebSocket closed without opened")
+      ) {
         return;
       }
       const error = reason instanceof Error ? reason : new Error(String(reason));
@@ -91,8 +79,12 @@ export async function recordException(
     message.includes("Failed to fetch") ||
     message.includes("NetworkError") ||
     message.includes("Load failed") ||
+    message.includes("WebSocket closed without opened") ||
+    message.includes("failed to connect to websocket") ||
+    message.includes("[vite]") ||
     String(error).includes("AbortError") ||
-    String(error).includes("Failed to fetch")
+    String(error).includes("Failed to fetch") ||
+    String(error).includes("WebSocket closed without opened")
   ) {
     return;
   }

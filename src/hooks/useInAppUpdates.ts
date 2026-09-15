@@ -26,16 +26,12 @@ export function useInAppUpdates() {
   // Initialize native app info on mount
   useEffect(() => {
     let isMounted = true;
-    getInstalledAppInfo()
-      .then((info) => {
-        if (isMounted) {
-          setCurrentVersion(info.version);
-          setCurrentBuild(info.buildNumber);
-        }
-      })
-      .catch((err) => {
-        console.warn('[useInAppUpdates] getInstalledAppInfo error:', err);
-      });
+    getInstalledAppInfo().then((info) => {
+      if (isMounted) {
+        setCurrentVersion(info.version);
+        setCurrentBuild(info.buildNumber);
+      }
+    });
     return () => {
       isMounted = false;
     };
@@ -126,9 +122,7 @@ export function useInAppUpdates() {
   // 1. Setup real-time listener & manual event trigger
   useEffect(() => {
     const unsubscribe = subscribeToAppUpdates((config) => {
-      evaluateVersion(config, true).catch((err) => {
-        console.warn('[useInAppUpdates] evaluateVersion error:', err);
-      });
+      evaluateVersion(config, true);
     });
 
     const handleManualTrigger = async (e: Event) => {

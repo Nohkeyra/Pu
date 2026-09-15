@@ -216,7 +216,7 @@ export async function verifyAdminMockFallback(fallbackPassword?: string): Promis
       const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
         headers: { Authorization: `Bearer ${storedToken}` }
       });
-      if (verifyRes?.ok) {
+      if (verifyRes.ok) {
         const verifyData = await verifyRes.json();
         if (verifyData.success) {
           if (verifyData.firebaseCustomToken) {
