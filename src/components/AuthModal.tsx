@@ -30,7 +30,11 @@ import { getSecureItem } from '@/lib/preferences';
 import { 
   checkBiometricAvailability, 
   getCustomerBiometricCredentials, 
-  storeCustomerBiometricCredentials 
+  storeCustomerBiometricCredentials,
+  getAdminBiometricCredentials,
+  storeAdminBiometricCredentials,
+  ADMIN_BIOMETRIC_PREF_KEY,
+  CUSTOMER_BIOMETRIC_PREF_KEY
 } from '@/services/authService';
 
 interface AuthModalProps {
@@ -85,25 +89,42 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
   const handleBiometricLogin = useCallback(async () => {
     try {
-      const creds = await getCustomerBiometricCredentials();
-      if (creds && creds.email && creds.password) {
-        setIsLoading(true);
-        await signInWithEmailAndPassword(auth, creds.email, creds.password);
-        triggerNotification(NotificationType.Success);
-        toast({
-          title: t('Success', 'Berjaya'),
-          description: t('Successfully logged in with Biometrics!', 'Berjaya log masuk dengan Biometrik!'),
-          variant: 'success'
-        });
-        resetForm();
-        onSuccess?.();
-        onClose();
+      if (isAdminAuth) {
+        const creds = await getAdminBiometricCredentials();
+        if (creds && creds.username && creds.password) {
+          setIsLoading(true);
+          await signInWithEmailAndPassword(auth, creds.username, creds.password);
+          triggerNotification(NotificationType.Success);
+          toast({
+            title: t('Admin Access Granted', 'Akses Admin Diberikan'),
+            description: t('Successfully verified Admin biometrics!', 'Berjaya disahkan dengan Biometrik Admin!'),
+            variant: 'success'
+          });
+          resetForm();
+          onSuccess?.();
+          onClose();
+        }
+      } else {
+        const creds = await getCustomerBiometricCredentials();
+        if (creds && creds.email && creds.password) {
+          setIsLoading(true);
+          await signInWithEmailAndPassword(auth, creds.email, creds.password);
+          triggerNotification(NotificationType.Success);
+          toast({
+            title: t('Success', 'Berjaya'),
+            description: t('Successfully logged in with Biometrics!', 'Berjaya log masuk dengan Biometrik!'),
+            variant: 'success'
+          });
+          resetForm();
+          onSuccess?.();
+          onClose();
+        }
       }
     } catch (err: any) {
       console.warn('Biometric login failed:', err);
       setIsLoading(false);
       // Only show error toast if the user did not cancel the native popup dialog
-      const errMsg = err.message || '';
+      const errMsg = err?.message || '';
       if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('user cancel')) {
         toast({
           title: t('Biometric Failed', 'Biometrik Gagal'),
@@ -112,18 +133,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         });
       }
     }
-  }, [t, toast, onSuccess, onClose, resetForm]);
+  }, [t, toast, onSuccess, onClose, resetForm, isAdminAuth]);
 
   useEffect(() => {
     async function initBiometrics() {
-      if (isAdminAuth) {
-        return;
-      }
       try {
         const avail = await checkBiometricAvailability();
         setIsBiometricHardwareAvailable(avail.isAvailable);
         
-        const enabled = await getSecureItem('wawasan_customer_biometrics_enabled');
+        const prefKey = isAdminAuth ? ADMIN_BIOMETRIC_PREF_KEY : CUSTOMER_BIOMETRIC_PREF_KEY;
+        const enabled = await getSecureItem(prefKey);
         if (enabled === 'true') {
           setHasStoredBiometrics(true);
           // Auto-trigger on initial modal load if we are in signin mode and user is not already logged in
@@ -135,7 +154,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           }
         }
       } catch (err) {
-        console.warn('Failed to initialize customer biometrics:', err);
+        console.warn('Failed to initialize biometrics:', err);
       }
     }
     if (isOpen) {
@@ -174,9 +193,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
         if (rememberBiometrics) {
           try {
-            await storeCustomerBiometricCredentials(email, password);
+            if (isAdminAuth) {
+              await storeAdminBiometricCredentials(email, password);
+            } else {
+              await storeCustomerBiometricCredentials(email, password);
+            }
           } catch (bioErr) {
-            console.warn('Failed to store customer biometric credentials:', bioErr);
+            console.warn('Failed to store biometric credentials:', bioErr);
           }
         }
 
@@ -540,7 +563,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               </button>
 
               {/* Quick Biometric Access Button */}
-              {!isAdminAuth && mode === 'signin' && hasStoredBiometrics && (
+              {mode === 'signin' && hasStoredBiometrics && (
                 <button
                   type="button"
                   onClick={handleBiometricLogin}
@@ -548,7 +571,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   className="w-full h-12 bg-stone-50 dark:bg-stone-900/40 hover:bg-stone-100 dark:hover:bg-stone-900 border border-stone-200 dark:border-white/10 text-stone-700 dark:text-stone-300 font-semibold rounded-lg active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-3 disabled:opacity-50"
                 >
                   <Fingerprint className="w-5 h-5 text-[var(--color-sunshine-cta)] shrink-0" />
-                  <span>{t('Sign In with Fingerprint / Face ID', 'Log Masuk dengan Cap Jari / Wajah')}</span>
+                  <span>
+                    {isAdminAuth
+                      ? t('Unlock Admin with Fingerprint / Face ID', 'Buka Kunci Admin dengan Cap Jari / Wajah')
+                      : t('Sign In with Fingerprint / Face ID', 'Log Masuk dengan Cap Jari / Wajah')}
+                  </span>
                 </button>
               )}
 

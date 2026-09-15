@@ -296,6 +296,9 @@ export async function storeAdminBiometricCredentials(
 ): Promise<boolean> {
   const isNative = isAndroidApk();
   if (!isNative) {
+    await setSecureItem('wawasan_admin_email', username);
+    await setSecureItem('wawasan_admin_password', tokenOrSecret);
+    await setSecureItem(ADMIN_BIOMETRIC_PREF_KEY, 'true');
     await setSecureItem(ADMIN_TOKEN_KEY, tokenOrSecret);
     return true;
   }
@@ -311,6 +314,9 @@ export async function storeAdminBiometricCredentials(
     return true;
   } catch (error) {
     console.warn('[AuthService] Failed to set native biometric credentials:', error);
+    await setSecureItem('wawasan_admin_email', username);
+    await setSecureItem('wawasan_admin_password', tokenOrSecret);
+    await setSecureItem(ADMIN_BIOMETRIC_PREF_KEY, 'true');
     await setSecureItem(ADMIN_TOKEN_KEY, tokenOrSecret);
     return false;
   }
@@ -322,6 +328,11 @@ export async function storeAdminBiometricCredentials(
 export async function getAdminBiometricCredentials(): Promise<{ username: string; password: string } | null> {
   const isNative = isAndroidApk();
   if (!isNative) {
+    const email = await getSecureItem('wawasan_admin_email');
+    const password = await getSecureItem('wawasan_admin_password');
+    if (email && password) {
+      return { username: email, password };
+    }
     const token = await getStoredAdminToken();
     return token ? { username: 'admin', password: token } : null;
   }
@@ -333,9 +344,19 @@ export async function getAdminBiometricCredentials(): Promise<{ username: string
     if (creds && creds.password) {
       return { username: creds.username || 'admin', password: creds.password };
     }
+    const fallbackEmail = await getSecureItem('wawasan_admin_email');
+    const fallbackPassword = await getSecureItem('wawasan_admin_password');
+    if (fallbackEmail && fallbackPassword) {
+      return { username: fallbackEmail, password: fallbackPassword };
+    }
     return null;
   } catch (error) {
     console.warn('[AuthService] Failed to retrieve native biometric credentials:', error);
+    const fallbackEmail = await getSecureItem('wawasan_admin_email');
+    const fallbackPassword = await getSecureItem('wawasan_admin_password');
+    if (fallbackEmail && fallbackPassword) {
+      return { username: fallbackEmail, password: fallbackPassword };
+    }
     const fallbackToken = await getStoredAdminToken();
     return fallbackToken ? { username: 'admin', password: fallbackToken } : null;
   }
