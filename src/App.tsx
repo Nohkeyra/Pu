@@ -210,7 +210,7 @@ function App() {
               isOpen={showPrivacyPolicy && isSplashFinished}
               onUnderstood={handlePrivacyUnderstood}
             />
-            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Router>
               <VercelSpeedInsights />
               <PushNotificationHandler />
               <NativeBackButtonHandler />

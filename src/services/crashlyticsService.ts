@@ -24,8 +24,30 @@ export async function initCrashlytics(): Promise<void> {
 
   // Register global window error and unhandled rejection hooks
   if (typeof window !== "undefined") {
+    const isBenignNoise = (msg: string): boolean => {
+      const lower = msg.toLowerCase();
+      return (
+        lower.includes("websocket") ||
+        lower.includes("failed to fetch") ||
+        lower.includes("networkerror") ||
+        lower.includes("network error") ||
+        lower.includes("load failed") ||
+        lower.includes("aborterror") ||
+        lower.includes("aborted") ||
+        lower.includes("resizeobserver loop") ||
+        lower.includes("non-error promise rejection") ||
+        lower === "undefined" ||
+        lower === "null" ||
+        lower === ""
+      );
+    };
+
     window.addEventListener("error", (event) => {
-      recordException(event.error || new Error(event.message), {
+      const msg = event.message || event.error?.message || "";
+      if (isBenignNoise(msg)) {
+        return;
+      }
+      recordException(event.error || new Error(event.message || "Unknown window error"), {
         filename: event.filename,
         lineno: event.lineno,
         colno: event.colno,
@@ -35,17 +57,11 @@ export async function initCrashlytics(): Promise<void> {
 
     window.addEventListener("unhandledrejection", (event) => {
       const reason = event.reason;
+      if (!reason) {
+        return;
+      }
       const message = reason?.message || String(reason);
-      // Ignore AbortError / cancelled requests or transient fetch failures which are normal web/telemetry behavior
-      if (
-        reason?.name === "AbortError" ||
-        message.includes("aborted") ||
-        message.includes("Failed to fetch") ||
-        message.includes("NetworkError") ||
-        message.includes("Load failed") ||
-        String(reason).includes("AbortError") ||
-        String(reason).includes("Failed to fetch")
-      ) {
+      if (reason?.name === "AbortError" || isBenignNoise(message)) {
         return;
       }
       const error = reason instanceof Error ? reason : new Error(String(reason));
