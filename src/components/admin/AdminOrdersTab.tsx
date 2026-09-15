@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertTriangle, Check, Eye, Send, FileSpreadsheet, X, Star, Search, Inbox, Trash2,
   SlidersHorizontal, ChevronDown
@@ -88,6 +88,15 @@ export function AdminOrdersTab({
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1024));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const hasActiveDate = Boolean(dateFromFilter || dateToFilter);
   const hasActiveStatus = Boolean(statusFilter && statusFilter !== 'all');
@@ -501,7 +510,7 @@ export function AdminOrdersTab({
           />
         ) : (
           (() => {
-            const rowHeight = typeof window !== 'undefined' && window.innerWidth < 420 ? 146 : typeof window !== 'undefined' && window.innerWidth < 768 ? 134 : 118;
+            const rowHeight = windowWidth < 420 ? 152 : windowWidth < 768 ? 138 : 122;
             const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 620);
 
             return (
