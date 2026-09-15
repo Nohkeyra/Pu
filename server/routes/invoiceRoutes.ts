@@ -170,14 +170,13 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req: Req
     }
 
     const db = getFirestore();
+    const cleanIds = orderIds.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
+    const docSnaps = await Promise.all(cleanIds.map(id => db.collection('orders').doc(id.trim()).get()));
     const orderDocs: Record<string, any>[] = [];
 
-    for (const id of orderIds) {
-      if (typeof id === 'string' && id.trim()) {
-        const snap = await db.collection('orders').doc(id.trim()).get();
-        if (snap.exists) {
-          orderDocs.push({ id: snap.id, ...snap.data() });
-        }
+    for (const snap of docSnaps) {
+      if (snap.exists) {
+        orderDocs.push({ id: snap.id, ...snap.data() });
       }
     }
 
@@ -211,15 +210,14 @@ router.post('/invoice/combined/pdf', async (req, res) => {
     }
 
     const db = getFirestore();
+    const cleanIds = orderIds.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
+    const docSnaps = await Promise.all(cleanIds.map(id => db.collection('orders').doc(id.trim()).get()));
     const orderDocs = [];
     const customInvoiceNo = 'RW COMBINED';
 
-    for (const id of orderIds) {
-      if (typeof id === 'string' && id.trim()) {
-        const snap = await db.collection('orders').doc(id.trim()).get();
-        if (snap.exists) {
-          orderDocs.push({ id: snap.id, ...snap.data() });
-        }
+    for (const snap of docSnaps) {
+      if (snap.exists) {
+        orderDocs.push({ id: snap.id, ...snap.data() });
       }
     }
 
