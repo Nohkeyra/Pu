@@ -59,30 +59,20 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     }
   }, [adminToken, authHeaders]);
 
-  const loadingRef = useRef(loading);
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
-
   useEffect(() => {
     if (!adminToken) {
       setOrders([]);
       return;
     }
 
-    let isSubscribed = true;
-    let fallbackTimer: NodeJS.Timeout | null = null;
-
-    // Real-time listener: loads initial data immediately and listens for updates.
-    // If Firestore rules disallow direct client read, the error handler triggers fetchOrders() fallback.
+    // The onSnapshot listener below is the primary data source (it already
+    // fetches the same 100 orders): don't also fire a redundant REST fetch
+    // here, or every mount doubles the read cost and races two writers into
+    // `orders`. fetchOrders() is invoked only if the listener itself fails
+    // (see the error handler), and remains available for manual refresh.
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
-      if (!isSubscribed) return;
-      if (fallbackTimer) {
-        clearTimeout(fallbackTimer);
-        fallbackTimer = null;
-      }
       const fetchedOrders: Order[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -112,22 +102,14 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       setOrders(fetchedOrders);
       setLoading(false);
     }, (error) => {
-      if (!isSubscribed) return;
-      console.warn('[Admin Orders] Real-time Firestore snapshot inactive (falling back to Admin API):', error.message);
-      // Fallback to Admin API only when real-time snapshot is unauthorized / inactive
+      console.warn('[Admin Orders] Real-time Firestore snapshot inactive, falling back to Admin API:', error.message);
+      // Only hit the REST endpoint when the live listener can't run at all
+      // (e.g. Firestore rules reject it) — the single fallback path instead
+      // of an unconditional duplicate fetch on every mount.
       fetchOrders(false);
     });
 
-    // Safety fallback: if snapshot hasn't resolved within 4 seconds, fetch via Admin API
-    fallbackTimer = setTimeout(() => {
-      if (isSubscribed && loadingRef.current) {
-        fetchOrders(true);
-      }
-    }, 4000);
-
     return () => {
-      isSubscribed = false;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
       unsubscribeSnapshot();
     };
   }, [adminToken, fetchOrders]);

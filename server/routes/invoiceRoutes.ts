@@ -170,15 +170,18 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req: Req
     }
 
     const db = getFirestore();
-    const cleanIds = orderIds.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
-    const docSnaps = await Promise.all(cleanIds.map(id => db.collection('orders').doc(id.trim()).get()));
-    const orderDocs: Record<string, any>[] = [];
+    const validIds = orderIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+      .map((id: string) => id.trim());
 
-    for (const snap of docSnaps) {
-      if (snap.exists) {
-        orderDocs.push({ id: snap.id, ...snap.data() });
-      }
-    }
+    // Batch all order lookups into a single Firestore round-trip (db.getAll)
+    // instead of awaiting one .get() per id in sequence — with N orderIds
+    // that was N sequential network round-trips before PDF generation
+    // could even start.
+    const refs = validIds.map((id: string) => db.collection('orders').doc(id));
+    const snaps = refs.length > 0 ? await db.getAll(...refs) : [];
+    const orderDocs: Record<string, any>[] = snaps
+      .filter((snap) => snap.exists)
+      .map((snap) => ({ id: snap.id, ...snap.data() }));
 
     if (orderDocs.length === 0) {
       return res.status(404).json({ success: false, error: 'No matching order documents found for provided orderIds' });
@@ -210,16 +213,17 @@ router.post('/invoice/combined/pdf', async (req, res) => {
     }
 
     const db = getFirestore();
-    const cleanIds = orderIds.filter((id): id is string => typeof id === 'string' && Boolean(id.trim()));
-    const docSnaps = await Promise.all(cleanIds.map(id => db.collection('orders').doc(id.trim()).get()));
-    const orderDocs = [];
     const customInvoiceNo = 'RW COMBINED';
 
-    for (const snap of docSnaps) {
-      if (snap.exists) {
-        orderDocs.push({ id: snap.id, ...snap.data() });
-      }
-    }
+    // Single batched round-trip via db.getAll() instead of one sequential
+    // .get() per orderId.
+    const validIds = orderIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+      .map((id: string) => id.trim());
+    const refs = validIds.map((id: string) => db.collection('orders').doc(id));
+    const snaps = refs.length > 0 ? await db.getAll(...refs) : [];
+    const orderDocs = snaps
+      .filter((snap) => snap.exists)
+      .map((snap) => ({ id: snap.id, ...snap.data() }));
 
     if (orderDocs.length === 0) {
       return res.status(404).json({ success: false, error: 'No matching order documents found' });

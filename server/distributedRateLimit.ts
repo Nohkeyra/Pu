@@ -13,10 +13,21 @@ export interface DistributedRateLimitDoc {
   updatedAt?: FirebaseFirestore.Timestamp;
 }
 
+// How long a locally-cached count is trusted as "close enough" to
+// authoritative before we go back to Firestore. Every previous request hit
+// Firestore with a full read-modify-write transaction; bursty traffic from
+// the same key (a single IP hammering an endpoint) paid that round-trip
+// every single time. A short cache window collapses those bursts into one
+// Firestore round-trip per window while keeping cross-instance drift bounded
+// to ~1s, which is more than acceptable for rate limiting (it only ever
+// makes the limit marginally more permissive during the drift window, never
+// less — so it can't be used to fully bypass the limit).
+const LOCAL_CACHE_TTL_MS = 1000;
+
 export class FirestoreDistributedStore implements Store {
   prefix: string;
   windowMs: number = 15 * 60 * 1000;
-  private localFallback = new Map<string, { totalHits: number; resetTimeMs: number }>();
+  private localFallback = new Map<string, { totalHits: number; resetTimeMs: number; syncedAt: number }>();
   private static cleanupRegistered = false;
 
   constructor(prefix = 'rl') {
@@ -42,11 +53,12 @@ export class FirestoreDistributedStore implements Store {
 
     if (existing && existing.resetTimeMs > now) {
       existing.totalHits += 1;
+      existing.syncedAt = now;
       return { totalHits: existing.totalHits, resetTime: new Date(existing.resetTimeMs) };
     }
 
     const resetTimeMs = now + this.windowMs;
-    const entry = { totalHits: 1, resetTimeMs };
+    const entry = { totalHits: 1, resetTimeMs, syncedAt: now };
     this.localFallback.set(key, entry);
     return { totalHits: 1, resetTime: new Date(resetTimeMs) };
   }
@@ -64,6 +76,18 @@ export class FirestoreDistributedStore implements Store {
 
   async increment(key: string): Promise<ClientRateLimitInfo> {
     const now = Date.now();
+
+    // Fast path: a recently-synced local entry stands in for Firestore for
+    // LOCAL_CACHE_TTL_MS. This is what actually cuts the per-request cost —
+    // repeated hits from the same key within that window are answered from
+    // memory instead of each paying a full Firestore transaction round-trip.
+    const cached = this.localFallback.get(key);
+    if (cached && cached.resetTimeMs > now && now - cached.syncedAt < LOCAL_CACHE_TTL_MS) {
+      cached.totalHits += 1;
+      this.syncIncrementInBackground(key, cached.resetTimeMs);
+      return { totalHits: cached.totalHits, resetTime: new Date(cached.resetTimeMs) };
+    }
+
     const docId = this.getDocId(key);
 
     try {
@@ -113,11 +137,54 @@ export class FirestoreDistributedStore implements Store {
         return { totalHits, resetTime: new Date(resetTimeMs) };
       });
 
+      // Seed the local cache with the authoritative count so the next
+      // request(s) within LOCAL_CACHE_TTL_MS take the fast path above
+      // instead of another Firestore round-trip.
+      this.localFallback.set(key, {
+        totalHits: result.totalHits,
+        resetTimeMs: result.resetTime.getTime(),
+        syncedAt: now,
+      });
+
       return result;
     } catch (err) {
       console.warn(`[DistributedRateLimit] Firestore increment failed for key ${key}, using memory fallback:`, err instanceof Error ? err.message : err);
       return this.fallbackIncrement(key);
     }
+  }
+
+  // Best-effort, non-blocking sync of a locally-fast-pathed increment back to
+  // Firestore, so other instances eventually see it. Deliberately not
+  // awaited by callers — that would defeat the point of the fast path.
+  private syncIncrementInBackground(key: string, resetTimeMs: number): void {
+    const docId = this.getDocId(key);
+    const db = getFirestore();
+    const docRef = db.collection('rate_limits').doc(docId);
+
+    db.runTransaction(async (transaction) => {
+      const snap = await transaction.get(docRef);
+      if (snap.exists) {
+        const data = snap.data() as Partial<DistributedRateLimitDoc>;
+        const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
+        if (storedResetTime > 0 && storedResetTime === resetTimeMs) {
+          transaction.update(docRef, {
+            totalHits: (data?.totalHits || 0) + 1,
+            updatedAt: Timestamp.now(),
+          });
+          return;
+        }
+      }
+      transaction.set(docRef, {
+        key,
+        prefix: this.prefix,
+        totalHits: 1,
+        resetTimeMs,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+    }).catch((err) => {
+      console.warn(`[DistributedRateLimit] Background sync failed for key ${key}:`, err instanceof Error ? err.message : err);
+    });
   }
 
   async decrement(key: string): Promise<void> {

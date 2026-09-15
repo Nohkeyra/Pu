@@ -277,28 +277,47 @@ export default function CalendarPage() {
     return orders.filter((o) => o.status !== 'cancelled' && o.status !== 'rejected');
   }, [orders]);
 
-  // Retrieve active orders on a given date
-  const getOrdersForDay = (date: Date) => {
-    const targetDateStr = format(date, 'yyyy-MM-dd');
-    return activeOrders.filter((order) => getOrderDateString(order) === targetDateStr);
+  // Bucket active orders by date string ONCE per activeOrders change, instead
+  // of re-scanning the full array for every rendered day cell (~35-42 cells
+  // per month). getOrdersForDay/getDailySessions become O(1) map lookups.
+  const ordersByDate = useMemo(() => {
+    const map = new Map<string, Order[]>();
+    for (const order of activeOrders) {
+      const key = getOrderDateString(order);
+      if (!key) continue;
+      const bucket = map.get(key);
+      if (bucket) {
+        bucket.push(order);
+      } else {
+        map.set(key, [order]);
+      }
+    }
+    return map;
+  }, [activeOrders]);
+
+  type DailySessions = {
+    breakfast: { count: number; pax: number };
+    lunch: { count: number; pax: number };
+    hi_tea: { count: number; pax: number };
   };
 
-  // For aggregate counters on the grid cells
-  const getDailySessions = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    if (aggregatedSessions[dateStr]) {
-      return aggregatedSessions[dateStr];
-    }
+  // Same idea for the per-day session aggregates used as a fallback when the
+  // server-computed `aggregatedSessions` cache doesn't have an entry.
+  const sessionsByDate = useMemo(() => {
+    const map = new Map<string, DailySessions>();
+    for (const order of activeOrders) {
+      const key = getOrderDateString(order);
+      if (!key) continue;
+      let sessions = map.get(key);
+      if (!sessions) {
+        sessions = {
+          breakfast: { count: 0, pax: 0 },
+          lunch: { count: 0, pax: 0 },
+          hi_tea: { count: 0, pax: 0 },
+        };
+        map.set(key, sessions);
+      }
 
-    const dayOrders = activeOrders.filter((order) => getOrderDateString(order) === dateStr);
-
-    const sessions = {
-      breakfast: { count: 0, pax: 0 },
-      lunch: { count: 0, pax: 0 },
-      hi_tea: { count: 0, pax: 0 },
-    };
-
-    dayOrders.forEach((order) => {
       const pax = order.guests || order.quantity || 0;
       const meals = order.meals || [];
 
@@ -314,18 +333,50 @@ export default function CalendarPage() {
         sessions.hi_tea.count += 1;
         sessions.hi_tea.pax += pax;
       }
-    });
+    }
+    return map;
+  }, [activeOrders]);
 
-    return sessions;
+  const emptySessions: DailySessions = {
+    breakfast: { count: 0, pax: 0 },
+    lunch: { count: 0, pax: 0 },
+    hi_tea: { count: 0, pax: 0 },
+  };
+
+  // Same idea for notes: bucket by date once per calendarNotes change.
+  const notesByDate = useMemo(() => {
+    const map = new Map<string, CalendarNote[]>();
+    for (const note of calendarNotes) {
+      const bucket = map.get(note.date);
+      if (bucket) {
+        bucket.push(note);
+      } else {
+        map.set(note.date, [note]);
+      }
+    }
+    return map;
+  }, [calendarNotes]);
+
+  // Retrieve active orders on a given date
+  const getOrdersForDay = (date: Date) => {
+    const targetDateStr = format(date, 'yyyy-MM-dd');
+    return ordersByDate.get(targetDateStr) || [];
+  };
+
+  // For aggregate counters on the grid cells
+  const getDailySessions = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    if (aggregatedSessions[dateStr]) {
+      return aggregatedSessions[dateStr];
+    }
+    return sessionsByDate.get(dateStr) || emptySessions;
   };
 
   const getNotesForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return calendarNotes.filter((n) => {
-      if (n.date !== dateStr) return false;
-      if (isAdmin) return true;
-      return n.userId === currentUser?.uid;
-    });
+    const dayNotes = notesByDate.get(dateStr) || [];
+    if (isAdmin) return dayNotes;
+    return dayNotes.filter((n) => n.userId === currentUser?.uid);
   };
 
   // Handle click on a calendar cell
