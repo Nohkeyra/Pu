@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.RemoteViews;
+import android.view.View;
 
 import com.wawasanpakusop.app.MainActivity;
 import com.wawasanpakusop.app.R;
@@ -214,6 +215,9 @@ public class WidgetUpdateService {
             }
 
             views.setTextViewText(R.id.widget_today_summary, summaryText);
+            views.setViewVisibility(R.id.widget_today_summary, View.GONE);
+            views.setViewVisibility(R.id.widget_today_summary_container, View.GONE);
+            views.setViewVisibility(R.id.widget_subtitle, View.GONE);
 
             manager.updateAppWidget(appWidgetId, views);
         }

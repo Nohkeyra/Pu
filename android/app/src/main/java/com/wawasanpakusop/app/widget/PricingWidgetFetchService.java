@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.RemoteViews;
+import android.view.View;
 
 import com.wawasanpakusop.app.R;
 
@@ -176,6 +177,9 @@ public class PricingWidgetFetchService {
                 summaryText = "Memuatkan...";
             }
             views.setTextViewText(R.id.pricing_widget_summary, summaryText);
+            views.setViewVisibility(R.id.pricing_widget_summary, View.GONE);
+            views.setViewVisibility(R.id.pricing_widget_summary_container, View.GONE);
+            views.setViewVisibility(R.id.pricing_widget_subtitle, View.GONE);
 
             manager.updateAppWidget(appWidgetId, views);
         }
