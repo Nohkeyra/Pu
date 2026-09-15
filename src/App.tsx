@@ -156,33 +156,53 @@ function App() {
     // login/logout, so this boot-time sync was redundant as well as unsafe.
     // Removed rather than awaited/reordered to eliminate the race outright.
 
-    // Fire-and-forget background ping to wake up Render (or any sleeping backend) 
-    // immediately on app launch so it is ready by the time the user logs in.
-    fetch(getApiUrl('/api/health'), { method: 'GET' }).catch(() => {
-      // Ignore network errors on background ping
-    });
+    // Background ping with 2.5s abort timeout to wake up backend immediately on app launch
+    const healthController = new AbortController();
+    const healthTimeout = setTimeout(() => healthController.abort(), 2500);
+    fetch(getApiUrl('/api/health'), { method: 'GET', signal: healthController.signal })
+      .catch(() => {
+        // Ignore network errors or aborts on background ping
+      })
+      .finally(() => {
+        clearTimeout(healthTimeout);
+      });
 
-    const hideSplash = async () => {
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+      ]);
+    };
+
+    const initializeNativePlugins = async () => {
       try {
-        if (Capacitor.isPluginAvailable('SplashScreen')) await SplashScreen.hide();
+        if (Capacitor.isPluginAvailable('SplashScreen')) {
+          await withTimeout(SplashScreen.hide(), 1500, undefined);
+        }
       } catch (err) {
         console.warn('SplashScreen hide warning:', err);
       } finally {
         setIsAppLoading(false);
       }
-    };
-    hideSplash();
 
-    const setupSafeArea = async () => {
       try {
-        const { insets } = await SafeArea.getSafeAreaInsets();
-        document.documentElement.style.setProperty('--safe-area-inset-top', `${insets.top}px`);
-        document.documentElement.style.setProperty('--safe-area-inset-bottom', `${insets.bottom}px`);
+        if (Capacitor.isPluginAvailable('SafeArea')) {
+          const result = await withTimeout(
+            SafeArea.getSafeAreaInsets(),
+            1500,
+            { insets: { top: 0, bottom: 0, left: 0, right: 0 } }
+          );
+          if (result && result.insets) {
+            document.documentElement.style.setProperty('--safe-area-inset-top', `${result.insets.top}px`);
+            document.documentElement.style.setProperty('--safe-area-inset-bottom', `${result.insets.bottom}px`);
+          }
+        }
       } catch (err) {
         console.warn('SafeArea plugin error:', err);
       }
     };
-    setupSafeArea();
+
+    initializeNativePlugins();
   }, []);
 
   if (useFallbackUi) {

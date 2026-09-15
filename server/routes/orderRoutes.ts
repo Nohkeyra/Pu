@@ -234,7 +234,24 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const pageSize = Math.max(1, Math.min(100, Number(req.body.pageSize) || 50));
       let query: FirebaseFirestore.Query = db.collection('orders').orderBy('createdAt', 'desc').limit(pageSize);
 
-      if (req.body.lastId) {
+      if (req.body.lastCreatedAt) {
+        let cursorValue: any = req.body.lastCreatedAt;
+        if (typeof cursorValue === 'number') {
+          cursorValue = new Date(cursorValue);
+        } else if (typeof cursorValue === 'string') {
+          cursorValue = new Date(cursorValue);
+        } else if (cursorValue && typeof cursorValue === 'object' && 'seconds' in cursorValue) {
+          cursorValue = new Date(cursorValue.seconds * 1000);
+        }
+        if (cursorValue instanceof Date && !isNaN(cursorValue.getTime())) {
+          query = query.startAfter(cursorValue);
+        } else if (req.body.lastId) {
+          const lastDocSnap = await db.collection('orders').doc(req.body.lastId).get();
+          if (lastDocSnap.exists) {
+            query = query.startAfter(lastDocSnap);
+          }
+        }
+      } else if (req.body.lastId) {
         const lastDocSnap = await db.collection('orders').doc(req.body.lastId).get();
         if (lastDocSnap.exists) {
           query = query.startAfter(lastDocSnap);
@@ -653,7 +670,10 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
 router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
-    const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
+    const snapshot = await db.collection('orders')
+      .orderBy('createdAt', 'desc')
+      .limit(2000)
+      .get();
     const orders = snapshot.docs
       .map(doc => ({ ...doc.data(), id: doc.id }))
       .filter((o: any) => !o.deletedByAdmin) as OrderData[];
@@ -679,6 +699,28 @@ const calendarSessionsLimiter = createDistributedRateLimiter({
 
 const calendarSessionsCacheMap = new Map<string, { data: Record<string, unknown>; expiresAt: number }>();
 const CALENDAR_SESSIONS_CACHE_TTL_MS = 3 * 60 * 1000;
+const MAX_CALENDAR_CACHE_ENTRIES = 100;
+
+function setCalendarSessionsCache(key: string, data: Record<string, unknown>): void {
+  const now = Date.now();
+  // 1. Purge expired entries to reclaim space
+  for (const [k, v] of calendarSessionsCacheMap.entries()) {
+    if (v.expiresAt <= now) {
+      calendarSessionsCacheMap.delete(k);
+    }
+  }
+  // 2. If still at/over capacity, evict oldest entry (LRU/FIFO order)
+  while (calendarSessionsCacheMap.size >= MAX_CALENDAR_CACHE_ENTRIES) {
+    const oldestKey = calendarSessionsCacheMap.keys().next().value;
+    if (!oldestKey) break;
+    calendarSessionsCacheMap.delete(oldestKey);
+  }
+  // 3. Set entry
+  calendarSessionsCacheMap.set(key, {
+    data,
+    expiresAt: now + CALENDAR_SESSIONS_CACHE_TTL_MS,
+  });
+}
 
 export function invalidateCalendarSessionsCache(): void {
   calendarSessionsCacheMap.clear();
@@ -739,15 +781,20 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
 
     const db = getFirestore();
 
-    let snapshot: FirebaseFirestore.QuerySnapshot;
+    let query: FirebaseFirestore.Query = db.collection('orders');
     if (fromDate && toDate) {
-      snapshot = await db.collection('orders')
+      query = query
         .where('eventDate', '>=', fromDate)
-        .where('eventDate', '<=', toDate)
-        .get();
+        .where('eventDate', '<=', toDate);
+    } else if (fromDate) {
+      query = query.where('eventDate', '>=', fromDate).limit(500);
+    } else if (toDate) {
+      query = query.where('eventDate', '<=', toDate).limit(500);
     } else {
-      snapshot = await db.collection('orders').get();
+      query = query.orderBy('eventDate', 'desc').limit(500);
     }
+
+    const snapshot = await query.get();
 
     const dailySessions: Record<string, {
       breakfast: { count: number; pax: number };
@@ -810,14 +857,7 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
       }
     });
 
-    if (calendarSessionsCacheMap.size > 100) {
-      calendarSessionsCacheMap.clear();
-    }
-
-    calendarSessionsCacheMap.set(cacheKey, {
-      data: dailySessions,
-      expiresAt: Date.now() + CALENDAR_SESSIONS_CACHE_TTL_MS,
-    });
+    setCalendarSessionsCache(cacheKey, dailySessions);
 
     return res.json({ success: true, sessions: dailySessions });
   } catch (err) {
@@ -834,15 +874,20 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
     const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
     const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
 
-    let snapshot: FirebaseFirestore.QuerySnapshot;
+    let query: FirebaseFirestore.Query = db.collection('orders');
     if (fromDate && toDate) {
-      snapshot = await db.collection('orders')
+      query = query
         .where('eventDate', '>=', fromDate)
-        .where('eventDate', '<=', toDate)
-        .get();
+        .where('eventDate', '<=', toDate);
+    } else if (fromDate) {
+      query = query.where('eventDate', '>=', fromDate).limit(200);
+    } else if (toDate) {
+      query = query.where('eventDate', '<=', toDate).limit(200);
     } else {
-      snapshot = await db.collection('orders').limit(100).get();
+      query = query.orderBy('eventDate', 'desc').limit(200);
     }
+
+    const snapshot = await query.get();
 
     const orders = snapshot.docs
       .filter(doc => !doc.data().deletedByAdmin)

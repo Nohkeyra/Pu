@@ -275,7 +275,7 @@ router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Respons
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
 
       try {
         const fetchRes = await fetch(currentUrl, {
@@ -339,12 +339,23 @@ router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Respons
   }
 });
 
+let menuHealthCache: { data: Record<string, unknown>; expiresAt: number } | null = null;
+const MENU_HEALTH_CACHE_TTL_MS = 60 * 1000;
+
+export function invalidateMenuHealthCache(): void {
+  menuHealthCache = null;
+}
+
 /**
  * Route: Image Health Diagnostic Check
  * GET /api/images/health
  */
 router.get('/images/health', verifyAdminToken, async (_req: Request, res: Response) => {
   try {
+    if (menuHealthCache && menuHealthCache.expiresAt > Date.now()) {
+      return res.json(menuHealthCache.data);
+    }
+
     const db = getFirestore();
     let menuItems = DEFAULT_MENU_ITEMS;
 
@@ -402,7 +413,7 @@ router.get('/images/health', verifyAdminToken, async (_req: Request, res: Respon
       });
     }
 
-    return res.json({
+    const responsePayload = {
       success: true,
       summary: {
         total: menuItems.length,
@@ -411,7 +422,14 @@ router.get('/images/health', verifyAdminToken, async (_req: Request, res: Respon
         protection: 'Active Anti-Hotlink Guard & Server-Side Image Repair Proxy',
       },
       items: results,
-    });
+    };
+
+    menuHealthCache = {
+      data: responsePayload,
+      expiresAt: Date.now() + MENU_HEALTH_CACHE_TTL_MS,
+    };
+
+    return res.json(responsePayload);
   } catch (err) {
     return res.status(500).json({ success: false, error: String(err) });
   }
@@ -431,10 +449,12 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
     }
 
     const publicDir = path.join(process.cwd(), 'public');
-    const batch = db.batch();
+    const BATCH_LIMIT = 400;
+    let currentBatch = db.batch();
+    let currentBatchOps = 0;
     let repairedCount = 0;
 
-    snap.docs.forEach((doc) => {
+    for (const doc of snap.docs) {
       const data = doc.data();
       const currentImg = data.image || '';
 
@@ -455,17 +475,26 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
         const relativeAsset = fallback.substring(publicDir.length).replace(/\\/g, '/');
         newImg = relativeAsset.startsWith('/') ? relativeAsset : `/${relativeAsset}`;
 
-        batch.update(doc.ref, {
+        currentBatch.update(doc.ref, {
           image: newImg,
           updatedAt: new Date().toISOString(),
         });
         repairedCount++;
-      }
-    });
+        currentBatchOps++;
 
-    if (repairedCount > 0) {
-      await batch.commit();
+        if (currentBatchOps >= BATCH_LIMIT) {
+          await currentBatch.commit();
+          currentBatch = db.batch();
+          currentBatchOps = 0;
+        }
+      }
     }
+
+    if (currentBatchOps > 0) {
+      await currentBatch.commit();
+    }
+
+    invalidateMenuHealthCache();
 
     return res.json({
       success: true,
