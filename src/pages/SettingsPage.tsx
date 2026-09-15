@@ -840,8 +840,8 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main
+        {/* Content Container */}
+        <div
           className="pt-24 sm:pt-28 max-w-2xl mx-auto px-4 sm:px-6 space-y-6"
           style={{ paddingTop: 'calc(76px + var(--sat, 0px))' }}
         >
@@ -1686,7 +1686,7 @@ export default function SettingsPage() {
               &copy; {new Date().getFullYear()} Restoran Wawasan. All rights reserved.
             </p>
           </div>
-        </main>
+        </div>
 
         {/* DIALOG 1: PRIVACY POLICY */}
         <Dialog open={privacyModalOpen} onOpenChange={setPrivacyModalOpen}>

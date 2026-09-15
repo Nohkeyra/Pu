@@ -103,7 +103,7 @@ export default function BottomNavigation() {
           isolation: 'isolate',
         }}
       >
-        <nav className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
+        <nav id="bottom-navigation" aria-label="Main Navigation" className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
         {tabs.map((tab) => {
           const isActive = currentTabId === tab.id;
           const Icon = tab.icon;

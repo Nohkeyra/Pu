@@ -104,7 +104,7 @@ export default function Header() {
   return (
     <>
       <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 z-[1001]" />
-      <header className={`fixed left-0 right-0 top-1 z-[1000] transition-all duration-300 ${headerStateClass}`}>
+      <header id="app-header" className={`fixed left-0 right-0 top-1 z-[1000] transition-all duration-300 ${headerStateClass}`}>
         <div className="content-container flex items-center justify-between gap-4">
           <Link 
             to={currentUser ? '/home' : '/'} 
@@ -146,7 +146,7 @@ export default function Header() {
             </div>
           </Link>
 
-          <nav className={`hidden items-center gap-1 xl:flex ${isScrolled ? '' : 'rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-md'}`}>
+          <nav id="desktop-navigation" aria-label="Desktop Navigation" className={`hidden items-center gap-1 xl:flex ${isScrolled ? '' : 'rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/20 shadow-md'}`}>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}

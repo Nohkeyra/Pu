@@ -47,7 +47,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer ref={footerRef} className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
+    <footer id="app-footer" ref={footerRef} className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
       {/* Cinematic Deep Dark Background Layer (Matching HeroSection) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pointer-events-none">
         {/* Dynamic Atmospheric Overlays */}

@@ -32,7 +32,7 @@ export default function LandingPage() {
         style={{ scaleX }}
       />
       <Header />
-      <main className="relative">
+      <div className="relative">
         <HeroSection />
 
         <div className="content-container py-4">
@@ -82,7 +82,7 @@ export default function LandingPage() {
         <div className="section-visibility-auto relative">
           <VisitSection />
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   );

@@ -83,7 +83,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
+      <div className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
         {!currentUser ? (
           <div className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -157,7 +157,7 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       <AuthModal
         isOpen={authModalOpen}
