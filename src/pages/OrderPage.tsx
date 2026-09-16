@@ -12,6 +12,7 @@ import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
 import AuthModal from '@/components/AuthModal';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
+import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { motion } from 'motion/react';
 import { triggerLightImpact } from '@/lib/haptics';
@@ -187,15 +188,36 @@ export default function OrderPage() {
           <OrderForm initialData={initialData} />
         </motion.main>
 
-        <footer className="bg-charcoal border-t border-border pt-8 pb-[calc(100px+env(safe-area-inset-bottom,16px))] mt-14">
-          <div className="max-w-3xl mx-auto px-4 text-center">
+        <footer className="bg-deep-forest dark:bg-card border-t border-amber-500/20 pt-10 pb-[calc(110px+env(safe-area-inset-bottom,16px))] mt-14 relative overflow-hidden">
+          {/* Cinematic Deep Dark Batik Background Layer (Matching HeroSection) */}
+          <div className="absolute inset-0 z-0 overflow-hidden bg-deep-forest dark:bg-card pointer-events-none">
+            {/* Dynamic Atmospheric Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-b from-deep-forest/90 via-deep-forest/65 to-deep-forest dark:from-card/95 dark:via-card/75 dark:to-card z-0" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/35 via-transparent to-amber-950/20 dark:from-[#101915]/60 dark:to-transparent z-0" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_15%,rgba(12,16,14,0.8)_100%)] z-0" />
+
+            {/* Traditional Malaysian Batik Vector Pattern Background Layer */}
+            <Batik3DMotion
+              mode="background"
+              src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
+              backgroundSize="cover"
+              backgroundRepeat="no-repeat"
+              maxRotation={12}
+              imgClassName="opacity-25 dark:opacity-[0.14] dark:contrast-105 dark:brightness-85 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
+            />
+
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none z-10" />
+          </div>
+
+          <div className="max-w-3xl mx-auto px-4 text-center relative z-10">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-sunshine-cta)]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-sunshine-cta)] shadow-[0_0_8px_rgba(246,153,19,0.8)]" />
               <span className="text-white text-xs tracking-[0.18em] uppercase font-semibold">
                 Restoran Wawasan Pak Usop
               </span>
             </div>
-            <p className="text-stone text-sm">© 2026 All rights reserved</p>
+            <p className="text-amber-100/70 dark:text-stone-400 text-xs sm:text-sm">© 2026 All rights reserved</p>
           </div>
         </footer>
 

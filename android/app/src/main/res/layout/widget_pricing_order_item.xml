@@ -3,40 +3,55 @@
     android:id="@+id/pricing_item_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingStart="6dp"
-    android:paddingEnd="6dp"
-    android:paddingTop="16dp"
-    android:paddingBottom="16dp"
+    android:orientation="vertical"
     android:background="@android:color/transparent">
 
-    <!-- The visible elements: Food Menu details & SET button on the far right end -->
-    <TextView
-        android:id="@+id/pricing_item_menu"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textColor="@color/widget_primary_text"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:singleLine="true"
-        android:ellipsize="end"
-        android:text="🍽️ Menu Makanan" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp">
 
-    <TextView
-        android:id="@+id/pricing_item_action_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="28dp"
-        android:gravity="center"
-        android:background="@drawable/widget_badge_background"
-        android:textColor="@color/widget_title_text"
-        android:textSize="12.5sp"
-        android:textStyle="bold"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:text="SET 💵"
-        android:layout_marginStart="8dp" />
+        <!-- The visible elements: Food Menu details & SET button on the far right end -->
+        <TextView
+            android:id="@+id/pricing_item_menu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/widget_primary_text"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="🍽️ Menu Makanan" />
+
+        <TextView
+            android:id="@+id/pricing_item_action_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:gravity="center"
+            android:background="@drawable/widget_badge_background"
+            android:textColor="@color/widget_title_text"
+            android:textSize="12.5sp"
+            android:textStyle="bold"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="SET 💵"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <!-- Visual Divider Line Between Orders -->
+    <View
+        android:id="@+id/pricing_item_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:background="#33FFFFFF" />
 
     <!-- Hidden bindings to satisfy PricingWidgetListFactory Java code securely -->
     <TextView

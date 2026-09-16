@@ -16,8 +16,9 @@ import java.util.List;
 
 /**
  * Supplies each row of the pricing widget's ListView from the cached JSON
- * written by PricingWidgetFetchService. One row per order that still needs
- * a price (or was already billed today, shown with a "Sudah Dibil" state).
+ * written by PricingWidgetFetchService.
+ * Exactly ONE row per order, grouping all meal types (BF, LN, HT) tightly together
+ * with a single "SET💵" action button, and supporting full vertical scrolling.
  */
 public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsFactory {
 
@@ -83,6 +84,7 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
                 JSONObject o = arr.getJSONObject(i);
                 JSONArray mealsArr = o.optJSONArray("meals");
                 String mealsLabel = buildMealsLabel(mealsArr);
+                String mealCodes = buildMealCodes(mealsArr, o.optString("mealType", ""));
                 boolean isPast = o.optBoolean("isPast", false);
                 boolean isToday = o.optBoolean("isToday", false);
                 String rawDate = o.optString("eventDate", o.optString("date", ""));
@@ -97,47 +99,35 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
                     dateBadge = "📅 " + (formattedDate.isEmpty() ? "AKAN DATANG" : formattedDate);
                 }
 
-                if (mealsArr != null && mealsArr.length() > 1) {
-                    for (int j = 0; j < mealsArr.length(); j++) {
-                        String m = mealsArr.optString(j, "");
-                        String mealMenuText;
-                        if (m.equalsIgnoreCase("breakfast") || m.equalsIgnoreCase("sarapan")) {
-                            mealMenuText = "× Breakfast →";
-                        } else if (m.equalsIgnoreCase("lunch") || m.equalsIgnoreCase("tengahari")) {
-                            mealMenuText = "× Lunch →";
-                        } else if (m.equalsIgnoreCase("hi_tea") || m.equalsIgnoreCase("hi-tea") || m.equalsIgnoreCase("tea")) {
-                            mealMenuText = "× Hi-Tea →";
-                        } else if (m.equalsIgnoreCase("dinner") || m.equalsIgnoreCase("malam")) {
-                            mealMenuText = "× Dinner →";
-                        } else {
-                            mealMenuText = "× " + m.substring(0, 1).toUpperCase() + m.substring(1).toLowerCase() + " →";
-                        }
-
-                        rows.add(new PricingOrderRow(
-                            o.optString("id", ""),
-                            o.optString("to", "Pelanggan"),
-                            mealMenuText,
-                            o.optInt("quantity", 0),
-                            mealsLabel,
-                            o.optString("status", "pending"),
-                            dateBadge,
-                            isPast,
-                            o.optString("location", "-")
-                        ));
-                    }
-                } else {
-                    rows.add(new PricingOrderRow(
-                        o.optString("id", ""),
-                        o.optString("to", "Pelanggan"),
-                        o.optString("menu", "-"),
-                        o.optInt("quantity", 0),
-                        mealsLabel,
-                        o.optString("status", "pending"),
-                        dateBadge,
-                        isPast,
-                        o.optString("location", "-")
-                    ));
+                String company = o.optString("to", "Pelanggan");
+                if (company == null || company.isEmpty() || company.equals("N/A")) {
+                    company = o.optString("name", "Pelanggan");
                 }
+
+                String rawMenu = o.optString("menu", "");
+                if (rawMenu == null || rawMenu.isEmpty() || rawMenu.equals("-")) {
+                    rawMenu = mealsLabel;
+                }
+
+                // Compactly join meal code badges (BF»LN»HT) with dish details in one tight row per order
+                String consolidatedMenu;
+                if (!mealCodes.isEmpty()) {
+                    consolidatedMenu = "[" + mealCodes + "] " + rawMenu;
+                } else {
+                    consolidatedMenu = rawMenu;
+                }
+
+                rows.add(new PricingOrderRow(
+                    o.optString("id", ""),
+                    company,
+                    consolidatedMenu,
+                    o.optInt("quantity", 0),
+                    mealsLabel,
+                    o.optString("status", "pending"),
+                    dateBadge,
+                    isPast,
+                    o.optString("location", "-")
+                ));
             }
         } catch (Exception ignored) {}
     }
@@ -161,16 +151,64 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         for (int i = 0; i < meals.length(); i++) {
             String m = meals.optString(i, "");
             String label;
-            switch (m) {
-                case "breakfast": label = "Sarapan"; break;
-                case "lunch": label = "Tengahari"; break;
-                case "hi_tea": label = "Hi-Tea"; break;
-                default: label = m; break;
+            switch (m.toLowerCase()) {
+                case "breakfast":
+                case "sarapan":
+                    label = "Sarapan";
+                    break;
+                case "lunch":
+                case "tengahari":
+                    label = "Tengahari";
+                    break;
+                case "hi_tea":
+                case "hi-tea":
+                case "tea":
+                    label = "Hi-Tea";
+                    break;
+                case "dinner":
+                case "malam":
+                    label = "Makan Malam";
+                    break;
+                default:
+                    label = m;
+                    break;
             }
             if (sb.length() > 0) sb.append(" + ");
             sb.append(label);
         }
         return sb.length() > 0 ? sb.toString() : "Tempahan";
+    }
+
+    private String buildMealCodes(JSONArray meals, String fallbackMealType) {
+        List<String> codes = new ArrayList<>();
+        if (meals != null && meals.length() > 0) {
+            for (int i = 0; i < meals.length(); i++) {
+                String m = meals.optString(i, "").toLowerCase();
+                if (m.contains("breakfast") || m.contains("sarapan")) {
+                    if (!codes.contains("BF")) codes.add("BF");
+                } else if (m.contains("lunch") || m.contains("tengahari")) {
+                    if (!codes.contains("LN")) codes.add("LN");
+                } else if (m.contains("hi_tea") || m.contains("hi-tea") || m.contains("tea")) {
+                    if (!codes.contains("HT")) codes.add("HT");
+                } else if (m.contains("dinner") || m.contains("malam")) {
+                    if (!codes.contains("DN")) codes.add("DN");
+                }
+            }
+        } else if (fallbackMealType != null && !fallbackMealType.isEmpty()) {
+            String m = fallbackMealType.toLowerCase();
+            if (m.contains("breakfast") || m.contains("sarapan")) codes.add("BF");
+            if (m.contains("lunch") || m.contains("tengahari")) codes.add("LN");
+            if (m.contains("hi_tea") || m.contains("hi-tea") || m.contains("tea")) codes.add("HT");
+            if (m.contains("dinner") || m.contains("malam")) codes.add("DN");
+        }
+
+        if (codes.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String c : codes) {
+            if (sb.length() > 0) sb.append("»");
+            sb.append(c);
+        }
+        return sb.toString();
     }
 
     @Override
@@ -180,46 +218,38 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
 
     @Override
     public int getCount() {
-        if (appWidgetId != android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) {
-            android.appwidget.AppWidgetManager appWidgetManager = android.appwidget.AppWidgetManager.getInstance(context);
-            android.os.Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
-            if (options != null) {
-                int minHeight = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
-                if (minHeight <= 100) {
-                    return Math.min(rows.size(), 1);
-                }
-            }
-        } else {
-            // Default/fallback to 1 if appWidgetId is not set
-            return Math.min(rows.size(), 1);
-        }
         return rows.size();
     }
 
     @Override
     public RemoteViews getViewAt(int position) {
+        if (position < 0 || position >= rows.size()) return null;
+
         RemoteViews view = new RemoteViews(context.getPackageName(), R.layout.widget_pricing_order_item);
         PricingOrderRow row = rows.get(position);
 
         view.setTextViewText(R.id.pricing_item_date_badge, row.dateBadge);
         if (row.isPast) {
-            view.setTextColor(R.id.pricing_item_date_badge, 0xFFEF4444); // Urgent red for past overdue unpriced
+            view.setTextColor(R.id.pricing_item_date_badge, 0xFFEF4444);
         } else {
-            view.setTextColor(R.id.pricing_item_date_badge, 0xFFF59E0B); // Amber gold for today/upcoming
+            view.setTextColor(R.id.pricing_item_date_badge, 0xFFF59E0B);
         }
 
         view.setTextViewText(R.id.pricing_item_company, row.companyName);
         view.setViewVisibility(R.id.pricing_item_company, android.view.View.VISIBLE);
 
-        if (row.menu != null && row.menu.startsWith("×")) {
-            view.setTextViewText(R.id.pricing_item_menu, row.menu);
-        } else {
-            view.setTextViewText(R.id.pricing_item_menu, "🍽️ " + row.menu);
-        }
+        view.setTextViewText(R.id.pricing_item_menu, "🍽️ " + row.menu);
         view.setViewVisibility(R.id.pricing_item_menu, android.view.View.VISIBLE);
 
         view.setTextViewText(R.id.pricing_item_location, "📍 " + row.location);
         view.setViewVisibility(R.id.pricing_item_location, android.view.View.VISIBLE);
+
+        // Hide divider line on the last order row for a clean bottom edge
+        if (position == rows.size() - 1) {
+            view.setViewVisibility(R.id.pricing_item_divider, android.view.View.GONE);
+        } else {
+            view.setViewVisibility(R.id.pricing_item_divider, android.view.View.VISIBLE);
+        }
 
         view.setTextViewText(R.id.pricing_item_pax, row.quantity + " PAX");
         view.setTextViewText(R.id.pricing_item_meals, row.mealsLabel);
@@ -227,14 +257,12 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         boolean isBilled = "billed".equals(row.status);
         if (isBilled) {
             view.setTextViewText(R.id.pricing_item_action_btn, "✓ Dibil");
-            view.setTextColor(R.id.pricing_item_action_btn, 0xFF38BDF8); // Status billed sky blue
+            view.setTextColor(R.id.pricing_item_action_btn, 0xFF38BDF8);
         } else {
             view.setTextViewText(R.id.pricing_item_action_btn, "SET 💵");
-            view.setTextColor(R.id.pricing_item_action_btn, 0xFFF59E0B); // Amber gold title text
+            view.setTextColor(R.id.pricing_item_action_btn, 0xFFF59E0B);
         }
 
-        // Fill-in intent: carries this specific order's ID to PricingInputActivity
-        // via the PendingIntentTemplate set on the ListView in PricingWidgetFetchService.
         Intent fillInIntent = new Intent();
         fillInIntent.putExtra("order_id", row.id);
         fillInIntent.putExtra("company_name", row.companyName);
@@ -242,6 +270,7 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         fillInIntent.putExtra("quantity", row.quantity);
         fillInIntent.putExtra("meals_label", row.mealsLabel);
         fillInIntent.putExtra("is_billed", isBilled);
+
         view.setOnClickFillInIntent(R.id.pricing_item_root, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_action_btn, fillInIntent);
         view.setOnClickFillInIntent(R.id.pricing_item_meals, fillInIntent);

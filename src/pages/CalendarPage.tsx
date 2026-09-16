@@ -557,20 +557,20 @@ export default function CalendarPage() {
           : currentUser 
           ? tl('Your catering dates & availability', 'Tarikh katering & ketersediaan') 
           : tl('Kitchen availability & bookings', 'Ketersediaan & tempahan')}
-        showBatik={false}
+        showBatik={true}
         backHref="/home"
         actions={todayAction}
       >
         <div className="w-full space-y-5 pb-20">
 
-          {/* 1. CALENDAR CONTROLS & RECENTERED HEADER */}
-          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs">
+          {/* 1. CALENDAR CONTROLS & HEADER */}
+          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors duration-200">
             <div className="flex items-center justify-between gap-4">
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={handlePrevMonth}
-                className="rounded-xl shrink-0"
+                className="rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
                 aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -586,7 +586,7 @@ export default function CalendarPage() {
                 variant="secondary"
                 size="icon"
                 onClick={handleNextMonth}
-                className="rounded-xl shrink-0"
+                className="rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
                 aria-label={tl('Next Month', 'Bulan Seterusnya')}
               >
                 <ChevronRight className="w-5 h-5" />
@@ -594,7 +594,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* 2. CALENDAR GRID (Consistent Light & Dark Mode) */}
+          {/* 2. CALENDAR GRID WITH BATIK PATTERN OVERLAYS */}
           {loading ? (
             <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs flex flex-col items-center justify-center space-y-4">
               <WawasanLoader size={64} />
@@ -605,16 +605,21 @@ export default function CalendarPage() {
           ) : (
             <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden transition-colors duration-200">
               
-              {/* Weekdays Header */}
-              <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-800 bg-stone-50/90 dark:bg-stone-900/50">
+              {/* Weekdays Header Row with Batik Overlay */}
+              <div className="relative overflow-hidden grid grid-cols-7 border-b border-amber-900/10 dark:border-stone-800 bg-deep-forest text-amber-100 dark:bg-stone-900 dark:text-amber-200 shadow-inner">
+                {/* Batik Background Layer for Weekday Header */}
+                <div 
+                  className="absolute inset-0 pattern-batik opacity-35 dark:opacity-25 pointer-events-none mix-blend-overlay"
+                  aria-hidden="true"
+                />
                 {weekdays.map((day, idx) => (
                   <div 
                     key={idx} 
                     className={cn(
-                      "py-2.5 sm:py-3 text-center text-xs sm:text-xs font-extrabold tracking-wider uppercase select-none",
+                      "relative z-10 py-2.5 sm:py-3 text-center text-xs sm:text-xs font-black tracking-widest uppercase select-none drop-shadow-xs",
                       day.weekend 
-                        ? "text-rose-500 dark:text-rose-400 font-extrabold" 
-                        : "text-stone-500 dark:text-stone-400"
+                        ? "text-rose-300 dark:text-rose-400 font-black" 
+                        : "text-amber-100 dark:text-amber-200/90"
                     )}
                   >
                     <span className="hidden sm:inline">{day.full}</span>
@@ -626,13 +631,13 @@ export default function CalendarPage() {
               {/* Days Matrix */}
               <div className="grid grid-cols-7 divide-x divide-y divide-stone-200/80 dark:divide-stone-800">
                 
-                {/* 1. Leading Prev Month Days (Diagonal Striped) */}
+                {/* 1. Leading Prev Month Days (Batik Overlay + Stripe Shading) */}
                 {prevMonthDays.map((pDay) => (
                   <div
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
                   >
-                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
+                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(pDay, 'd')}
                     </span>
                   </div>
@@ -751,13 +756,13 @@ export default function CalendarPage() {
                   );
                 })}
 
-                {/* 3. Trailing Next Month Days (Diagonal Striped) */}
+                {/* 3. Trailing Next Month Days (Batik Overlay + Stripe Shading) */}
                 {nextMonthDays.map((nDay) => (
                   <div
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
                   >
-                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
+                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(nDay, 'd')}
                     </span>
                   </div>
@@ -769,17 +774,17 @@ export default function CalendarPage() {
 
           {/* 3. REFINED SELECTED DAY AGENDA */}
           {selectedDay && (
-            <div className="bg-white dark:bg-card border border-stone-200/70 dark:border-stone-800/80 rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden transition-colors duration-200">
               
               {/* Day Header */}
-              <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/40 dark:bg-stone-900/30">
+              <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 shrink-0">
                     <CalendarIcon className="w-4 h-4 text-crisp-carrot" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-display font-bold text-base sm:text-lg text-stone-900 dark:text-white leading-tight">
+                      <h3 className="font-display font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100 leading-tight">
                         {format(selectedDay, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
                       </h3>
                       {isToday(selectedDay) && (
@@ -788,7 +793,7 @@ export default function CalendarPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-stone-400 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       {selectedDayTotalPax > 0 
                         ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}` 
                         : tl('No bookings scheduled', 'Tiada tempahan dijadualkan')}
@@ -796,256 +801,255 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* Meal Breakdown Pills */}
-                {selectedDaySessions && selectedDayTotalPax > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {selectedDaySessions.breakfast.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-warning)] text-stone-950 flex items-center gap-1.5 shadow-xs">
-                        <Coffee className="w-3.5 h-3.5" />
-                        <span>Breakfast: {selectedDaySessions.breakfast.pax}p</span>
-                      </span>
-                    )}
-                    {selectedDaySessions.lunch.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-success)] text-white flex items-center gap-1.5 shadow-xs">
-                        <Sun className="w-3.5 h-3.5" />
-                        <span>Lunch: {selectedDaySessions.lunch.pax}p</span>
-                      </span>
-                    )}
-                    {selectedDaySessions.hi_tea.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-white flex items-center gap-1.5 shadow-xs">
-                        <UtensilsCrossed className="w-3.5 h-3.5" />
-                        <span>Hi-Tea: {selectedDaySessions.hi_tea.pax}p</span>
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Day Body: Orders & Notes */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-5">
-                
-                {/* Left: Orders (7 cols) */}
-                <div className="lg:col-span-7 space-y-3">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-xs font-extrabold text-stone-600 dark:text-stone-300 uppercase tracking-wider">
-                      {tl('Bookings for this day', 'Tempahan hari ini')} ({getOrdersForDay(selectedDay).length})
-                    </span>
-                  </div>
-
-                  {getOrdersForDay(selectedDay).length === 0 ? (
-                    <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
-                      <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                        {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
-                      </p>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
-                        className="gap-1.5 text-xs font-bold rounded-xl shadow-xs"
-                      >
-                        <Plus className="w-4 h-4" />
-                        {tl('Book for this date', 'Tempah untuk tarikh ini')}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                      {getOrdersForDay(selectedDay).map((ord) => {
-                        const totalPax = ord.guests || ord.quantity || 0;
-                        const eventDeliveryTime = getCustomerSelectedEventTime(ord);
-
-                        return (
-                          <div 
-                            key={ord.id}
-                            className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
-                                #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
-                              </span>
-                              <span className={cn(
-                                "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
-                                ord.status === 'approved' && "bg-emerald-500 text-white",
-                                ord.status === 'pending' && "bg-amber-500 text-white",
-                                ord.status === 'billed' && "bg-blue-600 text-white",
-                                (ord.status as string) === 'completed' && "bg-stone-600 text-white"
-                              )}>
-                                {ord.status}
-                              </span>
-                            </div>
-
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100">
-                                  {isAdmin ? (ord.to || ord.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
-                                </h5>
-                                {ord.company && ord.company !== ord.to && (
-                                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{ord.company}</p>
-                                )}
-                              </div>
-
-                              <span className="text-xs font-black text-stone-900 dark:text-stone-100 tabular-nums shrink-0 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
-                                {totalPax} {tl('Pax', 'Orang')}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                                <span>{eventDeliveryTime}</span>
-                              </div>
-                              {ord.location && (
-                                <div className="flex items-center gap-1.5 truncate">
-                                  <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                                  <span className="truncate">{ord.location}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-end">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-                                  await triggerLightImpact();
-                                  setSelectedOrder(ord);
-                                }}
-                                className="text-xs font-bold text-crisp-carrot hover:underline gap-1 p-0 h-auto"
-                              >
-                                {tl('View Details', 'Lihat Butiran')}
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  {/* Meal Breakdown Pills */}
+                  {selectedDaySessions && selectedDayTotalPax > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedDaySessions.breakfast.pax > 0 && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-warning)] text-stone-950 flex items-center gap-1.5 shadow-xs">
+                          <Coffee className="w-3.5 h-3.5" />
+                          <span>Breakfast: {selectedDaySessions.breakfast.pax}p</span>
+                        </span>
+                      )}
+                      {selectedDaySessions.lunch.pax > 0 && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-success)] text-white flex items-center gap-1.5 shadow-xs">
+                          <Sun className="w-3.5 h-3.5" />
+                          <span>Lunch: {selectedDaySessions.lunch.pax}p</span>
+                        </span>
+                      )}
+                      {selectedDaySessions.hi_tea.pax > 0 && (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-white flex items-center gap-1.5 shadow-xs">
+                          <UtensilsCrossed className="w-3.5 h-3.5" />
+                          <span>Hi-Tea: {selectedDaySessions.hi_tea.pax}p</span>
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Right: Notes (5 cols) */}
-                <div className="lg:col-span-5 space-y-3">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
-                      {tl('Operational Notes', 'Nota Operasi')}
-                    </span>
-                  </div>
-
-                  {!currentUser ? (
-                    <div className="p-5 rounded-xl bg-stone-50/60 dark:bg-stone-900/30 border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5">
-                      <p className="text-xs text-stone-500 font-medium">
-                        {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
-                      </p>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={async () => {
-                          await triggerLightImpact();
-                          setAuthModalOpen(true);
-                        }}
-                        className="gap-1.5 text-xs font-semibold rounded-lg"
-                      >
-                        <LogIn className="w-3.5 h-3.5" />
-                        {tl('Sign In', 'Log Masuk')}
-                      </Button>
+                {/* Day Body: Orders & Notes */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-5">
+                  
+                  {/* Left: Orders (7 cols) */}
+                  <div className="lg:col-span-7 space-y-3">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                        {tl('Bookings for this day', 'Tempahan hari ini')} ({getOrdersForDay(selectedDay).length})
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Notes list */}
-                      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                        {getNotesForDay(selectedDay).length === 0 ? (
-                          <div className="p-4 text-center rounded-xl bg-stone-50/40 dark:bg-stone-900/20 border border-dashed border-stone-200 dark:border-stone-800">
-                            <p className="text-xs text-stone-400">
-                              {tl('No notes for this date.', 'Tiada nota untuk tarikh ini.')}
-                            </p>
-                          </div>
-                        ) : (
-                          getNotesForDay(selectedDay).map((n) => (
+
+                    {getOrdersForDay(selectedDay).length === 0 ? (
+                      <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
+                        <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
+                          {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
+                        </p>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
+                          className="gap-1.5 text-xs font-bold rounded-xl shadow-xs"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {tl('Book for this date', 'Tempah untuk tarikh ini')}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+                        {getOrdersForDay(selectedDay).map((ord) => {
+                          const totalPax = ord.guests || ord.quantity || 0;
+                          const eventDeliveryTime = getCustomerSelectedEventTime(ord);
+
+                          return (
                             <div 
-                              key={n.id}
-                              className="p-3 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/60 dark:border-stone-800 text-xs space-y-1"
+                              key={ord.id}
+                              className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-stone-400 font-semibold flex items-center gap-1">
-                                  {n.userId === 'admin' ? (
-                                    <span className="text-amber-600 font-bold flex items-center gap-1">
-                                      <Shield className="w-3 h-3" /> Admin
-                                    </span>
-                                  ) : (
-                                    <span className="flex items-center gap-1">
-                                      <UserIcon className="w-3 h-3" /> {n.userName}
-                                    </span>
-                                  )}
-                                  <span>•</span>
-                                  <span>{format(parseISO(n.updatedAt), 'hh:mm a')}</span>
+                                <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
+                                  #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
                                 </span>
+                                <span className={cn(
+                                  "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
+                                  ord.status === 'approved' && "bg-emerald-500 text-white",
+                                  ord.status === 'pending' && "bg-amber-500 text-white",
+                                  ord.status === 'billed' && "bg-blue-600 text-white",
+                                  (ord.status as string) === 'completed' && "bg-stone-600 text-white"
+                                )}>
+                                  {ord.status}
+                                </span>
+                              </div>
 
-                                {(isAdmin || n.userId === currentUser.uid) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteNote(n.id)}
-                                    className="text-stone-400 hover:text-rose-500 p-0.5 h-6 w-6 rounded transition-colors"
-                                    aria-label={tl('Delete note', 'Padam nota')}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100">
+                                    {isAdmin ? (ord.to || ord.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
+                                  </h5>
+                                  {ord.company && ord.company !== ord.to && (
+                                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{ord.company}</p>
+                                  )}
+                                </div>
+
+                                <span className="text-xs font-black text-stone-900 dark:text-stone-100 tabular-nums shrink-0 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
+                                  {totalPax} {tl('Pax', 'Orang')}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  <span>{eventDeliveryTime}</span>
+                                </div>
+                                {ord.location && (
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="truncate">{ord.location}</span>
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-stone-700 dark:text-stone-300 font-medium whitespace-pre-wrap">
-                                {n.note}
+
+                              <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await triggerLightImpact();
+                                    setSelectedOrder(ord);
+                                  }}
+                                  className="text-xs font-bold text-crisp-carrot hover:underline gap-1 p-0 h-auto"
+                                >
+                                  {tl('View Details', 'Lihat Butiran')}
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: Notes (5 cols) */}
+                  <div className="lg:col-span-5 space-y-3">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                        {tl('Operational Notes', 'Nota Operasi')}
+                      </span>
+                    </div>
+
+                    {!currentUser ? (
+                      <div className="p-5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5">
+                        <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                          {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
+                        </p>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={async () => {
+                            await triggerLightImpact();
+                            setAuthModalOpen(true);
+                          }}
+                          className="gap-1.5 text-xs font-semibold rounded-lg"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          {tl('Sign In', 'Log Masuk')}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Notes list */}
+                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                          {getNotesForDay(selectedDay).length === 0 ? (
+                            <div className="p-4 text-center rounded-xl bg-stone-50/60 dark:bg-stone-900/30 border border-dashed border-stone-200 dark:border-stone-800">
+                              <p className="text-xs text-stone-400">
+                                {tl('No notes for this date.', 'Tiada nota untuk tarikh ini.')}
                               </p>
                             </div>
-                          ))
-                        )}
-                      </div>
+                          ) : (
+                            getNotesForDay(selectedDay).map((n) => (
+                              <div 
+                                key={n.id}
+                                className="p-3 rounded-xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800 text-xs space-y-1"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-stone-500 dark:text-stone-400 font-semibold flex items-center gap-1">
+                                    {n.userId === 'admin' ? (
+                                      <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                                        <Shield className="w-3 h-3" /> Admin
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1">
+                                        <UserIcon className="w-3 h-3" /> {n.userName}
+                                      </span>
+                                    )}
+                                    <span>•</span>
+                                    <span>{format(parseISO(n.updatedAt), 'hh:mm a')}</span>
+                                  </span>
 
-                      {/* Note composer */}
-                      <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800/80">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {notePresets.slice(0, 3).map((preset, pIdx) => (
-                            <Chip
-                              key={pIdx}
-                              variant="preset"
-                              size="xs"
-                              onClick={() => handleInsertPresetNote(preset)}
+                                  {(isAdmin || n.userId === currentUser.uid) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteNote(n.id)}
+                                      className="text-stone-400 hover:text-rose-500 p-0.5 h-6 w-6 rounded transition-colors"
+                                      aria-label={tl('Delete note', 'Padam nota')}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                                <p className="text-stone-800 dark:text-stone-200 font-medium whitespace-pre-wrap">
+                                  {n.note}
+                                </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Note composer */}
+                        <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {notePresets.slice(0, 3).map((preset, pIdx) => (
+                              <Chip
+                                key={pIdx}
+                                variant="preset"
+                                size="xs"
+                                onClick={() => handleInsertPresetNote(preset)}
+                              >
+                                +{preset}
+                              </Chip>
+                            ))}
+                          </div>
+
+                          <textarea
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder={tl('Add prep alert, special request...', 'Tambah arahan penyediaan, permintaan khusus...')}
+                            maxLength={500}
+                            rows={2}
+                            className="w-full text-xs p-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-crisp-carrot transition-all resize-none"
+                          />
+
+                          <div className="flex items-center justify-end">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={handleSaveNote}
+                              disabled={isSavingNote || !noteText.trim()}
+                              className="text-xs font-semibold rounded-lg gap-1"
                             >
-                              +{preset}
-                            </Chip>
-                          ))}
-                        </div>
-
-                        <textarea
-                          value={noteText}
-                          onChange={(e) => setNoteText(e.target.value)}
-                          placeholder={tl('Add prep alert, special request...', 'Tambah arahan penyediaan, permintaan khusus...')}
-                          maxLength={500}
-                          rows={2}
-                          className="w-full text-xs p-2.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-crisp-carrot transition-all resize-none"
-                        />
-
-                        <div className="flex items-center justify-end">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleSaveNote}
-                            disabled={isSavingNote || !noteText.trim()}
-                            className="text-xs font-semibold rounded-lg gap-1"
-                          >
-                            {isSavingNote ? (
-                              <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                            ) : (
-                              <Plus className="w-3.5 h-3.5" />
-                            )}
-                            {tl('Save Note', 'Simpan')}
-                          </Button>
+                              {isSavingNote ? (
+                                <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
+                              )}
+                              {tl('Save Note', 'Simpan')}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-
               </div>
-            </div>
           )}
 
           {/* 4. MODAL: ORDER DETAILS */}
