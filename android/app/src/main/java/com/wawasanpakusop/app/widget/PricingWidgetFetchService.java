@@ -177,9 +177,9 @@ public class PricingWidgetFetchService {
                 summaryText = "Memuatkan...";
             }
             views.setTextViewText(R.id.pricing_widget_summary, summaryText);
-            views.setViewVisibility(R.id.pricing_widget_summary, View.VISIBLE);
-            views.setViewVisibility(R.id.pricing_widget_summary_container, View.VISIBLE);
-            views.setViewVisibility(R.id.pricing_widget_subtitle, View.VISIBLE);
+            views.setViewVisibility(R.id.pricing_widget_summary, View.GONE);
+            views.setViewVisibility(R.id.pricing_widget_summary_container, View.GONE);
+            views.setViewVisibility(R.id.pricing_widget_subtitle, View.GONE);
 
             manager.updateAppWidget(appWidgetId, views);
         }

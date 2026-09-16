@@ -4,100 +4,69 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="@drawable/widget_card_background">
+    android:gravity="center_vertical"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:background="@android:color/transparent">
 
-    <!-- Status accent stripe with full-height vertical stretch -->
+    <!-- Subtle Status Accent Line on the left -->
     <ImageView
         android:id="@+id/item_status_stripe"
-        android:layout_width="4dp"
-        android:layout_height="match_parent"
-        android:background="#D4A853" />
+        android:layout_width="3dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center_vertical"
+        android:background="#D4A853"
+        android:layout_marginEnd="6dp" />
 
-    <!-- Order Details Container: meal type | Quantity | lokasi | time -->
+    <!-- Two-line layout for Details and Menu -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="9dp"
-        android:paddingBottom="9dp">
+        android:gravity="center_vertical">
 
-        <!-- Line 1: Meal Type & Quantity -->
-        <LinearLayout
+        <!-- Line 1: Date DD/MM | Location 🚩 | Meal Abbreviation (BF/LN/HT/DN) -->
+        <TextView
+            android:id="@+id/item_meal_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:textColor="@color/widget_primary_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:text="15/09 | Putrajaya 🚩 | LN" />
 
-            <TextView
-                android:id="@+id/item_meal_type"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@color/widget_primary_text"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:singleLine="true"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/item_pax_badge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/widget_badge_text"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:background="@drawable/widget_badge_background"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="2.5dp"
-                android:paddingBottom="2.5dp"
-                android:layout_marginStart="6dp" />
-        </LinearLayout>
-
-        <!-- Line 2: Tarikh & Masa -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="3.5dp">
-
-            <TextView
-                android:id="@+id/item_date"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@color/widget_title_accent"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:singleLine="true"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/item_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/widget_title_accent"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:layout_marginStart="8dp"
-                android:singleLine="true" />
-        </LinearLayout>
-
-        <!-- Line 3: Lokasi -->
+        <!-- Line 2: Menu Makanan -->
         <TextView
             android:id="@+id/item_meal_location"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/widget_secondary_text"
             android:textSize="11sp"
-            android:paddingTop="3dp"
             android:singleLine="true"
-            android:ellipsize="end" />
+            android:ellipsize="end"
+            android:text="Nasi Beriani, Ayam Masak Merah" />
 
     </LinearLayout>
 
-</LinearLayout>
+    <!-- Hidden dummy elements to satisfy other Java bindings safely without crashes -->
+    <TextView
+        android:id="@+id/item_pax_badge"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/item_date"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/item_time"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
+</LinearLayout>

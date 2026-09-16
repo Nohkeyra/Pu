@@ -113,6 +113,77 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                     client = o.optString("name", "");
                 }
 
+                // Format date as DD/MM
+                String ddmm = "??/??";
+                if (rawDate != null && rawDate.length() >= 10) {
+                    String month = rawDate.substring(5, 7);
+                    String day = rawDate.substring(8, 10);
+                    ddmm = day + "/" + month;
+                } else if (parsed != null) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM", Locale.US);
+                        ddmm = sdf.format(parsed);
+                    } catch (Exception e) {}
+                }
+
+                // Abbreviate English Meal type to 2 chars (BF, LN, HT, DN), combining multiples with »
+                String abbrev = "";
+                try {
+                    List<String> rawMeals = new ArrayList<>();
+                    JSONArray mealsArr = o.optJSONArray("meals");
+                    if (mealsArr != null && mealsArr.length() > 0) {
+                        for (int i = 0; i < mealsArr.length(); i++) {
+                            rawMeals.add(mealsArr.optString(i));
+                        }
+                    } else {
+                        String mealTypeStr = o.optString("mealType", "");
+                        if (mealTypeStr.isEmpty()) {
+                            mealTypeStr = o.optString("meals", "");
+                        }
+                        if (!mealTypeStr.isEmpty()) {
+                            String[] parts = mealTypeStr.split("[,+/\\s]+");
+                            for (String p : parts) {
+                                if (!p.trim().isEmpty()) {
+                                    rawMeals.add(p.trim());
+                                }
+                            }
+                        }
+                    }
+
+                    List<String> codes = new ArrayList<>();
+                    for (String m : rawMeals) {
+                        String mLower = m.toLowerCase();
+                        String code = "";
+                        if (mLower.contains("breakfast") || mLower.contains("sarapan")) {
+                            code = "BF";
+                        } else if (mLower.contains("lunch") || mLower.contains("tengahari")) {
+                            code = "LN";
+                        } else if (mLower.contains("hi_tea") || mLower.contains("tea") || mLower.contains("hi-tea")) {
+                            code = "HT";
+                        } else if (mLower.contains("dinner") || mLower.contains("malam")) {
+                            code = "DN";
+                        } else {
+                            code = "KT";
+                        }
+                        if (!codes.contains(code)) {
+                            codes.add(code);
+                        }
+                    }
+
+                    if (!codes.isEmpty()) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < codes.size(); i++) {
+                            if (i > 0) sb.append("»");
+                            sb.append(codes.get(i));
+                        }
+                        abbrev = sb.toString();
+                    } else {
+                        abbrev = "KT";
+                    }
+                } catch (Exception e) {
+                    abbrev = "KT";
+                }
+
                 OrderRow item = new OrderRow(
                     o.optString("id", ""),
                     o.optInt("quantity", 0),
@@ -122,14 +193,15 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                     timeLabel,
                     dateLabel,
                     client,
-                    o.optString("status", "pending")
+                    o.optString("status", "pending"),
+                    abbrev,
+                    ddmm
                 );
 
                 grouped.computeIfAbsent(dayLabel, k -> new ArrayList<>()).add(item);
             }
 
             for (Map.Entry<String, List<OrderRow>> entry : grouped.entrySet()) {
-                rows.add(Row.header(entry.getKey()));
                 for (OrderRow item : entry.getValue()) {
                     rows.add(Row.order(item));
                 }
@@ -162,16 +234,13 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         RemoteViews itemView = new RemoteViews(context.getPackageName(), R.layout.widget_order_item);
         OrderRow item = row.order;
 
-        // Line 1: Meal Type & Quantity (Pax)
-        itemView.setTextViewText(R.id.item_meal_type, item.meals);
-        itemView.setTextViewText(R.id.item_pax_badge, item.quantity + " PAX");
+        // Line 1: Date DD/MM | Location | Meal Abbreviation (BF/LN/HT/DN)
+        String line1Text = item.ddmm + " | " + item.location + " 🚩 | " + item.abbrev;
+        itemView.setTextViewText(R.id.item_meal_type, line1Text);
 
-        // Line 2: Tarikh & Masa
-        itemView.setTextViewText(R.id.item_date, item.formattedDate);
-        itemView.setTextViewText(R.id.item_time, "⏰ " + item.time);
-
-        // Line 3: Lokasi
-        itemView.setTextViewText(R.id.item_meal_location, "📍 " + item.location);
+        // Line 2: Menu details
+        String menuText = (item.menu == null || item.menu.trim().isEmpty()) ? "🍽️ Menu belum ditentukan" : item.menu;
+        itemView.setTextViewText(R.id.item_meal_location, menuText);
         
         // Status stripe color with refined palette
         int stripeColor;
@@ -363,8 +432,10 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         final String formattedDate;
         final String clientName;
         final String status;
+        final String abbrev;
+        final String ddmm;
 
-        OrderRow(String id, int quantity, String meals, String location, String menu, String time, String formattedDate, String clientName, String status) {
+        OrderRow(String id, int quantity, String meals, String location, String menu, String time, String formattedDate, String clientName, String status, String abbrev, String ddmm) {
             this.id = id;
             this.quantity = quantity;
             this.meals = meals;
@@ -374,6 +445,8 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
             this.formattedDate = formattedDate;
             this.clientName = clientName;
             this.status = status;
+            this.abbrev = abbrev;
+            this.ddmm = ddmm;
         }
     }
 }
