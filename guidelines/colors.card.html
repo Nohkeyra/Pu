@@ -1,0 +1,98 @@
+<!-- @dsCard group="Guidelines" viewport="800x260" subtitle="Primary & Semantic Color Tokens (WCAG AA Compliant)" name="Color Foundations" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      box-sizing: border-box;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 16px;
+    }
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-md, 6px);
+      overflow: hidden;
+      border: 1px solid var(--color-border, #E8E2D6);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .preview {
+      height: 64px;
+      width: 100%;
+    }
+    .info {
+      padding: 10px;
+      background: var(--color-surface, #FAF7F1);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text, #1A1816);
+    }
+    .code {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--color-text-muted, #70685C);
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="swatch">
+      <div class="preview" style="background: #C2932D;"></div>
+      <div class="info">
+        <span class="title">Gold Accent</span>
+        <span class="code">--rw-gold</span>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="preview" style="background: #0C453C;"></div>
+      <div class="info">
+        <span class="title">Deep Forest</span>
+        <span class="code">--color-deep-forest</span>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="preview" style="background: #FAF7F1;"></div>
+      <div class="info">
+        <span class="title">Warm Cream</span>
+        <span class="code">--rw-cream</span>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="preview" style="background: #1A1816;"></div>
+      <div class="info">
+        <span class="title">Charcoal</span>
+        <span class="code">--rw-charcoal</span>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="preview" style="background: #B33A3A;"></div>
+      <div class="info">
+        <span class="title">Danger</span>
+        <span class="code">--color-danger</span>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="preview" style="background: #2E7D32;"></div>
+      <div class="info">
+        <span class="title">Success</span>
+        <span class="code">--color-success</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

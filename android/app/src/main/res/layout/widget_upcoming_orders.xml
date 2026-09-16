@@ -22,7 +22,8 @@
         <ListView
             android:id="@+id/widget_orders_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:divider="@android:color/transparent"
             android:dividerHeight="1dp"
             android:scrollbars="vertical" />

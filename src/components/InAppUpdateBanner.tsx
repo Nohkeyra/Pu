@@ -39,10 +39,10 @@ export default function InAppUpdateBanner({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-sunshine-cta)]">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--color-sunshine-cta)]">
                   {isBM ? 'Kemaskini Tersedia' : 'Update Ready'}
                 </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
+                <span className="text-xs font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
                   v{config.latestVersion}
                 </span>
               </div>
@@ -69,17 +69,19 @@ export default function InAppUpdateBanner({
               <ArrowRight className="w-3 h-3" />
             </Button>
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={async () => {
                 await triggerLightImpact();
                 onDismiss();
               }}
-              className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+              className="h-8 w-8 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
               aria-label="Close notification"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </motion.div>

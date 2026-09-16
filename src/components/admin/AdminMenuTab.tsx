@@ -18,6 +18,7 @@ import {
   Wrench
 } from 'lucide-react';
 import type { ToastMessage } from '../ui/Toast';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { invalidateFetchCache } from '@/lib/api';
@@ -396,14 +397,14 @@ export default function AdminMenuTab({
               {tText('Menu Manager', 'Pengurus Menu')}
             </h2>
           </div>
-          <p className="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 font-normal mt-1">
+          <p className="text-xs sm:text-xs text-stone-500 dark:text-stone-400 font-normal mt-1">
             {tText('Manage menu items across the 4 meal categories. Toggle customer visibility and prices.', 'Urus sajian menu mengikut 4 kategori hidangan. Tetapkan status paparan dan harga.')}
           </p>
         </div>
 
         {/* Stats Badges + Add Button */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
             <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
               <Eye className="w-3 h-3" />
               <span>{visibleCount} {tText('Shown', 'Dipapar')}</span>
@@ -415,27 +416,30 @@ export default function AdminMenuTab({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleRepairImages}
               disabled={isRepairingImages}
               title={tText('Audit and repair missing menu image references', 'Periksa dan baiki imej menu')}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-lg text-xs font-semibold transition-all border border-stone-200/60 dark:border-stone-700 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 h-auto bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-lg text-xs font-semibold border border-stone-200/60 dark:border-stone-700 disabled:opacity-50 flex items-center gap-1.5"
             >
               {isRepairingImages ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
               ) : (
                 <Wrench className="w-3.5 h-3.5 text-amber-500" />
               )}
-              <span className="hidden md:inline text-[11px]">{tText('Audit Images', 'Baiki Imej')}</span>
-            </button>
+              <span className="hidden md:inline text-xs">{tText('Audit Images', 'Baiki Imej')}</span>
+            </Button>
 
-            <button
+            <Button
+              size="sm"
               onClick={handleOpenAddModal}
-              className="flex items-center gap-1.5 bg-sunshine hover:bg-crisp-carrot text-deep-forest px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 h-auto bg-sunshine hover:bg-crisp-carrot text-deep-forest px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold shrink-0 shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{tText('Add Item', 'Tambah Menu')}</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -449,18 +453,22 @@ export default function AdminMenuTab({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
             <input
               type="text"
+              aria-label={tText('Search menu item name', 'Cari nama hidangan')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={tText('Search menu item name...', 'Cari nama hidangan...')}
               className="w-full pl-8 pr-8 h-8 sm:h-9 bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-lg text-xs text-deep-forest dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
             {searchTerm && (
-              <button 
+              <Button 
+                variant="ghost"
+                size="icon"
                 onClick={() => setSearchTerm('')} 
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 cursor-pointer"
+                aria-label={tText('Clear search', 'Padam carian')}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-stone-400 hover:text-stone-600"
               >
                 <X className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             )}
           </div>
 
@@ -468,7 +476,7 @@ export default function AdminMenuTab({
           <div className="flex bg-stone-100 dark:bg-stone-800/90 p-0.5 rounded-lg border border-stone-200/70 dark:border-stone-800 shrink-0 self-start sm:self-auto">
             <button
               onClick={() => setVisibilityFilter('all')}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                 visibilityFilter === 'all'
                   ? 'bg-white dark:bg-card shadow-xs text-deep-forest dark:text-stone-100'
                   : 'text-stone-500 dark:text-stone-400 hover:text-deep-forest dark:hover:text-stone-200'
@@ -478,7 +486,7 @@ export default function AdminMenuTab({
             </button>
             <button
               onClick={() => setVisibilityFilter('visible')}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                 visibilityFilter === 'visible'
                   ? 'bg-white dark:bg-card shadow-xs text-emerald-600 dark:text-emerald-400'
                   : 'text-stone-500 dark:text-stone-400 hover:text-deep-forest dark:hover:text-stone-200'
@@ -489,7 +497,7 @@ export default function AdminMenuTab({
             </button>
             <button
               onClick={() => setVisibilityFilter('hidden')}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                 visibilityFilter === 'hidden'
                   ? 'bg-white dark:bg-card shadow-xs text-stone-700 dark:text-stone-300'
                   : 'text-stone-500 dark:text-stone-400 hover:text-deep-forest dark:hover:text-stone-200'
@@ -512,7 +520,7 @@ export default function AdminMenuTab({
             }`}
           >
             <span>{tText('All Categories', 'Semua Kategori')}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+            <span className={`text-xs px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'all' ? 'bg-white/20 text-white dark:text-stone-950 dark:bg-black/20' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
             }`}>
               {totalCount}
@@ -528,10 +536,10 @@ export default function AdminMenuTab({
                 : 'bg-white dark:bg-card text-stone-600 dark:text-stone-300 border-stone-200/70 dark:border-stone-800 hover:border-amber-500/40'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 flex items-center justify-center text-[10px] font-black">1</span>
+            <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 flex items-center justify-center text-xs font-black">1</span>
             <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>{tText('Breakfast', 'Sarapan')}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+            <span className={`text-xs px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'breakfast' ? 'bg-stone-950/20 text-stone-950' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
             }`}>
               {categoryCounts.breakfast}
@@ -547,10 +555,10 @@ export default function AdminMenuTab({
                 : 'bg-white dark:bg-card text-stone-600 dark:text-stone-300 border-stone-200/70 dark:border-stone-800 hover:border-orange-500/40'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-orange-500/20 text-orange-800 dark:text-orange-300 flex items-center justify-center text-[10px] font-black">2</span>
+            <span className="w-4 h-4 rounded-full bg-orange-500/20 text-orange-800 dark:text-orange-300 flex items-center justify-center text-xs font-black">2</span>
             <Sun className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
             <span>{tText('Lunch', 'Tengahari')}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+            <span className={`text-xs px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'lunch' ? 'bg-white/20 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
             }`}>
               {categoryCounts.lunch}
@@ -566,10 +574,10 @@ export default function AdminMenuTab({
                 : 'bg-white dark:bg-card text-stone-600 dark:text-stone-300 border-stone-200/70 dark:border-stone-800 hover:border-pink-500/40'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-pink-500/20 text-pink-800 dark:text-pink-300 flex items-center justify-center text-[10px] font-black">3</span>
+            <span className="w-4 h-4 rounded-full bg-pink-500/20 text-pink-800 dark:text-pink-300 flex items-center justify-center text-xs font-black">3</span>
             <Cake className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
             <span>{tText('Hi-Tea', 'Hi-Tea')}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+            <span className={`text-xs px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'hi tea' ? 'bg-white/20 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
             }`}>
               {categoryCounts.hiTea}
@@ -585,10 +593,10 @@ export default function AdminMenuTab({
                 : 'bg-white dark:bg-card text-stone-600 dark:text-stone-300 border-stone-200/70 dark:border-stone-800 hover:border-blue-500/40'
             }`}
           >
-            <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-800 dark:text-blue-300 flex items-center justify-center text-[10px] font-black">4</span>
+            <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-800 dark:text-blue-300 flex items-center justify-center text-xs font-black">4</span>
             <CupSoda className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>{tText('Drinks', 'Minuman')}</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+            <span className={`text-xs px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'drinks' ? 'bg-white/20 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
             }`}>
               {categoryCounts.drinks}
@@ -616,7 +624,7 @@ export default function AdminMenuTab({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filteredMenuItems.map((item) => {
             const isVisible = item.available !== false;
             const badge = getCategoryBadge(item.category);
@@ -637,7 +645,7 @@ export default function AdminMenuTab({
                 <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
                   {/* Category Accent Indicator */}
                   <div 
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-[11px] font-bold ${badge.colorClass}`}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-xs font-bold ${badge.colorClass}`}
                     title={`${badge.num} - ${badge.name}`}
                   >
                     {badge.icon}
@@ -650,7 +658,7 @@ export default function AdminMenuTab({
                         {displayName}
                       </h4>
                       {showAltName && (
-                        <span className="text-[10px] text-stone-400 dark:text-stone-500 hidden md:inline truncate max-w-[120px]">
+                        <span className="text-xs text-stone-400 dark:text-stone-500 hidden md:inline truncate max-w-[120px]">
                           ({altName})
                         </span>
                       )}
@@ -660,7 +668,7 @@ export default function AdminMenuTab({
                       <span className="text-xs font-bold text-amber-700 dark:text-amber-400 font-mono">
                         RM {item.price.toFixed(2)}
                       </span>
-                      <span className="text-[10px] text-stone-400 dark:text-stone-500 font-medium">
+                      <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">
                         • {badge.shortName}
                       </span>
                     </div>
@@ -673,7 +681,7 @@ export default function AdminMenuTab({
                   <button
                     type="button"
                     onClick={() => handleToggleAvailable(item)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                       isVisible
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                         : 'bg-stone-200/60 text-stone-600 dark:bg-stone-800 dark:text-stone-400 border-stone-300/60 dark:border-stone-700 hover:bg-stone-200'
@@ -683,12 +691,12 @@ export default function AdminMenuTab({
                     {isVisible ? (
                       <>
                         <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-[10px]">{tText('Shown', 'Papar')}</span>
+                        <span className="text-xs">{tText('Shown', 'Papar')}</span>
                       </>
                     ) : (
                       <>
                         <EyeOff className="w-3 h-3 text-stone-500 dark:text-stone-400" />
-                        <span className="text-[10px]">{tText('Hidden', 'Sorot')}</span>
+                        <span className="text-xs">{tText('Hidden', 'Sorot')}</span>
                       </>
                     )}
                   </button>
@@ -741,7 +749,7 @@ export default function AdminMenuTab({
                   <label className="text-xs font-bold text-deep-forest dark:text-white block">
                     {tText('Show in Order Form', 'Papar dalam Borang Tempahan')}
                   </label>
-                  <p className="text-[10px] text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+                  <p className="text-xs text-stone-500 dark:text-stone-400 font-normal mt-0.5">
                     {tText('When enabled, customers can select this item in orders.', 'Pelanggan boleh memilih hidangan ini apabila diaktifkan.')}
                   </p>
                 </div>
@@ -754,7 +762,7 @@ export default function AdminMenuTab({
 
               {/* 4 Categories Selector */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
                   {tText('Meal Category (1-4)', 'Kategori Hidangan (1-4)')}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -784,7 +792,7 @@ export default function AdminMenuTab({
               {/* Name (English & BM) in 2 columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
                     {tText('Name (English)', 'Nama (Inggeris)')}
                   </label>
                   <input
@@ -798,7 +806,7 @@ export default function AdminMenuTab({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
                     {tText('Name (Bahasa Melayu)', 'Nama (Melayu)')}
                   </label>
                   <input
@@ -814,7 +822,7 @@ export default function AdminMenuTab({
 
               {/* Price */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1">
                   {tText('Price (RM)', 'Harga Seunit (RM)')}
                 </label>
                 <div className="relative">

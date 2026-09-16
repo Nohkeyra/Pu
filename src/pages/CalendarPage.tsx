@@ -24,7 +24,8 @@ import {
   ArrowRight,
   Coffee,
   Sun,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { 
   format, 
@@ -43,6 +44,8 @@ import { ms, enUS } from 'date-fns/locale';
 import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
 import PageShell from '@/components/PageShell';
 import AuthModal from '@/components/AuthModal';
 import type { Order } from '@/types';
@@ -535,12 +538,14 @@ export default function CalendarPage() {
     : 0;
 
   const todayAction = (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       onClick={handleToday}
-      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+      className="text-xs font-semibold px-3 py-1.5 h-auto rounded-lg"
     >
       {tl('Today', 'Hari Ini')}
-    </button>
+    </Button>
   );
 
   return (
@@ -561,13 +566,15 @@ export default function CalendarPage() {
           {/* 1. CALENDAR CONTROLS & RECENTERED HEADER */}
           <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between gap-4">
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 onClick={handlePrevMonth}
-                className="p-2 sm:p-2.5 rounded-xl bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/70 dark:border-stone-800 transition-all cursor-pointer shrink-0"
+                className="rounded-xl shrink-0"
                 aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
               >
                 <ChevronLeft className="w-5 h-5" />
-              </button>
+              </Button>
 
               <div className="text-center flex-1">
                 <h2 className="font-display font-bold text-lg sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
@@ -575,13 +582,15 @@ export default function CalendarPage() {
                 </h2>
               </div>
 
-              <button
+              <Button
+                variant="secondary"
+                size="icon"
                 onClick={handleNextMonth}
-                className="p-2 sm:p-2.5 rounded-xl bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200/70 dark:border-stone-800 transition-all cursor-pointer shrink-0"
+                className="rounded-xl shrink-0"
                 aria-label={tl('Next Month', 'Bulan Seterusnya')}
               >
                 <ChevronRight className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -602,7 +611,7 @@ export default function CalendarPage() {
                   <div 
                     key={idx} 
                     className={cn(
-                      "py-2.5 sm:py-3 text-center text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase select-none",
+                      "py-2.5 sm:py-3 text-center text-xs sm:text-xs font-extrabold tracking-wider uppercase select-none",
                       day.weekend 
                         ? "text-rose-500 dark:text-rose-400 font-extrabold" 
                         : "text-stone-500 dark:text-stone-400"
@@ -623,7 +632,7 @@ export default function CalendarPage() {
                     key={`prev-${pDay.toISOString()}`}
                     className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
                   >
-                    <span className="text-[11px] sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
+                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
                       {format(pDay, 'd')}
                     </span>
                   </div>
@@ -643,6 +652,11 @@ export default function CalendarPage() {
                   const holiday = getMalaysiaHolidayInfo(dateIso);
 
                   return (
+                    /**
+                     * DESIGN-SYSTEM-EXCEPTION: Calendar Matrix Day Cell
+                     * Domain-specific calendar grid cell (aspect-square matrix item with indicators).
+                     * Exempt from generic <Button> primitive migration.
+                     */
                     <button
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
@@ -658,7 +672,7 @@ export default function CalendarPage() {
                       {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
-                          <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-crisp-carrot text-white text-[11px] sm:text-xs font-black flex items-center justify-center shadow-xs">
+                          <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-crisp-carrot text-white text-xs sm:text-xs font-black flex items-center justify-center shadow-xs">
                             {format(day, 'd')}
                           </span>
                         ) : (
@@ -679,8 +693,8 @@ export default function CalendarPage() {
                         {/* Holiday / Note Indicators */}
                         <div className="flex items-center gap-0.5 sm:gap-1">
                           {holiday && (
-                            <span className="text-[9px] sm:text-[10px] text-amber-500 dark:text-amber-400 font-bold" title={holiday.nameBm}>
-                              ✨
+                            <span title={holiday.nameBm}>
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
                             </span>
                           )}
                           {dayNotes.length > 0 && (
@@ -691,7 +705,7 @@ export default function CalendarPage() {
 
                       {/* Holiday Micro-label */}
                       {holiday && (
-                        <div className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 truncate max-w-full my-0.5" title={holiday.nameBm}>
+                        <div className="text-xs font-extrabold text-amber-600 dark:text-amber-400 truncate max-w-full my-0.5" title={holiday.nameBm}>
                           {holiday.nameBm}
                         </div>
                       )}
@@ -703,34 +717,34 @@ export default function CalendarPage() {
                             {/* Meal Badges */}
                             <div className="flex items-center gap-1 flex-wrap">
                               {sessions.breakfast.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500 text-stone-950 dark:text-white shadow-2xs leading-none">
+                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-warning)] text-stone-950 dark:text-white shadow-2xs leading-none">
                                   B
                                 </span>
                               )}
                               {sessions.lunch.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-stone-950 dark:text-white shadow-2xs leading-none">
+                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-success)] text-white shadow-2xs leading-none">
                                   L
                                 </span>
                               )}
                               {sessions.hi_tea.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-pink-500 dark:bg-purple-600 text-white shadow-2xs leading-none">
+                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-accent)] text-white shadow-2xs leading-none">
                                   T
                                 </span>
                               )}
                             </div>
 
                             {/* Pax summary line */}
-                            <div className="text-[10px] font-bold tracking-tight text-stone-500 dark:text-stone-400 truncate flex items-center gap-1">
-                              <span className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums text-[9px] leading-none">
+                            <div className="text-xs font-bold tracking-tight text-stone-500 dark:text-stone-400 truncate flex items-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums text-xs leading-none">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
-                              <span className="hidden sm:inline opacity-75 font-medium text-[10px]">
+                              <span className="hidden sm:inline opacity-75 font-medium text-xs">
                                 ({dayOrders.length})
                               </span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-transparent select-none leading-none">·</span>
+                          <span className="text-xs text-transparent select-none leading-none">·</span>
                         )}
                       </div>
                     </button>
@@ -743,7 +757,7 @@ export default function CalendarPage() {
                     key={`next-${nDay.toISOString()}`}
                     className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside flex flex-col justify-start bg-stone-50/50 dark:bg-stone-900/30"
                   >
-                    <span className="text-[11px] sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
+                    <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-600 tabular-nums">
                       {format(nDay, 'd')}
                     </span>
                   </div>
@@ -769,7 +783,7 @@ export default function CalendarPage() {
                         {format(selectedDay, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
                       </h3>
                       {isToday(selectedDay) && (
-                        <span className="px-2 py-0.5 rounded-full bg-crisp-carrot/10 text-crisp-carrot text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-crisp-carrot/10 text-crisp-carrot text-xs font-bold">
                           {tl('Today', 'Hari Ini')}
                         </span>
                       )}
@@ -786,19 +800,19 @@ export default function CalendarPage() {
                 {selectedDaySessions && selectedDayTotalPax > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     {selectedDaySessions.breakfast.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500 text-white flex items-center gap-1.5 shadow-xs">
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-warning)] text-stone-950 flex items-center gap-1.5 shadow-xs">
                         <Coffee className="w-3.5 h-3.5" />
                         <span>Breakfast: {selectedDaySessions.breakfast.pax}p</span>
                       </span>
                     )}
                     {selectedDaySessions.lunch.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600 text-white flex items-center gap-1.5 shadow-xs">
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-success)] text-white flex items-center gap-1.5 shadow-xs">
                         <Sun className="w-3.5 h-3.5" />
                         <span>Lunch: {selectedDaySessions.lunch.pax}p</span>
                       </span>
                     )}
                     {selectedDaySessions.hi_tea.pax > 0 && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-purple-600 text-white flex items-center gap-1.5 shadow-xs">
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-white flex items-center gap-1.5 shadow-xs">
                         <UtensilsCrossed className="w-3.5 h-3.5" />
                         <span>Hi-Tea: {selectedDaySessions.hi_tea.pax}p</span>
                       </span>
@@ -823,13 +837,15 @@ export default function CalendarPage() {
                       <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
                         {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
                       </p>
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
+                        className="gap-1.5 text-xs font-bold rounded-xl shadow-xs"
                       >
                         <Plus className="w-4 h-4" />
                         {tl('Book for this date', 'Tempah untuk tarikh ini')}
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
@@ -843,11 +859,11 @@ export default function CalendarPage() {
                             className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+                              <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
                                 #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
                               </span>
                               <span className={cn(
-                                "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full capitalize",
+                                "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
                                 ord.status === 'approved' && "bg-emerald-500 text-white",
                                 ord.status === 'pending' && "bg-amber-500 text-white",
                                 ord.status === 'billed' && "bg-blue-600 text-white",
@@ -886,16 +902,18 @@ export default function CalendarPage() {
                             </div>
 
                             <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-end">
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={async () => {
                                   await triggerLightImpact();
                                   setSelectedOrder(ord);
                                 }}
-                                className="text-xs font-bold text-crisp-carrot hover:underline flex items-center gap-1 cursor-pointer"
+                                className="text-xs font-bold text-crisp-carrot hover:underline gap-1 p-0 h-auto"
                               >
                                 {tl('View Details', 'Lihat Butiran')}
                                 <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         );
@@ -917,16 +935,18 @@ export default function CalendarPage() {
                       <p className="text-xs text-stone-500 font-medium">
                         {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
                       </p>
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={async () => {
                           await triggerLightImpact();
                           setAuthModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:opacity-90 transition-all cursor-pointer"
+                        className="gap-1.5 text-xs font-semibold rounded-lg"
                       >
                         <LogIn className="w-3.5 h-3.5" />
                         {tl('Sign In', 'Log Masuk')}
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -945,7 +965,7 @@ export default function CalendarPage() {
                               className="p-3 rounded-xl bg-stone-50 dark:bg-stone-900/50 border border-stone-200/60 dark:border-stone-800 text-xs space-y-1"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-stone-400 font-semibold flex items-center gap-1">
+                                <span className="text-xs text-stone-400 font-semibold flex items-center gap-1">
                                   {n.userId === 'admin' ? (
                                     <span className="text-amber-600 font-bold flex items-center gap-1">
                                       <Shield className="w-3 h-3" /> Admin
@@ -960,12 +980,15 @@ export default function CalendarPage() {
                                 </span>
 
                                 {(isAdmin || n.userId === currentUser.uid) && (
-                                  <button
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => handleDeleteNote(n.id)}
-                                    className="text-stone-400 hover:text-rose-500 p-0.5 rounded transition-colors"
+                                    className="text-stone-400 hover:text-rose-500 p-0.5 h-6 w-6 rounded transition-colors"
+                                    aria-label={tl('Delete note', 'Padam nota')}
                                   >
                                     <Trash2 className="w-3 h-3" />
-                                  </button>
+                                  </Button>
                                 )}
                               </div>
                               <p className="text-stone-700 dark:text-stone-300 font-medium whitespace-pre-wrap">
@@ -980,14 +1003,14 @@ export default function CalendarPage() {
                       <div className="space-y-2 pt-2 border-t border-stone-100 dark:border-stone-800/80">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {notePresets.slice(0, 3).map((preset, pIdx) => (
-                            <button
+                            <Chip
                               key={pIdx}
-                              type="button"
+                              variant="preset"
+                              size="xs"
                               onClick={() => handleInsertPresetNote(preset)}
-                              className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors cursor-pointer"
                             >
                               +{preset}
-                            </button>
+                            </Chip>
                           ))}
                         </div>
 
@@ -1001,10 +1024,12 @@ export default function CalendarPage() {
                         />
 
                         <div className="flex items-center justify-end">
-                          <button
+                          <Button
+                            variant="primary"
+                            size="sm"
                             onClick={handleSaveNote}
                             disabled={isSavingNote || !noteText.trim()}
-                            className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-1 cursor-pointer"
+                            className="text-xs font-semibold rounded-lg gap-1"
                           >
                             {isSavingNote ? (
                               <span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -1012,7 +1037,7 @@ export default function CalendarPage() {
                               <Plus className="w-3.5 h-3.5" />
                             )}
                             {tl('Save Note', 'Simpan')}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1038,15 +1063,18 @@ export default function CalendarPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4 text-white">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase bg-crisp-carrot px-2 py-0.5 rounded-md">
+                      <span className="text-xs font-bold uppercase bg-crisp-carrot px-2 py-0.5 rounded-md">
                         {tl('Catering Event', 'Acara Katering')}
                       </span>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setSelectedOrder(null)}
-                        className="p-1 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors cursor-pointer"
+                        className="p-1 h-7 w-7 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                        aria-label={tl('Close', 'Tutup')}
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                     <h3 className="font-display font-bold text-base tracking-tight mt-1 text-white">
                       {selectedOrder.guests || selectedOrder.quantity || 0} Pax • {selectedOrder.meals?.join(' & ') || 'Event'}
@@ -1061,12 +1089,12 @@ export default function CalendarPage() {
                       <h4 className="text-sm font-bold text-stone-900 dark:text-white">
                         {isAdmin ? selectedOrder.to || selectedOrder.name : tl('Catering Session', 'Sesi Katering')}
                       </h4>
-                      <p className="text-[11px] text-crisp-carrot font-semibold mt-0.5">
+                      <p className="text-xs text-crisp-carrot font-semibold mt-0.5">
                         #{selectedOrder.invoiceNo || selectedOrder.id?.slice(0, 8).toUpperCase()}
                       </p>
                     </div>
                     <span className={cn(
-                      "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize",
+                      "text-xs font-semibold px-2 py-0.5 rounded-full capitalize",
                       selectedOrder.status === 'approved' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
                       selectedOrder.status === 'pending' && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
                       selectedOrder.status === 'billed' && "bg-blue-500/10 text-blue-700 dark:text-blue-300"
@@ -1083,7 +1111,7 @@ export default function CalendarPage() {
                         <span className="font-semibold text-stone-900 dark:text-white">
                           {getCustomerSelectedEventTime(selectedOrder)}
                         </span>
-                        <span className="text-stone-400 block text-[11px]">
+                        <span className="text-stone-400 block text-xs">
                           {getCustomerSelectedEventDay(selectedOrder)}
                         </span>
                       </div>
@@ -1096,7 +1124,7 @@ export default function CalendarPage() {
                           {selectedOrder.location || tl('Delivery Location', 'Lokasi Penghantaran')}
                         </span>
                         {selectedOrder.to && (
-                          <span className="text-stone-400 block text-[11px]">{selectedOrder.to}</span>
+                          <span className="text-stone-400 block text-xs">{selectedOrder.to}</span>
                         )}
                       </div>
                     </div>
@@ -1109,14 +1137,14 @@ export default function CalendarPage() {
                             {tl('Menu & Dishes', 'Menu & Hidangan')}
                           </span>
                           {selectedOrder.menu && (
-                            <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-[11px] font-semibold text-stone-800 dark:text-stone-200">
+                            <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-xs font-semibold text-stone-800 dark:text-stone-200">
                               {selectedOrder.menu}
                             </p>
                           )}
                           {selectedOrder.dishes && selectedOrder.dishes.length > 0 && (
                             <div className="space-y-1 mt-1 pl-1">
                               {selectedOrder.dishes.map((dish, i) => (
-                                <div key={i} className="flex items-center gap-1.5 text-[11px] text-stone-600 dark:text-stone-400">
+                                <div key={i} className="flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400">
                                   <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                                   <span>{dish}</span>
                                 </div>
@@ -1134,7 +1162,7 @@ export default function CalendarPage() {
                           <span className="font-semibold text-stone-900 dark:text-white block">
                             {tl('Notes', 'Nota')}
                           </span>
-                          <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-[11px] text-stone-600 dark:text-stone-300 italic mt-0.5">
+                          <p className="bg-stone-50 dark:bg-stone-800 p-2 rounded-lg text-xs text-stone-600 dark:text-stone-300 italic mt-0.5">
                             "{selectedOrder.notes}"
                           </p>
                         </div>
@@ -1145,13 +1173,17 @@ export default function CalendarPage() {
 
                 {/* Footer */}
                 <div className="p-3.5 border-t border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/40 flex items-center justify-end gap-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setSelectedOrder(null)}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+                    className="text-xs font-semibold rounded-lg"
                   >
                     {tl('Close', 'Tutup')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => {
                       setSelectedOrder(null);
                       if (isAdmin) {
@@ -1160,10 +1192,10 @@ export default function CalendarPage() {
                         navigate('/profile');
                       }
                     }}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-crisp-carrot text-white hover:bg-crisp-carrot/90 transition-all shadow-xs cursor-pointer"
+                    className="text-xs font-semibold rounded-lg shadow-xs"
                   >
                     {isAdmin ? tl('Open in Admin', 'Buka di Admin') : tl('View in Profile', 'Lihat di Profil')}
-                  </button>
+                  </Button>
                 </div>
 
               </div>

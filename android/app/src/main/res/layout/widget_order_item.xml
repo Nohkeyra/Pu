@@ -5,20 +5,20 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="4dp"
-    android:paddingEnd="4dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="14dp"
     android:background="@android:color/transparent">
 
     <!-- Subtle Status Accent Line on the left -->
     <ImageView
         android:id="@+id/item_status_stripe"
-        android:layout_width="3dp"
-        android:layout_height="24dp"
+        android:layout_width="3.5dp"
+        android:layout_height="36dp"
         android:layout_gravity="center_vertical"
         android:background="#D4A853"
-        android:layout_marginEnd="6dp" />
+        android:layout_marginEnd="8dp" />
 
     <!-- Two-line layout for Details and Menu -->
     <LinearLayout
@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/widget_primary_text"
-            android:textSize="12sp"
+            android:textSize="13.5sp"
             android:textStyle="bold"
             android:singleLine="true"
             android:ellipsize="end"
@@ -45,10 +45,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/widget_secondary_text"
-            android:textSize="11sp"
+            android:textSize="12.5sp"
             android:singleLine="true"
             android:ellipsize="end"
-            android:text="Nasi Beriani, Ayam Masak Merah" />
+            android:text="Nasi Beriani, Ayam Masak Merah"
+            android:layout_marginTop="2dp" />
 
     </LinearLayout>
 

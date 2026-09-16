@@ -1,0 +1,74 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Interactive tokens, filters, and preset input tags" name="Chip" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md, 6px);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 10px;
+      min-height: 26px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .chip-preset {
+      background: var(--color-surface-muted, #F2EDE3);
+      color: var(--color-text, #1A1816);
+    }
+    .chip-preset:hover {
+      background: var(--color-border, #E8E2D6);
+    }
+    .chip-active {
+      background: var(--color-accent, #C2932D);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    .chip-outline {
+      background: transparent;
+      border-color: var(--color-border, #E8E2D6);
+      color: var(--color-text-soft, #6B6560);
+    }
+    .chip-outline.chip-active {
+      background: rgba(194, 147, 45, 0.12);
+      border-color: var(--color-accent, #C2932D);
+      color: var(--color-accent-deep, #725014);
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <button type="button" class="chip chip-preset">+Tanpa Pedas</button>
+    <button type="button" class="chip chip-preset">+Bungkus Asing</button>
+    <button type="button" class="chip chip-preset">+Kurang Manis</button>
+    <button type="button" class="chip chip-active">Selected Tag</button>
+    <button type="button" class="chip chip-outline">Outline Tag</button>
+    <button type="button" class="chip chip-outline chip-active">Active Outline</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Standardized Lucide icon wrapper with 1.5px stroke" name="Icon" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--color-text-soft, #6B6560);
+    }
+    .icon-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-surface-muted, #F2EDE3);
+      border-radius: var(--radius-md, 6px);
+      color: var(--color-text, #1A1816);
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <div class="item">
+      <div class="icon-box" style="width: 28px; height: 28px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <span>Small (16px)</span>
+    </div>
+    <div class="item">
+      <div class="icon-box" style="width: 36px; height: 36px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <span>Medium (20px - Standard)</span>
+    </div>
+    <div class="item">
+      <div class="icon-box" style="width: 44px; height: 44px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <span>Large (24px)</span>
+    </div>
+  </div>
+</body>
+</html>

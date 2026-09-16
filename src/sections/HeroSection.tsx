@@ -34,11 +34,11 @@ const HeroSection = React.memo(() => {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e] pt-[calc(7.5rem+var(--sat,0px))] sm:pt-36 pb-[calc(6.5rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-center items-center">
+    <section className="relative w-full overflow-hidden bg-deep-forest dark:bg-card pt-[calc(7.5rem+var(--sat,0px))] sm:pt-36 pb-[calc(6.5rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-center items-center">
       {/* Cinematic Deep Dark Full-Bleed Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1c18] dark:bg-[#0c100e]">
+      <div className="absolute inset-0 z-0 overflow-hidden bg-deep-forest dark:bg-card">
         {/* Dynamic Atmospheric Overlays for maximum text & logo legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a1c18]/90 via-[#0a1c18]/65 to-[#0a1c18] dark:from-[#0c100e]/95 dark:via-[#0c100e]/75 dark:to-[#0c100e] z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-deep-forest/90 via-deep-forest/65 to-deep-forest dark:from-card/95 dark:via-card/75 dark:to-card z-0 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/35 via-transparent to-amber-950/20 dark:from-[#101915]/60 dark:to-transparent z-0 pointer-events-none" />
         {/* Soft center vignette to ensure foreground elements are crystal clear */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_15%,rgba(12,16,14,0.8)_100%)] z-0 pointer-events-none" />
@@ -101,7 +101,7 @@ const HeroSection = React.memo(() => {
         >
           <a 
             href="#menu" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-xl shadow-[var(--color-sunshine-cta)]/25"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,transform,box-shadow] duration-200 ease-out active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-xl shadow-[var(--color-sunshine-cta)]/25"
           >
             <UtensilsCrossed className="w-5 h-5 transition-transform duration-200 group-hover:rotate-12" />
             <span>{t('explore_menu_btn')}</span>
@@ -110,7 +110,7 @@ const HeroSection = React.memo(() => {
 
           <Link 
             to="/order" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[#1c2622] hover:bg-[#26312d] border border-amber-400/40 hover:border-amber-400/70 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out hover:scale-[1.03] active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-lg"
+            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[#1c2622] hover:bg-[#26312d] border border-amber-400/40 hover:border-amber-400/70 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-lg"
           >
             <span>{t('order_catering_btn')}</span>
           </Link>
@@ -122,7 +122,7 @@ const HeroSection = React.memo(() => {
           className="mt-8 sm:mt-14 flex flex-col items-center gap-2 sm:gap-3 text-amber-300/90"
         >
           <div className="w-px h-8 sm:h-10 bg-gradient-to-b from-amber-400 to-transparent" />
-          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
+          <span className="text-xs sm:text-xs font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
         </motion.div>
       </motion.div>
     </section>

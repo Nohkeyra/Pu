@@ -6,6 +6,7 @@ import { db } from '@/firebaseConfig';
 import { type User } from 'firebase/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact } from '@/lib/haptics';
+import { Button } from '@/components/ui/button';
 
 export interface OrderNotification {
   id: string;
@@ -110,7 +111,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                 `Catering dishes for #${invoiceNo} are being prepared in kitchen.`
               );
             } else if (status === 'in_transit') {
-              title = t('Pesanan Dalam Perjalanan 🚚', 'Order In Transit 🚚');
+              title = t('Pesanan Dalam Perjalanan', 'Order In Transit');
               message = t(
                 `Penghantaran #${invoiceNo} sedang dalam perjalanan ke lokasi anda.`,
                 `Delivery #${invoiceNo} is on the way to your location.`
@@ -207,7 +208,9 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         type="button"
         onClick={() => {
           triggerLightImpact();
@@ -220,11 +223,11 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
         <Bell className="h-5 w-5 text-amber-400" />
         
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white shadow-md animate-pulse">
+          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white shadow-md animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
-      </button>
+      </Button>
 
       <AnimatePresence>
         {isOpen && (
@@ -243,7 +246,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                   {t('Pemberitahuan Status', 'Status Alerts')}
                 </span>
                 {unreadCount > 0 && (
-                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
                     {unreadCount} {t('baru', 'new')}
                   </span>
                 )}
@@ -251,23 +254,27 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
 
               <div className="flex items-center gap-1">
                 {unreadCount > 0 && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     type="button"
                     onClick={markAllAsRead}
-                    className="flex min-h-[44px] items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400 transition-colors"
+                    className="flex min-h-[44px] items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-stone-500 hover:text-amber-600 dark:text-stone-400 dark:hover:text-amber-400"
                   >
                     <CheckCheck className="h-3.5 w-3.5" />
                     <span>{t('Baca semua', 'Mark read')}</span>
-                  </button>
+                  </Button>
                 )}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   type="button"
                   onClick={() => setIsOpen(false)}
                   className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg p-2 text-stone-400 hover:text-stone-600 dark:hover:text-white"
                   aria-label={t('Tutup', 'Close')}
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -279,7 +286,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                   <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
                     {t('Tiada pemberitahuan lagi.', 'No status notifications yet.')}
                   </p>
-                  <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
                     {t('Status tempahan katering anda akan dipaparkan di sini.', 'Your catering booking status will appear here.')}
                   </p>
                 </div>
@@ -311,6 +318,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                     <button
                       key={notif.id}
                       type="button"
+                      aria-label={`${notif.title} - ${formatRelativeTime(notif.timestamp)}`}
                       onClick={() => handleNotificationClick(notif)}
                       className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 hover:bg-stone-50 dark:hover:bg-white/5 ${
                         isUnread ? 'bg-amber-500/5 dark:bg-amber-500/10' : ''
@@ -325,20 +333,20 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
                           <span className="font-bold text-xs text-deep-forest dark:text-white truncate">
                             {notif.title}
                           </span>
-                          <span className="text-[10px] font-medium text-stone-400 shrink-0">
+                          <span className="text-xs font-medium text-stone-400 shrink-0">
                             {formatRelativeTime(notif.timestamp)}
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
                           {notif.message}
                         </p>
 
                         <div className="mt-2 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md">
                             #{notif.invoiceNo}
                           </span>
-                          <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 flex items-center gap-0.5 hover:text-amber-500">
+                          <span className="text-xs font-bold text-stone-500 dark:text-stone-400 flex items-center gap-0.5 hover:text-amber-500">
                             <span>{t('Lihat Pesanan', 'View Order')}</span>
                             <ChevronRight className="h-3 w-3" />
                           </span>

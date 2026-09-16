@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Card } from '@/components/ui/card';
 import { AlertTriangle, User, Shield, Trash2, Home } from 'lucide-react';
 
 interface FallbackDashboardProps {
@@ -81,31 +82,31 @@ export default function FallbackDashboard({ onExit }: FallbackDashboardProps) {
           )}
         </div>
 
-        <div className="bg-white dark:bg-stone-900 border border-border p-5 rounded-3xl shadow-sm space-y-3">
+        <Card className="bg-white dark:bg-stone-900 border border-border p-5 rounded-3xl shadow-sm space-y-3">
           <h2 className="microcopy-14-upper font-bold text-deep-forest dark:text-amber-400">
             Sistem Diagnostik Semasa
           </h2>
           <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-            <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
+            <Card variant="outlined" className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border shadow-none">
               <span className="block microcopy-12-upper text-stone font-bold">Status Internet</span>
               <span className={stats.online ? "text-emerald-600 font-bold" : "text-tomato-burst font-bold"}>
                 {stats.online ? 'ONLINE' : 'OFFLINE'}
               </span>
-            </div>
-            <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
+            </Card>
+            <Card variant="outlined" className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border shadow-none">
               <span className="block microcopy-12-upper text-stone font-bold">Platform</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold uppercase">{stats.platform}</span>
-            </div>
-            <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
+            </Card>
+            <Card variant="outlined" className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border shadow-none">
               <span className="block microcopy-12-upper text-stone font-bold">Capacitor Native</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold">{stats.native ? 'YES' : 'NO'}</span>
-            </div>
-            <div className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border">
+            </Card>
+            <Card variant="outlined" className="bg-cream dark:bg-stone-950 p-2.5 rounded-xl border border-border shadow-none">
               <span className="block microcopy-12-upper text-stone font-bold">Dimensi Skrin</span>
               <span className="text-deep-forest dark:text-stone-300 font-bold">{stats.width}x{stats.height}</span>
-            </div>
+            </Card>
           </div>
-        </div>
+        </Card>
 
         <div className="space-y-3.5">
           <button

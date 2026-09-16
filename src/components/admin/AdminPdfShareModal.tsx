@@ -3,7 +3,8 @@ import { motion } from 'motion/react';
 import { 
   X, 
   FileText, 
-  FileDown 
+  FileDown,
+  Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Capacitor } from '@capacitor/core';
@@ -120,14 +121,16 @@ export function AdminPdfShareModal({
               {t('pdf_preview_desc')}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="ml-4 p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 transition-all hover:rotate-90"
+            className="ml-4 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 hover:rotate-90 transition-transform"
             aria-label="Close"
             id="pdf-preview-close-btn"
           >
-            <X className="w-7 h-7 text-stone-400" />
-          </button>
+            <X className="w-6 h-6 text-stone-400" />
+          </Button>
         </div>
 
         {/* PDF View Container */}
@@ -163,7 +166,7 @@ export function AdminPdfShareModal({
         {/* Tip Box */}
         {!Capacitor.isNativePlatform() && (
           <div className="px-6 py-4 bg-stone-50 dark:bg-stone-800/40 border-y border-stone-200 dark:border-stone-800 text-xs flex items-center gap-4">
-            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 text-base">💡</span>
+            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center text-amber-600"><Lightbulb className="w-4 h-4" aria-hidden="true" /></span>
             <p className="text-stone-600 dark:text-stone-400 leading-relaxed italic">
               {language === 'bm' 
                 ? 'Nota: Jika paparan kosong, klik "Muat Turun PDF" untuk membuka fail secara manual.' 

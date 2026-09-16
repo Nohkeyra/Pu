@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { X, Lightbulb } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const STORAGE_KEY = 'wawasan_order_tip_dismissed_v1'
 
@@ -45,14 +46,16 @@ export function OrderFormTip({ language }: { language: string }) {
             : 'Complete each step in order. Your draft is auto-saved on this device if you leave briefly.'}
         </p>
       </div>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         type="button"
         onClick={dismiss}
-        className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 shrink-0"
+        className="h-7 w-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 shrink-0"
         aria-label={language === 'bm' ? 'Tutup' : 'Dismiss'}
       >
         <X className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   )
 }

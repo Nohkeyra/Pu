@@ -151,7 +151,7 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
             <span className="font-display font-black text-sm lg:text-base tracking-tight text-stone-800 dark:text-amber-100 max-w-[180px] line-clamp-1">
               {displayName}
             </span>
-            <span className="text-[9px] uppercase font-black tracking-widest text-amber-600/80 dark:text-amber-400/80">
+            <span className="text-xs uppercase font-black tracking-widest text-amber-600/80 dark:text-amber-400/80">
               {isDrink ? 'Authentic Drink' : 'Heritage Food'}
             </span>
           </div>

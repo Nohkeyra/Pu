@@ -12,6 +12,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { FormError } from '@/components/ui/FormError';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
@@ -193,7 +194,7 @@ export function Step3ContactDetails({
                       sideOffset={4}
                     >
                       <div className="px-2.5 py-1.5 border-b border-stone-100 dark:border-stone-800/70 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           {tText('Select Registered Panel / Agency', 'Pilih Panel / Agensi Berdaftar')}
                         </span>
                       </div>
@@ -212,7 +213,7 @@ export function Step3ContactDetails({
                                 {mainTitle}
                               </span>
                               {subAddress ? (
-                                <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5 leading-tight">
+                                <span className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5 leading-tight">
                                   {subAddress}
                                 </span>
                               ) : null}
@@ -349,7 +350,7 @@ export function Step3ContactDetails({
                     <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
                       {tText('Event Date', 'Tarikh Majlis *')}
                     </Label>
-                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                       {tText('Min. 2 days notice', 'Min. 2 hari awal')}
                     </span>
                   </div>
@@ -387,10 +388,10 @@ export function Step3ContactDetails({
                 >
                   <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div className="space-y-0.5 text-xs">
-                    <p className="font-bold text-amber-800 dark:text-amber-300">
-                      🎉 {tText('Public Holiday Detected:', 'Cuti Umum Diimbas:')} {holidayInfo.nameBm} ({holidayInfo.nameEn})
-                    </p>
-                    <p className="text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
+                    <Badge variant="warning" className="font-bold">
+                      {tText('Public Holiday Detected:', 'Cuti Umum Diimbas:')} {holidayInfo.nameBm} ({holidayInfo.nameEn})
+                    </Badge>
+                    <p className="text-stone-600 dark:text-stone-300 text-xs leading-relaxed">
                       {holidayInfo.noticeBm || tText('High demand day. Your slot is prioritized once confirmed with kitchen admin.', 'Musim tempahan puncak. Slot anda diberi keutamaan selepas pengesahan dapur.')}
                     </p>
                   </div>
@@ -468,7 +469,7 @@ export function Step3ContactDetails({
               aria-checked={orderState.delivery === 'delivery'}
               onClick={() => setOrderState(prev => ({ ...prev, delivery: 'delivery' }))}
               className={cn(
-                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]",
                 orderState.delivery === 'delivery'
                   ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30"
                   : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -479,7 +480,7 @@ export function Step3ContactDetails({
               </div>
               <div className="w-full">
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Delivery', 'Hantar ke Lokasi')}</span>
-                <span className="text-[11px] text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Direct to venue', 'Dihantar ke majlis')}</span>
+                <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Direct to venue', 'Dihantar ke majlis')}</span>
               </div>
             </button>
 
@@ -489,7 +490,7 @@ export function Step3ContactDetails({
               aria-checked={orderState.delivery === 'pickup'}
               onClick={() => setOrderState(prev => ({ ...prev, delivery: 'pickup' }))}
               className={cn(
-                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+                "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]",
                 orderState.delivery === 'pickup'
                   ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30"
                   : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -500,7 +501,7 @@ export function Step3ContactDetails({
               </div>
               <div className="w-full">
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">{tText('Self Pickup', 'Ambil di Restoran')}</span>
-                <span className="text-[11px] text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Collect at Presint 2', 'Ambil di Restoran')}</span>
+                <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">{tText('Collect at Presint 2', 'Ambil di Restoran')}</span>
               </div>
             </button>
           </div>

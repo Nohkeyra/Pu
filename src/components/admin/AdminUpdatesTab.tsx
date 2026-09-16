@@ -246,7 +246,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
             {isBM ? 'Versi Disiarkan Semasa' : 'Current Live Broadcast Version'}
           </span>
-          <span className="text-[11px] font-mono text-stone dark:text-stone/70">
+          <span className="text-xs font-mono text-stone dark:text-stone/70">
             Internal Build: v{CURRENT_APP_VERSION}
           </span>
         </div>
@@ -258,7 +258,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
         ) : currentConfig ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
             <div className="p-3 rounded-2xl bg-cream/70 dark:bg-stone/10 border border-border/60 space-y-1">
-              <span className="text-[10px] uppercase text-stone dark:text-stone/70 block">
+              <span className="text-xs uppercase text-stone dark:text-stone/70 block">
                 {isBM ? 'Versi Terkini' : 'Latest Version'}
               </span>
               <span className="font-mono text-base font-bold text-[var(--color-sunshine-cta)]">
@@ -267,7 +267,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
             </div>
 
             <div className="p-3 rounded-2xl bg-cream/70 dark:bg-stone/10 border border-border/60 space-y-1">
-              <span className="text-[10px] uppercase text-stone dark:text-stone/70 block">
+              <span className="text-xs uppercase text-stone dark:text-stone/70 block">
                 {isBM ? 'Versi Minimum' : 'Min Mandatory'}
               </span>
               <span className="font-mono text-base font-bold text-deep-forest dark:text-white">
@@ -276,7 +276,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
             </div>
 
             <div className="p-3 rounded-2xl bg-cream/70 dark:bg-stone/10 border border-border/60 space-y-1">
-              <span className="text-[10px] uppercase text-stone dark:text-stone/70 block">
+              <span className="text-xs uppercase text-stone dark:text-stone/70 block">
                 {isBM ? 'Status Kemaskini' : 'Update Type'}
               </span>
               <span className={`font-semibold text-xs px-2 py-0.5 rounded-full inline-block ${currentConfig.forceUpdate ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
@@ -285,7 +285,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
             </div>
 
             <div className="p-3 rounded-2xl bg-cream/70 dark:bg-stone/10 border border-border/60 space-y-1">
-              <span className="text-[10px] uppercase text-stone dark:text-stone/70 block">
+              <span className="text-xs uppercase text-stone dark:text-stone/70 block">
                 {isBM ? 'Tarikh Disiar' : 'Last Broadcast'}
               </span>
               <span className="font-mono text-xs text-stone dark:text-stone/80 truncate block">
@@ -360,7 +360,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
                     variant: 'success',
                   });
                 }}
-                className="rounded-xl min-h-[38px] border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10 font-bold text-[11px] w-full sm:w-auto"
+                className="rounded-xl min-h-[38px] border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10 font-bold text-xs w-full sm:w-auto"
               >
                 {isBM ? 'Gunakan Butiran GitHub' : 'Use GitHub Details'}
               </Button>
@@ -422,7 +422,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold flex items-center justify-between">
               <span>{isBM ? 'Pautan Capgo OTA Zip Bundle (Pilihan / Instant)' : 'Capgo OTA Zip Bundle URL (Optional / Instant)'}</span>
-              <span className="text-[10px] text-[var(--color-sunshine-cta)] font-bold">Capgo Live</span>
+              <span className="text-xs text-[var(--color-sunshine-cta)] font-bold">Capgo Live</span>
             </Label>
             <div className="relative">
               <Input
@@ -453,7 +453,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               {isBM ? 'Kemaskini Wajib (Mandatory Critical Update)' : 'Mandatory Critical Update'}
             </span>
-            <span className="text-[11px] text-stone dark:text-stone/75 block">
+            <span className="text-xs text-stone dark:text-stone/75 block">
               {isBM 
                 ? 'Jika diaktifkan, pengguna wajib mengemaskini aplikasi sebelum meneruskan penggunaan.' 
                 : 'When enabled, forces users to update before accessing the application.'}

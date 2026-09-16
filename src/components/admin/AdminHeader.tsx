@@ -37,7 +37,7 @@ export function AdminHeader({
   return (
     <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/95 dark:bg-card/90 backdrop-blur-md sticky top-0 z-30 transition-colors flex flex-col pt-[var(--sat)]">
       {/* Sync Status Banner Bar - Moved to Top for better prominence on mobile */}
-      <div className={`w-full h-7 px-4 sm:px-6 flex items-center justify-between text-[10px] sm:text-[11px] font-bold transition-all duration-300 ${
+      <div className={`w-full h-7 px-4 sm:px-6 flex items-center justify-between text-xs sm:text-xs font-bold transition-all duration-300 ${
         syncStatus === 'connected' 
           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
           : syncStatus === 'syncing'
@@ -64,7 +64,7 @@ export function AdminHeader({
             {syncStatus === 'offline' && (language === 'en' ? 'Offline' : 'Luar talian')}
           </span>
         </div>
-        <span className="uppercase tracking-widest opacity-80 text-[9px] flex-shrink-0">
+        <span className="uppercase tracking-widest opacity-80 text-xs flex-shrink-0">
           {syncStatus}
         </span>
       </div>
@@ -80,11 +80,11 @@ export function AdminHeader({
               <h1 className="text-sm sm:text-lg font-bold font-display tracking-tight text-deep-forest dark:text-white leading-tight truncate">
                 Restoran Wawasan
               </h1>
-              <Badge variant="outline" className="hidden xs:inline-flex text-[9px] uppercase font-bold tracking-wider border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5 px-1.5 py-0">
+              <Badge variant="outline" className="hidden xs:inline-flex text-xs uppercase font-bold tracking-wider border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5 px-1.5 py-0">
                 Admin
               </Badge>
             </div>
-            <p className="hidden xs:block text-[10px] sm:text-xs text-stone/80 dark:text-stone-400 font-medium truncate">
+            <p className="hidden xs:block text-xs sm:text-xs text-stone/80 dark:text-stone-400 font-medium truncate">
               {language === 'en' ? 'Catering Control Center' : 'Pusat Kawalan Katering'}
             </p>
           </div>
@@ -118,13 +118,16 @@ export function AdminHeader({
           </div>
 
           {/* Theme Toggle Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleTheme}
+            aria-label={theme === 'dark' ? (language === 'en' ? 'Switch to Light Mode' : 'Tukar ke Mod Cerah') : (language === 'en' ? 'Switch to Dark Mode' : 'Tukar ke Mod Gelap')}
             className="w-9 h-9 rounded-xl bg-muted/70 dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center text-stone dark:text-stone-300 hover:text-crisp-carrot transition-colors"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          </Button>
 
           {/* Logout Button */}
           {onLogout && (

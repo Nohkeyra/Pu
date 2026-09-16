@@ -29,7 +29,7 @@ const VisitSection = React.memo(() => {
   };
 
   return (
-    <section id="visit" className="py-24 bg-[#fdfbf7] dark:bg-stone-950 relative overflow-hidden">
+    <section id="visit" className="py-24 bg-background dark:bg-stone-950 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-sunshine-cta)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-deep-forest/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -135,7 +135,7 @@ const VisitSection = React.memo(() => {
                 target="_blank" 
                 rel="noreferrer"
                 style={{ backgroundColor: '#287407', color: '#ffc701', fontFamily: 'Verdana, sans-serif' }}
-                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg shadow-green-900/20 hover:brightness-110 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
               >
                 {isBm ? 'Dapatkan Arah' : 'Get Directions'}
                 <ExternalLink className="w-4 h-4" />
@@ -161,7 +161,7 @@ const VisitSection = React.memo(() => {
             />
             
             {/* Map Overlay Card */}
-            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3 sm:p-4 bg-[#fdfbf7]/95 dark:bg-stone-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/20 shadow-md hidden sm:block">
+            <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 p-3 sm:p-4 bg-card/95 dark:bg-stone-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/20 shadow-md hidden sm:block">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-[var(--color-sunshine-cta)] rounded-lg sm:rounded-xl shrink-0">
                   <MapPin className="w-4 h-4 text-deep-forest" />

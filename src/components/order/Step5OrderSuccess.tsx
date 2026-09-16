@@ -125,10 +125,10 @@ export function Step5OrderSuccess({
             </span>
           </div>
           <div className="flex justify-between items-center pt-1.5 border-t border-dashed border-stone/10">
-            <span className="text-[10px] text-stone-500 font-medium">
+            <span className="text-xs text-stone-500 font-medium">
               {tText('Official Invoice:', 'Invois Rasmi:')}
             </span>
-            <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-wide">
+            <span className="text-xs font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-wide">
               {tText('Quotation Pending (Awaiting Admin Billing)', 'Menunggu Sebut Harga (Menunggu Admin)')}
             </span>
           </div>

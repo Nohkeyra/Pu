@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -51,15 +52,15 @@ export function ProfileInfoTab({
   t,
 }: ProfileInfoTabProps) {
   return (
-    <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
-      <div className="flex items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10">
+    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
+          <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
             {t('Personal & Organization Profile', 'Profil Peribadi & Organisasi')}
-          </h3>
-          <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+          </CardTitle>
+          <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('Default contact details used for quick catering invoice generation.', 'Maklumat perhubungan utama untuk penjanaan invois katering.')}
-          </p>
+          </CardDescription>
         </div>
         {!isEditing ? (
           <Button
@@ -92,9 +93,9 @@ export function ProfileInfoTab({
             </Button>
           </div>
         )}
-      </div>
+      </CardHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 font-sans">
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 font-sans p-0 pt-0">
         {/* Full Name */}
         <div className="space-y-1.5">
           <Label htmlFor="profile-fullname" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
@@ -168,7 +169,7 @@ export function ProfileInfoTab({
                             {mainTitle}
                           </span>
                           {subAddress ? (
-                            <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5 leading-tight">
+                            <span className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0.5 leading-tight">
                               {subAddress}
                             </span>
                           ) : null}
@@ -242,7 +243,7 @@ export function ProfileInfoTab({
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

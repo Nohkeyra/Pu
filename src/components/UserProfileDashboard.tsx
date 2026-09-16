@@ -636,12 +636,15 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <div className="flex items-center gap-2 relative z-10">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleSignOut}
-                  className="p-2 text-stone hover:text-tomato-burst hover:bg-tomato-burst/10 rounded-lg transition-colors duration-200"
+                  aria-label={t('Log Out', 'Log Keluar')}
+                  className="text-stone hover:text-tomato-burst hover:bg-tomato-burst/10 rounded-lg"
                 >
                   <LogOut className="w-5 h-5" />
-                </button>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{t('Log Out', 'Log Keluar')}</p>
@@ -650,12 +653,15 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             {!isEmbedded && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={onClose}
-                    className="p-2 text-stone hover:text-deep-forest hover:bg-black/5 rounded-lg transition-colors duration-200"
+                    aria-label={t('Close Profile', 'Tutup Profil')}
+                    className="text-stone hover:text-deep-forest hover:bg-black/5 rounded-lg"
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{t('Close', 'Tutup')}</p>
@@ -682,7 +688,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             <span className="truncate">{tGlobal('profile_submissions')}</span>
             {orders.length > 0 && (
               <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 font-bold",
+                "px-1.5 py-0.5 rounded-full text-xs font-mono shrink-0 font-bold",
                 activeTab === 'orders' ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
               )}>
                 {orders.length}
@@ -716,7 +722,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             <span className="truncate">{t('Locations', 'Lokasi')}</span>
             {savedLocations.length > 0 && (
               <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 font-bold",
+                "px-1.5 py-0.5 rounded-full text-xs font-mono shrink-0 font-bold",
                 activeTab === 'locations' ? "bg-white/20 text-white" : "bg-stone/15 text-stone-600 dark:text-stone-300"
               )}>
                 {savedLocations.length}

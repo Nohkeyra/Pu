@@ -47,15 +47,15 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
   // Determine badge styling based on item characteristics
   const getBadgeInfo = () => {
     if (item.tags?.includes('signature') || item.id === 'asam-pedas') {
-      return { text: isBm ? 'Paling Laris #1' : '#1 Best Seller', icon: '✦', color: 'text-amber-700 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
+      return { text: isBm ? 'Paling Laris #1' : '#1 Best Seller', icon: <Sparkles className="w-3 h-3" />, color: 'text-amber-700 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
     if (item.tags?.includes('classic') || item.id === 'nasi-lemak') {
-      return { text: isBm ? 'Sajian Warisan' : 'Heritage Dish', icon: '★', color: 'text-emerald-800 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/15 dark:bg-stone-950/80 shadow-xs' };
+      return { text: isBm ? 'Sajian Warisan' : 'Heritage Dish', icon: <Flame className="w-3 h-3" />, color: 'text-emerald-800 dark:text-emerald-300 border-emerald-500/40 bg-emerald-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
     if (item.category === 'drinks') {
-      return { text: isBm ? 'Minuman Kaw' : 'Signature Drink', icon: '☕', color: 'text-amber-800 dark:text-amber-200 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
+      return { text: isBm ? 'Minuman Kaw' : 'Signature Drink', icon: <Coffee className="w-3 h-3" />, color: 'text-amber-800 dark:text-amber-200 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
     }
-    return { text: isBm ? 'Pilihan Ramai' : 'Popular Pick', icon: '✦', color: 'text-amber-800 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
+    return { text: isBm ? 'Pilihan Ramai' : 'Popular Pick', icon: <Sparkles className="w-3 h-3" />, color: 'text-amber-800 dark:text-amber-300 border-amber-500/40 bg-amber-500/15 dark:bg-stone-950/80 shadow-xs' };
   };
 
   const badge = getBadgeInfo();
@@ -92,7 +92,7 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
             
             {/* Magazine-Style Floating Glassmorphism Badge */}
             <div className="absolute top-3.5 left-3.5 z-10">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border ${badge.color}`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg border ${badge.color}`}>
                 <span>{badge.icon}</span>
                 <span className="whitespace-nowrap">{badge.text}</span>
               </span>
@@ -136,7 +136,7 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
             />
             <div className="relative z-10 flex items-center justify-between w-full">
               <div className="flex flex-col text-left">
-                <span className="text-[10px] font-bold text-amber-100 uppercase tracking-widest leading-none">
+                <span className="text-xs font-bold text-amber-100 uppercase tracking-widest leading-none">
                   {isBm ? 'Harga Bermula' : 'Price Starts'}
                 </span>
                 <span className="font-sans font-black text-white text-base sm:text-lg leading-tight mt-0.5 drop-shadow-sm">
@@ -331,7 +331,7 @@ export default function MenuSection() {
               <HungryButton
                 onHungryClick={handleOrderClick}
                 text={isBm ? 'Pesan Sekarang (Pelawat)' : 'Order Now (Guest)'}
-                className="group-hover:scale-[1.02] min-h-[48px] w-full sm:w-auto"
+                className="min-h-[48px] w-full sm:w-auto"
               />
             </div>
           </div>

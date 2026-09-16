@@ -1,0 +1,51 @@
+<!-- @dsCard group="Guidelines" viewport="800x260" subtitle="Interactive segmented switches for tabbed subviews" name="Segmented Controls" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .segmented {
+      display: inline-flex;
+      background: var(--color-surface-muted, #F2EDE3);
+      padding: 4px;
+      border-radius: var(--radius-md, 6px);
+      gap: 4px;
+      border: 1px solid var(--color-border, #E8E2D6);
+    }
+    .segment {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--color-text-muted, #70685C);
+    }
+    .segment.active {
+      background: #FFFFFF;
+      color: var(--color-text, #1A1816);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="segmented">
+    <button class="segment active" type="button">Semua Pesanan</button>
+    <button class="segment" type="button">Belum Selesai</button>
+    <button class="segment" type="button">Selesai</button>
+  </div>
+</body>
+</html>

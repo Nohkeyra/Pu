@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getApiUrl } from '@/lib/api';
 import WawasanLoader from '@/components/WawasanLoader';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { 
   saveAdminToken, 
   clearAdminSession, 
@@ -139,7 +140,7 @@ export default function AdminPage() {
   if (!user || !token) {
     return (
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col items-center justify-center relative p-4">
-        <div className="panel-surface p-8 max-w-md w-full text-center space-y-6 z-10 shadow-xl rounded-2xl border border-amber-500/20">
+        <Card className="panel-surface p-8 max-w-md w-full text-center space-y-6 z-10 shadow-xl rounded-2xl border border-amber-500/20">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-[var(--color-sunshine-cta)] mx-auto flex items-center justify-center border border-amber-500/20 shadow-inner">
             <Lock className="w-8 h-8" />
           </div>
@@ -193,7 +194,7 @@ export default function AdminPage() {
               {t('Back to Main Menu', 'Kembali ke Menu Utama')}
             </Button>
           </div>
-        </div>
+        </Card>
         <AuthModal
           isOpen={authOpen}
           onClose={() => setAuthOpen(false)}

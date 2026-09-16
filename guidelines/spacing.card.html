@@ -1,0 +1,62 @@
+<!-- @dsCard group="Guidelines" viewport="800x260" subtitle="4pt base spacing and consistent rhythm units" name="Spacing System" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+    }
+    .space-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .space-box {
+      background: var(--color-sunshine-cta, #C2932D);
+      height: 20px;
+      border-radius: 4px;
+    }
+    .space-label {
+      width: 140px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="space-row">
+    <span class="space-label">Space 1 (4px)</span>
+    <div class="space-box" style="width: 4px;"></div>
+  </div>
+  <div class="space-row">
+    <span class="space-label">Space 2 (8px)</span>
+    <div class="space-box" style="width: 8px;"></div>
+  </div>
+  <div class="space-row">
+    <span class="space-label">Space 3 (12px)</span>
+    <div class="space-box" style="width: 12px;"></div>
+  </div>
+  <div class="space-row">
+    <span class="space-label">Space 4 (16px)</span>
+    <div class="space-box" style="width: 16px;"></div>
+  </div>
+  <div class="space-row">
+    <span class="space-label">Space 6 (24px)</span>
+    <div class="space-box" style="width: 24px;"></div>
+  </div>
+  <div class="space-row">
+    <span class="space-label">Space 8 (32px)</span>
+    <div class="space-box" style="width: 32px;"></div>
+  </div>
+</body>
+</html>

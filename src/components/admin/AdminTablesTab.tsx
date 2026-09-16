@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { exportOrdersAsExcelStandard } from '@/lib/exportUtils';
 import { getDisplayInvoiceNo, formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
@@ -466,7 +467,7 @@ export function AdminTablesTab({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
+            <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
               {isBm ? 'Jumlah Permohonan' : 'Total Submissions'}
             </span>
             <div className="w-6 h-6 rounded-md bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold text-xs shrink-0">
@@ -477,16 +478,16 @@ export function AdminTablesTab({
             <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
               {stats.total}
             </span>
-            <span className="text-[10px] text-deep-forest/40 dark:text-stone/40">{isBm ? 'rekod' : 'records'}</span>
+            <span className="text-xs text-deep-forest/40 dark:text-stone/40">{isBm ? 'rekod' : 'records'}</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-card border border-amber-500/20 dark:border-amber-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate">
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate">
               {isBm ? 'Menunggu Disahkan' : 'Pending Review'}
             </span>
-            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">
               {stats.pending}
             </div>
           </div>
@@ -494,13 +495,13 @@ export function AdminTablesTab({
             <span className="text-xl font-display font-bold text-amber-600 dark:text-amber-400 leading-none">
               {stats.pending}
             </span>
-            <span className="text-[10px] text-amber-600/60 dark:text-amber-400/60">{isBm ? 'tindakan' : 'pending'}</span>
+            <span className="text-xs text-amber-600/60 dark:text-amber-400/60">{isBm ? 'tindakan' : 'pending'}</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-card border border-emerald-500/20 dark:border-emerald-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider truncate">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider truncate">
               {isBm ? 'Invois / Diluluskan' : 'Approved & Billed'}
             </span>
             <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
@@ -511,21 +512,21 @@ export function AdminTablesTab({
             <span className="text-xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-none">
               {stats.approved + stats.billed}
             </span>
-            <span className="text-[10px] text-emerald-600/60 dark:text-emerald-400/60">{isBm ? 'selesai' : 'done'}</span>
+            <span className="text-xs text-emerald-600/60 dark:text-emerald-400/60">{isBm ? 'selesai' : 'done'}</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-card border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/20 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
+            <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
               {isBm ? 'Hasil Terkumpul' : 'Total Revenue'}
             </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)] shrink-0">
+            <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)] shrink-0">
               RM
             </span>
           </div>
           <div className="mt-1.5 flex items-baseline gap-0.5">
-            <span className="text-[10px] font-bold text-[var(--color-sunshine-cta)]">RM</span>
+            <span className="text-xs font-bold text-[var(--color-sunshine-cta)]">RM</span>
             <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
               {stats.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -541,6 +542,7 @@ export function AdminTablesTab({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-deep-forest/40 dark:text-stone/40" />
             <input
               type="text"
+              aria-label={isBm ? "Cari rujukan, nama, emel, klien, lokasi" : "Search ref, name, email, client, location"}
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               placeholder={isBm ? "Cari rujukan, nama, emel, klien, lokasi..." : "Search ref, name, email, client, location..."}
@@ -549,6 +551,7 @@ export function AdminTablesTab({
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
+                aria-label={isBm ? "Padam carian" : "Clear search"}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-deep-forest/40 hover:text-deep-forest dark:text-stone/40 dark:hover:text-white"
               >
                 ✕
@@ -975,7 +978,7 @@ export function AdminTablesTab({
                           {order.prices ? (
                             <div className="flex flex-col items-end">
                               {Object.entries(order.prices).map(([meal, price]) => (
-                                <span key={meal} className="text-[10px] leading-tight">
+                                <span key={meal} className="text-xs leading-tight">
                                   {meal.charAt(0).toUpperCase() + meal.slice(1)}: RM {price.toFixed(2)}
                                 </span>
                               ))}
@@ -1250,7 +1253,7 @@ export function AdminTablesTab({
                 placeholder="RW 00015"
                 className="font-mono bg-cream/50 dark:bg-background/40 border-stone/15 dark:border-white/10 focus:border-[var(--color-sunshine-cta)] text-sm font-bold text-deep-forest dark:text-white"
               />
-              <p className="text-[11px] text-stone dark:text-stone/70">
+              <p className="text-xs text-stone dark:text-stone/70">
                 {isBm
                   ? 'Nombor ini akan digunakan pada dokumen PDF yang dijana.'
                   : 'This invoice number will be applied to the generated PDF document.'}
@@ -1258,28 +1261,30 @@ export function AdminTablesTab({
             </div>
 
             <div className="space-y-2.5">
-              <button
+              <Button
                 onClick={() => handleConfirmConsolidate(true)}
                 disabled={isGenerating}
-                className="w-full h-11 bg-[var(--color-sunshine-cta)] text-charcoal rounded-xl text-sm font-bold hover:bg-[var(--color-sunshine-cta)]/90 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-11 bg-[var(--color-sunshine-cta)] text-charcoal rounded-xl text-sm font-bold hover:bg-[var(--color-sunshine-cta)]/90 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>{isBm ? 'Sertakan Lajur Nota (PDF)' : 'Yes, include Notes (PDF)'}</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => handleConfirmConsolidate(false)}
                 disabled={isGenerating}
-                className="w-full h-11 bg-cream dark:bg-white/10 border border-stone/15 dark:border-white/10 text-deep-forest dark:text-white rounded-xl text-sm font-bold hover:bg-black/5 dark:hover:bg-white/15 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-11 bg-cream dark:bg-white/10 border border-stone/15 dark:border-white/10 text-deep-forest dark:text-white rounded-xl text-sm font-bold hover:bg-black/5 dark:hover:bg-white/15 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <span>{isBm ? 'Tanpa Lajur Nota (PDF)' : 'No, hide Notes (PDF)'}</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setIsModalOpen(false)}
                 disabled={isGenerating}
-                className="w-full py-2 text-xs font-semibold text-stone hover:text-deep-forest dark:text-stone/70 dark:hover:text-white transition-colors cursor-pointer"
+                className="w-full py-2 text-xs font-semibold text-stone hover:text-deep-forest dark:text-stone/70 dark:hover:text-white cursor-pointer"
               >
                 {isBm ? 'Batal' : 'Cancel'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>,

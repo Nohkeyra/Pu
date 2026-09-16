@@ -5,6 +5,38 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ========== DESIGN SYSTEM TOKENS (FASA 0) ==========
+        brand: {
+          gold: 'var(--rw-gold)',
+          'gold-deep': 'var(--rw-gold-deep)',
+          'gold-text': 'var(--rw-gold-text)',
+          charcoal: 'var(--rw-charcoal)',
+          cream: 'var(--rw-cream)',
+        },
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          muted: 'var(--color-surface-muted)',
+        },
+        text: {
+          DEFAULT: 'var(--color-text)',
+          soft: 'var(--color-text-soft)',
+          muted: 'var(--color-text-muted)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          deep: 'var(--color-accent-deep)',
+        },
+        status: {
+          success: 'var(--color-success)',
+          'success-soft': 'var(--color-success-soft)',
+          warning: 'var(--color-warning)',
+          'warning-soft': 'var(--color-warning-soft)',
+          danger: 'var(--color-danger)',
+          'danger-soft': 'var(--color-danger-soft)',
+          error: 'var(--color-error)',
+          'error-soft': 'var(--color-error-soft)',
+        },
+
         // ========== CURRENT COLOR TOKENS ==========
         // Values are defined as CSS custom properties in src/index.css
         // (see :root and .dark blocks there for the actual hex values).
@@ -75,6 +107,7 @@ module.exports = {
         },
       },
       fontFamily: {
+        sans:    ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['"Outfit"', '"Syne"', '"Plus Jakarta Sans"', '"Space Grotesk"', 'sans-serif'],
         body:    ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
         hype:    ['"Syne"', '"Outfit"', '"Bebas Neue"', 'sans-serif'],
@@ -83,26 +116,24 @@ module.exports = {
         urban:   ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
       borderRadius: {
-        xl: "calc(var(--radius) + 4px)",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': 'var(--radius-2xl)',
+        full: 'var(--radius-full)',
         xs: "calc(var(--radius) - 6px)",
       },
       boxShadow: {
-        'sunshine-glow': '0 8px 30px rgba(246, 153, 19, 0.35)',
-        'carrot-glow':   '0 8px 30px rgba(233, 98, 18, 0.35)',
-        'kiwi-glow':     '0 8px 30px rgba(233, 98, 18, 0.35)',
-        'forest-glow':   '0 8px 30px rgba(12, 69, 60, 0.15)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
       },
       keyframes: {
         "bounce-down": {
           "0%, 100%": { transform: "translateY(0)" },
           "50%":      { transform: "translateY(8px)" },
-        },
-        "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 20px rgba(246, 153, 19, 0.25)" },
-          "50%":      { boxShadow: "0 0 30px rgba(246, 153, 19, 0.45)" },
         },
         "shimmer": {
           "0%":   { backgroundPosition: "-200% 0" },
@@ -133,7 +164,6 @@ module.exports = {
       },
       animation: {
         "bounce-down": "bounce-down 3s ease-in-out infinite",
-        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
         "shimmer": "shimmer 2s infinite",
         "float": "float 6s ease-in-out infinite",
         "leaf-sway": "leaf-sway 4s ease-in-out infinite",

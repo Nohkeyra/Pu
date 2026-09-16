@@ -1,0 +1,48 @@
+:root {
+  /* Brand */
+  --rw-gold: #C2932D;
+  --rw-gold-deep: #725014;
+  --rw-gold-text: #A67C1E;
+  --rw-charcoal: #1A1816;
+  --rw-cream: #FAF7F1;
+
+  /* Semantic */
+  --color-bg: #FFFFFF;
+  --color-surface: #FAF7F1;
+  --color-surface-muted: #F2EDE3;
+  --color-text: #1A1816;
+  --color-text-soft: #6B6560;
+  --color-text-muted: #9A938A;
+  --color-accent: var(--color-sunshine-cta);
+  --color-accent-deep: #725014;
+  --color-border: #E8E2D6;
+  --color-border-strong: #D4CCBC;
+
+  /* Status */
+  --color-success: #2E7D4F;
+  --color-success-soft: #E6F2EB;
+  --color-warning: #C2932D;
+  --color-warning-soft: #FBF3E0;
+  --color-danger: #B33A3A;
+  --color-danger-soft: #FBEAEA;
+  --color-error: #B33A3A;
+  --color-error-soft: #FBEAEA;
+}
+
+/* Dark mode */
+.dark {
+  --dark-bg: #1A1816;
+  --dark-surface: #242220;
+  --dark-text: #F5F1E8;
+  --dark-border: #3A3634;
+
+  /* Semantic overrides in dark mode */
+  --color-bg: var(--dark-bg);
+  --color-surface: var(--dark-surface);
+  --color-surface-muted: #2E2A27;
+  --color-text: var(--dark-text);
+  --color-text-soft: #B8B2A8;
+  --color-text-muted: #8C857D;
+  --color-border: var(--dark-border);
+  --color-border-strong: #4F4A47;
+}

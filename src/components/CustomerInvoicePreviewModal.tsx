@@ -18,6 +18,7 @@ import {
   MapPin,
   Calendar
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { triggerLightImpact, triggerNotification, NotificationType } from '@/lib/haptics';
 import { launchWhatsApp } from '@/lib/nativeService';
 import { RESTORAN_CONTACT } from '@/constants/contact';
@@ -143,26 +144,31 @@ export function CustomerInvoicePreviewModal({
 
           <div className="flex items-center gap-2">
             {/* Origami Fold / Unfold Interactive Toggle */}
-            <button
+            <Button
+              variant="outline"
+              type="button"
               onClick={() => {
                 triggerLightImpact();
                 setIsFolded(!isFolded);
               }}
-              className="inline-flex min-h-[44px] items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border border-stone-600/50 backdrop-blur-md transition-all shadow-md active:scale-95"
+              className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border-stone-600/50 backdrop-blur-md shadow-md active:scale-95"
               title={isFolded ? 'Buka Kertas Lipatan' : 'Lipat Semula Kertas'}
             >
               <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFolded ? 'rotate-180 text-amber-400' : 'text-stone-300'}`} />
               <span className="hidden sm:inline">{isFolded ? (language === 'bm' ? 'Buka Kertas' : 'Unfold Paper') : (language === 'bm' ? 'Lipat Kertas' : 'Fold Paper')}</span>
-            </button>
+            </Button>
 
             {/* Close Button */}
-            <button
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
               onClick={onClose}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white border border-stone-600/50 backdrop-blur-md transition-colors shadow-md"
+              className="min-h-[44px] min-w-[44px] rounded-full bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white border-stone-600/50 backdrop-blur-md shadow-md"
               aria-label="Tutup Paparan"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -227,7 +233,7 @@ export function CustomerInvoicePreviewModal({
                       <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white font-display">
                         RESTORAN WAWASAN
                       </h1>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                         EST. PUTRAJAYA
                       </span>
                     </div>
@@ -235,7 +241,7 @@ export function CustomerInvoicePreviewModal({
                       <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
                       Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
                     </p>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1.5 mt-0.5">
                       <Phone className="w-3 h-3 text-stone-400 shrink-0" />
                       Tel: 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
                     </p>
@@ -245,23 +251,27 @@ export function CustomerInvoicePreviewModal({
                 {/* Invoice Reference Capsule */}
                 <div className="w-full sm:w-auto bg-stone-100/90 dark:bg-stone-900/90 p-3 rounded-xl border border-stone-200 dark:border-stone-700/80 shadow-sm flex sm:flex-col justify-between items-end">
                   <div>
-                    <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                    <div className="text-xs font-bold text-stone-500 uppercase tracking-wider">
                       {language === 'bm' ? 'No. Rujukan Invois' : 'Invoice Reference'}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm sm:text-base font-mono font-bold text-amber-600 dark:text-amber-400">
                         {invoiceNo}
                       </span>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
                         onClick={handleCopyInvoiceNo}
-                        className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
+                        aria-label="Salin nombor invois"
+                        className="h-7 w-7 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
                         title="Salin No Invois"
                       >
                         {copiedInvoiceNo ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <div className="text-right text-[11px] text-stone-500 dark:text-stone-400 mt-1 flex items-center gap-1">
+                  <div className="text-right text-xs text-stone-500 dark:text-stone-400 mt-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     <span>{dateStr}</span>
                   </div>
@@ -294,7 +304,7 @@ export function CustomerInvoicePreviewModal({
               {/* Client & Booking Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-stone-50 dark:bg-stone-900/60 p-4 rounded-xl border border-stone-200 dark:border-stone-800">
                 <div>
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1 flex items-center gap-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1 flex items-center gap-1">
                     <Building2 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                     {language === 'bm' ? 'Invois Kepada (Pelanggan)' : 'Invoiced To'}
                   </h3>
@@ -310,7 +320,7 @@ export function CustomerInvoicePreviewModal({
                 </div>
 
                 <div>
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1">
                     {language === 'bm' ? 'Maklumat Majlis & Lokasi' : 'Event & Delivery Details'}
                   </h3>
                   <p className="text-xs text-stone-700 dark:text-stone-300">
@@ -332,7 +342,7 @@ export function CustomerInvoicePreviewModal({
               <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-xs bg-white dark:bg-stone-900/40">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 text-[11px] uppercase tracking-wider font-bold border-b border-stone-200 dark:border-stone-700">
+                    <tr className="bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 text-xs uppercase tracking-wider font-bold border-b border-stone-200 dark:border-stone-700">
                       <th className="py-2.5 px-3 sm:px-4">{language === 'bm' ? 'Butiran / Pakej Hidangan' : 'Description / Menu Item'}</th>
                       <th className="py-2.5 px-3 text-center">{language === 'bm' ? 'Kadar / Pax' : 'Rate / Pax'}</th>
                       <th className="py-2.5 px-3 text-center">{language === 'bm' ? 'Kuantiti' : 'Qty'}</th>
@@ -354,7 +364,7 @@ export function CustomerInvoicePreviewModal({
                             <td className="py-3 px-3 sm:px-4 font-semibold text-stone-800 dark:text-stone-200 capitalize">
                               {String(meal).replace(/_/g, ' ')}
                               {idx === 0 && order?.menu && (
-                                <div className="text-[11px] text-stone-500 font-normal mt-0.5">
+                                <div className="text-xs text-stone-500 font-normal mt-0.5">
                                   {order.menu}
                                 </div>
                               )}
@@ -417,13 +427,13 @@ export function CustomerInvoicePreviewModal({
                 {/* Bank Account Details Pill */}
                 <div className="bg-amber-50/70 dark:bg-amber-950/20 p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-900/40 relative group">
                   <div className="flex items-center justify-between mb-1.5">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-amber-600" />
                       {language === 'bm' ? 'Akaun Bank Rasmi' : 'Official Bank Details'}
                     </h4>
                     <button
                       onClick={handleCopyBank}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
                     >
                       {copiedBank ? (
                         <>
@@ -479,10 +489,10 @@ export function CustomerInvoicePreviewModal({
                   style={{ maskImage: 'radial-gradient(circle, black 70%, transparent 100%)' }}
                 >
                   <div className="border border-red-600/60 dark:border-red-500/60 px-3 py-1 rounded text-center">
-                    <div className="text-[9px] font-black tracking-widest text-red-700 dark:text-red-400 uppercase">
+                    <div className="text-xs font-black tracking-widest text-red-700 dark:text-red-400 uppercase">
                       RESTORAN WAWASAN
                     </div>
-                    <div className="text-[11px] font-black tracking-widest text-red-600 dark:text-red-400 uppercase my-0.5">
+                    <div className="text-xs font-black tracking-widest text-red-600 dark:text-red-400 uppercase my-0.5">
                       ★ {isOrderFinal ? (language === 'bm' ? 'DISAHKAN' : 'APPROVED') : (language === 'bm' ? 'SEBUT HARGA' : 'QUOTATION')} ★
                     </div>
                     <div className="text-[8px] font-semibold text-red-700/80 dark:text-red-400/80">
@@ -492,11 +502,11 @@ export function CustomerInvoicePreviewModal({
                 </div>
 
                 {/* Footer Microcopy */}
-                <div className="text-center sm:text-right text-[11px] text-stone-500 dark:text-stone-400">
+                <div className="text-center sm:text-right text-xs text-stone-500 dark:text-stone-400">
                   <p className="font-semibold text-stone-700 dark:text-stone-300">
                     {language === 'bm' ? 'Terima kasih atas tempahan anda.' : 'Thank you for choosing Restoran Wawasan.'}
                   </p>
-                  <p className="text-[10px] text-stone-400">
+                  <p className="text-xs text-stone-400">
                     Sistem Tempahan & Pengurusan Katering Digital
                   </p>
                 </div>
@@ -519,48 +529,51 @@ export function CustomerInvoicePreviewModal({
             <div className="px-5 py-3.5 bg-stone-100/90 dark:bg-stone-900/90 border-t border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2.5">
               
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={handlePrint}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-750 transition-all shadow-xs active:scale-95"
+                  className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-750 shadow-xs active:scale-95"
                 >
                   <Printer className="w-3.5 h-3.5 text-stone-500" />
                   <span>{language === 'bm' ? 'Cetak' : 'Print'}</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={handleWhatsAppShare}
-                  className="inline-flex min-h-[44px] items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-950 dark:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all shadow-xs active:scale-95"
+                  className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-950 dark:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 shadow-xs active:scale-95"
                 >
                   <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{language === 'bm' ? 'WhatsApp Invois' : 'WhatsApp Share'}</span>
-                </button>
+                </Button>
               </div>
 
               <div className="flex items-center gap-2">
                 {onDownload && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       triggerLightImpact();
                       onDownload();
                       if (onClose) onClose();
                     }}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md shadow-amber-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md active:scale-[0.98]"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>{language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}</span>
-                  </button>
+                  </Button>
                 )}
 
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={onClose}
-                  className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors flex items-center justify-center"
+                  className="min-h-[44px] h-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 flex items-center justify-center"
                 >
                   {language === 'bm' ? 'Tutup' : 'Close'}
-                </button>
+                </Button>
               </div>
 
             </div>

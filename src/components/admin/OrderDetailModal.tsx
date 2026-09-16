@@ -8,7 +8,9 @@ import {
   XCircle, 
   Send,
   Copy,
-  Trash2
+  Trash2,
+  Truck,
+  MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,7 +104,7 @@ export function OrderDetailModal({
             </h2>
             {selectedOrder && (
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 font-mono">
+                <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 font-sans font-medium">
                   {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
                 </p>
                 {(selectedOrder.invoiceNo || selectedOrder.id) && (
@@ -134,14 +136,16 @@ export function OrderDetailModal({
               </div>
             )}
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
+            className="rounded-full hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
             aria-label="Close"
             id="order-detail-close-btn"
           >
             <X className="w-5 h-5 text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100" />
-          </button>
+          </Button>
         </div>
 
         {/* Body - Scrollable Area */}
@@ -223,7 +227,7 @@ export function OrderDetailModal({
                     } : null,
                   ].filter(Boolean).map((field, idx) => (
                     <div key={idx} className="pb-5 border-b border-stone-100 dark:border-stone-800/80 last:border-0 last:pb-0">
-                      <span className="text-[11px] sm:text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1.5">
+                      <span className="text-xs sm:text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1.5">
                         {field!.label}
                       </span>
                       <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug break-words max-w-[70ch] whitespace-pre-line">
@@ -253,17 +257,19 @@ export function OrderDetailModal({
                           size="sm"
                           disabled={isApproving || selectedOrder.status?.toLowerCase() === 'in_transit'}
                           onClick={() => handleUpdateStatus(selectedOrder.id!, 'in_transit')}
-                          className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9"
+                          className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
                         >
-                          🚚 {language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</span>
                         </Button>
                         <Button
                           size="sm"
                           disabled={isApproving || selectedOrder.status?.toLowerCase() === 'delivered'}
                           onClick={() => handleUpdateStatus(selectedOrder.id!, 'delivered')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-9"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
                         >
-                          ✅ {language === 'bm' ? 'Dihantar / Selesai' : 'Mark Delivered'}
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>{language === 'bm' ? 'Dihantar / Selesai' : 'Mark Delivered'}</span>
                         </Button>
                       </div>
                       {handleTrack && (
@@ -275,7 +281,8 @@ export function OrderDetailModal({
                           }}
                           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold h-9 mt-2 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
                         >
-                          🗺️ {language === 'bm' ? 'Jejak & Geofence' : 'Track & Geofence'}
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>{language === 'bm' ? 'Jejak & Geofence' : 'Track & Geofence'}</span>
                         </Button>
                       )}
                     </div>

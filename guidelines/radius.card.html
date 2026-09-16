@@ -1,0 +1,42 @@
+<!-- @dsCard group="Guidelines" viewport="800x260" subtitle="Corner radius scale for buttons, cards, and overlays" name="Radius Scale" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-sizing: border-box;
+    }
+    .box {
+      width: 100px;
+      height: 100px;
+      background: var(--color-surface, #FAF7F1);
+      border: 2px solid var(--color-sunshine-cta, #C2932D);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div class="box" style="border-radius: var(--radius-sm, 4px);">SM<br><span style="font-size: 10px; font-weight: normal;">4px</span></div>
+  <div class="box" style="border-radius: var(--radius-md, 6px);">MD<br><span style="font-size: 10px; font-weight: normal;">6px (Button)</span></div>
+  <div class="box" style="border-radius: var(--radius-lg, 8px);">LG<br><span style="font-size: 10px; font-weight: normal;">8px (Card)</span></div>
+  <div class="box" style="border-radius: var(--radius-xl, 12px);">XL<br><span style="font-size: 10px; font-weight: normal;">12px (Modal)</span></div>
+  <div class="box" style="border-radius: 9999px;">Full<br><span style="font-size: 10px; font-weight: normal;">Pill / Badge</span></div>
+</body>
+</html>

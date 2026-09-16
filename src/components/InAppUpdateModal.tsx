@@ -115,17 +115,19 @@ export default function InAppUpdateModal({
 
           {/* Dismiss button if non-mandatory */}
           {!isForceUpdate && !downloading && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={async () => {
                 await triggerLightImpact();
                 onDismiss();
               }}
-              className="absolute top-4 right-4 p-2 rounded-full text-stone hover:text-deep-forest dark:hover:text-white hover:bg-stone/10 transition-colors"
+              className="absolute top-4 right-4 h-9 w-9 rounded-full text-stone hover:text-deep-forest dark:hover:text-white hover:bg-stone/10 transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           )}
 
           {/* Header Icon & Tag */}
@@ -138,7 +140,7 @@ export default function InAppUpdateModal({
               )}
             </div>
             <div>
-              <span className={`text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block ${isForceUpdate ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-[var(--color-sunshine-cta)]/20 text-[var(--color-sunshine-cta)]'}`}>
+              <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block ${isForceUpdate ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-[var(--color-sunshine-cta)]/20 text-[var(--color-sunshine-cta)]'}`}>
                 {isForceUpdate 
                   ? (isBM ? 'Kemaskini Penting Diperlukan' : 'Critical Update Required') 
                   : (isBM ? 'Kemaskini Terus Aplikasi' : 'Live In-App Update')}
@@ -152,7 +154,7 @@ export default function InAppUpdateModal({
           {/* Version Pill Badges */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-cream/70 dark:bg-stone/10 border border-border/60 text-xs font-semibold">
             <div className="space-y-0.5">
-              <span className="text-stone dark:text-stone/70 block text-[10px] uppercase tracking-wider">
+              <span className="text-stone dark:text-stone/70 block text-xs uppercase tracking-wider">
                 {isBM ? 'Versi Semasa' : 'Current Version'}
               </span>
               <span className="text-stone dark:text-stone/80 font-mono text-sm">
@@ -163,7 +165,7 @@ export default function InAppUpdateModal({
             <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
 
             <div className="space-y-0.5 text-right">
-              <span className="text-stone dark:text-stone/70 block text-[10px] uppercase tracking-wider">
+              <span className="text-stone dark:text-stone/70 block text-xs uppercase tracking-wider">
                 {isBM ? 'Versi Terkini' : 'Latest Version'}
               </span>
               <span className="text-[var(--color-sunshine-cta)] font-mono text-sm font-bold">
@@ -250,7 +252,7 @@ export default function InAppUpdateModal({
             )}
 
             {isForceUpdate && (
-              <p className="text-[11px] text-center text-amber-600 dark:text-amber-400 font-medium">
+              <p className="text-xs text-center text-amber-600 dark:text-amber-400 font-medium">
                 {isBM
                   ? 'Kemaskini ini adalah wajib untuk memastikan kelancaran aplikasi.'
                   : 'This critical update is mandatory to ensure application functionality.'}

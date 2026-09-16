@@ -92,6 +92,11 @@ export default function OrderPage() {
         */}
         <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
           <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
+            {/**
+             * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
+             * Semantic multi-line logo & identity header touch target navigating to /home.
+             * Not a standard action button; exempt from <Button> primitive migration.
+             */}
             <button
               type="button"
               onClick={async () => {
@@ -113,13 +118,13 @@ export default function OrderPage() {
             </button>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={async () => {
                   await triggerLightImpact();
                   toggleTheme();
                 }}
-                className="icon-button-soft touch-target"
                 aria-label="Toggle theme"
               >
                 {theme === 'light' ? (
@@ -127,10 +132,11 @@ export default function OrderPage() {
                 ) : (
                   <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
                 )}
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={async () => {
                   await triggerLightImpact();
                   if (currentUser) {
@@ -144,7 +150,6 @@ export default function OrderPage() {
                     setAuthModalOpen(true);
                   }
                 }}
-                className="icon-button-soft touch-target"
                 aria-label={currentUser ? 'Account' : 'Sign in'}
               >
                 {currentUser ? (
@@ -154,7 +159,7 @@ export default function OrderPage() {
                 ) : (
                   <UserIcon className="w-5 h-5" />
                 )}
-              </button>
+              </Button>
 
               {/* P0 — semantic back button + 44 px tap target. */}
               <Button

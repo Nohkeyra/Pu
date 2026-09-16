@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/Toast';
@@ -20,7 +21,8 @@ import {
   Utensils, 
   Check,
   MessageCircle,
-  Pencil
+  Pencil,
+  Truck
 } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
@@ -96,7 +98,7 @@ function OrderItem({
             style={{ opacity: swipeOpacity, scale: swipeScale }}
           >
             <Trash2 className="w-6 h-6 mb-1" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">{t('Delete', 'Padam')}</span>
+            <span className="text-xs font-bold uppercase tracking-wider">{t('Delete', 'Padam')}</span>
           </motion.div>
         </div>
       )}
@@ -278,9 +280,10 @@ function OrderItem({
                 setTrackingOrder(order);
               }}
               size="sm"
-              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3 shadow-sm"
+              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3 shadow-sm flex items-center"
             >
-              <span>🚚 {t('Track Delivery', 'Jejak Penghantaran')}</span>
+              <Truck className="w-3.5 h-3.5" />
+              <span>{t('Track Delivery', 'Jejak Penghantaran')}</span>
             </Button>
           )}
 
@@ -418,9 +421,19 @@ export function ProfileOrdersTab({
       case 'approved':
         return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Approved', 'Diluluskan')}</Badge>;
       case 'in_transit':
-        return <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold animate-pulse">{t('In Transit 🚚', 'Dalam Perjalanan 🚚')}</Badge>;
+        return (
+          <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold animate-pulse inline-flex items-center gap-1">
+            <Truck className="w-3 h-3" />
+            <span>{t('In Transit', 'Dalam Perjalanan')}</span>
+          </Badge>
+        );
       case 'delivered':
-        return <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Delivered ✅', 'Selesai Dihantar ✅')}</Badge>;
+        return (
+          <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold inline-flex items-center gap-1">
+            <Check className="w-3 h-3" />
+            <span>{t('Delivered', 'Selesai Dihantar')}</span>
+          </Badge>
+        );
       case 'cancelled':
         return <Badge variant="outline" className="border-stone-400 text-stone-500 text-xs font-bold">{t('Cancelled', 'Dibatalkan')}</Badge>;
       case 'rejected':
@@ -432,16 +445,16 @@ export function ProfileOrdersTab({
   };
 
   return (
-    <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans">
+    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <div>
-          <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
+          <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
             <History className="w-5 h-5 text-primary" />
             <span>{t('Catering Order History', 'Sejarah Tempahan Katering')}</span>
-          </h3>
-          <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+          </CardTitle>
+          <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('View past catering orders, request invoice PDFs, or reorder favorite menus.', 'Semak tempahan lalu, muat turun invois, atau hantar semula tempahan.')}
-          </p>
+          </CardDescription>
         </div>
 
         {orders.length > 1 && (
@@ -487,7 +500,9 @@ export function ProfileOrdersTab({
             )}
           </div>
         )}
-      </div>
+      </CardHeader>
+
+      <CardContent className="p-0 pt-0 space-y-4">
 
       {isLoadingOrders ? (
         <div className="flex flex-col items-center justify-center py-10 space-y-2">
@@ -590,6 +605,7 @@ export function ProfileOrdersTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

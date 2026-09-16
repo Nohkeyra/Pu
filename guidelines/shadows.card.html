@@ -1,0 +1,40 @@
+<!-- @dsCard group="Guidelines" viewport="800x260" subtitle="Elevation levels without fake glowing artifacts" name="Elevation & Shadows" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      box-sizing: border-box;
+    }
+    .card {
+      width: 120px;
+      height: 90px;
+      background: #FFFFFF;
+      border: 1px solid var(--color-border, #E8E2D6);
+      border-radius: var(--radius-lg, 8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" style="box-shadow: 0 1px 2px rgba(0,0,0,0.05);">Shadow SM<br><span style="font-size: 11px; font-weight: normal; color: #70685C;">Subtle</span></div>
+  <div class="card" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);">Shadow MD<br><span style="font-size: 11px; font-weight: normal; color: #70685C;">Cards</span></div>
+  <div class="card" style="box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);">Shadow LG<br><span style="font-size: 11px; font-weight: normal; color: #70685C;">Floating / Popover</span></div>
+  <div class="card" style="box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">Shadow XL<br><span style="font-size: 11px; font-weight: normal; color: #70685C;">Dialogs / Modals</span></div>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Shield, ArrowRight, User as UserIcon, Download, Sun, Moon, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { User } from 'firebase/auth';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
@@ -78,17 +79,19 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
 
       <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         {/* Close Button */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           type="button"
           onClick={async () => {
             await triggerLightImpact();
             onClose();
           }}
-          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-stone/15 bg-white text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] active:scale-95 transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8]"
+          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-stone/15 bg-white text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8]"
           aria-label={language === 'bm' ? 'Tutup menu' : 'Close menu'}
         >
           <X className="h-5 w-5" />
-        </button>
+        </Button>
 
         <nav ref={itemsRef} className="flex flex-1 flex-col overflow-y-auto pb-6 pt-12">
           {/* Brand Header */}
@@ -148,14 +151,15 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
           {/* Bottom Action Grid */}
           <div className="mt-8 space-y-2.5">
             {/* Member Sign In / Account */}
-            <button
+            <Button
+              variant="outline"
               type="button"
               onClick={handleAuth}
-              className="flex w-full min-h-[48px] items-center justify-center gap-2.5 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+              className="flex w-full min-h-[48px] items-center justify-center gap-2.5 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
             >
               {currentUser ? (
                 <>
-                  <div className="flex min-h-[32px] min-w-[32px] h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[11px] font-black text-[#ede5d8]">
+                  <div className="flex min-h-[32px] min-w-[32px] h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-xs font-black text-[#ede5d8]">
                     {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                   <span>{language === 'bm' ? 'Akaun / Papan Pemuka' : 'Account / Dashboard'}</span>
@@ -166,28 +170,30 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                   <span>{language === 'bm' ? 'Log Masuk Ahli' : 'Member Sign In'}</span>
                 </>
               )}
-            </button>
+            </Button>
 
             {/* Language & Theme Controls Row */}
             <div className="grid grid-cols-2 gap-2.5">
               {/* Language Switcher */}
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={toggleLanguage}
-                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
               >
                 <span className="tracking-wider text-xs">
                   <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-stone-400 dark:text-stone-500'}>EN</span>
                   <span className="mx-1 text-stone-300 dark:text-stone-600">/</span>
                   <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-stone-400 dark:text-stone-500'}>BM</span>
                 </span>
-              </button>
+              </Button>
 
               {/* Theme Switcher */}
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={handleThemeToggle}
-                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
               >
                 {theme === 'dark' ? (
                   <>
@@ -200,7 +206,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                     <span className="text-xs">{language === 'bm' ? 'Gelap' : 'Dark'}</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
 
             {/* Download APK */}

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Sparkles, 
+  Sparkles,
+  CupSoda,
+  Coffee,
+  Utensils,
+  CakeSlice,
   ArrowLeft, 
   ArrowRight,
   Check
@@ -69,7 +73,7 @@ export function Step2DishSelection({
     await handleStepNext(2);
   };
 
-  const renderSection = (title: string, icon: string, category: string, colorClass: string, isFirstSection: boolean = false) => {
+  const renderSection = (title: string, icon: React.ReactNode, category: string, colorClass: string, isFirstSection: boolean = false) => {
     const categoryDishes = visibleMenu.filter(item => item.category === category);
     if (!categoryDishes.length) return null;
 
@@ -80,7 +84,7 @@ export function Step2DishSelection({
       <div className="space-y-4">
         <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2.5 sticky top-[72px] z-30 bg-cream/95 dark:bg-stone-950/95 backdrop-blur-md -mx-2 px-2 py-1">
           <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block shrink-0`}>
-            {icon} {title}
+            <span className="inline-flex items-center gap-1.5">{icon}<span>{title}</span></span>
           </Label>
           {selectedCount > 0 && (
             <span className="microcopy-12-upper font-bold px-3 py-1 rounded-full transition-colors text-white bg-amber-600 shadow-xs shrink-0 whitespace-nowrap">
@@ -190,16 +194,16 @@ export function Step2DishSelection({
         </div>
       ) : (
         <div className="space-y-6">
-          {orderState.mealTypes.includes('sarapan') && renderSection(tText('Breakfast Selection', 'Pilihan Sarapan'), '🍳', 'breakfast', 'text-amber-500', true)}
-          {orderState.mealTypes.includes('tengahari') && renderSection(tText('Lunch Selection', 'Pilihan Tengahari'), '🍛', 'lunch', 'text-orange-500', !orderState.mealTypes.includes('sarapan'))}
-          {orderState.mealTypes.includes('hitea') && renderSection(tText('Hi-Tea Selection', 'Pilihan Hi-Tea'), '🍰', 'hi tea', 'text-pink-500', !orderState.mealTypes.includes('sarapan') && !orderState.mealTypes.includes('tengahari'))}
-          {!orderState.mealTypes.length && renderSection(tText('Menu Selection', 'Pilihan Menu'), '🍽️', 'lunch', 'text-orange-500', true)}
+          {orderState.mealTypes.includes('sarapan') && renderSection(tText('Breakfast Selection', 'Pilihan Sarapan'), <Utensils className="w-4 h-4" aria-hidden="true" />, 'breakfast', 'text-amber-500', true)}
+          {orderState.mealTypes.includes('tengahari') && renderSection(tText('Lunch Selection', 'Pilihan Tengahari'), <Utensils className="w-4 h-4" aria-hidden="true" />, 'lunch', 'text-orange-500', !orderState.mealTypes.includes('sarapan'))}
+          {orderState.mealTypes.includes('hitea') && renderSection(tText('Hi-Tea Selection', 'Pilihan Hi-Tea'), <CakeSlice className="w-4 h-4" aria-hidden="true" />, 'hi tea', 'text-pink-500', !orderState.mealTypes.includes('sarapan') && !orderState.mealTypes.includes('tengahari'))}
+          {!orderState.mealTypes.length && renderSection(tText('Menu Selection', 'Pilihan Menu'), <Utensils className="w-4 h-4" aria-hidden="true" />, 'lunch', 'text-orange-500', true)}
 
           {visibleMenu.some(item => item.category === 'drinks') && (
             <div className="space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
                 <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block shrink-0">
-                  🥤 {tText('Drinks Selection', 'Pilihan Minuman')}
+                  <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Drinks Selection', 'Pilihan Minuman')}</span>
                 </Label>
                 {orderState.dishes.filter(d => d.category === 'drinks').length > 0 && (
                   <span className="microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full transition-colors text-white bg-crisp-carrot shadow-sm shrink-0 whitespace-nowrap">
@@ -210,8 +214,8 @@ export function Step2DishSelection({
 
               {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (
                 <div className="space-y-3">
-                  <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block opacity-80">
-                    {tText('☕ Hot/Warm Drinks', '☕ Minuman Panas/Suam')}
+                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block opacity-80">
+                    <span className="inline-flex items-center gap-1.5"><Coffee className="w-4 h-4" aria-hidden="true" />{tText('Hot/Warm Drinks', 'Minuman Panas/Suam')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">
                     {visibleMenu
@@ -268,8 +272,8 @@ export function Step2DishSelection({
 
               {(orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length) && (
                 <div className="space-y-3 pt-2">
-                  <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block opacity-80">
-                    {tText('🥤 Refreshing Box/Cordial/Mineral Drinks', '🥤 Minuman Kotak/Kordial/Mineral Segar')}
+                  <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block opacity-80">
+                    <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Refreshing Box/Cordial/Mineral Drinks', 'Minuman Kotak/Kordial/Mineral Segar')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">
                     {visibleMenu
@@ -412,7 +416,7 @@ export function Step2DishSelection({
       {/* Floating Bottom Quick Action Bar for Mobile Ergonomics */}
       <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 md:hidden flex items-center justify-between gap-3 shadow-xl">
         <div className="flex flex-col text-left">
-          <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-none">
+          <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-none">
             {tText('Selection', 'Pilihan')}
           </span>
           <span className="text-sm font-black text-stone-900 dark:text-white leading-tight mt-0.5">

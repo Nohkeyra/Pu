@@ -6,7 +6,8 @@ import {
   Check, 
   Phone, 
   ArrowRight, 
-  User as UserIcon
+  User as UserIcon,
+  Ghost
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
@@ -1157,20 +1158,21 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-              <button
+              <Button
                 type="button"
                 onClick={() => { setAuthMode('signin'); setAuthModalOpen(true); }}
-                className="btn-cta px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shadow-sm"
+                className="btn-cta px-4 py-2 min-h-[40px] h-auto rounded-xl text-xs font-bold flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <span>{tText('Sign In', 'Log Masuk')}</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}
-                className="px-4 py-2 min-h-[40px] rounded-xl text-xs font-bold border border-stone/20 hover:border-[var(--color-sunshine-cta)] bg-white dark:bg-card text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-800 transition-all flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
+                className="px-4 py-2 min-h-[40px] h-auto rounded-xl text-xs font-bold border-stone/20 hover:border-[var(--color-sunshine-cta)] bg-white dark:bg-card text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-800 flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
               >
                 <span>{tText('Sign Up', 'Daftar')}</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1188,17 +1190,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/40 dark:bg-stone-900/40 border-b border-stone/10 dark:border-white/5" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
                 {draftSavedAt && !initialData && (
                   <div className="flex items-center justify-between mb-3 bg-stone-100/70 dark:bg-stone-800/60 px-3 py-1.5 rounded-xl border border-stone/15 dark:border-white/10" role="status">
-                    <p className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5 truncate mr-2">
+                    <p className="text-xs font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5 truncate mr-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
                       <span className="truncate">{tText('Draft saved on this device', 'Draf disimpan pada peranti ini')}</span>
                     </p>
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       onClick={handleDiscardDraft}
-                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 shrink-0 underline cursor-pointer select-none px-1 py-0.5"
+                      className="text-xs h-auto p-0 font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 shrink-0 underline cursor-pointer select-none px-1 py-0.5"
                     >
                       {tText('Clear Draft', 'Padam Draf')}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -1206,7 +1209,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 <div className="sm:hidden space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
                         {tText(`Step ${effectiveStep} of 4`, `Langkah ${effectiveStep} / 4`)}
                       </span>
                       <motion.span
@@ -1224,13 +1227,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     </div>
 
                     {hasSeenDemo && !demoActive && (
-                      <button
+                      <Button
+                        variant="outline"
                         type="button"
                         onClick={handleStartDemo}
-                        className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        className="text-xs h-auto font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
                       >
-                        <span>👻 {tText('Watch demo', 'Tonton demo')}</span>
-                      </button>
+                        <><Ghost className="w-4 h-4" aria-hidden="true" /><span>{tText('Watch demo', 'Tonton demo')}</span></>
+                      </Button>
                     )}
                   </div>
                   {/* Visual Step Progress Capsules */}
@@ -1321,13 +1325,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   })}
 
                   {hasSeenDemo && !demoActive && (
-                    <button
+                    <Button
+                      variant="outline"
                       type="button"
                       onClick={handleStartDemo}
-                      className="ml-4 text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0"
+                      className="ml-4 text-xs h-auto font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
                     >
-                      <span>👻 {tText('Watch demo', 'Tonton demo')}</span>
-                    </button>
+                      <><Ghost className="w-4 h-4" aria-hidden="true" /><span>{tText('Watch demo', 'Tonton demo')}</span></>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -1602,13 +1607,13 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       {/* Ghost Demo Overlay & Floating Skip Button */}
       {demoActive && (
         <div className="fixed top-4 right-4 z-[9999]">
-          <button
+          <Button
             type="button"
             onClick={handleEndDemo}
-            className="bg-stone-900/90 hover:bg-black text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-white/20 flex items-center gap-1.5 backdrop-blur-md cursor-pointer transition-all active:scale-95"
+            className="bg-stone-900/90 hover:bg-black text-white px-3.5 py-1.5 h-auto rounded-full text-xs font-bold shadow-lg border border-white/20 flex items-center gap-1.5 backdrop-blur-md cursor-pointer active:scale-95"
           >
             <span>{tText('Skip demo', 'Langkau demo')} ✕</span>
-          </button>
+          </Button>
         </div>
       )}
       <DemoOverlay

@@ -1,6 +1,7 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Bell, Mail, Ban, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,19 +29,19 @@ export function ProfilePreferencesTab({
 }: ProfilePreferencesTabProps) {
   const navigate = useNavigate();
   return (
-    <div className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 rounded-xl p-5 sm:p-6 shadow-sm space-y-5">
-      <div className="pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans">
-        <h3 className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
+    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
+        <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
           {t('Notification & Communication Preferences', 'Tetapan Notifikasi & Komunikasi')}
-        </h3>
-        <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+        </CardTitle>
+        <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
           {t('Manage how you receive order status alerts, invoice emails, and cancellation updates.', 'Urus saluran notifikasi pesanan dan invois anda.')}
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      <div className="space-y-4 font-sans">
+      <CardContent className="space-y-4 font-sans p-0 pt-0">
         {/* Order Status Notification */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
+        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Bell className="w-4 h-4 text-primary shrink-0" />
@@ -57,10 +58,10 @@ export function ProfilePreferencesTab({
               setTimeout(() => handleSavePreferences(), 100);
             }}
           />
-        </div>
+        </Card>
 
         {/* Invoice Email Updates */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
+        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Mail className="w-4 h-4 text-primary shrink-0" />
@@ -77,10 +78,10 @@ export function ProfilePreferencesTab({
               setTimeout(() => handleSavePreferences(), 100);
             }}
           />
-        </div>
+        </Card>
 
         {/* Cancel Approval Alerts */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10">
+        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Ban className="w-4 h-4 text-primary shrink-0" />
@@ -97,7 +98,7 @@ export function ProfilePreferencesTab({
               setTimeout(() => handleSavePreferences(), 100);
             }}
           />
-        </div>
+        </Card>
 
         {/* Full Application Settings Button */}
         <div className="pt-2">
@@ -111,7 +112,7 @@ export function ProfilePreferencesTab({
             <span>{t('Open Full Application Settings', 'Buka Tetapan Penuh Aplikasi')}</span>
           </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

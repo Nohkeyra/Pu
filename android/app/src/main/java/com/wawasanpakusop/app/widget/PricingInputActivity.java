@@ -84,9 +84,9 @@ public class PricingInputActivity extends Activity {
 
         // Show only the meal-type rows actually present in this order.
         String meals = mealsLabel != null ? mealsLabel : "";
-        hasBreakfast = meals.contains("Sarapan");
-        hasLunch = meals.contains("Tengahari");
-        hasHitea = meals.contains("Hi-Tea");
+        hasBreakfast = meals.contains("Sarapan") || meals.toLowerCase().contains("breakfast");
+        hasLunch = meals.contains("Tengahari") || meals.toLowerCase().contains("lunch");
+        hasHitea = meals.contains("Hi-Tea") || meals.toLowerCase().contains("hi-tea") || meals.toLowerCase().contains("hi_tea");
 
         // Fallback: if label parsing found nothing (unexpected format), show all three.
         if (!hasBreakfast && !hasLunch && !hasHitea) {

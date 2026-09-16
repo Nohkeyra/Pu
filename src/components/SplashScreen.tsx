@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
 import { triggerDramaticImpact } from '@/lib/haptics';
+import { Sparkles, Star } from 'lucide-react';
 
 // F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
@@ -238,7 +239,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             type="button"
             onClick={handleSkip}
             aria-label="Langkau skrin percikan"
-            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-black/25 active:scale-95 border border-white/30 text-[10px] font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-black/40 pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0c453c]"
+            className="absolute right-6 z-[10000] px-3.5 py-1.5 rounded-full bg-black/25 active:scale-95 border border-white/30 text-xs font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-black/40 pointer-events-auto focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0c453c]"
             style={{
               top: 'calc(1.5rem + var(--safe-area-inset-top, 0px))',
               opacity: skipFaded ? 0.35 : 1,
@@ -259,7 +260,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#fde047] opacity-80" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#fde047]" />
                 </span>
-                <span className="text-[10px] font-bold tracking-widest text-white/95 uppercase">
+                <span className="text-xs font-bold tracking-widest text-white/95 uppercase">
                   {isLoading ? 'Menyediakan' : 'Sedia'}
                 </span>
               </div>
@@ -364,9 +365,9 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                 transition={{ duration: 1.0, ease: 'easeOut' }}
               >
                 <div className="relative flex items-center justify-center w-28 h-10">
-                  <span className="absolute left-1 top-0 text-amber-200 text-lg drop-shadow font-black animate-bounce">⭐</span>
-                  <span className="absolute right-2 top-1 text-yellow-100 text-sm drop-shadow font-black animate-pulse">✨</span>
-                  <span className="absolute left-8 -top-3 text-amber-300 text-xs drop-shadow font-black animate-spin">💫</span>
+                  <Star className="absolute left-1 top-0 w-4 h-4 text-amber-200 drop-shadow animate-bounce" aria-hidden="true" />
+                  <Sparkles className="absolute right-2 top-1 w-4 h-4 text-yellow-100 drop-shadow animate-pulse" aria-hidden="true" />
+                  <Sparkles className="absolute left-8 -top-3 w-3.5 h-3.5 text-amber-300 drop-shadow animate-spin" aria-hidden="true" />
                 </div>
               </motion.div>
             )}
@@ -553,7 +554,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               />
             </div>
 
-            <p className="text-[10px] font-medium tracking-widest text-white/75 uppercase mt-1.5">
+            <p className="text-xs font-medium tracking-widest text-white/75 uppercase mt-1.5">
               Sistem Tempahan Katering Putrajaya
             </p>
           </motion.div>

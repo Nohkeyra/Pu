@@ -94,13 +94,14 @@ export function Step1EventMeal({
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
         <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             role="radio"
             aria-checked={orderState.eventType === 'pejabat'}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'pejabat' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
-              "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+              "p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
               orderState.eventType === 'pejabat' 
                 ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30" 
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -119,17 +120,18 @@ export function Step1EventMeal({
             </div>
             <div className="w-full">
               <span className="text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-              <span className="text-[11px] text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
+              <span className="text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             role="radio"
             aria-checked={orderState.eventType === 'lain'}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'lain' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
-              "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+              "p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
               orderState.eventType === 'lain' 
                 ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30" 
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -148,9 +150,9 @@ export function Step1EventMeal({
             </div>
             <div className="w-full">
               <span className="text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Private Events', 'Majlis Katering')}</span>
-              <span className="text-[11px] text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
+              <span className="text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
             </div>
-          </button>
+          </Button>
         </div>
         {fieldErrors.eventType && <FormError message={fieldErrors.eventType} />}
       </div>
@@ -161,7 +163,7 @@ export function Step1EventMeal({
           <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
             {tText('Meals / Sajian', 'Pilihan Sajian *')}
           </Label>
-          <span className="text-[11px] text-stone font-normal">
+          <span className="text-xs text-stone font-normal">
             {tText('Multi-select enabled', 'Boleh pilih > 1')}
           </span>
         </div>
@@ -183,7 +185,7 @@ export function Step1EventMeal({
                 aria-pressed={isSelected}
                 onClick={() => { handleToggleMeal(mealId); setFieldErrors((e) => ({ ...e, mealTypes: undefined })); }}
                 className={cn(
-                  "p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[96px] cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+                  "p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[96px] cursor-pointer relative select-none active:scale-[0.99]",
                   isSelected 
                     ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
                     : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -202,7 +204,7 @@ export function Step1EventMeal({
                 </div>
                 <div className="w-full mt-1">
                   <span className="text-xs font-bold block leading-tight text-deep-forest dark:text-white truncate">{m.label()}</span>
-                  <span className="text-[10px] text-stone/85 dark:text-stone-300/85 leading-none font-medium block mt-1">{m.time}</span>
+                  <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-none font-medium block mt-1">{m.time}</span>
                 </div>
               </button>
             );
@@ -224,7 +226,7 @@ export function Step1EventMeal({
             aria-checked={orderState.preparationType === 'buffet'}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'buffet' }))}
             className={cn(
-              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
               orderState.preparationType === 'buffet'
                 ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -243,7 +245,7 @@ export function Step1EventMeal({
             </div>
             <div className="min-w-0 pr-4">
               <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white truncate">{tText('Buffet Style', 'Hidangan Bufet')}</span>
-              <span className="text-[11px] text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
+              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
             </div>
           </button>
 
@@ -254,7 +256,7 @@ export function Step1EventMeal({
             aria-checked={orderState.preparationType === 'meal_box'}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'meal_box' }))}
             className={cn(
-              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none hover:scale-[1.01] active:scale-[0.99]",
+              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
               orderState.preparationType === 'meal_box'
                 ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
@@ -273,7 +275,7 @@ export function Step1EventMeal({
             </div>
             <div className="min-w-0 pr-4">
               <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white truncate">{tText('Pre-Pack Box', 'Set Box')}</span>
-              <span className="text-[11px] text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
+              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
             </div>
           </button>
         </div>

@@ -86,14 +86,16 @@ export function SendInvoiceModal({
               </p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-stone/10 transition-all hover:rotate-90"
+            className="rounded-full hover:bg-stone/10 hover:rotate-90 transition-transform"
             aria-label="Close"
             id="send-invoice-close-btn"
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6 text-deep-forest/40" />
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8" id="send-invoice-body">
@@ -103,7 +105,7 @@ export function SendInvoiceModal({
               <div className="p-4 sm:p-6 bg-white/60 dark:bg-background/20 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
                   <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('invoice_no_label')}</span>
-                  <span className="font-mono font-bold text-deep-forest dark:text-white">
+                  <span className="font-sans font-bold text-deep-forest dark:text-white">
                     {getDisplayInvoiceNo(sendOrder)}
                   </span>
                 </div>
@@ -136,7 +138,7 @@ export function SendInvoiceModal({
                     {t('email_desc')}
                   </p>
                   <div className="space-y-2">
-                    <Label htmlFor="send-email-input" className="text-[10px] font-black text-deep-forest/40 uppercase tracking-widest ml-1">
+                    <Label htmlFor="send-email-input" className="text-xs font-black text-deep-forest/40 uppercase tracking-widest ml-1">
                       {t('recipient_email')}
                     </Label>
                     <Input
@@ -186,7 +188,7 @@ export function SendInvoiceModal({
                     {t('whatsapp_desc')}
                   </p>
                   <div className="space-y-2">
-                    <Label htmlFor="send-phone-input" className="text-[10px] font-black text-deep-forest/40 uppercase tracking-widest ml-1">
+                    <Label htmlFor="send-phone-input" className="text-xs font-black text-deep-forest/40 uppercase tracking-widest ml-1">
                       {t('recipient_phone')}
                     </Label>
                     <Input

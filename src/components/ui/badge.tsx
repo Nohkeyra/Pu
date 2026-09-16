@@ -5,20 +5,33 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Badge Variants adhering to Restoran Wawasan Semantic Color Tokens
+ * Supports standard semantic variants: default, secondary, success, warning, danger, outline
+ * as well as legacy brand-palette tokens.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive transition-[color,box-shadow,background-color] overflow-hidden",
   {
     variants: {
       variant: {
+        // Standard semantic variants
         default:
-          "border-transparent bg-kiwi text-deep-forest [a&]:hover:bg-fern",
+          "border-transparent bg-[var(--color-accent)] text-white [a&]:hover:bg-[var(--color-accent-deep)]",
         secondary:
-          "border-transparent bg-forest-green text-deep-forest border border-deep-forest/10 [a&]:hover:bg-light-forest",
+          "border-transparent bg-[var(--color-surface-muted)] text-[var(--color-text)] border border-[var(--color-border)] [a&]:hover:bg-[var(--color-surface)]",
+        success:
+          "border-transparent bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20 [a&]:hover:bg-[var(--color-success-soft)]/80",
+        warning:
+          "border-transparent bg-[var(--color-warning-soft)] text-[var(--color-accent-deep)] border border-[var(--color-warning)]/30 [a&]:hover:bg-[var(--color-warning-soft)]/80",
+        danger:
+          "border-transparent bg-[var(--color-error-soft)] text-[var(--color-danger)] border border-[var(--color-danger)]/30 [a&]:hover:bg-[var(--color-error-soft)]/80",
         destructive:
-          "border-transparent bg-tomato-burst text-deep-forest [a&]:hover:bg-tomato-burst/90",
+          "border-transparent bg-[var(--color-error-soft)] text-[var(--color-danger)] border border-[var(--color-danger)]/30 [a&]:hover:bg-[var(--color-error-soft)]/80",
         outline:
-          "text-deep-forest border-deep-forest/20 [a&]:hover:bg-deep-forest/5 [a&]:hover:text-kiwi",
-        // Brand-specific variants.
+          "bg-transparent text-[var(--color-text)] border border-[var(--color-border)] [a&]:hover:bg-[var(--color-surface-muted)]",
+        
+        // Brand-specific variants
         honey:
           "border-transparent bg-honey/15 text-honey border border-honey/20 [a&]:hover:bg-honey/25",
         sage:
@@ -39,13 +52,27 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Props for Badge component
+ */
+export interface BadgeProps
+  extends React.ComponentProps<"span">,
+    VariantProps<typeof badgeVariants> {
+  /**
+   * Render as child slot component
+   */
+  asChild?: boolean
+}
+
+/**
+ * Badge tag/indicator component for status and categorization
+ */
 function Badge({
   className,
   variant,
   asChild = false,
   ...props
-}: React.ComponentProps<"span"> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+}: BadgeProps) {
   const Comp = asChild ? Slot : "span"
 
   return (

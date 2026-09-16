@@ -81,7 +81,8 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                String mealsLabel = buildMealsLabel(o.optJSONArray("meals"));
+                JSONArray mealsArr = o.optJSONArray("meals");
+                String mealsLabel = buildMealsLabel(mealsArr);
                 boolean isPast = o.optBoolean("isPast", false);
                 boolean isToday = o.optBoolean("isToday", false);
                 String rawDate = o.optString("eventDate", o.optString("date", ""));
@@ -96,17 +97,47 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
                     dateBadge = "📅 " + (formattedDate.isEmpty() ? "AKAN DATANG" : formattedDate);
                 }
 
-                rows.add(new PricingOrderRow(
-                    o.optString("id", ""),
-                    o.optString("to", "Pelanggan"),
-                    o.optString("menu", "-"),
-                    o.optInt("quantity", 0),
-                    mealsLabel,
-                    o.optString("status", "pending"),
-                    dateBadge,
-                    isPast,
-                    o.optString("location", "-")
-                ));
+                if (mealsArr != null && mealsArr.length() > 1) {
+                    for (int j = 0; j < mealsArr.length(); j++) {
+                        String m = mealsArr.optString(j, "");
+                        String mealMenuText;
+                        if (m.equalsIgnoreCase("breakfast") || m.equalsIgnoreCase("sarapan")) {
+                            mealMenuText = "× Breakfast →";
+                        } else if (m.equalsIgnoreCase("lunch") || m.equalsIgnoreCase("tengahari")) {
+                            mealMenuText = "× Lunch →";
+                        } else if (m.equalsIgnoreCase("hi_tea") || m.equalsIgnoreCase("hi-tea") || m.equalsIgnoreCase("tea")) {
+                            mealMenuText = "× Hi-Tea →";
+                        } else if (m.equalsIgnoreCase("dinner") || m.equalsIgnoreCase("malam")) {
+                            mealMenuText = "× Dinner →";
+                        } else {
+                            mealMenuText = "× " + m.substring(0, 1).toUpperCase() + m.substring(1).toLowerCase() + " →";
+                        }
+
+                        rows.add(new PricingOrderRow(
+                            o.optString("id", ""),
+                            o.optString("to", "Pelanggan"),
+                            mealMenuText,
+                            o.optInt("quantity", 0),
+                            mealsLabel,
+                            o.optString("status", "pending"),
+                            dateBadge,
+                            isPast,
+                            o.optString("location", "-")
+                        ));
+                    }
+                } else {
+                    rows.add(new PricingOrderRow(
+                        o.optString("id", ""),
+                        o.optString("to", "Pelanggan"),
+                        o.optString("menu", "-"),
+                        o.optInt("quantity", 0),
+                        mealsLabel,
+                        o.optString("status", "pending"),
+                        dateBadge,
+                        isPast,
+                        o.optString("location", "-")
+                    ));
+                }
             }
         } catch (Exception ignored) {}
     }
@@ -180,7 +211,11 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
         view.setTextViewText(R.id.pricing_item_company, row.companyName);
         view.setViewVisibility(R.id.pricing_item_company, android.view.View.VISIBLE);
 
-        view.setTextViewText(R.id.pricing_item_menu, "🍽️ " + row.menu);
+        if (row.menu != null && row.menu.startsWith("×")) {
+            view.setTextViewText(R.id.pricing_item_menu, row.menu);
+        } else {
+            view.setTextViewText(R.id.pricing_item_menu, "🍽️ " + row.menu);
+        }
         view.setViewVisibility(R.id.pricing_item_menu, android.view.View.VISIBLE);
 
         view.setTextViewText(R.id.pricing_item_location, "📍 " + row.location);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Sun, Moon, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { useTheme } from '@/context/ThemeContext';
@@ -130,14 +131,16 @@ export default function PageShell({
         <div className="page-shell__main flex h-14 min-h-[44px] items-center gap-2 sm:gap-3">
           {/* Back vs. Brand */}
           {!hideBack && !isHome ? (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleBack}
               className="icon-button-soft touch-target"
               aria-label={t('back') || 'Back'}
             >
               <ArrowLeft className="h-5 w-5" />
-            </button>
+            </Button>
           ) : (
             <Link to={homeRoute} className="flex items-center gap-2 min-h-[44px]">
               <div className="h-9 w-9 rounded-xl bg-white/80 p-0.5 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
@@ -177,7 +180,9 @@ export default function PageShell({
           {/* Right-side minimal actions */}
           <div className="flex items-center gap-2">
             {actions}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={async () => {
                 await triggerLightImpact();
@@ -188,8 +193,10 @@ export default function PageShell({
               title={t('nav_settings') || 'Settings'}
             >
               <SettingsIcon className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleThemeToggle}
               className="icon-button-soft touch-target"
@@ -200,8 +207,10 @@ export default function PageShell({
               ) : (
                 <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
               )}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleAuth}
               className="icon-button-soft touch-target"
@@ -214,7 +223,7 @@ export default function PageShell({
               ) : (
                 <UserIcon className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </header>

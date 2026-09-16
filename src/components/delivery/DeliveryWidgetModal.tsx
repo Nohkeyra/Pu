@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, Phone, Navigation, Check, X, LayoutGrid, Smartphone, BellRing, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Order } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -79,7 +80,7 @@ export function DeliveryWidgetModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-md rounded-t-[32px] sm:rounded-[28px] bg-stone-900 text-white p-5 sm:p-6 max-h-[90dvh] overflow-y-auto border-t sm:border border-stone-700/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col gap-4"
+        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-stone-900 text-white p-5 sm:p-6 max-h-[90dvh] overflow-y-auto border-t sm:border border-stone-700/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Drag/Grab Handle */}
@@ -95,20 +96,22 @@ export function DeliveryWidgetModal({
               <span className="text-xs sm:text-sm font-bold text-stone-100 block">
                 {language === 'bm' ? 'Widget Skrin Utama' : 'Home Screen Widget'}
               </span>
-              <span className="text-[10px] text-stone-400 block">
+              <span className="text-xs text-stone-400 block">
                 {language === 'bm' ? 'Pralihat Komponen Android / iOS' : 'Android / iOS Component Preview'}
               </span>
             </div>
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             onClick={onClose}
             className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white rounded-full transition-colors active:scale-95 border border-stone-700/50"
             aria-label={language === 'bm' ? 'Tutup' : 'Close'}
           >
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Live Clock & Date Sub-header */}
@@ -136,7 +139,7 @@ export function DeliveryWidgetModal({
                 <span className="font-bold text-stone-100 text-xs sm:text-[13px] block tracking-tight">
                   Restoran Wawasan
                 </span>
-                <span className="text-[11px] text-amber-400 font-medium flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-amber-400 font-medium flex items-center gap-1.5 mt-0.5">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -147,7 +150,7 @@ export function DeliveryWidgetModal({
             </div>
 
             <span
-              className={`text-[11px] px-3 py-1 rounded-full font-mono font-bold tracking-wide shrink-0 border transition-colors ${
+              className={`text-xs px-3 py-1 rounded-full font-mono font-bold tracking-wide shrink-0 border transition-colors ${
                 geofenceBreached
                   ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm shadow-rose-500/20 animate-pulse'
                   : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -161,7 +164,7 @@ export function DeliveryWidgetModal({
           <div className="bg-stone-950/70 p-3.5 sm:p-4 rounded-2xl border border-stone-800/90 space-y-2.5 shadow-inner">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-stone-400 block mb-0.5">
+                <span className="text-xs uppercase tracking-wider font-bold text-stone-400 block mb-0.5">
                   {language === 'bm' ? 'Nama Pelanggan' : 'Customer Name'}
                 </span>
                 <h4 className="text-sm sm:text-base font-bold text-white truncate">
@@ -170,14 +173,14 @@ export function DeliveryWidgetModal({
               </div>
 
               {orderSummary && (
-                <span className="text-[10px] px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 font-bold uppercase tracking-wider border border-amber-500/30 shrink-0">
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 font-bold uppercase tracking-wider border border-amber-500/30 shrink-0">
                   {orderSummary}
                 </span>
               )}
             </div>
 
             <div className="pt-2 border-t border-stone-800/70">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-stone-400 block mb-1">
+              <span className="text-xs uppercase tracking-wider font-bold text-stone-400 block mb-1">
                 {language === 'bm' ? 'Destinasi' : 'Destination'}
               </span>
               <div className="flex items-start gap-2 text-xs sm:text-[13px] text-stone-200 font-medium leading-relaxed">
@@ -193,7 +196,7 @@ export function DeliveryWidgetModal({
           <div className="space-y-2.5 pt-1">
             {/* Primary 1-Tap 'Delivered' Button */}
             {onMarkDelivered && (
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   onMarkDelivered();
@@ -207,53 +210,56 @@ export function DeliveryWidgetModal({
                   </span>
                   <span>{language === 'bm' ? 'Selesai Hantar (Delivered)' : 'Delivered'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-100 bg-emerald-700/50 px-2.5 py-1 rounded-full border border-emerald-400/20">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-100 bg-emerald-700/50 px-2.5 py-1 rounded-full border border-emerald-400/20">
                   <BellRing className="w-3.5 h-3.5" />
                   <span>Notifikasi</span>
                 </div>
-              </button>
+              </Button>
             )}
 
             {/* Quick Communication Buttons */}
             <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => {
                   onSendWhatsApp();
                   onClose();
                 }}
-                className="min-h-[46px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-emerald-500/40 shadow-sm"
+                className="min-h-[46px] h-auto py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-emerald-500/40 shadow-sm"
               >
                 <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>WhatsApp</span>
-              </button>
+              </Button>
 
               {onCallCustomer ? (
-                <button
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={() => {
                     onCallCustomer();
                     onClose();
                   }}
-                  className="min-h-[46px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-sky-500/40 shadow-sm"
+                  className="min-h-[46px] h-auto py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-sky-500/40 shadow-sm"
                 >
                   <Phone className="w-4 h-4 text-sky-400 shrink-0" />
                   <span>{language === 'bm' ? 'Telefon' : 'Call'}</span>
-                </button>
+                </Button>
               ) : null}
 
               {onOpenNavigation ? (
-                <button
+                <Button
+                  variant="outline"
                   type="button"
                   onClick={() => {
                     onOpenNavigation();
                     onClose();
                   }}
-                  className="min-h-[46px] py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-amber-500/40 shadow-sm"
+                  className="min-h-[46px] h-auto py-2.5 px-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white font-bold text-xs flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all active:scale-[0.98] border border-stone-700/60 hover:border-amber-500/40 shadow-sm"
                 >
                   <Navigation className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>Maps</span>
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -264,7 +270,7 @@ export function DeliveryWidgetModal({
           <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
             <BellRing className="w-3.5 h-3.5 text-emerald-400" />
           </div>
-          <p className="leading-relaxed text-[11px] sm:text-xs">
+          <p className="leading-relaxed text-xs sm:text-xs">
             {language === 'bm'
               ? 'Menekan butang "Delivered" akan menghantar notifikasi segera kepada pelanggan yang memuat turun dan menggunakan aplikasi.'
               : 'Pressing "Delivered" immediately sends a push notification to the customer who downloaded and uses the app.'}
@@ -273,7 +279,7 @@ export function DeliveryWidgetModal({
 
         {/* Bottom Helper Indicator */}
         <div className="text-center pt-1 pb-1">
-          <span className="text-[11px] text-stone-400 tracking-wider uppercase font-medium flex items-center justify-center gap-1.5">
+          <span className="text-xs text-stone-400 tracking-wider uppercase font-medium flex items-center justify-center gap-1.5">
             <Smartphone className="w-3.5 h-3.5 text-amber-400/80" />
             {language === 'bm' ? 'Widget Skrin Utama & Notifikasi Pantas' : 'Home Screen Widget & Instant Notification'}
           </span>

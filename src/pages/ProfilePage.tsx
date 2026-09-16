@@ -5,6 +5,7 @@ import { auth } from '@/firebaseConfig';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { ArrowLeft, User as UserIcon, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import { getAssetUrl } from '@/lib/utils';
 import WawasanLoader from '@/components/WawasanLoader';
@@ -49,6 +50,11 @@ export default function ProfilePage() {
       */}
       <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
         <div className="flex items-center justify-between px-4 sm:px-6 min-h-[60px] sm:min-h-[64px]">
+          {/**
+           * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
+           * Semantic brand logo and page-title touch target navigating to /home.
+           * Not a standard action button; exempt from <Button> primitive migration.
+           */}
           <button
             type="button"
             onClick={() => navigate('/home')}
@@ -85,7 +91,7 @@ export default function ProfilePage() {
 
       <div className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
         {!currentUser ? (
-          <div className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
+          <Card className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <UserIcon className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
             </div>
@@ -105,7 +111,7 @@ export default function ProfilePage() {
                     setAuthMode('signin');
                     setAuthModalOpen(true);
                   }}
-                  className="btn-cta w-full py-4 min-h-[52px] rounded-2xl text-base font-bold flex items-center justify-center gap-2 shadow-sunshine-glow"
+                  className="btn-cta w-full py-4 min-h-[52px] rounded-2xl text-base font-bold flex items-center justify-center gap-2 shadow-md"
                 >
                   <LogIn className="w-5 h-5" />
                   <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
@@ -125,10 +131,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="pt-2 border-t border-stone/10">
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   onClick={() => navigate('/order')}
-                  className="w-full py-3 px-2 min-h-[44px] text-xs font-semibold text-stone hover:text-deep-forest dark:hover:text-white flex items-center justify-center gap-2 transition-colors group text-center leading-relaxed"
+                  className="w-full py-3 px-2 min-h-[44px] text-xs font-semibold text-stone hover:text-deep-forest dark:hover:text-white flex items-center justify-center gap-2 transition-colors group text-center leading-relaxed whitespace-normal h-auto"
                 >
                   <span>
                     {language === 'bm'
@@ -136,10 +142,10 @@ export default function ProfilePage() {
                       : 'Or proceed directly to Order Form without even caring about what you have ordered recently'}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 transition-transform group-hover:translate-x-1" />
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -147,14 +153,14 @@ export default function ProfilePage() {
               <p className="text-stone dark:text-stone/75 microcopy-14 font-medium">Manage your profile and track your catering requests.</p>
             </div>
 
-            <div className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg">
+            <Card className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg p-0">
               <UserProfileDashboard
                 isOpen={true}
                 isEmbedded={true}
                 onClose={() => navigate('/home')}
                 onReorder={(data) => navigate('/order', { state: { reorderData: data } })}
               />
-            </div>
+            </Card>
           </div>
         )}
       </div>

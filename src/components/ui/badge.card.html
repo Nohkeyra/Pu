@@ -1,0 +1,76 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Status and semantic tag indicators" name="Badge" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: var(--radius-full, 999px);
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      line-height: 1.4;
+    }
+    .badge-default {
+      background: var(--color-accent, #C2932D);
+      color: #FFFFFF;
+    }
+    .badge-secondary {
+      background: var(--color-surface-muted, #F2EDE3);
+      color: var(--color-text, #1A1816);
+      border-color: var(--color-border, #E8E2D6);
+    }
+    .badge-success {
+      background: var(--color-success-soft, #E6F2EB);
+      color: var(--color-success, #2E7D4F);
+      border-color: rgba(46, 125, 79, 0.2);
+    }
+    .badge-warning {
+      background: var(--color-warning-soft, #FBF3E0);
+      color: var(--color-accent-deep, #725014);
+      border-color: rgba(194, 147, 45, 0.3);
+    }
+    .badge-danger {
+      background: var(--color-error-soft, #FBEAEA);
+      color: var(--color-danger, #B33A3A);
+      border-color: rgba(179, 58, 58, 0.3);
+    }
+    .badge-outline {
+      background: transparent;
+      color: var(--color-text, #1A1816);
+      border-color: var(--color-border, #E8E2D6);
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <span class="badge badge-default">Default (Brand)</span>
+    <span class="badge badge-secondary">Secondary</span>
+    <span class="badge badge-success">Success</span>
+    <span class="badge badge-warning">Warning</span>
+    <span class="badge badge-danger">Danger</span>
+    <span class="badge badge-outline">Outline</span>
+  </div>
+</body>
+</html>

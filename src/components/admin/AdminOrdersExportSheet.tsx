@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import { X, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Order } from '@/types';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { exportOrdersAsExcelTemplate, exportOrdersAsExcelStandard } from '@/lib/exportUtils';
@@ -133,20 +134,23 @@ export function AdminOrdersExportSheet({
               {subheading}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
             className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-stone/10 dark:hover:bg-white/10 text-stone-500 dark:text-stone-400"
             aria-label={isBm ? 'Tutup' : 'Close'}
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         <div className="pt-2 space-y-2">
-          <button
+          <Button
+            variant="outline"
             onClick={() => runExcel('excel-template')}
             disabled={busyFormat !== null}
-            className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left"
+            className="w-full h-auto flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left justify-start"
           >
             <div className="w-10 h-10 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               {busyFormat === 'excel-template' ? (
@@ -159,16 +163,17 @@ export function AdminOrdersExportSheet({
               <p className="text-sm font-bold text-deep-forest dark:text-white">
                 {isBm ? 'Excel — Templat Invois' : 'Excel — Invoice Template'}
               </p>
-              <p className="microcopy-12 text-stone-500 dark:text-stone-400">
+              <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal">
                 {isBm ? 'Satu helaian per pesanan, ikut borang RW rasmi' : 'One sheet per order, using the official RW template'}
               </p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
             onClick={() => runExcel('excel-standard')}
             disabled={busyFormat !== null}
-            className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left"
+            className="w-full h-auto flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left justify-start"
           >
             <div className="w-10 h-10 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
               {busyFormat === 'excel-standard' ? (
@@ -181,16 +186,17 @@ export function AdminOrdersExportSheet({
               <p className="text-sm font-bold text-deep-forest dark:text-white">
                 {isBm ? 'Excel — Jadual Standard' : 'Excel — Standard Table'}
               </p>
-              <p className="microcopy-12 text-stone-500 dark:text-stone-400">
+              <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal">
                 {isBm ? 'Satu baris per pesanan, senarai ringkas' : 'One row per order, flat spreadsheet list'}
               </p>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
             onClick={runPdf}
             disabled={busyFormat !== null || !prepareConsolidateModal}
-            className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left"
+            className="w-full h-auto flex items-center gap-3 p-3.5 rounded-xl border border-stone/15 dark:border-white/10 hover:bg-[var(--color-sunshine-cta)]/10 disabled:opacity-50 transition-colors text-left justify-start"
             title={!prepareConsolidateModal ? (isBm ? 'Tidak tersedia' : 'Not available') : undefined}
           >
             <div className="w-10 h-10 shrink-0 rounded-lg bg-rose-500/10 flex items-center justify-center">
@@ -200,11 +206,11 @@ export function AdminOrdersExportSheet({
               <p className="text-sm font-bold text-deep-forest dark:text-white">
                 {isBm ? 'PDF — Invois Konsolidasi' : 'PDF — Consolidated Invoice'}
               </p>
-              <p className="microcopy-12 text-stone-500 dark:text-stone-400">
+              <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal">
                 {isBm ? 'Satu klien sahaja setiap invois; akan diminta sahkan nombor invois' : 'Single client only per invoice; you\'ll confirm the invoice number next'}
               </p>
             </div>
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

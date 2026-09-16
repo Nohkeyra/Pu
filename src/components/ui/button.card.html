@@ -1,0 +1,78 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Interactive action buttons with semantic variants and states" name="Buttons" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: var(--radius-md, 6px);
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: var(--color-sunshine-cta, #C2932D);
+      color: #FFFFFF;
+    }
+    .btn-secondary {
+      background: var(--color-surface-muted, #F2EDE3);
+      color: var(--color-text, #1A1816);
+      border-color: var(--color-border, #E8E2D6);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--color-text, #1A1816);
+      border-color: var(--color-border-strong, #D4CCBC);
+    }
+    .btn-danger {
+      background: var(--color-danger, #B33A3A);
+      color: #FFFFFF;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-text, #1A1816);
+    }
+    .btn-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <button class="btn btn-primary" type="button">Primary Action</button>
+    <button class="btn btn-secondary" type="button">Secondary</button>
+    <button class="btn btn-outline" type="button">Outline</button>
+    <button class="btn btn-danger" type="button">Danger Action</button>
+    <button class="btn btn-ghost" type="button">Ghost</button>
+    <button class="btn btn-primary btn-disabled" type="button" disabled>Disabled</button>
+  </div>
+</body>
+</html>

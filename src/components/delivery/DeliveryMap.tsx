@@ -15,6 +15,9 @@ import {
   Shield,
   ChevronUp,
   ChevronDown,
+  Home,
+  Utensils,
+  Map,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -213,7 +216,7 @@ function LeafletMapContainer({
 
     // Restaurant marker
     const restIcon = L.divIcon({
-      html: `<div class="w-9 h-9 bg-orange-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-md font-bold text-base hover:scale-110 transition-transform">🍽️</div>`,
+      html: `<div class="w-9 h-9 bg-orange-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7a3 3 0 0 0 3 3h1v10"/><path d="M7 2v7"/><path d="M11 2v7a3 3 0 0 1-3 3"/><path d="M16 2v20"/><path d="M16 2a4 4 0 0 1 4 4v4h-4"/></svg></div>`,
       className: '',
       iconSize: [36, 36],
       iconAnchor: [18, 18],
@@ -224,7 +227,7 @@ function LeafletMapContainer({
 
     // Customer destination marker
     const destIcon = L.divIcon({
-      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg font-bold text-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing">🏠</div>`,
+      html: `<div class="w-10 h-10 bg-emerald-600 border-2 border-white text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 20],
@@ -718,12 +721,12 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-stone-950/60 rounded-xl border border-stone-800 text-center">
                 <Clock className="w-4 h-4 text-sky-400 mx-auto mb-1" />
-                <span className="text-[10px] uppercase font-bold text-stone-400 block">{t('ETA', 'Anggaran Masa')}</span>
+                <span className="text-xs uppercase font-bold text-stone-400 block">{t('ETA', 'Anggaran Masa')}</span>
                 <span className="text-sm font-bold text-white mt-0.5 block">{order.status === 'delivered' ? t('Delivered', 'Sampai') : eta}</span>
               </div>
               <div className="p-3 bg-stone-950/60 rounded-xl border border-stone-800 text-center">
                 <Navigation className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-                <span className="text-[10px] uppercase font-bold text-stone-400 block">{t('Distance', 'Jarak')}</span>
+                <span className="text-xs uppercase font-bold text-stone-400 block">{t('Distance', 'Jarak')}</span>
                 <span className="text-sm font-bold text-white mt-0.5 block">{exactDistanceMeters !== null ? `${exactDistanceMeters} m` : distance}</span>
               </div>
             </div>
@@ -739,7 +742,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                   <button
                     type="button"
                     onClick={() => setBroadcastEnabled(!broadcastEnabled)}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all ${
+                    className={`px-2 py-0.5 text-xs font-bold rounded-md transition-all ${
                       broadcastEnabled ? 'bg-emerald-500 text-white shadow-sm' : 'bg-stone-800 text-stone-400'
                     }`}
                   >
@@ -774,7 +777,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                 {/* Simulation Slider */}
                 {trackingSource === 'simulation' && (
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-[10px] font-bold text-stone-400">
+                    <div className="flex justify-between text-xs font-bold text-stone-400">
                       <span>{t('Route Progress', 'Perjalanan')}</span>
                       <span className="font-mono text-amber-400">{simPercent}%</span>
                     </div>
@@ -793,7 +796,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                 <div className="p-2.5 bg-stone-950/80 rounded-xl border border-stone-800 flex items-center justify-between text-xs">
                   <span className="text-stone-400">{t('Geofence (200m)', 'Zon 200m')}</span>
                   <span className={`font-bold ${geofenceBreached ? 'text-emerald-400 animate-pulse' : 'text-stone-400'}`}>
-                    {geofenceBreached ? '🚨 REACHED' : 'IN TRANSIT'}
+                    <span className="inline-flex items-center gap-1">{geofenceBreached && <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />} {geofenceBreached ? 'REACHED' : 'IN TRANSIT'}</span>
                   </span>
                 </div>
               </div>
@@ -801,7 +804,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
 
             {/* External Map Navigation */}
             <div className="space-y-2">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
+              <span className="text-xs font-bold text-stone-400 uppercase tracking-wider block">
                 {t('Navigation Apps', 'Aplikasi Navigasi')}
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -810,14 +813,14 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                   onClick={handleOpenGoogleMaps}
                   className="py-2.5 px-3 bg-stone-950 hover:bg-stone-800 border border-stone-800 text-xs font-bold text-stone-200 rounded-xl flex items-center justify-center gap-1.5 transition-all"
                 >
-                  🗺️ Google Maps
+                  <Map className="w-4 h-4" aria-hidden="true" /> Google Maps
                 </button>
                 <button
                   type="button"
                   onClick={handleOpenWaze}
                   className="py-2.5 px-3 bg-stone-950 hover:bg-stone-800 border border-stone-800 text-xs font-bold text-stone-200 rounded-xl flex items-center justify-center gap-1.5 transition-all"
                 >
-                  🚙 Waze
+                  <Navigation className="w-4 h-4" aria-hidden="true" /> Waze
                 </button>
               </div>
             </div>
@@ -891,11 +894,11 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                   <span className="text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[200px]">
                     {order.name || t('Catering Order', 'Pesanan Katering')}
                   </span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.2 bg-stone-800 text-stone-300 rounded shrink-0">
+                  <span className="font-mono text-xs px-1.5 py-0.2 bg-stone-800 text-stone-300 rounded shrink-0">
                     #{order.invoiceNo || order.id?.substring(0, 6).toUpperCase()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-stone-400 mt-0.5 truncate">
+                <div className="flex items-center gap-1.5 text-xs text-stone-400 mt-0.5 truncate">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${order.status === 'delivered' ? 'bg-emerald-400' : 'bg-sky-400 animate-ping'}`} />
                   <span className="truncate">{order.status === 'delivered' ? t('Delivered', 'Sampai') : `${distance} • ${eta}${riderSpeed > 0 ? ` • ${riderSpeed} km/h` : ''}`}</span>
                 </div>
@@ -963,7 +966,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                   <button
                     type="button"
                     onClick={handleSendArrivalAlert}
-                    className="px-2.5 py-1 bg-white text-emerald-800 text-[11px] font-black rounded-xl shrink-0 uppercase tracking-wider"
+                    className="px-2.5 py-1 bg-white text-emerald-800 text-xs font-black rounded-xl shrink-0 uppercase tracking-wider"
                   >
                     WhatsApp
                   </button>
@@ -985,7 +988,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                     <button
                       type="button"
                       onClick={() => setTrackingSource('simulation')}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                      className={`px-2 py-1 rounded-lg text-xs font-bold ${
                         trackingSource === 'simulation' ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-400'
                       }`}
                     >
@@ -994,7 +997,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                     <button
                       type="button"
                       onClick={() => setTrackingSource('gps')}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                      className={`px-2 py-1 rounded-lg text-xs font-bold ${
                         trackingSource === 'gps' ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-400'
                       }`}
                     >
@@ -1006,12 +1009,12 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                 {/* Progress Slider in Simulation Mode */}
                 {trackingSource === 'simulation' && (
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold text-stone-400">
+                    <div className="flex justify-between text-xs font-bold text-stone-400">
                       <span>{t('Route Simulation Progress', 'Perjalanan Simulasi')}</span>
                       <span className="font-mono text-amber-400">{simPercent}%</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs">🍽️</span>
+                      <Utensils className="w-3.5 h-3.5" aria-hidden="true" />
                       <input
                         type="range"
                         min="0"
@@ -1020,7 +1023,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                         onChange={(e) => setSimPercent(parseInt(e.target.value))}
                         className="flex-1 accent-amber-500 h-2 bg-stone-800 rounded-lg cursor-pointer"
                       />
-                      <span className="text-xs">🏠</span>
+                      <Home className="w-3.5 h-3.5" aria-hidden="true" />
                     </div>
                   </div>
                 )}
@@ -1045,10 +1048,10 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                   >
                     <MessageSquare className="w-4 h-4 shrink-0" />
                     <div className="text-left leading-tight">
-                      <span className="block text-[11px] font-black uppercase tracking-wider">
-                        {geofenceBreached ? t('🚨 Arrived! WhatsApp', '🚨 Tiba! Hantar WhatsApp') : t('WhatsApp Arrival', 'WhatsApp Sampai')}
+                      <span className="block text-xs font-black uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1.5">{geofenceBreached && <AlertTriangle className="w-4 h-4" aria-hidden="true" />}{geofenceBreached ? t('Arrived! WhatsApp', 'Tiba! Hantar WhatsApp') : t('WhatsApp Arrival', 'WhatsApp Sampai')}</span>
                       </span>
-                      <span className="block text-[9px] opacity-80 font-normal">
+                      <span className="block text-xs opacity-80 font-normal">
                         {order.contact || '017-315 7731'}
                       </span>
                     </div>
@@ -1097,7 +1100,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
                       <span className="text-xs font-bold text-white block">
                         {order.status === 'delivered' ? t('Delivered Successfully', 'Selamat Sampai') : t('Rider In Transit', 'Rider Dalam Perjalanan')}
                       </span>
-                      <span className="text-[10px] text-stone-400 block">
+                      <span className="text-xs text-stone-400 block">
                         {exactDistanceMeters !== null ? `${exactDistanceMeters} m ${t('to your doorstep', 'ke lokasi anda')}` : `${distance} • ${eta}`}
                       </span>
                     </div>

@@ -10,6 +10,7 @@ import { formatDateTimeDisplay } from '@/lib/utils';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Card } from '@/components/ui/card';
 
 import { List } from 'react-window';
 
@@ -132,7 +133,7 @@ export function AdminOrdersTab({
           </h2>
           <div className="space-y-2.5">
             {cancelRequests.map((order, idx) => (
-              <div key={order.id || `cancel-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 bg-white dark:bg-card border border-amber-500/20 rounded-xl shadow-sm">
+              <Card key={order.id || `cancel-${idx}`} variant="default" padding="sm" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-amber-500/20">
                 <div>
                   <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{order.name} ({order.quantity} pax)</p>
                   <p className="text-xs text-stone-500 dark:text-stone-400">{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</p>
@@ -180,7 +181,7 @@ export function AdminOrdersTab({
                     {t('reject')}
                   </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -224,7 +225,7 @@ export function AdminOrdersTab({
               {language === 'bm' ? 'Penapis' : 'Filter'}
             </span>
             {activeFilterCount > 0 && (
-              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
+              <span className={`w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
                 isFilterDropdownOpen
                   ? 'bg-[#f69913] text-white'
                   : 'bg-[#0c453c] text-white dark:bg-emerald-400 dark:text-stone-900'
@@ -239,11 +240,11 @@ export function AdminOrdersTab({
         {/* Compact Active Filter Chips when Dropdown is collapsed */}
         {!isFilterDropdownOpen && activeFilterCount > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-xs">
-            <span className="text-stone-500 dark:text-stone-400 text-[11px] font-medium">
+            <span className="text-stone-500 dark:text-stone-400 text-xs font-medium">
               {language === 'bm' ? 'Penapis aktif:' : 'Active:'}
             </span>
             {hasActiveStatus && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f69913]/15 text-[#b06300] dark:text-amber-300 font-semibold text-[11px]">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f69913]/15 text-[#b06300] dark:text-amber-300 font-semibold text-xs">
                 {statusFilter === 'pending' ? (language === 'bm' ? 'Menunggu' : 'Pending')
                   : statusFilter === 'approved' ? (language === 'bm' ? 'Diluluskan' : 'Approved')
                   : statusFilter === 'billed' ? (language === 'bm' ? 'Dibilkan' : 'Billed')
@@ -261,7 +262,7 @@ export function AdminOrdersTab({
               </span>
             )}
             {hasActiveDate && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0c453c]/10 text-[#0c453c] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-[11px]">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0c453c]/10 text-[#0c453c] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-xs">
                 {dateFromFilter || '...'} – {dateToFilter || '...'}
                 <button
                   type="button"
@@ -274,7 +275,7 @@ export function AdminOrdersTab({
               </span>
             )}
             {isSelectMode && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px]">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 font-semibold text-xs">
                 {language === 'bm' ? 'Mod Pilih Aktif' : 'Select Mode'}
               </span>
             )}
@@ -285,7 +286,7 @@ export function AdminOrdersTab({
                 setDateFromFilter('');
                 setDateToFilter('');
               }}
-              className="text-[11px] text-[#e03f14] hover:underline font-semibold ml-1 cursor-pointer"
+              className="text-xs text-[#e03f14] hover:underline font-semibold ml-1 cursor-pointer"
             >
               {language === 'bm' ? 'Set Semula' : 'Reset All'}
             </button>
@@ -303,7 +304,7 @@ export function AdminOrdersTab({
               {/* Date range picker group */}
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 w-full sm:w-auto">
                 <div className="flex-1 sm:flex-none flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-2.5 sm:px-3.5 py-1 sm:py-0 min-h-[44px]">
-                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
                     {language === 'bm' ? 'Dari' : 'From'}
                   </span>
                   <input
@@ -315,7 +316,7 @@ export function AdminOrdersTab({
                     className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
                   />
                   <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
-                  <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
+                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
                     {language === 'bm' ? 'Hingga' : 'To'}
                   </span>
                   <input
@@ -594,14 +595,14 @@ export function AdminOrdersTab({
                           <span className="font-bold text-xs sm:text-[13px] text-[#0c453c] dark:text-emerald-400 leading-tight">
                             {formattedHeaderDate}
                           </span>
-                          <span className="text-[10px] text-stone-400 dark:text-stone-500">· {relativeTime} ago</span>
+                          <span className="text-xs text-stone-400 dark:text-stone-500">· {relativeTime} ago</span>
                           {getStatusBadge(order.status)}
                         </div>
                         <h3 className="font-bold text-xs sm:text-sm text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug">
                           {clientName}
                         </h3>
                         {order.email && (
-                          <p className="text-[10px] text-stone-500 dark:text-stone-400 truncate mt-0">{order.email}</p>
+                          <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0">{order.email}</p>
                         )}
                       </div>
 
@@ -637,14 +638,14 @@ export function AdminOrdersTab({
 
                     <div className="flex items-center justify-between gap-2 pl-1.5">
                       <div className="flex items-center gap-2">
-                        <div className="flex flex-col items-center justify-center min-w-[40px] h-8 rounded-lg bg-[#f69913]/10 dark:bg-[#f69913]/15 border border-[#f69913]/25 px-1.5">
-                          <span className="font-bold text-xs sm:text-sm text-[#0c453c] dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
-                          <span className="text-[8px] font-bold uppercase tracking-wider text-[#0c453c]/60 dark:text-amber-300/80 mt-0.5">pax</span>
+                        <div className="flex flex-col items-center justify-center min-w-[40px] h-8 rounded-lg bg-sunshine/15 dark:bg-sunshine/20 border border-sunshine/30 px-1.5">
+                          <span className="font-bold text-xs sm:text-sm text-deep-forest dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-deep-forest/70 dark:text-amber-300/80 mt-0.5">pax</span>
                         </div>
 
                         <div>
-                          <p className="text-[8px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider leading-none mb-0.5">Total</p>
-                          <p className="font-bold text-[#0c453c] dark:text-emerald-400 text-xs font-mono leading-none">{totalAmount}</p>
+                          <p className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider leading-none mb-0.5">Total</p>
+                          <p className="font-bold text-deep-forest dark:text-emerald-400 text-xs font-sans leading-none">{totalAmount}</p>
                         </div>
                       </div>
 
@@ -652,7 +653,7 @@ export function AdminOrdersTab({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:bg-[#f69913]/15 dark:hover:bg-stone-800 text-[#0c453c] dark:text-stone-200"
+                          className="h-7 w-7 rounded-lg hover:bg-sunshine/20 dark:hover:bg-stone-800 text-deep-forest dark:text-stone-200"
                           onClick={() => openOrderDetail(order)}
                           title="View Details"
                         >
@@ -661,7 +662,7 @@ export function AdminOrdersTab({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:bg-[#e96212]/15 dark:hover:bg-stone-800 text-[#0c453c] dark:text-stone-200"
+                          className="h-7 w-7 rounded-lg hover:bg-crisp-carrot/20 dark:hover:bg-stone-800 text-deep-forest dark:text-stone-200"
                           onClick={() => openSendDialog(order)}
                           title="Send Invoice"
                         >

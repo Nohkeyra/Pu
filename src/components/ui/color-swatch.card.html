@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Theme palette and accent color picker swatches" name="ColorSwatch" -->
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--color-bg, #FFFFFF);
+      color: var(--color-text, #1A1816);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .swatch {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full, 999px);
+      border: none;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: all 0.15s ease;
+      opacity: 0.75;
+    }
+    .swatch:hover {
+      opacity: 1;
+    }
+    .swatch.selected {
+      opacity: 1;
+      box-shadow: 0 0 0 2px var(--color-bg, #FFFFFF), 0 0 0 4px var(--color-accent, #C2932D);
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <button type="button" class="swatch selected" style="background-color: #A3310E;" title="Terracotta"></button>
+    <button type="button" class="swatch" style="background-color: #C2932D;" title="Gold"></button>
+    <button type="button" class="swatch" style="background-color: #0C453C;" title="Forest"></button>
+    <button type="button" class="swatch" style="background-color: #E96212;" title="Carrot"></button>
+    <button type="button" class="swatch" style="background-color: #E03F14;" title="Tomato"></button>
+  </div>
+</body>
+</html>

@@ -8,6 +8,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/button';
 import { 
   Mail, 
   Lock, 
@@ -17,7 +18,6 @@ import {
   Briefcase,
   X, 
   ArrowRight, 
-  Loader2,
   ChevronDown,
   Fingerprint
 } from 'lucide-react';
@@ -328,13 +328,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           <div className="relative h-[3px] bg-gradient-to-r from-sunshine-cta via-honey to-sunshine-cta z-10 shrink-0" />
 
           {/* Close button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
             aria-label={t('Close dialog', 'Tutup tetingkap')}
-            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors duration-200 z-20 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunshine-cta/40"
+            className="absolute top-4 right-4 z-20 text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
 
           <div className="relative p-6 sm:p-8 z-10 overflow-y-auto flex-1">
             {/* Header */}
@@ -424,6 +426,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                     </div>
                     {selectedCompany === 'other' && (
                       <div className="relative mt-2">
+                        <label htmlFor="signup-custom-company" className="sr-only">
+                          {t('Other Company Name', 'Nama Syarikat Lain')}
+                        </label>
                         <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                           id="signup-custom-company"
@@ -545,30 +550,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
               )}
 
               {/* Submit Button */}
-              <button
+              <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-6 shadow-lg shadow-primary/10 disabled:opacity-50"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full mt-6 font-semibold"
               >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    {mode === 'signin' && t('Enter Dashboard', 'Masuk ke Papan Pemuka')}
-                    {mode === 'signup' && t('Register Profile', 'Daftar Profil')}
-                    {mode === 'forgot' && t('Send Reset Instructions', 'Hantar Arahan Set Semula')}
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+                {mode === 'signin' && t('Enter Dashboard', 'Masuk ke Papan Pemuka')}
+                {mode === 'signup' && t('Register Profile', 'Daftar Profil')}
+                {mode === 'forgot' && t('Send Reset Instructions', 'Hantar Arahan Set Semula')}
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
 
               {/* Quick Biometric Access Button */}
               {mode === 'signin' && hasStoredBiometrics && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="lg"
                   onClick={handleBiometricLogin}
                   disabled={isLoading}
-                  className="w-full h-12 bg-stone-50 dark:bg-stone-900/40 hover:bg-stone-100 dark:hover:bg-stone-900 border border-stone-200 dark:border-white/10 text-stone-700 dark:text-stone-300 font-semibold rounded-lg active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 text-sm mt-3 disabled:opacity-50"
+                  className="w-full mt-3 font-semibold flex items-center justify-center gap-2"
                 >
                   <Fingerprint className="w-5 h-5 text-[var(--color-sunshine-cta)] shrink-0" />
                   <span>
@@ -576,7 +579,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       ? t('Unlock Admin with Fingerprint / Face ID', 'Buka Kunci Admin dengan Cap Jari / Wajah')
                       : t('Sign In with Fingerprint / Face ID', 'Log Masuk dengan Cap Jari / Wajah')}
                   </span>
-                </button>
+                </Button>
               )}
 
               {/* Toggle modes */}

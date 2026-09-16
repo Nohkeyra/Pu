@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, User as UserIcon, Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
@@ -163,7 +164,9 @@ export default function Header() {
           </nav>
 
           <div className="hidden items-center gap-2 xl:flex shrink-0">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={async () => {
                 await triggerLightImpact();
@@ -174,18 +177,22 @@ export default function Header() {
               title={language === 'bm' ? 'Tetapan' : 'Settings'}
             >
               <SettingsIcon className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleThemeToggle}
               className={desktopActionClass}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
               {theme === 'light' ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />}
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={toggleLanguage}
               className={`${desktopActionClass} gap-1.5 text-xs font-bold`}
@@ -194,7 +201,7 @@ export default function Header() {
               <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)]' : ''}>EN</span>
               <span className={isScrolled ? 'text-deep-forest/25 dark:text-white/25' : 'text-white/30'}>/</span>
               <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)]' : ''}>BM</span>
-            </button>
+            </Button>
 
             <NotificationBell
               currentUser={currentUser}
@@ -202,7 +209,8 @@ export default function Header() {
               onOpenProfileWithOrder={() => setProfileDashboardOpen(true)}
             />
 
-            <button
+            <Button
+              variant="ghost"
               type="button"
               onClick={handleAuthClick}
               className={`${desktopActionClass} gap-2 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
@@ -223,18 +231,20 @@ export default function Header() {
                   <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-1.5 xl:hidden shrink-0">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleThemeToggle}
               className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
               {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
-            </button>
+            </Button>
 
             <NotificationBell
               currentUser={currentUser}
@@ -242,7 +252,9 @@ export default function Header() {
               onOpenProfileWithOrder={() => setProfileDashboardOpen(true)}
             />
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleAuthClick}
               className={mobileActionClass}
@@ -255,9 +267,11 @@ export default function Header() {
               ) : (
                 <UserIcon className="h-5 w-5" />
               )}
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={async () => {
                 await triggerLightImpact();
@@ -267,7 +281,7 @@ export default function Header() {
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
-            </button>
+            </Button>
           </div>
         </div>
       </header>

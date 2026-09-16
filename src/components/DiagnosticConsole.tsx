@@ -194,9 +194,10 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
           </div>
           <button 
             onClick={onClose}
+            aria-label="Tutup konsol diagnostik"
             className="rounded-lg p-2 text-white/60 hover:text-white hover:bg-white/5 transition-colors touch-target"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -303,15 +304,15 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
               
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-black/40 border border-white/5 p-3 text-center">
-                  <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Alpha (Z)</span>
+                  <span className="text-xs uppercase tracking-wider text-white/40 block mb-1">Alpha (Z)</span>
                   <span className="text-xl font-bold font-mono text-gold">{motion.alpha}°</span>
                 </div>
                 <div className="rounded-lg bg-black/40 border border-white/5 p-3 text-center">
-                  <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Beta (X)</span>
+                  <span className="text-xs uppercase tracking-wider text-white/40 block mb-1">Beta (X)</span>
                   <span className="text-xl font-bold font-mono text-gold">{motion.beta}°</span>
                 </div>
                 <div className="rounded-lg bg-black/40 border border-white/5 p-3 text-center">
-                  <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1">Gamma (Y)</span>
+                  <span className="text-xs uppercase tracking-wider text-white/40 block mb-1">Gamma (Y)</span>
                   <span className="text-xl font-bold font-mono text-gold">{motion.gamma}°</span>
                 </div>
               </div>
@@ -333,7 +334,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                     );
                   })}
                 </div>
-                <span className="absolute bottom-1 right-2 text-[9px] font-mono text-white/30 uppercase tracking-widest">Physics Core</span>
+                <span className="absolute bottom-1 right-2 text-xs font-mono text-white/30 uppercase tracking-widest">Physics Core</span>
               </div>
             </div>
 
@@ -393,9 +394,11 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-white/60 block mb-1">Kunyit Accent Shade Controller</label>
+                  <label htmlFor="diag-batik-color" className="text-xs text-white/60 block mb-1">Kunyit Accent Shade Controller</label>
                   <div className="flex gap-2">
                     <input 
+                      id="diag-batik-color"
+                      aria-label="Pemilih warna aksen kunyit"
                       type="color" 
                       value={customBatikColor}
                       onChange={(e) => {
@@ -405,6 +408,8 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                       className="rounded-lg bg-black/40 border border-white/10 h-10 w-20 cursor-pointer"
                     />
                     <input 
+                      id="diag-batik-hex"
+                      aria-label="Nilai hex warna corak batik"
                       type="text" 
                       value={customBatikColor}
                       readOnly
@@ -413,8 +418,10 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-white/60 block mb-1">Matrix Pattern Grid Density: {batikDensity}x{batikDensity}</label>
+                  <label htmlFor="diag-batik-density" className="text-xs text-white/60 block mb-1">Matrix Pattern Grid Density: {batikDensity}x{batikDensity}</label>
                   <input 
+                    id="diag-batik-density"
+                    aria-label={`Ketumpatan corak matriks: ${batikDensity} kali ${batikDensity}`}
                     type="range" 
                     min="2" 
                     max="10" 
@@ -458,6 +465,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
               <span className="flex items-center gap-1"><Terminal className="h-3 w-3" /> System Logs (Console Terminal)</span>
               <button 
                 onClick={() => setTerminalLogs([])}
+                aria-label="Kosongkan log terminal"
                 className="hover:text-white transition-colors"
               >
                 Clear Screen

@@ -100,7 +100,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   const { id, title, description, variant = 'info' } = toast;
   const variants = {
     success: { Icon: CheckCircle2, iconClass: 'text-[var(--color-success)]',  stripe: 'bg-[var(--color-success)]',  surface: 'bg-card border-[color-mix(in_srgb,var(--color-success)_22%,transparent)]' },
-    error:   { Icon: XCircle,         iconClass: 'text-[var(--color-error)]',    stripe: 'bg-[var(--color-error)]',    surface: 'bg-card border-[color-mix(in_srgb,var(--color-error)_22%,transparent)]'   },
+    error:   { Icon: XCircle,         iconClass: 'text-[var(--color-error)]',    stripe: 'bg-[var(--color-error)]',    surface: 'bg-[var(--color-error-soft)] border border-[var(--color-error)] text-[var(--color-error)]'   },
     warning: { Icon: AlertTriangle,   iconClass: 'text-[var(--color-warning)]',  stripe: 'bg-[var(--color-warning)]',  surface: 'bg-card border-[color-mix(in_srgb,var(--color-warning)_22%,transparent)]' },
     info:    { Icon: Info,            iconClass: 'text-[var(--color-sunshine-cta)]',                 stripe: 'bg-[var(--color-sunshine-cta)]',                 surface: 'bg-card border-[var(--color-sunshine-cta)]/20' },
   } as const;
@@ -116,7 +116,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
       className={cn(
-        "pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-lg transition-all duration-200 max-w-full relative overflow-hidden",
+        "pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg transition-all duration-200 max-w-full relative overflow-hidden",
         V.surface
       )}
     >
@@ -125,14 +125,17 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
         <Icon className={cn("w-5 h-5", V.iconClass)} />
       </div>
       <div className="flex-1 flex flex-col justify-center min-w-0 pr-4">
-        {title && <h4 className="text-sm font-bold page-header-text leading-tight mb-1">{title}</h4>}
-        {description && <p className="text-helper text-sm font-sans leading-relaxed break-words">{description}</p>}
+        {title && <h4 className={cn("text-sm font-bold page-header-text leading-tight mb-1", variant === 'error' && "text-[var(--color-error)]")}>{title}</h4>}
+        {description && <p className={cn("text-helper text-sm font-sans leading-relaxed break-words", variant === 'error' && "text-[var(--color-error)]")}>{description}</p>}
       </div>
       <button
         type="button"
         onClick={() => onDismiss(id)}
         aria-label="Close notification"
-        className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center text-stone hover:text-deep-forest rounded-lg hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] dark:hover:bg-white/10 shrink-0"
+        className={cn(
+          "inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-lg hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] dark:hover:bg-white/10 shrink-0",
+          variant === 'error' ? "text-[var(--color-error)] hover:bg-[var(--color-error)]/10" : "text-stone hover:text-deep-forest"
+        )}
       >
         <X className="w-4 h-4" />
       </button>

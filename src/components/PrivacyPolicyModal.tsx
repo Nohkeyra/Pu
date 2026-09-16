@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, CheckCircle2, Lock, FileText, Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { getAssetUrl } from '@/lib/utils';
@@ -76,25 +77,26 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
                       {language === 'bm' ? 'Dasar Privasi & Terma' : 'Privacy Policy & Terms'}
                     </h2>
                   </div>
-                  <p className="text-[11px] font-medium text-white/80 mt-0.5">
+                  <p className="text-xs font-medium text-white/80 mt-0.5">
                     Restoran Wawasan Pak Usop (Est. 1986)
                   </p>
                 </div>
               </div>
 
               {/* Language Switcher Pill */}
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={async () => {
                   await triggerLightImpact();
                   setLanguage(language === 'bm' ? 'en' : 'bm');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-colors shrink-0 touch-target"
+                className="flex items-center gap-1.5 px-3 py-1.5 h-auto rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-colors shrink-0 touch-target"
                 aria-label="Tukar bahasa"
               >
                 <Globe className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)]" />
                 <span>{language === 'bm' ? 'EN' : 'BM'}</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -116,7 +118,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 1 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   1
                 </span>
                 {language === 'bm' ? 'Maklumat Yang Dikumpul' : 'Information We Collect'}
@@ -131,7 +133,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 2 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   2
                 </span>
                 {language === 'bm' ? 'Penggunaan & Keselamatan Data' : 'Data Usage & Protection'}
@@ -146,7 +148,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 3 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   3
                 </span>
                 {language === 'bm' ? 'Jaminan Tiada Penjualan Data' : 'No Data Selling Guarantee'}
@@ -161,7 +163,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 4 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   4
                 </span>
                 {language === 'bm' ? 'Hak & Akses Pengguna' : 'Your Control & Rights'}
@@ -174,7 +176,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             </div>
 
             {/* Document badge footer */}
-            <div className="pt-2 border-t border-stone-200 dark:border-white/10 flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400">
+            <div className="pt-2 border-t border-stone-200 dark:border-white/10 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
               <span className="flex items-center gap-1 font-mono">
                 <FileText className="w-3.5 h-3.5 text-stone-400" />
                 PDPA-2010-MY-V1.3
@@ -185,7 +187,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
 
           {/* Footer CTA */}
           <div className="p-4 sm:p-5 bg-stone-100/80 dark:bg-[#0c100e] border-t border-stone-200 dark:border-white/10 shrink-0">
-            <button
+            <Button
               id="privacy-policy-understood-btn"
               type="button"
               onClick={handleUnderstoodClick}
@@ -195,7 +197,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
               <span>
                 {language === 'bm' ? 'Saya Fahami & Teruskan' : 'I Understand & Continue'}
               </span>
-            </button>
+            </Button>
           </div>
         </motion.div>
       </div>

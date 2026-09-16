@@ -5,10 +5,10 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="4dp"
-    android:paddingEnd="4dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
     android:background="@android:color/transparent">
 
     <!-- The visible elements: Food Menu details & SET button on the far right end -->
@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textColor="@color/widget_primary_text"
-        android:textSize="12.5sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:singleLine="true"
         android:ellipsize="end"
@@ -27,16 +27,16 @@
     <TextView
         android:id="@+id/pricing_item_action_btn"
         android:layout_width="wrap_content"
-        android:layout_height="22dp"
+        android:layout_height="28dp"
         android:gravity="center"
         android:background="@drawable/widget_badge_background"
         android:textColor="@color/widget_title_text"
-        android:textSize="11sp"
+        android:textSize="12.5sp"
         android:textStyle="bold"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         android:text="SET 💵"
-        android:layout_marginStart="6dp" />
+        android:layout_marginStart="8dp" />
 
     <!-- Hidden bindings to satisfy PricingWidgetListFactory Java code securely -->
     <TextView
