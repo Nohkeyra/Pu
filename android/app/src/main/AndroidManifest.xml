@@ -62,7 +62,7 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <receiver android:name=".widget.WawasanWidgetProvider" android:exported="false">
+        <receiver android:name=".widget.WawasanWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.wawasanpakusop.app.widget.ACTION_REFRESH" />
@@ -77,7 +77,7 @@
         />
 
         <!-- ── Pricing Widget (second, separate widget) ─────────────────── -->
-        <receiver android:name=".widget.PricingWidgetProvider" android:exported="false">
+        <receiver android:name=".widget.PricingWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.wawasanpakusop.app.widget.PRICING_ACTION_REFRESH" />
