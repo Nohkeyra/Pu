@@ -215,9 +215,9 @@ public class WidgetUpdateService {
             }
 
             views.setTextViewText(R.id.widget_today_summary, summaryText);
-            views.setViewVisibility(R.id.widget_today_summary, View.GONE);
-            views.setViewVisibility(R.id.widget_today_summary_container, View.GONE);
-            views.setViewVisibility(R.id.widget_subtitle, View.GONE);
+            views.setViewVisibility(R.id.widget_today_summary, View.VISIBLE);
+            views.setViewVisibility(R.id.widget_today_summary_container, View.VISIBLE);
+            views.setViewVisibility(R.id.widget_subtitle, View.VISIBLE);
 
             manager.updateAppWidget(appWidgetId, views);
         }
