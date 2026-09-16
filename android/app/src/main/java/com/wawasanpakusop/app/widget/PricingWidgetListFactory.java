@@ -22,6 +22,7 @@ import java.util.List;
 public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsFactory {
 
     private final Context context;
+    private final int appWidgetId;
     private List<PricingOrderRow> rows = new ArrayList<>();
 
     static class PricingOrderRow {
@@ -50,6 +51,14 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
 
     PricingWidgetListFactory(Context context, Intent intent) {
         this.context = context;
+        if (intent != null) {
+            this.appWidgetId = intent.getIntExtra(
+                android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,
+                android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID
+            );
+        } else {
+            this.appWidgetId = android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID;
+        }
     }
 
     @Override
@@ -140,6 +149,19 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
 
     @Override
     public int getCount() {
+        if (appWidgetId != android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) {
+            android.appwidget.AppWidgetManager appWidgetManager = android.appwidget.AppWidgetManager.getInstance(context);
+            android.os.Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
+            if (options != null) {
+                int minHeight = options.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
+                if (minHeight <= 100) {
+                    return Math.min(rows.size(), 1);
+                }
+            }
+        } else {
+            // Default/fallback to 1 if appWidgetId is not set
+            return Math.min(rows.size(), 1);
+        }
         return rows.size();
     }
 

@@ -334,40 +334,34 @@ jobs:
       # =============================================
       - name: Create GitHub Release
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v2
         with:
-          artifacts: "android/app/build/outputs/apk/release/*.apk,android/app/build/outputs/bundle/release/*.aab"
-          tag: v${{ env.VERSION_NAME }}
+          files: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          tag_name: v${{ env.VERSION_NAME }}
           name: Release v${{ env.VERSION_NAME }}
-          allowUpdates: true
-          makeLatest: true
-          artifactErrorsFailBuild: false
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          make_latest: true
           body: |
             ## 📱 APK Release v${{ env.VERSION_NAME }}
-            
-            ### 🎯 Build Information
-            - **Version Name:** ${{ env.VERSION_NAME }}
-            - **Version Code:** ${{ env.VERSION_CODE }}
-            - **Commit:** ${{ github.sha }}
-            - **Branch:** ${{ github.ref_name }}
             
             ### 📦 Downloads
             - **Signed APK:** Ready to install
             - **AAB Bundle:** For Play Store
-            
-            ### 🔧 Changes
-            - Auto-built from commit [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            - Built with Capacitor on GitHub Actions
             
             ### 📲 Installation
             1. Download the APK from assets below
             2. Enable "Install from unknown sources" on your device
             3. Install the APK
             
-            ---
-            *Auto-generated release from GitHub Actions*
-          draft: false
-          prerelease: false
+            ### 🎯 Build Information
+            - **Version Name:** ${{ env.VERSION_NAME }}
+            - **Version Code:** ${{ env.VERSION_CODE }}
+            - **Commit:** ${{ github.sha }}
+            - **Branch:** ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # =============================================
