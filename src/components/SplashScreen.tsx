@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getAssetUrl, cn } from '@/lib/utils';
 import { triggerDramaticImpact } from '@/lib/haptics';
-import { Sparkles, Star } from 'lucide-react';
+import { Sparkles, Star, Volume2, VolumeX } from 'lucide-react';
 
 // F-SPLASH: Animated delivery rider splash screen with Kunyit Gold Dark Mode & Putrajaya Sticker.
 
@@ -64,12 +64,57 @@ const MIN_SPLASH_DURATION = 3500; // Guaranteed minimum duration of exactly 3,50
 export default function SplashScreen({ isLoading, onComplete }: SplashScreenProps) {
   const [stage, setStage] = useState<Stage>('ride');
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const soundRef = useRef<HTMLAudioElement | null>(null);
   const reachedHoldRef = useRef(false);
   const minDurationPassedRef = useRef(false);
   const isLoadingRef = useRef(isLoading);
   const isReducedRef = useRef(false);
   const [isLowEnd] = useState(isLowEndDevice);
   const [skipFaded, setSkipFaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (soundRef.current) {
+      soundRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  // Preload whip crack sound effect
+  useEffect(() => {
+    try {
+      const audioUrl = getAssetUrl('/assets/sounds/Whip-Crack.mp3');
+      const audio = new Audio(audioUrl);
+      audio.preload = 'auto';
+      audio.volume = 0.665; // Reduced volume by 30% (0.95 * 0.70 = 0.665)
+      audio.muted = isMutedRef.current;
+      soundRef.current = audio;
+    } catch (e) {
+      console.warn('[SplashScreen] Sound preload error:', e);
+    }
+  }, []);
+
+  const playWhipCrackSound = useCallback(() => {
+    if (isMutedRef.current) return;
+    try {
+      if (!soundRef.current) {
+        const audioUrl = getAssetUrl('/assets/sounds/Whip-Crack.mp3');
+        soundRef.current = new Audio(audioUrl);
+        soundRef.current.volume = 0.665; // Reduced volume by 30% (0.95 * 0.70 = 0.665)
+      }
+      soundRef.current.muted = isMutedRef.current;
+      soundRef.current.currentTime = 0;
+      const playPromise = soundRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('[SplashScreen] Sound autoplay prevented or error:', err);
+        });
+      }
+    } catch (err) {
+      console.warn('[SplashScreen] Sound play error:', err);
+    }
+  }, []);
 
   useEffect(() => {
     isLoadingRef.current = isLoading;
@@ -117,17 +162,18 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
     setStage('ride');
 
     // ── SLAPSTICK TIMING SEQUENCE (Guaranteed 3,500ms minimum duration) ──
-    // 1. Rider memecut laju dari kanan (0ms -> 750ms)
-    // 2. 750ms: Hentam cermin telefon! Melekat & leper (Impact & stick to glass with cracks)
+    // 1. Rider memecut laju dari kanan (0ms -> 1100ms)
+    // 2. 1100ms (+350ms adjustment): Hentam cermin telefon! Melekat & leper (Impact & stick to glass with cracks)
     addTimer(() => {
       setStage('impact');
       triggerDramaticImpact().catch(() => {});
-    }, 750);
+      playWhipCrackSound();
+    }, 1100);
 
-    // 3. 1800ms: Rider mula meluncur gelongsor perlahan ke bawah (comic slide down: 1,000ms)
+    // 3. 2000ms: Rider mula meluncur gelongsor perlahan ke bawah (comic slide down)
     addTimer(() => {
       setStage('slide');
-    }, 1800);
+    }, 2000);
 
     // 4. 2800ms: Rider dah meluncur habis ke bawah, mendedahkan logo Restoran Wawasan sepenuhnya
     addTimer(() => {
@@ -142,7 +188,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         setStage('exit');
       }
     }, MIN_SPLASH_DURATION);
-  }, []);
+  }, [playWhipCrackSound]);
 
   useEffect(() => {
     runSequence();
@@ -246,6 +292,24 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
             }}
           >
             Langkau
+          </button>
+
+          {/* Mute Sound Button */}
+          <button
+            type="button"
+            onClick={() => setIsMuted((prev) => !prev)}
+            aria-label={isMuted ? 'Nyahbisu bunyi' : 'Bisukan bunyi'}
+            title={isMuted ? 'Unmute sound' : 'Mute sound'}
+            className="absolute right-6 z-[10000] p-2.5 rounded-full bg-black/25 active:scale-95 border border-white/30 text-white backdrop-blur-md transition-all duration-300 hover:bg-black/40 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0c453c]"
+            style={{
+              bottom: 'calc(1.5rem + var(--safe-area-inset-bottom, 0px))',
+            }}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-white/80" aria-hidden="true" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-white" aria-hidden="true" />
+            )}
           </button>
 
           {/* Loading / Ready Indicator */}
@@ -407,7 +471,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
                     }
                   : isImpacted
                   ? { duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }
-                  : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+                  : { duration: 1.05, ease: [0.22, 1, 0.36, 1] }
               }
             >
               <img
