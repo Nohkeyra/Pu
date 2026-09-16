@@ -3,7 +3,8 @@ import { motion } from 'motion/react';
 import { 
   Sparkles, 
   ArrowLeft, 
-  ArrowRight 
+  ArrowRight,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton, DishCardSkeleton } from '@/components/ui/Skeleton';
@@ -12,7 +13,7 @@ import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getAssetUrl } from '@/lib/utils';
-import { MenuItemCard } from './MenuItemCard';
+import { repairDishImage } from '@/lib/imageRepair';
 
 interface OrderState {
   mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
@@ -68,11 +69,12 @@ export function Step2DishSelection({
     await handleStepNext(2);
   };
 
-  const renderSection = (title: string, icon: string, category: string, colorClass: string) => {
+  const renderSection = (title: string, icon: string, category: string, colorClass: string, isFirstSection: boolean = false) => {
     const categoryDishes = visibleMenu.filter(item => item.category === category);
     if (!categoryDishes.length) return null;
 
     const selectedCount = orderState.dishes.filter(d => d.category === category).length;
+    const isVeggie = category === 'veggies' || category === 'veggie' || category === 'vegetables';
 
     return (
       <div className="space-y-4">
@@ -86,16 +88,59 @@ export function Step2DishSelection({
             </span>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-2">
-          {categoryDishes.map(item => (
-            <MenuItemCard
-              key={item.id}
-              item={item}
-              isSelected={orderState.dishes.some(x => x.id === item.id)}
-              onToggle={() => { setFieldError(null); void handleToggleDish(item); }}
-              tText={tText}
-            />
-          ))}
+        <div 
+          className="grid grid-cols-2 gap-2.5 pb-2"
+          data-tour={isVeggie ? "step2-veggie-list" : "step2-dish-list"}
+        >
+          {categoryDishes.map((item, index) => {
+            const isFirstDish = isFirstSection && index === 0;
+            const selected = orderState.dishes.some(x => x.id === item.id);
+            const onToggle = () => {
+              setFieldError(null);
+              void handleToggleDish(item);
+            };
+            const dishName = tText(item.nameEn, item.nameBm) || item.name;
+            const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
+
+            return (
+              <div
+                key={item.id}
+                data-tour={isFirstDish ? 'step2-dish-1' : undefined}
+                className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
+                            border border-white/10 bg-stone-900/40
+                            hover:bg-stone-900/60 transition-colors
+                            cursor-pointer min-h-[72px]
+                            ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
+                onClick={onToggle}
+              >
+                {/* Thumbnail */}
+                <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
+                  {dishImg
+                    ? <img src={getAssetUrl(dishImg)} alt={dishName}
+                           className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center
+                                       justify-center text-xl">🍽</div>}
+                </div>
+
+                {/* Name */}
+                <div className="flex-1 min-w-0 pr-5">
+                  <span className="text-sm font-semibold leading-tight
+                                   line-clamp-2 block text-stone-900 dark:text-stone-100">
+                    {dishName}
+                  </span>
+                </div>
+
+                {/* Checkbox */}
+                <div className="absolute top-2 right-2">
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
+                    selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
+                  }`}>
+                    {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -145,9 +190,10 @@ export function Step2DishSelection({
         </div>
       ) : (
         <div className="space-y-6">
-          {orderState.mealTypes.includes('sarapan') && renderSection(tText('Breakfast Selection', 'Pilihan Sarapan'), '🍳', 'breakfast', 'text-amber-500')}
-          {orderState.mealTypes.includes('tengahari') && renderSection(tText('Lunch Selection', 'Pilihan Tengahari'), '🍛', 'lunch', 'text-orange-500')}
-          {orderState.mealTypes.includes('hitea') && renderSection(tText('Hi-Tea Selection', 'Pilihan Hi-Tea'), '🍰', 'hi tea', 'text-pink-500')}
+          {orderState.mealTypes.includes('sarapan') && renderSection(tText('Breakfast Selection', 'Pilihan Sarapan'), '🍳', 'breakfast', 'text-amber-500', true)}
+          {orderState.mealTypes.includes('tengahari') && renderSection(tText('Lunch Selection', 'Pilihan Tengahari'), '🍛', 'lunch', 'text-orange-500', !orderState.mealTypes.includes('sarapan'))}
+          {orderState.mealTypes.includes('hitea') && renderSection(tText('Hi-Tea Selection', 'Pilihan Hi-Tea'), '🍰', 'hi tea', 'text-pink-500', !orderState.mealTypes.includes('sarapan') && !orderState.mealTypes.includes('tengahari'))}
+          {!orderState.mealTypes.length && renderSection(tText('Menu Selection', 'Pilihan Menu'), '🍽️', 'lunch', 'text-orange-500', true)}
 
           {visibleMenu.some(item => item.category === 'drinks') && (
             <div className="space-y-4">
@@ -167,18 +213,55 @@ export function Step2DishSelection({
                   <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block opacity-80">
                     {tText('☕ Hot/Warm Drinks', '☕ Minuman Panas/Suam')}
                   </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                  <div className="grid grid-cols-2 gap-2.5 pb-2">
                     {visibleMenu
                       .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
-                      .map(item => (
-                        <MenuItemCard
-                          key={item.id}
-                          item={item}
-                          isSelected={orderState.dishes.some(x => x.id === item.id)}
-                          onToggle={() => { setFieldError(null); void handleToggleDish(item); }}
-                          tText={tText}
-                        />
-                      ))}
+                      .map(item => {
+                        const selected = orderState.dishes.some(x => x.id === item.id);
+                        const onToggle = () => {
+                          setFieldError(null);
+                          void handleToggleDish(item);
+                        };
+                        const dishName = tText(item.nameEn, item.nameBm) || item.name;
+                        const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
+                                        border border-white/10 bg-stone-900/40
+                                        hover:bg-stone-900/60 transition-colors
+                                        cursor-pointer min-h-[72px]
+                                        ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
+                            onClick={onToggle}
+                          >
+                            {/* Thumbnail */}
+                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
+                              {dishImg
+                                ? <img src={getAssetUrl(dishImg)} alt={dishName}
+                                       className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center
+                                                   justify-center text-xl">🍽</div>}
+                            </div>
+
+                            {/* Name */}
+                            <div className="flex-1 min-w-0 pr-5">
+                              <span className="text-sm font-semibold leading-tight
+                                               line-clamp-2 block text-stone-900 dark:text-stone-100">
+                                {dishName}
+                              </span>
+                            </div>
+
+                            {/* Checkbox */}
+                            <div className="absolute top-2 right-2">
+                              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
+                                selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
+                              }`}>
+                                {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -188,18 +271,55 @@ export function Step2DishSelection({
                   <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block opacity-80">
                     {tText('🥤 Refreshing Box/Cordial/Mineral Drinks', '🥤 Minuman Kotak/Kordial/Mineral Segar')}
                   </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                  <div className="grid grid-cols-2 gap-2.5 pb-2">
                     {visibleMenu
                       .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
-                      .map(item => (
-                        <MenuItemCard
-                          key={item.id}
-                          item={item}
-                          isSelected={orderState.dishes.some(x => x.id === item.id)}
-                          onToggle={() => { setFieldError(null); void handleToggleDish(item); }}
-                          tText={tText}
-                        />
-                      ))}
+                      .map(item => {
+                        const selected = orderState.dishes.some(x => x.id === item.id);
+                        const onToggle = () => {
+                          setFieldError(null);
+                          void handleToggleDish(item);
+                        };
+                        const dishName = tText(item.nameEn, item.nameBm) || item.name;
+                        const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
+                                        border border-white/10 bg-stone-900/40
+                                        hover:bg-stone-900/60 transition-colors
+                                        cursor-pointer min-h-[72px]
+                                        ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
+                            onClick={onToggle}
+                          >
+                            {/* Thumbnail */}
+                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
+                              {dishImg
+                                ? <img src={getAssetUrl(dishImg)} alt={dishName}
+                                       className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center
+                                                   justify-center text-xl">🍽</div>}
+                            </div>
+
+                            {/* Name */}
+                            <div className="flex-1 min-w-0 pr-5">
+                              <span className="text-sm font-semibold leading-tight
+                                               line-clamp-2 block text-stone-900 dark:text-stone-100">
+                                {dishName}
+                              </span>
+                            </div>
+
+                            {/* Checkbox */}
+                            <div className="absolute top-2 right-2">
+                              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
+                                selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
+                              }`}>
+                                {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -281,6 +401,7 @@ export function Step2DishSelection({
         </Button>
         <Button
           onClick={validateAndNext}
+          data-tour="step2-next"
           className="flex-1 bg-amber-600 hover:bg-amber-700 text-white min-h-[48px] rounded-2xl font-bold text-sm shadow-md"
         >
           {tText('Next: Details', 'Seterusnya: Butiran')}

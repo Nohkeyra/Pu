@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { 
@@ -24,6 +24,7 @@ import { Step2DishSelection } from './order/Step2DishSelection';
 import { Step3ContactDetails } from './order/Step3ContactDetails';
 import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
 import { Step5OrderSuccess } from './order/Step5OrderSuccess';
+import { DemoOverlay } from '@/ghost/DemoOverlay';
 import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { Capacitor } from '@capacitor/core';
@@ -117,10 +118,66 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     return 1;
   });
 
-  // Automatically scroll page to top whenever step changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep]);
+  // Multi-step State with localStorage draft support
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [orderState, setOrderState] = useState<OrderState>((): OrderState => {
+    const defaultState: OrderState = {
+      eventType: '',
+      mealTypes: [],
+      preparationType: 'meal_box',
+      guests: 50,
+      dishes: [],
+      veggies: [],
+      name: '',
+      contact: '',
+      email: '',
+      confirmEmail: '',
+      date: '',
+      time: '12:00',
+      location: '',
+      delivery: 'delivery',
+      notes: '',
+      companyName: '',
+      customCompany: '',
+      department: '',
+      initials: '',
+      attn: '',
+      customMenu: ''
+    };
+
+    if (initialData) {
+      return { ...defaultState, ...(initialData as Partial<OrderState>) };
+    }
+
+    try {
+      const saved = localStorage.getItem('wawasan_order_draft_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...defaultState,
+            ...parsed,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to parse draft state:', err);
+    }
+    return defaultState;
+  });
+
+  // Ghost Demo Shadow State
+  const [demoActive, setDemoActive] = useState(false);
+  const [demoState, setDemoState] = useState<Partial<OrderState>>({});
+  const [demoStep, setDemoStep] = useState(1);
+  const [hasSeenDemo, setHasSeenDemo] = useState<boolean>(() => {
+    try {
+      return Boolean(localStorage.getItem('wawasan_ghost_demo_seen_v1'));
+    } catch {
+      return false;
+    }
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   // C-03 (2026-08-06): stable per-attempt key so a retried/duplicate submit
   // (network timeout + retry, offline-queue replay) can't create a second
@@ -140,6 +197,57 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
   const [dynamicMenu, setDynamicMenu] = useState<any[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+
+  // Derived Values
+  const effectiveState = demoActive ? { ...orderState, ...demoState } : orderState;
+  const effectiveStep = demoActive ? demoStep : currentStep;
+
+  // useCallback Hooks
+  const applyDemoUpdate = useCallback((key: string, value: any) => {
+    setDemoState(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const applyDemoStep = useCallback((step: number) => {
+    setDemoStep(step);
+  }, []);
+
+  const handleEndDemo = useCallback(() => {
+    setDemoActive(false);
+    setDemoState({});
+    setDemoStep(1);
+    try {
+      localStorage.setItem('wawasan_ghost_demo_seen_v1', '1');
+      setHasSeenDemo(true);
+    } catch (e) {
+      console.warn('Failed to set ghost demo seen flag:', e);
+    }
+  }, []);
+
+  const handleStartDemo = useCallback(() => {
+    setDemoState({});
+    setDemoStep(1);
+    setDemoActive(true);
+  }, []);
+
+  // Auto-play ghost demo on first visit
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem('wawasan_ghost_demo_seen_v1');
+      if (!seen && !initialData) {
+        const timer = setTimeout(() => {
+          setDemoActive(true);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {
+      console.warn('Failed to check ghost demo seen flag:', e);
+    }
+  }, [initialData]);
+
+  // Automatically scroll page to top whenever step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [effectiveStep]);
 
   // Helper to clear saved draft
   const clearOrderDraft = () => {
@@ -208,56 +316,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     };
   }, []);
 
-  // Multi-step State with localStorage draft support
-  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
-  const [orderState, setOrderState] = useState<OrderState>((): OrderState => {
-    const defaultState: OrderState = {
-      eventType: '',
-      mealTypes: [],
-      preparationType: 'meal_box',
-      guests: 50,
-      dishes: [],
-      veggies: [],
-      name: '',
-      contact: '',
-      email: '',
-      confirmEmail: '',
-      date: '',
-      time: '12:00',
-      location: '',
-      delivery: 'delivery',
-      notes: '',
-      companyName: '',
-      customCompany: '',
-      department: '',
-      initials: '',
-      attn: '',
-      customMenu: ''
-    };
-
-    if (initialData) {
-      return { ...defaultState, ...(initialData as Partial<OrderState>) };
-    }
-
-    try {
-      const saved = localStorage.getItem('wawasan_order_draft_state');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            ...defaultState,
-            ...parsed,
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to parse draft state:', err);
-    }
-    return defaultState;
-  });
-
   // Save draft on every state or step change
   useEffect(() => {
+    if (demoActive) return;
     if (currentStep < 5 && !initialData) {
       try {
         localStorage.setItem('wawasan_order_draft_step', String(currentStep));
@@ -267,7 +328,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         console.warn('Failed to save draft state:', err);
       }
     }
-  }, [currentStep, orderState, initialData]);
+  }, [currentStep, orderState, initialData, demoActive]);
 
   const tText = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -276,13 +337,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   // together), so this joins all selected labels rather than checking a
   // single value.
   const getMealTypesLabel = () => {
-    if (orderState.mealTypes.length === 0) return tText('Not selected', 'Belum dipilih');
+    const mealTypes = effectiveState.mealTypes || [];
+    if (mealTypes.length === 0) return tText('Not selected', 'Belum dipilih');
     const labels: Record<'sarapan' | 'tengahari' | 'hitea', string> = {
       sarapan: tText('Breakfast', 'Sarapan'),
       tengahari: tText('Lunch', 'Makan Tengah Hari'),
       hitea: tText('Hi-Tea', 'Hi-Tea'),
     };
-    return orderState.mealTypes.map(m => labels[m]).join(', ');
+    return mealTypes.map(m => labels[m]).join(', ');
   };
 
   // Sync Logged-In User Profile details
@@ -554,6 +616,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   // HANDLERS FOR FIELD UPDATES
   const handleToggleDish = async (dish: any) => {
+    if (demoActive) return;
     await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.dishes.some(d => d.id === dish.id);
@@ -565,6 +628,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
   const adjustGuests = async (delta: number) => {
+    if (demoActive) return;
     await triggerLightImpact();
     setOrderState(prev => {
       let g = prev.guests + delta;
@@ -575,6 +639,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleToggleMeal = async (id: 'sarapan' | 'tengahari' | 'hitea') => {
+    if (demoActive) return;
     await triggerLightImpact();
     setOrderState(prev => {
       const exists = prev.mealTypes.includes(id);
@@ -587,6 +652,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleDiscardDraft = async () => {
+    if (demoActive) return;
     await triggerLightImpact();
     localStorage.removeItem('wawasan_order_draft_step');
     localStorage.removeItem('wawasan_order_draft_state');
@@ -622,7 +688,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     const triggerWarning = () => triggerNotification(NotificationType.Warning);
 
     if (step === 1) {
-      if (!orderState.eventType) {
+      if (!effectiveState.eventType) {
         triggerWarning();
         toast({
           title: tText('Event Type Required', 'Pilih Jenis Majlis'),
@@ -631,7 +697,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         });
         return;
       }
-      if (orderState.mealTypes.length === 0) {
+      if (effectiveState.mealTypes.length === 0) {
         triggerWarning();
         toast({
           title: tText('Meal Type Required', 'Pilih Jenis Hidangan'),
@@ -640,7 +706,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         });
         return;
       }
-      if (!orderState.guests || orderState.guests < 1) {
+      if (!effectiveState.guests || effectiveState.guests < 1) {
         triggerWarning();
         toast({
           title: tText('Minimum Quantity Required', 'Kuantiti Minimum Diperlukan'),
@@ -649,19 +715,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         });
         return;
       }
-      setCurrentStep(2);
+      if (!demoActive) setCurrentStep(2);
       logOrderStep(2, 'dish_selection');
     }
 
     if (step === 2) {
-      setCurrentStep(3);
+      if (!demoActive) setCurrentStep(3);
       logOrderStep(3, 'contact_details');
     }
 
     if (step === 3) {
       // Validate customer & billing info
-      if (orderState.eventType === 'pejabat') {
-        if (!orderState.companyName) {
+      if (effectiveState.eventType === 'pejabat') {
+        if (!effectiveState.companyName) {
           triggerWarning();
           toast({
             title: tText('Company Billing Info', 'Nama Syarikat/Jabatan'),
@@ -670,7 +736,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           });
           return;
         }
-        if (orderState.companyName === 'other' && !orderState.customCompany) {
+        if (effectiveState.companyName === 'other' && !effectiveState.customCompany) {
           triggerWarning();
           toast({
             title: tText('Company Name Needed', 'Nama Jabatan'),
@@ -681,55 +747,56 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         }
       }
 
-      if (!orderState.name.trim()) {
+      if (!effectiveState.name.trim()) {
         triggerWarning();
         toast({ title: tText('Name Needed', 'Nama Diperlukan'), description: tText('Please enter your full name.', 'Sila masukkan nama penuh anda.'), variant: 'warning' });
         return;
       }
 
-      if (!orderState.contact.trim()) {
+      if (!effectiveState.contact.trim()) {
         triggerWarning();
         toast({ title: tText('Contact Needed', 'No. Telefon Diperlukan'), description: tText('Please enter a valid phone number.', 'Sila masukkan nombor telefon yang sah.'), variant: 'warning' });
         return;
       }
 
-      if (!orderState.email.trim()) {
+      if (!effectiveState.email.trim()) {
         triggerWarning();
         toast({ title: tText('Email Needed', 'Emel Diperlukan'), description: tText('Please enter your email address for invoices.', 'Sila masukkan alamat emel anda untuk penerimaan invois.'), variant: 'warning' });
         return;
       }
 
-      if ((orderState.email || '').trim().toLowerCase() !== (orderState.confirmEmail || '').trim().toLowerCase()) {
+      if ((effectiveState.email || '').trim().toLowerCase() !== (effectiveState.confirmEmail || '').trim().toLowerCase()) {
         triggerWarning();
         toast({ title: tText('Email Mismatch', 'Emel Tidak Sepadan'), description: tText('The confirm email field does not match.', 'Alamat emel pengesahan tidak sepadan.'), variant: 'warning' });
         return;
       }
 
-      if (!orderState.date) {
+      if (!effectiveState.date) {
         triggerWarning();
         toast({ title: tText('Date Required', 'Tarikh Diperlukan'), description: tText('Please choose your event date.', 'Sila pilih tarikh majlis anda.'), variant: 'warning' });
         return;
       }
 
-      if (!orderState.time) {
+      if (!effectiveState.time) {
         triggerWarning();
         toast({ title: tText('Time Required', 'Masa Diperlukan'), description: tText('Please select a serving time.', 'Sila tetapkan masa majlis anda.'), variant: 'warning' });
         return;
       }
 
-      if (!orderState.location.trim()) {
+      if (!effectiveState.location.trim()) {
         triggerWarning();
         toast({ title: tText('Location Required', 'Lokasi Diperlukan'), description: tText('Please enter your event location or address.', 'Sila isi alamat atau lokasi majlis.'), variant: 'warning' });
         return;
       }
 
-      setCurrentStep(4);
+      if (!demoActive) setCurrentStep(4);
       logOrderStep(4, 'review_submit');
     }
   };
 
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
+    if (demoActive) return;
     setIsSubmitting(true);
     // F-OFFLINE (audit 2026-08-11): orderData itself is built inside the try
     // block below and is out of scope in catch. This holds a reference to
@@ -1117,7 +1184,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           <div className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl overflow-hidden">
             
             {/* Progress Bar Indicator */}
-            {currentStep <= 4 && (
+            {effectiveStep <= 4 && (
               <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/40 dark:bg-stone-900/40 border-b border-stone/10 dark:border-white/5" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
                 {draftSavedAt && !initialData && (
                   <div className="flex items-center justify-between mb-3 bg-stone-100/70 dark:bg-stone-800/60 px-3 py-1.5 rounded-xl border border-stone/15 dark:border-white/10" role="status">
@@ -1140,27 +1207,37 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
-                        {tText(`Step ${currentStep} of 4`, `Langkah ${currentStep} / 4`)}
+                        {tText(`Step ${effectiveStep} of 4`, `Langkah ${effectiveStep} / 4`)}
                       </span>
                       <motion.span
-                        key={currentStep}
+                        key={effectiveStep}
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
                         className="text-xs font-bold text-deep-forest dark:text-stone-100"
                       >
-                        {currentStep === 1 && tText('Event Setup', 'Jenis Majlis')}
-                        {currentStep === 2 && tText('Dish Selection', 'Pilih Menu')}
-                        {currentStep === 3 && tText('Contact & Delivery', 'Maklumat & Lokasi')}
-                        {currentStep === 4 && tText('Review & Submit', 'Semak & Hantar')}
+                        {effectiveStep === 1 && tText('Event Setup', 'Jenis Majlis')}
+                        {effectiveStep === 2 && tText('Dish Selection', 'Pilih Menu')}
+                        {effectiveStep === 3 && tText('Contact & Delivery', 'Maklumat & Lokasi')}
+                        {effectiveStep === 4 && tText('Review & Submit', 'Semak & Hantar')}
                       </motion.span>
                     </div>
+
+                    {hasSeenDemo && !demoActive && (
+                      <button
+                        type="button"
+                        onClick={handleStartDemo}
+                        className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        <span>👻 {tText('Watch demo', 'Tonton demo')}</span>
+                      </button>
+                    )}
                   </div>
                   {/* Visual Step Progress Capsules */}
                   <div className="grid grid-cols-4 gap-1.5 w-full">
                     {[1, 2, 3, 4].map((stepNum) => {
-                      const isPast = currentStep > stepNum;
-                      const isCurrent = currentStep === stepNum;
+                      const isPast = effectiveStep > stepNum;
+                      const isCurrent = effectiveStep === stepNum;
                       return (
                         <div
                           key={stepNum}
@@ -1189,8 +1266,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     { s: 3, label: tText('Billing', 'Butiran') },
                     { s: 4, label: tText('Review', 'Semakan') }
                   ].map((item, idx) => {
-                    const isCurrent = currentStep === item.s;
-                    const isDone = currentStep > item.s;
+                    const isCurrent = effectiveStep === item.s;
+                    const isDone = effectiveStep > item.s;
                     return (
                       <div key={item.s} className="flex items-center flex-1 last:flex-none">
                         <div className="flex flex-col items-center gap-1.5 relative z-10">
@@ -1242,6 +1319,16 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       </div>
                     );
                   })}
+
+                  {hasSeenDemo && !demoActive && (
+                    <button
+                      type="button"
+                      onClick={handleStartDemo}
+                      className="ml-4 text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0"
+                    >
+                      <span>👻 {tText('Watch demo', 'Tonton demo')}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1251,9 +1338,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <AnimatePresence mode="wait">
             
             {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
-            {currentStep === 1 && (
+            {effectiveStep === 1 && (
               <Step1EventMeal
-                orderState={orderState}
+                orderState={effectiveState}
                 setOrderState={setOrderState}
                 handleToggleMeal={handleToggleMeal}
                 adjustGuests={adjustGuests}
@@ -1263,9 +1350,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             )}
 
             {/* STEP 2: PILIH LAUK PAUK & CALCULATE PRICE */}
-            {currentStep === 2 && (
+            {effectiveStep === 2 && (
               <Step2DishSelection
-                orderState={orderState}
+                orderState={effectiveState}
                 setOrderState={setOrderState}
                 menuLoading={menuLoading}
                 dynamicMenu={dynamicMenu}
@@ -1279,9 +1366,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             )}
 
             {/* STEP 3: BUTIRAN TEMPAHAN */}
-            {currentStep === 3 && (
+            {effectiveStep === 3 && (
               <Step3ContactDetails
-                orderState={orderState}
+                orderState={effectiveState}
                 setOrderState={setOrderState}
                 isProfileLoading={isProfileLoading}
                 savedLocations={savedLocations}
@@ -1298,9 +1385,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             )}
 
             {/* STEP 4: REVIEW & CONFIRMATION */}
-            {currentStep === 4 && (
+            {effectiveStep === 4 && (
               <Step4ReviewSubmit
-                orderState={orderState}
+                orderState={effectiveState}
                 getMealTypesLabel={getMealTypesLabel}
                 isSubmitting={isSubmitting}
                 handleOrderSubmission={handleOrderSubmission}
@@ -1312,9 +1399,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             )}
 
             {/* STEP 5: KEJAYAAN / SUCCESS */}
-            {currentStep === 5 && (
+            {effectiveStep === 5 && (
               <Step5OrderSuccess
-                orderState={orderState}
+                orderState={effectiveState}
                 referenceNumber={referenceNumber}
                 getMealTypesLabel={getMealTypesLabel}
                 emailStatus={emailStatus}
@@ -1342,7 +1429,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </h3>
               </div>
               <span className="microcopy-12-upper font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
-                {currentStep >= 5 ? tText('Completed', 'Selesai') : `Step ${currentStep} / 4`}
+                {effectiveStep >= 5 ? tText('Completed', 'Selesai') : `Step ${effectiveStep} / 4`}
               </span>
             </div>
 
@@ -1351,9 +1438,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <div className="flex justify-between items-center">
                 <span className="text-stone font-medium">{tText('Event Type:', 'Jenis Majlis:')}</span>
                 <span className="font-bold text-deep-forest dark:text-white">
-                  {orderState.eventType === 'pejabat' 
+                  {effectiveState.eventType === 'pejabat' 
                     ? tText('Office Feast', 'Jamuan Pejabat') 
-                    : orderState.eventType === 'lain'
+                    : effectiveState.eventType === 'lain'
                       ? tText('Private Event', 'Lain-Lain')
                       : tText('Not Selected', 'Belum Dipilih')}
                 </span>
@@ -1362,7 +1449,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <div className="flex justify-between items-center">
                 <span className="text-stone font-medium">{tText('Guest Count:', 'Kuantiti Pax:')}</span>
                 <span className="font-bold text-deep-forest dark:text-white">
-                  {orderState.guests} {tText('pax', 'orang')}
+                  {effectiveState.guests} {tText('pax', 'orang')}
                 </span>
               </div>
 
@@ -1373,11 +1460,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </span>
               </div>
 
-              {orderState.date && (
+              {effectiveState.date && (
                 <div className="flex justify-between items-center">
                   <span className="text-stone font-medium">{tText('Date & Time:', 'Tarikh & Masa:')}</span>
                   <span className="font-bold text-deep-forest dark:text-white">
-                    {orderState.date} @ {orderState.time}
+                    {effectiveState.date} @ {effectiveState.time}
                   </span>
                 </div>
               )}
@@ -1388,14 +1475,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   {tText('Selected Menu Items:', 'Menu Pilihan:')}
                 </span>
                 
-                {orderState.dishes.length > 0 || orderState.veggies.length > 0 ? (
+                {effectiveState.dishes.length > 0 || effectiveState.veggies.length > 0 ? (
                   <div className="flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1">
-                    {orderState.dishes.map(d => (
+                    {effectiveState.dishes.map(d => (
                       <span key={d.id} className="inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20">
                         {tText(d.nameEn, d.nameBm)}
                       </span>
                     ))}
-                    {orderState.veggies.map(v => (
+                    {effectiveState.veggies.map(v => (
                       <span key={v.id} className="inline-block bg-deep-forest/20 text-deep-forest dark:text-sunshine font-bold px-2 py-0.5 rounded microcopy-12-upper border border-deep-forest/30">
                         {tText(v.nameEn, v.nameBm)}
                       </span>
@@ -1468,11 +1555,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       )}
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
-      {currentStep <= 4 && (
+      {effectiveStep <= 4 && (
         <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom,12px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-deep-forest/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
-              <span>{orderState.guests} pax</span>
+              <span>{effectiveState.guests} pax</span>
               <span>•</span>
               <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
             </div>
@@ -1484,9 +1571,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {currentStep < 4 ? (
+            {effectiveStep < 4 ? (
               <Button
-                onClick={() => handleStepNext(currentStep)}
+                onClick={() => handleStepNext(effectiveStep)}
                 className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
               >
                 <span>{tText('Next', 'Seterusnya')}</span>
@@ -1511,6 +1598,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           </div>
         </div>
       )}
+
+      {/* Ghost Demo Overlay & Floating Skip Button */}
+      {demoActive && (
+        <div className="fixed top-4 right-4 z-[9999]">
+          <button
+            type="button"
+            onClick={handleEndDemo}
+            className="bg-stone-900/90 hover:bg-black text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-white/20 flex items-center gap-1.5 backdrop-blur-md cursor-pointer transition-all active:scale-95"
+          >
+            <span>{tText('Skip demo', 'Langkau demo')} ✕</span>
+          </button>
+        </div>
+      )}
+      <DemoOverlay
+        active={demoActive}
+        onDone={handleEndDemo}
+        applyDemoUpdate={applyDemoUpdate}
+        applyDemoStep={applyDemoStep}
+      />
 
     </>
   );

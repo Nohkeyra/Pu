@@ -1,0 +1,56 @@
+/* Ghost Demo System Styles */
+
+.ghost-target {
+  outline: 2px dashed #f59e0b !important;
+  outline-offset: 3px !important;
+  border-radius: 8px !important;
+  transition: outline 0.2s ease-in-out;
+}
+
+.ghost-glow {
+  animation: ghostPulse 1.5s infinite !important;
+  border-radius: 8px !important;
+}
+
+@keyframes ghostPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes ghostTap {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes calloutIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-glow,
+  .ghost-target {
+    animation: none !important;
+    transition: none !important;
+  }
+}

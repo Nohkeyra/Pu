@@ -287,6 +287,7 @@ export function Step3ContactDetails({
           <Label htmlFor="contact-name" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
           <Input
             id="contact-name"
+            data-tour="step3-name"
             value={orderState.name}
             onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
             placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
@@ -299,6 +300,7 @@ export function Step3ContactDetails({
           <Label htmlFor="contact-phone" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
           <Input
             id="contact-phone"
+            data-tour="step3-contact"
             type="tel"
             value={orderState.contact}
             onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
@@ -313,6 +315,7 @@ export function Step3ContactDetails({
             <Label htmlFor="contact-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
             <Input
               id="contact-email"
+              data-tour="step3-email"
               type="email"
               value={orderState.email}
               onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
@@ -324,6 +327,7 @@ export function Step3ContactDetails({
             <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
             <Input
               id="contact-confirm-email"
+              data-tour="step3-confirm-email"
               type="email"
               value={orderState.confirmEmail}
               onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
@@ -351,6 +355,7 @@ export function Step3ContactDetails({
                   </div>
                   <input
                     id="event-date"
+                    data-tour="step3-date"
                     type="date"
                     value={orderState.date}
                     min={minBookingDate}
@@ -364,6 +369,7 @@ export function Step3ContactDetails({
                   </Label>
                   <input
                     id="event-time"
+                    data-tour="step3-time"
                     type="time"
                     value={orderState.time}
                     onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
@@ -443,6 +449,7 @@ export function Step3ContactDetails({
 
           <Textarea
             id="contact-location"
+            data-tour="step3-location"
             value={orderState.location}
             onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
             placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
@@ -454,7 +461,7 @@ export function Step3ContactDetails({
         <div className="space-y-1.5 pt-1">
           <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">{tText('Delivery Method', 'Kaedah Penghantaran *')}</Label>
 
-          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')}>
+          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')} data-tour="step3-delivery">
             <button
               type="button"
               role="radio"
@@ -534,6 +541,7 @@ export function Step3ContactDetails({
         </Button>
         <Button
           onClick={validateAndNext}
+          data-tour="step3-next"
           className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
         >
           {tText('Next: Review', 'Seterusnya: Semak')}

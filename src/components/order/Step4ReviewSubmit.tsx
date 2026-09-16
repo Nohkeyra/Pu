@@ -55,7 +55,7 @@ export function Step4ReviewSubmit({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4" data-tour="step4-review">
         
         {/* Event & Serve Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
@@ -229,6 +229,7 @@ export function Step4ReviewSubmit({
         <Button 
           onClick={handleOrderSubmission} 
           disabled={isSubmitting}
+          data-tour="step4-submit"
           className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-xl font-bold text-sm shadow-md"
         >
           {isSubmitting ? (

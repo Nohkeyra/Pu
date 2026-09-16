@@ -93,7 +93,7 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')}>
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
           <button
             type="button"
             role="radio"
@@ -179,6 +179,7 @@ export function Step1EventMeal({
               <button
                 key={m.id}
                 type="button"
+                data-tour={`step1-meal-${m.id}`}
                 aria-pressed={isSelected}
                 onClick={() => { handleToggleMeal(mealId); setFieldErrors((e) => ({ ...e, mealTypes: undefined })); }}
                 className={cn(
@@ -218,6 +219,7 @@ export function Step1EventMeal({
         <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
           <button
             type="button"
+            data-tour="step1-prep-buffet"
             role="radio"
             aria-checked={orderState.preparationType === 'buffet'}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'buffet' }))}
@@ -247,6 +249,7 @@ export function Step1EventMeal({
 
           <button
             type="button"
+            data-tour="step1-prep-mealbox"
             role="radio"
             aria-checked={orderState.preparationType === 'meal_box'}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'meal_box' }))}
@@ -325,6 +328,7 @@ export function Step1EventMeal({
             />
             <button
               type="button"
+              data-tour="step1-guests-plus"
               aria-label={tText('Increase quantity', 'Tambah kuantiti')}
               onClick={() => adjustGuests(1)}
               className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
@@ -340,6 +344,7 @@ export function Step1EventMeal({
       {/* Next Button */}
       <Button
         onClick={validateAndNext}
+        data-tour="step1-next"
         className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
       >
         {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
