@@ -132,8 +132,8 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
                     List<String> rawMeals = new ArrayList<>();
                     JSONArray mealsArr = o.optJSONArray("meals");
                     if (mealsArr != null && mealsArr.length() > 0) {
-                        for (int i = 0; i < mealsArr.length(); i++) {
-                            rawMeals.add(mealsArr.optString(i));
+                        for (int mIdx = 0; mIdx < mealsArr.length(); mIdx++) {
+                            rawMeals.add(mealsArr.optString(mIdx));
                         }
                     } else {
                         String mealTypeStr = o.optString("mealType", "");
@@ -172,9 +172,9 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
 
                     if (!codes.isEmpty()) {
                         StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < codes.size(); i++) {
-                            if (i > 0) sb.append("»");
-                            sb.append(codes.get(i));
+                        for (int k = 0; k < codes.size(); k++) {
+                            if (k > 0) sb.append("»");
+                            sb.append(codes.get(k));
                         }
                         abbrev = sb.toString();
                     } else {
