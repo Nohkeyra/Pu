@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import com.wawasanpakusop.app.R;
+
 /**
  * Second, separate home-screen widget dedicated to setting prices on today's
  * orders and auto-emailing the final invoice — independent from
