@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Obsidian & Forest Base Surfaces -->
-    <color name="widget_background">#0F1411</color>
+    <color name="widget_bg_base">#0F1411</color>
     <color name="widget_surface">#161D19</color>
     <color name="widget_card_background">#1C2420</color>
     <color name="widget_card_background_alt">#232D28</color>

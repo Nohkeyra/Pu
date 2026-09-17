@@ -113,6 +113,25 @@ public class WidgetUpdateService {
             && (lastSuccessAt == 0 || System.currentTimeMillis() - lastSuccessAt > STALE_THRESHOLD_MS);
 
         for (int appWidgetId : appWidgetIds) {
+            try {
+                applyUpdateForWidget(context, manager, appWidgetId, cachedJson, hasData, fetchSucceeded, isStale);
+            } catch (Exception e) {
+                android.util.Log.e("WidgetUpdateService", "applyUpdate failed for widget " + appWidgetId, e);
+                // WawasanWidgetProvider already pushed a bare-safe view
+                // synchronously at add time; leave that on-screen rather
+                // than let this exception crash the Handler callback.
+            }
+        }
+
+        try {
+            manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_orders_list);
+        } catch (Exception e) {
+            android.util.Log.w("WidgetUpdateService", "notifyAppWidgetViewDataChanged failed", e);
+        }
+    }
+
+    private static void applyUpdateForWidget(Context context, AppWidgetManager manager, int appWidgetId,
+                                              String cachedJson, boolean hasData, boolean fetchSucceeded, boolean isStale) {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
 
             Intent openIntent = new Intent(context, MainActivity.class);
@@ -220,9 +239,6 @@ public class WidgetUpdateService {
             views.setViewVisibility(R.id.widget_subtitle, View.GONE);
 
             manager.updateAppWidget(appWidgetId, views);
-        }
-
-        manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_orders_list);
     }
 
     private static String formatShortDate(String dateStr) {

@@ -4,8 +4,11 @@ import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 import com.wawasanpakusop.app.MainActivity;
@@ -16,8 +19,16 @@ import com.wawasanpakusop.app.R;
  * Data is fetched from the Render backend's /api/widget/upcoming-orders
  * endpoint by WidgetUpdateService, which then pushes the result back here
  * via updateAppWidget().
+ *
+ * Every RemoteViews/PendingIntent construction below is wrapped so a
+ * transient failure degrades to a bare-safe view instead of throwing out
+ * of onUpdate()/onReceive() -- an uncaught exception here runs on the
+ * launcher's binder call and is what makes the OS report "Couldn't add
+ * widget" for the whole placement, not just this one visual detail.
  */
 public class WawasanWidgetProvider extends AppWidgetProvider {
+
+    private static final String TAG = "WawasanWidgetProvider";
 
     public static final String ACTION_REFRESH = "com.wawasanpakusop.app.widget.ACTION_REFRESH";
     public static final String EXTRA_OPEN_ADMIN = "open_admin_panel";
@@ -25,16 +36,47 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
-            // Show a lightweight "loading" state immediately, then kick off
-            // the network fetch which will update the view when it completes.
+            pushSafeInitialView(context, appWidgetManager, appWidgetId);
+        }
+
+        try {
+            BroadcastReceiver.PendingResult pendingResult = goAsync();
+            WidgetUpdateService.fetchAndUpdate(context, appWidgetIds, pendingResult);
+        } catch (Exception e) {
+            // The safe initial view above is already on-screen; a failure
+            // kicking off the background fetch just means it stays on the
+            // "loading" state until the next scheduled update instead of
+            // taking the widget placement down with it.
+            Log.w(TAG, "fetchAndUpdate dispatch failed", e);
+        }
+    }
+
+    /**
+     * Renders a minimal, guaranteed-inflatable view immediately, before any
+     * PendingIntent or network-touching code runs. If everything below this
+     * succeeds it gets replaced a moment later by WidgetUpdateService's real
+     * content; if something downstream throws, this is what stays visible
+     * instead of an empty/error widget.
+     */
+    private void pushSafeInitialView(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
+        try {
+            RemoteViews bare = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
+            appWidgetManager.updateAppWidget(appWidgetId, bare);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to push safe initial view for widget " + appWidgetId, e);
+            return;
+        }
+
+        try {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
             setOpenAdminIntent(context, views);
             setRefreshIntent(context, views);
             appWidgetManager.updateAppWidget(appWidgetId, views);
+        } catch (Exception e) {
+            // Bare layout (pushed above) is already showing; click intents
+            // just won't be wired until the next successful update.
+            Log.w(TAG, "Failed to wire click intents for widget " + appWidgetId, e);
         }
-        
-        BroadcastReceiver.PendingResult pendingResult = goAsync();
-        WidgetUpdateService.fetchAndUpdate(context, appWidgetIds, pendingResult);
     }
 
     private void setOpenAdminIntent(Context context, RemoteViews views) {
@@ -61,21 +103,28 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
-    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager appWidgetManager, int appWidgetId, android.os.Bundle newOptions) {
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager appWidgetManager, int appWidgetId, Bundle newOptions) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions);
-        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_orders_list);
+        try {
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_orders_list);
+        } catch (Exception e) {
+            Log.w(TAG, "onAppWidgetOptionsChanged failed for widget " + appWidgetId, e);
+        }
     }
 
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        if (ACTION_REFRESH.equals(intent.getAction())) {
+        if (intent == null || !ACTION_REFRESH.equals(intent.getAction())) {
+            return;
+        }
+        try {
             AppWidgetManager manager = AppWidgetManager.getInstance(context);
-            int[] ids = manager.getAppWidgetIds(
-                new android.content.ComponentName(context, WawasanWidgetProvider.class)
-            );
+            int[] ids = manager.getAppWidgetIds(new ComponentName(context, WawasanWidgetProvider.class));
             BroadcastReceiver.PendingResult pendingResult = goAsync();
             WidgetUpdateService.fetchAndUpdate(context, ids, pendingResult);
+        } catch (Exception e) {
+            Log.w(TAG, "Manual refresh failed", e);
         }
     }
 

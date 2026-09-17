@@ -111,7 +111,27 @@ public class PricingWidgetFetchService {
         boolean hasData = cachedJson != null && !cachedJson.equals("[]");
 
         for (int appWidgetId : appWidgetIds) {
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_pricing);
+            try {
+                applyUpdateForWidget(context, manager, appWidgetId, cachedJson, hasData, fetchSucceeded, errorReason);
+            } catch (Exception e) {
+                android.util.Log.e("PricingWidgetFetchSvc", "applyUpdate failed for widget " + appWidgetId, e);
+                // Widget already has the bare-safe view PricingWidgetProvider
+                // pushed synchronously at add time; leave it as-is rather
+                // than let this exception reach the Handler's main-thread
+                // callback and crash the process.
+            }
+        }
+
+        try {
+            manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.pricing_widget_orders_list);
+        } catch (Exception e) {
+            android.util.Log.w("PricingWidgetFetchSvc", "notifyAppWidgetViewDataChanged failed", e);
+        }
+    }
+
+    private static void applyUpdateForWidget(Context context, AppWidgetManager manager, int appWidgetId,
+                                              String cachedJson, boolean hasData, boolean fetchSucceeded, String errorReason) {
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_pricing);
 
             // Refresh button
             Intent refreshIntent = new Intent(context, PricingWidgetProvider.class);
@@ -181,9 +201,6 @@ public class PricingWidgetFetchService {
             views.setViewVisibility(R.id.pricing_widget_summary_container, View.GONE);
             views.setViewVisibility(R.id.pricing_widget_subtitle, View.GONE);
 
-            manager.updateAppWidget(appWidgetId, views);
-        }
-
-        manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.pricing_widget_orders_list);
+        manager.updateAppWidget(appWidgetId, views);
     }
 }
