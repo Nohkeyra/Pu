@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  AlertTriangle, Check, Eye, Send, FileSpreadsheet, X, Star, Search, Inbox, Trash2,
+  AlertTriangle, Check, Send, FileSpreadsheet, X, Search, Inbox, Trash2,
   SlidersHorizontal, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AdminOrderRow } from './AdminOrderRow';
 
 import { List } from 'react-window';
 
@@ -79,6 +81,7 @@ export function AdminOrdersTab({
   handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (orderId: string) => void;
   handleRejectCancellation: (orderId: string) => void;
+  handleUpdateStatus?: (id: string, status: string) => void;
   authHeaders: () => HeadersInit;
   getApiUrl: (path: string) => string;
   fetchOrders: () => void;
@@ -90,6 +93,7 @@ export function AdminOrdersTab({
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1024));
+  const [longPressedOrder, setLongPressedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -576,111 +580,26 @@ export function AdminOrdersTab({
                   : 'bg-[#f69913]';
 
               return (
-                <div style={style} className="px-2 sm:px-3 py-1">
-                  <div
-                    onClick={() => openOrderDetail(order)}
-                    className={`
-                      relative flex flex-col justify-between gap-1.5 p-2.5 sm:p-3 rounded-lg bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800
-                      cursor-pointer transition-all duration-150
-                      hover:shadow-xs hover:-translate-y-0.5
-                      ${isSelected ? 'ring-1.5 ring-sunshine-cta shadow-xs' : ''}
-                      ${order.status === 'cancel_requested' ? 'ring-1.5 ring-amber-400/60' : ''}
-                    `}
-                  >
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${stripColor}`} />
-
-                    <div className="flex items-start justify-between gap-1.5 pl-1.5">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-xs sm:text-[13px] text-[#0c453c] dark:text-emerald-400 leading-tight">
-                            {formattedHeaderDate}
-                          </span>
-                          <span className="text-xs text-stone-400 dark:text-stone-500">· {relativeTime} ago</span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <h3 className="font-bold text-xs sm:text-sm text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug">
-                          {clientName}
-                        </h3>
-                        {order.email && (
-                          <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0">{order.email}</p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {isSelectMode ? (
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleOrderSelect(order.id)}
-                            className="w-4 h-4 accent-[#f69913] rounded cursor-pointer"
-                          />
-                        ) : (
-                          <button
-                            onClick={() => {
-                              if (!order.id) return;
-                              setStarredOrderIds(prev => {
-                                const next = new Set(prev);
-                                if (next.has(order.id!)) {
-                                  next.delete(order.id!);
-                                } else {
-                                  next.add(order.id!);
-                                }
-                                return next;
-                              });
-                            }}
-                            className="p-1 rounded-full hover:bg-[#f69913]/15 dark:hover:bg-stone-800 transition-colors"
-                          >
-                            <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-[#f69913] text-[#f69913]' : 'text-stone-300 dark:text-stone-600'}`} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pl-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex flex-col items-center justify-center min-w-[40px] h-8 rounded-lg bg-sunshine/15 dark:bg-sunshine/20 border border-sunshine/30 px-1.5">
-                          <span className="font-bold text-xs sm:text-sm text-deep-forest dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-deep-forest/70 dark:text-amber-300/80 mt-0.5">pax</span>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-stone-400 dark:text-stone-500 tracking-wider leading-none mb-0.5">Total</p>
-                          <p className="font-bold text-deep-forest dark:text-emerald-400 text-xs font-sans leading-none">{totalAmount}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:bg-sunshine/20 dark:hover:bg-stone-800 text-deep-forest dark:text-stone-200"
-                          onClick={() => openOrderDetail(order)}
-                          title="View Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:bg-crisp-carrot/20 dark:hover:bg-stone-800 text-deep-forest dark:text-stone-200"
-                          onClick={() => openSendDialog(order)}
-                          title="Send Invoice"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 rounded-lg hover:bg-rose-500/15 dark:hover:bg-stone-800 text-stone-500 hover:text-rose-600 dark:text-stone-400 dark:hover:text-rose-400"
-                          onClick={() => order.id && handleDelete(order.id)}
-                          title={language === 'bm' ? 'Padam Tempahan' : 'Delete Order'}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <AdminOrderRow
+                  style={style}
+                  order={order}
+                  language={language}
+                  isSelected={isSelected}
+                  isStarred={isStarred}
+                  formattedHeaderDate={formattedHeaderDate}
+                  relativeTime={relativeTime}
+                  clientName={clientName}
+                  totalAmount={totalAmount}
+                  stripColor={stripColor}
+                  isSelectMode={isSelectMode}
+                  getStatusBadge={getStatusBadge}
+                  handleToggleOrderSelect={handleToggleOrderSelect}
+                  setStarredOrderIds={setStarredOrderIds}
+                  openOrderDetail={openOrderDetail}
+                  openSendDialog={openSendDialog}
+                  handleDelete={handleDelete}
+                  setLongPressedOrder={setLongPressedOrder}
+                />
               );
             })}
           />
@@ -698,6 +617,85 @@ export function AdminOrdersTab({
         language={language}
         toast={toast}
       />
+
+      <Dialog open={!!longPressedOrder} onOpenChange={(open) => !open && setLongPressedOrder(null)}>
+        <DialogContent className="sm:max-w-md bg-stone-50 dark:bg-stone-950 p-0 border-0 overflow-hidden">
+          <div className="p-4 sm:p-6 bg-white dark:bg-card border-b border-stone-100 dark:border-stone-800">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-deep-forest dark:text-stone-100">
+                {language === 'bm' ? 'Tindakan Pantas' : 'Quick Actions'}: #{longPressedOrder?.orderId || longPressedOrder?.id?.slice(-4).toUpperCase()}
+              </DialogTitle>
+              <DialogDescription className="text-stone-500">
+                {longPressedOrder?.name || longPressedOrder?.to || 'Customer'}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          
+          <div className="p-2 sm:p-4 grid gap-2">
+            {longPressedOrder?.status !== 'approved' && longPressedOrder?.status !== 'billed' && longPressedOrder?.status !== 'cancelled' && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start py-6 text-[#0c453c] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900"
+                onClick={() => {
+                  if (longPressedOrder?.id && handleUpdateStatus) {
+                    handleUpdateStatus(longPressedOrder.id, 'approved');
+                    setLongPressedOrder(null);
+                  }
+                }}
+              >
+                <Check className="w-5 h-5 mr-3" />
+                {language === 'bm' ? 'Luluskan Tempahan' : 'Approve Order'}
+              </Button>
+            )}
+
+            {longPressedOrder?.status === 'approved' && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start py-6 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900"
+                onClick={() => {
+                  if (longPressedOrder?.id && handleUpdateStatus) {
+                    handleUpdateStatus(longPressedOrder.id, 'billed');
+                    setLongPressedOrder(null);
+                  }
+                }}
+              >
+                <FileSpreadsheet className="w-5 h-5 mr-3" />
+                {language === 'bm' ? 'Tandakan Sebagai Dibilkan' : 'Mark as Billed'}
+              </Button>
+            )}
+
+            <Button 
+              variant="outline" 
+              className="w-full justify-start py-6 text-[#f69913] hover:bg-sunshine/10 dark:text-amber-500 dark:hover:bg-amber-950 border-sunshine/30 dark:border-amber-900/50"
+              onClick={() => {
+                if (longPressedOrder) {
+                  openSendDialog(longPressedOrder);
+                  setLongPressedOrder(null);
+                }
+              }}
+            >
+              <Send className="w-5 h-5 mr-3" />
+              {language === 'bm' ? 'Hantar Invois WhatsApp' : 'Send WhatsApp Invoice'}
+            </Button>
+
+            <div className="h-px bg-stone-200 dark:bg-stone-800 my-1" />
+
+            <Button 
+              variant="outline" 
+              className="w-full justify-start py-6 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 border-rose-200 dark:border-rose-900"
+              onClick={() => {
+                if (longPressedOrder?.id) {
+                  handleDelete(longPressedOrder.id);
+                  setLongPressedOrder(null);
+                }
+              }}
+            >
+              <Trash2 className="w-5 h-5 mr-3" />
+              {language === 'bm' ? 'Padam Tempahan' : 'Delete Order'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

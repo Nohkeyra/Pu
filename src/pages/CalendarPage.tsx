@@ -21,12 +21,27 @@ import {
   LogIn, 
   MapPin, 
   UtensilsCrossed, 
-  ArrowRight,
   Coffee,
   Sun,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Check,
+  FileSpreadsheet,
+  Copy,
+  Share2,
+  ExternalLink,
+  CalendarPlus,
+  Eye
 } from 'lucide-react';
+import { CalendarEventCard } from '@/components/calendar/CalendarEventCard';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/Toast';
 import { 
   format, 
   addMonths, 
@@ -81,6 +96,8 @@ export default function CalendarPage() {
   // Active Selected Day
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [quickActionEvent, setQuickActionEvent] = useState<Order | null>(null);
+  const { toast } = useToast();
   const [noteText, setNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
 
@@ -273,6 +290,111 @@ export default function CalendarPage() {
     }
     const oDateStr = getOrderDateString(order);
     return oDateStr ? format(parseISO(oDateStr), 'EEEE, dd MMM yyyy', { locale: dateLocale }) : '';
+  };
+
+  const handleQuickUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const adminToken = localStorage.getItem('wawasan_admin_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {})
+      };
+      const res = await fetch(getApiUrl(`/api/admin/orders/${orderId}/status`), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o));
+        toast({
+          title: language === 'bm' ? 'Status Dikemas kini' : 'Status Updated',
+          description: language === 'bm' ? `Status acara ditukar kepada ${newStatus}.` : `Event status changed to ${newStatus}.`,
+          variant: 'success'
+        });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        toast({
+          title: language === 'bm' ? 'Ralat' : 'Error',
+          description: errData.error || (language === 'bm' ? 'Gagal mengemas kini status.' : 'Failed to update status.'),
+          variant: 'error'
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update event status:', err);
+      toast({
+        title: language === 'bm' ? 'Ralat' : 'Error',
+        description: language === 'bm' ? 'Gagal mengemas kini status acara.' : 'Failed to update event status.',
+        variant: 'error'
+      });
+    }
+  };
+
+  const handleCopyEventSummary = async (ord: Order) => {
+    try {
+      const dateText = getCustomerSelectedEventDay(ord);
+      const timeText = getCustomerSelectedEventTime(ord);
+      const paxCount = ord.guests || ord.quantity || 0;
+      const refNumber = ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase();
+      const clientName = ord.to || ord.name || (language === 'bm' ? 'Pelanggan Katering' : 'Catering Client');
+
+      const lines = [
+        `📋 ${language === 'bm' ? 'Acara Katering' : 'Catering Event'} #${refNumber}`,
+        `👤 ${language === 'bm' ? 'Pelanggan' : 'Client'}: ${clientName}`,
+        ord.company && ord.company !== ord.to ? `🏢 ${language === 'bm' ? 'Syarikat' : 'Company'}: ${ord.company}` : '',
+        `📅 ${language === 'bm' ? 'Tarikh' : 'Date'}: ${dateText}`,
+        `⏰ ${language === 'bm' ? 'Waktu Sesi' : 'Session Time'}: ${timeText}`,
+        `👥 Pax: ${paxCount}`,
+        ord.location ? `📍 ${language === 'bm' ? 'Lokasi' : 'Location'}: ${ord.location}` : '',
+        ord.menu ? `🍽️ Menu: ${ord.menu}` : ''
+      ].filter(Boolean);
+
+      const text = lines.join('\n');
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      }
+      toast({
+        title: language === 'bm' ? 'Berjaya Disalin' : 'Copied to Clipboard',
+        description: language === 'bm' ? 'Ringkasan acara katering telah disalin.' : 'Catering event summary copied.',
+        variant: 'success'
+      });
+      setQuickActionEvent(null);
+    } catch (err) {
+      console.error('Failed to copy event summary:', err);
+      toast({
+        title: language === 'bm' ? 'Ralat' : 'Error',
+        description: language === 'bm' ? 'Gagal menyalin ringkasan acara.' : 'Failed to copy summary.',
+        variant: 'error'
+      });
+    }
+  };
+
+  const handleShareWhatsApp = (ord: Order) => {
+    const dateText = getCustomerSelectedEventDay(ord);
+    const timeText = getCustomerSelectedEventTime(ord);
+    const paxCount = ord.guests || ord.quantity || 0;
+    const refNumber = ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase();
+    const clientName = ord.to || ord.name || (language === 'bm' ? 'Pelanggan Katering' : 'Catering Client');
+
+    const lines = [
+      `📋 *${language === 'bm' ? 'Acara Katering' : 'Catering Event'} #${refNumber}*`,
+      `👤 *${language === 'bm' ? 'Pelanggan' : 'Client'}*: ${clientName}`,
+      ord.company && ord.company !== ord.to ? `🏢 *${language === 'bm' ? 'Syarikat' : 'Company'}*: ${ord.company}` : '',
+      `📅 *${language === 'bm' ? 'Tarikh' : 'Date'}*: ${dateText}`,
+      `⏰ *${language === 'bm' ? 'Waktu Sesi' : 'Session Time'}*: ${timeText}`,
+      `👥 *Pax*: ${paxCount}`,
+      ord.location ? `📍 *${language === 'bm' ? 'Lokasi' : 'Location'}*: ${ord.location}` : '',
+      ord.menu ? `🍽️ *Menu*: ${ord.menu}` : ''
+    ].filter(Boolean);
+
+    const message = encodeURIComponent(lines.join('\n'));
+    let url = `https://wa.me/?text=${message}`;
+    if (ord.phone) {
+      const cleanPhone = ord.phone.replace(/[^0-9]/g, '');
+      const waPhone = cleanPhone.startsWith('60') ? cleanPhone : cleanPhone.startsWith('0') ? '6' + cleanPhone : cleanPhone;
+      url = `https://wa.me/${waPhone}?text=${message}`;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setQuickActionEvent(null);
   };
 
   // Filter out canceled and rejected orders
@@ -859,68 +981,17 @@ export default function CalendarPage() {
                           const eventDeliveryTime = getCustomerSelectedEventTime(ord);
 
                           return (
-                            <div 
+                            <CalendarEventCard
                               key={ord.id}
-                              className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
-                                  #{ord.invoiceNo || ord.id?.slice(0, 8).toUpperCase()}
-                                </span>
-                                <span className={cn(
-                                  "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
-                                  ord.status === 'approved' && "bg-emerald-500 text-white",
-                                  ord.status === 'pending' && "bg-amber-500 text-white",
-                                  ord.status === 'billed' && "bg-blue-600 text-white",
-                                  (ord.status as string) === 'completed' && "bg-stone-600 text-white"
-                                )}>
-                                  {ord.status}
-                                </span>
-                              </div>
-
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100">
-                                    {isAdmin ? (ord.to || ord.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
-                                  </h5>
-                                  {ord.company && ord.company !== ord.to && (
-                                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{ord.company}</p>
-                                  )}
-                                </div>
-
-                                <span className="text-xs font-black text-stone-900 dark:text-stone-100 tabular-nums shrink-0 px-2.5 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg">
-                                  {totalPax} {tl('Pax', 'Orang')}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                                  <span>{eventDeliveryTime}</span>
-                                </div>
-                                {ord.location && (
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                                    <span className="truncate">{ord.location}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-end">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={async () => {
-                                    await triggerLightImpact();
-                                    setSelectedOrder(ord);
-                                  }}
-                                  className="text-xs font-bold text-crisp-carrot hover:underline gap-1 p-0 h-auto"
-                                >
-                                  {tl('View Details', 'Lihat Butiran')}
-                                  <ArrowRight className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </div>
+                              order={ord}
+                              isAdmin={isAdmin}
+                              language={language}
+                              tl={tl}
+                              totalPax={totalPax}
+                              eventTime={eventDeliveryTime}
+                              onOpenDetails={(o) => setSelectedOrder(o)}
+                              onLongPress={(o) => setQuickActionEvent(o)}
+                            />
                           );
                         })}
                       </div>
@@ -1205,6 +1276,154 @@ export default function CalendarPage() {
               </div>
             </div>
           )}
+
+          {/* Quick Actions Dialog for Calendar Event */}
+          <Dialog open={!!quickActionEvent} onOpenChange={(open) => !open && setQuickActionEvent(null)}>
+            <DialogContent className="sm:max-w-md bg-stone-50 dark:bg-stone-950 p-0 border-0 overflow-hidden">
+              <div className="p-4 sm:p-6 bg-white dark:bg-card border-b border-stone-100 dark:border-stone-800">
+                <DialogHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <DialogTitle className="text-lg font-bold text-deep-forest dark:text-stone-100">
+                      {tl('Quick Actions', 'Tindakan Pantas')}: #{quickActionEvent?.invoiceNo || quickActionEvent?.id?.slice(0, 8).toUpperCase()}
+                    </DialogTitle>
+                    {quickActionEvent && (
+                      <span className={cn(
+                        "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
+                        quickActionEvent.status === 'approved' && "bg-emerald-500 text-white",
+                        quickActionEvent.status === 'pending' && "bg-amber-500 text-white",
+                        quickActionEvent.status === 'billed' && "bg-blue-600 text-white",
+                        (quickActionEvent.status as string) === 'completed' && "bg-stone-600 text-white"
+                      )}>
+                        {quickActionEvent.status}
+                      </span>
+                    )}
+                  </div>
+                  <DialogDescription className="text-stone-500 font-medium">
+                    {isAdmin ? (quickActionEvent?.to || quickActionEvent?.name) : tl('Corporate Catering Event', 'Acara Katering Korporat')} • {quickActionEvent?.guests || quickActionEvent?.quantity || 0} {tl('Pax', 'Orang')}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              <div className="p-3 sm:p-4 grid gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start py-5 text-deep-forest dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                  onClick={async () => {
+                    if (quickActionEvent) {
+                      await triggerLightImpact();
+                      setSelectedOrder(quickActionEvent);
+                      setQuickActionEvent(null);
+                    }
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-3 text-crisp-carrot" />
+                  {tl('View Event Details', 'Lihat Butiran Acara')}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start py-5 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                  onClick={() => {
+                    if (quickActionEvent) {
+                      handleCopyEventSummary(quickActionEvent);
+                    }
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-3 text-blue-500" />
+                  {tl('Copy Event Summary', 'Salin Ringkasan Acara')}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start py-5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60 cursor-pointer"
+                  onClick={() => {
+                    if (quickActionEvent) {
+                      handleShareWhatsApp(quickActionEvent);
+                    }
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-3 text-emerald-600" />
+                  {tl('Share on WhatsApp', 'Kongsi ke WhatsApp')}
+                </Button>
+
+                {selectedDay && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start py-5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border-amber-200 dark:border-amber-900/60 cursor-pointer"
+                    onClick={() => {
+                      const dateStr = format(selectedDay, 'yyyy-MM-dd');
+                      setQuickActionEvent(null);
+                      navigate(`/order?date=${dateStr}`);
+                    }}
+                  >
+                    <CalendarPlus className="w-4 h-4 mr-3 text-amber-600" />
+                    {tl('Book Another Event on this Date', 'Tempah Acara Baru pada Tarikh Ini')}
+                  </Button>
+                )}
+
+                {isAdmin && quickActionEvent && (
+                  <>
+                    <div className="h-px bg-stone-200 dark:bg-stone-800 my-1" />
+
+                    {quickActionEvent.status === 'pending' && (
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start py-5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900 font-bold cursor-pointer"
+                        onClick={() => {
+                          handleQuickUpdateStatus(quickActionEvent.id, 'approved');
+                          setQuickActionEvent(null);
+                        }}
+                      >
+                        <Check className="w-4 h-4 mr-3 text-emerald-600" />
+                        {tl('Approve Catering Event', 'Luluskan Acara Katering')}
+                      </Button>
+                    )}
+
+                    {quickActionEvent.status === 'approved' && (
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start py-5 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900 font-bold cursor-pointer"
+                        onClick={() => {
+                          handleQuickUpdateStatus(quickActionEvent.id, 'billed');
+                          setQuickActionEvent(null);
+                        }}
+                      >
+                        <FileSpreadsheet className="w-4 h-4 mr-3 text-indigo-600" />
+                        {tl('Mark as Billed', 'Tandakan Sebagai Dibilkan')}
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start py-5 text-deep-forest dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                      onClick={() => {
+                        const orderId = quickActionEvent.id;
+                        setQuickActionEvent(null);
+                        navigate('/admin', { state: { highlightOrderId: orderId } });
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-3 text-stone-500" />
+                      {tl('Open in Admin Dashboard', 'Buka di Papan Pemuka Admin')}
+                    </Button>
+                  </>
+                )}
+
+                {!isAdmin && currentUser && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start py-5 text-deep-forest dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                    onClick={() => {
+                      setQuickActionEvent(null);
+                      navigate('/profile');
+                    }}
+                  >
+                    <UserIcon className="w-4 h-4 mr-3 text-stone-500" />
+                    {tl('View in My Profile', 'Lihat di Profil Saya')}
+                  </Button>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <AuthModal
             isOpen={authModalOpen}

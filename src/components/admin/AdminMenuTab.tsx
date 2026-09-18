@@ -21,6 +21,8 @@ import type { ToastMessage } from '../ui/Toast';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AdminMenuItemRow } from './AdminMenuItemRow';
 import { invalidateFetchCache } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 
@@ -53,6 +55,7 @@ export default function AdminMenuTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'breakfast' | 'lunch' | 'hi tea' | 'drinks'>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [longPressedItem, setLongPressedItem] = useState<MenuItem | null>(null);
   
   // Form modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -633,93 +636,21 @@ export default function AdminMenuTab({
             const showAltName = altName && altName.trim().toLowerCase() !== displayName.trim().toLowerCase();
 
             return (
-              <div 
+              <AdminMenuItemRow
                 key={item.id}
-                className={`group relative flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all duration-150 ${
-                  isVisible 
-                    ? 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-amber-500/40 dark:hover:border-amber-500/30 hover:shadow-xs' 
-                    : 'bg-stone-50/70 dark:bg-stone-900/40 border-stone-200/50 dark:border-white/5 opacity-70 hover:opacity-100'
-                }`}
-              >
-                {/* Left: Category Icon & Item Name & Price */}
-                <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                  {/* Category Accent Indicator */}
-                  <div 
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-xs font-bold ${badge.colorClass}`}
-                    title={`${badge.num} - ${badge.name}`}
-                  >
-                    {badge.icon}
-                  </div>
-
-                  {/* Name and Price */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-1.5 flex-wrap">
-                      <h4 className="text-xs sm:text-[13px] font-bold text-deep-forest dark:text-stone-100 truncate leading-tight">
-                        {displayName}
-                      </h4>
-                      {showAltName && (
-                        <span className="text-xs text-stone-400 dark:text-stone-500 hidden md:inline truncate max-w-[120px]">
-                          ({altName})
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs font-bold text-amber-700 dark:text-amber-400 font-mono">
-                        RM {item.price.toFixed(2)}
-                      </span>
-                      <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">
-                        • {badge.shortName}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Quick Show/Hide Toggle & Action Icons */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Show / Hide Toggle Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAvailable(item)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                      isVisible
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                        : 'bg-stone-200/60 text-stone-600 dark:bg-stone-800 dark:text-stone-400 border-stone-300/60 dark:border-stone-700 hover:bg-stone-200'
-                    }`}
-                    title={isVisible ? tText('Click to hide from customer order form', 'Klik untuk sembunyikan daripada pelanggan') : tText('Click to show to customers', 'Klik untuk paparkan kepada pelanggan')}
-                  >
-                    {isVisible ? (
-                      <>
-                        <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-xs">{tText('Shown', 'Papar')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="w-3 h-3 text-stone-500 dark:text-stone-400" />
-                        <span className="text-xs">{tText('Hidden', 'Sorot')}</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Edit & Delete Action Buttons */}
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => handleOpenEditModal(item)}
-                      className="p-1.5 text-stone-400 hover:text-deep-forest dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
-                      title={tText('Edit Item', 'Kemas kini Hidangan')}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(item.id, displayName)}
-                      className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors cursor-pointer"
-                      title={tText('Delete Item', 'Padam Hidangan')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                item={item}
+                language={language}
+                tText={tText}
+                badge={badge}
+                displayName={displayName}
+                altName={altName}
+                showAltName={showAltName}
+                isVisible={isVisible}
+                handleToggleAvailable={handleToggleAvailable}
+                handleOpenEditModal={handleOpenEditModal}
+                handleDeleteItem={handleDeleteItem}
+                setLongPressedItem={setLongPressedItem}
+              />
             );
           })}
         </div>
@@ -866,6 +797,77 @@ export default function AdminMenuTab({
           </div>
         </div>
       )}
+
+      {/* Quick Action Dialog */}
+      <Dialog open={!!longPressedItem} onOpenChange={(open) => !open && setLongPressedItem(null)}>
+        <DialogContent className="sm:max-w-md bg-stone-50 dark:bg-stone-950 p-0 border-0 overflow-hidden">
+          <div className="p-4 sm:p-6 bg-white dark:bg-card border-b border-stone-100 dark:border-stone-800">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-deep-forest dark:text-stone-100">
+                {language === 'bm' ? 'Tindakan Pantas' : 'Quick Actions'}: {language === 'bm' ? (longPressedItem?.nameBm || longPressedItem?.nameEn) : (longPressedItem?.nameEn || longPressedItem?.nameBm)}
+              </DialogTitle>
+              <DialogDescription className="text-stone-500 font-mono">
+                RM {longPressedItem?.price.toFixed(2)}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          
+          <div className="p-2 sm:p-4 grid gap-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start py-6 text-deep-forest dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
+              onClick={() => {
+                if (longPressedItem) {
+                  handleToggleAvailable(longPressedItem);
+                  setLongPressedItem(null);
+                }
+              }}
+            >
+              {longPressedItem?.available !== false ? (
+                <>
+                  <EyeOff className="w-5 h-5 mr-3 text-stone-500" />
+                  {tText('Hide from Menu (Out of Stock)', 'Sorot dari Menu (Kehabisan Stok)')}
+                </>
+              ) : (
+                <>
+                  <Eye className="w-5 h-5 mr-3 text-emerald-500" />
+                  {tText('Show on Menu (Available)', 'Papar di Menu (Ada Stok)')}
+                </>
+              )}
+            </Button>
+
+            <Button 
+              variant="outline" 
+              className="w-full justify-start py-6 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900"
+              onClick={() => {
+                if (longPressedItem) {
+                  handleOpenEditModal(longPressedItem);
+                  setLongPressedItem(null);
+                }
+              }}
+            >
+              <Edit2 className="w-5 h-5 mr-3" />
+              {tText('Quick Edit Item', 'Kemas kini Pantas')}
+            </Button>
+
+            <div className="h-px bg-stone-200 dark:bg-stone-800 my-1" />
+
+            <Button 
+              variant="outline" 
+              className="w-full justify-start py-6 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 border-rose-200 dark:border-rose-900"
+              onClick={() => {
+                if (longPressedItem) {
+                  handleDeleteItem(longPressedItem.id, language === 'bm' ? (longPressedItem.nameBm || longPressedItem.nameEn) : (longPressedItem.nameEn || longPressedItem.nameBm));
+                  setLongPressedItem(null);
+                }
+              }}
+            >
+              <Trash2 className="w-5 h-5 mr-3" />
+              {tText('Delete Item', 'Padam Hidangan')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
