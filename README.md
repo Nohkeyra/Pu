@@ -1,67 +1,16 @@
-# Restoran Wawasan Pak Usop — System Application
+# Restoran Wawasan Pak Usop
 
-A full-stack enterprise Point-of-Sale, Order Management, and Customer Invoicing System for Restoran Wawasan Pak Usop.
+Restoran Wawasan Pak Usop is a full-stack restaurant management application designed to simplify catering orders, customer management, and invoicing.
 
-## Architecture
+The app allows restaurant staff to:
 
-This application is built as a full-stack system consisting of:
-- **Frontend**: React 18, Vite, Tailwind CSS, shadcn/ui.
-- **Mobile**: Capacitor for Android native application support.
-- **Backend**: Express.js server providing API endpoints, PDF invoice generation, and calendar/email integration.
-- **Database & Authentication**: Firebase Firestore and Firebase Authentication.
+- Manage customer and catering orders
+- Review, approve, and update order prices
+- Track order status from submission to billing
+- Generate and preview PDF invoices
+- Send invoices to customers by email
+- Schedule orders using Google Calendar
+- Manage restaurant operations through a responsive web interface
+- Access the system through an Android application
 
-## Setup & Environment Variables
-
-Create a `.env` file at the root of the project by copying `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-Ensure you configure the required environment variables:
-- Firebase Admin SDK credentials (e.g., `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`)
-- Email/SMTP credentials for sending invoices
-- Calendar API credentials
-
-## Build & Run
-
-### Local Development (Web)
-
-To run the application locally for web development:
-
-```bash
-npm install
-npm run dev
-```
-
-This will start the Express backend and Vite frontend together.
-
-### Production Build
-
-To build the application for production:
-
-```bash
-npm run build
-npm run start
-```
-
-This compiles the frontend assets to `dist/` and bundles the Express server to `dist/server.cjs`.
-
-### Native Android Build
-
-To build the Android APK:
-
-```bash
-npm run build
-npx cap sync android
-cd android
-./gradlew assembleDebug
-```
-
-For more comprehensive Android build instructions, refer to `docs/BUILD.md`.
-
-## Deployment
-
-The application is containerized and designed for deployment to Google Cloud Run or any similar Docker-compatible environment. A `Dockerfile` is provided at the root.
-
-Ensure that all required environment variables are set in your deployment environment and that port `3000` is exposed.
+The application is built with React, TypeScript, Express.js, Firebase, and Capacitor.
