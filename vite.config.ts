@@ -39,11 +39,9 @@ export default defineConfig(({ mode }) => {
       "react-router",
       "@radix-ui/react-tooltip",
       "@radix-ui/react-dialog",
-      "@radix-ui/react-popover",
       "@radix-ui/react-select",
       "@radix-ui/react-switch",
       "@radix-ui/react-label",
-      "@radix-ui/react-toggle",
     ],
   },
   build: {
@@ -69,7 +67,7 @@ export default defineConfig(({ mode }) => {
             if (id.includes('exceljs')) {
               return 'vendor-excel';
             }
-            if (id.includes('jspdf') || id.includes('html2canvas')) {
+            if (id.includes('jspdf')) {
               return 'vendor-pdf';
             }
             if (id.includes('leaflet')) {

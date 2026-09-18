@@ -196,7 +196,7 @@ export function AdminDiagnosticsTab({
         <DiagCard 
           icon={FileText}
           title="PDF Engine"
-          description="Tests the html2canvas and jspdf generation pipeline."
+          description="Tests the jsPDF generation pipeline."
           state={diagPdf}
           onRun={runPdfDiag}
         />
