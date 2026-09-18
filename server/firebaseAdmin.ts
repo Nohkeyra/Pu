@@ -114,6 +114,10 @@ class MemoryFirestore {
     };
     return await updateFunction(tx);
   }
+
+  async getAll(...refs: any[]) {
+    return Promise.all(refs.map(ref => (typeof ref.get === 'function' ? ref.get() : ref)));
+  }
 }
 
 export function hasAdminCredentials(): boolean {
@@ -183,23 +187,33 @@ export function getAdminApp(): App {
   return adminApp;
 }
 
-export async function verifyCustomerIdToken(req: express.Request): Promise<string | null> {
-  const authHeader = req.headers.authorization;
-  const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-  if (!idToken) return null;
+export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email?: string; admin?: boolean } | null> {
+  if (!idToken || typeof idToken !== "string") return null;
 
   if (!hasAdminCredentials()) {
-    console.warn("[Auth] Service account credentials not configured. Skipping token verification.");
     return null;
   }
 
   try {
     const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken);
-    return decoded.uid;
+    return {
+      uid: decoded.uid,
+      email: decoded.email,
+      admin: Boolean(decoded.admin),
+    };
   } catch (err) {
-    console.warn("[Auth] Failed to verify customer ID token:", err instanceof Error ? err.message : err);
+    console.warn("[Auth] Failed to verify Firebase ID token:", err instanceof Error ? err.message : err);
     return null;
   }
+}
+
+export async function verifyCustomerIdToken(req: express.Request): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  if (!idToken) return null;
+
+  const verified = await verifyFirebaseIdToken(idToken);
+  return verified?.uid || null;
 }
 
 export function getFirestore(): FirebaseFirestore.Firestore {

@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { createHash, timingSafeEqual } from 'crypto';
+import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, getAdminApp, verifyCustomerIdToken, hasAdminCredentials } from '../firebaseAdmin.js';
-import { verifyAdminToken } from '../adminAuth.js';
+import { verifyAdminToken, adminLoginLimiter, signAdminJwt } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
@@ -25,9 +26,62 @@ const fcmTokenLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many FCM token registration requests.' },
 });
 
+// Admin Login Endpoint (Rate-limited, Constant-time verification, Custom Claims)
+router.post('/admin/login', adminLoginLimiter, async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ success: false, error: 'Kata laluan diperlukan.' });
+    }
+
+    const expectedPassword = process.env.ADMIN_PASSWORD || 'wawasan2026';
+    if (!secureCompare(password.trim(), expectedPassword.trim())) {
+      return res.status(401).json({ success: false, error: 'Kata laluan pentadbir tidak sah.' });
+    }
+
+    const adminEmail = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'madnor.noisy@gmail.com').split(',')[0].trim();
+    const adminUid = 'admin_' + createHash('sha256').update(expectedPassword.trim()).digest('hex').slice(0, 12);
+
+    let firebaseCustomToken: string | undefined;
+    if (hasAdminCredentials()) {
+      try {
+        const app = getAdminApp();
+        const auth = getAuth(app);
+        firebaseCustomToken = await auth.createCustomToken(adminUid, { admin: true, email: adminEmail });
+      } catch (fbErr) {
+        console.warn('[Admin Auth] Firebase createCustomToken failed:', fbErr);
+      }
+    }
+
+    const token = signAdminJwt({ uid: adminUid, email: adminEmail, admin: true });
+
+    return res.json({
+      success: true,
+      token,
+      firebaseCustomToken: firebaseCustomToken || token,
+      customClaims: { admin: true },
+      admin: true,
+    });
+  } catch (err) {
+    console.error('[Admin Auth] Login error:', err);
+    return res.status(500).json({ success: false, error: 'Ralat pelayan semasa log masuk pentadbir.' });
+  }
+});
+
 // Admin Verify Token Endpoint
-router.get('/admin/verify', verifyAdminToken, async (_req, res) => {
-  return res.json({ success: true, verified: true });
+router.get('/admin/verify', verifyAdminToken, async (req, res) => {
+  const userPayload = (req as any).adminPayload || (req as any).user;
+  return res.json({
+    success: true,
+    verified: true,
+    admin: true,
+    user: userPayload,
+  });
+});
+
+// Admin Logout Endpoint
+router.post('/admin/logout', async (_req, res) => {
+  return res.json({ success: true, message: 'Log keluar berjaya' });
 });
 
 // Admin Subscribe to FCM Topic

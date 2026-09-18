@@ -359,7 +359,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       const fileName = `Invois_Wawasan_${getDisplayInvoiceNo(order)}.pdf`;
       
-      const res = await fetch(`/api/invoice/${order.id}/pdf?final=true`);
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken().catch(() => null) : null;
+      const headers: Record<string, string> = idToken ? { Authorization: `Bearer ${idToken}` } : {};
+
+      const res = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=true`), { headers });
       if (!res.ok) throw new Error('Failed to fetch invoice');
       const blob = await res.blob();
 
@@ -513,9 +516,15 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       const selectedOrderData = orders.filter(o => selectedOrders.has(o.id!));
       const orderIds = selectedOrderData.map(o => o.id);
       
-      const res = await fetch('/api/invoice/combined/pdf', {
+      const idToken = auth.currentUser ? await auth.currentUser.getIdToken().catch(() => null) : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+      };
+
+      const res = await fetch(getApiUrl('/api/invoice/combined/pdf'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ orderIds, includeNotes: withNotes, lang: language })
       });
       if (!res.ok) throw new Error('Failed to fetch combined PDF');

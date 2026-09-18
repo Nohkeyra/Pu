@@ -1,14 +1,72 @@
 import { Router, type Request, type Response } from 'express';
-import { verifyAdminToken } from '../adminAuth.js';
+import { verifyAdminToken, verifyAdminJwt } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
-import { getFirestore } from '../firebaseAdmin.js';
+import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
 import { generateServerInvoicePdf, generateServerConsolidatedInvoicePdf } from '../services/serverPdfService.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export interface InvoiceCallerAuth {
+  isAdmin: boolean;
+  uid: string | null;
+  email: string | null;
+}
+
+export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerAuth | null> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : (typeof req.query.token === 'string' ? req.query.token.trim() : null);
+
+  if (!token) {
+    return null;
+  }
+
+  // 1. Check if token is a valid server-signed Admin JWT
+  const jwtPayload = verifyAdminJwt(token);
+  if (jwtPayload && jwtPayload.admin === true) {
+    return {
+      isAdmin: true,
+      uid: jwtPayload.uid || 'admin',
+      email: jwtPayload.email || null,
+    };
+  }
+
+  // 2. Check Firebase ID Token (for Admin or Customer)
+  const decoded = await verifyFirebaseIdToken(token);
+  if (decoded) {
+    const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    const userEmail = decoded.email?.toLowerCase() || null;
+    const isAdmin = decoded.admin === true || (userEmail !== null && adminEmails.includes(userEmail));
+
+    return {
+      isAdmin,
+      uid: decoded.uid || null,
+      email: userEmail,
+    };
+  }
+
+  return null;
+}
+
+export function isOrderOwnedByCaller(order: Record<string, any>, auth: InvoiceCallerAuth): boolean {
+  if (auth.isAdmin) return true;
+
+  const ownerUid = order.userId || order.uid || null;
+  const orderEmail = (order.email || order.customerEmail || '').toLowerCase().trim();
+
+  const matchesUid = Boolean(auth.uid && ownerUid && auth.uid === ownerUid);
+  const matchesEmail = Boolean(auth.email && orderEmail && auth.email === orderEmail);
+
+  return matchesUid || matchesEmail;
+}
 
 // Rate limiter for order forwarding
 const forwardOrderLimiter = createDistributedRateLimiter({
@@ -135,6 +193,14 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'orderId parameter is required' });
     }
 
+    const callerAuth = await getInvoiceCallerAuth(req);
+    if (!callerAuth) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required to access invoice PDF.',
+      });
+    }
+
     const db = getFirestore();
     const docSnap = await db.collection('orders').doc(orderId).get();
 
@@ -143,6 +209,14 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     }
 
     const orderData = { id: docSnap.id, ...docSnap.data() } as Record<string, any>;
+
+    if (!isOrderOwnedByCaller(orderData, callerAuth)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: You do not have permission to access this invoice.',
+      });
+    }
+
     if (req.query.lang && (req.query.lang === 'en' || req.query.lang === 'bm')) {
       orderData.lang = req.query.lang;
     }
@@ -205,11 +279,19 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req: Req
 });
 
 
-router.post('/invoice/combined/pdf', async (req, res) => {
+router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
   try {
     const { orderIds, includeNotes, lang } = req.body || {};
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
+    }
+
+    const callerAuth = await getInvoiceCallerAuth(req);
+    if (!callerAuth) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required to generate combined invoice PDF.',
+      });
     }
 
     const db = getFirestore();
@@ -221,12 +303,21 @@ router.post('/invoice/combined/pdf', async (req, res) => {
       .map((id: string) => id.trim());
     const refs = validIds.map((id: string) => db.collection('orders').doc(id));
     const snaps = refs.length > 0 ? await db.getAll(...refs) : [];
-    const orderDocs = snaps
+    const orderDocs: Record<string, any>[] = snaps
       .filter((snap) => snap.exists)
       .map((snap) => ({ id: snap.id, ...snap.data() }));
 
     if (orderDocs.length === 0) {
       return res.status(404).json({ success: false, error: 'No matching order documents found' });
+    }
+
+    // Ownership check: Caller must be admin or own ALL requested orders
+    const hasUnauthorizedOrder = orderDocs.some(order => !isOrderOwnedByCaller(order, callerAuth));
+    if (hasUnauthorizedOrder) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden: One or more requested orders do not belong to your account.',
+      });
     }
 
     const { generateServerConsolidatedInvoicePdf } = await import('../services/serverPdfService.js');
