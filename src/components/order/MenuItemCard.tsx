@@ -8,16 +8,18 @@ interface MenuItemCardProps {
   isSelected: boolean;
   onToggle: () => void;
   tText: (en: string, bm: string) => string;
+  dataTour?: string;
 }
 
 export const MenuItemCard = React.memo(
-  function MenuItemCard({ item, isSelected, onToggle, tText }: MenuItemCardProps) {
+  function MenuItemCard({ item, isSelected, onToggle, tText, dataTour }: MenuItemCardProps) {
     const dishImg = repairDishImage(item, { useProxyForExternal: true });
 
     return (
       <div
         role="button"
         tabIndex={0}
+        data-tour={dataTour}
         aria-pressed={isSelected}
         aria-label={`${tText(item.nameEn, item.nameBm)}`}
         onClick={onToggle}

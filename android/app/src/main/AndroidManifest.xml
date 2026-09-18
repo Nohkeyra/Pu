@@ -65,7 +65,6 @@
         <receiver android:name=".widget.WawasanWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.wawasanpakusop.app.widget.ACTION_REFRESH" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_upcoming_orders_info" />
         </receiver>
@@ -80,7 +79,6 @@
         <receiver android:name=".widget.PricingWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.wawasanpakusop.app.widget.PRICING_ACTION_REFRESH" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/pricing_widget_info" />
         </receiver>
@@ -121,7 +119,12 @@
     <!-- Core Networking -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- Biometrics (capacitor-native-biometric & androidx.biometric) -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+    <uses-feature android:name="android.hardware.biometrics" android:required="false" />
 
     <!-- Storage & Media -->
     <!-- F-10 (audit): external-storage reads removed; AppSplash + Capacitor

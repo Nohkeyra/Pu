@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getAssetUrl } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
+import { MenuItemCard } from '@/components/order/MenuItemCard';
 
 interface OrderState {
   mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
@@ -103,46 +104,16 @@ export function Step2DishSelection({
               setFieldError(null);
               void handleToggleDish(item);
             };
-            const dishName = tText(item.nameEn, item.nameBm) || item.name;
-            const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
 
             return (
-              <div
+              <MenuItemCard
                 key={item.id}
-                data-tour={isFirstDish ? 'step2-dish-1' : undefined}
-                className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
-                            border border-white/10 bg-stone-900/40
-                            hover:bg-stone-900/60 transition-colors
-                            cursor-pointer min-h-[72px]
-                            ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
-                onClick={onToggle}
-              >
-                {/* Thumbnail */}
-                <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
-                  {dishImg
-                    ? <img src={getAssetUrl(dishImg)} alt={dishName}
-                           className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center
-                                       justify-center text-xl">🍽</div>}
-                </div>
-
-                {/* Name */}
-                <div className="flex-1 min-w-0 pr-5">
-                  <span className="text-sm font-semibold leading-tight
-                                   line-clamp-2 block text-stone-900 dark:text-stone-100">
-                    {dishName}
-                  </span>
-                </div>
-
-                {/* Checkbox */}
-                <div className="absolute top-2 right-2">
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
-                    selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-                  }`}>
-                    {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
-                  </div>
-                </div>
-              </div>
+                item={item}
+                isSelected={selected}
+                onToggle={onToggle}
+                tText={tText}
+                dataTour={isFirstDish ? 'step2-dish-1' : undefined}
+              />
             );
           })}
         </div>

@@ -1,5 +1,6 @@
 package com.wawasanpakusop.app.widget;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.BroadcastReceiver;
@@ -54,6 +55,39 @@ public class PricingWidgetProvider extends AppWidgetProvider {
             appWidgetManager.updateAppWidget(appWidgetId, bare);
         } catch (Exception e) {
             Log.e(TAG, "Failed to push safe initial view for widget " + appWidgetId, e);
+            return;
+        }
+
+        try {
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_pricing);
+
+            // Manual Refresh Intent
+            Intent refreshIntent = new Intent(context, PricingWidgetProvider.class);
+            refreshIntent.setAction(ACTION_REFRESH);
+            PendingIntent refreshPendingIntent = PendingIntent.getBroadcast(
+                context, 2, refreshIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            views.setOnClickPendingIntent(R.id.pricing_widget_refresh_button, refreshPendingIntent);
+
+            // Connect remote adapter immediately to display cached orders without waiting for network
+            Intent listIntent = new Intent(context, PricingWidgetRemoteViewsService.class);
+            listIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            listIntent.setData(android.net.Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
+            views.setRemoteAdapter(R.id.pricing_widget_orders_list, listIntent);
+            views.setEmptyView(R.id.pricing_widget_orders_list, R.id.pricing_widget_empty_view);
+
+            Intent rowClickIntent = new Intent(context, PricingInputActivity.class);
+            rowClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+            PendingIntent rowClickTemplate = PendingIntent.getActivity(
+                context, 0, rowClickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+            );
+            views.setPendingIntentTemplate(R.id.pricing_widget_orders_list, rowClickTemplate);
+
+            appWidgetManager.updateAppWidget(appWidgetId, views);
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.pricing_widget_orders_list);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to wire click intents and adapter for widget " + appWidgetId, e);
         }
     }
 
@@ -70,9 +104,29 @@ public class PricingWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        if (intent == null || !ACTION_REFRESH.equals(intent.getAction())) {
+        if (intent == null) {
             return;
         }
+
+        String action = intent.getAction();
+
+        // Handle adb broadcast where ACTION_APPWIDGET_UPDATE is sent without EXTRA_APPWIDGET_IDS
+        if (AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action)) {
+            int[] ids = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
+            if (ids == null || ids.length == 0) {
+                AppWidgetManager manager = AppWidgetManager.getInstance(context);
+                int[] activeIds = manager.getAppWidgetIds(new ComponentName(context, PricingWidgetProvider.class));
+                if (activeIds != null && activeIds.length > 0) {
+                    onUpdate(context, manager, activeIds);
+                }
+            }
+            return;
+        }
+
+        if (!ACTION_REFRESH.equals(action)) {
+            return;
+        }
+
         try {
             AppWidgetManager manager = AppWidgetManager.getInstance(context);
             int[] ids = manager.getAppWidgetIds(new ComponentName(context, PricingWidgetProvider.class));

@@ -36,6 +36,11 @@ function loadImageBase64(relativePaths: string[]): string | null {
     path.join(cwd, 'dist'),
     path.join(cwd, 'public'),
     cwd,
+    path.join(__dirname, '..', 'public'),
+    path.join(__dirname, '..', 'dist'),
+    path.join(__dirname, 'public'),
+    path.join(__dirname, 'dist'),
+    __dirname,
   ];
   for (const relPath of relativePaths) {
     for (const base of bases) {
@@ -57,21 +62,26 @@ let cachedJawiBase64: string | null = null;
 let imagesLoaded = false;
 
 function ensureImagesLoaded() {
-  if (imagesLoaded) return;
-  cachedLogoBase64 = loadImageBase64([
-    'assets/brand/apk_logo_clean.png',
-    'assets/brand/wawasan_logo.png',
-    'assets/brand/wawasan_logo_fallback.png',
-  ]);
-  cachedJawiBase64 = loadImageBase64([
-    'assets/heritage/batik_pattern.jpg',
-    'assets/heritage/batik_pattern_hd.jpg',
-    'assets/heritage/batik_vector_pattern.jpg',
-    'assets/heritage/Jawi.jpg',
-  ]);
-  imagesLoaded = true;
-  if (!cachedLogoBase64)  console.warn('[serverPdfService] Logo image not found — PDF will render without logo.');
-  if (!cachedJawiBase64)  console.warn('[serverPdfService] Jawi image not found — PDF will render with clean header background.');
+  if (!cachedLogoBase64) {
+    cachedLogoBase64 = loadImageBase64([
+      'assets/brand/apk_logo_clean.png',
+      'assets/brand/wawasan_logo.png',
+      'assets/brand/wawasan_logo_fallback.png',
+    ]);
+  }
+  if (!cachedJawiBase64) {
+    cachedJawiBase64 = loadImageBase64([
+      'assets/heritage/batik_pattern.jpg',
+      'assets/heritage/batik_pattern_hd.jpg',
+      'assets/heritage/batik_vector_pattern.jpg',
+      'assets/heritage/Jawi.jpg',
+    ]);
+  }
+  if (!imagesLoaded) {
+    if (!cachedLogoBase64)  console.warn('[serverPdfService] Logo image not found — PDF will render without logo.');
+    if (!cachedJawiBase64)  console.warn('[serverPdfService] Jawi image not found — PDF will render with clean header background.');
+    imagesLoaded = true;
+  }
 }
 
 // ─── Amount-in-words (inlined from src/services/numberToWordsBM.ts) ───────────
@@ -105,7 +115,12 @@ function bmWords(num: number): string {
     }
     return res;
   };
-  const ip = Math.floor(num), dp = Math.round((num - ip) * 100);
+  // Split on whole cents (not a floating-point subtraction) so binary
+  // float drift in `num` (e.g. an amount built up from several 2dp
+  // additions) can never round the cents part up to 100 and silently
+  // drop a ringgit — see the matching fix in src/services/numberToWordsBM.ts.
+  const totalCents = Math.round(num * 100);
+  const ip = Math.floor(totalCents / 100), dp = totalCents % 100;
   return whole(ip) + (dp > 0 ? ' dan ' + whole(dp) + ' Sen' : '');
 }
 
@@ -133,7 +148,9 @@ function enWords(num: number): string {
     }
     return res;
   };
-  const ip = Math.floor(num), dp = Math.round((num - ip) * 100);
+  // See the matching comment in bmWords() above.
+  const totalCents = Math.round(num * 100);
+  const ip = Math.floor(totalCents / 100), dp = totalCents % 100;
   return whole(ip) + (dp > 0 ? ' and ' + whole(dp) + ' Sen' : '');
 }
 
@@ -446,7 +463,9 @@ export async function generateServerInvoicePdf(
   doc.setTextColor(35, 30, 25);
 
   if (isFinal && grandTotal > 0) {
-    const spelled = lang === 'en' ? enWords(grandTotal) : bmWords(grandTotal);
+    const spelled = lang === 'en'
+      ? `Ringgit Malaysia: ${enWords(grandTotal)} only.`
+      : `Ringgit Malaysia: ${bmWords(grandTotal)} sahaja.`;
     doc.text(spelled, 15, textNoteY);
   } else {
     const blankSpelling = lang === 'en'
@@ -602,6 +621,21 @@ export async function generateServerConsolidatedInvoicePdf(
   includeNotes: boolean = false,
   lang: 'bm' | 'en' = 'bm'
 ): Promise<Buffer> {
+  if (!orders || orders.length === 0) {
+    throw new Error(lang === 'bm'
+      ? 'Tiada pesanan dipilih untuk invois konsolidasi.'
+      : 'No orders selected for consolidated invoice.');
+  }
+
+  // Enforce single-client only. Consolidated invoices are per-client documents.
+  const distinctClients = new Set(orders.map(o => o.to || '-'));
+  if (distinctClients.size > 1) {
+    const clientList = Array.from(distinctClients).join(', ');
+    throw new Error(lang === 'bm'
+      ? `Invois konsolidasi hanya boleh untuk SATU syarikat/klien sahaja. Pesanan yang dipilih merangkumi ${distinctClients.size} klien berbeza: ${clientList}. Sila pilih pesanan dari satu klien sahaja.`
+      : `Consolidated invoices can only be generated for a SINGLE company/client. The selected orders span ${distinctClients.size} different clients: ${clientList}. Please select orders from only one client.`);
+  }
+
   ensureImagesLoaded();
 
   // Consolidated invoices MUST be landscape A4 (297mm x 210mm)
@@ -808,11 +842,10 @@ export async function generateServerConsolidatedInvoicePdf(
   doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
   doc.setFont('helvetica', 'bolditalic');
   doc.setFontSize(8);
-  if (lang === 'en') {
-    doc.text(enWords(grandTotal), 15, currentY);
-  } else {
-    doc.text(bmWords(grandTotal), 15, currentY);
-  }
+  const spelledConsolidated = lang === 'en'
+    ? `Ringgit Malaysia: ${enWords(grandTotal)} only.`
+    : `Ringgit Malaysia: ${bmWords(grandTotal)} sahaja.`;
+  doc.text(spelledConsolidated, 15, currentY);
 
   // Footer on all pages (Landscape A4: width 297, height 210)
   const totalPages = doc.getNumberOfPages();

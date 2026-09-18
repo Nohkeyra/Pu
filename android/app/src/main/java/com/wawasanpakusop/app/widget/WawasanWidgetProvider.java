@@ -71,11 +71,27 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_upcoming_orders);
             setOpenAdminIntent(context, views);
             setRefreshIntent(context, views);
+
+            // Connect remote adapter immediately to display cached orders without waiting for network
+            Intent listIntent = new Intent(context, WidgetRemoteViewsService.class);
+            listIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            listIntent.setData(android.net.Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
+            views.setRemoteAdapter(R.id.widget_orders_list, listIntent);
+            views.setEmptyView(R.id.widget_orders_list, R.id.widget_empty_view);
+
+            Intent rowClickIntent = new Intent(context, MainActivity.class);
+            rowClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent rowClickTemplate = PendingIntent.getActivity(
+                context, 0, rowClickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+            );
+            views.setPendingIntentTemplate(R.id.widget_orders_list, rowClickTemplate);
+
             appWidgetManager.updateAppWidget(appWidgetId, views);
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_orders_list);
         } catch (Exception e) {
             // Bare layout (pushed above) is already showing; click intents
             // just won't be wired until the next successful update.
-            Log.w(TAG, "Failed to wire click intents for widget " + appWidgetId, e);
+            Log.w(TAG, "Failed to wire click intents and adapter for widget " + appWidgetId, e);
         }
     }
 
@@ -115,9 +131,29 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        if (intent == null || !ACTION_REFRESH.equals(intent.getAction())) {
+        if (intent == null) {
             return;
         }
+
+        String action = intent.getAction();
+
+        // Handle adb broadcast where ACTION_APPWIDGET_UPDATE is sent without EXTRA_APPWIDGET_IDS
+        if (AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action)) {
+            int[] ids = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
+            if (ids == null || ids.length == 0) {
+                AppWidgetManager manager = AppWidgetManager.getInstance(context);
+                int[] activeIds = manager.getAppWidgetIds(new ComponentName(context, WawasanWidgetProvider.class));
+                if (activeIds != null && activeIds.length > 0) {
+                    onUpdate(context, manager, activeIds);
+                }
+            }
+            return;
+        }
+
+        if (!ACTION_REFRESH.equals(action)) {
+            return;
+        }
+
         try {
             AppWidgetManager manager = AppWidgetManager.getInstance(context);
             int[] ids = manager.getAppWidgetIds(new ComponentName(context, WawasanWidgetProvider.class));

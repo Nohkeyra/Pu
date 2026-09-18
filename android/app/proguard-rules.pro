@@ -38,6 +38,12 @@
 -keep class capacitor.firebase.** { *; }
 -dontwarn capacitor.firebase.**
 
+# AndroidX Biometric & capacitor-native-biometric
+-keep class androidx.biometric.** { *; }
+-dontwarn androidx.biometric.**
+-keep class com.epicshaggy.biometric.** { *; }
+-dontwarn com.epicshaggy.biometric.**
+
 # Firebase
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }

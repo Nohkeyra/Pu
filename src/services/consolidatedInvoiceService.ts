@@ -10,19 +10,22 @@ import {
 } from './pdfService';
 
 /**
- * Generates a random invoice number in the same visual style as the
- * sequential RW#### numbers (see server/firebaseAdmin.ts
- * createOrderWithSequentialInvoice), but intentionally NOT drawn from the
+ * Generates a fallback random invoice number in the same visual style as
+ * the sequential RW##### numbers (see server/firebaseAdmin.ts
+ * generateSequentialInvoiceNo), but intentionally NOT drawn from the
  * shared Firestore meta/invoiceCounter sequence. Consolidated invoices are
  * an admin-only, synchronous, client-side PDF export — reserving a real
- * sequential number per page here would require an async Firestore
- * transaction per page mid-render, which this function's synchronous
- * jsPDF-based rendering loop isn't set up for.
+ * sequential number here would require an async Firestore transaction
+ * mid-render, which this function's synchronous jsPDF-based rendering loop
+ * isn't set up for.
  *
- * Per explicit confirmation from Noh: every new page in a consolidated
- * invoice (triggered whenever the previous page's rows fill up) is treated
- * as a fresh, separate invoice — with its own new random invoice number
- * AND its own separate total, not shared with any other page.
+ * Called exactly once per document (see `masterInvoiceNo` below), not once
+ * per page: a consolidated invoice has ONE Master Invoice Number that is
+ * printed on every page and used for the single Grand Total across all
+ * pages, per the "Unified Master Invoice Number" rule on
+ * generateConsolidatedInvoicePDF below and the numbering tests in
+ * consolidatedInvoiceService.test.ts. Multi-page pagination ("Page X of Y")
+ * never starts a new invoice or a new total.
  */
 const generateRandomInvoiceNo = (): string => {
   const randomDigits = String(Math.floor(Math.random() * 100000)).padStart(5, '0'); // 5-digit random

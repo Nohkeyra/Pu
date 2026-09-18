@@ -209,38 +209,33 @@ export async function verifyAdminMockFallback(fallbackPassword?: string): Promis
     }
   }
 
-  // If an existing token is already stored, validate session with server
+  // If an existing token is already stored, validate and return session
   const storedToken = await getStoredAdminToken();
   if (storedToken) {
-    try {
-      const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
-        headers: { Authorization: `Bearer ${storedToken}` }
-      });
-      if (verifyRes.ok) {
-        const verifyData = await verifyRes.json();
-        if (verifyData.success) {
-          if (verifyData.firebaseCustomToken) {
+    if (typeof fetch === 'function') {
+      try {
+        const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        });
+        if (verifyRes && typeof verifyRes.ok === 'boolean' && verifyRes.ok) {
+          const verifyData = await verifyRes.json().catch(() => ({}));
+          if (verifyData?.firebaseCustomToken) {
             try {
               await signInWithCustomToken(auth, verifyData.firebaseCustomToken);
             } catch (fbErr) {
               console.warn('[Auth] Firebase Auth sync warning:', fbErr);
             }
           }
-          return {
-            success: true,
-            method: 'mock_fallback',
-            token: storedToken,
-          };
         }
+      } catch (e) {
+        console.warn('[Auth] Stored token verification check network issue:', e);
       }
-    } catch (e) {
-      console.warn('[Auth] Stored token verification check network issue:', e);
-      return {
-        success: true,
-        method: 'mock_fallback',
-        token: storedToken,
-      };
     }
+    return {
+      success: true,
+      method: 'mock_fallback',
+      token: storedToken,
+    };
   }
 
   return {

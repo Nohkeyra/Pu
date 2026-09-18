@@ -48,8 +48,17 @@ export const getBMWordsAmount = (num: number): string => {
     return result;
   };
 
-  const intPart = Math.floor(num);
-  const decPart = Math.round((num - intPart) * 100);
+  // Round to the nearest cent as an integer *before* splitting into
+  // ringgit/sen. Deriving decPart from a floating-point subtraction
+  // (num - Math.floor(num)) * 100 can land on 100 instead of 0 whenever the
+  // input has accumulated binary floating-point drift (e.g. a consolidated
+  // invoice's grandTotal, which is a running `sum + val` of several 2dp
+  // amounts) — e.g. 8591.999999999998 would floor to 8591 with a "100 Sen"
+  // remainder instead of correctly reading as 8592 exactly. Working in
+  // whole cents makes the split exact and impossible to misround.
+  const totalCents = Math.round(num * 100);
+  const intPart = Math.floor(totalCents / 100);
+  const decPart = totalCents % 100;
   let res = convertWhole(intPart);
   if (decPart > 0) {
     res += ' dan ' + convertWhole(decPart) + ' Sen';
@@ -99,8 +108,12 @@ export const getENWordsAmount = (num: number): string => {
     return result;
   };
 
-  const intPart = Math.floor(num);
-  const decPart = Math.round((num - intPart) * 100);
+  // See the matching comment in getBMWordsAmount: split on whole cents,
+  // not a floating-point subtraction, so drift can never round decPart up
+  // to 100 and silently drop a ringgit from the spelled-out total.
+  const totalCents = Math.round(num * 100);
+  const intPart = Math.floor(totalCents / 100);
+  const decPart = totalCents % 100;
   let res = convertWhole(intPart);
   if (decPart > 0) {
     res += ' and ' + convertWhole(decPart) + ' Sen';

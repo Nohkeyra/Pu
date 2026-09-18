@@ -111,6 +111,22 @@ export async function exportOrdersAsExcelTemplate(
       return;
     }
 
+    // Safety threshold: generating hundreds of fully-styled multi-page Excel
+    // worksheets client-side can exhaust mobile/browser heap memory. Limit to first 100
+    // and notify the user to use standard tabular export for massive datasets.
+    const MAX_EXCEL_TEMPLATE_ORDERS = 100;
+    let exportOrders = orders;
+    if (orders.length > MAX_EXCEL_TEMPLATE_ORDERS) {
+      toast({
+        title: isBm ? 'Had Eksport Templat' : 'Template Export Limit',
+        description: isBm
+          ? `Mengeksport ${MAX_EXCEL_TEMPLATE_ORDERS} pesanan pertama bagi memastikan kestabilan memori. Untuk senarai penuh, gunakan eksport jadual biasa.`
+          : `Exporting first ${MAX_EXCEL_TEMPLATE_ORDERS} orders to maintain memory stability. For full lists, please use the standard table export.`,
+        variant: 'warning',
+      });
+      exportOrders = orders.slice(0, MAX_EXCEL_TEMPLATE_ORDERS);
+    }
+
     const workbook = new ExcelJS.Workbook();
 
     // Helper function to copy a worksheet's structure, styling and merges
@@ -152,11 +168,25 @@ export async function exportOrdersAsExcelTemplate(
       });
     };
 
+    // Track assigned sheet names to prevent ExcelJS "Worksheet name already exists" errors
+    const usedSheetNames = new Set<string>();
+    const generateUniqueSheetName = (rawName: string): string => {
+      let base = rawName.replace(/[\\/?*:[\]]/g, '_').trim() || 'Invoice';
+      if (base.length > 25) base = base.substring(0, 25);
+      let candidate = base;
+      let counter = 1;
+      while (usedSheetNames.has(candidate.toLowerCase())) {
+        const suffix = `_${counter}`;
+        candidate = `${base.substring(0, 31 - suffix.length)}${suffix}`;
+        counter++;
+      }
+      usedSheetNames.add(candidate.toLowerCase());
+      return candidate;
+    };
+
     const populateOrderSheet = (o: any, sheet: any) => {
       const rawName = o.invoiceNo || (o.id ? `RW ${o.id.substring(0, 5).toUpperCase()}` : 'Invoice');
-      let safeName = rawName.replace(/[\\/?*:[\]]/g, '_');
-      if (safeName.length > 30) safeName = safeName.substring(0, 30);
-      sheet.name = safeName;
+      sheet.name = generateUniqueSheetName(rawName);
 
       sheet.getCell('C8').value = o.to || 'Majlis Persendirian';
       sheet.getCell('C9').value = o.name || o.attn || '';
@@ -197,16 +227,16 @@ export async function exportOrdersAsExcelTemplate(
       }
     };
 
-    if (orders.length === 1) {
+    if (exportOrders.length === 1) {
       await workbook.xlsx.load(arrayBuffer);
       const worksheet = workbook.worksheets[0];
-      populateOrderSheet(orders[0], worksheet);
+      populateOrderSheet(exportOrders[0], worksheet);
     } else {
       const tempWorkbook = new ExcelJS.Workbook();
       await tempWorkbook.xlsx.load(arrayBuffer);
       const sourceSheet = tempWorkbook.worksheets[0];
 
-      orders.forEach((o, index) => {
+      exportOrders.forEach((o, index) => {
         const targetSheet = workbook.addWorksheet(`TempSheet_${index}`);
         copyWorksheet(sourceSheet, targetSheet);
         populateOrderSheet(o, targetSheet);
@@ -216,8 +246,8 @@ export async function exportOrdersAsExcelTemplate(
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    const downloadName = orders.length === 1
-      ? `Invoice_${orders[0].invoiceNo || orders[0].id?.substring(0, 8) || 'Order'}.xlsx`
+    const downloadName = exportOrders.length === 1
+      ? `Invoice_${exportOrders[0].invoiceNo || exportOrders[0].id?.substring(0, 8) || 'Order'}.xlsx`
       : `Wawasan_Invoices_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
     await saveOrShareFile(downloadName, blob);
