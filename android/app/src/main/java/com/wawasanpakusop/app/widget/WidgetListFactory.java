@@ -286,10 +286,16 @@ public class WidgetListFactory implements RemoteViewsService.RemoteViewsFactory 
         }
         itemView.setInt(R.id.item_status_stripe, "setBackgroundColor", stripeColor);
 
-        // Tapping an individual order card opens the app directly to /admin
+        // Tapping an individual order card opens the OrderDetailActivity bottom-sheet overlay
         Intent fillInIntent = new Intent();
-        fillInIntent.putExtra("open_admin_panel", true);
         fillInIntent.putExtra("order_id", item.id);
+        fillInIntent.putExtra("date_time", item.formattedDate + (item.time != null && !item.time.isEmpty() && !"--:--".equals(item.time) ? " • " + item.time : ""));
+        fillInIntent.putExtra("meal_type", item.meals);
+        fillInIntent.putExtra("menu", item.menu);
+        fillInIntent.putExtra("location", item.location);
+        fillInIntent.putExtra("pax", item.quantity);
+        fillInIntent.putExtra("client_name", item.clientName);
+        fillInIntent.putExtra("status", item.status);
         itemView.setOnClickFillInIntent(R.id.item_root, fillInIntent);
 
         return itemView;

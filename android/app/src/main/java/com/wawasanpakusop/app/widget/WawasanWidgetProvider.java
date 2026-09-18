@@ -79,7 +79,7 @@ public class WawasanWidgetProvider extends AppWidgetProvider {
             views.setRemoteAdapter(R.id.widget_orders_list, listIntent);
             views.setEmptyView(R.id.widget_orders_list, R.id.widget_empty_view);
 
-            Intent rowClickIntent = new Intent(context, MainActivity.class);
+            Intent rowClickIntent = new Intent(context, OrderDetailActivity.class);
             rowClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             PendingIntent rowClickTemplate = PendingIntent.getActivity(
                 context, 0, rowClickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
