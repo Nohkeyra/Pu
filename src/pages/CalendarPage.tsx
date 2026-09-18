@@ -1365,13 +1365,15 @@ export default function CalendarPage() {
                   <>
                     <div className="h-px bg-stone-200 dark:bg-stone-800 my-1" />
 
-                    {quickActionEvent.status === 'pending' && (
+                    {quickActionEvent.status === 'pending' && quickActionEvent.id && (
                       <Button
                         variant="outline"
                         className="w-full justify-start py-5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900 font-bold cursor-pointer"
                         onClick={() => {
-                          handleQuickUpdateStatus(quickActionEvent.id, 'approved');
-                          setQuickActionEvent(null);
+                          if (quickActionEvent.id) {
+                            handleQuickUpdateStatus(quickActionEvent.id, 'approved');
+                            setQuickActionEvent(null);
+                          }
                         }}
                       >
                         <Check className="w-4 h-4 mr-3 text-emerald-600" />
@@ -1379,13 +1381,15 @@ export default function CalendarPage() {
                       </Button>
                     )}
 
-                    {quickActionEvent.status === 'approved' && (
+                    {quickActionEvent.status === 'approved' && quickActionEvent.id && (
                       <Button
                         variant="outline"
                         className="w-full justify-start py-5 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900 font-bold cursor-pointer"
                         onClick={() => {
-                          handleQuickUpdateStatus(quickActionEvent.id, 'billed');
-                          setQuickActionEvent(null);
+                          if (quickActionEvent.id) {
+                            handleQuickUpdateStatus(quickActionEvent.id, 'billed');
+                            setQuickActionEvent(null);
+                          }
                         }}
                       >
                         <FileSpreadsheet className="w-4 h-4 mr-3 text-indigo-600" />

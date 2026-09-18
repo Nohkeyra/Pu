@@ -49,6 +49,7 @@ export function AdminOrdersTab({
   openSendDialog,
   handleDelete,
   handleRejectCancellation,
+  handleUpdateStatus,
   authHeaders,
   getApiUrl,
   fetchOrders,
