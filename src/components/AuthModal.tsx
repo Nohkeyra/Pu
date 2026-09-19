@@ -193,7 +193,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
         if (rememberBiometrics) {
           try {
-            if (isAdminAuth) {
+            const isAdminUser = isAdminAuth || email.toLowerCase().trim() === 'admin@wawasanpakusop.my';
+            if (isAdminUser) {
               await storeAdminBiometricCredentials(email, password);
             } else {
               await storeCustomerBiometricCredentials(email, password);
@@ -531,7 +532,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </div>
 
                   {/* Remember Me with Biometrics Checkbox */}
-                  {!isAdminAuth && isBiometricHardwareAvailable && (
+                  {isBiometricHardwareAvailable && (
                     <div className="flex items-center gap-2 pt-2 pb-1">
                       <input
                         id="remember-biometrics"

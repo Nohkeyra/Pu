@@ -71,13 +71,15 @@ export default function AdminPage() {
         const enabled = await getSecureItem(ADMIN_BIOMETRIC_PREF_KEY);
         if (avail.isAvailable && enabled === 'true') {
           setHasAdminBiometrics(true);
+        } else {
+          setHasAdminBiometrics(false);
         }
       } catch (e) {
         console.warn('Error checking admin biometrics:', e);
       }
     }
     checkAdminBiometrics();
-  }, []);
+  }, [authOpen]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
