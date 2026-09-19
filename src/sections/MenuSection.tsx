@@ -6,7 +6,7 @@ import { getAssetUrl } from '@/lib/utils';
 import { MENU_ITEMS, type FeaturedMenuItem } from '@/constants/menu';
 import ResponsiveImage from '@/components/ResponsiveImage';
 import { HungryButton } from '@/components/ui/HungryButton';
-import { UtensilsCrossed, Sparkles, Coffee, Flame, ChevronRight } from 'lucide-react';
+import { UtensilsCrossed, Sparkles, Coffee, Flame, ChevronRight, Search, X } from 'lucide-react';
 import { triggerLightImpact } from '@/lib/haptics';
 
 // 3D Parallax Tilt Card for Menu Items with seamless dark framing
@@ -160,6 +160,7 @@ export default function MenuSection() {
   const { t, language } = useLanguage();
   const isBm = language === 'bm';
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const categories = useMemo(() => [
     { id: 'all', labelBm: 'Semua Sajian', labelEn: 'All Dishes', icon: UtensilsCrossed },
@@ -169,18 +170,26 @@ export default function MenuSection() {
   ], []);
 
   const filteredMenuItems = useMemo(() => {
-    if (activeCategory === 'all') return MENU_ITEMS;
+    let items = MENU_ITEMS;
     if (activeCategory === 'mains') {
-      return MENU_ITEMS.filter(item => item.category === 'lunch' || item.id === 'asam-pedas' || item.id === 'nasi-campur');
+      items = MENU_ITEMS.filter(item => item.category === 'lunch' || item.id === 'asam-pedas' || item.id === 'nasi-campur');
+    } else if (activeCategory === 'breakfast') {
+      items = MENU_ITEMS.filter(item => item.category === 'breakfast' && item.id !== 'nasi-campur');
+    } else if (activeCategory === 'drinks') {
+      items = MENU_ITEMS.filter(item => item.category === 'drinks');
     }
-    if (activeCategory === 'breakfast') {
-      return MENU_ITEMS.filter(item => item.category === 'breakfast' && item.id !== 'nasi-campur');
+
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      items = items.filter(item => 
+        item.nameEn.toLowerCase().includes(q) ||
+        item.nameBm.toLowerCase().includes(q) ||
+        item.descEn.toLowerCase().includes(q) ||
+        item.descBm.toLowerCase().includes(q)
+      );
     }
-    if (activeCategory === 'drinks') {
-      return MENU_ITEMS.filter(item => item.category === 'drinks');
-    }
-    return MENU_ITEMS;
-  }, [activeCategory]);
+    return items;
+  }, [activeCategory, searchQuery]);
 
   const handleCategoryChange = async (catId: string) => {
     await triggerLightImpact();
@@ -249,6 +258,32 @@ export default function MenuSection() {
             {t('menu_subtitle')}
           </motion.p>
         </motion.div>
+
+        {/* Instant Search Bar */}
+        <div className="max-w-md mx-auto mb-6">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isBm ? 'Cari sajian warisan...' : 'Search heritage dishes...'}
+              className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-900 dark:text-stone-100 placeholder-stone-400 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500 shadow-xs transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Category Navigation Bar (Requirement B & D: Sticky & Touch-friendly) */}
         <div className="sticky top-[70px] z-30 mb-10 py-2 -mx-4 px-4 sm:mx-0 sm:px-0 bg-cream/90 dark:bg-stone-950/90 backdrop-blur-md">

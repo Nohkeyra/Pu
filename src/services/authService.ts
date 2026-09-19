@@ -409,6 +409,49 @@ export async function storeCustomerBiometricCredentials(
 }
 
 /**
+ * Authenticates the customer using Native Biometrics (Fingerprint / Face ID).
+ */
+export async function authenticateCustomerWithBiometrics(
+  options: AdminBiometricAuthOptions = {}
+): Promise<{ success: boolean; creds?: { email: string; password: string }; error?: string }> {
+  const availability = await checkBiometricAvailability();
+
+  if (!availability.isAvailable) {
+    return {
+      success: false,
+      error: availability.reason || 'Biometric authentication is not available on this device.',
+    };
+  }
+
+  try {
+    await NativeBiometric.verifyIdentity({
+      reason: options.reason || 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.',
+      title: options.title || 'Pengesahan Biometrik Pelanggan',
+      subtitle: options.subtitle || 'Imbas cap jari atau pengecaman muka anda',
+      negativeButtonText: options.negativeButtonText || 'Batal',
+      maxAttempts: options.maxAttempts || 3,
+    });
+
+    const creds = await getCustomerBiometricCredentials();
+    if (creds && creds.email && creds.password) {
+      return { success: true, creds };
+    }
+
+    return {
+      success: false,
+      error: 'Tiada kredensial biometrik disimpan. Sila log masuk dengan kata laluan terlebih dahulu.',
+    };
+  } catch (error) {
+    console.error('[AuthService] Customer biometric verification failed or cancelled:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Pengesahan biometrik dibatalkan atau gagal.';
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
  * Retrieve customer credentials securely from hardware keychain.
  */
 export async function getCustomerBiometricCredentials(): Promise<{ email: string; password: string } | null> {

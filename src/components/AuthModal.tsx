@@ -27,12 +27,12 @@ import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
 import { getSecureItem } from '@/lib/preferences';
+import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 import { 
   checkBiometricAvailability, 
-  getCustomerBiometricCredentials, 
   storeCustomerBiometricCredentials,
-  getAdminBiometricCredentials,
   storeAdminBiometricCredentials,
+  authenticateCustomerWithBiometrics,
   ADMIN_BIOMETRIC_PREF_KEY,
   CUSTOMER_BIOMETRIC_PREF_KEY
 } from '@/services/authService';
@@ -87,13 +87,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setInitials('');
   }, []);
 
+  const { authenticateBiometric, loginWithPassword: loginAdminWithPassword } = useAdminBiometric({ autoRehydrate: false });
+
   const handleBiometricLogin = useCallback(async () => {
     try {
       if (isAdminAuth) {
-        const creds = await getAdminBiometricCredentials();
-        if (creds && creds.username && creds.password) {
-          setIsLoading(true);
-          await signInWithEmailAndPassword(auth, creds.username, creds.password);
+        setIsLoading(true);
+        const res = await authenticateBiometric({
+          reason: t('Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.', 'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.'),
+          title: t('Pengesahan Biometrik Admin', 'Pengesahan Biometrik Admin'),
+        });
+        if (res.success) {
           triggerNotification(NotificationType.Success);
           toast({
             title: t('Admin Access Granted', 'Akses Admin Diberikan'),
@@ -103,12 +107,25 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           resetForm();
           onSuccess?.();
           onClose();
+        } else {
+          setIsLoading(false);
+          if (res.error && !res.error.toLowerCase().includes('cancel')) {
+            toast({
+              title: t('Biometric Failed', 'Biometrik Gagal'),
+              description: res.error,
+              variant: 'error'
+            });
+          }
         }
       } else {
-        const creds = await getCustomerBiometricCredentials();
-        if (creds && creds.email && creds.password) {
-          setIsLoading(true);
-          await signInWithEmailAndPassword(auth, creds.email, creds.password);
+        setIsLoading(true);
+        const res = await authenticateCustomerWithBiometrics({
+          reason: t('Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.', 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.'),
+          title: t('Pengesahan Biometrik Pelanggan', 'Pengesahan Biometrik Pelanggan'),
+        });
+
+        if (res.success && res.creds) {
+          await signInWithEmailAndPassword(auth, res.creds.email, res.creds.password);
           triggerNotification(NotificationType.Success);
           toast({
             title: t('Success', 'Berjaya'),
@@ -118,12 +135,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           resetForm();
           onSuccess?.();
           onClose();
+        } else {
+          setIsLoading(false);
+          if (res.error && !res.error.toLowerCase().includes('cancel')) {
+            toast({
+              title: t('Biometric Failed', 'Biometrik Gagal'),
+              description: res.error,
+              variant: 'error'
+            });
+          }
         }
       }
     } catch (err: any) {
       console.warn('Biometric login failed:', err);
       setIsLoading(false);
-      // Only show error toast if the user did not cancel the native popup dialog
       const errMsg = err?.message || '';
       if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('user cancel')) {
         toast({
@@ -133,7 +158,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         });
       }
     }
-  }, [t, toast, onSuccess, onClose, resetForm, isAdminAuth]);
+  }, [t, toast, onSuccess, onClose, resetForm, isAdminAuth, authenticateBiometric]);
 
   useEffect(() => {
     async function initBiometrics() {
@@ -145,13 +170,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         const enabled = await getSecureItem(prefKey);
         if (enabled === 'true') {
           setHasStoredBiometrics(true);
-          // Auto-trigger on initial modal load if we are in signin mode and user is not already logged in
-          if (mode === 'signin' && isOpen && !auth.currentUser) {
-            // Short timeout to let the modal fully transition-in before triggering native OS popup
-            setTimeout(() => {
-              handleBiometricLogin();
-            }, 300);
-          }
         }
       } catch (err) {
         console.warn('Failed to initialize biometrics:', err);
@@ -189,18 +207,26 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     try {
       if (mode === 'signin') {
         if (!password) throw new Error(t('Password is required', 'Kata laluan diperlukan'));
-        await signInWithEmailAndPassword(auth, email, password);
 
-        if (rememberBiometrics) {
-          try {
-            const isAdminUser = isAdminAuth || email.toLowerCase().trim() === 'admin@wawasanpakusop.my';
-            if (isAdminUser) {
-              await storeAdminBiometricCredentials(email, password);
-            } else {
-              await storeCustomerBiometricCredentials(email, password);
+        if (isAdminAuth) {
+          const res = await loginAdminWithPassword(email, password, rememberBiometrics);
+          if (!res.success) {
+            throw new Error(res.error || t('Invalid email or password.', 'E-mel atau kata laluan tidak sah.'));
+          }
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+
+          if (rememberBiometrics) {
+            try {
+              const isAdminUser = email.toLowerCase().trim() === 'admin@wawasanpakusop.my';
+              if (isAdminUser) {
+                await storeAdminBiometricCredentials(email, password);
+              } else {
+                await storeCustomerBiometricCredentials(email, password);
+              }
+            } catch (bioErr) {
+              console.warn('Failed to store biometric credentials:', bioErr);
             }
-          } catch (bioErr) {
-            console.warn('Failed to store biometric credentials:', bioErr);
           }
         }
 

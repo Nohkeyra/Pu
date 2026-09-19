@@ -1,132 +1,59 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
 import AdminPanel from '@/components/AdminPanel';
 import AuthModal from '@/components/AuthModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { getApiUrl } from '@/lib/api';
 import WawasanLoader from '@/components/WawasanLoader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { 
-  saveAdminToken, 
-  clearAdminSession, 
-  getAdminBiometricCredentials, 
-  checkBiometricAvailability, 
-  ADMIN_BIOMETRIC_PREF_KEY 
-} from '@/services/authService';
-import { getSecureItem } from '@/lib/preferences';
 import { Fingerprint, Lock, Loader2 } from 'lucide-react';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 
 export default function AdminPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language } = useLanguage();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState('');
-  const [isInitializing, setIsInitializing] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
-  const [error, setError] = useState('');
-  const [hasAdminBiometrics, setHasAdminBiometrics] = useState(false);
-  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
-  const hasAutoPromptedRef = useRef(false);
 
   const t = useCallback((en: string, bm: string) => (language === 'bm' ? bm : en), [language]);
 
+  const {
+    isAuthenticated,
+    adminToken,
+    user,
+    isInitializing,
+    hasAdminBiometrics,
+    isBiometricLoading,
+    error,
+    authenticateBiometric,
+    logout,
+  } = useAdminBiometric({ autoRehydrate: true });
+
   const handleBiometricUnlock = useCallback(async () => {
-    try {
-      setIsBiometricLoading(true);
-      setError('');
-      const creds = await getAdminBiometricCredentials();
-      if (creds && creds.username && creds.password) {
-        await signInWithEmailAndPassword(auth, creds.username, creds.password);
-        triggerNotification(NotificationType.Success);
-        toast({
-          title: t('Admin Access Granted', 'Akses Admin Diberikan'),
-          description: t('Successfully verified Admin biometrics!', 'Berjaya disahkan dengan Biometrik Admin!'),
-          variant: 'success'
-        });
-      } else {
-        setIsBiometricLoading(false);
-      }
-    } catch (err: any) {
-      console.warn('Admin biometric unlock failed:', err);
-      setIsBiometricLoading(false);
-      const errMsg = err?.message || '';
-      if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('user cancel')) {
-        setError(t('Biometric verification failed. Please log in with password.', 'Pengesahan biometrik gagal. Sila log masuk dengan kata laluan.'));
-      }
-    }
-  }, [t, toast]);
-
-  useEffect(() => {
-    async function checkAdminBiometrics() {
-      try {
-        const avail = await checkBiometricAvailability();
-        const enabled = await getSecureItem(ADMIN_BIOMETRIC_PREF_KEY);
-        if (avail.isAvailable && enabled === 'true') {
-          setHasAdminBiometrics(true);
-        } else {
-          setHasAdminBiometrics(false);
-        }
-      } catch (e) {
-        console.warn('Error checking admin biometrics:', e);
-      }
-    }
-    checkAdminBiometrics();
-  }, [authOpen]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const idToken = await currentUser.getIdToken(true);
-          
-          // Verify with server to ensure it has admin claim
-          const res = await fetch(getApiUrl('/api/admin/verify'), {
-            headers: { Authorization: `Bearer ${idToken}` }
-          });
-          
-          if (res.ok) {
-            await saveAdminToken(idToken);
-            setToken(idToken);
-            setError('');
-          } else {
-            setToken('');
-            await clearAdminSession();
-            setError(t('You do not have administrative privileges. Only authorized users may access this panel.', 'Anda tidak mempunyai kebenaran pentadbir. Hanya pengguna yang diberi kuasa boleh mengakses panel ini.'));
-          }
-        } catch {
-          setToken('');
-          setError(t('Failed to verify admin status.', 'Gagal mengesahkan status pentadbir.'));
-        }
-      } else {
-        setToken('');
-        await clearAdminSession();
-      }
-      setIsInitializing(false);
-      setIsBiometricLoading(false);
+    const res = await authenticateBiometric({
+      reason: t(
+        'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.',
+        'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.'
+      ),
+      title: t('Pengesahan Biometrik Admin', 'Pengesahan Biometrik Admin'),
     });
 
-    return () => unsubscribe();
-  }, [t]);
-
-  // Auto-prompt admin biometrics on initial load if stored and not logged in
-  useEffect(() => {
-    if (!isInitializing && !user && hasAdminBiometrics && !hasAutoPromptedRef.current) {
-      hasAutoPromptedRef.current = true;
-      const timer = setTimeout(() => {
-        handleBiometricUnlock();
-      }, 400);
-      return () => clearTimeout(timer);
+    if (res.success) {
+      triggerNotification(NotificationType.Success);
+      toast({
+        title: t('Admin Access Granted', 'Akses Admin Diberikan'),
+        description: t(
+          'Successfully verified Admin biometrics!',
+          'Berjaya disahkan dengan Biometrik Admin!'
+        ),
+        variant: 'success',
+      });
     }
-  }, [isInitializing, user, hasAdminBiometrics, handleBiometricUnlock]);
+  }, [authenticateBiometric, t, toast]);
 
   if (isInitializing) {
     return (
@@ -139,7 +66,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || !token) {
+  if (!isAuthenticated || !adminToken) {
     return (
       <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col items-center justify-center relative p-4">
         <Card className="panel-surface p-8 max-w-md w-full text-center space-y-6 z-10 shadow-xl rounded-2xl border border-amber-500/20">
@@ -161,7 +88,7 @@ export default function AdminPage() {
           </div>
           
           <div className="space-y-3 pt-2">
-            {hasAdminBiometrics && !user && (
+            {hasAdminBiometrics && !isAuthenticated && (
               <Button
                 type="button"
                 onClick={handleBiometricUnlock}
@@ -187,7 +114,7 @@ export default function AdminPage() {
                 {t('Log In with Password', 'Log Masuk dengan Kata Laluan')}
               </Button>
             ) : (
-              <Button onClick={() => signOut(auth)} variant="outline" className="w-full h-11">
+              <Button onClick={logout} variant="outline" className="w-full h-11">
                 {t('Sign Out', 'Log Keluar')}
               </Button>
             )}
@@ -210,10 +137,9 @@ export default function AdminPage() {
   return (
     <ErrorBoundary>
       <AdminPanel
-        adminToken={token}
+        adminToken={adminToken}
         onLogout={async () => {
-          await clearAdminSession();
-          await signOut(auth);
+          await logout();
           navigate('/login');
         }}
       />

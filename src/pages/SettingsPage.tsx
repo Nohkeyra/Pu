@@ -41,7 +41,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Play,
+  Fingerprint,
 } from 'lucide-react';
+import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
@@ -172,6 +174,7 @@ export default function SettingsPage() {
   } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { hasAdminBiometrics, removeBiometrics } = useAdminBiometric({ autoRehydrate: false });
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [activeVersion, setActiveVersion] = useState(CURRENT_APP_VERSION);
 
@@ -1061,6 +1064,40 @@ export default function SettingsPage() {
                       <span>{language === 'bm' ? 'Buka' : 'Open'}</span>
                       <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                     </Button>
+                  }
+                />
+
+                <SettingsRow
+                  icon={Fingerprint}
+                  iconBg="bg-emerald-500/10"
+                  iconColor="text-emerald-600 dark:text-emerald-400"
+                  title={language === 'bm' ? 'Log Masuk Cepat Biometrik' : 'Biometric Quick Login'}
+                  action={
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-stone-500 font-medium">
+                        {hasAdminBiometrics ? (language === 'bm' ? 'Aktif' : 'Enabled') : (language === 'bm' ? 'Tidak Aktif' : 'Disabled')}
+                      </span>
+                      <Switch
+                        checked={hasAdminBiometrics}
+                        onCheckedChange={async (checked) => {
+                          await triggerLightImpact();
+                          if (!checked) {
+                            await removeBiometrics();
+                            toast({
+                              title: language === 'bm' ? 'Biometrik Dinyahaktifkan' : 'Biometrics Disabled',
+                              description: language === 'bm' ? 'Kredensial biometrik dipadam dari peranti.' : 'Biometric credentials removed from device.',
+                              variant: 'success',
+                            });
+                          } else {
+                            toast({
+                              title: language === 'bm' ? 'Cara Mengaktifkan' : 'How to Enable',
+                              description: language === 'bm' ? 'Log masuk dengan kata laluan semasa log keluar untuk mendayakan biometrik.' : 'Sign in with password upon next sign in to store biometrics.',
+                              variant: 'success',
+                            });
+                          }
+                        }}
+                      />
+                    </div>
                   }
                 />
 
