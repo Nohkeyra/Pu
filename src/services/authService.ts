@@ -358,6 +358,33 @@ export async function getAdminBiometricCredentials(): Promise<{ username: string
 }
 
 /**
+ * Whether this device currently has admin biometric login enabled: the
+ * admin previously opted in (ADMIN_BIOMETRIC_PREF_KEY === 'true') AND a
+ * stored credential actually exists to unlock with.
+ *
+ * This exists so session-restoration code (see useAdminBiometric's
+ * rehydrateSession) can tell whether a persisted admin token is allowed
+ * to silently re-admit the user, or whether it must first require a
+ * fresh biometric check. storeAdminBiometricCredentials() keeps a plain,
+ * non-biometric-gated copy of the session token in Preferences/
+ * localStorage (needed so a plain password-only admin login also has
+ * normal "stay logged in" behavior); without this check, that copy would
+ * make the fingerprint prompt purely cosmetic on any device where
+ * biometrics were actually enabled.
+ */
+export async function isAdminBiometricsEnabledOnDevice(): Promise<boolean> {
+  try {
+    const prefEnabled = await getSecureItem(ADMIN_BIOMETRIC_PREF_KEY);
+    if (prefEnabled !== 'true') return false;
+    const creds = await getAdminBiometricCredentials();
+    return Boolean(creds?.username && creds?.password);
+  } catch (err) {
+    console.warn('[AuthService] Failed to check admin biometrics enabled state:', err);
+    return false;
+  }
+}
+
+/**
  * Delete stored admin credentials from hardware keychain.
  */
 export async function deleteAdminBiometricCredentials(): Promise<boolean> {
@@ -591,6 +618,7 @@ export const authService = {
   authenticateAdmin,
   storeAdminBiometricCredentials,
   getAdminBiometricCredentials,
+  isAdminBiometricsEnabledOnDevice,
   deleteAdminBiometricCredentials,
   storeCustomerBiometricCredentials,
   getCustomerBiometricCredentials,

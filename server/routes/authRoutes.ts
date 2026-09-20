@@ -34,7 +34,15 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Kata laluan diperlukan.' });
     }
 
-    const expectedPassword = process.env.ADMIN_PASSWORD || 'wawasan2026';
+    const expectedPassword = process.env.ADMIN_PASSWORD;
+    if (!expectedPassword || !expectedPassword.trim()) {
+      // Never fall back to a fixed, publicly-known default password
+      // ("wawasan2026" previously shipped in source): that would let
+      // anyone who has read this file log in as admin on any deployment
+      // that forgot to set ADMIN_PASSWORD. Fail closed instead.
+      console.error('[Admin Auth] ADMIN_PASSWORD is not configured. Refusing admin login.');
+      return res.status(503).json({ success: false, error: 'Log masuk pentadbir tidak dikonfigurasi pada pelayan ini.' });
+    }
     if (!secureCompare(password.trim(), expectedPassword.trim())) {
       return res.status(401).json({ success: false, error: 'Kata laluan pentadbir tidak sah.' });
     }

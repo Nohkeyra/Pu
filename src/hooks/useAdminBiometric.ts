@@ -18,6 +18,7 @@ import {
   getStoredAdminToken,
   saveAdminToken,
   clearAdminSession,
+  isAdminBiometricsEnabledOnDevice,
   ADMIN_BIOMETRIC_PREF_KEY,
   type BiometricAvailability,
   type AdminAuthResult,
@@ -143,6 +144,21 @@ export function useAdminBiometric(options: UseAdminBiometricOptions = {}): UseAd
 
       // Case B: No active Firebase User, check stored admin token
       if (storedToken) {
+        // If this device has admin biometrics enabled, a persisted token
+        // must never be enough on its own to silently restore a session
+        // on app open/reload — that would make the fingerprint prompt
+        // purely cosmetic, since the same token also lives in a plain,
+        // non-biometric-gated Preferences/localStorage copy (kept so a
+        // plain password-only admin login also gets normal "stay logged
+        // in" behavior). Require an explicit authenticateBiometric() call
+        // instead when biometrics are enabled.
+        const biometricsEnabled = await isAdminBiometricsEnabledOnDevice();
+        if (biometricsEnabled) {
+          setAdminToken('');
+          setIsAuthenticated(false);
+          return false;
+        }
+
         try {
           const res = await fetch(getApiUrl('/api/admin/verify'), {
             headers: { Authorization: `Bearer ${storedToken}` },

@@ -1,5 +1,5 @@
 import type express from "express";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, randomBytes } from "crypto";
 import { getAuth } from "firebase-admin/auth";
 import { getAdminApp, hasAdminCredentials } from "./firebaseAdmin.js";
 import { createDistributedRateLimiter } from "./distributedRateLimit.js";
@@ -14,8 +14,52 @@ export interface AdminJwtPayload {
   [key: string]: any;
 }
 
+// Generated once per process start, only ever used as a last-resort local
+// development fallback (see getJwtSecret below). Unlike a fixed string
+// checked into source control, this value is unpredictable and does not
+// survive a restart, so it can never be pre-computed by anyone reading
+// this file and cannot be reused against a different process/deployment.
+const EPHEMERAL_DEV_JWT_SECRET = randomBytes(32).toString("hex");
+
+// Logged at most once per process: verifyAdminJwt() runs on every
+// authenticated request and swallows this function's throw internally
+// (see its try/catch), so without a one-time flag a misconfigured
+// production deployment would silently return generic 401s on every
+// admin request with no server-side signal pointing at the real cause.
+let warnedMissingSecretInProduction = false;
+
 export function getJwtSecret(): string {
-  return process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || "restoran-wawasan-admin-secret-key-2026";
+  const configured = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+  if (configured && configured.trim()) {
+    return configured.trim();
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    if (!warnedMissingSecretInProduction) {
+      warnedMissingSecretInProduction = true;
+      console.error(
+        "[Admin Auth] FATAL: ADMIN_JWT_SECRET (or JWT_SECRET) is not set in production. " +
+        "All admin authentication will fail until this is configured."
+      );
+    }
+    // Previously this fell back to a hardcoded literal secret
+    // ("restoran-wawasan-admin-secret-key-2026") that shipped in source.
+    // Anyone who had read this file could compute a valid HMAC-SHA256
+    // signature for an arbitrary { admin: true } payload themselves and
+    // pass verifyAdminToken with zero credentials on any deployment that
+    // forgot to set ADMIN_JWT_SECRET/JWT_SECRET — a full authentication
+    // bypass. Signing/verifying admin tokens under a secret nobody
+    // configured is not meaningfully different from having no
+    // authentication at all, so in production we fail loudly instead.
+    throw new Error(
+      "[Admin Auth] ADMIN_JWT_SECRET (or JWT_SECRET) must be set in production. " +
+      "Refusing to sign or verify admin tokens with an unconfigured secret."
+    );
+  }
+
+  // Non-production (local dev, ad-hoc scripts): keep working without any
+  // .env setup, but never with a public, guessable value.
+  return EPHEMERAL_DEV_JWT_SECRET;
 }
 
 export function signAdminJwt(payload: Partial<AdminJwtPayload>, expiresInSeconds = 24 * 60 * 60): string {
