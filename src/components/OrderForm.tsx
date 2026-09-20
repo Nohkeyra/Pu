@@ -37,6 +37,7 @@ import { addPendingOrder } from '@/lib/pendingOrdersQueue';
 import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
 import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
+import { useMobileKeyboard } from '@/hooks/useMobileKeyboard';
 import type { SavedLocation, Order } from '@/types';
 
 // FOOD MENU CONSTANTS FROM KIMI HTML
@@ -104,6 +105,21 @@ function generateUUID(): string {
 export default function OrderForm({ initialData }: OrderFormProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
+  const { keyboardHeight, isKeyboardVisible } = useMobileKeyboard();
+
+  // Auto scroll focused inputs into view to ensure visibility above mobile keyboard
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    };
+    document.addEventListener('focusin', handleFocusIn);
+    return () => document.removeEventListener('focusin', handleFocusIn);
+  }, []);
   
   const [currentStep, setCurrentStep] = useState<number>(() => {
     if (initialData) return 1;
@@ -1141,7 +1157,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={authMode} />
 
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
-      <div className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0">
+      <div 
+        className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0 transition-all duration-200"
+        style={{
+          paddingBottom: isKeyboardVisible ? `${keyboardHeight + 80}px` : undefined
+        }}
+      >
         
         {/* Sign In / Sign Up banner for unauthenticated guests */}
         {!currentUser && (

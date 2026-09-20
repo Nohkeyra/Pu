@@ -1,3 +1,4 @@
+import { getInvoiceCallerAuth, isOrderOwnedByCaller } from './invoiceRoutes.js';
 import { generateServerInvoicePdf } from "../services/serverPdfService.js";
 import { Router } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -910,7 +911,7 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
 });
 
 // Live Rider Location Streaming Endpoints
-router.post('/orders/:id/rider-location', async (req, res) => {
+router.post('/orders/:id/rider-location', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== 'string' || id.length > 100) {
@@ -966,13 +967,23 @@ router.get('/orders/:id/rider-location', async (req, res) => {
     }
 
     const db = getFirestore();
-    const orderSnap = await db.collection('orders').doc(id).get();
+    const orderSnap = await db.collection('orders').doc(id);
+    const orderDoc = await orderSnap.get();
 
-    if (!orderSnap.exists) {
+    if (!orderDoc.exists) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    const data = orderSnap.data();
+    const data = orderDoc.data();
+    if (data?.deletedByAdmin) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const auth = await getInvoiceCallerAuth(req);
+    if (!auth || !isOrderOwnedByCaller(data || {}, auth)) {
+      return res.status(403).json({ success: false, error: 'Not authorized to view rider location for this order' });
+    }
+
     return res.json({
       success: true,
       riderLocation: data?.riderLocation || null,
