@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AdminOrderRow } from './AdminOrderRow';
+import { triggerLightImpact } from '@/lib/haptics';
 
 import { List } from 'react-window';
 
@@ -365,7 +366,10 @@ export function AdminOrdersTab({
                   id="admin-export-btn"
                   variant="default"
                   size="default"
-                  onClick={() => setIsExportOpen(true)}
+                  onClick={() => {
+                    triggerLightImpact();
+                    setIsExportOpen(true);
+                  }}
                   className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
                 >
                   <FileSpreadsheet className="w-4 h-4" />

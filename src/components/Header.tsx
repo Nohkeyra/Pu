@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Menu, User as UserIcon, Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,10 +10,11 @@ import { useTheme } from '@/context/ThemeContext';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
 import { TransparentLogo } from './TransparentLogo';
-import MobileMenu from './MobileMenu';
-import AuthModal from './AuthModal';
-import UserProfileDashboard from './UserProfileDashboard';
 import { NotificationBell } from './NotificationBell';
+
+const MobileMenu = lazy(() => import('./MobileMenu'));
+const AuthModal = lazy(() => import('./AuthModal'));
+const UserProfileDashboard = lazy(() => import('./UserProfileDashboard'));
 
 const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
   { label: 'story', href: '#story' },
@@ -286,30 +287,42 @@ export default function Header() {
         </div>
       </header>
 
-      <MobileMenu
-        isOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        links={NAV_LINKS.map((link) => ({
-          ...link,
-          label: link.label.charAt(0).toUpperCase() + link.label.slice(1),
-        }))}
-        currentUser={currentUser}
-        onAuthClick={handleAuthClick}
-      />
+      {mobileOpen && (
+        <Suspense fallback={null}>
+          <MobileMenu
+            isOpen={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            links={NAV_LINKS.map((link) => ({
+              ...link,
+              label: link.label.charAt(0).toUpperCase() + link.label.slice(1),
+            }))}
+            currentUser={currentUser}
+            onAuthClick={handleAuthClick}
+          />
+        </Suspense>
+      )}
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={() => setProfileDashboardOpen(true)}
-      />
+      {authModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            onSuccess={() => setProfileDashboardOpen(true)}
+          />
+        </Suspense>
+      )}
 
-      <UserProfileDashboard
-        isOpen={profileDashboardOpen}
-        onClose={() => setProfileDashboardOpen(false)}
-        onReorder={(orderData) => {
-          navigate('/order', { state: { reorderData: orderData } });
-        }}
-      />
+      {profileDashboardOpen && (
+        <Suspense fallback={null}>
+          <UserProfileDashboard
+            isOpen={profileDashboardOpen}
+            onClose={() => setProfileDashboardOpen(false)}
+            onReorder={(orderData) => {
+              navigate('/order', { state: { reorderData: orderData } });
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

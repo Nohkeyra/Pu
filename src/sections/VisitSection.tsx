@@ -63,6 +63,9 @@ const VisitSection = React.memo(() => {
                 <ResponsiveImage 
                   src="/assets/venue/restoran-exterior.jpg" 
                   alt="Restoran Wawasan Exterior" 
+                  aspectRatio="16/10"
+                  width={800}
+                  height={500}
                   objectFit="cover"
                   containerClassName="w-full h-full"
                 />

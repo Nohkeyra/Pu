@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { HashRouter as Router, useLocation } from 'react-router-dom';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -9,55 +9,24 @@ import { TooltipProvider } from './components/ui/tooltip';
 import PushNotificationHandler from './components/PushNotificationHandler';
 import NativeBackButtonHandler from './components/NativeBackButtonHandler';
 import NativeAppListeners from './components/NativeAppListeners';
-import InAppUpdateModal from './components/InAppUpdateModal';
-import InAppUpdateBanner from './components/InAppUpdateBanner';
-import { useInAppUpdates } from './hooks/useInAppUpdates';
 import { useBatikScrollOpacity } from './hooks/useBatikScrollOpacity';
 import CateringSplashScreen from './components/SplashScreen';
-import PrivacyPolicyModal from './components/PrivacyPolicyModal';
-import FallbackDashboard from './components/app/FallbackDashboard';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/BatikMotionProvider';
 import { useBackgroundSync } from './hooks/useBackgroundSync';
 import { initInteractiveNotifications } from './services/interactiveNotifications';
 
+// Lazy-loaded secondary modals and diagnostics
+const GlobalInAppUpdateHandler = lazy(() => import('./components/GlobalInAppUpdateHandler'));
+const PrivacyPolicyModal = lazy(() => import('./components/PrivacyPolicyModal'));
+const FallbackDashboard = lazy(() => import('./components/app/FallbackDashboard'));
+
 // Speed Insights wrapper
 function VercelSpeedInsights() {
   const location = useLocation();
   if (Capacitor.isNativePlatform()) return null;
   return <SpeedInsights route={location.pathname} />;
-}
-
-function GlobalInAppUpdateHandler() {
-  const { 
-    currentVersion,
-    updateAvailable, 
-    showNotificationBanner, 
-    latestConfig, 
-    isForceUpdate, 
-    dismissUpdate, 
-    dismissNotificationBanner, 
-    showUpdateModalManually 
-  } = useInAppUpdates();
-
-  return (
-    <>
-      <InAppUpdateBanner
-        visible={showNotificationBanner && !updateAvailable}
-        config={latestConfig}
-        onOpenModal={showUpdateModalManually}
-        onDismiss={dismissNotificationBanner}
-      />
-      <InAppUpdateModal
-        isOpen={updateAvailable}
-        config={latestConfig}
-        currentVersion={currentVersion}
-        isForceUpdate={isForceUpdate}
-        onDismiss={dismissUpdate}
-      />
-    </>
-  );
 }
 
 function App() {
@@ -174,6 +143,20 @@ function App() {
       ]);
     };
 
+    let safeAreaListenerHandle: { remove: () => void } | null = null;
+
+    const applySafeAreaInsets = (insets: { top: number; bottom: number; left: number; right: number }) => {
+      const root = document.documentElement;
+      root.style.setProperty('--safe-area-inset-top', `${insets.top}px`);
+      root.style.setProperty('--safe-area-inset-bottom', `${insets.bottom}px`);
+      root.style.setProperty('--safe-area-inset-left', `${insets.left}px`);
+      root.style.setProperty('--safe-area-inset-right', `${insets.right}px`);
+      root.style.setProperty('--sat', `${insets.top}px`);
+      root.style.setProperty('--sab', `${insets.bottom}px`);
+      root.style.setProperty('--sal', `${insets.left}px`);
+      root.style.setProperty('--sar', `${insets.right}px`);
+    };
+
     const initializeNativePlugins = async () => {
       try {
         if (Capacitor.isPluginAvailable('SplashScreen')) {
@@ -193,9 +176,15 @@ function App() {
             { insets: { top: 0, bottom: 0, left: 0, right: 0 } }
           );
           if (result && result.insets) {
-            document.documentElement.style.setProperty('--safe-area-inset-top', `${result.insets.top}px`);
-            document.documentElement.style.setProperty('--safe-area-inset-bottom', `${result.insets.bottom}px`);
+            applySafeAreaInsets(result.insets);
           }
+
+          // Dynamically listen for safe area changes (orientation, system cutouts, soft keyboard/navigation)
+          safeAreaListenerHandle = await SafeArea.addListener('safeAreaChanged', (data) => {
+            if (data && data.insets) {
+              applySafeAreaInsets(data.insets);
+            }
+          });
         }
       } catch (err) {
         console.warn('SafeArea plugin error:', err);
@@ -203,13 +192,21 @@ function App() {
     };
 
     initializeNativePlugins();
+
+    return () => {
+      if (safeAreaListenerHandle) {
+        safeAreaListenerHandle.remove();
+      }
+    };
   }, []);
 
   if (useFallbackUi) {
     return (
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
-          <FallbackDashboard onExit={() => setUseFallbackUi(false)} />
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <FallbackDashboard onExit={() => setUseFallbackUi(false)} />
+          </Suspense>
         </ToastProvider>
       </TooltipProvider>
     );
@@ -226,16 +223,22 @@ function App() {
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
           <BatikMotionProvider>
-            <PrivacyPolicyModal
-              isOpen={showPrivacyPolicy && isSplashFinished}
-              onUnderstood={handlePrivacyUnderstood}
-            />
+            {showPrivacyPolicy && isSplashFinished && (
+              <Suspense fallback={null}>
+                <PrivacyPolicyModal
+                  isOpen={showPrivacyPolicy && isSplashFinished}
+                  onUnderstood={handlePrivacyUnderstood}
+                />
+              </Suspense>
+            )}
             <Router>
               <VercelSpeedInsights />
               <PushNotificationHandler />
               <NativeBackButtonHandler />
               <NativeAppListeners />
-              <GlobalInAppUpdateHandler />
+              <Suspense fallback={null}>
+                <GlobalInAppUpdateHandler />
+              </Suspense>
               <AppContent />
             </Router>
           </BatikMotionProvider>

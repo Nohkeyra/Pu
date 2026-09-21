@@ -57,6 +57,9 @@ const StorySection = React.memo(() => {
                 <ResponsiveImage 
                   src="/assets/venue/story-interior.jpg" 
                   alt={language === 'bm' ? 'Ruang Makan Restoran Wawasan' : 'Restoran Wawasan Dining Area'} 
+                  aspectRatio="16/9"
+                  width={800}
+                  height={450}
                   objectFit="cover"
                   containerClassName="w-full h-full"
                 />

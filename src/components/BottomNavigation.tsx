@@ -99,7 +99,7 @@ export default function BottomNavigation() {
         transition={{ type: 'spring', stiffness: 360, damping: 28 }}
         className="pointer-events-auto w-full max-w-xl border-t sm:border-x border-amber-500/20 bg-white/95 sm:rounded-t-[2rem] shadow-[0_-12px_36px_rgba(246,153,19,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
         style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          paddingBottom: 'max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 8px)',
           isolation: 'isolate',
         }}
       >

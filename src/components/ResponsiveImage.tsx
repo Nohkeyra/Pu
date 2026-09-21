@@ -7,6 +7,9 @@ export interface ResponsiveImageProps extends Omit<ImgHTMLAttributes<HTMLImageEl
   alt: string;
   sizes?: string;
   aspectRatio?: string;
+  width?: number | string;
+  height?: number | string;
+  fetchPriority?: 'high' | 'low' | 'auto';
   objectFit?: 'cover' | 'contain' | 'fill' | 'none';
   placeholderColor?: string;
   lazy?: boolean;
@@ -30,6 +33,9 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   src,
   alt,
   aspectRatio,
+  width,
+  height,
+  fetchPriority,
   objectFit = 'cover',
   placeholderColor,
   lazy = true,
@@ -179,6 +185,10 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
         ref={imgRef}
         src={currentSrc}
         alt={alt}
+        width={width}
+        height={height}
+        // @ts-expect-error React 18 types fetchPriority as camelCase or lowercase depending on exact DOM definition
+        fetchpriority={fetchPriority}
         loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
         onLoad={(e) => {
@@ -196,6 +206,9 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
           fitClass,
           className
         )}
+        style={{
+          aspectRatio: aspectRatio || undefined,
+        }}
         {...imgProps}
       />
     </div>

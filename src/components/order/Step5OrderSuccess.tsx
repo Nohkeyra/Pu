@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import confetti from 'canvas-confetti';
 import { 
   Eye, 
   ExternalLink,
@@ -43,15 +42,18 @@ export function Step5OrderSuccess({
   tText,
 }: Step5OrderSuccessProps) {
   React.useEffect(() => {
-    // 1. Trigger Confetti Cannon for a delightful "unpredictable" touch!
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#f69913', '#e96212', '#0c453c', '#e03f14'], // Amber, Orange, Emerald, Blue
-      disableForReducedMotion: true,
-      zIndex: 2000
-    });
+    // 1. Trigger Confetti Cannon dynamically for a delightful "unpredictable" touch!
+    import('canvas-confetti').then((confettiModule) => {
+      const fireConfetti = confettiModule.default || confettiModule;
+      fireConfetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#f69913', '#e96212', '#0c453c', '#e03f14'], // Amber, Orange, Emerald, Blue
+        disableForReducedMotion: true,
+        zIndex: 2000
+      });
+    }).catch(() => {});
 
     // 2. Trigger native notification
     scheduleLocalNotification({

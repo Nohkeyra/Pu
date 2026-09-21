@@ -73,19 +73,40 @@ export default defineConfig(({ mode }) => {
             if (id.includes('leaflet')) {
               return 'vendor-maps';
             }
-            if (id.includes('firebase')) {
-              return 'vendor-firebase';
+            // Firebase fine-grained separation
+            if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) {
+              return 'vendor-firebase-firestore';
             }
-            if (id.includes('motion') || id.includes('gsap') || id.includes('canvas-confetti')) {
-              return 'vendor-animation';
+            if (id.includes('firebase') || id.includes('@capacitor-firebase')) {
+              return 'vendor-firebase-core';
             }
-            if (id.includes('@radix-ui') || id.includes('date-fns') || id.includes('react-day-picker')) {
-              return 'vendor-ui-libs';
+            // Motion engine separated from auxiliary FX
+            if (id.includes('motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('gsap') || id.includes('canvas-confetti')) {
+              return 'vendor-fx';
+            }
+            // Date picker & calendar engines separated from root primitives
+            if (id.includes('date-fns') || id.includes('react-day-picker')) {
+              return 'vendor-dates';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'vendor-radix';
+            }
+            // Native platform & Capacitor bridge plugins
+            if (id.includes('@capacitor') || id.includes('capacitor-plugin')) {
+              return 'vendor-capacitor';
             }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
-            if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react-router/') || id.includes('/node_modules/scheduler/')) {
+            if (
+              id.includes('/node_modules/react/') ||
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react-router/') ||
+              id.includes('/node_modules/scheduler/')
+            ) {
               return 'vendor-react';
             }
           }

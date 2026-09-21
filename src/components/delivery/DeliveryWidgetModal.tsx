@@ -3,6 +3,7 @@ import { MessageSquare, Phone, Navigation, Check, X, LayoutGrid, Smartphone, Bel
 import { Button } from '@/components/ui/button';
 import type { Order } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
+import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 
 export interface DeliveryWidgetModalProps {
   isOpen: boolean;
@@ -76,8 +77,11 @@ export function DeliveryWidgetModal({
   return (
     <div
       id="app-widget-preview-modal"
-      className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md pt-[env(safe-area-inset-top,16px)] pb-[env(safe-area-inset-bottom,16px)] overscroll-contain animate-fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-[3000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md pt-[var(--safe-area-inset-top,env(safe-area-inset-top,16px))] pb-[var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px))] overscroll-contain animate-fade-in"
+      onClick={() => {
+        triggerLightImpact();
+        onClose();
+      }}
     >
       <div
         className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-stone-900 text-white p-5 sm:p-6 max-h-[90dvh] overflow-y-auto border-t sm:border border-stone-700/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col gap-4"
@@ -106,7 +110,10 @@ export function DeliveryWidgetModal({
             variant="ghost"
             size="icon"
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              triggerLightImpact();
+              onClose();
+            }}
             className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white rounded-full transition-colors active:scale-95 border border-stone-700/50"
             aria-label={language === 'bm' ? 'Tutup' : 'Close'}
           >
@@ -199,6 +206,7 @@ export function DeliveryWidgetModal({
               <Button
                 type="button"
                 onClick={() => {
+                  triggerMediumImpact();
                   onMarkDelivered();
                   onClose();
                 }}
@@ -223,6 +231,7 @@ export function DeliveryWidgetModal({
                 variant="outline"
                 type="button"
                 onClick={() => {
+                  triggerLightImpact();
                   onSendWhatsApp();
                   onClose();
                 }}
@@ -237,6 +246,7 @@ export function DeliveryWidgetModal({
                   variant="outline"
                   type="button"
                   onClick={() => {
+                    triggerLightImpact();
                     onCallCustomer();
                     onClose();
                   }}
@@ -252,6 +262,7 @@ export function DeliveryWidgetModal({
                   variant="outline"
                   type="button"
                   onClick={() => {
+                    triggerLightImpact();
                     onOpenNavigation();
                     onClose();
                   }}

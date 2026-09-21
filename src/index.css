@@ -10,6 +10,10 @@
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
     --sar: env(safe-area-inset-right, 0px);
+    --safe-area-inset-top: var(--sat);
+    --safe-area-inset-bottom: var(--sab);
+    --safe-area-inset-left: var(--sal);
+    --safe-area-inset-right: var(--sar);
 
     /* Logo-Derived Brand Tokens (light) */
     --color-deep-forest: #0c453c;
@@ -226,33 +230,15 @@
   }
 
   /* Typography Accents */
-  .font-hype {
-    font-family: 'Syne', 'Outfit', 'Plus Jakarta Sans', sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-  }
-  .font-bebas {
-    font-family: 'Bebas Neue', sans-serif;
-    letter-spacing: 0.05em;
-  }
-  .font-heritage {
-    font-family: 'Playfair Display', serif;
-  }
   .font-artistic {
     font-family: 'Uncial Antiqua', serif;
   }
-  .font-creative {
-    font-family: 'Sedgwick Ave Display', cursive;
-  }
-  .font-marker {
-    font-family: 'Permanent Marker', cursive;
-  }
   .editorial-heading {
-    font-family: 'Outfit', 'Syne', 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     @apply tracking-tight font-black uppercase;
   }
   .heritage-stamp {
-    font-family: 'Syne', 'Outfit', sans-serif;
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     @apply text-xs uppercase tracking-[0.25em] text-crisp-carrot dark:text-sunshine font-black;
   }
   .typography-accent-pill {
@@ -923,6 +909,44 @@ html.theme-transitioning *::after {
 /* ==========================================================================
    ANIMATION & UTILITY EXTRAS
    ========================================================================= */
+
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              fill 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              stroke 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes bounce-short {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-bounce-short {
+  animation: bounce-short 1.5s ease-in-out infinite;
+}
 
 .batik-fade-transition {
   transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);

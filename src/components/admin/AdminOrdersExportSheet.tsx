@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { Order } from '@/types';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { exportOrdersAsExcelTemplate, exportOrdersAsExcelStandard } from '@/lib/exportUtils';
+import { triggerLightImpact, triggerNotification, NotificationType } from '@/lib/haptics';
 
 interface AdminOrdersExportSheetProps {
   isOpen: boolean;
@@ -71,6 +72,7 @@ export function AdminOrdersExportSheet({
     : `${targetOrders.length} ${isBm ? 'pesanan (mengikut tapisan semasa)' : 'order(s) (current filters)'}`;
 
   const runExcel = async (mode: 'excel-template' | 'excel-standard') => {
+    triggerLightImpact();
     if (targetOrders.length === 0) {
       toast({
         title: isBm ? 'Tiada Rekod' : 'No Records',
@@ -86,6 +88,7 @@ export function AdminOrdersExportSheet({
       } else {
         await exportOrdersAsExcelStandard(targetOrders, toast, isBm);
       }
+      triggerNotification(NotificationType.Success);
       onClose();
     } finally {
       setBusyFormat(null);
@@ -93,6 +96,7 @@ export function AdminOrdersExportSheet({
   };
 
   const runPdf = () => {
+    triggerLightImpact();
     if (targetOrders.length === 0) {
       toast({
         title: isBm ? 'Tiada Rekod' : 'No Records',
@@ -121,10 +125,13 @@ export function AdminOrdersExportSheet({
   return createPortal(
     <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center">
       <div
-        onClick={onClose}
+        onClick={() => {
+          triggerLightImpact();
+          onClose();
+        }}
         className="absolute inset-0 bg-charcoal/60 backdrop-blur-sm"
       />
-      <div className="relative w-full md:max-w-md bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-t-3xl md:rounded-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl space-y-1">
+      <div className="relative w-full md:max-w-md bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-t-3xl md:rounded-2xl p-5 pb-[calc(1.25rem+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))] shadow-2xl space-y-1">
         <div className="flex items-center justify-between pb-3 border-b border-stone/10 dark:border-white/10">
           <div>
             <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
@@ -137,7 +144,10 @@ export function AdminOrdersExportSheet({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={() => {
+              triggerLightImpact();
+              onClose();
+            }}
             className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-stone/10 dark:hover:bg-white/10 text-stone-500 dark:text-stone-400"
             aria-label={isBm ? 'Tutup' : 'Close'}
           >

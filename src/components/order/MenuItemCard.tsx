@@ -47,7 +47,9 @@ export const MenuItemCard = React.memo(
           <img
             src={getAssetUrl(dishImg || '/assets/dishes/vector/nasi_lemak.jpg')}
             alt={tText(item.nameEn, item.nameBm)}
-            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+            width={48}
+            height={48}
+            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 aspect-square"
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"

@@ -82,6 +82,9 @@ const TiltCard = React.memo(({ item, isBm, cardVariants, onOrderClick }: {
             <ResponsiveImage
               src={item.image || ''}
               alt={isBm ? item.nameBm : item.nameEn}
+              aspectRatio="4/3"
+              width={600}
+              height={450}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               containerClassName="w-full h-full"
               className="group-hover:scale-108 transition-transform duration-700 object-cover"
