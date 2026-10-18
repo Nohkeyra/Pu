@@ -28,13 +28,17 @@ object SecureStorage {
     @JvmStatic
     @Synchronized
     fun getPrefs(context: Context): SharedPreferences {
-        return securePrefs ?: synchronized(this) {
-            securePrefs ?: createEncryptedPreferences(context).also { securePrefs = it }
+        if (securePrefs == null) {
+            synchronized(this) {
+                if (securePrefs == null) {
+                    securePrefs = createEncryptedPreferences(context.applicationContext)
+                }
+            }
         }
+        return securePrefs!!
     }
 
-    private fun createEncryptedPreferences(context: Context): SharedPreferences {
-        val appContext = context.applicationContext
+    private fun createEncryptedPreferences(appContext: Context): SharedPreferences {
         return try {
             val masterKey = MasterKey.Builder(appContext)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -48,22 +52,24 @@ object SecureStorage {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize EncryptedSharedPreferences, falling back to private SharedPreferences with warning", e)
-            // Emergency fallback for emulators or legacy devices lacking Keystore support
+            Log.e(
+                TAG,
+                "Failed to initialize EncryptedSharedPreferences; falling back to private SharedPreferences.",
+                e
+            )
             appContext.getSharedPreferences(SECURE_PREFS_FILE + "_fallback", Context.MODE_PRIVATE)
         }
     }
 
     @JvmStatic
     fun saveString(context: Context, key: String, value: String?) {
-        getPrefs(context).edit().apply {
-            if (value != null) {
-                putString(key, value)
-            } else {
-                remove(key)
-            }
-            apply()
+        val editor = getPrefs(context).edit()
+        if (value != null) {
+            editor.putString(key, value)
+        } else {
+            editor.remove(key)
         }
+        editor.apply()
     }
 
     @JvmStatic
