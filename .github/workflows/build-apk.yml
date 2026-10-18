@@ -27,6 +27,12 @@ on:
 permissions:
   contents: write
 
+# Serialize runs per ref so two pushes never bump the version at the same
+# time. Releases queue (never cancelled mid-build); stale PR builds are cancelled.
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,6 +49,99 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+
+      # =============================================
+      # 馃敘 VERSION: resolve, bump, commit and push - BEFORE building anything
+      # =============================================
+      # Why this runs right after checkout (it used to run after the web
+      # build + Capacitor sync):
+      #   1. The bump script rewrites six files (version.properties x2,
+      #      package.json, updateService.ts, updateRoutes.ts, server.ts) but
+      #      only three used to be committed. The other three stayed dirty in
+      #      the work tree, which is what made `git pull --rebase` abort with
+      #      "cannot pull with rebase: You have unstaged changes" (exit 128)
+      #      whenever a push was rejected.
+      #   2. The web bundle was built BEFORE the bump, so the APK shipped the
+      #      previous CURRENT_APP_VERSION / CURRENT_BUILD_NUMBER from
+      #      updateService.ts. Bumping first fixes that too.
+      #
+      # Race handling is optimistic concurrency instead of rebase: the work
+      # tree is clean here, so on every attempt we hard-reset to the latest
+      # origin tip, re-derive the bump from THAT version, commit and push.
+      # A rejected push just means someone else bumped first - the next
+      # attempt bumps from their number. No rebase, no conflicts, no stash.
+      - name: Resolve app version (bump + push on main/master)
+        id: version
+        env:
+          BRANCH: ${{ github.ref_name }}
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+          IS_RELEASE: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name != 'pull_request' }}
+        run: |
+          set -euo pipefail
+
+          VERSION_FILES=(
+            android/version.properties
+            android/app/version.properties
+            package.json
+            src/services/updateService.ts
+            server/routes/updateRoutes.ts
+            server.ts
+          )
+
+          if [ "$IS_RELEASE" != "true" ]; then
+            echo "鈩癸笍 Non-release build (PR / develop) - using current version, no bump"
+            node scripts/bump-version.cjs show --ci
+          elif [ "$BUMP" = "none" ]; then
+            echo "鈩癸笍 Bump disabled - using current version"
+            node scripts/bump-version.cjs show --ci
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            MAX_ATTEMPTS=5
+            pushed=0
+            for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+              echo "猬嗭笍 Bump attempt $attempt/$MAX_ATTEMPTS ($BUMP) on $BRANCH"
+
+              # Always start from the latest remote state. Safe: nothing has
+              # been built or generated yet, so there is nothing to lose.
+              git fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+              git reset --hard "origin/$BRANCH"
+
+              node scripts/bump-version.cjs "$BUMP" --ci
+
+              for f in "${VERSION_FILES[@]}"; do
+                if [ -f "$f" ]; then git add -- "$f"; fi
+              done
+
+              if git diff --cached --quiet; then
+                echo "::error::Version bump produced no file changes"
+                exit 1
+              fi
+
+              NAME=$(sed -n 's/^versionName=//p' android/version.properties)
+              CODE=$(sed -n 's/^versionCode=//p' android/version.properties)
+              git commit -q -m "chore(release): bump version to $NAME ($CODE)"
+
+              if git push origin "HEAD:refs/heads/$BRANCH"; then
+                pushed=1
+                break
+              fi
+
+              echo "鈿狅笍 Push rejected (origin moved) - retrying from latest origin..."
+              sleep $((attempt * 2))
+            done
+
+            if [ "$pushed" != "1" ]; then
+              echo "::error::Could not push version bump after $MAX_ATTEMPTS attempts. Failing the run so a release is never built with an unpublished version number."
+              exit 1
+            fi
+          fi
+
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "鉁� Version ready: $(sed -n 's/^versionName=//p' android/version.properties) ($(sed -n 's/^versionCode=//p' android/version.properties))"
+          echo "---- android/version.properties ----"
+          cat android/version.properties || true
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -89,14 +188,14 @@ jobs:
         run: |
           npm run build || npm run build:prod
           if [ ! -d "dist" ]; then
-            echo "❌ Build failed - dist folder not found"
+            echo "鉂� Build failed - dist folder not found"
             exit 1
           fi
 
       - name: Sync Capacitor
         run: |
           npx cap sync android || {
-            echo "⚠️ Capacitor sync failed, attempting to add android platform..."
+            echo "鈿狅笍 Capacitor sync failed, attempting to add android platform..."
             npx cap add android
             npx cap sync android
           }
@@ -105,97 +204,18 @@ jobs:
         run: |
           echo "Checking google-services.json..."
           if [ -f "android/app/google-services.json" ]; then
-            echo "✅ android/app/google-services.json exists."
+            echo "鉁� android/app/google-services.json exists."
             ls -la android/app/google-services.json
           elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-            echo "⚠️ Restoring google-services.json from secret..."
+            echo "鈿狅笍 Restoring google-services.json from secret..."
             mkdir -p android/app
             echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-            echo "✅ google-services.json restored"
+            echo "鉁� google-services.json restored"
           else
-            echo "❌ ERROR: android/app/google-services.json not found!"
-            echo "📁 Directory listing:"
+            echo "鉂� ERROR: android/app/google-services.json not found!"
+            echo "馃搧 Directory listing:"
             ls -la android/app/ || echo "android/app directory missing"
             exit 1
-          fi
-
-      - name: Sync latest version before bump (master and main)
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
-        run: |
-          # BUGFIX (2026-08-13, part 2): the earlier fix (rebase-before-push
-          # in "Commit bumped version") only solved conflicts at PUSH time.
-          # The actual root cause is earlier: this job checks out main once
-          # at job start, then spends several minutes building web assets,
-          # syncing Capacitor, etc. before it reads version.properties to
-          # decide the bump. If another workflow run's version-bump commit
-          # landed on main during that window, this run still bumps from
-          # the STALE version it checked out — e.g. both runs bump
-          # 1.2.5->1.2.6 instead of the second one bumping 1.2.6->1.2.7 —
-          # even though the later push itself succeeds via rebase.
-          #
-          # Scoped on purpose: only fetch + fast-forward the three version
-          # files from origin, not a full `git pull --rebase` of everything.
-          # A full rebase here could also pull in unrelated source changes
-          # pushed by another commit in the same window — but web assets and
-          # the Capacitor sync already ran against this run's original
-          # (now-stale) checkout above, so silently swapping in newer source
-          # at this point would build an APK from a source/version.properties
-          # mismatch. Only the version bookkeeping needs to be current; the
-          # app code being built should stay pinned to what this run started with.
-          git fetch origin "${{ github.ref_name }}"
-          git checkout "origin/${{ github.ref_name }}" -- android/version.properties android/app/version.properties package.json 2>/dev/null || \
-            echo "ℹ️ No newer version files on origin — using current checkout"
-
-      - name: Set app version
-        id: version
-        run: |
-          BUMP="${{ github.event.inputs.bump || 'patch' }}"
-
-          # Don't burn version numbers on PRs or develop CI
-          if [ "${{ github.event_name }}" = "pull_request" ] || { [ "${{ github.ref }}" != "refs/heads/main" ] && [ "${{ github.ref }}" != "refs/heads/master" ]; }; then
-            echo "ℹ️ Non-release build — using current version.properties (no bump)"
-            node scripts/bump-version.cjs show --ci
-          elif [ "$BUMP" = "none" ]; then
-            echo "ℹ️ Bump disabled — using current version.properties"
-            node scripts/bump-version.cjs show --ci
-          else
-            echo "⬆️ Bumping version ($BUMP)"
-            node scripts/bump-version.cjs "$BUMP" --ci
-          fi
-
-          echo "✅ Version ready: $VERSION_NAME ($VERSION_CODE)"
-          echo "---- android/version.properties ----"
-          cat android/version.properties || true
-
-      - name: Commit bumped version (master and main)
-        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event.inputs.bump || 'patch') != 'none'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add android/version.properties android/app/version.properties package.json || true
-          if git diff --staged --quiet; then
-            echo "No version file changes to commit"
-          else
-            git commit -m "chore(release): bump version to ${{ env.VERSION_NAME }} (${{ env.VERSION_CODE }})"
-            # BUGFIX (2026-08-13): when multiple pushes land close together,
-            # their workflow runs can overlap. Each run checks out the same
-            # starting commit, bumps the version, and tries to push — but a
-            # plain `git push` only succeeds for whichever run gets there
-            # first (fast-forward-only); every other run's push is rejected
-            # and its version bump is lost. That's why repeated releases
-            # kept reusing the same version tag (e.g. v1.2.6) even after
-            # many commits landed on main. `git pull --rebase` re-bases this
-            # run's version-bump commit onto whatever is now on main before
-            # pushing, so it can still land instead of being silently
-            # dropped. Retry a few times since another run could still win
-            # the race in between the pull and this push.
-            for attempt in 1 2 3; do
-              if git push; then
-                break
-              fi
-              echo "⚠️ Push rejected (attempt $attempt/3) — pulling and retrying..."
-              git pull --rebase origin "${{ github.ref_name }}"
-            done
           fi
 
       - name: Setup signing keystore
@@ -203,7 +223,7 @@ jobs:
         # over ANDROID_KEYSTORE_BASE64 (and RELEASE_STORE_PASSWORD over
         # KEYSTORE_PASSWORD). RELEASE_KEYSTORE_BASE64 does not exist as a
         # repository secret (confirmed via repo Settings > Secrets), yet the
-        # build log showed it evaluating to a non-empty value — meaning it
+        # build log showed it evaluating to a non-empty value 鈥� meaning it
         # was being supplied by an org-level Actions secret invisible from
         # this repo's secrets page, containing a *different, stale* keystore
         # than the one KEYSTORE_PASSWORD actually matches. That mismatch is
@@ -212,7 +232,7 @@ jobs:
         # and controlled here (ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD)
         # removes that shadowing possibility entirely. The old "generate a
         # throwaway keystore if secrets are missing" fallback is also removed
-        # for release builds — silently signing a release with a random new
+        # for release builds 鈥� silently signing a release with a random new
         # key is worse than failing the build with a clear error.
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -220,41 +240,41 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          STORE_PASS="${KEYSTORE_PASSWORD:?❌ KEYSTORE_PASSWORD secret is not set}"
-          KEY_PASS="${KEY_PASSWORD:?❌ KEY_PASSWORD secret is not set}"
-          ALIAS="${KEY_ALIAS:?❌ KEY_ALIAS secret is not set}"
-          KB64="${ANDROID_KEYSTORE_BASE64:?❌ ANDROID_KEYSTORE_BASE64 secret is not set}"
+          STORE_PASS="${KEYSTORE_PASSWORD:?鉂� KEYSTORE_PASSWORD secret is not set}"
+          KEY_PASS="${KEY_PASSWORD:?鉂� KEY_PASSWORD secret is not set}"
+          ALIAS="${KEY_ALIAS:?鉂� KEY_ALIAS secret is not set}"
+          KB64="${ANDROID_KEYSTORE_BASE64:?鉂� ANDROID_KEYSTORE_BASE64 secret is not set}"
 
           mkdir -p android/app
 
-          echo "🔑 Decoding production signing keystore from ANDROID_KEYSTORE_BASE64..."
+          echo "馃攽 Decoding production signing keystore from ANDROID_KEYSTORE_BASE64..."
           echo "$KB64" | base64 -d > android/app/release-key.jks
 
-          echo "🔎 Verifying keystore opens with KEYSTORE_PASSWORD / KEY_ALIAS before building..."
+          echo "馃攷 Verifying keystore opens with KEYSTORE_PASSWORD / KEY_ALIAS before building..."
           keytool -list -keystore android/app/release-key.jks -storepass "$STORE_PASS" -alias "$ALIAS" > /dev/null || {
-            echo "❌ Could not open android/app/release-key.jks with the KEYSTORE_PASSWORD/KEY_ALIAS secrets."
+            echo "鉂� Could not open android/app/release-key.jks with the KEYSTORE_PASSWORD/KEY_ALIAS secrets."
             echo "   Check that ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, and KEY_ALIAS all belong to the same keystore."
             exit 1
           }
-          echo "✅ Keystore opened successfully — password and alias confirmed valid."
+          echo "鉁� Keystore opened successfully 鈥� password and alias confirmed valid."
 
           echo "storePassword=$STORE_PASS" > android/app/key.properties
           echo "keyPassword=$KEY_PASS" >> android/app/key.properties
           echo "keyAlias=$ALIAS" >> android/app/key.properties
           echo "storeFile=release-key.jks" >> android/app/key.properties
           cp android/app/key.properties android/key.properties
-          echo "✅ Keystore successfully configured for release signing!"
+          echo "鉁� Keystore successfully configured for release signing!"
 
       - name: Setup Gradle permissions and wrapper integrity
         run: |
           cd android
           chmod +x gradlew
           if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
-            echo "⚠️ gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
+            echo "鈿狅笍 gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
             curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
             unzip -t gradle/wrapper/gradle-wrapper.jar
           else
-            echo "✅ Gradle wrapper jar verified."
+            echo "鉁� Gradle wrapper jar verified."
           fi
 
       - name: Build debug APK
@@ -263,7 +283,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace || {
-            echo "❌ Debug build failed. Check logs above."
+            echo "鉂� Debug build failed. Check logs above."
             exit 1
           }
 
@@ -273,7 +293,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace || {
-            echo "❌ Release build failed. Check logs above."
+            echo "鉂� Release build failed. Check logs above."
             exit 1
           }
 
@@ -283,7 +303,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew bundleRelease --no-daemon --stacktrace || {
-            echo "⚠️ Bundle build failed (continuing)"
+            echo "鈿狅笍 Bundle build failed (continuing)"
           }
 
       - name: Upload debug APK
@@ -296,7 +316,7 @@ jobs:
       # BUGFIX (2026-08-27): Gradle outputs the signed APK as
       # android/app/build/outputs/apk/release/app-release.apk. The
       # upload-artifact step below used "app-release-signed" only as its
-      # display name — that never renamed the actual file. The GitHub
+      # display name 鈥� that never renamed the actual file. The GitHub
       # Release asset (created later by ncipollo/release-action) keeps
       # Gradle's original filename, but the live-update broadcast step
       # further down hardcodes the download URL as ".../app-release-signed.apk".
@@ -330,7 +350,7 @@ jobs:
           retention-days: 30
 
       # =============================================
-      # 🚀 CREATE GITHUB RELEASE
+      # 馃殌 CREATE GITHUB RELEASE
       # =============================================
       - name: Create GitHub Release
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
@@ -346,26 +366,26 @@ jobs:
           generate_release_notes: true
           make_latest: true
           body: |
-            ## 📱 APK Release v${{ env.VERSION_NAME }}
+            ## 馃摫 APK Release v${{ env.VERSION_NAME }}
             
-            ### 📦 Downloads
+            ### 馃摝 Downloads
             - **Signed APK:** Ready to install
             - **AAB Bundle:** For Play Store
             
-            ### 📲 Installation
+            ### 馃摬 Installation
             1. Download the APK from assets below
             2. Enable "Install from unknown sources" on your device
             3. Install the APK
             
-            ### 🎯 Build Information
+            ### 馃幆 Build Information
             - **Version Name:** ${{ env.VERSION_NAME }}
             - **Version Code:** ${{ env.VERSION_CODE }}
-            - **Commit:** ${{ github.sha }}
+            - **Commit:** ${{ env.RELEASE_SHA }}
             - **Branch:** ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # =============================================
-      # 📡 AUTOMATIC LIVE UPDATE BROADCAST
+      # 馃摗 AUTOMATIC LIVE UPDATE BROADCAST
       # =============================================
       - name: Trigger Automatic In-App Live Update Broadcast
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
@@ -373,12 +393,12 @@ jobs:
           SYNC_SECRET: ${{ secrets.RELEASE_SYNC_SECRET }}
         run: |
           if [ -z "$SYNC_SECRET" ]; then
-            echo "⚠️ RELEASE_SYNC_SECRET is not configured in GitHub Secrets. Skipping auto-sync."
+            echo "鈿狅笍 RELEASE_SYNC_SECRET is not configured in GitHub Secrets. Skipping auto-sync."
           else
-            echo "🚀 Broadcasting live app version update to Wawasan Hub..."
+            echo "馃殌 Broadcasting live app version update to Wawasan Hub..."
             curl -X POST "https://restoran-wawasan-bio.onrender.com/api/app-version/github-sync" \
               -H "Content-Type: application/json" \
               -H "x-github-token: $SYNC_SECRET" \
               -d "{\"version\":\"${{ env.VERSION_NAME }}\",\"buildNumber\":\"${{ env.VERSION_CODE }}\",\"apkUrl\":\"https://github.com/Nohkeyra/Pu/releases/download/v${{ env.VERSION_NAME }}/app-release-signed.apk\"}"
-            echo "✅ Broadcast request completed successfully!"
+            echo "鉁� Broadcast request completed successfully!"
           fi
