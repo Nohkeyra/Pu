@@ -96,7 +96,7 @@ function SessionGuard({ children }: { children: ReactNode }) {
     </div>
   );
 
-  if (!allowed) return <Navigate to="/" replace />;
+  if (!allowed) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -198,16 +198,16 @@ const CalendarPageComp = lazyWithRetry(() => import('@/pages/CalendarPage'), 'Ca
 function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
   return (
     <Routes location={location} key={location.pathname}>
-      <Route path="/" element={<PageTransition><LoginPageComp /></PageTransition>} />
+      <Route path="/" element={<PageTransition><LandingPageComp /></PageTransition>} />
+      <Route path="/home" element={<PageTransition><LandingPageComp /></PageTransition>} />
+      <Route path="/main" element={<PageTransition><LandingPageComp /></PageTransition>} />
+      <Route path="/order" element={<PageTransition><OrderPageComp /></PageTransition>} />
       <Route path="/login" element={<PageTransition><LoginPageComp /></PageTransition>} />
-      <Route path="/home" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
-      <Route path="/main" element={<SessionGuard><PageTransition><LandingPageComp /></PageTransition></SessionGuard>} />
-      <Route path="/order" element={<SessionGuard><PageTransition><OrderPageComp /></PageTransition></SessionGuard>} />
       <Route path="/profile" element={<SessionGuard><PageTransition><ProfilePageComp /></PageTransition></SessionGuard>} />
       <Route path="/settings" element={<SessionGuard><PageTransition><SettingsPageComp /></PageTransition></SessionGuard>} />
       <Route path="/calendar" element={<SessionGuard><PageTransition><CalendarPageComp /></PageTransition></SessionGuard>} />
       <Route path="/admin" element={<PageTransition><AdminPageComp /></PageTransition>} />
-      <Route path="*" element={<PageTransition><LoginPageComp /></PageTransition>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

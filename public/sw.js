@@ -21,7 +21,7 @@ if (isDevSandbox) {
     );
   });
 } else {
-  const CACHE_NAME = 'wawasan-admin-v1';
+  const CACHE_NAME = 'wawasan-admin-v1.3.102';
   const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

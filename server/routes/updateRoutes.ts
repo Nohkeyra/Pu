@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import semver from 'semver';
 import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
 import { secureCompare } from './authRoutes.js';
@@ -6,10 +7,10 @@ import { secureCompare } from './authRoutes.js';
 const router = Router();
 
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.77',
+  latestVersion: '1.3.102',
   minVersion: '1.2.0',
-  buildNumber: 209,
-  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk',
+  buildNumber: 234,
+  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.102/app-release-signed.apk',
   bundleUrl: '',
   releaseNotes: [
     'Prestasi aplikasi & kestabilan haptik dipertingkatkan.',
@@ -24,10 +25,20 @@ const DEFAULT_VERSION_CONFIG = {
 router.get('/app-version', async (_req, res) => {
   try {
     const db = getFirestore();
-    const docSnap = await db.collection('app_config').doc('version').get();
+    const docRef = db.collection('app_config').doc('version');
+    const docSnap = await docRef.get();
     if (docSnap.exists) {
-      return res.json({ success: true, ...DEFAULT_VERSION_CONFIG, ...docSnap.data() });
+      const data = docSnap.data() || {};
+      const remoteVer = String(data.latestVersion || '0.0.0');
+      const cleanRemote = semver.clean(remoteVer) || semver.coerce(remoteVer)?.version || '0.0.0';
+      if (semver.valid(cleanRemote) && semver.lt(cleanRemote, DEFAULT_VERSION_CONFIG.latestVersion)) {
+        const merged = { ...data, ...DEFAULT_VERSION_CONFIG, updatedAt: new Date().toISOString() };
+        await docRef.set(merged, { merge: true });
+        return res.json({ success: true, ...merged });
+      }
+      return res.json({ success: true, ...DEFAULT_VERSION_CONFIG, ...data });
     }
+    await docRef.set(DEFAULT_VERSION_CONFIG, { merge: true });
     return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
   } catch {
     return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });

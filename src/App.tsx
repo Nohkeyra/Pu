@@ -69,39 +69,25 @@ function App() {
 
   const handleSplashComplete = () => {
     setIsSplashFinished(true);
-    try {
-      const isAcknowledged = localStorage.getItem('wawasan_privacy_acknowledged') === 'true';
-      if (!isAcknowledged) {
-        setShowPrivacyPolicy(true);
-      }
-    } catch {
-      setShowPrivacyPolicy(true);
-    }
   };
 
   const handlePrivacyUnderstood = () => {
     setShowPrivacyPolicy(false);
     try {
       sessionStorage.setItem('wawasan_privacy_completed', 'true');
-      if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#/login') {
-        window.location.hash = '#/';
-      }
+      localStorage.setItem('wawasan_privacy_acknowledged', 'true');
     } catch (err) {
-      console.warn('Privacy redirect warning:', err);
+      console.warn('Privacy acknowledgment warning:', err);
     }
   };
 
   useEffect(() => {
-    // F-LAUNCH: Force landing on Login Page on fresh cold starts
+    // Initialize session state on cold start to allow open browsing
     try {
       const isFreshSession = !sessionStorage.getItem('wawasan_app_initialized');
       if (isFreshSession) {
         sessionStorage.setItem('wawasan_app_initialized', 'true');
-        sessionStorage.removeItem('wawasan_session_started');
-        sessionStorage.removeItem('wawasan_guest_allowed');
-        if (window.location.hash && window.location.hash !== '#/' && window.location.hash !== '#/login') {
-          window.location.hash = '#/';
-        }
+        sessionStorage.setItem('wawasan_guest_allowed', 'true');
       }
     } catch (err) {
       console.warn('Session storage init error:', err);

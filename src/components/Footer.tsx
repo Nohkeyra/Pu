@@ -135,6 +135,13 @@ export default function Footer() {
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-normal text-white/60 dark:text-[#ede5d8]/60">
           <p>© {new Date().getFullYear()} Restoran Wawasan Pak Usop. All rights reserved.</p>
           <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('app:open-privacy-policy'))}
+              className="hover:text-white transition-colors min-h-[44px] inline-flex items-center text-white/75 hover:text-[var(--color-sunshine-cta)] cursor-pointer"
+            >
+              Privacy Policy
+            </button>
             <Link to="/order" className="hover:text-white transition-colors min-h-[44px] inline-flex items-center text-white/75 hover:text-[var(--color-sunshine-cta)]">
               Order Online
             </Link>

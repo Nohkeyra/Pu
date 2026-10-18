@@ -16,7 +16,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 import type { AppVersionConfig } from '@/services/updateService';
-import { CURRENT_APP_VERSION, downloadAndApplyCapgoOta } from '@/services/updateService';
+import { CURRENT_APP_VERSION, DEFAULT_APK_URL, downloadAndApplyCapgoOta } from '@/services/updateService';
 
 interface InAppUpdateModalProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export default function InAppUpdateModal({
 
   const displayCurrentVersion = currentVersion || CURRENT_APP_VERSION;
   const isBM = language === 'bm';
-  const apkUrl = config.apkUrl || 'https://github.com/Nohkeyra/Pu/releases/download/v7.0/Wawasan.Hub.apk';
+  const apkUrl = config.apkUrl || DEFAULT_APK_URL;
   const hasCapgoBundle = Boolean(config.bundleUrl && config.bundleUrl.trim().length > 0);
 
   const handleStartUpdate = async () => {

@@ -118,7 +118,7 @@ function main() {
     console.warn('Could not update package.json version:', e.message);
   }
 
-  // Keep src/services/updateService.ts in sync (CURRENT_APP_VERSION and CURRENT_BUILD_NUMBER)
+  // Keep src/services/updateService.ts in sync (CURRENT_APP_VERSION, CURRENT_BUILD_NUMBER, DEFAULT_APK_URL)
   try {
     if (fs.existsSync(updateServicePath)) {
       let content = fs.readFileSync(updateServicePath, 'utf8');
@@ -129,6 +129,10 @@ function main() {
       content = content.replace(
         /export const CURRENT_BUILD_NUMBER = \d+;/,
         `export const CURRENT_BUILD_NUMBER = ${nextCode};`
+      );
+      content = content.replace(
+        /export const DEFAULT_APK_URL = '[^']+';/,
+        `export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v${nextName}/app-release-signed.apk';`
       );
       fs.writeFileSync(updateServicePath, content, 'utf8');
     }
@@ -147,6 +151,10 @@ function main() {
       content = content.replace(
         /buildNumber:\s*\d+/,
         `buildNumber: ${nextCode}`
+      );
+      content = content.replace(
+        /apkUrl:\s*'[^']*'/,
+        `apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v${nextName}/app-release-signed.apk'`
       );
       fs.writeFileSync(updateRoutesPath, content, 'utf8');
     }

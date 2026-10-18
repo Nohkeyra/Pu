@@ -26,7 +26,7 @@ import { Step3ContactDetails } from './order/Step3ContactDetails';
 import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
 import { Step5OrderSuccess } from './order/Step5OrderSuccess';
 import { DemoOverlay } from '@/ghost/DemoOverlay';
-import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
+import { DEFAULT_MENU_ITEMS, type MenuItem } from '@/constants/menu';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
@@ -40,32 +40,14 @@ import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
 import { useMobileKeyboard } from '@/hooks/useMobileKeyboard';
 import type { SavedLocation, Order } from '@/types';
 
-// FOOD MENU CONSTANTS FROM KIMI HTML
-const LAUK_UTAMA = [
-  { id: 'asam_pedas', nameEn: 'Asam Pedas', nameBm: 'Asam Pedas', descEn: 'Fresh fish cooked in spicy, tangy herbal gravy', descBm: 'Ikan segar dimasak asam pedas berempah', price: 12 },
-  { id: 'ayam_goreng', nameEn: 'Spiced Fried Chicken', nameBm: 'Ayam Goreng Berempah', descEn: 'Crispy fried chicken with aromatic traditional spices', descBm: 'Ayam goreng crispy dengan rempah istimewa', price: 10 },
-  { id: 'daging_masak_merah', nameEn: 'Beef Masak Merah', nameBm: 'Daging Masak Merah', descEn: 'Tender beef cooked in rich sweet and savory tomato sauce', descBm: 'Daging lembu dimasak merah dengan tomato', price: 14 },
-  { id: 'sambal_sotong', nameEn: 'Sambal Squid', nameBm: 'Sambal Sotong', descEn: 'Squid cooked in rich chili sambal paste', descBm: 'Sotong dimasak sambal petai', price: 13 },
-  { id: 'ikan_keli', nameEn: 'Sambal Catfish', nameBm: 'Ikan Keli Sambal', descEn: 'Crispy fried catfish tossed in fiery house sambal', descBm: 'Ikan keli goreng dengan sambal', price: 11 },
-  { id: 'rendang_daging', nameEn: 'Beef Rendang', nameBm: 'Rendang Daging', descEn: 'Slow-cooked traditional caramelized beef curry', descBm: 'Rendang daging lembu tradisional', price: 15 },
-  { id: 'kari_kambing', nameEn: 'Mutton Curry', nameBm: 'Kari Kambing', descEn: 'Rich, thick spiced mutton curry', descBm: 'Kari kambing berempah pekat', price: 16 },
-  { id: 'udang_goreng', nameEn: 'Crispy Fried Prawns', nameBm: 'Udang Goreng Tepung', descEn: 'Crispy golden batter-fried fresh prawns', descBm: 'Udang goreng tepung rangup', price: 14 }
-];
-
-const SAYURAN = [
-  { id: 'sayur_campur', nameEn: 'Mixed Vegetables', nameBm: 'Sayur Campur', descEn: 'Stir-fried mixed vegetables with soft tofu', descBm: 'Sayur campur goreng dengan tahu', price: 5 },
-  { id: 'kangkung_belacan', nameEn: 'Kangkung Belacan', nameBm: 'Kangkung Belacan', descEn: 'Stir-fried water spinach with spicy shrimp paste', descBm: 'Kangkung tumis belacan pedas', price: 5 },
-  { id: 'pucuk_paku', nameEn: 'Pucuk Paku Lemak', nameBm: 'Pucuk Paku Masak Lemak', descEn: 'Jungle fern shoots cooked in rich yellow coconut gravy', descBm: 'Pucuk paku masak lemak dengan udang kering', price: 6 }
-];
-
 // TYPES
 export interface OrderState {
   eventType: 'pejabat' | 'lain' | '';
   mealTypes: ('sarapan' | 'tengahari' | 'hitea')[];
   preparationType: 'buffet' | 'meal_box';
   guests: number;
-  dishes: (typeof LAUK_UTAMA[number] & { category?: string })[];
-  veggies: typeof SAYURAN[number][];
+  dishes: (MenuItem & { category?: string })[];
+  veggies: (MenuItem & { category?: string })[];
   name: string;
   contact: string;
   email: string;
@@ -466,10 +448,21 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         }
       }
 
-      // Restore chosen dishes from previous order text or menu field
+      // Restore chosen dishes from previous order text or menu field using dynamic/default menu
       const previousMenuText = asString(initialData.menu).toLowerCase();
-      const matchedDishes = LAUK_UTAMA.filter(d => previousMenuText.includes((d.nameBm || '').toLowerCase()) || previousMenuText.includes((d.nameEn || '').toLowerCase()));
-      const matchedVeggies = SAYURAN.filter(v => previousMenuText.includes((v.nameBm || '').toLowerCase()) || previousMenuText.includes((v.nameEn || '').toLowerCase()));
+      const menuCatalog = dynamicMenu.length > 0 ? dynamicMenu : DEFAULT_MENU_ITEMS;
+      const matchedDishes = menuCatalog.filter(d =>
+        d.category !== 'drinks' &&
+        (previousMenuText.includes((d.nameBm || '').toLowerCase()) ||
+         previousMenuText.includes((d.nameEn || '').toLowerCase()) ||
+         previousMenuText.includes((d.name || '').toLowerCase()))
+      );
+      const matchedVeggies = menuCatalog.filter(v =>
+        (v.category === 'veggies' || v.category === 'veggie' || v.category === 'vegetables') &&
+        (previousMenuText.includes((v.nameBm || '').toLowerCase()) ||
+         previousMenuText.includes((v.nameEn || '').toLowerCase()) ||
+         previousMenuText.includes((v.name || '').toLowerCase()))
+      );
 
       const restoredMealTypes: ('sarapan' | 'tengahari' | 'hitea')[] = [];
       if (Array.isArray(initialData.meals)) {
@@ -504,7 +497,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         customMenu: ''
       });
     }
-  }, [initialData]);
+  }, [initialData, dynamicMenu]);
 
   // Load draft from localStorage on mount if no initialData
   useEffect(() => {

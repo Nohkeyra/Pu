@@ -411,7 +411,7 @@ export function AdminUpdatesTab({ adminToken, onPreviewModal }: AdminUpdatesTabP
               <Input
                 value={apkUrl}
                 onChange={(e) => setApkUrl(e.target.value)}
-                placeholder="https://github.com/.../Wawasan.Hub.apk"
+                placeholder="https://github.com/.../app-release-signed.apk"
                 required
                 className="rounded-xl font-mono text-xs pr-10"
               />
