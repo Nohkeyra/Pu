@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 def keyPropertiesFile = rootProject.file('key.properties')
 if (!keyPropertiesFile.exists()) {
@@ -120,6 +121,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // Kotlin standard library (align with top-level plugin version)
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
 
     // Import the Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:34.15.0')
