@@ -123,7 +123,7 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
 
     // Kotlin standard library (align with top-level plugin version)
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlinVersion}"
 
     // Import the Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:34.15.0')

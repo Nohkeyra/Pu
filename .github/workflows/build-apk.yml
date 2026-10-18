@@ -51,7 +51,7 @@ jobs:
           cache: 'npm'
 
       # =============================================
-      # 馃敘 VERSION: resolve, bump, commit and push - BEFORE building anything
+      # 🔢 VERSION: resolve, bump, commit and push - BEFORE building anything
       # =============================================
       # Why this runs right after checkout (it used to run after the web
       # build + Capacitor sync):
@@ -89,10 +89,10 @@ jobs:
           )
 
           if [ "$IS_RELEASE" != "true" ]; then
-            echo "鈩癸笍 Non-release build (PR / develop) - using current version, no bump"
+            echo "ℹ️ Non-release build (PR / develop) - using current version, no bump"
             node scripts/bump-version.cjs show --ci
           elif [ "$BUMP" = "none" ]; then
-            echo "鈩癸笍 Bump disabled - using current version"
+            echo "ℹ️ Bump disabled - using current version"
             node scripts/bump-version.cjs show --ci
           else
             git config user.name "github-actions[bot]"
@@ -101,7 +101,7 @@ jobs:
             MAX_ATTEMPTS=5
             pushed=0
             for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-              echo "猬嗭笍 Bump attempt $attempt/$MAX_ATTEMPTS ($BUMP) on $BRANCH"
+              echo "⬆️ Bump attempt $attempt/$MAX_ATTEMPTS ($BUMP) on $BRANCH"
 
               # Always start from the latest remote state. Safe: nothing has
               # been built or generated yet, so there is nothing to lose.
@@ -128,7 +128,7 @@ jobs:
                 break
               fi
 
-              echo "鈿狅笍 Push rejected (origin moved) - retrying from latest origin..."
+              echo "⚠️ Push rejected (origin moved) - retrying from latest origin..."
               sleep $((attempt * 2))
             done
 
@@ -139,7 +139,7 @@ jobs:
           fi
 
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          echo "鉁� Version ready: $(sed -n 's/^versionName=//p' android/version.properties) ($(sed -n 's/^versionCode=//p' android/version.properties))"
+          echo "✅ Version ready: $(sed -n 's/^versionName=//p' android/version.properties) ($(sed -n 's/^versionCode=//p' android/version.properties))"
           echo "---- android/version.properties ----"
           cat android/version.properties || true
 
@@ -188,14 +188,14 @@ jobs:
         run: |
           npm run build || npm run build:prod
           if [ ! -d "dist" ]; then
-            echo "鉂� Build failed - dist folder not found"
+            echo "❌ Build failed - dist folder not found"
             exit 1
           fi
 
       - name: Sync Capacitor
         run: |
           npx cap sync android || {
-            echo "鈿狅笍 Capacitor sync failed, attempting to add android platform..."
+            echo "⚠️ Capacitor sync failed, attempting to add android platform..."
             npx cap add android
             npx cap sync android
           }
@@ -204,16 +204,16 @@ jobs:
         run: |
           echo "Checking google-services.json..."
           if [ -f "android/app/google-services.json" ]; then
-            echo "鉁� android/app/google-services.json exists."
+            echo "✅ android/app/google-services.json exists."
             ls -la android/app/google-services.json
           elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-            echo "鈿狅笍 Restoring google-services.json from secret..."
+            echo "⚠️ Restoring google-services.json from secret..."
             mkdir -p android/app
             echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-            echo "鉁� google-services.json restored"
+            echo "✅ google-services.json restored"
           else
-            echo "鉂� ERROR: android/app/google-services.json not found!"
-            echo "馃搧 Directory listing:"
+            echo "❌ ERROR: android/app/google-services.json not found!"
+            echo "📁 Directory listing:"
             ls -la android/app/ || echo "android/app directory missing"
             exit 1
           fi
@@ -223,7 +223,7 @@ jobs:
         # over ANDROID_KEYSTORE_BASE64 (and RELEASE_STORE_PASSWORD over
         # KEYSTORE_PASSWORD). RELEASE_KEYSTORE_BASE64 does not exist as a
         # repository secret (confirmed via repo Settings > Secrets), yet the
-        # build log showed it evaluating to a non-empty value 鈥� meaning it
+        # build log showed it evaluating to a non-empty value — meaning it
         # was being supplied by an org-level Actions secret invisible from
         # this repo's secrets page, containing a *different, stale* keystore
         # than the one KEYSTORE_PASSWORD actually matches. That mismatch is
@@ -232,7 +232,7 @@ jobs:
         # and controlled here (ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD)
         # removes that shadowing possibility entirely. The old "generate a
         # throwaway keystore if secrets are missing" fallback is also removed
-        # for release builds 鈥� silently signing a release with a random new
+        # for release builds — silently signing a release with a random new
         # key is worse than failing the build with a clear error.
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -240,41 +240,41 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          STORE_PASS="${KEYSTORE_PASSWORD:?鉂� KEYSTORE_PASSWORD secret is not set}"
-          KEY_PASS="${KEY_PASSWORD:?鉂� KEY_PASSWORD secret is not set}"
-          ALIAS="${KEY_ALIAS:?鉂� KEY_ALIAS secret is not set}"
-          KB64="${ANDROID_KEYSTORE_BASE64:?鉂� ANDROID_KEYSTORE_BASE64 secret is not set}"
+          STORE_PASS="${KEYSTORE_PASSWORD:?❌ KEYSTORE_PASSWORD secret is not set}"
+          KEY_PASS="${KEY_PASSWORD:?❌ KEY_PASSWORD secret is not set}"
+          ALIAS="${KEY_ALIAS:?❌ KEY_ALIAS secret is not set}"
+          KB64="${ANDROID_KEYSTORE_BASE64:?❌ ANDROID_KEYSTORE_BASE64 secret is not set}"
 
           mkdir -p android/app
 
-          echo "馃攽 Decoding production signing keystore from ANDROID_KEYSTORE_BASE64..."
+          echo "🔑 Decoding production signing keystore from ANDROID_KEYSTORE_BASE64..."
           echo "$KB64" | base64 -d > android/app/release-key.jks
 
-          echo "馃攷 Verifying keystore opens with KEYSTORE_PASSWORD / KEY_ALIAS before building..."
+          echo "🔎 Verifying keystore opens with KEYSTORE_PASSWORD / KEY_ALIAS before building..."
           keytool -list -keystore android/app/release-key.jks -storepass "$STORE_PASS" -alias "$ALIAS" > /dev/null || {
-            echo "鉂� Could not open android/app/release-key.jks with the KEYSTORE_PASSWORD/KEY_ALIAS secrets."
+            echo "❌ Could not open android/app/release-key.jks with the KEYSTORE_PASSWORD/KEY_ALIAS secrets."
             echo "   Check that ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, and KEY_ALIAS all belong to the same keystore."
             exit 1
           }
-          echo "鉁� Keystore opened successfully 鈥� password and alias confirmed valid."
+          echo "✅ Keystore opened successfully — password and alias confirmed valid."
 
           echo "storePassword=$STORE_PASS" > android/app/key.properties
           echo "keyPassword=$KEY_PASS" >> android/app/key.properties
           echo "keyAlias=$ALIAS" >> android/app/key.properties
           echo "storeFile=release-key.jks" >> android/app/key.properties
           cp android/app/key.properties android/key.properties
-          echo "鉁� Keystore successfully configured for release signing!"
+          echo "✅ Keystore successfully configured for release signing!"
 
       - name: Setup Gradle permissions and wrapper integrity
         run: |
           cd android
           chmod +x gradlew
           if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
-            echo "鈿狅笍 gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
+            echo "⚠️ gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
             curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
             unzip -t gradle/wrapper/gradle-wrapper.jar
           else
-            echo "鉁� Gradle wrapper jar verified."
+            echo "✅ Gradle wrapper jar verified."
           fi
 
       - name: Build debug APK
@@ -283,7 +283,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace || {
-            echo "鉂� Debug build failed. Check logs above."
+            echo "❌ Debug build failed. Check logs above."
             exit 1
           }
 
@@ -293,7 +293,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace || {
-            echo "鉂� Release build failed. Check logs above."
+            echo "❌ Release build failed. Check logs above."
             exit 1
           }
 
@@ -303,7 +303,7 @@ jobs:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
           ./gradlew bundleRelease --no-daemon --stacktrace || {
-            echo "鈿狅笍 Bundle build failed (continuing)"
+            echo "⚠️ Bundle build failed (continuing)"
           }
 
       - name: Upload debug APK
@@ -316,7 +316,7 @@ jobs:
       # BUGFIX (2026-08-27): Gradle outputs the signed APK as
       # android/app/build/outputs/apk/release/app-release.apk. The
       # upload-artifact step below used "app-release-signed" only as its
-      # display name 鈥� that never renamed the actual file. The GitHub
+      # display name — that never renamed the actual file. The GitHub
       # Release asset (created later by ncipollo/release-action) keeps
       # Gradle's original filename, but the live-update broadcast step
       # further down hardcodes the download URL as ".../app-release-signed.apk".
@@ -350,7 +350,7 @@ jobs:
           retention-days: 30
 
       # =============================================
-      # 馃殌 CREATE GITHUB RELEASE
+      # 🚀 CREATE GITHUB RELEASE
       # =============================================
       - name: Create GitHub Release
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
@@ -366,18 +366,18 @@ jobs:
           generate_release_notes: true
           make_latest: true
           body: |
-            ## 馃摫 APK Release v${{ env.VERSION_NAME }}
+            ## 📱 APK Release v${{ env.VERSION_NAME }}
             
-            ### 馃摝 Downloads
+            ### 📦 Downloads
             - **Signed APK:** Ready to install
             - **AAB Bundle:** For Play Store
             
-            ### 馃摬 Installation
+            ### 📲 Installation
             1. Download the APK from assets below
             2. Enable "Install from unknown sources" on your device
             3. Install the APK
             
-            ### 馃幆 Build Information
+            ### 🎯 Build Information
             - **Version Name:** ${{ env.VERSION_NAME }}
             - **Version Code:** ${{ env.VERSION_CODE }}
             - **Commit:** ${{ env.RELEASE_SHA }}
@@ -385,7 +385,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # =============================================
-      # 馃摗 AUTOMATIC LIVE UPDATE BROADCAST
+      # 📡 AUTOMATIC LIVE UPDATE BROADCAST
       # =============================================
       - name: Trigger Automatic In-App Live Update Broadcast
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
@@ -393,12 +393,12 @@ jobs:
           SYNC_SECRET: ${{ secrets.RELEASE_SYNC_SECRET }}
         run: |
           if [ -z "$SYNC_SECRET" ]; then
-            echo "鈿狅笍 RELEASE_SYNC_SECRET is not configured in GitHub Secrets. Skipping auto-sync."
+            echo "⚠️ RELEASE_SYNC_SECRET is not configured in GitHub Secrets. Skipping auto-sync."
           else
-            echo "馃殌 Broadcasting live app version update to Wawasan Hub..."
+            echo "🚀 Broadcasting live app version update to Wawasan Hub..."
             curl -X POST "https://restoran-wawasan-bio.onrender.com/api/app-version/github-sync" \
               -H "Content-Type: application/json" \
               -H "x-github-token: $SYNC_SECRET" \
               -d "{\"version\":\"${{ env.VERSION_NAME }}\",\"buildNumber\":\"${{ env.VERSION_CODE }}\",\"apkUrl\":\"https://github.com/Nohkeyra/Pu/releases/download/v${{ env.VERSION_NAME }}/app-release-signed.apk\"}"
-            echo "鉁� Broadcast request completed successfully!"
+            echo "✅ Broadcast request completed successfully!"
           fi

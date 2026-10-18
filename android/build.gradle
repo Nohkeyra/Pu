@@ -1,11 +1,15 @@
 buildscript {
+    ext.kotlinVersion = '2.2.21'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.9.1'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
+        // Must be >= the Kotlin that Firebase BoM 34.x / play-services-measurement 23.x
+        // were compiled with (metadata 2.2.0). KGP 2.0.x cannot read those jars and
+        // the K2 compiler crashes with "source must not be null" while reporting it.
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath 'com.google.gms:google-services:4.4.2'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.3'
 
@@ -34,13 +38,12 @@ subprojects {
                     sourceCompatibility JavaVersion.VERSION_21
                     targetCompatibility JavaVersion.VERSION_21
                 }
-                if (project.plugins.hasPlugin('kotlin-android')) {
-                    kotlinOptions {
-                        jvmTarget = '21'
-                    }
-                }
             }
         }
+    }
+    // KGP 2.2 turned the old `kotlinOptions {}` DSL into a hard error.
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
