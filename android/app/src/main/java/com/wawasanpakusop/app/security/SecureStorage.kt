@@ -25,6 +25,7 @@ object SecureStorage {
     @Volatile
     private var securePrefs: SharedPreferences? = null
 
+    @JvmStatic
     @Synchronized
     fun getPrefs(context: Context): SharedPreferences {
         return securePrefs ?: synchronized(this) {
@@ -53,6 +54,7 @@ object SecureStorage {
         }
     }
 
+    @JvmStatic
     fun saveString(context: Context, key: String, value: String?) {
         getPrefs(context).edit().apply {
             if (value != null) {
@@ -64,26 +66,32 @@ object SecureStorage {
         }
     }
 
+    @JvmStatic
     fun getString(context: Context, key: String, defaultValue: String? = null): String? {
         return getPrefs(context).getString(key, defaultValue)
     }
 
+    @JvmStatic
     fun saveAdminToken(context: Context, token: String?) {
         saveString(context, KEY_ADMIN_TOKEN, token)
     }
 
+    @JvmStatic
     fun getAdminToken(context: Context): String? {
         return getString(context, KEY_ADMIN_TOKEN, null)
     }
 
+    @JvmStatic
     fun saveWidgetKey(context: Context, key: String?) {
         saveString(context, KEY_WIDGET_API_KEY, key)
     }
 
+    @JvmStatic
     fun getWidgetKey(context: Context): String? {
         return getString(context, KEY_WIDGET_API_KEY, null)
     }
 
+    @JvmStatic
     fun clearAll(context: Context) {
         getPrefs(context).edit().clear().apply()
     }

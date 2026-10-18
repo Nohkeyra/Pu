@@ -131,21 +131,6 @@ public class PricingWidgetFetchService {
             android.util.Log.w("PricingWidgetFetchSvc", "notifyAppWidgetViewDataChanged failed", e);
         }
     }
-            } catch (Exception e) {
-                android.util.Log.e("PricingWidgetFetchSvc", "applyUpdate failed for widget " + appWidgetId, e);
-                // Widget already has the bare-safe view PricingWidgetProvider
-                // pushed synchronously at add time; leave it as-is rather
-                // than let this exception reach the Handler's main-thread
-                // callback and crash the process.
-            }
-        }
-
-        try {
-            manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.pricing_widget_orders_list);
-        } catch (Exception e) {
-            android.util.Log.w("PricingWidgetFetchSvc", "notifyAppWidgetViewDataChanged failed", e);
-        }
-    }
 
     private static void applyUpdateForWidget(Context context, AppWidgetManager manager, int appWidgetId,
                                               String cachedJson, boolean hasData, boolean fetchSucceeded, String errorReason) {

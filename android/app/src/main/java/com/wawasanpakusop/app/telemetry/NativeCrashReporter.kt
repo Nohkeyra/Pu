@@ -13,6 +13,7 @@ object NativeCrashReporter {
     private const val TAG = "NativeCrashReporter"
     private var isInitialized = false
 
+    @JvmStatic
     @Synchronized
     fun initialize(context: Context) {
         if (isInitialized) return
@@ -32,6 +33,7 @@ object NativeCrashReporter {
         Log.i(TAG, "NativeCrashReporter initialized with Firebase Crashlytics hook")
     }
 
+    @JvmStatic
     fun recordException(throwable: Throwable, attributes: Map<String, String> = emptyMap()) {
         try {
             val crashlytics = FirebaseCrashlytics.getInstance()
@@ -44,6 +46,7 @@ object NativeCrashReporter {
         }
     }
 
+    @JvmStatic
     fun logBreadcrumb(message: String) {
         try {
             FirebaseCrashlytics.getInstance().log(message)
@@ -52,6 +55,7 @@ object NativeCrashReporter {
         }
     }
 
+    @JvmStatic
     fun setUserId(userId: String) {
         try {
             FirebaseCrashlytics.getInstance().setUserId(userId)

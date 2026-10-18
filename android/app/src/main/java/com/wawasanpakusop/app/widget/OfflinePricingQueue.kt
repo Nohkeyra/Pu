@@ -27,6 +27,7 @@ object OfflinePricingQueue {
     private const val ENDPOINT = "/api/widget/set-pricing"
     private val executor = Executors.newSingleThreadExecutor()
 
+    @JvmStatic
     fun isOnline(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
         val activeNetwork = cm.activeNetwork ?: return false
@@ -34,6 +35,7 @@ object OfflinePricingQueue {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
+    @JvmStatic
     @Synchronized
     fun enqueue(context: Context, orderId: String, prices: Map<String, Double>) {
         try {
@@ -65,6 +67,7 @@ object OfflinePricingQueue {
         }
     }
 
+    @JvmStatic
     @Synchronized
     fun getPendingCount(context: Context): Int {
         return try {
@@ -75,6 +78,7 @@ object OfflinePricingQueue {
         }
     }
 
+    @JvmStatic
     @Synchronized
     fun hasPendingOrder(context: Context, orderId: String): Boolean {
         return try {
@@ -89,6 +93,7 @@ object OfflinePricingQueue {
         }
     }
 
+    @JvmStatic
     fun flushQueueAsync(context: Context, onComplete: ((successCount: Int, failedCount: Int) -> Unit)? = null) {
         if (!isOnline(context)) {
             Log.d(TAG, "Device offline; skipping queue flush.")
