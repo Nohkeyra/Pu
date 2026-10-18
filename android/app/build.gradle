@@ -130,6 +130,13 @@ dependencies {
 
     // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0 and okhttp-android:5.4.0,
     // which requires compileSdk 36+ / AGP 8.9.1+.
+
+    // Jetpack Glance for Modern App Widgets
+    implementation libs.androidx.glance.appwidget
+    implementation libs.androidx.glance.material3
+
+    // Jetpack Security for EncryptedSharedPreferences
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 }
 
 apply from: 'capacitor.build.gradle'

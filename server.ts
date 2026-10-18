@@ -19,16 +19,12 @@ import diagnosticRoutes from './server/routes/diagnosticRoutes.js';
 import widgetRoutes from './server/routes/widgetRoutes.js';
 import imageRoutes, { antiHotlinkGuard } from './server/routes/imageRoutes.js';
 import { mountWawasanMcp } from './server/mcp/index.js';
+import { telemetry } from './server/telemetry.js';
 
 dotenv.config();
 
-process.on('unhandledRejection', (reason) => {
-  console.warn('[Server] Unhandled Rejection:', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('[Server] Uncaught Exception:', err);
-});
+// Centralized telemetry initialization for unhandled rejections and exceptions
+telemetry.initProcessHandlers();
 
 const ALLOWED_ORIGINS = [
   'https://restoran-wawasan-bio.onrender.com',
@@ -310,17 +306,8 @@ async function startServer() {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const requestId = (req as any).requestId || req.headers['x-request-id'];
-    console.error(`[GlobalError] [ReqID: ${requestId}]`, err);
-    const statusCode = typeof err?.status === 'number' && err.status >= 400 ? err.status : 500;
-    return res.status(statusCode).json({
-      success: false,
-      error: err?.message || 'Internal Server Error',
-      requestId
-    });
-  });
+  // Centralized telemetry error handler
+  app.use(telemetry.expressErrorHandler());
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);

@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
-import { createBrevoTransporter } from '../emailService.js';
-import { generateServerInvoicePdf } from '../services/serverPdfService.js';
+import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken } from '../firebaseAdmin.js';
+import { verifyAdminJwt } from '../adminAuth.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
+import { invoiceQueue } from '../services/invoiceQueue.js';
+import { telemetry } from '../telemetry.js';
 
 const router = Router();
 
@@ -16,16 +17,63 @@ const widgetPricingLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many widget requests. Please try again later.' },
 });
 
-// ─── Auth helper for widget-keyed endpoints ──────────────────────────────────
-// Widget endpoints that trigger side-effects (set prices, send invoice) need
-// a lightweight pre-shared key so they cannot be called by arbitrary clients.
-// The key is stored as env var WIDGET_API_KEY on Render and hardcoded in the
-// Android APK (self-distributed, Noh is sole user). This is deliberately NOT
-// a JWT — the widget is not a browser; it runs as a background Android service.
+// ─── Auth helper for widget-keyed and admin endpoints ──────────────────────────
+// Requires verified Admin credentials (JWT or Firebase ID token) or a verified widget pre-shared key.
+export async function verifyAdminOrWidgetAuth(req: any, res: any): Promise<boolean> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+  // 1. Verify via server-signed Admin JWT
+  if (token) {
+    const jwtPayload = verifyAdminJwt(token);
+    if (jwtPayload && jwtPayload.admin === true) {
+      req.user = jwtPayload;
+      return true;
+    }
+
+    // 2. Verify via Firebase ID token
+    try {
+      const decoded = await verifyFirebaseIdToken(token);
+      if (decoded) {
+        const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
+        const userEmail = decoded.email?.toLowerCase();
+        const isAdmin = decoded.admin === true || (userEmail && adminEmails.includes(userEmail));
+        if (isAdmin) {
+          req.user = decoded;
+          return true;
+        }
+      }
+    } catch {
+      // Pass through to widget key check
+    }
+  }
+
+  // 3. Verify via widget pre-shared key (fail-closed if not configured)
+  const key = process.env.WIDGET_API_KEY;
+  const provided = req.headers['x-widget-key'];
+  if (key && provided && provided === key) {
+    req.isWidgetAuthorized = true;
+    return true;
+  }
+
+  telemetry.captureException(new Error('Unauthorized widget pricing access attempt'), {
+    req,
+    metadata: { reason: 'Missing or invalid admin token and widget key' },
+  });
+
+  res.status(401).json({
+    success: false,
+    error: 'Unauthorized: Requires valid admin credentials or authenticated widget key.',
+  });
+  return false;
+}
+
 function checkWidgetKey(req: any, res: any): boolean {
   const key = process.env.WIDGET_API_KEY;
   if (!key) {
-    // If env var is not set, fail-closed: don't allow any access.
     res.status(503).json({ success: false, error: 'Widget API not configured.' });
     return false;
   }
@@ -218,11 +266,10 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
 //   5. Email PDF to customer
 //   6. Update Firestore order to status: 'billed'
 router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
-  if (!checkWidgetKey(req, res)) return;
+  if (!(await verifyAdminOrWidgetAuth(req, res))) return;
 
   const { orderId, prices } = req.body as {
     orderId: string;
-    // prices: { breakfast?: number, lunch?: number, hi_tea?: number }
     prices: Record<string, number>;
   };
 
@@ -268,7 +315,6 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     const finalPrices: Record<string, number> = {};
 
     for (const meal of orderMeals) {
-      // Accept prices keyed by 'breakfast', 'lunch', 'hi_tea' (server canonical form)
       const priceForMeal = prices[meal] ?? prices[meal.replace('_', '')] ?? null;
       if (priceForMeal !== null && priceForMeal > 0) {
         finalPrices[meal] = priceForMeal;
@@ -276,7 +322,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       }
     }
 
-    // If no meal matched (e.g. order has no meals array), fall back to a single 'default' price
+    // If no meal matched, fall back to a single 'default' price
     if (Object.keys(finalPrices).length === 0 && prices['default']) {
       finalPrices['default'] = prices['default'];
       totalAmount = prices['default'] * quantity;
@@ -291,7 +337,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
       : (order.invoiceNo || await generateSequentialInvoiceNo(false));
 
-    // Build order object for PDF generation
+    // Build order object for asynchronous pipeline
     const orderForPdf = {
       ...order,
       id: orderId,
@@ -301,76 +347,49 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       invoiceGeneratedAt: new Date().toISOString(),
     };
 
-    // Generate PDF server-side
-    let pdfBuffer: Buffer;
-    try {
-      pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
-    } catch (pdfErr) {
-      console.error('[Widget set-pricing] PDF generation failed:', pdfErr);
-      return res.status(500).json({ success: false, error: 'PDF generation failed. Prices NOT saved yet.' });
-    }
-
-    // Email PDF to customer
     const recipientEmail = order.email;
-    if (!recipientEmail || typeof recipientEmail !== 'string' || !recipientEmail.includes('@')) {
-      return res.status(400).json({ success: false, error: 'Order has no valid customer email. Cannot send invoice.' });
-    }
 
-    try {
-      const transporter = createBrevoTransporter();
-      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
-      const companyName = order.to || 'Pelanggan';
-      const lang = (order.lang === 'en') ? 'en' : 'bm';
-
-      await transporter.sendMail({
-        from: `"Restoran Wawasan Pak Usop" <${senderEmail}>`,
-        to: recipientEmail.trim(),
-        subject: lang === 'bm'
-          ? `[Restoran Wawasan] Invois Rasmi ${invoiceNo} - ${companyName}`
-          : `[Restoran Wawasan] Official Invoice ${invoiceNo} - ${companyName}`,
-        text: lang === 'bm'
-          ? `Salam hormat,\n\nSila rujuk invois rasmi kami ${invoiceNo} yang dilampirkan bersama emel ini.\n\nJumlah: RM ${totalAmount.toFixed(2)}\n\nTerima kasih atas kepercayaan anda.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`
-          : `Dear ${order.attn || companyName},\n\nPlease find our official invoice ${invoiceNo} attached to this email.\n\nTotal: RM ${totalAmount.toFixed(2)}\n\nThank you for your continued trust.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`,
-        attachments: [{
-          filename: `Invoice_${invoiceNo}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }]
-      });
-    } catch (emailErr) {
-      // EMAIL FAILED: Do NOT update Firestore yet — caller should retry.
-      // (If we saved 'billed' first then email failed, order would be stuck billed
-      // but customer never received the invoice.)
-      console.error('[Widget set-pricing] Email failed:', emailErr);
-      return res.status(500).json({
-        success: false,
-        error: 'Invoice generated but email delivery failed. Prices NOT saved. Please retry.',
-        invoiceNo
-      });
-    }
-
-    // Both PDF and email succeeded — now commit the Firestore update atomically
+    // Atomically commit the status update to Firestore
     await orderRef.update({
       status: 'billed',
       prices: finalPrices,
       totalAmount,
       invoiceNo,
       invoiceGeneratedAt: new Date().toISOString(),
+      invoiceDeliveryStatus: recipientEmail ? 'queued' : 'skipped_no_email',
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    console.log(`[Widget set-pricing] Order ${orderId} billed. Invoice ${invoiceNo} sent to ${recipientEmail}.`);
+    // Asynchronously dispatch PDF generation & email delivery in background queue
+    if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.includes('@')) {
+      invoiceQueue.enqueue({
+        orderId,
+        orderForPdf,
+        invoiceNo,
+        recipientEmail,
+        totalAmount,
+        companyName: order.to || order.company || 'Pelanggan',
+        lang: (order.lang === 'en') ? 'en' : 'bm',
+      });
+    }
 
-    return res.json({
+    telemetry.captureBreadcrumb('Pricing confirmed and invoice delivery queued', {
+      orderId,
+      invoiceNo,
+      totalAmount,
+    });
+
+    return res.status(200).json({
       success: true,
       orderId,
       invoiceNo,
       totalAmount,
-      message: `Invoice ${invoiceNo} emailed to ${recipientEmail}.`
+      status: 'queued',
+      message: `Invois ${invoiceNo} disahkan. Penghantaran invois sedang diproses di latar belakang.`
     });
 
   } catch (err) {
-    console.error('[Widget set-pricing Error]:', err);
+    telemetry.captureException(err, { req, metadata: { orderId } });
     return res.status(500).json({ success: false, error: String(err) });
   }
 });

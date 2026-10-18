@@ -7,6 +7,7 @@ import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
 import com.wawasanpakusop.app.R;
+import com.wawasanpakusop.app.security.SecureStorage;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,14 +75,14 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
 
     private void loadData() {
         rows = new ArrayList<>();
-        SharedPreferences prefs = context.getSharedPreferences(
-            PricingWidgetFetchService.PREFS_NAME, Context.MODE_PRIVATE);
-        String json = prefs.getString(PricingWidgetFetchService.PREF_ORDERS_JSON, "[]");
+        String json = SecureStorage.INSTANCE.getString(context, PricingWidgetFetchService.PREF_ORDERS_JSON, "[]");
 
         try {
-            JSONArray arr = new JSONArray(json);
+            JSONArray arr = new JSONArray(json != null ? json : "[]");
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
+                String orderId = o.optString("id", "");
+                boolean isPendingSync = OfflinePricingQueue.INSTANCE.hasPendingOrder(context, orderId);
                 JSONArray mealsArr = o.optJSONArray("meals");
                 String mealsLabel = buildMealsLabel(mealsArr);
                 String mealCodes = buildMealCodes(mealsArr, o.optString("mealType", ""));
@@ -91,7 +92,9 @@ public class PricingWidgetListFactory implements RemoteViewsService.RemoteViewsF
                 String formattedDate = formatDateShort(rawDate);
 
                 String dateBadge;
-                if (isPast) {
+                if (isPendingSync) {
+                    dateBadge = "⏳ PENDING SYNC • " + formattedDate;
+                } else if (isPast) {
                     dateBadge = "⚠️ LALU • " + formattedDate;
                 } else if (isToday) {
                     dateBadge = "⭐ HARI INI • " + formattedDate;

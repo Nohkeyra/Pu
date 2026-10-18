@@ -73,6 +73,18 @@ public class PricingInputActivity extends Activity {
             return;
         }
 
+        // Authorization gate: verify that widget key or admin token is present in SecureStorage or build
+        String widgetKey = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getWidgetKey(this);
+        if (widgetKey == null || widgetKey.isEmpty()) {
+            widgetKey = PricingWidgetFetchService.WIDGET_API_KEY;
+        }
+        String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(this);
+        if ((widgetKey == null || widgetKey.isEmpty()) && (adminToken == null || adminToken.isEmpty())) {
+            Toast.makeText(this, "Akses Terhad: Sila sahkan kelayakan pentadbir.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         if (isBilled) {
             Toast.makeText(this, "Tempahan ini sudah dibil dan invois telah dihantar.", Toast.LENGTH_LONG).show();
             finish();
@@ -142,8 +154,6 @@ public class PricingInputActivity extends Activity {
         if (hasLunch) perPaxSum += parseOrZero(inputLunch);
         if (hasHitea) perPaxSum += parseOrZero(inputHitea);
 
-        // Total = sum over each meal's (price-per-pax * quantity) — matches
-        // server's calculation in POST /api/widget/set-pricing.
         double total = 0;
         if (hasBreakfast) total += parseOrZero(inputBreakfast) * quantity;
         if (hasLunch) total += parseOrZero(inputLunch) * quantity;
@@ -166,20 +176,30 @@ public class PricingInputActivity extends Activity {
             return;
         }
 
+        java.util.Map<String, Double> pricesMap = new java.util.HashMap<>();
+        if (hasBreakfast && breakfastPrice > 0) pricesMap.put("breakfast", breakfastPrice);
+        if (hasLunch && lunchPrice > 0) pricesMap.put("lunch", lunchPrice);
+        if (hasHitea && hiteaPrice > 0) pricesMap.put("hi_tea", hiteaPrice);
+
+        // Offline resilience check
+        if (!OfflinePricingQueue.INSTANCE.isOnline(this)) {
+            OfflinePricingQueue.INSTANCE.enqueue(this, orderId, pricesMap);
+            Toast.makeText(this, "✓ Disimpan di luar talian (Pending Sync). Akan dihantar apabila dalam talian.", Toast.LENGTH_LONG).show();
+            PricingWidgetProvider.requestRefresh(getApplicationContext());
+            finish();
+            return;
+        }
+
         submitBtn.setEnabled(false);
         submitBtn.setText("Menghantar...");
 
         try {
-            JSONObject prices = new JSONObject();
-            if (hasBreakfast && breakfastPrice > 0) prices.put("breakfast", breakfastPrice);
-            if (hasLunch && lunchPrice > 0) prices.put("lunch", lunchPrice);
-            if (hasHitea && hiteaPrice > 0) prices.put("hi_tea", hiteaPrice);
-
+            JSONObject prices = new JSONObject(pricesMap);
             JSONObject body = new JSONObject();
             body.put("orderId", orderId);
             body.put("prices", prices);
 
-            new SubmitPricingTask().execute(body.toString());
+            new SubmitPricingTask(pricesMap).execute(body.toString());
         } catch (JSONException e) {
             Toast.makeText(this, "Ralat membina permintaan.", Toast.LENGTH_SHORT).show();
             submitBtn.setEnabled(true);
@@ -187,29 +207,38 @@ public class PricingInputActivity extends Activity {
         }
     }
 
-    /**
-     * AsyncTask (not a background Service) is deliberate here: this call
-     * only needs to live as long as the Activity is on screen — the user is
-     * actively waiting for the result (success/fail toast) before the sheet
-     * closes. A WorkManager job would be the wrong tool since there's a UI
-     * waiting on the outcome, not a fire-and-forget background task.
-     */
     private class SubmitPricingTask extends AsyncTask<String, Void, TaskResult> {
 
         static final String API_BASE_URL = "https://restoran-wawasan-bio.onrender.com";
         static final String ENDPOINT = "/api/widget/set-pricing";
+        private final java.util.Map<String, Double> fallbackPrices;
+
+        SubmitPricingTask(java.util.Map<String, Double> prices) {
+            this.fallbackPrices = prices;
+        }
 
         @Override
         protected TaskResult doInBackground(String... params) {
             String requestBody = params[0];
             try {
+                String widgetKey = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getWidgetKey(PricingInputActivity.this);
+                if (widgetKey == null || widgetKey.isEmpty()) {
+                    widgetKey = PricingWidgetFetchService.WIDGET_API_KEY;
+                }
+                String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(PricingInputActivity.this);
+
                 URL url = new URL(API_BASE_URL + ENDPOINT);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                conn.setRequestProperty("x-widget-key", PricingWidgetFetchService.WIDGET_API_KEY);
-                conn.setConnectTimeout(20000);
-                conn.setReadTimeout(25000); // PDF generation + email send can take a few seconds
+                if (widgetKey != null && !widgetKey.isEmpty()) {
+                    conn.setRequestProperty("x-widget-key", widgetKey);
+                }
+                if (adminToken != null && !adminToken.isEmpty()) {
+                    conn.setRequestProperty("Authorization", "Bearer " + adminToken);
+                }
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(20000);
                 conn.setDoOutput(true);
 
                 try (OutputStream os = conn.getOutputStream()) {
@@ -234,9 +263,14 @@ public class PricingInputActivity extends Activity {
                 String message = json.optString(success ? "message" : "error", success ? "Berjaya." : "Ralat tidak diketahui.");
                 String invoiceNo = json.optString("invoiceNo", null);
 
-                return new TaskResult(success, message, invoiceNo);
-            } catch (IOException | JSONException e) {
-                return new TaskResult(false, "Sambungan gagal: " + e.getMessage(), null);
+                return new TaskResult(success, message, invoiceNo, false);
+            } catch (IOException e) {
+                // Network disconnect or timeout: queue locally
+                OfflinePricingQueue.INSTANCE.enqueue(PricingInputActivity.this, orderId, fallbackPrices);
+                return new TaskResult(true, "Rangkaian terputus. Disimpan ke luar talian (Pending Sync).", null, true);
+            } catch (JSONException e) {
+                com.wawasanpakusop.app.telemetry.NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("orderId", orderId));
+                return new TaskResult(false, "Format jawapan pelayan tidak sah: " + e.getMessage(), null, false);
             }
         }
 
@@ -246,15 +280,18 @@ public class PricingInputActivity extends Activity {
             submitBtn.setText("Simpan Harga →");
 
             if (result.success) {
-                Toast.makeText(PricingInputActivity.this,
-                    "✓ Invois " + (result.invoiceNo != null ? result.invoiceNo : "") + " dihantar ke pelanggan!",
-                    Toast.LENGTH_LONG).show();
+                if (result.isOfflineQueued) {
+                    Toast.makeText(PricingInputActivity.this,
+                        "⏳ " + result.message,
+                        Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(PricingInputActivity.this,
+                        "✓ Invois " + (result.invoiceNo != null ? result.invoiceNo : "") + " diproses dan dihantar!",
+                        Toast.LENGTH_LONG).show();
+                }
                 PricingWidgetProvider.requestRefresh(getApplicationContext());
                 finish();
             } else {
-                // Deliberately NOT closing the sheet on failure — the price
-                // values the user typed stay on screen so they can retry
-                // without re-entering everything (e.g. after a timeout).
                 Toast.makeText(PricingInputActivity.this, "✗ " + result.message, Toast.LENGTH_LONG).show();
             }
         }
@@ -264,10 +301,13 @@ public class PricingInputActivity extends Activity {
         final boolean success;
         final String message;
         final String invoiceNo;
-        TaskResult(boolean success, String message, String invoiceNo) {
+        final boolean isOfflineQueued;
+
+        TaskResult(boolean success, String message, String invoiceNo, boolean isOfflineQueued) {
             this.success = success;
             this.message = message;
             this.invoiceNo = invoiceNo;
+            this.isOfflineQueued = isOfflineQueued;
         }
     }
 }

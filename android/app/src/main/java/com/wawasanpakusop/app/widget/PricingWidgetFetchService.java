@@ -23,15 +23,14 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.wawasanpakusop.app.security.SecureStorage;
+import com.wawasanpakusop.app.telemetry.NativeCrashReporter;
+
 /**
  * Fetches today's pending/approved orders (with menu + pax, no other PII)
  * from the secured /api/widget/today-pricing-orders endpoint, caches the raw
- * JSON to SharedPreferences (read by PricingWidgetListFactory), then tells
- * Android the ListView's data changed.
- *
- * Mirrors WidgetUpdateService's pattern but hits a widget-key-protected
- * endpoint instead of the fully public one, since this response includes
- * menu text and is a write-capable pipeline (pricing/invoice generation).
+ * JSON securely using EncryptedSharedPreferences (read by PricingWidgetListFactory),
+ * then tells Android the ListView's data changed.
  */
 public class PricingWidgetFetchService {
 
@@ -39,13 +38,8 @@ public class PricingWidgetFetchService {
     private static final String ENDPOINT = "/api/widget/today-pricing-orders";
     private static final int TIMEOUT_MS = 15000;
 
-    static final String PREFS_NAME = "wawasan_pricing_widget_prefs";
     static final String PREF_ORDERS_JSON = "cached_pricing_orders_json";
 
-    // Widget API key — must match WIDGET_API_KEY env var on Render.
-    // Stored here as a build constant (this is a self-distributed sideload
-    // APK, not published, so an embedded key is an acceptable trade-off vs.
-    // the complexity of a secure runtime secret store for a solo-dev app).
     static final String WIDGET_API_KEY = com.wawasanpakusop.app.BuildConfig.WIDGET_API_KEY;
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -57,10 +51,21 @@ public class PricingWidgetFetchService {
             String errorReason = null;
 
             try {
+                String effectiveKey = SecureStorage.INSTANCE.getWidgetKey(context);
+                if (effectiveKey == null || effectiveKey.isEmpty()) {
+                    effectiveKey = WIDGET_API_KEY;
+                }
+                String adminToken = SecureStorage.INSTANCE.getAdminToken(context);
+
                 URL url = new URL(API_BASE_URL + ENDPOINT);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("x-widget-key", WIDGET_API_KEY);
+                if (effectiveKey != null && !effectiveKey.isEmpty()) {
+                    conn.setRequestProperty("x-widget-key", effectiveKey);
+                }
+                if (adminToken != null && !adminToken.isEmpty()) {
+                    conn.setRequestProperty("Authorization", "Bearer " + adminToken);
+                }
                 conn.setConnectTimeout(TIMEOUT_MS);
                 conn.setReadTimeout(TIMEOUT_MS);
 
@@ -77,8 +82,8 @@ public class PricingWidgetFetchService {
                         ordersJson = json.getJSONArray("orders").toString();
                         success = true;
                     }
-                } else if (code == 401) {
-                    errorReason = "Widget key salah / tidak sepadan dengan server.";
+                } else if (code == 401 || code == 403) {
+                    errorReason = "Pengesahan gagal (Kunci/Akses ditolak).";
                 } else {
                     errorReason = "Server ralat (HTTP " + code + ")";
                 }
@@ -86,11 +91,13 @@ public class PricingWidgetFetchService {
             } catch (Exception e) {
                 success = false;
                 errorReason = "Tiada sambungan internet.";
+                NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("component", "PricingWidgetFetchService"));
             }
 
-            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             if (success && ordersJson != null) {
-                prefs.edit().putString(PREF_ORDERS_JSON, ordersJson).apply();
+                SecureStorage.INSTANCE.saveString(context, PREF_ORDERS_JSON, ordersJson);
+                // Drain any pending offline price updates when connectivity is confirmed
+                OfflinePricingQueue.INSTANCE.flushQueueAsync(context, null);
             }
 
             final boolean finalSuccess = success;
@@ -106,13 +113,24 @@ public class PricingWidgetFetchService {
 
     private static void applyUpdate(Context context, int[] appWidgetIds, boolean fetchSucceeded, String errorReason) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String cachedJson = prefs.getString(PREF_ORDERS_JSON, null);
+        String cachedJson = SecureStorage.INSTANCE.getString(context, PREF_ORDERS_JSON, null);
         boolean hasData = cachedJson != null && !cachedJson.equals("[]");
 
         for (int appWidgetId : appWidgetIds) {
             try {
                 applyUpdateForWidget(context, manager, appWidgetId, cachedJson, hasData, fetchSucceeded, errorReason);
+            } catch (Exception e) {
+                android.util.Log.e("PricingWidgetFetchSvc", "applyUpdate failed for widget " + appWidgetId, e);
+                NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("widget_id", String.valueOf(appWidgetId)));
+            }
+        }
+
+        try {
+            manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.pricing_widget_orders_list);
+        } catch (Exception e) {
+            android.util.Log.w("PricingWidgetFetchSvc", "notifyAppWidgetViewDataChanged failed", e);
+        }
+    }
             } catch (Exception e) {
                 android.util.Log.e("PricingWidgetFetchSvc", "applyUpdate failed for widget " + appWidgetId, e);
                 // Widget already has the bare-safe view PricingWidgetProvider

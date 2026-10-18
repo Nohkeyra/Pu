@@ -14,6 +14,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Initialize centralized crash reporter for native threads and uncaught exceptions
+        com.wawasanpakusop.app.telemetry.NativeCrashReporter.INSTANCE.initialize(getApplicationContext());
+
         // Optimize WebView rendering performance & hardware acceleration
         WebView webView = getBridge().getWebView();
         if (webView != null) {
