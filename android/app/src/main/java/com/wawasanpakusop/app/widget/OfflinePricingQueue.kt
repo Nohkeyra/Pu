@@ -165,7 +165,7 @@ object OfflinePricingQueue {
 
             conn.outputStream.use { os: OutputStream ->
                 val input = requestBody.toByteArray(StandardCharsets.UTF_8)
-                os.write(input, 0, input.length)
+                os.write(input, 0, input.size)
             }
 
             val code = conn.responseCode
