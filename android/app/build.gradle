@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 def keyPropertiesFile = rootProject.file('key.properties')
 if (!keyPropertiesFile.exists()) {
@@ -33,6 +34,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     buildFeatures {
         buildConfig = true
+        compose = true
     }
     defaultConfig {
         applicationId "com.wawasanpakusop.app"
@@ -135,7 +137,7 @@ dependencies {
     // Firebase BoM 34.15.0 transitively pulls androidx.browser:browser:1.9.0 and okhttp-android:5.4.0,
     // which requires compileSdk 36+ / AGP 8.9.1+.
 
-    // Jetpack Glance for Modern App Widgets
+    // Jetpack Glance for Modern App Widgets (Pricing beta widget)
     implementation libs.androidx.glance.appwidget
     implementation libs.androidx.glance.material3
 

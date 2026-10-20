@@ -29,8 +29,8 @@ import com.wawasanpakusop.app.telemetry.NativeCrashReporter;
 /**
  * Fetches today's pending/approved orders (with menu + pax, no other PII)
  * from the secured /api/widget/today-pricing-orders endpoint, caches the raw
- * JSON securely using EncryptedSharedPreferences (read by PricingWidgetListFactory),
- * then tells Android the ListView's data changed.
+ * JSON securely using EncryptedSharedPreferences,
+ * then triggers Glance widget updates.
  */
 public class PricingWidgetFetchService {
 
@@ -38,7 +38,7 @@ public class PricingWidgetFetchService {
     private static final String ENDPOINT = "/api/widget/today-pricing-orders";
     private static final int TIMEOUT_MS = 15000;
 
-    static final String PREF_ORDERS_JSON = "cached_pricing_orders_json";
+    public static final String PREF_ORDERS_JSON = "cached_pricing_orders_json";
 
     static final String WIDGET_API_KEY = com.wawasanpakusop.app.BuildConfig.WIDGET_API_KEY;
 
@@ -112,98 +112,6 @@ public class PricingWidgetFetchService {
     }
 
     private static void applyUpdate(Context context, int[] appWidgetIds, boolean fetchSucceeded, String errorReason) {
-        AppWidgetManager manager = AppWidgetManager.getInstance(context);
-        String cachedJson = SecureStorage.INSTANCE.getString(context, PREF_ORDERS_JSON, null);
-        boolean hasData = cachedJson != null && !cachedJson.equals("[]");
-
-        for (int appWidgetId : appWidgetIds) {
-            try {
-                applyUpdateForWidget(context, manager, appWidgetId, cachedJson, hasData, fetchSucceeded, errorReason);
-            } catch (Exception e) {
-                android.util.Log.e("PricingWidgetFetchSvc", "applyUpdate failed for widget " + appWidgetId, e);
-                NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("widget_id", String.valueOf(appWidgetId)));
-            }
-        }
-
-        try {
-            manager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.pricing_widget_orders_list);
-        } catch (Exception e) {
-            android.util.Log.w("PricingWidgetFetchSvc", "notifyAppWidgetViewDataChanged failed", e);
-        }
-    }
-
-    private static void applyUpdateForWidget(Context context, AppWidgetManager manager, int appWidgetId,
-                                              String cachedJson, boolean hasData, boolean fetchSucceeded, String errorReason) {
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_pricing);
-
-            // Refresh button
-            Intent refreshIntent = new Intent(context, PricingWidgetProvider.class);
-            refreshIntent.setAction(PricingWidgetProvider.ACTION_REFRESH);
-            PendingIntent refreshPendingIntent = PendingIntent.getBroadcast(
-                context, 2, refreshIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-            views.setOnClickPendingIntent(R.id.pricing_widget_refresh_button, refreshPendingIntent);
-            views.setOnClickPendingIntent(R.id.pricing_widget_header_bar, refreshPendingIntent);
-            views.setOnClickPendingIntent(R.id.pricing_widget_empty_view, refreshPendingIntent);
-
-            Intent listIntent = new Intent(context, PricingWidgetRemoteViewsService.class);
-            listIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-            listIntent.setData(android.net.Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
-            views.setRemoteAdapter(R.id.pricing_widget_orders_list, listIntent);
-            views.setEmptyView(R.id.pricing_widget_orders_list, R.id.pricing_widget_empty_view);
-
-            // Each row supplies its own fillInIntent with orderId (set in
-            // PricingWidgetListFactory) — this template makes taps launch
-            // PricingInputActivity with that specific order's data.
-            Intent rowClickIntent = new Intent(context, PricingInputActivity.class);
-            rowClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
-            PendingIntent rowClickTemplate = PendingIntent.getActivity(
-                context, 0, rowClickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
-            );
-            views.setPendingIntentTemplate(R.id.pricing_widget_orders_list, rowClickTemplate);
-
-            if (!hasData) {
-                String emptyMsg;
-                if (!fetchSucceeded) {
-                    emptyMsg = (errorReason != null ? errorReason : "Gagal memuatkan data") + "\nKetik untuk cuba semula";
-                } else {
-                    emptyMsg = "✓ Tiada tempahan tertunggak harga\nSemua tempahan telah dikey-in harga";
-                }
-                views.setTextViewText(R.id.pricing_widget_empty_view, emptyMsg);
-            }
-
-            // Summary pill: count of orders still needing a price (past & new)
-            int pendingCount = 0;
-            int pastCount = 0;
-            int totalPax = 0;
-            try {
-                JSONArray arr = new JSONArray(cachedJson != null ? cachedJson : "[]");
-                for (int i = 0; i < arr.length(); i++) {
-                    JSONObject o = arr.getJSONObject(i);
-                    totalPax += o.optInt("quantity", 0);
-                    if (!"billed".equals(o.optString("status", ""))) {
-                        pendingCount++;
-                        if (o.optBoolean("isPast", false)) {
-                            pastCount++;
-                        }
-                    }
-                }
-            } catch (Exception ignored) {}
-
-            String summaryText;
-            if (pendingCount > 0) {
-                summaryText = "⚡ " + pendingCount + " belum key-in harga" + (pastCount > 0 ? " (" + pastCount + " lalu)" : "") + "  •  " + totalPax + " pax";
-            } else if (hasData || fetchSucceeded) {
-                summaryText = "✓ Semua tempahan telah dikey-in harga";
-            } else {
-                summaryText = "Memuatkan...";
-            }
-            views.setTextViewText(R.id.pricing_widget_summary, summaryText);
-            views.setViewVisibility(R.id.pricing_widget_summary, View.GONE);
-            views.setViewVisibility(R.id.pricing_widget_summary_container, View.GONE);
-            views.setViewVisibility(R.id.pricing_widget_subtitle, View.GONE);
-
-        manager.updateAppWidget(appWidgetId, views);
+        com.wawasanpakusop.app.widgets.PricingWidgetUpdater.refresh(context);
     }
 }

@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.wawasanpakusop.app.R;
+import com.wawasanpakusop.app.widgets.PricingWidgetUpdater;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -185,7 +186,7 @@ public class PricingInputActivity extends Activity {
         if (!OfflinePricingQueue.INSTANCE.isOnline(this)) {
             OfflinePricingQueue.INSTANCE.enqueue(this, orderId, pricesMap);
             Toast.makeText(this, "✓ Disimpan di luar talian (Pending Sync). Akan dihantar apabila dalam talian.", Toast.LENGTH_LONG).show();
-            PricingWidgetProvider.requestRefresh(getApplicationContext());
+            PricingWidgetUpdater.refresh(getApplicationContext());
             finish();
             return;
         }
@@ -289,7 +290,7 @@ public class PricingInputActivity extends Activity {
                         "✓ Invois " + (result.invoiceNo != null ? result.invoiceNo : "") + " diproses dan dihantar!",
                         Toast.LENGTH_LONG).show();
                 }
-                PricingWidgetProvider.requestRefresh(getApplicationContext());
+                PricingWidgetUpdater.refresh(getApplicationContext());
                 finish();
             } else {
                 Toast.makeText(PricingInputActivity.this, "✗ " + result.message, Toast.LENGTH_LONG).show();

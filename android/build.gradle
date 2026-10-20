@@ -10,6 +10,7 @@ buildscript {
         // were compiled with (metadata 2.2.0). KGP 2.0.x cannot read those jars and
         // the K2 compiler crashes with "source must not be null" while reporting it.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion"
         classpath 'com.google.gms:google-services:4.4.2'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.3'
 
@@ -47,6 +48,6 @@ subprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
 }

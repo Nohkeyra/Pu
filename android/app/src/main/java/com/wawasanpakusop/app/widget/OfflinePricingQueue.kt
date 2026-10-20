@@ -6,6 +6,7 @@ import android.net.NetworkCapabilities
 import android.util.Log
 import com.wawasanpakusop.app.security.SecureStorage
 import com.wawasanpakusop.app.telemetry.NativeCrashReporter
+import com.wawasanpakusop.app.widgets.PricingWidgetUpdater
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -140,7 +141,7 @@ object OfflinePricingQueue {
             }
 
             if (successCount > 0) {
-                PricingWidgetProvider.requestRefresh(context)
+                PricingWidgetUpdater.refresh(context)
             }
             onComplete?.invoke(successCount, failedCount)
         }

@@ -4,4 +4,5 @@
     <string name="title_activity_main">Restoran Wawasan</string>
     <string name="package_name">com.wawasanpakusop.app</string>
     <string name="custom_url_scheme">com.wawasanpakusop.app</string>
+    <string name="pricing_glance_widget_name">Pricing</string>
 </resources>
