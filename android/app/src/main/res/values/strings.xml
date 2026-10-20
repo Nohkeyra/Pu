@@ -5,4 +5,5 @@
     <string name="package_name">com.wawasanpakusop.app</string>
     <string name="custom_url_scheme">com.wawasanpakusop.app</string>
     <string name="pricing_glance_widget_name">Pricing</string>
+    <string name="upcoming_orders_glance_widget_name">Upcoming Orders</string>
 </resources>
