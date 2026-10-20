@@ -1,7 +1,6 @@
 package com.wawasanpakusop.app.widgets
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +35,6 @@ import com.wawasanpakusop.app.widget.OfflinePricingQueue
 import com.wawasanpakusop.app.widget.PricingInputActivity
 import com.wawasanpakusop.app.widget.PricingWidgetFetchService
 import org.json.JSONArray
-import org.json.JSONObject
 
 class RefreshGlanceActionCallback : ActionCallback {
     override suspend fun onAction(
@@ -180,7 +178,6 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
             .background(GlanceTheme.colors.surface)
             .padding(12.dp)
     ) {
-        // Header Row
         Row(
             modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -202,7 +199,6 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
                     )
                 )
             }
-            // Refresh Button Action
             Box(
                 modifier = GlanceModifier
                     .clickable(actionRunCallback<RefreshGlanceActionCallback>())
@@ -221,14 +217,10 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
         }
 
         if (orders.isEmpty()) {
-            // Empty / Unreadable Cache Placeholder: Tap to Open App
-            val openAppIntent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .clickable(actionStartActivity(openAppIntent))
+                    .clickable(actionStartActivity<MainActivity>())
                     .padding(12.dp)
                     .background(GlanceTheme.colors.surfaceVariant),
                 contentAlignment = Alignment.Center
@@ -254,7 +246,6 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
                 }
             }
         } else {
-            // Render Order Items (Up to top 3 for widget viewport fit)
             val displayOrders = orders.take(3)
             for (order in displayOrders) {
                 GlanceOrderRowItem(context, order)
@@ -266,20 +257,10 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
 
 @Composable
 fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem) {
-    val inputIntent = Intent(context, PricingInputActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY
-        putExtra("order_id", order.id)
-        putExtra("company_name", order.company)
-        putExtra("menu", order.menu)
-        putExtra("quantity", order.quantity)
-        putExtra("meals_label", order.mealsLabel)
-        putExtra("is_billed", order.isBilled)
-    }
-
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .clickable(actionStartActivity(inputIntent))
+            .clickable(actionStartActivity<PricingInputActivity>())
             .background(GlanceTheme.colors.surfaceVariant)
             .padding(8.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically
