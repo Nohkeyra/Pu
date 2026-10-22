@@ -138,6 +138,7 @@ dependencies {
     // which requires compileSdk 36+ / AGP 8.9.1+.
 
     // Jetpack Glance for Modern App Widgets (Pricing beta widget)
+    implementation libs.androidx.glance
     implementation libs.androidx.glance.appwidget
     implementation libs.androidx.glance.material3
 
