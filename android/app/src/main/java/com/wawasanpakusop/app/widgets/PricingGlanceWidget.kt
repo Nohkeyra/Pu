@@ -218,10 +218,13 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
         }
 
         if (orders.isEmpty()) {
+            val openAppIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .clickable(actionStartActivity<MainActivity>())
+                    .clickable(actionStartActivity(openAppIntent))
                     .padding(12.dp)
                     .background(GlanceTheme.colors.surfaceVariant),
                 contentAlignment = Alignment.Center
