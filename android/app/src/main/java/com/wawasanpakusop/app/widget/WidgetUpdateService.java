@@ -39,9 +39,9 @@ public class WidgetUpdateService {
     private static final String ENDPOINT = "/api/widget/upcoming-orders?limit=50";
     private static final int TIMEOUT_MS = 15000;
 
-    static final String PREFS_NAME = "wawasan_widget_prefs";
-    static final String PREF_ORDERS_JSON = "cached_orders_json";
-    static final String PREF_LAST_SUCCESS_AT = "cached_orders_last_success_at";
+    public static final String PREFS_NAME = "wawasan_widget_prefs";
+    public static final String PREF_ORDERS_JSON = "cached_orders_json";
+    public static final String PREF_LAST_SUCCESS_AT = "cached_orders_last_success_at";
 
     // If a refresh fails and the cache hasn't been successfully updated in
     // this long, the cache is treated as stale rather than silently shown
