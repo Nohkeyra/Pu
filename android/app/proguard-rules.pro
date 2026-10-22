@@ -22,6 +22,11 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class com.wawasanpakusop.app.widget.** { *; }
+-keep class com.wawasanpakusop.app.widgets.** { *; }
+-keep class com.wawasanpakusop.app.security.** { *; }
+-keep class com.wawasanpakusop.app.telemetry.** { *; }
+-keep class androidx.glance.** { *; }
+-dontwarn androidx.glance.**
 -keep class com.wawasanpakusop.app.MainActivity { *; }
 
 # Capacitor Core & Android Runtime
