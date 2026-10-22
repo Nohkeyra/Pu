@@ -164,7 +164,14 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                 val displayOrders = orders.take(4)
                 for (order in displayOrders) {
                     val detailIntent = Intent(context, OrderDetailActivity::class.java).apply {
+                        putExtra("order_id", order.id)
                         putExtra("orderId", order.id)
+                        putExtra("client_name", order.company)
+                        putExtra("pax", order.quantity)
+                        putExtra("menu", order.menu)
+                        putExtra("meal_type", order.menu)
+                        putExtra("date_time", "${order.dateLabel} • ${order.timeLabel}")
+                        putExtra("status", order.status)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
                     val rowClick = actionStartActivity(detailIntent)

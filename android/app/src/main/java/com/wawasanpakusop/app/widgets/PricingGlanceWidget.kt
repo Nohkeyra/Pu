@@ -1,6 +1,7 @@
 package com.wawasanpakusop.app.widgets
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -257,10 +258,20 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
 
 @Composable
 fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem) {
+    val inputIntent = Intent(context, PricingInputActivity::class.java).apply {
+        putExtra("order_id", order.id)
+        putExtra("company_name", order.company)
+        putExtra("menu", order.menu)
+        putExtra("quantity", order.quantity)
+        putExtra("meals_label", order.mealsLabel)
+        putExtra("is_billed", order.isBilled)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .clickable(actionStartActivity<PricingInputActivity>())
+            .clickable(actionStartActivity(inputIntent))
             .background(GlanceTheme.colors.surfaceVariant)
             .padding(8.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically
