@@ -17,9 +17,10 @@ const widgetPricingLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many widget requests. Please try again later.' },
 });
 
-// ─── Auth helper for widget-keyed and admin endpoints ──────────────────────────
-// Requires verified Admin credentials (JWT or Firebase ID token) or a verified widget pre-shared key.
-export async function verifyAdminOrWidgetAuth(req: any, res: any): Promise<boolean> {
+// ─── Admin authentication for privileged widget endpoints ─────────────────────
+// Requires verified Admin credentials (server-signed admin JWT or Firebase ID token).
+// A key embedded in a distributed APK is not an authentication factor.
+export async function verifyAdminAuth(req: any, res: any): Promise<boolean> {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
@@ -47,42 +48,21 @@ export async function verifyAdminOrWidgetAuth(req: any, res: any): Promise<boole
         }
       }
     } catch {
-      // Pass through to widget key check
+      // Invalid or expired Firebase token: reject below.
     }
   }
 
-  // 3. Verify via widget pre-shared key (fail-closed if not configured)
-  const key = process.env.WIDGET_API_KEY;
-  const provided = req.headers['x-widget-key'];
-  if (key && provided && provided === key) {
-    req.isWidgetAuthorized = true;
-    return true;
-  }
-
-  telemetry.captureException(new Error('Unauthorized widget pricing access attempt'), {
+  // No shared-key fallback: distributed APK contents are inspectable.
+  telemetry.captureException(new Error('Unauthorized privileged widget access attempt'), {
     req,
-    metadata: { reason: 'Missing or invalid admin token and widget key' },
+    metadata: { reason: 'Missing or invalid admin credentials' },
   });
 
   res.status(401).json({
     success: false,
-    error: 'Unauthorized: Requires valid admin credentials or authenticated widget key.',
+    error: 'Unauthorized: valid admin credentials required.',
   });
   return false;
-}
-
-function checkWidgetKey(req: any, res: any): boolean {
-  const key = process.env.WIDGET_API_KEY;
-  if (!key) {
-    res.status(503).json({ success: false, error: 'Widget API not configured.' });
-    return false;
-  }
-  const provided = req.headers['x-widget-key'];
-  if (!provided || provided !== key) {
-    res.status(401).json({ success: false, error: 'Unauthorized.' });
-    return false;
-  }
-  return true;
 }
 
 // Helper to format meal types into clean Malay labels
@@ -99,10 +79,12 @@ function formatMealTypeBM(meals: any): string {
   return arr.map(m => map[m] || m).join(' + ');
 }
 
-// ─── 1. Upcoming orders widget (public, no PII) ───────────────────────────────
-// Returns upcoming orders with: meal type, quantity, lokasi, time
+// ─── 1. Upcoming orders widget (admin-authenticated) ──────────────────────────
+// Operational order data is restricted to authenticated administrators.
 // Enables scroll with configurable limit (default 50)
 router.get('/widget/upcoming-orders', async (req, res) => {
+  if (!(await verifyAdminAuth(req, res))) return;
+
   try {
     const db = getFirestore();
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
@@ -146,8 +128,8 @@ router.get('/widget/upcoming-orders', async (req, res) => {
           mealType: mealTypeStr,
           quantity: d.quantity || d.guests || d.pax || 0,
           location: locStr,
-          // Public endpoint: do not expose customer/company name (PII).
-          to: 'Tempahan',
+          // Admin-authenticated endpoint: provide customer/company label for widget display
+          to: d.to || d.company || d.name || 'Tempahan',
           menu: d.menu || '',
           status: status,
         };
@@ -158,15 +140,15 @@ router.get('/widget/upcoming-orders', async (req, res) => {
     return res.json({ success: true, orders, date: todayStr, count: orders.length });
   } catch (err) {
     console.error('[Widget upcoming-orders Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Unable to load upcoming orders.' });
   }
 });
 
-// ─── 2. Orders for the PRICING widget (widget-key protected) ──────────────────
+// ─── 2. Orders for the PRICING widget (admin-authenticated) ──────────────────
 // Returns orders (both past and new/upcoming) that have not had their prices keyed in yet.
 // Query checks status in ['pending', 'approved'] and filters out any already billed.
 router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPricingLimiter, async (req, res) => {
-  if (!checkWidgetKey(req, res)) return;
+  if (!(await verifyAdminAuth(req, res))) return;
 
   try {
     const db = getFirestore();
@@ -253,11 +235,11 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
     });
   } catch (err) {
     console.error('[Widget today-pricing-orders Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Unable to load pricing orders.' });
   }
 });
 
-// ─── 3. Set pricing + auto-generate & email final invoice (widget-key protected) ─
+// ─── 3. Set pricing + auto-generate & email final invoice (admin-authenticated) ─
 // This is the core action of the pricing widget:
 //   1. Receive pricePerPax per meal type from widget input
 //   2. Calculate totalAmount
@@ -266,7 +248,7 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
 //   5. Email PDF to customer
 //   6. Update Firestore order to status: 'billed'
 router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
-  if (!(await verifyAdminOrWidgetAuth(req, res))) return;
+  if (!(await verifyAdminAuth(req, res))) return;
 
   const { orderId, prices } = req.body as {
     orderId: string;
@@ -280,10 +262,12 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     return res.status(400).json({ success: false, error: 'prices object required.' });
   }
 
-  // Validate: all price values must be positive numbers
+  // Validate all submitted values before any database or invoice side effects.
+  // Do not invent a business price ceiling; enforce finite positive MYR values here
+  // and leave any approved ceiling to explicit business configuration.
   for (const [meal, price] of Object.entries(prices)) {
-    if (typeof price !== 'number' || price <= 0) {
-      return res.status(400).json({ success: false, error: `Invalid price for ${meal}: must be a positive number.` });
+    if (!meal.trim() || typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
+      return res.status(400).json({ success: false, error: 'Each meal must have a finite positive price.' });
     }
   }
 
@@ -308,28 +292,40 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     }
 
     // Calculate totalAmount: sum of (price * quantity) for each meal in the order
-    const quantity = Number(order.quantity || order.guests || 0);
-    const orderMeals: string[] = Array.isArray(order.meals) ? order.meals : [];
+    const quantity = Number(order.quantity || order.guests || order.pax || 0);
+    const orderMeals: string[] = Array.isArray(order.meals) ? order.meals : (order.meals ? [String(order.meals)] : []);
+
+    if (!Number.isFinite(quantity) || quantity <= 0 || orderMeals.length === 0) {
+      return res.status(400).json({ success: false, error: 'Order quantity or meal information is invalid.' });
+    }
 
     let totalAmount = 0;
     const finalPrices: Record<string, number> = {};
 
+    let missingMealPrice = false;
     for (const meal of orderMeals) {
       const priceForMeal = prices[meal] ?? prices[meal.replace('_', '')] ?? null;
-      if (priceForMeal !== null && priceForMeal > 0) {
-        finalPrices[meal] = priceForMeal;
-        totalAmount += priceForMeal * quantity;
+      if (priceForMeal === null || typeof priceForMeal !== 'number' || !Number.isFinite(priceForMeal) || priceForMeal <= 0) {
+        missingMealPrice = true;
+        continue;
+      }
+      finalPrices[meal] = priceForMeal;
+      totalAmount += priceForMeal * quantity;
+    }
+
+    // Preserve the existing single-default-price contract only when no individual
+    // meal price matched. Never partially bill an order with some meal prices missing.
+    if (missingMealPrice) {
+      if (Object.keys(finalPrices).length === 0 && typeof prices.default === 'number' && Number.isFinite(prices.default) && prices.default > 0) {
+        finalPrices.default = prices.default;
+        totalAmount = prices.default * quantity;
+      } else {
+        return res.status(400).json({ success: false, error: 'A valid price is required for every meal in the order.' });
       }
     }
 
-    // If no meal matched, fall back to a single 'default' price
-    if (Object.keys(finalPrices).length === 0 && prices['default']) {
-      finalPrices['default'] = prices['default'];
-      totalAmount = prices['default'] * quantity;
-    }
-
-    if (totalAmount <= 0) {
-      return res.status(400).json({ success: false, error: 'Could not compute a valid total. Check that meal types in the order match the prices provided.' });
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      return res.status(400).json({ success: false, error: 'Could not compute a valid total.' });
     }
 
     // Generate sequential invoice number (RW) or transition QT prefix to RW
@@ -337,28 +333,52 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
       : (order.invoiceNo || await generateSequentialInvoiceNo(false));
 
-    // Build order object for asynchronous pipeline
+    // Make the eligibility check and billing transition one Firestore transaction.
+    // A concurrent request will re-read the order and fail once another request bills it.
+    const invoiceGeneratedAt = new Date().toISOString();
+    const committedOrder = await db.runTransaction(async (tx: any) => {
+      const freshSnap = await tx.get(orderRef);
+      if (!freshSnap.exists) {
+        const error: any = new Error('ORDER_NOT_FOUND');
+        error.code = 'ORDER_NOT_FOUND';
+        throw error;
+      }
+      const freshOrder = freshSnap.data()!;
+      if (!['pending', 'approved'].includes(String(freshOrder.status || 'pending'))) {
+        const error: any = new Error('ORDER_NOT_ELIGIBLE');
+        error.code = 'ORDER_NOT_ELIGIBLE';
+        error.currentStatus = freshOrder.status || 'pending';
+        throw error;
+      }
+      const freshQuantity = Number(freshOrder.quantity || freshOrder.guests || freshOrder.pax || 0);
+      const freshMeals: string[] = Array.isArray(freshOrder.meals) ? freshOrder.meals : (freshOrder.meals ? [String(freshOrder.meals)] : []);
+      if (freshQuantity !== quantity || JSON.stringify(freshMeals) !== JSON.stringify(orderMeals)) {
+        const error: any = new Error('ORDER_CHANGED');
+        error.code = 'ORDER_CHANGED';
+        throw error;
+      }
+      tx.update(orderRef, {
+        status: 'billed',
+        prices: finalPrices,
+        totalAmount,
+        invoiceNo,
+        invoiceGeneratedAt,
+        invoiceDeliveryStatus: (typeof freshOrder.email === 'string' && freshOrder.email.trim().includes('@')) ? 'queued' : 'skipped_no_email',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return freshOrder;
+    });
+
+    // Use the fresh transactional snapshot for the invoice pipeline.
+    const recipientEmail = typeof committedOrder.email === 'string' ? committedOrder.email.trim() : '';
     const orderForPdf = {
-      ...order,
+      ...committedOrder,
       id: orderId,
       prices: finalPrices,
       totalAmount,
       invoiceNo,
-      invoiceGeneratedAt: new Date().toISOString(),
+      invoiceGeneratedAt,
     };
-
-    const recipientEmail = order.email;
-
-    // Atomically commit the status update to Firestore
-    await orderRef.update({
-      status: 'billed',
-      prices: finalPrices,
-      totalAmount,
-      invoiceNo,
-      invoiceGeneratedAt: new Date().toISOString(),
-      invoiceDeliveryStatus: recipientEmail ? 'queued' : 'skipped_no_email',
-      updatedAt: FieldValue.serverTimestamp(),
-    });
 
     // Asynchronously dispatch PDF generation & email delivery in background queue
     if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.includes('@')) {
@@ -368,8 +388,8 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         invoiceNo,
         recipientEmail,
         totalAmount,
-        companyName: order.to || order.company || 'Pelanggan',
-        lang: (order.lang === 'en') ? 'en' : 'bm',
+        companyName: committedOrder.to || committedOrder.company || 'Pelanggan',
+        lang: (committedOrder.lang === 'en') ? 'en' : 'bm',
       });
     }
 
@@ -389,8 +409,15 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     });
 
   } catch (err) {
+    const code = (err as any)?.code;
+    if (code === 'ORDER_NOT_FOUND') {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+    if (code === 'ORDER_NOT_ELIGIBLE' || code === 'ORDER_CHANGED') {
+      return res.status(409).json({ success: false, error: 'Order changed or is not eligible for pricing. Refresh the widget and try again.' });
+    }
     telemetry.captureException(err, { req, metadata: { orderId } });
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Unable to save pricing and queue the invoice.' });
   }
 });
 

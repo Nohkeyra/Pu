@@ -57,14 +57,25 @@ public class WidgetUpdateService {
             String ordersJson = null;
             boolean success = false;
 
+            boolean authRejected = false;
             try {
+                String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(context);
+                if (adminToken == null || adminToken.isEmpty()) {
+                    authRejected = true;
+                    throw new SecurityException("Missing admin session token");
+                }
                 URL url = new URL(API_BASE_URL + ENDPOINT);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "Bearer " + adminToken);
                 conn.setConnectTimeout(TIMEOUT_MS);
                 conn.setReadTimeout(TIMEOUT_MS);
 
-                if (conn.getResponseCode() == 200) {
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 401 || responseCode == 403) {
+                    authRejected = true;
+                }
+                if (responseCode == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     StringBuilder sb = new StringBuilder();
                     String line;
@@ -83,6 +94,10 @@ public class WidgetUpdateService {
             }
 
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            if (authRejected) {
+                // Do not keep displaying operational order data after logout or token rejection.
+                prefs.edit().remove(PREF_ORDERS_JSON).remove(PREF_LAST_SUCCESS_AT).apply();
+            }
             if (success && ordersJson != null) {
                 prefs.edit()
                     .putString(PREF_ORDERS_JSON, ordersJson)

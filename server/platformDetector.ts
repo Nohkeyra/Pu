@@ -28,12 +28,8 @@ function isTrustedPreviewUrl(url: string): boolean {
 }
 
 export function detectServerPlatform(req: Request): ServerDetectedPlatform {
-  // 1. Check explicit client platform header
-  const headerPlatform = req.headers['x-app-platform'] as string | undefined;
-  if (headerPlatform === 'android_apk' || headerPlatform === 'google_ai_studio_preview' || headerPlatform === 'webapp') {
-    return headerPlatform;
-  }
-
+  // Client-supplied platform headers are not identity signals and must not
+  // override server-side classification used by response security middleware.
   const userAgent = (req.headers['user-agent'] || '').toLowerCase();
   const origin = (req.headers['origin'] || '').toLowerCase();
   const referer = (req.headers['referer'] || '').toLowerCase();
@@ -73,12 +69,7 @@ export function platformOptimizerMiddleware(req: Request, res: Response, next: N
   // Inform response header silently
   res.setHeader('X-App-Platform-Detected', platform);
 
-  if (platform === 'android_apk') {
-    // Android APK WebView optimization:
-    // Ensure CORS headers allow native Capacitor origins, reduce asset overhead for API routes
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-App-Platform');
-  } else if (platform === 'google_ai_studio_preview') {
+  if (platform === 'google_ai_studio_preview') {
     // Google AI Studio preview optimization:
     // Allow iframe embedding without blocking headers for trusted preview environments only.
     res.removeHeader('X-Frame-Options');

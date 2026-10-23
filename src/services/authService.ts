@@ -4,6 +4,7 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { getApiUrl } from '@/lib/api';
 import { auth } from '@/firebaseConfig';
 import { signInWithCustomToken } from 'firebase/auth';
+import { registerPlugin, Capacitor } from '@capacitor/core';
 
 /**
  * Storage keys and server identifiers
@@ -14,6 +15,23 @@ export const ADMIN_BIOMETRIC_PREF_KEY = 'wawasan_admin_biometrics_enabled';
 
 export const CUSTOMER_BIOMETRIC_SERVER_ID = 'com.wawasanpakusop.app.customer';
 export const CUSTOMER_BIOMETRIC_PREF_KEY = 'wawasan_customer_biometrics_enabled';
+
+const AdminTokenBridge = registerPlugin<{
+  saveToken(options: { token: string }): Promise<void>;
+  clearToken(): Promise<void>;
+}>('AdminTokenBridge');
+
+async function syncAdminTokenToNative(token: string | null): Promise<void> {
+  if (!isAndroidApk() || !Capacitor.isPluginAvailable('AdminTokenBridge')) return;
+  try {
+    if (token) await AdminTokenBridge.saveToken({ token });
+    else await AdminTokenBridge.clearToken();
+  } catch (err) {
+    // Do not silently claim the native widget session was synced. The app login
+    // remains available, but the native widget will require a successful sync.
+    console.warn('[AuthService] Could not sync admin session to native widget storage:', err);
+  }
+}
 
 /**
  * Types and Interfaces for Authentication & Biometric states
@@ -548,6 +566,7 @@ export async function getStoredAdminToken(): Promise<string | null> {
 export async function saveAdminToken(token: string): Promise<void> {
   try {
     await setSecureItem(ADMIN_TOKEN_KEY, token);
+    await syncAdminTokenToNative(token);
     try {
       window.dispatchEvent(new CustomEvent('admin:login-state-change'));
     } catch {
@@ -579,6 +598,7 @@ export async function clearAdminSession(): Promise<void> {
     }
 
     await removeSecureItem(ADMIN_TOKEN_KEY);
+    await syncAdminTokenToNative(null);
     await deleteAdminBiometricCredentials();
 
     try {

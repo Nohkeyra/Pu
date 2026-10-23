@@ -18,7 +18,6 @@ object SecureStorage {
 
     // Key constants
     const val KEY_ADMIN_TOKEN = "admin_auth_jwt"
-    const val KEY_WIDGET_API_KEY = "widget_api_key"
     const val KEY_OFFLINE_PRICING_QUEUE = "offline_pricing_queue"
     const val KEY_CACHED_PRICING_ORDERS = "cached_pricing_orders"
 
@@ -52,12 +51,11 @@ object SecureStorage {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            Log.e(
-                TAG,
-                "Failed to initialize EncryptedSharedPreferences; falling back to private SharedPreferences.",
+            Log.e(TAG, "Encrypted storage unavailable; refusing plaintext fallback.", e)
+            throw IllegalStateException(
+                "Secure storage is unavailable. Sensitive widget data will not be stored unencrypted.",
                 e
             )
-            appContext.getSharedPreferences(SECURE_PREFS_FILE + "_fallback", Context.MODE_PRIVATE)
         }
     }
 
@@ -85,16 +83,6 @@ object SecureStorage {
     @JvmStatic
     fun getAdminToken(context: Context): String? {
         return getString(context, KEY_ADMIN_TOKEN, null)
-    }
-
-    @JvmStatic
-    fun saveWidgetKey(context: Context, key: String?) {
-        saveString(context, KEY_WIDGET_API_KEY, key)
-    }
-
-    @JvmStatic
-    fun getWidgetKey(context: Context): String? {
-        return getString(context, KEY_WIDGET_API_KEY, null)
     }
 
     @JvmStatic

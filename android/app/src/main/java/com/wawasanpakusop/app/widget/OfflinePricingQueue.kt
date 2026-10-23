@@ -112,8 +112,12 @@ object OfflinePricingQueue {
                 if (queue.length() == 0) return@execute
 
                 val remaining = JSONArray()
-                val apiKey = SecureStorage.getWidgetKey(context) ?: PricingWidgetFetchService.WIDGET_API_KEY
                 val adminToken = SecureStorage.getAdminToken(context)
+                if (adminToken.isNullOrBlank()) {
+                    Log.w(TAG, "Admin session missing; pending prices remain queued until the admin signs in again.")
+                    onComplete?.invoke(0, queue.length())
+                    return@execute
+                }
 
                 for (i in 0 until queue.length()) {
                     val item = queue.getJSONObject(i)
@@ -127,7 +131,7 @@ object OfflinePricingQueue {
                         put("prices", prices)
                     }
 
-                    val success = sendPriceUpdate(body.toString(), apiKey, adminToken)
+                    val success = sendPriceUpdate(body.toString(), adminToken)
                     if (success) {
                         successCount++
                         Log.i(TAG, "Successfully synced pending order: $orderId")
@@ -147,18 +151,13 @@ object OfflinePricingQueue {
         }
     }
 
-    private fun sendPriceUpdate(requestBody: String, widgetKey: String?, adminToken: String?): Boolean {
+    private fun sendPriceUpdate(requestBody: String, adminToken: String): Boolean {
         return try {
             val url = URL(API_BASE_URL + ENDPOINT)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            if (!widgetKey.isNullOrEmpty()) {
-                conn.setRequestProperty("x-widget-key", widgetKey)
-            }
-            if (!adminToken.isNullOrEmpty()) {
-                conn.setRequestProperty("Authorization", "Bearer $adminToken")
-            }
+            conn.setRequestProperty("Authorization", "Bearer $adminToken")
             conn.connectTimeout = 15000
             conn.readTimeout = 20000
             conn.doOutput = true

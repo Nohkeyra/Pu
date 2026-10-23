@@ -74,13 +74,9 @@ public class PricingInputActivity extends Activity {
             return;
         }
 
-        // Authorization gate: verify that widget key or admin token is present in SecureStorage or build
-        String widgetKey = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getWidgetKey(this);
-        if (widgetKey == null || widgetKey.isEmpty()) {
-            widgetKey = PricingWidgetFetchService.WIDGET_API_KEY;
-        }
+        // Privileged pricing requires an admin session token; no APK-shared-key fallback.
         String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(this);
-        if ((widgetKey == null || widgetKey.isEmpty()) && (adminToken == null || adminToken.isEmpty())) {
+        if (adminToken == null || adminToken.isEmpty()) {
             Toast.makeText(this, "Akses Terhad: Sila sahkan kelayakan pentadbir.", Toast.LENGTH_LONG).show();
             finish();
             return;
@@ -222,22 +218,16 @@ public class PricingInputActivity extends Activity {
         protected TaskResult doInBackground(String... params) {
             String requestBody = params[0];
             try {
-                String widgetKey = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getWidgetKey(PricingInputActivity.this);
-                if (widgetKey == null || widgetKey.isEmpty()) {
-                    widgetKey = PricingWidgetFetchService.WIDGET_API_KEY;
-                }
                 String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(PricingInputActivity.this);
+                if (adminToken == null || adminToken.isEmpty()) {
+                    return new TaskResult(false, "Sila buka aplikasi dan log masuk sebagai admin sebelum menetapkan harga.", null, false);
+                }
 
                 URL url = new URL(API_BASE_URL + ENDPOINT);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                if (widgetKey != null && !widgetKey.isEmpty()) {
-                    conn.setRequestProperty("x-widget-key", widgetKey);
-                }
-                if (adminToken != null && !adminToken.isEmpty()) {
-                    conn.setRequestProperty("Authorization", "Bearer " + adminToken);
-                }
+                conn.setRequestProperty("Authorization", "Bearer " + adminToken);
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(20000);
                 conn.setDoOutput(true);

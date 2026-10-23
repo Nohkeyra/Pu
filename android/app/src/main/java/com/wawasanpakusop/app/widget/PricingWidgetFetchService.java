@@ -40,8 +40,6 @@ public class PricingWidgetFetchService {
 
     public static final String PREF_ORDERS_JSON = "cached_pricing_orders_json";
 
-    static final String WIDGET_API_KEY = com.wawasanpakusop.app.BuildConfig.WIDGET_API_KEY;
-
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void fetchAndUpdate(Context context, int[] appWidgetIds, BroadcastReceiver.PendingResult pendingResult) {
@@ -51,21 +49,16 @@ public class PricingWidgetFetchService {
             String errorReason = null;
 
             try {
-                String effectiveKey = SecureStorage.INSTANCE.getWidgetKey(context);
-                if (effectiveKey == null || effectiveKey.isEmpty()) {
-                    effectiveKey = WIDGET_API_KEY;
-                }
                 String adminToken = SecureStorage.INSTANCE.getAdminToken(context);
+                if (adminToken == null || adminToken.isEmpty()) {
+                    errorReason = "Sila buka aplikasi dan log masuk sebagai admin untuk menyegarkan widget.";
+                    throw new SecurityException("Missing admin session token");
+                }
 
                 URL url = new URL(API_BASE_URL + ENDPOINT);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                if (effectiveKey != null && !effectiveKey.isEmpty()) {
-                    conn.setRequestProperty("x-widget-key", effectiveKey);
-                }
-                if (adminToken != null && !adminToken.isEmpty()) {
-                    conn.setRequestProperty("Authorization", "Bearer " + adminToken);
-                }
+                conn.setRequestProperty("Authorization", "Bearer " + adminToken);
                 conn.setConnectTimeout(TIMEOUT_MS);
                 conn.setReadTimeout(TIMEOUT_MS);
 
@@ -83,15 +76,20 @@ public class PricingWidgetFetchService {
                         success = true;
                     }
                 } else if (code == 401 || code == 403) {
-                    errorReason = "Pengesahan gagal (Kunci/Akses ditolak).";
+                    errorReason = "Sesi admin tamat atau akses ditolak. Buka aplikasi dan log masuk semula.";
+                    SecureStorage.INSTANCE.saveString(context, PREF_ORDERS_JSON, null);
                 } else {
                     errorReason = "Server ralat (HTTP " + code + ")";
                 }
                 conn.disconnect();
             } catch (Exception e) {
                 success = false;
-                errorReason = "Tiada sambungan internet.";
-                NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("component", "PricingWidgetFetchService"));
+                if (!(e instanceof SecurityException)) {
+                    errorReason = "Tiada sambungan internet.";
+                }
+                if (!(e instanceof SecurityException)) {
+                    NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("component", "PricingWidgetFetchService"));
+                }
             }
 
             if (success && ordersJson != null) {

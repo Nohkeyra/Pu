@@ -7,11 +7,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
+import com.wawasanpakusop.app.security.AdminTokenBridgePlugin;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(AdminTokenBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
         // Initialize centralized crash reporter for native threads and uncaught exceptions
