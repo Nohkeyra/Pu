@@ -42,19 +42,66 @@ interface ClaimedJob {
 const toMillis = (v: any): number => (v && typeof v.toMillis === 'function' ? v.toMillis() : 0);
 
 /**
+ * Classifies whether an email delivery failure is permanent (non-retryable).
+ * Permanent failures include invalid recipient email formats, explicit permanent error flags,
+ * or standard SMTP 5xx permanent negative completion responses (e.g. invalid recipient, mailbox not found).
+ */
+export function isPermanentEmailError(err: unknown, recipientEmail?: string): boolean {
+  if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.trim().length > 0) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) {
+      return true;
+    }
+  }
+  if (!err) return false;
+  const e = err as any;
+  if (e.isPermanent === true) return true;
+  if (e.code === 'EINVALIDEMAIL' || e.code === 'EENVELOPE') return true;
+
+  const msg = String(e.message || e.response || e || '').toLowerCase();
+  const permanentPatterns = [
+    /invalid recipient/,
+    /invalid email/,
+    /recipient address rejected/,
+    /mailbox unavailable/,
+    /user unknown/,
+    /account disabled/,
+    /domain not found/,
+    /550 /,
+    /551 /,
+    /552 /,
+    /553 /,
+    /554 /,
+    /5\.1\.1/,
+    /5\.1\.2/,
+    /5\.1\.3/,
+    /5\.2\.1/
+  ];
+  return permanentPatterns.some(pattern => pattern.test(msg));
+}
+
+/**
  * Durable Firestore-backed Invoice Outbox Service.
  *
  * Job lifecycle: pending -> processing -> delivered | failed.
  *  - Claiming is an atomic transaction that sets lockedBy, lockedUntil and a fresh
  *    per-claim `leaseToken`, and increments `attempts` (so crash loops are bounded too).
+ *  - ATTEMPT-COUNT SEMANTICS: `maxRetries` (default 3) specifies the MAXIMUM TOTAL ATTEMPTS
+ *    allowed (1 initial attempt + 2 retries = 3 total attempts).
+ *  - RETRY BACKOFF & PERSISTENCE: Retryable failures compute a bounded exponential backoff delay
+ *    with equal jitter (50% fixed base, 50% random jitter) and persist `nextRetryAt` as a Firestore
+ *    Timestamp. The delay survives server restarts and prevents any worker from claiming the job
+ *    until `now >= nextRetryAt`.
+ *  - PERMANENT FAILURES: Non-retryable failures (e.g. invalid email format, 5xx SMTP errors,
+ *    or exhausted total attempts) are marked `isPermanent: true` with `status: 'failed'` and
+ *    kept out of automatic retries.
  *  - Jobs left in `processing` whose lease expired (worker crash) are recovered by a
  *    separate query and re-claimed through the same transaction.
  *  - Acknowledgement (delivered / failed) is a transaction that only applies if the job is
  *    still `processing` with the caller's `leaseToken`, so a stale worker can never
  *    overwrite a job that another worker has reclaimed.
- *  - A job whose attempts are exhausted stays in the collection as `status: 'failed'` with
- *    `attempts >= maxRetries`, `failedPermanentlyAt` and `lastError` for diagnosis. To retry it
- *    manually, set status back to 'pending' and attempts to 0 on that document.
+ *  - A job whose attempts are exhausted or permanently failed stays in the collection as
+ *    `status: 'failed'` with `lastError` for diagnosis. To retry manually, set status to 'pending',
+ *    attempts to 0, `isPermanent` to false, and `nextRetryAt` to null on that document.
  *
  * NOTE ON SMTP DELIVERY SEMANTICS:
  * SMTP providers do not guarantee exactly-once delivery. If a worker crashes after the SMTP
@@ -68,6 +115,8 @@ export class DurableInvoiceOutboxService {
   private pollIntervalMs = 5000;
   private leaseDurationMs = 60_000; // 1 minute lease lock
   private maxRetries = 3;
+  private baseRetryDelayMs = 5_000;  // 5 seconds base retry delay
+  private maxRetryDelayMs = 300_000; // 5 minutes max retry delay
   private timer: NodeJS.Timeout | null = null;
 
   // Permanent Firestore errors (e.g. 9 FAILED_PRECONDITION: missing composite index)
@@ -82,6 +131,31 @@ export class DurableInvoiceOutboxService {
 
   constructor() {
     this.startBackgroundWorker();
+  }
+
+  public setBackoffDelays(baseMs: number, maxMs: number): void {
+    this.baseRetryDelayMs = baseMs;
+    this.maxRetryDelayMs = maxMs;
+  }
+
+  /**
+   * Computes bounded exponential backoff with equal jitter.
+   * Equal jitter guarantees at least 50% of the exponential delay with up to 50% random variation,
+   * avoiding thundering herd effects while keeping a predictable lower bound.
+   *
+   * @param attempt 1-based index of the failed attempt (1 for 1st failure, 2 for 2nd failure)
+   * @param randomFn optional RNG returning [0, 1) for testability
+   */
+  public computeRetryDelayMs(attempt: number, randomFn: () => number = Math.random): number {
+    const safeAttempt = Math.max(1, attempt);
+    const expDelay = Math.min(
+      this.maxRetryDelayMs,
+      this.baseRetryDelayMs * Math.pow(2, safeAttempt - 1)
+    );
+    const half = expDelay / 2;
+    const r = typeof randomFn === 'function' ? randomFn() : Math.random();
+    const clampedR = Math.max(0, Math.min(1, r));
+    return Math.floor(half + clampedR * half);
   }
 
   /** Firestore document ids cannot contain '/', so unsafe keys are hashed deterministically. */
@@ -118,6 +192,8 @@ export class DurableInvoiceOutboxService {
       createdAt: now,
       updatedAt: now,
       lastError: null,
+      nextRetryAt: null,
+      isPermanent: false,
       ...extra,
     };
   }
@@ -235,21 +311,14 @@ export class DurableInvoiceOutboxService {
     }
   }
 
-  private buildQuery(kind: PollKind, nowMs: number) {
+  private buildQuery(kind: PollKind) {
     const col = getFirestore().collection('invoice_outbox');
     if (kind === 'ready') {
-      // Index: invoice_outbox (status ASC, attempts ASC)
-      return col
-        .where('status', 'in', ['pending', 'failed'])
-        .where('attempts', '<', this.maxRetries)
-        .limit(5);
+      // Single-field index on status (supported out-of-the-box by Firestore without composite indexes)
+      return col.where('status', 'in', ['pending', 'failed']).limit(10);
     }
-    // Crash recovery: leases that have expired.
-    // Index: invoice_outbox (status ASC, lockedUntil ASC)
-    return col
-      .where('status', '==', 'processing')
-      .where('lockedUntil', '<=', Timestamp.fromMillis(nowMs))
-      .limit(5);
+    // Crash recovery: single-field index on status == 'processing'
+    return col.where('status', '==', 'processing').limit(10);
   }
 
   private async drain(kind: PollKind): Promise<void> {
@@ -258,13 +327,27 @@ export class DurableInvoiceOutboxService {
     if (nowMs < state.blockedUntilMs) return;
 
     try {
-      const snapshot = await this.buildQuery(kind, nowMs).get();
+      const snapshot = await this.buildQuery(kind).get();
 
-      // Query is healthy again (e.g. index finished building): clear any backoff.
+      // Query is healthy again: clear any backoff.
       state.blockedUntilMs = 0;
       state.backoffMs = DurableInvoiceOutboxService.BLOCK_BASE_MS;
 
       for (const docSnap of snapshot.docs) {
+        const d = docSnap.data();
+        if (kind === 'ready') {
+          const attempts = d?.attempts || 0;
+          const maxRetries = d?.maxRetries || this.maxRetries;
+          if (attempts >= maxRetries) continue;
+          if (d?.isPermanent) continue;
+
+          const nextRetryAtMs = toMillis(d?.nextRetryAt);
+          if (nextRetryAtMs && nextRetryAtMs > nowMs) continue;
+        } else if (kind === 'recovery') {
+          const lockedUntilMs = toMillis(d?.lockedUntil);
+          if (!lockedUntilMs || lockedUntilMs > nowMs) continue;
+        }
+
         const claimed = await this.claim(docSnap.ref);
         if (claimed) {
           await this.executeJob(docSnap.id, claimed);
@@ -295,8 +378,9 @@ export class DurableInvoiceOutboxService {
   }
 
   /**
-   * Atomically claim a job (new work or an expired lease). Returns null if another worker
-   * holds a live lease, the job is delivered/exhausted, or it was just dead-lettered.
+   * Atomically claim a job (new work, retryable failure whose nextRetryAt has arrived, or an expired lease).
+   * Returns null if another worker holds a live lease, the job is not yet eligible for retry,
+   * it is permanently failed, or attempts are exhausted.
    */
   private async claim(ref: FirebaseFirestore.DocumentReference): Promise<ClaimedJob | null> {
     const db = getFirestore();
@@ -314,16 +398,20 @@ export class DurableInvoiceOutboxService {
 
         if (d.status === 'processing') {
           if (toMillis(d.lockedUntil) > nowMs) return null; // live lease held by another worker
-          if (attempts >= maxRetries) {
-            // Crashed/timed out on every allowed attempt: keep the job visible as failed.
-            const lastError = 'Lease expired after maximum attempts (worker crash or timeout)';
+          if (d.isPermanent || attempts >= maxRetries) {
+            // Crashed/timed out on every allowed attempt or marked permanent: keep the job visible as failed.
+            const lastError = d.isPermanent
+              ? (d.lastError || 'Permanent failure (non-retryable error)')
+              : 'Lease expired after maximum attempts (worker crash or timeout)';
             tx.update(ref, {
               status: 'failed',
+              isPermanent: true,
               lockedBy: null,
               lockedUntil: null,
               leaseToken: null,
+              nextRetryAt: null,
               lastError,
-              failedPermanentlyAt: FieldValue.serverTimestamp(),
+              failedPermanentlyAt: d.failedPermanentlyAt || FieldValue.serverTimestamp(),
               updatedAt: FieldValue.serverTimestamp(),
             });
             tx.set(orderRef, {
@@ -334,7 +422,9 @@ export class DurableInvoiceOutboxService {
             return null;
           }
         } else if (d.status === 'pending' || d.status === 'failed') {
-          if (attempts >= maxRetries) return null;
+          if (d.isPermanent || attempts >= maxRetries) return null;
+          const nextRetryAtMs = toMillis(d.nextRetryAt);
+          if (nextRetryAtMs && nextRetryAtMs > nowMs) return null; // Not eligible yet for retry
         } else {
           return null; // delivered or unknown
         }
@@ -395,7 +485,7 @@ export class DurableInvoiceOutboxService {
         metadata: { component: 'DurableInvoiceOutboxService', jobId, orderId: data.orderId }
       });
 
-      await this.acknowledgeFailure(jobId, claimed, errorMsg);
+      await this.acknowledgeFailure(jobId, claimed, err);
       return;
     }
 
@@ -447,23 +537,32 @@ export class DurableInvoiceOutboxService {
     }
   }
 
-  private async acknowledgeFailure(jobId: string, claimed: ClaimedJob, errorMsg: string): Promise<void> {
+  private async acknowledgeFailure(jobId: string, claimed: ClaimedJob, rawError: unknown): Promise<void> {
     const db = getFirestore();
     const ref = db.collection('invoice_outbox').doc(jobId);
     const orderRef = db.collection('orders').doc(claimed.data.orderId);
-    const isPermanent = claimed.attempts >= claimed.maxRetries;
+    const errorMsg = rawError instanceof Error ? rawError.message : String(rawError);
+    const isPermanent = claimed.attempts >= claimed.maxRetries || isPermanentEmailError(rawError, claimed.data?.recipientEmail);
+    const nowMs = Date.now();
+
+    let nextRetryAt: Timestamp | null = null;
+    if (!isPermanent) {
+      const delayMs = this.computeRetryDelayMs(claimed.attempts);
+      nextRetryAt = Timestamp.fromMillis(nowMs + delayMs);
+    }
+
     try {
       const applied = await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         if (!this.ownsLease(snap, claimed.leaseToken)) return false;
         tx.update(ref, {
-          // Retryable failures are re-queried while attempts < maxRetries; exhausted ones stay
-          // as failed (never deleted) for diagnosis and manual recovery.
           status: 'failed',
+          isPermanent,
           lockedBy: null,
           lockedUntil: null,
           leaseToken: null,
           lastError: errorMsg,
+          nextRetryAt,
           ...(isPermanent ? { failedPermanentlyAt: FieldValue.serverTimestamp() } : {}),
           updatedAt: FieldValue.serverTimestamp(),
         });
@@ -510,3 +609,4 @@ export const invoiceQueue = {
   // Export singleton service instance
   service: sharedService,
 };
+

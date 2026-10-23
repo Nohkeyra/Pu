@@ -196,19 +196,17 @@ describe('DurableInvoiceOutboxService', () => {
 
   // ------------------------------------------------------------------ queries
   describe('queries and index-error backoff', () => {
-    it('uses the two documented query shapes (index-backed)', async () => {
+    it('uses single-field queries on status (built-in index)', async () => {
       await a.processQueue();
       expect(h.db.queryLog).toHaveLength(2);
       expect(h.db.queryLog[0].collection).toBe(OUTBOX);
       expect(h.db.queryLog[0].filters).toEqual([
         ['status', 'in', ['pending', 'failed']],
-        ['attempts', '<', 3],
       ]);
       const recovery = h.db.queryLog[1].filters;
-      expect(recovery[0]).toEqual(['status', '==', 'processing']);
-      expect(recovery[1][0]).toBe('lockedUntil');
-      expect(recovery[1][1]).toBe('<=');
-      expect(norm(recovery[1][2])).toBe(T0);
+      expect(recovery).toEqual([
+        ['status', '==', 'processing'],
+      ]);
     });
 
     it('pauses each query after FAILED_PRECONDITION and doubles the pause', async () => {
@@ -235,8 +233,8 @@ describe('DurableInvoiceOutboxService', () => {
       expect(h.db.queryLog).toHaveLength(6);
     });
 
-    it('a missing recovery index does not stall normal deliveries', async () => {
-      h.db.queryError = (f) => (f.some(x => x[0] === 'lockedUntil')
+    it('handles query failures gracefully without stalling queue worker', async () => {
+      h.db.queryError = (f) => (f.some(x => x[0] === 'status' && x[2] === 'processing')
         ? Object.assign(new Error('9 FAILED_PRECONDITION: needs index'), { code: 9 })
         : null);
       seed('job1');
@@ -299,15 +297,164 @@ describe('DurableInvoiceOutboxService', () => {
     it('bounds send failures to maxRetries and keeps the failed job for diagnosis', async () => {
       h.sendMail.mockRejectedValue(new Error('smtp down'));
       seed('job1');
-      for (let i = 0; i < 6; i++) await a.processQueue();
+
+      // Attempt 1
+      await a.processQueue();
+      expect(doc('job1')!.status).toBe('failed');
+      expect(doc('job1')!.attempts).toBe(1);
+      const next1 = norm(doc('job1')!.nextRetryAt);
+      expect(next1).toBeGreaterThan(T0);
+
+      // Advance time past 1st retry
+      vi.setSystemTime(next1 + 10);
+      // Attempt 2
+      await a.processQueue();
+      expect(doc('job1')!.status).toBe('failed');
+      expect(doc('job1')!.attempts).toBe(2);
+      const next2 = norm(doc('job1')!.nextRetryAt);
+      expect(next2).toBeGreaterThan(next1);
+
+      // Advance time past 2nd retry
+      vi.setSystemTime(next2 + 10);
+      // Attempt 3 (final attempt for maxRetries = 3)
+      await a.processQueue();
 
       expect(h.sendMail).toHaveBeenCalledTimes(3);
       const d = doc('job1')!;
       expect(d.status).toBe('failed');
       expect(d.attempts).toBe(3);
+      expect(d.isPermanent).toBe(true);
       expect(d.lastError).toBe('smtp down');
       expect(d.failedPermanentlyAt).toBeDefined();
       expect(order('o1')!.invoiceDeliveryStatus).toBe('failed');
+    });
+  });
+
+  // ------------------------------------------------ retry backoff & jitter
+  describe('bounded retry backoff, jitter, restart persistence & permanent errors', () => {
+    it('computes exponential backoff delay with equal jitter bounds', () => {
+      // Test attempt 1 (base 5000ms, max 300000ms)
+      const minJitter1 = a.computeRetryDelayMs(1, () => 0);
+      const maxJitter1 = a.computeRetryDelayMs(1, () => 1);
+      expect(minJitter1).toBe(2500);
+      expect(maxJitter1).toBe(5000);
+
+      // Test attempt 2 (10000ms exp delay)
+      const minJitter2 = a.computeRetryDelayMs(2, () => 0);
+      const maxJitter2 = a.computeRetryDelayMs(2, () => 1);
+      expect(minJitter2).toBe(5000);
+      expect(maxJitter2).toBe(10000);
+
+      // Test attempt 3 (20000ms exp delay)
+      const minJitter3 = a.computeRetryDelayMs(3, () => 0);
+      const maxJitter3 = a.computeRetryDelayMs(3, () => 1);
+      expect(minJitter3).toBe(10000);
+      expect(maxJitter3).toBe(20000);
+
+      // Test maximum cap at 300,000ms
+      const minJitterCap = a.computeRetryDelayMs(10, () => 0);
+      const maxJitterCap = a.computeRetryDelayMs(10, () => 1);
+      expect(minJitterCap).toBe(150000);
+      expect(maxJitterCap).toBe(300000);
+    });
+
+    it('persists nextRetryAt in Firestore so retry delay survives server restarts', async () => {
+      h.sendMail.mockRejectedValue(new Error('transient connection failure'));
+      const jobId = await a.enqueue(baseJob());
+
+      // Worker A attempts delivery and fails
+      await a.processQueue();
+      const jobAfterFail = doc(jobId)!;
+      expect(jobAfterFail.status).toBe('failed');
+      expect(jobAfterFail.attempts).toBe(1);
+      expect(jobAfterFail.isPermanent).toBe(false);
+      expect(jobAfterFail.nextRetryAt).toBeDefined();
+
+      const nextRetryAtMs = norm(jobAfterFail.nextRetryAt);
+      expect(nextRetryAtMs).toBeGreaterThan(T0);
+
+      // Server A shuts down
+      a.stopBackgroundWorker();
+
+      // Before nextRetryAtMs, a new Server C boots up and attempts processQueue
+      const c = new DurableInvoiceOutboxService();
+      c.stopBackgroundWorker();
+      await c.processQueue();
+      expect(doc(jobId)!.attempts).toBe(1); // not claimed before retry time!
+      expect(h.sendMail).toHaveBeenCalledTimes(1);
+
+      // Fast-forward past nextRetryAtMs
+      vi.setSystemTime(nextRetryAtMs + 50);
+
+      // Server C runs processQueue again -> now eligible!
+      h.sendMail.mockResolvedValueOnce({});
+      await c.processQueue();
+
+      expect(doc(jobId)!.status).toBe('delivered');
+      expect(doc(jobId)!.attempts).toBe(2);
+      expect(h.sendMail).toHaveBeenCalledTimes(2);
+      c.stopBackgroundWorker();
+    });
+
+    it('immediately classifies invalid recipient email as a permanent failure', async () => {
+      const invalidJob = baseJob({ recipientEmail: 'invalid-email-address-no-at-symbol' });
+      const jobId = await a.enqueue(invalidJob);
+
+      h.sendMail.mockRejectedValue(new Error('Invalid email recipient'));
+      await a.processQueue();
+
+      const d = doc(jobId)!;
+      expect(d.status).toBe('failed');
+      expect(d.isPermanent).toBe(true);
+      expect(d.nextRetryAt).toBeNull();
+      expect(d.failedPermanentlyAt).toBeDefined();
+
+      // Advance time and run again -> worker skips permanent failure
+      vi.setSystemTime(T0 + 3600_000);
+      await a.processQueue();
+      expect(h.sendMail).toHaveBeenCalledTimes(1); // no retry
+    });
+
+    it('immediately classifies SMTP 5xx permanent response as a permanent failure', async () => {
+      const jobId = await a.enqueue(baseJob());
+      h.sendMail.mockRejectedValue(new Error('550 5.1.1 User unknown: recipient address rejected'));
+
+      await a.processQueue();
+
+      const d = doc(jobId)!;
+      expect(d.status).toBe('failed');
+      expect(d.isPermanent).toBe(true);
+      expect(d.nextRetryAt).toBeNull();
+      expect(d.failedPermanentlyAt).toBeDefined();
+
+      // Advance time and run again -> worker skips permanent failure
+      vi.setSystemTime(T0 + 3600_000);
+      await a.processQueue();
+      expect(h.sendMail).toHaveBeenCalledTimes(1); // no retry
+    });
+
+    it('prevents concurrent workers from claiming a job before its nextRetryAt', async () => {
+      h.sendMail.mockRejectedValue(new Error('421 Service temporarily unavailable'));
+      seed('job1', {
+        status: 'failed',
+        attempts: 1,
+        nextRetryAt: Timestamp.fromMillis(T0 + 60_000),
+        isPermanent: false,
+      });
+
+      await Promise.all([a.processQueue(), b.processQueue()]);
+      expect(h.sendMail).not.toHaveBeenCalled();
+      expect(doc('job1')!.status).toBe('failed');
+      expect(doc('job1')!.attempts).toBe(1);
+
+      // Advance time past nextRetryAt
+      vi.setSystemTime(T0 + 60_001);
+      h.sendMail.mockResolvedValueOnce({});
+      await Promise.all([a.processQueue(), b.processQueue()]);
+
+      expect(h.sendMail).toHaveBeenCalledTimes(1);
+      expect(doc('job1')!.status).toBe('delivered');
+      expect(doc('job1')!.attempts).toBe(2);
     });
   });
 

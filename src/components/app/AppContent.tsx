@@ -167,14 +167,14 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
               <button
                 type="button"
                 onClick={() => this.setState({ hasError: false, error: null })}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#9a3412] hover:bg-[#7c2d12] text-white font-medium text-sm transition-colors cursor-pointer min-h-[48px]"
               >
                 Cuba Lagi
               </button>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-border hover:bg-black/5 dark:hover:bg-white/5 text-foreground font-medium text-sm transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border hover:bg-black/5 dark:hover:bg-white/5 text-foreground font-medium text-sm transition-colors cursor-pointer min-h-[48px]"
               >
                 Muat Semula
               </button>
@@ -239,7 +239,7 @@ export default function AppContent() {
       {/* Accessible Skip Link for Screen Readers and Keyboard Navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-amber-600 focus:text-white focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-amber-300 focus:outline-none transition-all"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-[#0c453c] focus:text-white focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-[#9a3412] focus:outline-none transition-all min-h-[48px] inline-flex items-center"
       >
         Skip to main content / Langkau ke kandungan utama
       </a>

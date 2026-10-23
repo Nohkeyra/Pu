@@ -26,11 +26,11 @@
     --color-tomato-burst: #e03f14;
     --color-kiwi: #e96212;
     --color-fern: #e96212;
-    --color-sunshine-cta: #c2410c;
-    --color-sunshine-cta-bg: #c2410c;
+    --color-sunshine-cta: #9a3412;
+    --color-sunshine-cta-bg: #9a3412;
     --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #9a3412;
-    --color-sunshine-cta-press: #7c2d12;
+    --color-sunshine-cta-hover: #7c2d12;
+    --color-sunshine-cta-press: #602008;
     --color-on-sunshine: #0c453c;
     --color-on-crisp-carrot: #ffffff;
     --color-on-tomato-burst: #ffffff;
@@ -407,17 +407,17 @@
   }
 
   /* ----------------------------------------------------------------
-   * P0 — Universal touch-target floor (44 × 44 px, Apple HIG / WCAG).
+   * P0 — Universal touch-target floor (48 × 48 px, WCAG 2.1 AAA 2.5.5).
    * ---------------------------------------------------------------- */
   .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  .touch-target-row { min-height: 44px; }
-  .touch-target-col { min-width:  44px; }
+  .touch-target-row { min-height: 48px; }
+  .touch-target-col { min-width:  48px; }
 
   /* ----------------------------------------------------------------
    * P0 — Primary CTA uses the AA token (not the failing sunshine).
@@ -692,8 +692,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 1rem;
     border: 1px solid rgba(12, 69, 60, 0.14);
     background: rgba(255, 255, 255, 0.85);
@@ -727,7 +727,7 @@
     font-weight: 700;
     color: var(--color-deep-forest);
     transition: background-color 0.3s ease, color 0.3s ease;
-    min-height: 44px;          /* P0 touch floor */
+    min-height: 48px;          /* P0 WCAG AAA 48px touch floor */
     display: inline-flex;
     align-items: center;
   }
