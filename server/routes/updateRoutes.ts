@@ -7,10 +7,10 @@ import { secureCompare } from './authRoutes.js';
 const router = Router();
 
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.121',
+  latestVersion: '1.3.122',
   minVersion: '1.2.0',
-  buildNumber: 253,
-  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.121/app-release-signed.apk',
+  buildNumber: 254,
+  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.122/app-release-signed.apk',
   bundleUrl: '',
   releaseNotes: [
     'Prestasi aplikasi & kestabilan haptik dipertingkatkan.',
