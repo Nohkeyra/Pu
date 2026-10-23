@@ -2,12 +2,35 @@ import { Star, Eye, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLongPress } from '@/hooks/useLongPress';
 
+import type { Order } from '@/types';
+
+interface AdminOrderRowProps {
+  style: React.CSSProperties;
+  order: Order;
+  language: string;
+  isSelected: boolean;
+  isStarred: boolean;
+  formattedHeaderDate: string;
+  relativeTime: string;
+  clientName: string;
+  totalAmount: string;
+  stripColor: string;
+  isSelectMode: boolean;
+  getStatusBadge: (status?: string) => React.ReactNode;
+  handleToggleOrderSelect: (id?: string) => void;
+  setStarredOrderIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  openOrderDetail: (order: Order) => void;
+  openSendDialog: (order: Order) => void;
+  handleDelete: (id: string) => void;
+  setLongPressedOrder: (order: Order | null) => void;
+}
+
 export function AdminOrderRow({
   style, order, language, isSelected, isStarred, formattedHeaderDate, relativeTime,
   clientName, totalAmount, stripColor, isSelectMode, getStatusBadge,
   handleToggleOrderSelect, setStarredOrderIds, openOrderDetail, openSendDialog, handleDelete,
   setLongPressedOrder
-}: any) {
+}: AdminOrderRowProps) {
   
   const longPressProps = useLongPress(
     () => { setLongPressedOrder(order); },

@@ -52,6 +52,7 @@ export function SendInvoiceModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="send-invoice-title"
       className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6"
       id="send-invoice-dialog-overlay"
     >
@@ -78,7 +79,7 @@ export function SendInvoiceModal({
               <Send className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-sunshine-cta)]" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
+              <h2 id="send-invoice-title" className="text-lg sm:text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
                 {t('send_invoice_pdf')}
               </h2>
               <p className="text-xs text-deep-forest/50 font-medium">

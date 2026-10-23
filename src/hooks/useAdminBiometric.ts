@@ -207,6 +207,10 @@ export function useAdminBiometric(options: UseAdminBiometricOptions = {}): UseAd
    */
   const authenticateBiometric = useCallback(
     async (options?: AdminBiometricAuthOptions): Promise<AdminAuthResult> => {
+      if (isVerifyingRef.current || isBiometricLoading) {
+        return { success: false, method: 'biometric', error: 'Authentication already in progress' };
+      }
+      isVerifyingRef.current = true;
       setIsBiometricLoading(true);
       setError('');
 
@@ -299,10 +303,11 @@ export function useAdminBiometric(options: UseAdminBiometricOptions = {}): UseAd
           error: errMsg,
         };
       } finally {
+        isVerifyingRef.current = false;
         setIsBiometricLoading(false);
       }
     },
-    []
+    [isBiometricLoading]
   );
 
   /**

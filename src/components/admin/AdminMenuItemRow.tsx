@@ -85,6 +85,7 @@ export function AdminMenuItemRow({
         <div className="flex items-center">
           <button
             onClick={() => handleOpenEditModal(item)}
+            aria-label={tText('Edit', 'Kemas kini')}
             className="p-1.5 text-stone-400 hover:text-deep-forest dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
             title={tText('Edit Item', 'Kemas kini Hidangan')}
           >
@@ -92,6 +93,7 @@ export function AdminMenuItemRow({
           </button>
           <button
             onClick={() => handleDeleteItem(item.id, displayName)}
+            aria-label={tText('Delete', 'Padam')}
             className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors cursor-pointer"
             title={tText('Delete Item', 'Padam Hidangan')}
           >

@@ -80,6 +80,7 @@ export function OrderDetailModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="order-detail-title"
       className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6"
       onClick={onClose}
       id="order-detail-dialog-overlay"
@@ -99,7 +100,7 @@ export function OrderDetailModal({
         {/* Header */}
         <div className="px-6 py-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-white/60 dark:bg-stone-900/60 backdrop-blur-md shrink-0" id="order-detail-header">
           <div className="flex-1 min-w-0 pr-4">
-            <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
+            <h2 id="order-detail-title" className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
               {t('order_details')}
             </h2>
             {selectedOrder && (

@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { 
   Loader2, 
@@ -70,6 +70,19 @@ export function Step3ContactDetails({
 }: Step3ContactDetailsProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Phone number masking helper: 012-345 6789
+  const formatPhoneNumber = useCallback((value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    let formatted = numbers;
+    if (numbers.length > 3) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    }
+    if (numbers.length > 6) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+    }
+    return formatted.slice(0, 12);
+  }, []);
+
   const validateAndNext = async () => {
     const next: Record<string, string> = {};
     if (orderState.eventType === 'pejabat') {
@@ -82,7 +95,7 @@ export function Step3ContactDetails({
     if (!orderState.name?.trim()) {
       next.name = tText('Please enter your full name.', 'Sila masukkan nama penuh anda.');
     }
-    if (!orderState.contact?.trim() || orderState.contact.trim().length < 8) {
+    if (!orderState.contact?.trim() || orderState.contact.replace(/\D/g, '').length < 10) {
       next.contact = tText('Please enter a valid phone number.', 'Sila masukkan nombor telefon yang sah.');
     }
     if (!orderState.email?.trim()) {
@@ -185,7 +198,7 @@ export function Step3ContactDetails({
                     onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
                     required
                   >
-                    <SelectTrigger className="w-full h-11 rounded-xl border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-950/60 text-deep-forest dark:text-[#ede5d8] focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs text-sm font-medium">
+                    <SelectTrigger aria-describedby={fieldErrors.companyName ? 'company-error' : undefined} className="w-full h-11 rounded-xl border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-950/60 text-deep-forest dark:text-[#ede5d8] focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs text-sm font-medium">
                       <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
                     </SelectTrigger>
                     <SelectContent 
@@ -244,11 +257,14 @@ export function Step3ContactDetails({
                         value={orderState.customCompany}
                         onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
                         placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
+                        aria-describedby={fieldErrors.customCompany ? 'custom-company-error' : undefined}
                         required
                         className="mt-2 h-11 rounded-xl font-sans bg-white dark:bg-stone-950/60 border-stone-200 dark:border-stone-700/80 focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs"
                       />
+                      {fieldErrors.customCompany && <FormError id="custom-company-error" message={fieldErrors.customCompany} />}
                     </>
                   )}
+                  {fieldErrors.companyName && <FormError id="company-error" message={fieldErrors.companyName} />}
                 </>
               )}
             </div>
@@ -292,8 +308,10 @@ export function Step3ContactDetails({
             value={orderState.name}
             onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
             placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
+            aria-describedby={fieldErrors.name ? 'name-error' : undefined}
             className="h-11 rounded-xl font-sans"
           />
+          {fieldErrors.name && <FormError id="name-error" message={fieldErrors.name} />}
         </div>
 
         {/* Phone Input */}
@@ -304,10 +322,12 @@ export function Step3ContactDetails({
             data-tour="step3-contact"
             type="tel"
             value={orderState.contact}
-            onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
+            onChange={(e) => setOrderState(prev => ({ ...prev, contact: formatPhoneNumber(e.target.value) }))}
             placeholder={tText('e.g. 012-345 6789', 'Contoh: 012-345 6789')}
+            aria-describedby={fieldErrors.contact ? 'contact-error' : undefined}
             className="h-11 rounded-xl font-sans"
           />
+          {fieldErrors.contact && <FormError id="contact-error" message={fieldErrors.contact} />}
         </div>
 
         {/* Email & Confirm Email Inputs */}
@@ -321,8 +341,10 @@ export function Step3ContactDetails({
               value={orderState.email}
               onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
               placeholder={tText('e.g. ahmad@gmail.com', 'Contoh: ahmad@gmail.com')}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               className="h-11 rounded-xl font-sans"
             />
+            {fieldErrors.email && <FormError id="email-error" message={fieldErrors.email} />}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
@@ -333,8 +355,10 @@ export function Step3ContactDetails({
               value={orderState.confirmEmail}
               onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
               placeholder={tText('Re-type email address', 'Ulang alamat e-mel')}
+              aria-describedby={fieldErrors.confirmEmail ? 'confirm-email-error' : undefined}
               className="h-11 rounded-xl font-sans"
             />
+            {fieldErrors.confirmEmail && <FormError id="confirm-email-error" message={fieldErrors.confirmEmail} />}
           </div>
         </div>
 
@@ -361,8 +385,10 @@ export function Step3ContactDetails({
                     value={orderState.date}
                     min={minBookingDate}
                     onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
+                    aria-describedby={fieldErrors.date ? 'date-error' : undefined}
                     className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
                   />
+                  {fieldErrors.date && <FormError id="date-error" message={fieldErrors.date} />}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
@@ -374,8 +400,10 @@ export function Step3ContactDetails({
                     type="time"
                     value={orderState.time}
                     onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
+                    aria-describedby={fieldErrors.time ? 'time-error' : undefined}
                     className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
                   />
+                  {fieldErrors.time && <FormError id="time-error" message={fieldErrors.time} />}
                 </div>
               </div>
 
@@ -454,8 +482,10 @@ export function Step3ContactDetails({
             value={orderState.location}
             onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
             placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
+            aria-describedby={fieldErrors.location ? 'location-error' : undefined}
             className="rounded-xl min-h-[70px] font-sans"
           />
+          {fieldErrors.location && <FormError id="location-error" message={fieldErrors.location} />}
         </div>
 
         {/* Delivery vs Pickup Method Cards */}
@@ -505,6 +535,7 @@ export function Step3ContactDetails({
               </div>
             </button>
           </div>
+          {fieldErrors.delivery && <FormError message={fieldErrors.delivery} />}
         </div>
 
         {/* Notes input */}

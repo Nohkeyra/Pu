@@ -774,6 +774,7 @@ export function AdminTablesTab({
                 <th className="py-3 px-4 w-10 min-w-[40px] text-center whitespace-nowrap">
                   <input
                     type="checkbox"
+                    aria-label="Select all orders"
                     checked={paginatedOrders.length > 0 && selectedIds.size === paginatedOrders.length}
                     onChange={handleSelectAll}
                     className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
@@ -916,6 +917,7 @@ export function AdminTablesTab({
                       <td className={`${densityCellPadding} text-center`}>
                         <input
                           type="checkbox"
+                          aria-label="Select order"
                           checked={isSelected}
                           onChange={() => handleSelectRow(order.id!)}
                           className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"

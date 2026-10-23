@@ -24,6 +24,8 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
   const [showConsolidateModal, setShowConsolidateModal] = useState(false);
 
   const handlePreviewPDF = async (order: Order, isFinal: boolean) => {
+    if (!order.id) return;
+    setGeneratingInvoice(order.id);
     try {
       if (!order.id) throw new Error('Missing database ID');
       const invoiceNo = order.invoiceNo || `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
@@ -56,6 +58,8 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       }
     } catch (error) {
       toast({ title: t('error'), description: String(error), variant: 'error' });
+    } finally {
+      setGeneratingInvoice(null);
     }
   };
 

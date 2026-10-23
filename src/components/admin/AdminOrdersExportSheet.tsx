@@ -123,7 +123,12 @@ export function AdminOrdersExportSheet({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-sheet-title"
+      className="fixed inset-0 z-[2000] flex items-end md:items-center justify-center"
+    >
       <div
         onClick={() => {
           triggerLightImpact();
@@ -134,7 +139,7 @@ export function AdminOrdersExportSheet({
       <div className="relative w-full md:max-w-md bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-t-3xl md:rounded-2xl p-5 pb-[calc(1.25rem+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))] shadow-2xl space-y-1">
         <div className="flex items-center justify-between pb-3 border-b border-stone/10 dark:border-white/10">
           <div>
-            <h3 className="font-display font-bold text-lg text-deep-forest dark:text-white">
+            <h3 id="export-sheet-title" className="font-display font-bold text-lg text-deep-forest dark:text-white">
               {heading}
             </h3>
             <p className="microcopy-12 text-stone-500 dark:text-stone-400">

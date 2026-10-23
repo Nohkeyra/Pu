@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   AlertTriangle, Check, Send, FileSpreadsheet, X, Search, Inbox, Trash2,
   SlidersHorizontal, ChevronDown
@@ -110,23 +110,24 @@ export function AdminOrdersTab({
   const activeFilterCount = (hasActiveDate ? 1 : 0) + (hasActiveStatus ? 1 : 0) + (isSelectMode ? 1 : 0);
 
   // Local search over already-filtered orders (name, email, phone, invoice, client)
-  const searchedOrders = searchQuery.trim()
-    ? filteredOrders.filter((o) => {
-        const q = searchQuery.trim().toLowerCase();
-        const hay = [
-          o.name,
-          o.email,
-          o.contact || o.phone,
-          o.invoiceNo,
-          o.to,
-          o.id,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        return hay.includes(q);
-      })
-    : filteredOrders;
+  const searchedOrders = useMemo(() => {
+    if (!searchQuery.trim()) return filteredOrders;
+    const q = searchQuery.trim().toLowerCase();
+    return filteredOrders.filter((o) => {
+      const hay = [
+        o.name,
+        o.email,
+        o.contact || o.phone,
+        o.invoiceNo,
+        o.to,
+        o.id,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [filteredOrders, searchQuery]);
 
   return (
     <>
@@ -161,16 +162,20 @@ export function AdminOrdersTab({
                             data: { status: 'cancelled' }
                           })
                         });
-                        if (response.ok) {
-                          toast({
-                            title: t('success'),
-                            description: t('cancellation_approved'),
-                            variant: 'success'
-                          });
-                          fetchOrders();
-                        }
+                        if (!response.ok) throw new Error(t('error_approval_failed') || 'Failed to approve cancellation.');
+                        toast({
+                          title: t('success'),
+                          description: t('cancellation_approved'),
+                          variant: 'success'
+                        });
+                        fetchOrders();
                       } catch (e) {
                         console.error(e);
+                        toast({
+                          title: t('error'),
+                          description: e instanceof Error ? e.message : t('error_general'),
+                          variant: 'error'
+                        });
                       } finally {
                         setIsApproving(false);
                       }
@@ -217,6 +222,7 @@ export function AdminOrdersTab({
             type="button"
             onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
             aria-expanded={isFilterDropdownOpen}
+            aria-controls="admin-filter-dropdown-panel"
             aria-label={language === 'bm' ? 'Buka atau tutup penapis' : 'Toggle filters dropdown'}
             className={`h-11 min-h-[44px] px-3 sm:px-4 flex items-center justify-center gap-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all cursor-pointer shrink-0 select-none ${
               isFilterDropdownOpen
@@ -262,6 +268,7 @@ export function AdminOrdersTab({
                   onClick={() => setStatusFilter?.('all')}
                   className="hover:opacity-75 cursor-pointer ml-0.5"
                   title={language === 'bm' ? 'Padam tapisan status' : 'Clear status filter'}
+                  aria-label={language === 'bm' ? 'Padam tapisan status' : 'Clear status filter'}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -275,6 +282,7 @@ export function AdminOrdersTab({
                   onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
                   className="hover:opacity-75 cursor-pointer ml-0.5"
                   title={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
+                  aria-label={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -395,7 +403,7 @@ export function AdminOrdersTab({
                   { 
                     id: 'approved', 
                     label: language === 'bm' ? 'Diluluskan' : 'Approved',
-                    count: orders.filter((o: Order) => o.status === 'approved' || (o.status as string) === 'confirmed').length 
+                    count: orders.filter((o: Order) => o.status === 'approved').length 
                   },
                   { 
                     id: 'billed', 
