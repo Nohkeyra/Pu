@@ -16,7 +16,9 @@ export function sortOrdersByCreatedAt<T extends TimestampedOrder>(orders: readon
   return [...orders].sort((a, b) => {
     const timestampOrder = compareTimestampValues(a.createdAt, b.createdAt, direction);
     if (timestampOrder !== 0) return timestampOrder;
-    return (a.id || '').localeCompare(b.id || '');
+    const idA = a.id || '';
+    const idB = b.id || '';
+    return idA < idB ? -1 : idA > idB ? 1 : 0;
   });
 }
 
