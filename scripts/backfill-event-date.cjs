@@ -165,7 +165,7 @@ async function runBackfill(argv = process.argv.slice(2), injectedDb = null) {
       continue;
     }
     planned++;
-    pending.push({ ref: doc.ref, eventDate: derived });
+    pending.push({ ref: doc.ref, updateTime: doc.updateTime, eventDate: derived });
   }
 
   console.log(`Project: ${args.projectId}`);
@@ -186,7 +186,10 @@ async function runBackfill(argv = process.argv.slice(2), injectedDb = null) {
     const group = pending.slice(offset, offset + BATCH_SIZE);
     for (const item of group) {
       // Additive update: never overwrite the original legacy date fields or other order data.
-      batch.update(item.ref, { eventDate: item.eventDate });
+      // Abort this batch if the document changed after the dry-run/scan snapshot.
+      // A rerun will safely re-evaluate the newer document state.
+      if (!item.updateTime) throw new Error('Missing updateTime for a document selected for update; refusing an unsafe write.');
+      batch.update(item.ref, { eventDate: item.eventDate }, { lastUpdateTime: item.updateTime });
     }
     await batch.commit();
     updated += group.length;
