@@ -8,7 +8,7 @@ import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransport
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { toJSDate, toISODateString, compareTimestampValues } from '../../src/lib/dateUtils.js';
+import { toISODateString } from '../../src/lib/dateUtils.js';
 import { getOrderCalendarDate, getOrderEventDate, paginateSortedOrders, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
 import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
@@ -262,7 +262,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const allOrders = sortOrdersByCreatedAt(snapshot.docs
         .map(doc => ({ ...doc.data(), id: doc.id }))
         .filter((order: any) => order.deletedByAdmin !== true), 'desc');
-      let page: ReturnType<typeof paginateSortedOrders<typeof allOrders[number]>>;
+      let page: { orders: typeof allOrders; hasMore: boolean; cursorFound: boolean };
       if (typeof req.body.lastId === 'string' && req.body.lastId) {
         page = paginateSortedOrders(allOrders, pageSize, req.body.lastId);
         if (!page.cursorFound) {
