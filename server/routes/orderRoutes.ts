@@ -262,16 +262,21 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const allOrders = sortOrdersByCreatedAt(snapshot.docs
         .map(doc => ({ ...doc.data(), id: doc.id }))
         .filter((order: any) => order.deletedByAdmin !== true), 'desc');
-      let page: { orders: typeof allOrders; hasMore: boolean };
+      let page: ReturnType<typeof paginateSortedOrders<typeof allOrders[number]>>;
       if (typeof req.body.lastId === 'string' && req.body.lastId) {
         page = paginateSortedOrders(allOrders, pageSize, req.body.lastId);
+        if (!page.cursorFound) {
+          return res.status(409).json({
+            success: false,
+            error: 'Pagination cursor is no longer available. Restart pagination from the first page.',
+          });
+        }
       } else if (req.body.lastCreatedAt !== undefined) {
-        // Timestamp-only cursors cannot distinguish equal timestamps; new callers should send lastId.
-        const cursorDate = toJSDate(req.body.lastCreatedAt);
-        const afterCursor = cursorDate
-          ? allOrders.filter((order: any) => compareTimestampValues(order.createdAt, cursorDate, 'desc') > 0)
-          : allOrders;
-        page = paginateSortedOrders(afterCursor, pageSize);
+        // A timestamp alone cannot uniquely identify a position when orders share a timestamp.
+        return res.status(400).json({
+          success: false,
+          error: 'Use lastId as the pagination cursor; timestamp-only cursors are ambiguous.',
+        });
       } else {
         page = paginateSortedOrders(allOrders, pageSize);
       }
