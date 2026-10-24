@@ -116,7 +116,7 @@
     "eslint-plugin-react-refresh": "^0.5.4",
     "sharp": "0.35.5",
     "typescript-eslint": "^8.65.0",
-    "vitest": "^4.1.11"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "eslint-visitor-keys": "4.2.0",
