@@ -52,6 +52,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     fetchOrders,
     handleUpdateOrderStatus,
     handleDeleteOrder,
+    handleBatchDelete,
     authHeaders
   } = useAdminOrders({ adminToken, onLogout: () => onLogout?.(), toast, t, language });
 
@@ -300,6 +301,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             handlePreviewPDF={handlePreviewPDF}
             handleDownloadPDF={handleDownloadPDF}
             handleDelete={handleDeleteOrder}
+            handleBatchDelete={handleBatchDelete}
             handleRejectCancellation={(id) => handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected')}
             handleUpdateStatus={(id, status) => handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`)}
             toast={toast}

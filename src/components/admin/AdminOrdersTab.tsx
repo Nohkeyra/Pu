@@ -49,6 +49,7 @@ export function AdminOrdersTab({
   openOrderDetail,
   openSendDialog,
   handleDelete,
+  handleBatchDelete,
   handleRejectCancellation,
   handleUpdateStatus,
   toast,
@@ -78,6 +79,7 @@ export function AdminOrdersTab({
   handlePreviewPDF: (order: Order, isFinal: boolean) => void;
   handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (orderId: string) => void;
+  handleBatchDelete?: (orderIds: string[]) => Promise<void>;
   handleRejectCancellation: (orderId: string) => void;
   handleUpdateStatus?: (id: string, status: string) => void;
   toast: (opts: { title?: string; description?: string; variant?: ToastVariant }) => void;
@@ -434,44 +436,60 @@ export function AdminOrdersTab({
             </div>
 
             {searchedOrders.length > 0 && (
-              <Button
-                variant="outline"
-                size="default"
-                onClick={() => {
-                  const allSelected = searchedOrders.every(o => o.id && selectedOrderIds.has(o.id));
-                  if (allSelected) {
-                    setSelectedOrderIds(new Set());
-                    return;
-                  }
-                  const distinctClients = new Set(searchedOrders.map(o => o.to));
-                  if (distinctClients.size > 1) {
-                    toast({
-                      title: t('error') || 'Error',
-                      description: language === 'bm'
-                        ? 'Paparan semasa merangkumi lebih daripada satu klien. Sila gunakan tapisan Klien untuk pilih satu klien sahaja sebelum "Select All".'
-                        : 'The current view spans more than one client. Please use the Client filter to narrow to a single client before "Select All".',
-                      variant: 'error'
-                    });
-                    return;
-                  }
-                  let toSelect = searchedOrders.filter(o => Boolean(o.id));
-                  if (filterBySameEmail) {
-                    const first = toSelect.find(o => o.email);
-                    if (first?.email) {
-                      const target = String(first.email).trim().toLowerCase();
-                      toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === target);
-                    }
-                  }
-                  setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
-                }}
-                className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
-              >
-                {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
-                  <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>
-                ) : (
-                  <><Check className="w-4 h-4 mr-1.5 opacity-40" />{t('select_all_orders') || 'Select All'}</>
+              <div className="flex items-center gap-2">
+                {selectedOrderIds.size > 0 && handleBatchDelete && (
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={async () => {
+                      await handleBatchDelete(Array.from(selectedOrderIds));
+                      setSelectedOrderIds(new Set());
+                    }}
+                    className="h-10 min-h-[40px] bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm px-4 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>{language === 'bm' ? `Padam (${selectedOrderIds.size})` : `Delete (${selectedOrderIds.size})`}</span>
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="default"
+                  onClick={() => {
+                    const allSelected = searchedOrders.every(o => o.id && selectedOrderIds.has(o.id));
+                    if (allSelected) {
+                      setSelectedOrderIds(new Set());
+                      return;
+                    }
+                    const distinctClients = new Set(searchedOrders.map(o => o.to));
+                    if (distinctClients.size > 1) {
+                      toast({
+                        title: t('error') || 'Error',
+                        description: language === 'bm'
+                          ? 'Paparan semasa merangkumi lebih daripada satu klien. Sila gunakan tapisan Klien untuk pilih satu klien sahaja sebelum "Select All".'
+                          : 'The current view spans more than one client. Please use the Client filter to narrow to a single client before "Select All".',
+                        variant: 'error'
+                      });
+                      return;
+                    }
+                    let toSelect = searchedOrders.filter(o => Boolean(o.id));
+                    if (filterBySameEmail) {
+                      const first = toSelect.find(o => o.email);
+                      if (first?.email) {
+                        const target = String(first.email).trim().toLowerCase();
+                        toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === target);
+                      }
+                    }
+                    setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
+                  }}
+                  className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
+                >
+                  {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
+                    <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>
+                  ) : (
+                    <><Check className="w-4 h-4 mr-1.5 opacity-40" />{t('select_all_orders') || 'Select All'}</>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         )}

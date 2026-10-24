@@ -15,7 +15,7 @@ interface UseAdminOrdersProps {
   language?: string;
 }
 
-export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrdersProps) {
+export function useAdminOrders({ adminToken, onLogout, toast, t, language }: UseAdminOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
@@ -171,6 +171,43 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     }
   };
 
+  const handleBatchDelete = async (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+    const isConfirmed = await showConfirm({
+      title: tRef.current('confirm_action') || 'Confirm Action',
+      message: language === 'bm'
+        ? `Adakah anda pasti mahu memadam ${orderIds.length} pesanan yang dipilih?`
+        : `Are you sure you want to delete ${orderIds.length} selected orders?`
+    });
+    if (!isConfirmed) return;
+
+    try {
+      let successCount = 0;
+      for (const orderId of orderIds) {
+        const response = await fetch(getApiUrl('/api/admin/orders'), {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ action: 'delete', orderId })
+        });
+        if (response.ok) successCount++;
+      }
+      toastRef.current({
+        title: tRef.current('success'),
+        description: language === 'bm'
+          ? `${successCount} pesanan berjaya dipadam.`
+          : `${successCount} orders successfully deleted.`,
+        variant: 'success'
+      });
+    } catch (error) {
+      console.error('Error batch deleting orders:', error);
+      toastRef.current({
+        title: tRef.current('error'),
+        description: 'Failed to delete selected orders.',
+        variant: 'error'
+      });
+    }
+  };
+
   return {
     orders,
     loading,
@@ -179,6 +216,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     fetchOrders,
     handleUpdateOrderStatus,
     handleDeleteOrder,
+    handleBatchDelete,
     authHeaders
   };
 }
