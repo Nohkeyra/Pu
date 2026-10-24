@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ResponsiveImage from '@/components/ResponsiveImage';
@@ -8,7 +8,7 @@ const VisitSection = React.memo(() => {
   const { language } = useLanguage();
   const isBm = language === 'bm';
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -19,7 +19,7 @@ const VisitSection = React.memo(() => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
       opacity: 1, 

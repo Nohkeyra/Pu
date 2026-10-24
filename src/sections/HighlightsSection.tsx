@@ -1,7 +1,7 @@
 import React from 'react';
 import { Coffee, MapPin, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 
 const HighlightsSection = React.memo(() => {
   const { language } = useLanguage();
@@ -34,7 +34,7 @@ const HighlightsSection = React.memo(() => {
     },
   ];
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: {},
     visible: {
       transition: {
@@ -43,7 +43,7 @@ const HighlightsSection = React.memo(() => {
     },
   };
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, scale: 0.95, y: 20 },
     visible: {
       opacity: 1,

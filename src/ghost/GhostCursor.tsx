@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, type Variants } from 'motion/react';
 
 export interface GhostCursorProps {
   pos: { x: number; y: number } | null;
@@ -52,7 +52,7 @@ const BatikFlower: React.FC<{ className?: string }> = ({ className }) => {
 // Hand-carved Asian Wooden Chopsticks SVG (🥢) with interactive pinching logic
 const Chopsticks: React.FC<{ gesture: string }> = ({ gesture }) => {
   // Animates the right chopstick to "pinch" closer to the left chopstick on click!
-  const rightStickVariants = {
+  const rightStickVariants: Variants = {
     idle: { rotate: 0 },
     tap: {
       rotate: [0, -8, 0],
@@ -143,7 +143,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({ pos, gesture }) => {
   if (!pos) return null;
 
   // Refined -45deg angle movement physics
-  const chopstickVariants = {
+  const chopstickVariants: Variants = {
     idle: { 
       x: 0, 
       y: 0, 
