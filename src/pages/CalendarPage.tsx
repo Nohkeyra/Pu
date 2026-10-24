@@ -162,7 +162,8 @@ export default function CalendarPage() {
           const data = docSnap.data() as Order;
           list.push({ ...data, id: docSnap.id });
         });
-        setOrders(sortOrdersByCreatedAt(list, 'desc').slice(0, 150));
+        // Calendar events are selected by event date, not creation recency; do not drop older orders here.
+        setOrders(sortOrdersByCreatedAt(list, 'desc'));
         setLoading(false);
       }, (err) => {
         console.warn("Order stream permission note:", err);
