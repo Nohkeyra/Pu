@@ -58,3 +58,41 @@ test('default mode is dry-run and never creates a write batch', async () => {
     console.log = originalLog;
   }
 });
+
+
+test('apply writes only eventDate and guards against concurrent document changes', async () => {
+  const writes = [];
+  const updateTime = { seconds: 1, nanoseconds: 0 };
+  const fakeDb = {
+    collection: () => ({
+      get: async () => ({
+        size: 1,
+        docs: [{
+          id: 'legacy-1',
+          ref: { id: 'legacy-1' },
+          updateTime,
+          data: () => ({ date: '25/11/2026', status: 'pending' }),
+        }],
+      }),
+    }),
+    batch: () => ({
+      update: (...args) => writes.push(args),
+      commit: async () => {},
+    }),
+  };
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const result = await runBackfill([
+      '--project-id=staging-project',
+      '--apply',
+      '--confirm-project-id=staging-project',
+    ], fakeDb);
+    assert.equal(result.updated, 1);
+    assert.equal(writes.length, 1);
+    assert.deepEqual(writes[0][1], { eventDate: '2026-11-25' });
+    assert.deepEqual(writes[0][2], { lastUpdateTime: updateTime });
+  } finally {
+    console.log = originalLog;
+  }
+});
