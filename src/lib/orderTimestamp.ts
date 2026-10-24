@@ -8,18 +8,42 @@ export interface TimestampedOrder {
   dateTime?: unknown;
 }
 
-/** Sort the complete fetched set chronologically; callers must not apply Firestore limits first. */
+/**
+ * Sort chronologically with a stable document-ID tie-breaker.
+ * Invalid/missing timestamps remain last in either direction.
+ */
 export function sortOrdersByCreatedAt<T extends TimestampedOrder>(orders: readonly T[], direction: 'asc' | 'desc' = 'desc'): T[] {
-  return [...orders].sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, direction));
+  return [...orders].sort((a, b) => {
+    const timestampOrder = compareTimestampValues(a.createdAt, b.createdAt, direction);
+    if (timestampOrder !== 0) return timestampOrder;
+    return (a.id || '').localeCompare(b.id || '');
+  });
 }
 
-/** Page an already globally sorted set using the previous page's document ID. */
-export function paginateSortedOrders<T extends TimestampedOrder>(sortedOrders: readonly T[], pageSize: number, lastId?: string): { orders: T[]; hasMore: boolean } {
+/**
+ * Page a globally sorted set using the previous page's document ID.
+ * A stale/unknown cursor must not silently restart at page one, which duplicates
+ * records and can cause clients to loop forever.
+ */
+export function paginateSortedOrders<T extends TimestampedOrder>(
+  sortedOrders: readonly T[],
+  pageSize: number,
+  lastId?: string,
+): { orders: T[]; hasMore: boolean; cursorFound: boolean } {
   const safePageSize = Math.max(1, Math.floor(pageSize) || 1);
   const cursorIndex = lastId ? sortedOrders.findIndex(order => order.id === lastId) : -1;
+
+  if (lastId && cursorIndex < 0) {
+    return { orders: [], hasMore: false, cursorFound: false };
+  }
+
   const startIndex = cursorIndex >= 0 ? cursorIndex + 1 : 0;
   const orders = sortedOrders.slice(startIndex, startIndex + safePageSize);
-  return { orders, hasMore: startIndex + orders.length < sortedOrders.length };
+  return {
+    orders,
+    hasMore: startIndex + orders.length < sortedOrders.length,
+    cursorFound: true,
+  };
 }
 
 /** Resolve event-date fields without treating order creation time as an event date. */
