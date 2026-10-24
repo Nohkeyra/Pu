@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';

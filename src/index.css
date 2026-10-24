@@ -1,7 +1,147 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
 @import "../styles.css";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+/* Tailwind v4: restore v3 `darkMode: ["class"]` behaviour (dark: follows .dark, not OS setting) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Design System Tokens */
+  --color-brand-gold: var(--rw-gold);
+  --color-brand-gold-deep: var(--rw-gold-deep);
+  --color-brand-gold-text: var(--rw-gold-text);
+  --color-brand-charcoal: var(--rw-charcoal);
+  --color-brand-cream: var(--rw-cream);
+
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+
+  --color-text: var(--color-text);
+  --color-text-soft: var(--color-text-soft);
+  --color-text-muted: var(--color-text-muted);
+
+  --color-accent: var(--color-accent);
+  --color-accent-deep: var(--color-accent-deep);
+
+  --color-status-success: var(--color-success);
+  --color-status-success-soft: var(--color-success-soft);
+  --color-status-warning: var(--color-warning);
+  --color-status-warning-soft: var(--color-warning-soft);
+  --color-status-danger: var(--color-danger);
+  --color-status-danger-soft: var(--color-danger-soft);
+  --color-status-error: var(--color-error);
+  --color-status-error-soft: var(--color-error-soft);
+
+  --color-deep-forest: var(--color-deep-forest);
+  --color-deep-forest-accent: var(--color-deep-forest-accent);
+  --color-forest-green: var(--color-forest);
+  --color-light-forest: var(--color-light-forest);
+
+  --color-sunshine: var(--color-sunshine);
+  --color-honey: var(--color-honey);
+  --color-crisp-carrot: var(--color-crisp-carrot);
+  --color-tomato-burst: var(--color-tomato-burst);
+  --color-kiwi: var(--color-kiwi);
+  --color-fern: var(--color-kiwi);
+
+  --color-sunshine-cta: var(--color-sunshine-cta);
+  --color-sunshine-cta-bg: var(--color-sunshine-cta-bg);
+  --color-sunshine-cta-fg: var(--color-sunshine-cta-fg);
+  --color-sunshine-cta-hover: var(--color-sunshine-cta-hover);
+  --color-sunshine-cta-press: var(--color-sunshine-cta-press);
+  --color-on-sunshine: var(--color-on-sunshine);
+  --color-on-crisp-carrot: var(--color-on-crisp-carrot);
+  --color-on-tomato-burst: var(--color-on-tomato-burst);
+  --color-on-deep-forest: var(--color-on-deep-forest);
+
+  --color-cream: var(--color-cream);
+  --color-cream-dark: var(--color-cream-dark);
+  --color-charcoal: var(--color-charcoal);
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: var(--color-sunshine-cta);
+  --color-primary-foreground: var(--color-sunshine-cta-fg);
+  --color-secondary: var(--color-cream-dark);
+  --color-secondary-foreground: var(--color-deep-forest);
+  --color-destructive: var(--color-tomato-burst);
+  --color-destructive-foreground: var(--color-cream);
+
+  --font-sans: "Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif";
+  --font-display: "Outfit", "Plus Jakarta Sans", "system-ui", "sans-serif";
+  --font-body: "Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif";
+  --font-artistic: "Uncial Antiqua", "serif";
+  --font-hype: "Outfit", "Plus Jakarta Sans", "sans-serif";
+  --font-bebas: "Outfit", "sans-serif";
+  --font-accent: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace";
+  --font-urban: "Plus Jakarta Sans", "system-ui", "sans-serif";
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+  --radius-xs: calc(var(--radius) - 6px);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  @keyframes bounce-down {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes leaf-sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes success-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  --animate-bounce-down: bounce-down 3s ease-in-out infinite;
+  --animate-shimmer: shimmer 2s infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-leaf-sway: leaf-sway 4s ease-in-out infinite;
+  --animate-gradient-shift: gradient-shift 8s ease infinite;
+  --animate-success-pop: success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  --animate-shake: shake 0.3s ease-in-out;
+}
+
+
+/* Tailwind v4: shadcn tokens that tailwind.config.js (v3) used to map.
+   `inline` so utilities resolve hsl(var(--card)) at use-site and follow .dark */
+@theme inline {
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+}
 
 @layer base {
   :root {

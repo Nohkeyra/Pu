@@ -39,6 +39,7 @@ import { DeliveryWidgetModal } from './DeliveryWidgetModal';
 import { db } from '@/firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getApiUrl } from '@/lib/api';
+import { isUserAdmin } from '@/constants/auth';
 
 const RESTORAN_WAWASAN_COORDS = { lat: 2.92841, lng: 101.68728 };
 
@@ -388,8 +389,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin: isAdminPr
     ? isAdminProp
     : Boolean(
         isContextAdmin ||
-        auth.currentUser?.uid === 'admin' ||
-        auth.currentUser?.email === 'admin@wawasanpakusop.my' ||
+        isUserAdmin(auth.currentUser?.email) ||
         localStorage.getItem('wawasan_admin_token') !== null
       );
 

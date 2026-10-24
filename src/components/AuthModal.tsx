@@ -36,6 +36,7 @@ import {
   ADMIN_BIOMETRIC_PREF_KEY,
   CUSTOMER_BIOMETRIC_PREF_KEY
 } from '@/services/authService';
+import { isUserAdmin } from '@/constants/auth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -231,7 +232,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
           if (rememberBiometrics) {
             try {
-              const isAdminUser = email.toLowerCase().trim() === 'admin@wawasanpakusop.my';
+              const isAdminUser = isUserAdmin(email);
               if (isAdminUser) {
                 await storeAdminBiometricCredentials(email, password);
               } else {

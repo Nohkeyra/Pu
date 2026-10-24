@@ -7,67 +7,59 @@ import { motion } from 'motion/react';
 
 const REVIEWS = [
   {
-    text: "Wah... we are on our last day of our Putrajaya holiday. The place is at the basement of Menara PjH with a great view of the lake and the mosque. My wife and I bought nasi goreng kampung, nasi lemak, and some other varieties. Everything was good. Really good food, and definitely affordable.",
-    name: 'Sufian A.',
+    text: "The food is delicious..the fried bananas and banana pancakes are also delicious..the pancakes have less flour & the bananas taste sweet..the food is just like our parents cooked..the prices are reasonable..just parking is a little difficult..just parking on the side of the road..you're out of luck if you get a ticket..hehe..",
+    name: 'Miss Sya',
     rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Breakfast & View',
+    date: '4 weeks ago',
+    tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
   {
-    text: "The food was delicious and the owners are great people! After we ate our lunch here, they let us try authentic Malaysian desserts — fried bananas and durian soup. Warm hospitality with scenic lakeside seating.",
-    name: 'Anastasia V.',
+    text: "Had a wonderful lunch at Restoran Wawasan Pak Usop! The chicken and catfish were absolutely delicious, and they even treated me to a fresh jackfruit dessert. What impressed me the most was their kindness. When I had a problem with my payment, they simply told me, \"It's okay, just enjoy your meal.\"",
+    name: 'hugh ahn',
     rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Lunch & Dessert',
+    date: '2 months ago',
+    tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
   {
-    text: "The Lontong Singapore, Soto and Nasi Campur are exquisitely delicious! My favorites are the Asam Pedas and Ikan Keli Sambal Lado Hijau. The teh tarik is legendary, and coffee uses Muar's 434 which is well known. Recommended!",
-    name: 'Irwan R.',
-    rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Signature Dishes',
+    text: "We came here for breakfast on a friday to try out the mee rebus, but did know that mee rebus is only served on Thursdays. So we had the Soto and nasi lemak, instead... Anyway, it has a great view of Putrajaya Lake.",
+    name: 'Rahmah Ramli',
+    rating: 4,
+    date: '4 months ago',
+    tag: 'Dine-in • Breakfast',
     source: 'Google Maps'
   },
   {
-    text: "Pilihan lauk ala Padang & Melayu sangat banyak dan menyelerakan! Asam pedas, nasi lemak, mee rebus, mee soto, rendang padang, dan rojak Singapore hari Jumaat memang terbaik. Ruang makan bersih dan sejuk tepi tasik.",
-    name: 'Norazman M.',
+    text: "I happend to see this restaurant on google map and decided to try, The Food was SO GOOD and even the drink. The price is really cheap def recommended 👌👌",
+    name: 'Buachompoo Rerksuitthirat',
     rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Lauk Campur & Soto',
+    date: '5 months ago',
+    tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
   {
-    text: "Soto Ayam was delicious and hearty. The price is really good for the area where it is located. A true hidden gem in Putrajaya with authentic flavors and breezy outdoor seating facing the lake.",
-    name: 'Carolina P.',
+    text: "I ordered Soto Ayam, topped with delicious deep-fried potato dumplings, for RM8.50. It was filled with lots of toppings, including potatoes and kamaboko fish cakes. It's closed on the weekend, so I was glad I went during the only time I could.",
+    name: '大渕真志',
     rating: 5,
-    date: 'Recent Google Review',
+    date: '8 months ago',
     tag: 'Dine-in • Soto Ayam',
     source: 'Google Maps'
   },
   {
-    text: "Servis katering untuk majlis rasmi pejabat di Putrajaya memang sangat memuaskan. Makanan dihantar panas-panas, ayam berempah rangup, sambal sotong sedap, dan semua jemputan puji kualiti hidangan.",
-    name: 'Fazli Hashim',
+    text: "Soto Ayam was delicious. The price is really good for the area where is located.",
+    name: 'Carol Pitta',
     rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Catering • Majlis Korporat',
+    date: 'a year ago',
+    tag: 'Dine-in • Soto Ayam',
     source: 'Google Maps'
   },
   {
-    text: "Great lunch spot in Putrajaya with generous portions. Incredible variety of dishes at very reasonable prices. The crispy fried chicken with sambal belacan and teh tarik halia are top notch!",
-    name: 'David T.',
+    text: "Best to eat here, the food is delicious. Pak Usop is friendly and accommodating. Cheap price is worth it. Can repeat",
+    name: 'Sarina Yusuf',
     rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Lunch Variety',
-    source: 'Google Maps'
-  },
-  {
-    text: "Tempat sarapan dan makan tengahari kegemaran setiap kali ke Presint 2. Lontong kuah lodeh pekat, sambal sedap, staf mesra dan cepat layan walaupun waktu puncak.",
-    name: 'Hafizah Ahmad',
-    rating: 5,
-    date: 'Recent Google Review',
-    tag: 'Dine-in • Sarapan Pagi',
+    date: 'a year ago',
+    tag: 'Dine-in • Breakfast',
     source: 'Google Maps'
   },
 ];

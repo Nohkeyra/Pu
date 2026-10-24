@@ -207,7 +207,7 @@ const translations: Translation = {
   pic_label: { en: 'Person In Charge', bm: 'Orang Dipertanggungjawabkan' },
   officer_info: { en: 'Person in charge', bm: 'Orang dipertanggungjawabkan' },
   full_name: { en: 'Full Name', bm: 'Nama Penuh' },
-  submit_order_download: { en: 'Submit Order & Download Invoice', bm: 'Hantar Pesanan & Muat Tunun Invois' },
+  submit_order_download: { en: 'Submit Order & Download Invoice', bm: 'Hantar Pesanan & Muat Turun Invois' },
   share_form: { en: 'Share Form', bm: 'Kongsi Borang' },
   terms_agree: { en: 'By submitting, you agree to our terms and conditions.', bm: 'Dengan menghantar, anda bersetuju dengan terma dan syarat kami.' },
   live_preview: { en: 'Live Document Preview (A4-Style)', bm: 'Pratonton Dokumen Langsung (Gaya A4)' },

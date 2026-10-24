@@ -33,15 +33,14 @@ import {
   FileText,
   ShieldCheck,
   Code2,
-  User as UserIcon,
-  LogOut,
   Trash2,
-  UserX,
   Cloud,
   CheckCircle2,
   AlertTriangle,
   Play,
   Fingerprint,
+  LogOut,
+  UserCircle,
 } from 'lucide-react';
 import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
@@ -55,6 +54,9 @@ import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from 
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
+import { isUserAdmin } from '@/constants/auth';
+
+import { RESTORAN_CONTACT } from '@/constants/contact';
 
 import { getApiUrl } from '@/lib/api';
 import { removeSecureItem } from '@/lib/preferences';
@@ -189,6 +191,7 @@ export default function SettingsPage() {
 
   // Modals state
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
+  const [faqModalOpen, setFaqModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [licensesModalOpen, setLicensesModalOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
@@ -868,7 +871,7 @@ export default function SettingsPage() {
           </div>
 
           {/* ADMIN MANAGEMENT CARD (If Logged In) */}
-          {(isAdmin || currentUser?.uid === 'admin' || currentUser?.email === 'admin@wawasanpakusop.my') && (
+          {(isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)) && (
             <div className="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -1035,7 +1038,7 @@ export default function SettingsPage() {
                         {language === 'bm' ? 'Pentadbir Wawasan' : 'Wawasan Administrator'}
                       </p>
                       <p className="text-xs text-stone-500 dark:text-stone-400 truncate font-mono">
-                        {currentUser?.email || 'admin@wawasanpakusop.my'}
+                        {currentUser?.email || RESTORAN_CONTACT.email}
                       </p>
                     </div>
                   </div>
@@ -1044,6 +1047,28 @@ export default function SettingsPage() {
                     {language === 'bm' ? 'Aktif' : 'Active'}
                   </span>
                 </div>
+
+                <SettingsRow
+                  icon={UserCircle}
+                  iconBg="bg-amber-500/10"
+                  iconColor="text-amber-600 dark:text-amber-400"
+                  title={language === 'bm' ? 'Maklumat Profil Pentadbir' : 'Admin Profile Info'}
+                  action={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        navigate('/profile');
+                      }}
+                      className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
+                    >
+                      <span>{language === 'bm' ? 'Kemas Kini' : 'Update'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                    </Button>
+                  }
+                />
 
                 <SettingsRow
                   icon={Shield}
@@ -1150,10 +1175,10 @@ export default function SettingsPage() {
                 </div>
 
                 <SettingsRow
-                  icon={UserIcon}
-                  iconBg="bg-blue-500/10"
-                  iconColor="text-blue-600 dark:text-blue-400"
-                  title={language === 'bm' ? 'Profil & Alamat Penghantaran' : 'Profile & Delivery Address'}
+                  icon={UserCircle}
+                  iconBg="bg-[var(--color-sunshine-cta)]/10"
+                  iconColor="text-[var(--color-sunshine-cta)]"
+                  title={language === 'bm' ? 'Maklumat Profil' : 'Profile Information'}
                   action={
                     <Button
                       type="button"
@@ -1165,7 +1190,7 @@ export default function SettingsPage() {
                       }}
                       className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
                     >
-                      <span>{language === 'bm' ? 'Urus' : 'Manage'}</span>
+                      <span>{language === 'bm' ? 'Kemas Kini' : 'Update'}</span>
                       <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                     </Button>
                   }
@@ -1173,9 +1198,10 @@ export default function SettingsPage() {
 
                 <SettingsRow
                   icon={LogOut}
-                  iconBg="bg-amber-500/10"
-                  iconColor="text-amber-600 dark:text-amber-400"
+                  iconBg="bg-rose-500/10"
+                  iconColor="text-rose-600 dark:text-rose-400"
                   title={language === 'bm' ? 'Log Keluar' : 'Sign Out'}
+                  isLast={true}
                   action={
                     <Button
                       type="button"
@@ -1185,68 +1211,82 @@ export default function SettingsPage() {
                         await triggerLightImpact();
                         setSignOutConfirmOpen(true);
                       }}
-                      className="h-8 px-3 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-xl"
+                      className="h-8 px-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl"
                     >
                       {language === 'bm' ? 'Keluar' : 'Sign Out'}
                     </Button>
                   }
                 />
-
-                <SettingsRow
-                  icon={UserX}
-                  iconBg="bg-rose-500/10"
-                  iconColor="text-rose-600 dark:text-rose-400"
-                  title={language === 'bm' ? 'Padam Akaun & Data' : 'Delete Account & Data'}
-                  isLast={true}
-                  action={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        await triggerLightImpact();
-                        setDeleteAccountModalOpen(true);
-                      }}
-                      className="h-8 px-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl"
-                    >
-                      {language === 'bm' ? 'Permintaan' : 'Request'}
-                    </Button>
-                  }
-                />
               </>
             ) : (
-              <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 flex items-center justify-center shrink-0">
-                    <UserIcon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-deep-forest dark:text-white">
-                      {language === 'bm' ? 'Mod Pelawat (Tetamu)' : 'Guest Mode'}
-                    </p>
-                    <p className="text-xs text-stone-500 dark:text-stone-400">
-                      {language === 'bm'
-                        ? 'Log masuk untuk simpan tempahan katering & invois anda.'
-                        : 'Sign in to sync your bookings and order history across devices.'}
-                    </p>
-                  </div>
+                <div className="p-4 sm:p-5 text-center">
+                   <p className="text-sm text-stone-600 dark:text-stone-400">
+                      {language === 'bm' ? 'Log masuk untuk mengurus akaun' : 'Sign in to manage account'}
+                   </p>
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={async () => {
-                    await triggerLightImpact();
-                    navigate('/profile');
-                  }}
-                  className="w-full sm:w-auto h-8 px-4 rounded-xl text-xs font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 shadow-2xs"
-                >
-                  {language === 'bm' ? 'Log Masuk / Daftar' : 'Sign In / Register'}
-                </Button>
-              </div>
             )}
           </SettingsSection>
 
-          {/* SECTION 2: PREFERENCES */}
+          {/* SECTION 2: PRIVACY & DATA */}
+          <SettingsSection title={language === 'bm' ? 'Privasi & Data' : 'Privacy & Data'}>
+            <SettingsRow
+              icon={ShieldCheck}
+              iconBg="bg-blue-500/10"
+              iconColor="text-blue-600 dark:text-blue-400"
+              title={language === 'bm' ? 'Analitik Penggunaan' : 'Usage Analytics'}
+              isLast={true}
+              action={
+                <Switch
+                  checked={!developerMode}
+                  onCheckedChange={async (checked) => {
+                    await triggerLightImpact();
+                    setDeveloperMode(!checked);
+                  }}
+                />
+              }
+            />
+          </SettingsSection>
+
+          {/* SECTION 3: SUPPORT */}
+          <SettingsSection title={language === 'bm' ? 'Sokongan' : 'Support'}>
+            <SettingsRow
+              icon={AlertTriangle}
+              iconBg="bg-amber-500/10"
+              iconColor="text-amber-600 dark:text-amber-400"
+              title={language === 'bm' ? 'Soalan Lazim (FAQ)' : 'FAQ'}
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
+                  onClick={() => setFaqModalOpen(true)}
+                >
+                  {language === 'bm' ? 'Buka' : 'Open'}
+                </Button>
+              }
+            />
+            <SettingsRow
+              icon={Smartphone}
+              iconBg="bg-emerald-500/10"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+              title={language === 'bm' ? 'Hubungi Kami' : 'Contact Support'}
+              isLast={true}
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
+                  onClick={() => {
+                     window.open('https://wa.me/60123456789', '_blank');
+                  }}
+                >
+                  {language === 'bm' ? 'WhatsApp' : 'WhatsApp'}
+                </Button>
+              }
+            />
+          </SettingsSection>
+
+          {/* SECTION 4: PREFERENCES */}
           <SettingsSection title={language === 'bm' ? 'Pilihan Paparan' : 'Preferences'}>
             {/* Language Selector */}
             <SettingsRow
@@ -1331,7 +1371,7 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 3: NOTIFICATIONS */}
+          {/* SECTION 5: NOTIFICATIONS */}
           <SettingsSection title={language === 'bm' ? 'Pemberitahuan' : 'Notifications'}>
             <SettingsRow
               icon={Bell}
@@ -1349,7 +1389,7 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 4: HAPTICS & SOUND FX */}
+          {/* SECTION 6: HAPTICS & AUDIO */}
           <SettingsSection title={language === 'bm' ? 'Maklum Balas Sentuhan & Bunyi' : 'Haptics & Audio'}>
             <SettingsRow
               icon={Vibrate}
@@ -1407,7 +1447,7 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 5: DEVICE & DISPLAY */}
+          {/* SECTION 7: DEVICE & DISPLAY */}
           <SettingsSection title={language === 'bm' ? 'Peranti & Paparan' : 'Device & Display'}>
             <SettingsRow
               icon={Smartphone}
@@ -1471,7 +1511,7 @@ export default function SettingsPage() {
             )}
           </SettingsSection>
 
-          {/* SECTION 6: STORAGE & CACHE MANAGEMENT */}
+          {/* SECTION 8: STORAGE & CACHE MANAGEMENT */}
           <SettingsSection title={language === 'bm' ? 'Storan & Cache' : 'Storage & Cache'}>
             <SettingsRow
               icon={Database}
@@ -1527,7 +1567,7 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 7: LEGAL & PRIVACY */}
+          {/* SECTION 9: LEGAL & PRIVACY */}
           <SettingsSection title={language === 'bm' ? 'Perundangan & Privasi' : 'Legal & Privacy'}>
             <SettingsRow
               icon={ShieldCheck}
@@ -1599,7 +1639,7 @@ export default function SettingsPage() {
 
           {isAdmin && (
             <>
-              {/* SECTION 8: SYSTEM & DIAGNOSTICS */}
+              {/* SECTION 10: SYSTEM & DIAGNOSTICS */}
               <SettingsSection title={language === 'bm' ? 'Sistem & Diagnostik' : 'System & Tools'}>
                 <SettingsRow
                   icon={Cpu}
@@ -1875,8 +1915,68 @@ export default function SettingsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* DIALOG 4: FAQ (SOALAN LAZIM) */}
+        <Dialog open={faqModalOpen} onOpenChange={setFaqModalOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                {language === 'bm' ? 'Soalan Lazim (FAQ)' : 'Frequently Asked Questions'}
+              </DialogTitle>
+              <DialogDescription>
+                {language === 'bm'
+                  ? 'Jawapan pantas untuk soalan biasa mengenai Restoran Wawasan.'
+                  : 'Quick answers to common questions about Restoran Wawasan.'}
+              </DialogDescription>
+            </DialogHeader>
 
-        {/* DIALOG 4: SIGN OUT CONFIRMATION */}
+            <div className="space-y-4 text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed py-2">
+              {[
+                {
+                  q: language === 'bm' ? 'Adakah anda menerima pesanan katering?' : 'Do you accept catering orders?',
+                  a: language === 'bm' 
+                    ? 'Ya! Kami pakar dalam katering untuk kenduri, pejabat, dan majlis peribadi. Anda boleh mendapatkan sebut harga terus melalui aplikasi ini.' 
+                    : 'Yes! We specialize in catering for weddings, corporate events, and private parties. You can request a quote directly through this app.'
+                },
+                {
+                  q: language === 'bm' ? 'Berapa awal saya perlu memesan?' : 'How early should I order?',
+                  a: language === 'bm'
+                    ? 'Untuk katering besar, kami memerlukan sekurang-kurangnya 48 jam notis. Untuk pesanan harian, anda boleh memesan pada bila-bila masa.'
+                    : 'For large catering, we require at least 48 hours notice. For daily orders, you can order anytime during operation hours.'
+                },
+                {
+                  q: language === 'bm' ? 'Di mana lokasi restoran anda?' : 'Where is your restaurant located?',
+                  a: language === 'bm'
+                    ? 'Kami terletak di Putrajaya. Lokasi tepat boleh didapati di bahagian "Hubungi Kami" atau di Google Maps.'
+                    : 'We are located in Putrajaya. The exact location can be found in the "Contact Us" section or on Google Maps.'
+                },
+                {
+                  q: language === 'bm' ? 'Adakah makanan anda Halal?' : 'Is your food Halal?',
+                  a: language === 'bm'
+                    ? 'Ya, 100% Halal. Kami adalah restoran Muslim yang mementingkan kualiti dan kebersihan mengikut syariat.'
+                    : 'Yes, 100% Halal. We are a Muslim-owned restaurant that prioritizes quality and cleanliness according to Sharia standards.'
+                }
+              ].map((faq, i) => (
+                <div key={i} className="space-y-1.5 p-3 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200/50 dark:border-white/5">
+                  <h4 className="font-bold text-deep-forest dark:text-white">{faq.q}</h4>
+                  <p className="text-stone-600 dark:text-stone-400">{faq.a}</p>
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={() => setFaqModalOpen(false)}
+                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 rounded-xl text-xs h-9"
+              >
+                {language === 'bm' ? 'Tutup' : 'Close'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG 5: SIGN OUT CONFIRMATION */}
         <Dialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -1911,7 +2011,7 @@ export default function SettingsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* DIALOG 5: DELETE ACCOUNT & DATA REQUEST */}
+        {/* DIALOG 6: DELETE ACCOUNT & DATA REQUEST */}
         <Dialog open={deleteAccountModalOpen} onOpenChange={setDeleteAccountModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -1938,8 +2038,8 @@ export default function SettingsPage() {
                 </p>
                 <p>
                   {language === 'bm'
-                    ? 'Untuk memadam rekod pesanan arkib dari pangkalan data pelayan awam, sila emel kepada pengurusan kami di madnor.noisy@gmail.com dengan tajuk [Permintaan Padam Data].'
-                    : 'To erase archived server records from our cloud database, please email management at madnor.noisy@gmail.com with subject [Data Erasure Request].'}
+                    ? 'Untuk memadam rekod pesanan arkib dari pangkalan data pelayan awam, sila emel kepada pengurusan kami di wawasan.orders@gmail.com dengan tajuk [Permintaan Padam Data].'
+                    : 'To erase archived server records from our cloud database, please email management at wawasan.orders@gmail.com with subject [Data Erasure Request].'}
                 </p>
               </div>
             </div>

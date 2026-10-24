@@ -243,7 +243,7 @@ export function CustomerInvoicePreviewModal({
                     </p>
                     <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1.5 mt-0.5">
                       <Phone className="w-3 h-3 text-stone-400 shrink-0" />
-                      Tel: 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
+                      Tel (Call Only): 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
                     </p>
                   </div>
                 </div>

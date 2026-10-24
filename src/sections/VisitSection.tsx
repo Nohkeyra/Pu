@@ -96,8 +96,8 @@ const VisitSection = React.memo(() => {
                     {isBm ? 'Hubungi' : 'Contact'}
                   </h3>
                   <p className="text-stone/80 dark:text-stone-400 text-sm">
-                    {isBm ? 'Telefon' : 'Call'}: +60 17-858 2642<br />
-                    WhatsApp: +60 17-315 7731
+                    {isBm ? 'Telefon (Panggilan Sahaja)' : 'Call (Only)'}: +60 17-858 2642<br />
+                    WhatsApp: +60 17-315 7721
                   </p>
                 </div>
               </motion.div>
@@ -137,8 +137,7 @@ const VisitSection = React.memo(() => {
                 href="https://maps.app.goo.gl/F1aswiA657kzhf298" 
                 target="_blank" 
                 rel="noreferrer"
-                style={{ backgroundColor: '#287407', color: '#ffc701', fontFamily: 'Verdana, sans-serif' }}
-                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg bg-[#287407] text-[#ffc701] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
               >
                 {isBm ? 'Dapatkan Arah' : 'Get Directions'}
                 <ExternalLink className="w-4 h-4" />
