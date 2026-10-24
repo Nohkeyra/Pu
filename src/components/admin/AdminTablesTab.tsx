@@ -27,7 +27,7 @@ import type { ToastMessage } from '../ui/Toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { exportOrdersAsExcelStandard } from '@/lib/exportUtils';
-import { getDisplayInvoiceNo, formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
+import { compareTimestampValues, getDisplayInvoiceNo, formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 
 interface AdminTablesTabProps {
   orders: Order[];
@@ -216,26 +216,7 @@ export function AdminTablesTab({
         let valB: string | number = '';
 
         if (sortField === 'createdAt' || sortField === 'date') {
-          const getMs = (dateVal: any) => {
-            if (!dateVal) return 0;
-            if (typeof dateVal === 'string') {
-              const d = new Date(dateVal);
-              return isNaN(d.getTime()) ? 0 : d.getTime();
-            }
-            if (dateVal instanceof Date) return dateVal.getTime();
-            if (typeof dateVal === 'object') {
-              if ('seconds' in dateVal && typeof dateVal.seconds === 'number') {
-                return dateVal.seconds * 1000;
-              }
-              if ('_seconds' in dateVal && typeof dateVal._seconds === 'number') {
-                return dateVal._seconds * 1000;
-              }
-            }
-            return 0;
-          };
-          const timeA = getMs(a.createdAt);
-          const timeB = getMs(b.createdAt);
-          return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+          return compareTimestampValues(a.createdAt, b.createdAt, sortOrder);
         }
 
         if (sortField === 'to') {

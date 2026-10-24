@@ -34,20 +34,32 @@ export function toJSDate(val: unknown): Date | null {
       _nanoseconds?: unknown;
     };
 
-    if (typeof candidate.toDate === 'function') {
+    let toDateMethod: unknown;
+    try {
+      toDateMethod = candidate.toDate;
+    } catch {
+      toDateMethod = undefined;
+    }
+
+    if (typeof toDateMethod === 'function') {
       try {
-        const converted = candidate.toDate();
+        const converted = toDateMethod.call(val);
         if (converted instanceof Date && Number.isFinite(converted.getTime())) return converted;
       } catch {
         // Continue to the supported seconds-based representations.
       }
     }
 
-    const seconds = typeof candidate.seconds === 'number'
-      ? candidate.seconds
-      : typeof candidate._seconds === 'number'
-        ? candidate._seconds
-        : null;
+    let seconds: number | null;
+    try {
+      seconds = typeof candidate.seconds === 'number'
+        ? candidate.seconds
+        : typeof candidate._seconds === 'number'
+          ? candidate._seconds
+          : null;
+    } catch {
+      return null;
+    }
 
     if (seconds !== null && Number.isFinite(seconds)) {
       const d = new Date(seconds * 1000);
@@ -59,6 +71,22 @@ export function toJSDate(val: unknown): Date | null {
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (!trimmed) return null;
+
+    // JavaScript normalizes impossible ISO calendar dates such as 2026-02-31.
+    // Validate the calendar portion before allowing Date.parse to interpret it.
+    const isoCalendarMatch = /^(\d{4})-(\d{2})-(\d{2})(?:[Tt ].*)?$/.exec(trimmed);
+    if (isoCalendarMatch) {
+      const year = Number(isoCalendarMatch[1]);
+      const month = Number(isoCalendarMatch[2]);
+      const day = Number(isoCalendarMatch[3]);
+      const calendarDate = new Date(Date.UTC(year, month - 1, day));
+      if (
+        month < 1 || month > 12 || day < 1 ||
+        calendarDate.getUTCFullYear() !== year ||
+        calendarDate.getUTCMonth() !== month - 1 ||
+        calendarDate.getUTCDate() !== day
+      ) return null;
+    }
 
     // Parse the app's DD/MM/YYYY and DD-MM-YYYY display formats strictly.
     const match = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(trimmed);
@@ -100,6 +128,25 @@ export function normalizeTimestamp(val: unknown): number {
   if (!d) return 0;
   const timestamp = Math.floor(d.getTime() / 1000);
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+/**
+ * Compares timestamp values without letting invalid/missing dates distort order.
+ * Invalid values sort last in either direction; valid timestamps remain chronological.
+ */
+export function compareTimestampValues(
+  a: unknown,
+  b: unknown,
+  direction: 'asc' | 'desc' = 'desc',
+): number {
+  const dateA = toJSDate(a);
+  const dateB = toJSDate(b);
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+
+  const difference = dateA.getTime() - dateB.getTime();
+  return direction === 'asc' ? difference : -difference;
 }
 
 /** Formats date and time as "DD/MM/YYYY @ 12:00 PM" or "DD/MM/YYYY". */

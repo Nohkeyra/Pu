@@ -5,6 +5,7 @@ import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
+import { compareTimestampValues } from '@/lib/utils';
 
 interface UseAdminOrdersProps {
   adminToken?: string;
@@ -47,7 +48,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.orders)) {
-          setOrders(data.orders);
+          setOrders([...data.orders].sort((a: Order, b: Order) => compareTimestampValues(a.createdAt, b.createdAt, 'desc')));
         }
       } else if (response.status === 401 || response.status === 403) {
         onLogoutRef.current?.();
@@ -85,7 +86,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
             ...data,
           } as Order);
         });
-      setOrders(fetchedOrders);
+      setOrders(fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc')));
       setLoading(false);
     }, (error) => {
       console.warn('[Admin Orders] Real-time Firestore snapshot inactive, falling back to Admin API:', error.message);
