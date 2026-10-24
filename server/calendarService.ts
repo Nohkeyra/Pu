@@ -1,3 +1,4 @@
+import { toJSDate } from '../src/lib/dateUtils.js';
 import { google } from "googleapis";
 import { getFirestore, type OrderData } from "./firebaseAdmin.js";
 import { getLocalOrders, saveLocalOrders } from "./localOrdersStore.js";
@@ -68,23 +69,9 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       return { success: false, error: `Order ${orderId} not found` };
     }
 
-    let startDateTime: Date | null = null;
     const raw = orderData.dateTime || orderData.eventDate || orderData.date;
-    
-    if (raw) {
-      if (raw instanceof Date) {
-        startDateTime = raw;
-      } else if (typeof raw === 'object' && raw !== null) {
-        const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
-        if (seconds !== null) {
-          startDateTime = new Date(seconds * 1000);
-        } else if (typeof raw.toDate === 'function') {
-          startDateTime = raw.toDate();
-        }
-      } else if (typeof raw === 'string' || typeof raw === 'number') {
-        startDateTime = new Date(raw);
-      }
-    }
+    // Shared defensive parser accepts strings, Dates, and Firestore Timestamp objects.
+    let startDateTime: Date | null = toJSDate(raw);
 
     if (!startDateTime || isNaN(startDateTime.getTime())) {
       if (orderData.date) {
