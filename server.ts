@@ -65,8 +65,11 @@ function isAllowedOrigin(origin: string): boolean {
 
   if (ALLOWED_HOSTS.has(hostname)) return true;
 
-  if (hostname.endsWith('.onrender.com')) return true;
-  if (hostname.endsWith('.run.app')) return true;
+  // S-6 fix: *.onrender.com and *.run.app wildcards removed — any attacker-controlled
+  // subdomain on those shared platforms would otherwise satisfy the CORS check.
+  // Only the specific production hostname is trusted.
+  if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
+
   if (hostname.endsWith('.aistudio.google.com')) return true;
   if (hostname.endsWith('.claude.ai')) return true;
   if (hostname.endsWith('.anthropic.com')) return true;

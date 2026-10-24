@@ -497,7 +497,28 @@ export function mountMcpOAuth(app: import('express').Express): void {
     }
   });
 
+  // S-9 fix: require a static registration-access token so unauthenticated callers
+  // cannot trigger unbounded Firestore writes.  Set MCP_REGISTRATION_TOKEN in the
+  // environment; if it is absent the endpoint is disabled in production.
   app.post('/oauth/register', async (req, res) => {
+    const envToken = process.env.MCP_REGISTRATION_TOKEN?.trim();
+    if (!envToken) {
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(503).json({ error: 'registration_not_supported', error_description: 'Dynamic client registration is not enabled on this server.' });
+      }
+      // Non-production: allow without a token (dev convenience), but log a warning.
+      console.warn('[MCP /oauth/register] MCP_REGISTRATION_TOKEN is not set — endpoint is open (non-prod only).');
+    } else {
+      const authHeader = req.headers.authorization || '';
+      const supplied = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+      const envBuf = Buffer.from(envToken);
+      const suppliedBuf = Buffer.from(supplied);
+      const valid = envBuf.length === suppliedBuf.length && timingSafeEqual(envBuf, suppliedBuf);
+      if (!valid) {
+        return res.status(401).json({ error: 'unauthorized_client', error_description: 'Valid registration access token required.' });
+      }
+    }
+
     try {
       const registration = await helpers.registerClient(req.body, getMcpIssuer(req));
       return res.status(201).json(registration);

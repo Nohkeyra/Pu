@@ -250,8 +250,9 @@ export default function PageShell({
           >
             <Batik3DMotion
               maxRotation={4}
-              imgClassName="opacity-[0.05] dark:opacity-[0.10]"
-              mode="background"
+              imgClassName="opacity-25 dark:opacity-20 contrast-[1.12] saturate-[1.15]"
+              mode="img"
+              src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
             />
           </div>
         ) : null}

@@ -69,7 +69,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       return { success: false, error: `Order ${orderId} not found` };
     }
 
-    const raw = orderData.dateTime || orderData.eventDate || orderData.date;
+    const raw: any = orderData.dateTime || orderData.eventDate || orderData.date;
     // Shared defensive parser accepts strings, Dates, and Firestore Timestamp objects.
     let startDateTime: Date | null = toJSDate(raw);
 

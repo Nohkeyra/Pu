@@ -47,7 +47,7 @@ export function signAdminJwt(payload: Partial<AdminJwtPayload>, expiresInSeconds
   const now = Math.floor(Date.now() / 1000);
   const fullPayload: AdminJwtPayload = {
     uid: payload.uid || "admin-root",
-    email: payload.email || (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "madnor.noisy@gmail.com").split(",")[0].trim(),
+    email: payload.email || (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "").split(",")[0].trim() || undefined,
     admin: true,
     role: "admin",
     iat: now,

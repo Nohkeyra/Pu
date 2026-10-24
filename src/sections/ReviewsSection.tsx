@@ -142,7 +142,7 @@ const ReviewsSection = React.memo(() => {
                 {t('reviews')}
               </div>
             </motion.div>
-            <motion.h2 variants={headerItemVariants} className="review-header section-title-artistic !text-left">
+            <motion.h2 variants={headerItemVariants} className="review-header section-title-artistic text-center md:text-left">
               {t('what_they_say')}
             </motion.h2>
           </div>

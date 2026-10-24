@@ -74,7 +74,8 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
         <motion.img
           src={batikUrl}
           alt={alt}
-          fetchPriority="high"
+          // @ts-expect-error React 18 types fetchPriority as camelCase or lowercase depending on exact DOM definition
+          fetchpriority="high"
           decoding="async"
           style={{
             rotateX,

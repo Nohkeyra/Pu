@@ -60,7 +60,7 @@ export default function LoginPage() {
       </header>
 
       <div className="absolute inset-0">
-        <Batik3DMotion mode="background" src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} backgroundSize="cover" backgroundRepeat="no-repeat" imgClassName="opacity-30 contrast-[1.08] saturate-[1.12] dark:opacity-22" maxRotation={10} />
+        <Batik3DMotion mode="img" src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} imgClassName="opacity-35 contrast-[1.12] saturate-[1.18] dark:opacity-28 dark:brightness-105" maxRotation={10} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.70),rgba(255,255,255,0.40))] dark:bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(12,69,60,0.95),rgba(12,69,60,0.80),rgba(12,69,60,0.55))]" />
       </div>
 

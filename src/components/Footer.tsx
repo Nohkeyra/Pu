@@ -58,15 +58,13 @@ export default function Footer() {
         {/* Scroll-animated 3D Batik Background Layer */}
         <motion.div 
           style={{ y: smoothY, scale: smoothScale, opacity }} 
-          className="batik-fade-transition batik-container absolute inset-0 z-0"
+          className="batik-fade-transition absolute inset-0 z-0 overflow-hidden"
         >
           <Batik3DMotion
-            mode="background"
+            mode="img"
             src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
-            backgroundSize="cover"
-            backgroundRepeat="no-repeat"
             maxRotation={15}
-            imgClassName="opacity-25 dark:opacity-[0.14] dark:contrast-105 dark:brightness-85 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-35 sm:opacity-50 dark:opacity-28 dark:sm:opacity-38 contrast-[1.12] saturate-[1.18] dark:brightness-105 transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
 

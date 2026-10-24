@@ -198,12 +198,10 @@ export default function OrderPage() {
 
             {/* Traditional Malaysian Batik Vector Pattern Background Layer */}
             <Batik3DMotion
-              mode="background"
+              mode="img"
               src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
-              backgroundSize="cover"
-              backgroundRepeat="no-repeat"
               maxRotation={12}
-              imgClassName="opacity-25 dark:opacity-[0.14] dark:contrast-105 dark:brightness-85 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
+              imgClassName="opacity-35 sm:opacity-50 dark:opacity-28 dark:sm:opacity-38 contrast-[1.12] saturate-[1.18] dark:brightness-105 transition-opacity duration-700 pointer-events-none"
             />
 
             {/* Subtle grid pattern */}

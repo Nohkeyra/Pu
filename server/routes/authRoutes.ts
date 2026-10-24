@@ -4,7 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, getAdminApp, verifyCustomerIdToken, hasAdminCredentials } from '../firebaseAdmin.js';
-import { verifyAdminToken, adminLoginLimiter, signAdminJwt } from '../adminAuth.js';
+import { verifyAdminToken, adminLoginLimiter, signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
@@ -47,7 +47,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
       return res.status(401).json({ success: false, error: 'Kata laluan pentadbir tidak sah.' });
     }
 
-    const adminEmail = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'madnor.noisy@gmail.com').split(',')[0].trim();
+    const adminEmail = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',')[0].trim();
     const adminUid = 'admin_' + createHash('sha256').update(expectedPassword.trim()).digest('hex').slice(0, 12);
 
     let firebaseCustomToken: string | undefined;
@@ -87,8 +87,33 @@ router.get('/admin/verify', verifyAdminToken, async (req, res) => {
   });
 });
 
-// Admin Logout Endpoint
-router.post('/admin/logout', async (_req, res) => {
+// Admin Logout Endpoint — C-1 fix: revoke the session JWT by writing its JTI to admin_revocations
+router.post('/admin/logout', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+  if (token) {
+    const payload = verifyAdminJwt(token);
+    if (payload?.jti) {
+      try {
+        const db = getFirestore();
+        // Write a TTL document so the JTI is checked during verifyAdminJwtWithRevocation.
+        // expireAt is set 25 hours out (token lifetime is 24 h) so the revocation record
+        // outlives the token, preventing a race between expiry and the Firestore TTL sweep.
+        const expireAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
+        await db.collection('admin_revocations').doc(`jti_${payload.jti}`).set({
+          jti: payload.jti,
+          uid: payload.uid,
+          revokedAt: FieldValue.serverTimestamp(),
+          expireAt,
+        });
+      } catch (err) {
+        // Log but don't block the client response — the token will expire naturally.
+        console.error('[Admin Logout] Failed to write JTI revocation:', err);
+      }
+    }
+  }
+
   return res.json({ success: true, message: 'Log keluar berjaya' });
 });
 

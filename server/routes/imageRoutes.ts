@@ -54,8 +54,8 @@ export function isAllowedReferer(refererHeader: string | undefined, originHeader
     const hostname = parsed.hostname.toLowerCase();
 
     if (TRUSTED_REFERER_DOMAINS.has(hostname)) return true;
-    if (hostname.endsWith('.onrender.com')) return true;
-    if (hostname.endsWith('.run.app')) return true;
+    // S-6 fix: wildcard *.onrender.com / *.run.app removed; only the known production host is trusted.
+    if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
     if (hostname.endsWith('.aistudio.google.com')) return true;
     if (hostname.endsWith('.claude.ai')) return true;
 

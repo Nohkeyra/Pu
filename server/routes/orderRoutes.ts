@@ -17,6 +17,31 @@ const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
 
+// C-3 fix: validate and whitelist the delivery field shape so arbitrary nested
+// objects cannot be written to Firestore unchecked.
+function sanitizeDelivery(raw: unknown): Record<string, string | number | boolean | null> | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const src = raw as Record<string, unknown>;
+  const allowed: Record<string, string | number | boolean | null> = {};
+  const ALLOWED_KEYS = new Set(['address', 'city', 'state', 'postcode', 'country', 'notes', 'fee', 'zone', 'type', 'distance']);
+  for (const key of ALLOWED_KEYS) {
+    const val = src[key];
+    if (val === undefined) continue;
+    if (typeof val === 'string') {
+      allowed[key] = val.slice(0, 500);
+    } else if (typeof val === 'number' && Number.isFinite(val)) {
+      allowed[key] = val;
+    } else if (typeof val === 'boolean') {
+      allowed[key] = val;
+    } else if (val === null) {
+      allowed[key] = null;
+    }
+    // Nested objects / arrays are silently dropped.
+  }
+  return Object.keys(allowed).length > 0 ? allowed : null;
+}
+
 export function deriveEventDate(body: any): string | null {
   if (!body) return null;
   const raw = body.eventDate || body.date || body.dateTime;
@@ -153,7 +178,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],
       customMenu: typeof rawBody.customMenu === 'string' ? rawBody.customMenu.slice(0, 1000) : '',
       userId: typeof rawBody.userId === 'string' ? rawBody.userId : null,
-      delivery: typeof rawBody.delivery === 'object' && rawBody.delivery !== null ? rawBody.delivery : null,
+      delivery: sanitizeDelivery(rawBody.delivery),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
@@ -184,12 +209,17 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
 
         const batch = db.batch();
         batch.set(orderRef, sanitizedOrderDoc);
+        // C-2 fix: expireAt enables Firestore TTL on this collection so stale keys
+        // are automatically deleted. Configure a TTL policy on the `expireAt` field
+        // for the `idempotency_keys` collection in Firestore console / terraform.
+        const idempExpireAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
         batch.set(idempRef, {
           orderId,
           invoiceNo: finalInvoiceNo,
           createdAt: FieldValue.serverTimestamp(),
           totalAmount,
           prices,
+          expireAt: idempExpireAt,
         });
         await batch.commit();
       }

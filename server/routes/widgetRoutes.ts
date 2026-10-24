@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken } from '../firebaseAdmin.js';
-import { verifyAdminJwt } from '../adminAuth.js';
+import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 import { invoiceQueue } from '../services/invoiceQueue.js';
@@ -25,9 +25,9 @@ export async function verifyAdminAuth(req: any, res: any): Promise<boolean> {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
-  // 1. Verify via server-signed Admin JWT
+  // 1. Verify via server-signed Admin JWT (with revocation check — S-1 fix)
   if (token) {
-    const jwtPayload = verifyAdminJwt(token);
+    const jwtPayload = await verifyAdminJwtWithRevocation(token);
     if (jwtPayload && jwtPayload.admin === true) {
       req.user = jwtPayload;
       return true;

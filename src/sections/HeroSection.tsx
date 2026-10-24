@@ -34,28 +34,27 @@ const HeroSection = React.memo(() => {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-deep-forest dark:bg-card pt-[calc(7.5rem+var(--sat,0px))] sm:pt-36 pb-[calc(6.5rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-center items-center">
+    <section className="relative w-full overflow-hidden bg-deep-forest dark:bg-[#0c100e] pt-[calc(6rem+var(--sat,0px))] sm:pt-36 pb-[calc(6rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-start sm:justify-center items-center">
       {/* Cinematic Deep Dark Full-Bleed Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-deep-forest dark:bg-card">
-        {/* Dynamic Atmospheric Overlays for maximum text & logo legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-deep-forest/90 via-deep-forest/65 to-deep-forest dark:from-card/95 dark:via-card/75 dark:to-card z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/35 via-transparent to-amber-950/20 dark:from-[#101915]/60 dark:to-transparent z-0 pointer-events-none" />
-        {/* Soft center vignette to ensure foreground elements are crystal clear */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_15%,rgba(12,16,14,0.8)_100%)] z-0 pointer-events-none" />
-        
-        {/* Batik Background - Lightweight hardware transform */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-deep-forest dark:bg-[#0c100e]">
+        {/* Batik Background - Restored authentic Malaysian heritage artwork with 3D tilt */}
         <motion.div 
           style={{ y, opacity, scale }} 
-          className="batik-fade-transition batik-container absolute inset-0 z-0 transform-gpu"
+          className="batik-fade-transition absolute inset-0 z-0 transform-gpu overflow-hidden"
         >
           <Batik3DMotion
-            mode="background"
+            mode="img"
             src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
-            backgroundSize="cover"
             maxRotation={12}
-            imgClassName="opacity-[0.15] sm:opacity-25 dark:opacity-[0.09] dark:sm:opacity-[0.16] dark:contrast-110 dark:brightness-90 dark:saturate-[0.85] transition-opacity duration-700 pointer-events-none"
+            imgClassName="opacity-40 sm:opacity-55 dark:opacity-30 dark:sm:opacity-42 contrast-[1.12] saturate-[1.18] dark:brightness-105 transition-opacity duration-700 pointer-events-none"
           />
         </motion.div>
+
+        {/* Dynamic Atmospheric Overlays: gentle framing that keeps text crystal-clear without drowning the batik */}
+        <div className="absolute inset-0 bg-gradient-to-b from-deep-forest/50 via-deep-forest/15 to-deep-forest/80 dark:from-[#0c100e]/60 dark:via-[#0c100e]/15 dark:to-[#0c100e]/85 z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#101915]/50 dark:to-transparent z-0 pointer-events-none" />
+        {/* Soft center vignette to ensure foreground elements are crystal clear */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_25%,rgba(12,16,14,0.7)_100%)] z-0 pointer-events-none" />
         
         {/* Subtle grid pattern */}
         <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none z-10" />
@@ -72,7 +71,7 @@ const HeroSection = React.memo(() => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="content-container flex flex-col items-center text-center relative z-20 w-full my-auto py-2 sm:py-6 px-4 sm:px-6"
+        className="content-container flex flex-col items-center text-center relative z-20 w-full mt-6 sm:mt-auto mb-auto pt-6 sm:pt-4 pb-2 sm:pb-6 px-4 sm:px-6"
       >
         {/* Unified Brand Headline */}
         <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl select-none">

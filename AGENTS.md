@@ -33,7 +33,7 @@ Read the associated spec **before** changing the area:
 | Design system / UI kit | `docs/DESIGN_SYSTEM_SKILL.md` |
 | Auth / Firebase / security | `docs/SECURITY_SPEC.md` |
 | Android build / release | `docs/BUILD.md` + `docs/CI_CD_COMPLETE.md` |
-| WhatsApp / Email / Calendar | `docs/AGENTS.md` |
+| WhatsApp / Email / Calendar | `AGENTS.md` (this file) |
 
 Do not attempt work in these areas without reading the corresponding spec.
 
@@ -66,6 +66,11 @@ Classify every conclusion:
 
 Never claim to have inspected, executed, searched, tested, rendered, or verified
 something unless it actually happened.
+
+### Data Provenance & Honesty Rule
+- **Never pass off local mock/hardcoded prototype data (such as sample reviews, dummy contacts, or placeholder items) as live fetched data from external APIs or third-party services (like Google Maps).**
+- Always clearly distinguish between live runtime data, web search results, and local prototype mock data.
+- If unsure of data origin or provenance, state explicitly that it is simulated or prototype data.
 
 ---
 

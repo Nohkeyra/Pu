@@ -114,5 +114,18 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "idempotency_keys",
+      "fieldPath": "expireAt",
+      "indexes": [],
+      "ttlConfig": {}
+    },
+    {
+      "collectionGroup": "admin_revocations",
+      "fieldPath": "expireAt",
+      "indexes": [],
+      "ttlConfig": {}
+    }
+  ]
 }
