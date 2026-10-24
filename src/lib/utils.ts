@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export { formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toJSDate } from './dateUtils'
+export { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toJSDate } from './dateUtils'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
