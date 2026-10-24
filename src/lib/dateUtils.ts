@@ -79,7 +79,8 @@ export function toJSDate(val: unknown): Date | null {
       const year = Number(isoCalendarMatch[1]);
       const month = Number(isoCalendarMatch[2]);
       const day = Number(isoCalendarMatch[3]);
-      const calendarDate = new Date(Date.UTC(year, month - 1, day));
+      const calendarDate = new Date(0);
+      calendarDate.setUTCFullYear(year, month - 1, day);
       if (
         month < 1 || month > 12 || day < 1 ||
         calendarDate.getUTCFullYear() !== year ||

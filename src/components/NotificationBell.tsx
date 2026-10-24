@@ -74,7 +74,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
               return date ? date.toISOString() : '';
             };
 
-            const updatedAt = getIsoString(data.updatedAt || data.createdAt);
+            const updatedAt = getIsoString(data.updatedAt) || getIsoString(data.createdAt);
 
             let title = t('Pesanan Dikemas Kini', 'Order Updated');
             let message = t('Status pesanan anda telah dikemas kini.', 'Your order status has been updated.');
