@@ -4,6 +4,7 @@ import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { generateServerInvoicePdf } from '../services/serverPdfService.js';
 import { isValidStatusTransition } from '../services/orderValidator.js';
+import { toJSDate } from '../../src/lib/dateUtils.js';
 
 type ToolResult = {
   content: Array<{ type: 'text'; text: string }>;
@@ -19,11 +20,23 @@ type McpAuthInfo = {
 function jsonSafe(value: unknown): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value === 'bigint') return value.toString();
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
   if (typeof value === 'object') {
-    const v = value as any;
-    if (typeof v.toDate === 'function') return v.toDate().toISOString();
     if (Array.isArray(value)) return value.map(jsonSafe);
+
+    const v = value as any;
+    let timestampLike = false;
+    try {
+      timestampLike = typeof v.toDate === 'function' || typeof v.seconds === 'number' || typeof v._seconds === 'number';
+    } catch {
+      return null;
+    }
+
+    if (timestampLike) {
+      const date = toJSDate(value);
+      return date ? date.toISOString() : null;
+    }
+
     return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, x]) => [k, jsonSafe(x)]));
   }
   return value;

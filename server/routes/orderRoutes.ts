@@ -8,6 +8,7 @@ import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransport
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
+import { toJSDate } from '../../src/lib/dateUtils.js';
 import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
@@ -825,40 +826,20 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
     }> = {};
 
     const parseOrderDateStr = (order: any): string | null => {
-      try {
-        const raw = order.eventDate || order.date || order.dateTime || order.createdAt;
-        if (!raw) return null;
+      const raw = order.eventDate || order.date || order.dateTime || order.createdAt;
+      if (raw == null || raw === '') return null;
 
-        // 1. Direct YYYY-MM-DD string
-        if (typeof raw === 'string') {
-          if (raw.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
-            return raw.slice(0, 10);
-          }
-        }
-
-        // 2. Extract from other formats
-        let d: Date | null = null;
-        if (raw instanceof Date) {
-          d = raw;
-        } else if (typeof raw === 'object' && raw !== null) {
-          const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
-          if (seconds !== null) {
-            d = new Date(seconds * 1000);
-          } else if (typeof raw.toDate === 'function') {
-            d = raw.toDate();
-          }
-        } else if (typeof raw === 'string' || typeof raw === 'number') {
-          d = new Date(raw);
-        }
-
-        if (!d || isNaN(d.getTime())) return null;
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      } catch {
-        return null;
+      // Preserve the input calendar day for ISO strings, but reject impossible dates.
+      if (typeof raw === 'string' && /^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/.test(raw)) {
+        return toJSDate(raw) ? raw.slice(0, 10) : null;
       }
+
+      const date = toJSDate(raw);
+      if (!date) return null;
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     };
 
     snapshot.docs.forEach(doc => {
