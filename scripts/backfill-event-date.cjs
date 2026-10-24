@@ -31,7 +31,7 @@ function parseArgs(argv) {
 
 function validISODate(value) {
   if (typeof value !== 'string') return null;
-  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value.trim());
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
   if (!match) return null;
   const year = Number(match[1]);
   const month = Number(match[2]);
@@ -81,14 +81,14 @@ function toDate(value) {
   if (typeof value !== 'string' || !value.trim()) return null;
   const input = value.trim();
 
-  const isoDatePrefix = /^(\\d{4}-\\d{2}-\\d{2})(?:$|[Tt ])/.exec(input);
+  const isoDatePrefix = /^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/.exec(input);
   if (isoDatePrefix) {
     const valid = validISODate(isoDatePrefix[1]);
     if (!valid) return null;
     if (input === valid) return new Date(`${valid}T12:00:00+08:00`);
   }
 
-  const dmy = /^(\\d{2})[/-](\\d{2})[/-](\\d{4})$/.exec(input);
+  const dmy = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(input);
   if (dmy) {
     const day = Number(dmy[1]), month = Number(dmy[2]), year = Number(dmy[3]);
     const valid = validISODate(`${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
