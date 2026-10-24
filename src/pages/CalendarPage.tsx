@@ -160,6 +160,8 @@ export default function CalendarPage() {
         const list: Order[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Order;
+          // Match the server calendar endpoint: soft-deleted orders must not reappear.
+          if (data.deletedByAdmin) return;
           list.push({ ...data, id: docSnap.id });
         });
         // Calendar events are selected by event date, not creation recency; do not drop older orders here.
