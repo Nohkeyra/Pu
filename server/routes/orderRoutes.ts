@@ -8,7 +8,8 @@ import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransport
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { toJSDate } from '../../src/lib/dateUtils.js';
+import { toJSDate, toISODateString, compareTimestampValues } from '../../src/lib/dateUtils.js';
+import { getOrderCalendarDate, getOrderEventDate, paginateSortedOrders, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
 import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
@@ -25,7 +26,7 @@ export function deriveEventDate(body: any): string | null {
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return trimmed;
+      return toISODateString(trimmed);
     }
   }
 
@@ -255,36 +256,26 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
   try {
     if (action === 'fetch') {
       const pageSize = Math.max(1, Math.min(100, Number(req.body.pageSize) || 50));
-      let query: FirebaseFirestore.Query = db.collection('orders').orderBy('createdAt', 'desc').limit(pageSize);
-
-      if (req.body.lastCreatedAt) {
-        let cursorValue: any = req.body.lastCreatedAt;
-        if (typeof cursorValue === 'number') {
-          cursorValue = new Date(cursorValue);
-        } else if (typeof cursorValue === 'string') {
-          cursorValue = new Date(cursorValue);
-        } else if (cursorValue && typeof cursorValue === 'object' && 'seconds' in cursorValue) {
-          cursorValue = new Date(cursorValue.seconds * 1000);
-        }
-        if (cursorValue instanceof Date && !isNaN(cursorValue.getTime())) {
-          query = query.startAfter(cursorValue);
-        } else if (req.body.lastId) {
-          const lastDocSnap = await db.collection('orders').doc(req.body.lastId).get();
-          if (lastDocSnap.exists) {
-            query = query.startAfter(lastDocSnap);
-          }
-        }
-      } else if (req.body.lastId) {
-        const lastDocSnap = await db.collection('orders').doc(req.body.lastId).get();
-        if (lastDocSnap.exists) {
-          query = query.startAfter(lastDocSnap);
-        }
+      // Firestore orderBy('createdAt') excludes missing fields and sorts mixed types by type.
+      // Read first, then normalize-sort and paginate to preserve legacy records.
+      const snapshot = await db.collection('orders').get();
+      const allOrders = sortOrdersByCreatedAt(snapshot.docs
+        .map(doc => ({ ...doc.data(), id: doc.id }))
+        .filter((order: any) => order.deletedByAdmin !== true), 'desc');
+      let page: { orders: typeof allOrders; hasMore: boolean };
+      if (typeof req.body.lastId === 'string' && req.body.lastId) {
+        page = paginateSortedOrders(allOrders, pageSize, req.body.lastId);
+      } else if (req.body.lastCreatedAt !== undefined) {
+        // Timestamp-only cursors cannot distinguish equal timestamps; new callers should send lastId.
+        const cursorDate = toJSDate(req.body.lastCreatedAt);
+        const afterCursor = cursorDate
+          ? allOrders.filter((order: any) => compareTimestampValues(order.createdAt, cursorDate, 'desc') > 0)
+          : allOrders;
+        page = paginateSortedOrders(afterCursor, pageSize);
+      } else {
+        page = paginateSortedOrders(allOrders, pageSize);
       }
-
-      const snapshot = await query.get();
-      const allOrders = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      const orders = allOrders.filter((o: any) => o.deletedByAdmin !== true);
-      return res.json({ success: true, orders, hasMore: allOrders.length === pageSize });
+      return res.json({ success: true, orders: page.orders, hasMore: page.hasMore });
     }
 
     if (action === 'update' && orderId) {
@@ -693,13 +684,10 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
 router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
-    const snapshot = await db.collection('orders')
-      .orderBy('createdAt', 'desc')
-      .limit(2000)
-      .get();
-    const orders = snapshot.docs
+    const snapshot = await db.collection('orders').get();
+    const orders = sortOrdersByCreatedAt(snapshot.docs
       .map(doc => ({ ...doc.data(), id: doc.id }))
-      .filter((o: any) => !o.deletedByAdmin) as OrderData[];
+      .filter((o: any) => !o.deletedByAdmin), 'desc').slice(0, 2000) as OrderData[];
 
     const workbook = await generateOrdersWorkbook(orders);
 
@@ -804,20 +792,8 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
 
     const db = getFirestore();
 
-    let query: FirebaseFirestore.Query = db.collection('orders');
-    if (fromDate && toDate) {
-      query = query
-        .where('eventDate', '>=', fromDate)
-        .where('eventDate', '<=', toDate);
-    } else if (fromDate) {
-      query = query.where('eventDate', '>=', fromDate).limit(500);
-    } else if (toDate) {
-      query = query.where('eventDate', '<=', toDate).limit(500);
-    } else {
-      query = query.orderBy('eventDate', 'desc').limit(500);
-    }
-
-    const snapshot = await query.get();
+    // Query filters on eventDate omit records with legacy date/dateTime fields; filter locally.
+    const snapshot = await db.collection('orders').get();
 
     const dailySessions: Record<string, {
       breakfast: { count: number; pax: number };
@@ -825,29 +801,14 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
       hi_tea: { count: number; pax: number };
     }> = {};
 
-    const parseOrderDateStr = (order: any): string | null => {
-      const raw = order.eventDate || order.date || order.dateTime || order.createdAt;
-      if (raw == null || raw === '') return null;
-
-      // Preserve the input calendar day for ISO strings, but reject impossible dates.
-      if (typeof raw === 'string' && /^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/.test(raw)) {
-        return toJSDate(raw) ? raw.slice(0, 10) : null;
-      }
-
-      const date = toJSDate(raw);
-      if (!date) return null;
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
+    const parseOrderDateStr = (order: any): string | null => getOrderCalendarDate(order);
 
     snapshot.docs.forEach(doc => {
       const order = doc.data();
       if (order.status === 'cancelled' || order.status === 'rejected' || order.deletedByAdmin) return;
 
       const dateStr = parseOrderDateStr(order);
-      if (!dateStr) return;
+      if (!dateStr || (fromDate && dateStr < fromDate) || (toDate && dateStr > toDate)) return;
 
       if (!dailySessions[dateStr]) {
         dailySessions[dateStr] = {
@@ -891,33 +852,18 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
     const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
     const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
 
-    let query: FirebaseFirestore.Query = db.collection('orders');
-    if (fromDate && toDate) {
-      query = query
-        .where('eventDate', '>=', fromDate)
-        .where('eventDate', '<=', toDate);
-    } else if (fromDate) {
-      query = query.where('eventDate', '>=', fromDate).limit(200);
-    } else if (toDate) {
-      query = query.where('eventDate', '<=', toDate).limit(200);
-    } else {
-      query = query.orderBy('eventDate', 'desc').limit(200);
-    }
-
-    const snapshot = await query.get();
-
+    const snapshot = await db.collection('orders').get();
     const orders = snapshot.docs
       .filter(doc => !doc.data().deletedByAdmin)
       .map(doc => {
         const d = doc.data();
-        return {
-          id: doc.id,
-          status: d.status || 'pending',
-          eventDate: d.eventDate || d.date || null,
-          meals: d.meals || [],
-          guests: d.guests || d.quantity || 0,
-        };
-      });
+        return { id: doc.id, status: d.status || 'pending', eventDate: d.eventDate || d.date || d.dateTime || null,
+          meals: d.meals || [], guests: d.guests || d.quantity || 0, normalizedEventDate: getOrderEventDate(d) };
+      })
+      .filter(order => Boolean(order.normalizedEventDate)
+        && (!fromDate || order.normalizedEventDate! >= fromDate)
+        && (!toDate || order.normalizedEventDate! <= toDate))
+      .map(order => ({ id: order.id, status: order.status, eventDate: order.eventDate, meals: order.meals, guests: order.guests }));
 
     return res.json({ success: true, orders });
   } catch (err) {

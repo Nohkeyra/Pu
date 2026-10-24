@@ -131,6 +131,21 @@ export function normalizeTimestamp(val: unknown): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+/** Returns a validated calendar date as YYYY-MM-DD, preserving date-only ISO input. */
+export function toISODateString(val: unknown): string | null {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    const isoDateMatch = /^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/.exec(trimmed);
+    if (isoDateMatch) return toJSDate(trimmed) ? isoDateMatch[1] : null;
+  }
+  const date = toJSDate(val);
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Compares timestamp values without letting invalid/missing dates distort order.
  * Invalid values sort last in either direction; valid timestamps remain chronological.

@@ -5,6 +5,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 import { invoiceQueue } from '../services/invoiceQueue.js';
 import { telemetry } from '../telemetry.js';
+import { getOrderEventDate } from '../../src/lib/orderTimestamp.js';
 
 const router = Router();
 
@@ -117,12 +118,13 @@ router.get('/widget/upcoming-orders', async (req, res) => {
         const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
         const mealTypeStr = formatMealTypeBM(mealsArr);
         const locStr = d.location || d.deliveryLocation || d.address || d.venue || 'Lokasi Belum Dinyatakan';
-        const eventDateVal = d.eventDate || d.date || null;
+        const normalizedEventDate = getOrderEventDate(d);
+        if (!normalizedEventDate || normalizedEventDate < todayStr) return null;
 
         return {
           id: doc.id,
-          eventDate: eventDateVal,
-          date: eventDateVal,
+          eventDate: normalizedEventDate,
+          date: normalizedEventDate,
           time: d.time || null,
           meals: mealsArr,
           mealType: mealTypeStr,
@@ -135,6 +137,7 @@ router.get('/widget/upcoming-orders', async (req, res) => {
         };
       })
       .filter((o): o is NonNullable<typeof o> => o !== null)
+      .sort((a, b) => String(a.eventDate || '').localeCompare(String(b.eventDate || '')))
       .slice(0, limitNum);
 
     return res.json({ success: true, orders, date: todayStr, count: orders.length });

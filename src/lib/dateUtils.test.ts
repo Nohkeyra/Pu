@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toJSDate } from './dateUtils';
+import { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toISODateString, toJSDate } from './dateUtils';
 
 describe('Date Formatting Utilities (DD/MM/YYYY Slashes Format)', () => {
   it('formats standard YYYY-MM-DD ISO string correctly', () => {
@@ -141,5 +141,21 @@ describe('Date Formatting Utilities (DD/MM/YYYY Slashes Format)', () => {
       expect(descending.map((order) => order.id)).toEqual(['newest', 'middle', 'oldest', 'missing', 'invalid']);
       expect(ascending.map((order) => order.id)).toEqual(['oldest', 'middle', 'newest', 'missing', 'invalid']);
     });
+  });
+});
+
+
+describe('toISODateString legacy date normalization', () => {
+  it('preserves valid ISO calendar days and rejects impossible dates', () => {
+    expect(toISODateString('2026-11-25')).toBe('2026-11-25');
+    expect(toISODateString('2026-11-25T23:30:00Z')).toBe('2026-11-25');
+    expect(toISODateString('2026-02-31')).toBeNull();
+  });
+  it('normalizes supported legacy display strings and Firestore timestamps', () => {
+    expect(toISODateString('25/11/2026')).toBe('2026-11-25');
+    expect(toISODateString('25-11-2026')).toBe('2026-11-25');
+    expect(toISODateString({ seconds: 1795564800, nanoseconds: 0 })).toBe('2026-11-25');
+    expect(toISODateString('not-a-date')).toBeNull();
+    expect(toISODateString(undefined)).toBeNull();
   });
 });

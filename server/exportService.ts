@@ -1,3 +1,4 @@
+import { toJSDate } from '../src/lib/dateUtils.js';
 import ExcelJS from "exceljs";
 import type { OrderData } from "./firebaseAdmin.js";
 
@@ -45,14 +46,10 @@ export function formatUnitPrices(order: OrderData): string {
 }
 
 export function formatTimestamp(ts: unknown): string {
-  if (!ts) return "-";
-  if (typeof ts === "string") return ts;
-  if (ts instanceof Date) return ts.toISOString();
-  if (typeof ts === "object" && ts !== null && "seconds" in ts) {
-    const sec = (ts as { seconds: number }).seconds;
-    return new Date(sec * 1000).toISOString();
-  }
-  return String(ts);
+  if (ts == null || ts === '') return "-";
+  if (typeof ts === "string") return toJSDate(ts) ? ts : "-";
+  const date = toJSDate(ts);
+  return date ? date.toISOString() : "-";
 }
 
 export async function generateOrdersWorkbook(orders: OrderData[]): Promise<ExcelJS.Workbook> {

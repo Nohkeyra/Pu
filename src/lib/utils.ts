@@ -1,7 +1,8 @@
+import { toJSDate } from './dateUtils';
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toJSDate } from './dateUtils'
+export { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toISODateString, toJSDate } from './dateUtils'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -116,8 +117,12 @@ export function safeJsonStringify(value: unknown, space?: number | string): stri
       }
       if (typeof val === 'object' && val !== null) {
         // Handle Firestore timestamp objects or objects with custom toDate
-        if ('toDate' in val && typeof (val as { toDate?: unknown }).toDate === 'function') {
-          return (val as { toDate: () => Date }).toDate().toISOString();
+        let hasToDate = false;
+        try { hasToDate = 'toDate' in val && typeof (val as { toDate?: unknown }).toDate === 'function'; }
+        catch { return null; }
+        if (hasToDate) {
+          const date = toJSDate(val);
+          return date ? date.toISOString() : null;
         }
         // Handle DOM nodes / HTML elements / window / synthetic events
         if (
