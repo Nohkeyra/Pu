@@ -49,7 +49,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     orders,
     loading,
     isApproving,
-    setIsApproving,
     fetchOrders,
     handleUpdateOrderStatus,
     handleDeleteOrder,
@@ -303,11 +302,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
             handleDelete={handleDeleteOrder}
             handleRejectCancellation={(id) => handleUpdateOrderStatus(id, { status: 'approved' }, 'Cancellation rejected')}
             handleUpdateStatus={(id, status) => handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`)}
-            authHeaders={authHeaders}
-            getApiUrl={getApiUrl}
-            fetchOrders={() => fetchOrders(true)}
             toast={toast}
-            setIsApproving={setIsApproving}
           />
         )}
 

@@ -251,6 +251,7 @@ export interface OrderData {
   email?: string;
   status?: string;
   date?: string;
+  eventDate?: string;
   time?: string;
   dateTime?: string;
   quantity?: number;

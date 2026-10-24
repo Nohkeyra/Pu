@@ -19,7 +19,7 @@ Act as an evidence-driven agent. Never treat a plausible change as a verified re
 - **Package manager**: `npm` only. Never generate `bun.lock`.
 - **Scripts**: `dev`, `build`, `start`, `lint`, `test`
 
-**Directories**: `/src`, `/server`, `/android`, `/scripts`, `/public`, `/docs`, `/e2e`
+**Directories**: `/src`, `/server`, `/android`, `/scripts`, `/public`, `/e2e`
 
 ---
 

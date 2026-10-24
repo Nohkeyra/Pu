@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { formatDateDisplay } from './dateUtils';
+import { formatDateDisplay, toJSDate } from './dateUtils';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -320,9 +320,9 @@ export async function exportOrdersAsExcelStandard(
     orders.forEach((o) => {
       const dateStr = formatDateDisplay(o.dateTime || o.eventDate || o.date);
       let timeStr = '-';
-      if (o.dateTime) {
+      const d = toJSDate(o.dateTime);
+      if (d) {
         try {
-          const d = new Date(o.dateTime);
           timeStr = format(d, 'HH:mm');
         } catch {
           timeStr = '-';

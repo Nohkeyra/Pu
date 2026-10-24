@@ -127,8 +127,19 @@ export function ProfileInfoTab({
             <Input
               id="profile-phone"
               value={editContact}
-              onChange={(e) => setEditContact(e.target.value)}
-              placeholder="e.g. 012-3456789"
+              onChange={(e) => {
+                const value = e.target.value;
+                const numbers = value.replace(/\D/g, '');
+                let formatted = numbers;
+                if (numbers.length > 3) {
+                  formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+                }
+                if (numbers.length > 6) {
+                  formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+                }
+                setEditContact(formatted.slice(0, 12));
+              }}
+              placeholder="e.g. 012-345 6789"
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (

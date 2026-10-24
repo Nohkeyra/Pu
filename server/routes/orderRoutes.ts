@@ -20,6 +20,7 @@ export function deriveEventDate(body: any): string | null {
   const raw = body.eventDate || body.date || body.dateTime;
   if (!raw) return null;
 
+  // 1. Direct YYYY-MM-DD string
   if (typeof raw === 'string') {
     const trimmed = raw.trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
@@ -27,10 +28,30 @@ export function deriveEventDate(body: any): string | null {
     }
   }
 
+  // 2. Extract from various formats
   try {
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return null;
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(d);
+    let d: Date | null = null;
+    if (raw instanceof Date) {
+      d = raw;
+    } else if (typeof raw === 'object' && raw !== null) {
+      // Handle Firestore Timestamp {seconds, nanoseconds} or {_seconds, _nanoseconds}
+      const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
+      if (seconds !== null) {
+        d = new Date(seconds * 1000);
+      } else if (typeof raw.toDate === 'function') {
+        d = raw.toDate();
+      }
+    } else if (typeof raw === 'string' || typeof raw === 'number') {
+      d = new Date(raw);
+    }
+
+    if (!d || isNaN(d.getTime())) return null;
+    
+    // Format to YYYY-MM-DD in MYT
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   } catch {
     return null;
   }
@@ -805,18 +826,32 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
 
     const parseOrderDateStr = (order: any): string | null => {
       try {
-        let dateVal = order.eventDate || order.date || order.dateTime || order.createdAt;
-        if (!dateVal) return null;
-        if (typeof dateVal === 'string') {
-          if (dateVal.length >= 10 && dateVal[4] === '-' && dateVal[7] === '-') {
-            return dateVal.slice(0, 10);
+        const raw = order.eventDate || order.date || order.dateTime || order.createdAt;
+        if (!raw) return null;
+
+        // 1. Direct YYYY-MM-DD string
+        if (typeof raw === 'string') {
+          if (raw.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(raw)) {
+            return raw.slice(0, 10);
           }
         }
-        if (typeof dateVal === 'object' && dateVal !== null && 'seconds' in dateVal) {
-          dateVal = new Date((dateVal as any).seconds * 1000);
+
+        // 2. Extract from other formats
+        let d: Date | null = null;
+        if (raw instanceof Date) {
+          d = raw;
+        } else if (typeof raw === 'object' && raw !== null) {
+          const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
+          if (seconds !== null) {
+            d = new Date(seconds * 1000);
+          } else if (typeof raw.toDate === 'function') {
+            d = raw.toDate();
+          }
+        } else if (typeof raw === 'string' || typeof raw === 'number') {
+          d = new Date(raw);
         }
-        const d = new Date(dateVal);
-        if (isNaN(d.getTime())) return null;
+
+        if (!d || isNaN(d.getTime())) return null;
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');

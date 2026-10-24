@@ -57,7 +57,7 @@ import {
 } from 'date-fns';
 import { ms, enUS } from 'date-fns/locale';
 import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
-import { cn } from '@/lib/utils';
+import { cn, toJSDate } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
@@ -236,31 +236,14 @@ export default function CalendarPage() {
 
   // Normalize and extract Date string YYYY-MM-DD from an Order
   const getOrderDateString = (order: Order): string | null => {
-    try {
-      const val = order.eventDate || order.date || order.dateTime || order.createdAt;
-      if (!val) return null;
-      if (typeof val === 'string') {
-        if (val.length >= 10 && val[4] === '-' && val[7] === '-') {
-          return val.slice(0, 10);
-        }
-      }
-      let d: Date | null = null;
-      if (val instanceof Date) d = val;
-      else if (typeof val === 'object' && val !== null && 'seconds' in (val as any)) {
-        d = new Date((val as any).seconds * 1000);
-      } else if (typeof val === 'string') {
-        d = new Date(val);
-      }
-      if (d && !isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      }
-    } catch (e) {
-      console.debug("Date string parse error:", e);
-    }
-    return null;
+    const val = order.eventDate || order.date || order.dateTime || order.createdAt;
+    const d = toJSDate(val);
+    if (!d) return null;
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const getCustomerSelectedEventTime = (order: Order): string => {

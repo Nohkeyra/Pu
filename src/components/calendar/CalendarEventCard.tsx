@@ -41,16 +41,18 @@ export function CalendarEventCard({
       {...longPressProps}
       className="p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-900/60 hover:border-crisp-carrot/50 transition-all space-y-2.5 shadow-2xs select-none cursor-pointer"
     >
-      <div className="flex items-center justify-between pointer-events-none">
+      <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
           #{order.invoiceNo || order.id?.slice(0, 8).toUpperCase()}
         </span>
         <span
           className={cn(
-            'text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize',
+            'text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize shadow-2xs',
             order.status === 'approved' && 'bg-emerald-500 text-white',
             order.status === 'pending' && 'bg-amber-500 text-white',
             order.status === 'billed' && 'bg-blue-600 text-white',
+            order.status === 'cancel_requested' && 'bg-rose-500 text-white animate-pulse',
+            order.status === 'cancelled' && 'bg-stone-500 text-white',
             (order.status as string) === 'completed' && 'bg-stone-600 text-white'
           )}
         >
@@ -58,7 +60,7 @@ export function CalendarEventCard({
         </span>
       </div>
 
-      <div className="flex items-start justify-between gap-2 pointer-events-none">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <h5 className="font-bold text-sm text-stone-900 dark:text-stone-100">
             {isAdmin ? (order.to || order.name) : tl('Corporate Catering Session', 'Sesi Katering Korporat')}
@@ -73,7 +75,7 @@ export function CalendarEventCard({
         </span>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400 pointer-events-none">
+      <div className="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400">
         <div className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
           <span>{eventTime}</span>

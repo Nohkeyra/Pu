@@ -73,32 +73,18 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
-      const fetchedOrders: Order[] = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.deletedByAdmin) {
-          return;
-        }
-        let createdAtObj = data.createdAt;
-        if (data.createdAt) {
-          const sec = typeof data.createdAt.seconds === 'number'
-            ? data.createdAt.seconds
-            : (typeof data.createdAt._seconds === 'number' ? data.createdAt._seconds : null);
-          const nanosec = typeof data.createdAt.nanoseconds === 'number'
-            ? data.createdAt.nanoseconds
-            : (typeof data.createdAt._nanoseconds === 'number' ? data.createdAt._nanoseconds : 0);
-              
-          if (sec !== null) {
-            createdAtObj = { seconds: sec, nanoseconds: nanosec };
+        const fetchedOrders: Order[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.deletedByAdmin) {
+            return;
           }
-        }
-        
-        fetchedOrders.push({ 
-          id: docSnap.id, 
-          ...data,
-          createdAt: createdAtObj 
-        } as Order);
-      });
+          
+          fetchedOrders.push({ 
+            id: docSnap.id, 
+            ...data,
+          } as Order);
+        });
       setOrders(fetchedOrders);
       setLoading(false);
     }, (error) => {

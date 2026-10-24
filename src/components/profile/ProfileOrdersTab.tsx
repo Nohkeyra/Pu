@@ -51,7 +51,26 @@ interface ProfileOrdersTabProps {
   t: (en: string, bm: string) => string;
 }
 
-// Unpredictable Feature: Swipe-to-Reveal Delete Item
+// Swipe-to-Reveal Delete Item
+interface OrderItemProps {
+  order: Order;
+  isSelected: boolean;
+  isSelectMode: boolean;
+  handleToggleOrderSelect: (id: string) => void;
+  getStatusBadge: (status?: string) => React.ReactNode;
+  onReorder: (order: Order) => void;
+  setPreviewOrder: (order: Order | null) => void;
+  handleRequestInvoiceEmail: (order: Order) => Promise<void>;
+  pokingOrderId: string | null;
+  setTrackingOrder?: (order: Order | null) => void;
+  setConfirmDialog: (val: { type: 'cancel' | 'delete'; orderId: string } | null) => void;
+  setEditingOrder?: (order: Order) => void;
+  cancellingOrderId: string | null;
+  deletingOrderId: string | null;
+  t: (en: string, bm: string) => string;
+  itemVariants: any;
+}
+
 function OrderItem({
   order,
   isSelected,
@@ -69,7 +88,7 @@ function OrderItem({
   deletingOrderId,
   t,
   itemVariants
-}: any) {
+}: OrderItemProps) {
   const x = useMotionValue(0);
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
@@ -414,7 +433,7 @@ export function ProfileOrdersTab({
     visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
-  const getStatusBadge = (status: Order['status']) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'billed':
         return <Badge className="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 text-xs font-bold">{t('Billed', 'Telah Diinvois')}</Badge>;

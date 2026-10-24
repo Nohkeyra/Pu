@@ -138,8 +138,8 @@ export default function ProfilePage() {
                 >
                   <span>
                     {language === 'bm'
-                      ? 'Atau teruskan ke Borang Pesanan tanpa kisah tentang tempahan terkini anda'
-                      : 'Or proceed directly to Order Form without even caring about what you have ordered recently'}
+                      ? 'Atau teruskan ke Borang Pesanan sebagai tetamu'
+                      : 'Or proceed directly to Order Form as a guest'}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 transition-transform group-hover:translate-x-1" />
                 </Button>
@@ -149,8 +149,14 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-6">
             <div className="text-center mb-6">
-              <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white mb-1">Your Dashboard</h1>
-              <p className="text-stone dark:text-stone/75 microcopy-14 font-medium">Manage your profile and track your catering requests.</p>
+              <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white mb-1">
+                {language === 'bm' ? 'Papan Pemuka Anda' : 'Your Dashboard'}
+              </h1>
+              <p className="text-stone dark:text-stone/75 microcopy-14 font-medium">
+                {language === 'bm' 
+                  ? 'Urus profil anda dan jejak permintaan katering anda.' 
+                  : 'Manage your profile and track your catering requests.'}
+              </p>
             </div>
 
             <Card className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg p-0">

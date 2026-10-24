@@ -6,7 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
-import { formatDateTimeDisplay } from '@/lib/utils';
+import { formatDateTimeDisplay, normalizeTimestamp } from '@/lib/utils';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -51,11 +51,7 @@ export function AdminOrdersTab({
   handleDelete,
   handleRejectCancellation,
   handleUpdateStatus,
-  authHeaders,
-  getApiUrl,
-  fetchOrders,
   toast,
-  setIsApproving,
 }: {
   t: (key: string) => string;
   language: string;
@@ -84,11 +80,7 @@ export function AdminOrdersTab({
   handleDelete: (orderId: string) => void;
   handleRejectCancellation: (orderId: string) => void;
   handleUpdateStatus?: (id: string, status: string) => void;
-  authHeaders: () => HeadersInit;
-  getApiUrl: (path: string) => string;
-  fetchOrders: () => void;
   toast: (opts: { title?: string; description?: string; variant?: ToastVariant }) => void;
-  setIsApproving: (v: boolean) => void;
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -107,7 +99,8 @@ export function AdminOrdersTab({
 
   const hasActiveDate = Boolean(dateFromFilter || dateToFilter);
   const hasActiveStatus = Boolean(statusFilter && statusFilter !== 'all');
-  const activeFilterCount = (hasActiveDate ? 1 : 0) + (hasActiveStatus ? 1 : 0) + (isSelectMode ? 1 : 0);
+  const hasSearch = Boolean(searchQuery.trim());
+  const activeFilterCount = (hasActiveDate ? 1 : 0) + (hasActiveStatus ? 1 : 0) + (isSelectMode ? 1 : 0) + (hasSearch ? 1 : 0);
 
   // Local search over already-filtered orders (name, email, phone, invoice, client)
   const searchedOrders = useMemo(() => {
@@ -150,34 +143,9 @@ export function AdminOrdersTab({
                     variant="default"
                     size="sm"
                     className="h-10 min-h-[40px] bg-emerald-600 hover:bg-emerald-700 text-white border-0 font-bold text-sm shadow-sm px-4"
-                    onClick={async () => {
-                      setIsApproving(true);
-                      try {
-                        const response = await fetch(getApiUrl('/api/admin/orders'), {
-                          method: 'POST',
-                          headers: authHeaders(),
-                          body: JSON.stringify({
-                            action: 'update',
-                            orderId: order.id,
-                            data: { status: 'cancelled' }
-                          })
-                        });
-                        if (!response.ok) throw new Error(t('error_approval_failed') || 'Failed to approve cancellation.');
-                        toast({
-                          title: t('success'),
-                          description: t('cancellation_approved'),
-                          variant: 'success'
-                        });
-                        fetchOrders();
-                      } catch (e) {
-                        console.error(e);
-                        toast({
-                          title: t('error'),
-                          description: e instanceof Error ? e.message : t('error_general'),
-                          variant: 'error'
-                        });
-                      } finally {
-                        setIsApproving(false);
+                    onClick={() => {
+                      if (order.id && handleUpdateStatus) {
+                        handleUpdateStatus(order.id, 'cancelled');
                       }
                     }}
                   >
@@ -529,7 +497,7 @@ export function AdminOrdersTab({
         ) : (
           (() => {
             const rowHeight = windowWidth < 420 ? 152 : windowWidth < 768 ? 138 : 122;
-            const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 620);
+            const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 900);
 
             return (
               <List
@@ -552,28 +520,11 @@ export function AdminOrdersTab({
               }
 
               const getRelativeTime = (o: Order) => {
-                let dateVal = new Date();
-                if (o.createdAt) {
-                  if (typeof o.createdAt === 'object') {
-                    if ('seconds' in o.createdAt && typeof o.createdAt.seconds === 'number') {
-                      dateVal = new Date(o.createdAt.seconds * 1000);
-                    } else if ('_seconds' in o.createdAt && typeof (o.createdAt as any)._seconds === 'number') {
-                      dateVal = new Date((o.createdAt as any)._seconds * 1000);
-                    } else {
-                      dateVal = new Date(o.createdAt as any);
-                    }
-                  } else {
-                    dateVal = new Date(o.createdAt);
-                  }
-                } else if (o.dateTime) {
-                  dateVal = new Date(o.dateTime);
-                }
-                const timeMs = dateVal.getTime();
-                const diffMs = isNaN(timeMs) ? 0 : Date.now() - timeMs;
+                const ts = normalizeTimestamp(o.createdAt || o.dateTime);
+                const diffMs = ts > 0 ? Date.now() - (ts * 1000) : 0;
                 const diffMins = Math.floor(diffMs / 60000);
                 const diffHrs = Math.floor(diffMins / 60);
                 const diffDays = Math.floor(diffHrs / 24);
-                if (isNaN(diffMins) || diffMs < 0) return '1m';
                 if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
                 if (diffHrs < 24) return `${diffHrs}h`;
                 return `${diffDays}d`;

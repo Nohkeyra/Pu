@@ -68,16 +68,31 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
       return { success: false, error: `Order ${orderId} not found` };
     }
 
-    let startDateTime: Date;
-    if (orderData.dateTime) {
-      startDateTime = new Date(orderData.dateTime);
-    } else if (orderData.date) {
-      startDateTime = new Date(`${orderData.date}T${orderData.time || '12:00'}:00+08:00`);
-    } else {
-      startDateTime = new Date();
+    let startDateTime: Date | null = null;
+    const raw = orderData.dateTime || orderData.eventDate || orderData.date;
+    
+    if (raw) {
+      if (raw instanceof Date) {
+        startDateTime = raw;
+      } else if (typeof raw === 'object' && raw !== null) {
+        const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
+        if (seconds !== null) {
+          startDateTime = new Date(seconds * 1000);
+        } else if (typeof raw.toDate === 'function') {
+          startDateTime = raw.toDate();
+        }
+      } else if (typeof raw === 'string' || typeof raw === 'number') {
+        startDateTime = new Date(raw);
+      }
     }
 
-    if (isNaN(startDateTime.getTime())) {
+    if (!startDateTime || isNaN(startDateTime.getTime())) {
+      if (orderData.date) {
+        startDateTime = new Date(`${orderData.date}T${orderData.time || '12:00'}:00+08:00`);
+      }
+    }
+
+    if (!startDateTime || isNaN(startDateTime.getTime())) {
       startDateTime = new Date();
     }
 

@@ -190,6 +190,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setMode(newMode);
   };
 
+  // Phone number masking helper: 012-345 6789
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    let formatted = numbers;
+    if (numbers.length > 3) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    }
+    if (numbers.length > 6) {
+      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
+    }
+    return formatted.slice(0, 12);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
@@ -397,6 +410,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Dato' Ahmad"
+                        autoComplete="name"
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
                       />
@@ -413,8 +427,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                         id="signup-contact"
                         type="tel"
                         value={contact}
-                        onChange={(e) => setContact(e.target.value)}
-                        placeholder="e.g. +60123456789"
+                        onChange={(e) => setContact(formatPhoneNumber(e.target.value))}
+                        placeholder="e.g. 012-345 6789"
+                        autoComplete="tel"
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
                       />
@@ -439,6 +454,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                             setTo(val);
                           }
                         }}
+                        autoComplete="organization"
                         className="w-full h-11 pl-10 pr-10 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200 appearance-none"
                       >
                         <option value="" className="text-muted-foreground bg-background">-- {t('Select Company / Organization', 'Pilih Syarikat / Organisasi')} --</option>
@@ -521,6 +537,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g. nama@organisasi.gov.my"
+                    autoComplete="email"
                     className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                     required
                   />
@@ -552,6 +569,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                       className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                       required
                     />

@@ -137,9 +137,16 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             }
           });
           fetchedOrders.sort((a, b) => {
-            const dateA = (a.createdAt as any)?.seconds || 0;
-            const dateB = (b.createdAt as any)?.seconds || 0;
-            return dateB - dateA;
+            const getTimestamp = (o: Order) => {
+              const ca = o.createdAt as any;
+              if (!ca) return 0;
+              if (typeof ca.seconds === 'number') return ca.seconds;
+              if (typeof ca._seconds === 'number') return ca._seconds;
+              if (ca instanceof Date) return Math.floor(ca.getTime() / 1000);
+              if (typeof ca === 'string') return Math.floor(new Date(ca).getTime() / 1000);
+              return 0;
+            };
+            return getTimestamp(b) - getTimestamp(a);
           });
           setOrders(fetchedOrders);
           setIsLoadingOrders(false);

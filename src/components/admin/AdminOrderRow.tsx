@@ -54,18 +54,18 @@ export function AdminOrderRow({
 
         <div className="flex items-start justify-between gap-1.5 pl-1.5">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap pointer-events-none">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-xs sm:text-[13px] text-[#0c453c] dark:text-emerald-400 leading-tight">
                 {formattedHeaderDate}
               </span>
               <span className="text-xs text-stone-400 dark:text-stone-500">· {relativeTime} ago</span>
               {getStatusBadge(order.status)}
             </div>
-            <h3 className="font-bold text-xs sm:text-sm text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug pointer-events-none">
+            <h3 className="font-bold text-xs sm:text-sm text-[#0c453c] dark:text-stone-100 truncate mt-0.5 leading-snug">
               {clientName}
             </h3>
             {order.email && (
-              <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0 pointer-events-none">{order.email}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 truncate mt-0">{order.email}</p>
             )}
           </div>
 
@@ -100,7 +100,7 @@ export function AdminOrderRow({
         </div>
 
         <div className="flex items-center justify-between gap-2 pl-1.5">
-          <div className="flex items-center gap-2 pointer-events-none">
+          <div className="flex items-center gap-2">
             <div className="flex flex-col items-center justify-center min-w-[40px] h-8 rounded-lg bg-sunshine/15 dark:bg-sunshine/20 border border-sunshine/30 px-1.5">
               <span className="font-bold text-xs sm:text-sm text-deep-forest dark:text-amber-300 leading-none">{order.quantity ?? '–'}</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-deep-forest/70 dark:text-amber-300/80 mt-0.5">pax</span>

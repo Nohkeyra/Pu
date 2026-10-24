@@ -11,88 +11,81 @@
  * or Firestore Timestamp object) into DD/MM/YYYY format with slashes.
  */
 export function formatDateDisplay(val: unknown, fallback = '-'): string {
-  if (!val) return fallback;
+  const d = toJSDate(val);
+  if (!d) return fallback;
 
-  // 1. String inputs
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Converts any timestamp-like input (Date, string, Firestore Timestamp, number)
+ * into a valid Javascript Date object or null if invalid.
+ */
+export function toJSDate(val: any): Date | null {
+  if (!val) return null;
+
+  // 1. Date instances
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? null : val;
+  }
+
+  // 2. Firestore Timestamp or similar object
+  if (typeof val === 'object' && val !== null) {
+    if (typeof val.toDate === 'function') {
+      try {
+        const d = val.toDate();
+        if (d instanceof Date && !isNaN(d.getTime())) return d;
+      } catch { /* fallback */ }
+    }
+    // Handle both client SDK {seconds, nanoseconds} and admin SDK {_seconds, _nanoseconds}
+    const seconds = typeof val.seconds === 'number' ? val.seconds : (typeof val._seconds === 'number' ? val._seconds : null);
+    if (seconds !== null) {
+      return new Date(seconds * 1000);
+    }
+  }
+
+  // 3. String (ISO or other)
   if (typeof val === 'string') {
     const trimmed = val.trim();
-    if (!trimmed) return fallback;
+    if (!trimmed) return null;
 
-    // Fast check: ISO date prefix YYYY-MM-DD (e.g. "2026-01-05" or "2026-01-05T12:00:00Z")
-    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
-    if (isoMatch) {
-      const [, year, month, day] = isoMatch;
-      return `${day}/${month}/${year}`;
+    // 1. Try explicit DD/MM/YYYY or DD-MM-YYYY (standard display format in this app)
+    const ddmmyyyyMatch = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(trimmed);
+    if (ddmmyyyyMatch) {
+      const [, day, month, year] = ddmmyyyyMatch;
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+      if (!isNaN(parsed.getTime())) return parsed;
     }
 
-    // Already in DD/MM/YYYY format
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
-      return trimmed;
-    }
-
-    // Already in DD-MM-YYYY format (convert dashes to slashes)
-    const dashMatch = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
-    if (dashMatch) {
-      const [, day, month, year] = dashMatch;
-      return `${day}/${month}/${year}`;
-    }
-
-    // Attempt Date parse for other string representations
-    const parsed = new Date(trimmed);
-    if (!isNaN(parsed.getTime())) {
-      const day = String(parsed.getDate()).padStart(2, '0');
-      const month = String(parsed.getMonth() + 1).padStart(2, '0');
-      const year = parsed.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
-    return trimmed;
+    // 2. Fallback to native Date parsing (handles ISO and other formats)
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) return d;
   }
 
-  // 2. Date instances
-  if (val instanceof Date) {
-    if (isNaN(val.getTime())) return fallback;
-    const day = String(val.getDate()).padStart(2, '0');
-    const month = String(val.getMonth() + 1).padStart(2, '0');
-    const year = val.getFullYear();
-    return `${day}/${month}/${year}`;
+  // 4. Number (seconds or milliseconds)
+  if (typeof val === 'number') {
+    // Large number (> 10^11) is likely milliseconds (e.g. 1767571200000)
+    // Small number (< 10^11) is likely seconds (e.g. 1767571200)
+    const ms = val > 100000000000 ? val : val * 1000;
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) return d;
   }
 
-  // 3. Firestore Timestamp objects or objects with seconds/_seconds/toDate
-  if (typeof val === 'object' && val !== null) {
-    if ('toDate' in val && typeof (val as { toDate: () => Date }).toDate === 'function') {
-      try {
-        const d = (val as { toDate: () => Date }).toDate();
-        if (d instanceof Date && !isNaN(d.getTime())) {
-          const day = String(d.getDate()).padStart(2, '0');
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const year = d.getFullYear();
-          return `${day}/${month}/${year}`;
-        }
-      } catch {
-        // fallback
-      }
-    }
-    if ('seconds' in val && typeof (val as { seconds: number }).seconds === 'number') {
-      const d = new Date((val as { seconds: number }).seconds * 1000);
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-    }
-    if ('_seconds' in val && typeof (val as { _seconds: number })._seconds === 'number') {
-      const d = new Date((val as { _seconds: number })._seconds * 1000);
-      if (!isNaN(d.getTime())) {
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-    }
-  }
+  return null;
+}
 
-  return fallback;
+/**
+ * Normalizes any timestamp-like input (Date, string, Firestore Timestamp)
+ * into a Unix timestamp (seconds) for consistent sorting and comparison.
+ * Returns 0 for invalid inputs to ensure safe sorting.
+ */
+export function normalizeTimestamp(val: any): number {
+  const d = toJSDate(val);
+  if (!d) return 0;
+  return Math.floor(d.getTime() / 1000);
 }
 
 /**

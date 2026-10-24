@@ -1,5 +1,5 @@
-import { format } from 'date-fns'
 import type { Order } from '@/types'
+import { normalizeTimestamp } from './utils'
 
 /** Maps UI status chips to stored bm/en status strings on orders. */
 export const STATUS_FILTER_GROUPS: Record<string, string[]> = {
@@ -36,16 +36,23 @@ export function filterAdminOrders({
 
   return orders.filter((order) => {
     const dateMatch = (() => {
-      if (!order.dateTime || !sLower) return false
+      if (!sLower) return false
+      const ts = normalizeTimestamp(order.dateTime || order.eventDate || order.createdAt);
+      if (ts === 0) return false;
+      const d = new Date(ts * 1000);
       try {
-        const d = new Date(order.dateTime)
+        // We use a simple Intl format instead of date-fns to reduce dependencies if possible, 
+        // but since date-fns was here, I'll stick to native for better control over legacy formats.
+        const dateStr = d.toLocaleDateString('en-GB'); // DD/MM/YYYY
+        const monthStr = d.toLocaleDateString('en-GB', { month: 'long' }).toLowerCase();
+        const dayStr = d.toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase();
+        
         return (
-          format(d, 'PP').toLowerCase().includes(sLower) ||
-          format(d, 'dd/MM/yyyy').toLowerCase().includes(sLower) ||
-          format(d, 'MMMM').toLowerCase().includes(sLower) ||
-          format(d, 'EEEE').toLowerCase().includes(sLower) ||
+          dateStr.includes(sLower) ||
+          monthStr.includes(sLower) ||
+          dayStr.includes(sLower) ||
           d.getFullYear().toString().includes(sLower)
-        )
+        );
       } catch {
         return false
       }
@@ -72,12 +79,17 @@ export function filterAdminOrders({
 
     const matchesDateRange = (() => {
       if (!dateFromFilter && !dateToFilter) return true
-      if (!order.dateTime) return false
+      const ts = normalizeTimestamp(order.dateTime || order.eventDate || order.createdAt);
+      if (ts === 0) return false;
       try {
-        const d = new Date(order.dateTime)
-        const day = format(d, 'yyyy-MM-dd')
-        if (dateFromFilter && day < dateFromFilter) return false
-        if (dateToFilter && day > dateToFilter) return false
+        const d = new Date(ts * 1000);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${day}`;
+        
+        if (dateFromFilter && dateStr < dateFromFilter) return false
+        if (dateToFilter && dateStr > dateToFilter) return false
         return true
       } catch {
         return true

@@ -1471,7 +1471,7 @@ export default function SettingsPage() {
             )}
           </SettingsSection>
 
-          {/* SECTION 5: STORAGE & CACHE MANAGEMENT */}
+          {/* SECTION 6: STORAGE & CACHE MANAGEMENT */}
           <SettingsSection title={language === 'bm' ? 'Storan & Cache' : 'Storage & Cache'}>
             <SettingsRow
               icon={Database}
@@ -1527,7 +1527,7 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 6: LEGAL & PRIVACY */}
+          {/* SECTION 7: LEGAL & PRIVACY */}
           <SettingsSection title={language === 'bm' ? 'Perundangan & Privasi' : 'Legal & Privacy'}>
             <SettingsRow
               icon={ShieldCheck}
@@ -1597,47 +1597,51 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
-          {/* SECTION 7: SYSTEM & DIAGNOSTICS */}
-          <SettingsSection title={language === 'bm' ? 'Sistem & Diagnostik' : 'System & Tools'}>
-            <SettingsRow
-              icon={Cpu}
-              iconBg="bg-indigo-500/10"
-              iconColor="text-indigo-600 dark:text-indigo-400"
-              title={language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
-              action={
-                <Switch
-                  checked={developerMode}
-                  onCheckedChange={handleToggleDeveloper}
-                  aria-label="Toggle developer mode"
+          {isAdmin && (
+            <>
+              {/* SECTION 8: SYSTEM & DIAGNOSTICS */}
+              <SettingsSection title={language === 'bm' ? 'Sistem & Diagnostik' : 'System & Tools'}>
+                <SettingsRow
+                  icon={Cpu}
+                  iconBg="bg-indigo-500/10"
+                  iconColor="text-indigo-600 dark:text-indigo-400"
+                  title={language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
+                  action={
+                    <Switch
+                      checked={developerMode}
+                      onCheckedChange={handleToggleDeveloper}
+                      aria-label="Toggle developer mode"
+                    />
+                  }
                 />
-              }
-            />
 
-            <SettingsRow
-              icon={Terminal}
-              iconBg="bg-zinc-500/10"
-              iconColor="text-zinc-600 dark:text-zinc-400"
-              title={language === 'bm' ? 'Konsol Diagnostik' : 'Diagnostics Console'}
-              isLast={true}
-              action={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await triggerLightImpact();
-                    setDiagnosticOpen(true);
-                  }}
-                  className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
-                >
-                  <span>{language === 'bm' ? 'Buka' : 'Open'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                </Button>
-              }
-            />
-          </SettingsSection>
+                <SettingsRow
+                  icon={Terminal}
+                  iconBg="bg-zinc-500/10"
+                  iconColor="text-zinc-600 dark:text-zinc-400"
+                  title={language === 'bm' ? 'Konsol Diagnostik' : 'Diagnostics Console'}
+                  isLast={true}
+                  action={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        setDiagnosticOpen(true);
+                      }}
+                      className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
+                    >
+                      <span>{language === 'bm' ? 'Buka' : 'Open'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                    </Button>
+                  }
+                />
+              </SettingsSection>
+            </>
+          )}
 
-          {/* SECTION 8: APP INFO & VERSION */}
+          {/* SECTION 9: APP INFO & VERSION */}
           <div className="pt-2 pb-6 flex flex-col items-center justify-center text-center space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 shadow-2xs flex items-center justify-center p-2.5">
               <TransparentLogo

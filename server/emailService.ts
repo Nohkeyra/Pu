@@ -1,8 +1,8 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAdminApp, getFirestore, hasAdminCredentials, type OrderData } from "./firebaseAdmin.js";
 
-export function createBrevoTransporter(): nodemailer.Transporter {
+export function createBrevoTransporter(): Transporter {
   const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
   const port = Number(process.env.SMTP_PORT) || 2525;
   const user = process.env.SMTP_USER;
@@ -209,7 +209,7 @@ export function buildStatusEmailHtml(copy: StatusCopy, lang: NotifyLang): string
 }
 
 export async function sendOrderStatusEmail(
-  transporter: nodemailer.Transporter,
+  transporter: Transporter,
   order: Partial<OrderData> & { email?: string; name?: string; invoiceNo?: string; lang?: string; rejectionReason?: string },
   newStatus: string,
   senderEmail: string,
@@ -315,7 +315,7 @@ export async function sendOrderStatusPush(
 }
 
 export async function notifyCustomerOfStatusChange(
-  transporter: nodemailer.Transporter,
+  transporter: Transporter,
   order: Partial<OrderData> & { id?: string; uid?: string; email?: string; name?: string; invoiceNo?: string; lang?: string },
   newStatus: string,
   senderEmail: string,
