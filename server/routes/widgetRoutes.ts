@@ -5,6 +5,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 import { invoiceQueue } from '../services/invoiceQueue.js';
 import { telemetry } from '../telemetry.js';
+import { getOrderEventDate } from '../../src/lib/orderTimestamp.js';
 
 const router = Router();
 
@@ -90,11 +91,9 @@ router.get('/widget/upcoming-orders', async (req, res) => {
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
     const limitNum = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
 
-    const snapshot = await db.collection('orders')
-      .where('eventDate', '>=', todayStr)
-      .orderBy('eventDate', 'asc')
-      .limit(limitNum * 2)
-      .get();
+    // Do not constrain this legacy-compatible read by eventDate: older documents
+    // may only contain date/dateTime, and Firestore filters omit missing fields.
+    const snapshot = await db.collection('orders').get();
 
     const excludedStatuses = new Set(['cancelled', 'rejected', 'cancel_requested']);
 
@@ -117,12 +116,13 @@ router.get('/widget/upcoming-orders', async (req, res) => {
         const mealsArr = Array.isArray(d.meals) ? d.meals : (d.meals ? [d.meals] : []);
         const mealTypeStr = formatMealTypeBM(mealsArr);
         const locStr = d.location || d.deliveryLocation || d.address || d.venue || 'Lokasi Belum Dinyatakan';
-        const eventDateVal = d.eventDate || d.date || null;
+        const normalizedEventDate = getOrderEventDate(d);
+        if (!normalizedEventDate || normalizedEventDate < todayStr) return null;
 
         return {
           id: doc.id,
-          eventDate: eventDateVal,
-          date: eventDateVal,
+          eventDate: normalizedEventDate,
+          date: normalizedEventDate,
           time: d.time || null,
           meals: mealsArr,
           mealType: mealTypeStr,
@@ -135,6 +135,7 @@ router.get('/widget/upcoming-orders', async (req, res) => {
         };
       })
       .filter((o): o is NonNullable<typeof o> => o !== null)
+      .sort((a, b) => String(a.eventDate || '').localeCompare(String(b.eventDate || '')))
       .slice(0, limitNum);
 
     return res.json({ success: true, orders, date: todayStr, count: orders.length });
@@ -170,7 +171,7 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
         // Same soft-delete gap as /widget/upcoming-orders — see comment there.
         if (d.deletedByAdmin) return null;
 
-        const eventDateVal = d.eventDate || d.date || '';
+        const eventDateVal = getOrderEventDate(d) || '';
         const isBilled = d.status === 'billed';
         const hasPrices = d.prices && Object.keys(d.prices).length > 0 && Number(d.totalAmount) > 0;
 

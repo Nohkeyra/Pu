@@ -6,6 +6,7 @@ import { db } from '@/firebaseConfig';
 import { type User } from 'firebase/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact } from '@/lib/haptics';
+import { compareTimestampValues, toJSDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 export interface OrderNotification {
@@ -68,26 +69,12 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
             const status = data.status || 'pending';
             const pax = data.guests || data.pax || 0;
             // Safe extraction of Firestore Timestamp, standard JS Date, or ISO date string
-            const getIsoString = (val: any): string => {
-              if (!val) return new Date().toISOString();
-              if (typeof val === 'string') return val;
-              if (val instanceof Date) return val.toISOString();
-              if (typeof val === 'object') {
-                if (typeof val.toDate === 'function') {
-                  return val.toDate().toISOString();
-                }
-                if (typeof val.seconds === 'number') {
-                  return new Date(val.seconds * 1000).toISOString();
-                }
-                if (typeof val._seconds === 'number') {
-                  return new Date(val._seconds * 1000).toISOString();
-                }
-              }
-              const d = new Date(val);
-              return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+            const getIsoString = (val: unknown): string => {
+              const date = toJSDate(val);
+              return date ? date.toISOString() : '';
             };
 
-            const updatedAt = getIsoString(data.updatedAt || data.createdAt);
+            const updatedAt = getIsoString(data.updatedAt) || getIsoString(data.createdAt);
 
             let title = t('Pesanan Dikemas Kini', 'Order Updated');
             let message = t('Status pesanan anda telah dikemas kini.', 'Your order status has been updated.');
@@ -144,7 +131,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
           });
 
           // Sort by timestamp descending
-          notifs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          notifs.sort((a, b) => compareTimestampValues(a.timestamp, b.timestamp, 'desc'));
           setNotifications(notifs);
         },
         (error) => {

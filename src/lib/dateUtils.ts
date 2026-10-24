@@ -1,118 +1,184 @@
 /**
  * Date Formatting Utilities
- * 
+ *
  * Standard Display Format: DD/MM/YYYY (e.g. 05/01/2026) with slashes.
- * Internal Storage & Querying: YYYY-MM-DD (e.g. 2026-01-05) to ensure
- * Firestore chronological range sorting and calendar queries remain correct.
+ * Internal Storage & Querying: YYYY-MM-DD (e.g. 2026-01-05).
  */
 
-/**
- * Formats any date input (YYYY-MM-DD string, ISO string, Date instance,
- * or Firestore Timestamp object) into DD/MM/YYYY format with slashes.
- */
+/** Formats supported legacy date inputs as DD/MM/YYYY. */
 export function formatDateDisplay(val: unknown, fallback = '-'): string {
   const d = toJSDate(val);
   if (!d) return fallback;
-
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+  return `${day}/${month}/${d.getFullYear()}`;
 }
 
 /**
- * Converts any timestamp-like input (Date, string, Firestore Timestamp, number)
- * into a valid Javascript Date object or null if invalid.
+ * Converts supported legacy timestamp representations to a valid Date.
+ * Invalid/missing values return null; callers must not assume input validity.
  */
-export function toJSDate(val: any): Date | null {
-  if (!val) return null;
+export function toJSDate(val: unknown): Date | null {
+  if (val == null) return null;
 
-  // 1. Date instances
   if (val instanceof Date) {
-    return isNaN(val.getTime()) ? null : val;
+    return Number.isFinite(val.getTime()) ? val : null;
   }
 
-  // 2. Firestore Timestamp or similar object
-  if (typeof val === 'object' && val !== null) {
-    if (typeof val.toDate === 'function') {
+  if (typeof val === 'object') {
+    const candidate = val as {
+      toDate?: () => unknown;
+      seconds?: unknown;
+      _seconds?: unknown;
+      nanoseconds?: unknown;
+      _nanoseconds?: unknown;
+    };
+
+    let toDateMethod: unknown;
+    try {
+      toDateMethod = candidate.toDate;
+    } catch {
+      toDateMethod = undefined;
+    }
+
+    if (typeof toDateMethod === 'function') {
       try {
-        const d = val.toDate();
-        if (d instanceof Date && !isNaN(d.getTime())) return d;
-      } catch { /* fallback */ }
+        const converted = toDateMethod.call(val);
+        if (converted instanceof Date && Number.isFinite(converted.getTime())) return converted;
+      } catch {
+        // Continue to the supported seconds-based representations.
+      }
     }
-    // Handle both client SDK {seconds, nanoseconds} and admin SDK {_seconds, _nanoseconds}
-    const seconds = typeof val.seconds === 'number' ? val.seconds : (typeof val._seconds === 'number' ? val._seconds : null);
-    if (seconds !== null) {
-      return new Date(seconds * 1000);
+
+    let seconds: number | null;
+    try {
+      seconds = typeof candidate.seconds === 'number'
+        ? candidate.seconds
+        : typeof candidate._seconds === 'number'
+          ? candidate._seconds
+          : null;
+    } catch {
+      return null;
     }
+
+    if (seconds !== null && Number.isFinite(seconds)) {
+      const d = new Date(seconds * 1000);
+      return Number.isFinite(d.getTime()) ? d : null;
+    }
+    return null;
   }
 
-  // 3. String (ISO or other)
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (!trimmed) return null;
 
-    // 1. Try explicit DD/MM/YYYY or DD-MM-YYYY (standard display format in this app)
-    const ddmmyyyyMatch = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(trimmed);
-    if (ddmmyyyyMatch) {
-      const [, day, month, year] = ddmmyyyyMatch;
-      const parsed = new Date(Number(year), Number(month) - 1, Number(day));
-      if (!isNaN(parsed.getTime())) return parsed;
+    // JavaScript normalizes impossible ISO calendar dates such as 2026-02-31.
+    // Validate the calendar portion before allowing Date.parse to interpret it.
+    const isoCalendarMatch = /^(\d{4})-(\d{2})-(\d{2})(?:[Tt ].*)?$/.exec(trimmed);
+    if (isoCalendarMatch) {
+      const year = Number(isoCalendarMatch[1]);
+      const month = Number(isoCalendarMatch[2]);
+      const day = Number(isoCalendarMatch[3]);
+      const calendarDate = new Date(0);
+      calendarDate.setUTCFullYear(year, month - 1, day);
+      if (
+        month < 1 || month > 12 || day < 1 ||
+        calendarDate.getUTCFullYear() !== year ||
+        calendarDate.getUTCMonth() !== month - 1 ||
+        calendarDate.getUTCDate() !== day
+      ) return null;
     }
 
-    // 2. Fallback to native Date parsing (handles ISO and other formats)
+    // Parse the app's DD/MM/YYYY and DD-MM-YYYY display formats strictly.
+    const match = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(trimmed);
+    if (match) {
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      const parsed = new Date(year, month - 1, day);
+      if (
+        month >= 1 && month <= 12 && day >= 1 &&
+        parsed.getFullYear() === year &&
+        parsed.getMonth() === month - 1 &&
+        parsed.getDate() === day
+      ) return parsed;
+      return null;
+    }
+
     const d = new Date(trimmed);
-    if (!isNaN(d.getTime())) return d;
+    return Number.isFinite(d.getTime()) ? d : null;
   }
 
-  // 4. Number (seconds or milliseconds)
-  if (typeof val === 'number') {
-    // Large number (> 10^11) is likely milliseconds (e.g. 1767571200000)
-    // Small number (< 10^11) is likely seconds (e.g. 1767571200)
+  if (typeof val === 'number' && Number.isFinite(val)) {
+    // Preserve the existing convention: values above 10^11 are milliseconds,
+    // smaller values are Unix seconds.
     const ms = val > 100000000000 ? val : val * 1000;
     const d = new Date(ms);
-    if (!isNaN(d.getTime())) return d;
+    return Number.isFinite(d.getTime()) ? d : null;
   }
 
   return null;
 }
 
 /**
- * Normalizes any timestamp-like input (Date, string, Firestore Timestamp)
- * into a Unix timestamp (seconds) for consistent sorting and comparison.
- * Returns 0 for invalid inputs to ensure safe sorting.
+ * Normalizes supported timestamp inputs to Unix seconds.
+ * Invalid/missing/unexpected values map to 0 (the documented oldest-sort fallback).
  */
-export function normalizeTimestamp(val: any): number {
+export function normalizeTimestamp(val: unknown): number {
   const d = toJSDate(val);
   if (!d) return 0;
-  return Math.floor(d.getTime() / 1000);
+  const timestamp = Math.floor(d.getTime() / 1000);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+/** Returns a validated calendar date as YYYY-MM-DD, preserving date-only ISO input. */
+export function toISODateString(val: unknown): string | null {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    const isoDateMatch = /^(\d{4}-\d{2}-\d{2})(?:$|[Tt ])/.exec(trimmed);
+    if (isoDateMatch) return toJSDate(trimmed) ? isoDateMatch[1] : null;
+  }
+  const date = toJSDate(val);
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
- * Formats date and time cleanly as "DD/MM/YYYY @ 12:00 PM" or "DD/MM/YYYY"
+ * Compares timestamp values without letting invalid/missing dates distort order.
+ * Invalid values sort last in either direction; valid timestamps remain chronological.
  */
+export function compareTimestampValues(
+  a: unknown,
+  b: unknown,
+  direction: 'asc' | 'desc' = 'desc',
+): number {
+  const dateA = toJSDate(a);
+  const dateB = toJSDate(b);
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+
+  const difference = dateA.getTime() - dateB.getTime();
+  return direction === 'asc' ? difference : -difference;
+}
+
+/** Formats date and time as "DD/MM/YYYY @ 12:00 PM" or "DD/MM/YYYY". */
 export function formatDateTimeDisplay(val: unknown, timeStr?: string, fallback = '-'): string {
   const formattedDate = formatDateDisplay(val, fallback);
   if (formattedDate === fallback) return fallback;
 
-  if (timeStr && timeStr.trim()) {
-    return `${formattedDate} @ ${timeStr.trim()}`;
-  }
+  if (timeStr && timeStr.trim()) return `${formattedDate} @ ${timeStr.trim()}`;
 
-  if (typeof val === 'string' && val.includes('T')) {
-    try {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        const hours = d.getHours();
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const formattedHour = hours % 12 === 0 ? 12 : hours % 12;
-        return `${formattedDate} @ ${formattedHour}:${mins} ${ampm}`;
-      }
-    } catch {
-      // ignore
-    }
+  const d = typeof val === 'string' && val.includes('T') ? toJSDate(val) : null;
+  if (d) {
+    const hours = d.getHours();
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHour = hours % 12 === 0 ? 12 : hours % 12;
+    return `${formattedDate} @ ${formattedHour}:${mins} ${ampm}`;
   }
-
   return formattedDate;
 }

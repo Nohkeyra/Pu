@@ -4,6 +4,8 @@ import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { generateServerInvoicePdf } from '../services/serverPdfService.js';
 import { isValidStatusTransition } from '../services/orderValidator.js';
+import { toJSDate } from '../../src/lib/dateUtils.js';
+import { getOrderEventDate, isOrderDateInRange, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
 
 type ToolResult = {
   content: Array<{ type: 'text'; text: string }>;
@@ -19,11 +21,23 @@ type McpAuthInfo = {
 function jsonSafe(value: unknown): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value === 'bigint') return value.toString();
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : null;
   if (typeof value === 'object') {
-    const v = value as any;
-    if (typeof v.toDate === 'function') return v.toDate().toISOString();
     if (Array.isArray(value)) return value.map(jsonSafe);
+
+    const v = value as any;
+    let timestampLike = false;
+    try {
+      timestampLike = typeof v.toDate === 'function' || typeof v.seconds === 'number' || typeof v._seconds === 'number';
+    } catch {
+      return null;
+    }
+
+    if (timestampLike) {
+      const date = toJSDate(value);
+      return date ? date.toISOString() : null;
+    }
+
     return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, x]) => [k, jsonSafe(x)]));
   }
   return value;
@@ -181,49 +195,44 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
       }
       case 'list_orders': {
         const args = listOrdersSchema.parse(rawArgs ?? {});
-        let query: FirebaseFirestore.Query = db.collection('orders');
-        if (args.date) query = query.where('eventDate', '==', args.date);
-        if (args.status) query = query.where('status', '==', args.status);
-        query = query.orderBy('createdAt', 'desc').limit(args.limit);
-        const snap = await query.get();
-        const orders = snap.docs.filter(d => d.data().deletedByAdmin !== true).map(d => ({ id: d.id, ...d.data() }));
+        const snap = await db.collection('orders').get();
+        const orders = sortOrdersByCreatedAt(snap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, any>))
+          .filter(order => order.deletedByAdmin !== true)
+          .filter(order => !args.status || String(order.status || '') === args.status)
+          .filter(order => !args.date || getOrderEventDate(order) === args.date), 'desc').slice(0, args.limit);
         return result({ orders, count: orders.length });
       }
       case 'list_unbilled_orders': {
         const args = unbilledOrdersSchema.parse(rawArgs ?? {});
-        let query: FirebaseFirestore.Query = db.collection('orders');
-        if (args.from) query = query.where('eventDate', '>=', args.from);
-        if (args.to) query = query.where('eventDate', '<=', args.to);
-        const snap = await query.limit(Math.min(500, Math.max(args.limit * 4, 100))).get();
-        const orders = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as Record<string, any>))
-          .filter(activeOrder)
-          .filter(o => String(o.status || 'pending').toLowerCase() !== 'billed')
-          .sort((a, b) => String(a.eventDate || a.date || '').localeCompare(String(b.eventDate || b.date || '')))
-          .slice(0, args.limit);
+        const snap = await db.collection('orders').get();
+        const eligible = snap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, any>))
+          .filter(activeOrder).filter(o => String(o.status || 'pending').toLowerCase() !== 'billed')
+          .filter(o => (!args.from && !args.to) || isOrderDateInRange(o, args.from, args.to));
+        eligible.sort((a, b) => {
+          const ad = getOrderEventDate(a), bd = getOrderEventDate(b);
+          if (!ad && !bd) return 0; if (!ad) return 1; if (!bd) return -1;
+          return ad.localeCompare(bd);
+        });
+        const orders = eligible.slice(0, args.limit);
         return result({ orders, count: orders.length });
       }
       case 'find_orders': {
         const args = findOrdersSchema.parse(rawArgs);
         const needle = args.query.trim().toLowerCase();
-        const snap = await db.collection('orders').orderBy('createdAt', 'desc').limit(300).get();
-        const orders = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as Record<string, any>))
+        const snap = await db.collection('orders').get();
+        const orders = sortOrdersByCreatedAt(snap.docs.map(d => ({ id: d.id, ...d.data() } as Record<string, any>))
           .filter(d => d.deletedByAdmin !== true)
-          .filter(d => [d.id, d.invoiceNo, d.name, d.to, d.attn, d.email, d.customerEmail, d.contact, d.phone].some(v => String(v || '').toLowerCase().includes(needle)))
-          .slice(0, args.limit);
+          .filter(d => [d.id, d.invoiceNo, d.name, d.to, d.attn, d.email, d.customerEmail, d.contact, d.phone].some(v => String(v || '').toLowerCase().includes(needle))), 'desc').slice(0, args.limit);
         return result({ orders, count: orders.length });
       }
       case 'get_sales_summary': {
         const args = salesSchema.parse(rawArgs ?? {});
-        let query: FirebaseFirestore.Query = db.collection('orders');
-        if (args.from) query = query.where('eventDate', '>=', args.from);
-        if (args.to) query = query.where('eventDate', '<=', args.to);
-        const snap = await query.get();
+        const snap = await db.collection('orders').get();
         let totalAmount = 0, billedAmount = 0, paidAmount = 0, orderCount = 0;
         for (const doc of snap.docs) {
           const data = doc.data() as any;
           if (data.deletedByAdmin === true) continue;
+          if ((args.from || args.to) && !isOrderDateInRange(data, args.from, args.to)) continue;
           orderCount++;
           const amount = Number(data.totalAmount ?? 0) || 0;
           totalAmount += amount;
@@ -235,8 +244,9 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
       case 'get_calendar_events': {
         const args = calendarSchema.parse(rawArgs ?? {});
         const date = args.date ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
-        const snap = await db.collection('orders').where('eventDate', '==', date).get();
-        const events = snap.docs.filter(d => d.data().deletedByAdmin !== true).map(d => ({ id: d.id, ...d.data() }));
+        const snap = await db.collection('orders').get();
+        const events = snap.docs.filter(d => d.data().deletedByAdmin !== true).map(d => ({ id: d.id, ...d.data() }))
+          .filter(order => getOrderEventDate(order) === date);
         return result({ date, events, count: events.length });
       }
       case 'update_order_status': {

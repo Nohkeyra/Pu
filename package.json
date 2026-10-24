@@ -40,6 +40,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@capacitor/toast": "8.0.1",
     "@capgo/capacitor-updater": "^8.51.14",
+    "@google-cloud/firestore": "9.1.0",
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@radix-ui/react-dialog": "^1.1.23",
@@ -59,7 +60,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/semver": "^7.5.8",
     "@vercel/speed-insights": "^2.0.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "5.2.0",
     "autoprefixer": "^10.4.19",
     "canvas-confetti": "^1.9.4",
     "capacitor-native-biometric": "4.2.2",
@@ -106,6 +107,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
     "@playwright/test": "1.63.0",
+    "@vitest/coverage-v8": "4.1.11",
     "esbuild": "^0.28.2",
     "eslint": "^9.6.0",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -115,6 +117,7 @@
     "vitest": "^4.1.11"
   },
   "overrides": {
-    "eslint-visitor-keys": "4.2.0"
+    "eslint-visitor-keys": "4.2.0",
+    "@grpc/grpc-js": "1.14.5"
   }
 }

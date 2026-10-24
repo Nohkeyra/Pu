@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { getApiUrl } from '@/lib/api';
+import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import WawasanLoader from '@/components/WawasanLoader';
 import { 
@@ -153,14 +154,16 @@ export default function CalendarPage() {
 
     if (isAdmin) {
       const ordersCol = collection(db, 'orders');
-      const qOrders = query(ordersCol, orderBy('createdAt', 'desc'), limit(150));
+      // Avoid query-level orderBy/limit so documents missing createdAt remain eligible.
+      const qOrders = query(ordersCol);
       unsubscribeOrders1 = onSnapshot(qOrders, (snapshot) => {
         const list: Order[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Order;
           list.push({ ...data, id: docSnap.id });
         });
-        setOrders(list);
+        // Calendar events are selected by event date, not creation recency; do not drop older orders here.
+        setOrders(sortOrdersByCreatedAt(list, 'desc'));
         setLoading(false);
       }, (err) => {
         console.warn("Order stream permission note:", err);

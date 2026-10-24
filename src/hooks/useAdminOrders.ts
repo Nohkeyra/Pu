@@ -3,8 +3,9 @@ import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
+import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
 
 interface UseAdminOrdersProps {
   adminToken?: string;
@@ -47,7 +48,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.orders)) {
-          setOrders(data.orders);
+          setOrders(sortOrdersByCreatedAt(data.orders as Order[], 'desc').slice(0, 100));
         }
       } else if (response.status === 401 || response.status === 403) {
         onLogoutRef.current?.();
@@ -65,12 +66,10 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
       return;
     }
 
-    // The onSnapshot listener below is the primary data source (it already
-    // fetches the same 100 orders): don't also fire a redundant REST fetch
-    // here, or every mount doubles the read cost and races two writers into
-    // `orders`. fetchOrders() is invoked only if the listener itself fails
-    // (see the error handler), and remains available for manual refresh.
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    // The listener is primary and reads all orders before local sorting so legacy
+    // records remain eligible. Use the REST fallback only if the listener fails.
+    // Do not orderBy/limit in Firestore: legacy records may lack createdAt or use mixed types.
+    const q = query(collection(db, 'orders'));
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
         const fetchedOrders: Order[] = [];
@@ -85,7 +84,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t }: UseAdminOrder
             ...data,
           } as Order);
         });
-      setOrders(fetchedOrders);
+      setOrders(sortOrdersByCreatedAt(fetchedOrders, 'desc').slice(0, 100));
       setLoading(false);
     }, (error) => {
       console.warn('[Admin Orders] Real-time Firestore snapshot inactive, falling back to Admin API:', error.message);

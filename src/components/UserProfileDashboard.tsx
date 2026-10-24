@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import type { Order, UserProfile, SavedLocation } from '@/types';
-import { cn, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
+import { cn, compareTimestampValues, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -136,18 +136,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               fetchedOrders.push({ id: docSnap.id, ...data });
             }
           });
-          fetchedOrders.sort((a, b) => {
-            const getTimestamp = (o: Order) => {
-              const ca = o.createdAt as any;
-              if (!ca) return 0;
-              if (typeof ca.seconds === 'number') return ca.seconds;
-              if (typeof ca._seconds === 'number') return ca._seconds;
-              if (ca instanceof Date) return Math.floor(ca.getTime() / 1000);
-              if (typeof ca === 'string') return Math.floor(new Date(ca).getTime() / 1000);
-              return 0;
-            };
-            return getTimestamp(b) - getTimestamp(a);
-          });
+          fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
           setOrders(fetchedOrders);
           setIsLoadingOrders(false);
         }, (err) => {

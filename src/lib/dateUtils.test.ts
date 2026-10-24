@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toJSDate } from './dateUtils';
+import { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toISODateString, toJSDate } from './dateUtils';
 
 describe('Date Formatting Utilities (DD/MM/YYYY Slashes Format)', () => {
   it('formats standard YYYY-MM-DD ISO string correctly', () => {
@@ -100,18 +100,62 @@ describe('Date Formatting Utilities (DD/MM/YYYY Slashes Format)', () => {
 
     it('facilitates correct sorting for mixed format timestamps', () => {
       const mixedOrders = [
-        { id: '1', createdAt: '2026-01-01T10:00:00Z' }, // 3rd (latest)
-        { id: '2', createdAt: { seconds: 1735689600, nanoseconds: 0 } }, // 2024-12-31T16:00:00Z - 1st (earliest)
-        { id: '3', createdAt: new Date('2025-06-01T12:00:00Z') }, // 2nd
+        { id: '1', createdAt: '2026-01-01T10:00:00Z' }, // latest
+        { id: '2', createdAt: { seconds: 1735689600, nanoseconds: 0 } }, // earliest
+        { id: '3', createdAt: new Date('2025-06-01T12:00:00Z') }, // middle
       ];
 
-      const sorted = [...mixedOrders].sort((a, b) => {
-        return normalizeTimestamp(b.createdAt) - normalizeTimestamp(a.createdAt);
-      });
-
-      expect(sorted[0].id).toBe('1');
-      expect(sorted[1].id).toBe('3');
-      expect(sorted[2].id).toBe('2');
+      const sorted = [...mixedOrders].sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
+      expect(sorted.map((order) => order.id)).toEqual(['1', '3', '2']);
     });
+
+    it('normalizes Firestore Timestamp toDate objects and Admin SDK seconds objects consistently', () => {
+      const expected = Math.floor(new Date('2026-01-05T12:00:00Z').getTime() / 1000);
+      const values: unknown[] = [
+        { toDate: () => new Date('2026-01-05T12:00:00Z') },
+        { _seconds: expected, _nanoseconds: 0 },
+        { seconds: expected, nanoseconds: 0 },
+      ];
+      values.forEach((value) => expect(normalizeTimestamp(value)).toBe(expected));
+    });
+
+    it('rejects impossible calendar dates, invalid Dates, missing values, and unexpected objects safely', () => {
+      const throwingTimestamp = Object.defineProperty({}, 'toDate', { get: () => { throw new Error('bad timestamp'); } });
+      const values: unknown[] = [null, undefined, '', 'not-a-date', '31/02/2026', '2026-02-31', {}, [], true, NaN, Infinity, new Date(NaN), { seconds: Infinity }, { toDate: () => { throw new Error('bad timestamp'); } }, throwingTimestamp];
+      values.forEach((value) => {
+        expect(normalizeTimestamp(value)).toBe(0);
+        expect(toJSDate(value)).toBeNull();
+      });
+    });
+
+    it('sorts invalid and missing values last for both ascending and descending order', () => {
+      const mixedOrders = [
+        { id: 'missing' },
+        { id: 'newest', createdAt: '2026-01-01T10:00:00Z' },
+        { id: 'oldest', createdAt: { _seconds: 1735689600, _nanoseconds: 0 } },
+        { id: 'middle', createdAt: new Date('2025-06-01T12:00:00Z') },
+        { id: 'invalid', createdAt: 'invalid' },
+      ];
+      const descending = [...mixedOrders].sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
+      const ascending = [...mixedOrders].sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'asc'));
+      expect(descending.map((order) => order.id)).toEqual(['newest', 'middle', 'oldest', 'missing', 'invalid']);
+      expect(ascending.map((order) => order.id)).toEqual(['oldest', 'middle', 'newest', 'missing', 'invalid']);
+    });
+  });
+});
+
+
+describe('toISODateString legacy date normalization', () => {
+  it('preserves valid ISO calendar days and rejects impossible dates', () => {
+    expect(toISODateString('2026-11-25')).toBe('2026-11-25');
+    expect(toISODateString('2026-11-25T23:30:00Z')).toBe('2026-11-25');
+    expect(toISODateString('2026-02-31')).toBeNull();
+  });
+  it('normalizes supported legacy display strings and Firestore timestamps', () => {
+    expect(toISODateString('25/11/2026')).toBe('2026-11-25');
+    expect(toISODateString('25-11-2026')).toBe('2026-11-25');
+    expect(toISODateString({ seconds: 1795564800, nanoseconds: 0 })).toBe('2026-11-25');
+    expect(toISODateString('not-a-date')).toBeNull();
+    expect(toISODateString(undefined)).toBeNull();
   });
 });
