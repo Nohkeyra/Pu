@@ -91,11 +91,9 @@ router.get('/widget/upcoming-orders', async (req, res) => {
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
     const limitNum = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
 
-    const snapshot = await db.collection('orders')
-      .where('eventDate', '>=', todayStr)
-      .orderBy('eventDate', 'asc')
-      .limit(limitNum * 2)
-      .get();
+    // Do not constrain this legacy-compatible read by eventDate: older documents
+    // may only contain date/dateTime, and Firestore filters omit missing fields.
+    const snapshot = await db.collection('orders').get();
 
     const excludedStatuses = new Set(['cancelled', 'rejected', 'cancel_requested']);
 
@@ -173,7 +171,7 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
         // Same soft-delete gap as /widget/upcoming-orders — see comment there.
         if (d.deletedByAdmin) return null;
 
-        const eventDateVal = d.eventDate || d.date || '';
+        const eventDateVal = getOrderEventDate(d) || '';
         const isBilled = d.status === 'billed';
         const hasPrices = d.prices && Object.keys(d.prices).length > 0 && Number(d.totalAmount) > 0;
 
