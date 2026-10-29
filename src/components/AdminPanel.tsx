@@ -208,7 +208,6 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       </motion.div>
  
       <AdminHeader
-        syncStatus="connected"
         language={language}
         theme={theme}
         toggleTheme={toggleTheme}
