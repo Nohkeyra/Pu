@@ -135,14 +135,16 @@ export default function AdminPage() {
   }
 
   return (
-    <ErrorBoundary>
-      <AdminPanel
-        adminToken={adminToken}
-        onLogout={async () => {
-          await logout();
-          navigate('/login');
-        }}
-      />
-    </ErrorBoundary>
+    <main className="min-h-screen bg-cream dark:bg-background">
+      <ErrorBoundary>
+        <AdminPanel
+          adminToken={adminToken}
+          onLogout={async () => {
+            await logout();
+            navigate('/login');
+          }}
+        />
+      </ErrorBoundary>
+    </main>
   );
 }

@@ -591,7 +591,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none"
         animate={{ 
-          y: isRefreshing ? 20 : Math.min(pullDistance - 100, 20),
+          y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 100, 20)),
+          opacity: pullDistance > 20 || isRefreshing ? 1 : 0,
         }}
       >
         <div className="relative overflow-hidden w-20 h-20 sm:w-24 sm:h-24 rounded-b-[2rem] bg-amber-500/10 shadow-lg border-b border-l border-r border-[var(--color-sunshine-cta)]/30 flex items-end justify-center backdrop-blur-md pb-2">

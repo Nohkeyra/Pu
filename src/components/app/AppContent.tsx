@@ -249,48 +249,30 @@ export default function AppContent() {
       <SmoothScrollHandler />
       <ScrollToTopButton />
 
-      {(pullDistance > 0 || isRefreshing) && (
-        <div 
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
-          style={{ transform: `translateY(${Math.min(pullDistance, 120)}px)` }}
-        >
-          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
-            <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
-          </div>
+      <motion.div 
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
+        initial={{ opacity: 0, y: -20, scale: 0.8 }}
+        animate={{ 
+          opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
+          y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
+          scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
+        }}
+      >
+        <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+          <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
+          <span>{isRefreshing ? 'Refreshing app...' : pullDistance > 80 ? 'Release to refresh' : 'Pull down to refresh'}</span>
         </div>
-      )}
+      </motion.div>
 
-      <main id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
+      <div id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
         <RouteErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
-            {/*
-              BUG FIX (audit 2026-08-28): AnimatePresence mode="wait" defers
-              mounting the new route until the outgoing route's exit animation
-              reports completion. PageTransition sets exit={undefined} on
-              native builds (Capacitor.isNativePlatform()) since no exit
-              animation is used there — so on native, AnimatePresence was
-              waiting on an exit signal that never meaningfully fires,
-              combined with `key` living on a non-motion <Routes> wrapper and
-              a single shared Suspense boundary for every lazy page. Confirmed
-              on-device: tapping Home/Calendar/Settings while on /admin
-              updated the URL and bottom-nav highlight, flashed the loading
-              screen, then silently reverted to the old (admin) screen and
-              stayed there — navigation looked like it worked but never
-              actually completed. Since native never had a real exit
-              animation to sequence in the first place, AnimatePresence's
-              "wait" behavior provided no benefit there — only risk. Skipping
-              it entirely on native (routes swap immediately, matching what
-              the disabled exit already implied) removes that race outright.
-              Web keeps AnimatePresence since it has a real exit animation to
-              sequence.
-            */}
             <AnimatePresence mode="wait">
               <AppRoutes location={location} key={location.pathname} />
             </AnimatePresence>
           </Suspense>
         </RouteErrorBoundary>
-      </main>
+      </div>
       <BottomNavigation />
     </div>
   );

@@ -222,10 +222,14 @@ function App() {
               <PushNotificationHandler />
               <NativeBackButtonHandler />
               <NativeAppListeners />
-              <Suspense fallback={null}>
-                <GlobalInAppUpdateHandler />
-              </Suspense>
-              <AppContent />
+              {isSplashFinished && (
+                <>
+                  <Suspense fallback={null}>
+                    <GlobalInAppUpdateHandler />
+                  </Suspense>
+                  <AppContent />
+                </>
+              )}
             </Router>
           </BatikMotionProvider>
         </ToastProvider>

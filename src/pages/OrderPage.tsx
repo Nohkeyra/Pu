@@ -62,12 +62,12 @@ export default function OrderPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
+    <main className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
         {/* Pull to Refresh Indicator */}
         <motion.div
           className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
           animate={{
-            y: isRefreshing ? 20 : Math.min(pullDistance - 40, 20),
+            y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
             opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
             scale: pullDistance > 10 || isRefreshing ? 1 : 0.8,
           }}
@@ -232,7 +232,7 @@ export default function OrderPage() {
             navigate('/order', { state: { reorderData: orderData } });
           }}
         />
-      </div>
+      </main>
     </ErrorBoundary>
   );
 }

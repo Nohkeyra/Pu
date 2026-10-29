@@ -71,7 +71,7 @@ const HeroSection = React.memo(() => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="content-container flex flex-col items-center text-center relative z-20 w-full mt-6 sm:mt-auto mb-auto pt-6 sm:pt-4 pb-2 sm:pb-6 px-4 sm:px-6"
+        className="content-container flex flex-col items-center text-center relative z-20 w-full pt-12 sm:pt-20 pb-8 sm:pb-12 px-4 sm:px-6"
       >
         {/* Unified Brand Headline */}
         <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl select-none">
