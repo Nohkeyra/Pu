@@ -53,6 +53,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from '@/services/updateService';
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
+import { DeviceOsSettingsCard } from '@/components/DeviceOsSettingsCard';
 import InAppUpdateModal from '@/components/InAppUpdateModal';
 import { isUserAdmin } from '@/constants/auth';
 
@@ -1372,22 +1373,25 @@ export default function SettingsPage() {
           </SettingsSection>
 
           {/* SECTION 5: NOTIFICATIONS */}
-          <SettingsSection title={language === 'bm' ? 'Pemberitahuan' : 'Notifications'}>
-            <SettingsRow
-              icon={Bell}
-              iconBg="bg-rose-500/10"
-              iconColor="text-rose-600 dark:text-rose-400"
-              title={language === 'bm' ? 'Notifikasi Push' : 'Push Notifications'}
-              isLast={true}
-              action={
-                <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={handleToggleNotifications}
-                  aria-label="Toggle notifications"
-                />
-              }
-            />
-          </SettingsSection>
+          <div className="space-y-3">
+            <SettingsSection title={language === 'bm' ? 'Pemberitahuan' : 'Notifications'}>
+              <SettingsRow
+                icon={Bell}
+                iconBg="bg-rose-500/10"
+                iconColor="text-rose-600 dark:text-rose-400"
+                title={language === 'bm' ? 'Notifikasi Push' : 'Push Notifications'}
+                isLast={true}
+                action={
+                  <Switch
+                    checked={notificationsEnabled}
+                    onCheckedChange={handleToggleNotifications}
+                    aria-label="Toggle notifications"
+                  />
+                }
+              />
+            </SettingsSection>
+            <DeviceOsSettingsCard />
+          </div>
 
           {/* SECTION 6: HAPTICS & AUDIO */}
           <SettingsSection title={language === 'bm' ? 'Maklum Balas Sentuhan & Bunyi' : 'Haptics & Audio'}>

@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share';
 import { format } from 'date-fns';
 import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
+import { getDisplayInvoiceNo } from '@/lib/utils';
 import type { ToastVariant } from '@/components/ui/Toast';
 
 interface UseAdminPdfProps {
@@ -28,7 +29,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     setGeneratingInvoice(order.id);
     try {
       if (!order.id) throw new Error('Missing database ID');
-      const invoiceNo = order.invoiceNo || `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
+      const invoiceNo = getDisplayInvoiceNo(order);
       const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
@@ -68,7 +69,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     setGeneratingInvoice(order.id);
     
     try {
-      const invoiceNo = order.invoiceNo || `RW ${order.id.substring(0, 5).toUpperCase()}-PRE`;
+      const invoiceNo = getDisplayInvoiceNo(order);
       const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {

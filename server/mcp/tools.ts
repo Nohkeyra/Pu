@@ -260,7 +260,7 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
 
         const updates: Record<string, unknown> = { status: args.status, updatedAt: FieldValue.serverTimestamp() };
         if (args.status === 'approved' || args.status === 'billed') {
-          if (!oldData.invoiceNo) updates.invoiceNo = await generateSequentialInvoiceNo(false);
+          if (!oldData.invoiceNo) updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
           else if (String(oldData.invoiceNo).startsWith('QT')) updates.invoiceNo = String(oldData.invoiceNo).replace(/^QT\s*/i, 'RW ');
         }
         if (args.status === 'approved') updates.approvedAt = oldData.approvedAt || new Date().toISOString();
@@ -281,7 +281,7 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
         const pricing = calculatePrices(order, args.prices);
         const invoiceNo = String(order.invoiceNo || '').startsWith('QT')
           ? String(order.invoiceNo).replace(/^QT\s*/i, 'RW ')
-          : (order.invoiceNo || await generateSequentialInvoiceNo(false));
+          : (order.invoiceNo || await generateSequentialInvoiceNo(false, order.eventDate || order.date));
         const orderForPdf = { ...order, prices: pricing.finalPrices, totalAmount: pricing.totalAmount, invoiceNo, status: 'billed' };
         const pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
 

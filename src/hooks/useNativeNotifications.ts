@@ -29,33 +29,21 @@ export function useNativeNotifications() {
     const setupPush = async () => {
       try {
         let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive === 'prompt') {
+        if (permStatus.receive === 'prompt' || (permStatus.receive as string) === 'prompt-with-rationale') {
           permStatus = await PushNotifications.requestPermissions();
         }
         if (permStatus.receive !== 'granted') {
-          console.warn('Push notifications permission not granted');
+          console.warn('Push notifications permission status:', permStatus.receive);
           return;
         }
 
-        // F-CHAN (audit 2026-08-11): Android 8+ (API 26+, which is all of
-        // our minSdk 24 install base running a modern OS) requires every
-        // notification to belong to a channel, or it silently falls back to
-        // whatever channel ID is in the manifest meta-data (currently
-        // "default" — see AndroidManifest.xml). That fallback means every
-        // push looked the same to the OS regardless of type, so the
-        // customer couldn't set a different sound/vibration/importance for
-        // order-status updates specifically. This channel id ('order_status')
-        // must match the channelId the server sends in sendOrderStatusPush
-        // (server/emailService.ts) — if either side is wrong, notifications
-        // silently fall back to the manifest default channel again, so keep
-        // them in sync if either side ever changes.
-        // createChannel() is a no-op on iOS/web; only takes effect on Android.
+        // Android 8+ (API 26+) notification channel creation
         try {
           await PushNotifications.createChannel({
             id: 'order_status',
             name: 'Kemas Kini Tempahan / Order Updates',
-            description: 'Pemberitahuan status tempahan (diluluskan, invois, dibatalkan). / Order status notifications (approved, invoiced, cancelled).',
-            importance: 4, // HIGH — heads-up notification, matches prior default behaviour
+            description: 'Pemberitahuan status tempahan (diluluskan, invois, dibatalkan). / Order status notifications.',
+            importance: 4, // HIGH — heads-up notification
             visibility: 1, // PUBLIC — full content on lockscreen
             vibration: true,
           });
@@ -64,18 +52,16 @@ export function useNativeNotifications() {
             id: 'new_orders',
             name: 'Tempahan Baharu (Admin) / New Orders',
             description: 'Notifikasi tempahan baharu dan permintaan pembatalan bagi pentadbir.',
-            importance: 4, // HIGH
+            importance: 5, // MAX importance
             visibility: 1,
             vibration: true,
           });
         } catch (channelErr) {
-          // Never let channel setup block registration — worst case the
-          // notification falls back to the manifest default channel.
           console.warn('Error creating notification channels:', channelErr);
         }
 
         await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push registration successful, token:', token.value);
+          console.log('Push registration successful, native token:', token.value);
           
           try {
             localStorage.setItem('wawasan_device_token', token.value);
@@ -103,32 +89,44 @@ export function useNativeNotifications() {
             console.error('Error subscribing to topic:', subscribeErr);
           }
 
-          // Fetch FCM token and map to user profile if logged in
+          // Fetch FCM token with native token fallback
+          let activePushToken = token.value;
           try {
             const fcmTokenResult = await FCM.getToken();
-            const fcmToken = fcmTokenResult.token;
-            tokenRef.current = fcmToken;
+            if (fcmTokenResult?.token) {
+              activePushToken = fcmTokenResult.token;
+            }
+          } catch (fcmErr) {
+            console.warn('[PushNotifications] FCM.getToken failed, using native device token fallback:', fcmErr);
+          }
+
+          tokenRef.current = activePushToken;
+          try {
+            localStorage.setItem('wawasan_fcm_token', activePushToken);
+          } catch {
+            // Ignore localStorage errors
+          }
+
+          // Sync with backend API
+          fetch(getApiUrl('/api/user/fcm-token'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fcmToken: activePushToken, deviceToken: token.value })
+          }).catch(err => console.warn('[FCM] Server token sync failed:', err));
+
+          const currentUser = auth.currentUser;
+          if (currentUser) {
             try {
-              localStorage.setItem('wawasan_fcm_token', fcmToken);
-            } catch {
-              // Ignore localStorage errors
-            }
-
-            // Sync with backend API
-            fetch(getApiUrl('/api/user/fcm-token'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fcmToken })
-            }).catch(err => console.warn('[FCM] Server token sync failed:', err));
-
-            const currentUser = auth.currentUser;
-            if (currentUser) {
               const userDocRef = doc(db, 'users', currentUser.uid);
-              await setDoc(userDocRef, { fcmToken }, { merge: true });
-              console.log('FCM token mapped to user profile on registration:', currentUser.uid);
+              await setDoc(userDocRef, { 
+                fcmToken: activePushToken, 
+                pushToken: token.value, 
+                updatedAt: new Date().toISOString() 
+              }, { merge: true });
+              console.log('Push token mapped to user profile on registration:', currentUser.uid);
+            } catch (userDocErr) {
+              console.warn('Failed to update user profile with push token:', userDocErr);
             }
-          } catch (tokenErr) {
-            console.error('Error fetching FCM token:', tokenErr);
           }
         });
 

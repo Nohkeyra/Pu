@@ -124,7 +124,7 @@ export function hasAdminCredentials(): boolean {
   let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
     ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
     : undefined;
-  if (email && email.startsWith('"') && email.endsWith('"')) {
+  if (email && ((email.startsWith('"') && email.endsWith('"')) || (email.startsWith("'") && email.endsWith("'")))) {
     email = email.slice(1, -1).trim();
   }
 
@@ -132,7 +132,7 @@ export function hasAdminCredentials(): boolean {
     ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
     : undefined;
   if (privateKey) {
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
       privateKey = privateKey.slice(1, -1).trim();
     }
   }
@@ -147,7 +147,7 @@ export function getAdminApp(): App {
       let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
         ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
         : undefined;
-      if (email && email.startsWith('"') && email.endsWith('"')) {
+      if (email && ((email.startsWith('"') && email.endsWith('"')) || (email.startsWith("'") && email.endsWith("'")))) {
         email = email.slice(1, -1).trim();
       }
 
@@ -155,7 +155,7 @@ export function getAdminApp(): App {
         ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
         : undefined;
       if (privateKey) {
-        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
           privateKey = privateKey.slice(1, -1).trim();
         }
         privateKey = privateKey.replace(/\\n/g, "\n");
@@ -217,17 +217,15 @@ export async function verifyCustomerIdToken(req: express.Request): Promise<strin
 }
 
 export function getFirestore(): FirebaseFirestore.Firestore {
-  if (process.env.CI || process.env.NODE_ENV === 'test' || process.env.USE_MEMORY_FIRESTORE === 'true') {
+  if (process.env.CI || process.env.NODE_ENV === 'test' || process.env.VITEST === 'true' || process.env.USE_MEMORY_FIRESTORE === 'true') {
     if (process.env.NODE_ENV === 'production') {
       // NEVER use memory Firestore in production
       throw new Error('Memory Firestore disabled in production');
     }
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      if (!memoryFirestoreInstance) {
-        memoryFirestoreInstance = new MemoryFirestore();
-      }
-      return memoryFirestoreInstance as unknown as FirebaseFirestore.Firestore;
+    if (!memoryFirestoreInstance) {
+      memoryFirestoreInstance = new MemoryFirestore();
     }
+    return memoryFirestoreInstance as unknown as FirebaseFirestore.Firestore;
   }
 
   const app = getAdminApp();
@@ -362,9 +360,29 @@ export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | nul
   }
 }
 
-export async function generateSequentialInvoiceNo(isQuote = false): Promise<string> {
+export async function generateSequentialInvoiceNo(
+  isQuote = false,
+  targetDate?: string | Date
+): Promise<string> {
   const db = getFirestore();
-  const counterRef = db.collection("meta").doc("invoiceCounter");
+
+  let yearStr: string;
+  try {
+    if (targetDate) {
+      const d = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
+      yearStr = isNaN(d.getTime())
+        ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(new Date())
+        : new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(d);
+    } else {
+      yearStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(new Date());
+    }
+  } catch {
+    yearStr = String(new Date().getFullYear());
+  }
+
+  const prefix = isQuote ? "QT" : "RW";
+  const counterRef = db.collection("meta").doc(`invoiceCounter_${yearStr}`);
+
   return await db.runTransaction(async (tx) => {
     const counterSnap = await tx.get(counterRef);
     let next = 1;
@@ -373,14 +391,35 @@ export async function generateSequentialInvoiceNo(isQuote = false): Promise<stri
       if (data && typeof data.count === "number") {
         next = data.count + 1;
       }
+    } else {
+      // Check legacy counter doc for continuity if migrating
+      const legacyCounterRef = db.collection("meta").doc("invoiceCounter");
+      const legacySnap = await tx.get(legacyCounterRef);
+      if (legacySnap.exists) {
+        const legData = legacySnap.data();
+        if (legData && typeof legData.count === "number") {
+          next = legData.count + 1;
+        }
+      }
     }
-    const prefix = isQuote ? "QT" : "RW";
-    const invoiceNo = `${prefix} ${String(next).padStart(5, "0")}`;
+
+    const serial = String(next).padStart(5, "0");
+    const invoiceNo = `${prefix} ${yearStr}-${serial}`;
+
     tx.set(
       counterRef,
-      { count: next, updatedAt: FieldValue.serverTimestamp() },
+      { year: Number(yearStr), count: next, updatedAt: FieldValue.serverTimestamp() },
       { merge: true }
     );
+
+    // Keep legacy meta/invoiceCounter in sync for compatibility
+    const legacyCounterRef = db.collection("meta").doc("invoiceCounter");
+    tx.set(
+      legacyCounterRef,
+      { count: next, lastYear: Number(yearStr), updatedAt: FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+
     return invoiceNo;
   });
 }

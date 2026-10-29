@@ -56,7 +56,9 @@ export function getDisplayInvoiceNo(order?: { invoiceNo?: string; officialInvoic
   if (order.id) {
     if (order.id.length > 12) {
       const prefix = order.status === 'pending' ? 'QT' : 'RW';
-      return `${prefix} ${order.id.substring(0, 5).toUpperCase()}`;
+      const year = new Date().getFullYear();
+      const tail = order.id.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase().padStart(5, '0');
+      return `${prefix} ${year}-${tail}`;
     }
     return order.id;
   }

@@ -200,7 +200,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
         finalInvoiceNo = idempData?.invoiceNo || '';
         isDuplicate = true;
       } else {
-        finalInvoiceNo = await generateSequentialInvoiceNo(true);
+        finalInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
         sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
         (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
 
@@ -224,7 +224,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
         await batch.commit();
       }
     } else {
-      finalInvoiceNo = await generateSequentialInvoiceNo(true);
+      finalInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
       sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
       (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
 
@@ -329,7 +329,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
       if (data.status === 'approved' || data.status === 'billed') {
         if (!oldData.invoiceNo) {
-          updates.invoiceNo = await generateSequentialInvoiceNo(false);
+          updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
           (updates as any).officialInvoiceNo = updates.invoiceNo;
         } else if (oldData.invoiceNo.startsWith('QT')) {
           updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
@@ -413,7 +413,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 
     if (status === 'approved' || status === 'billed') {
       if (!oldData.invoiceNo) {
-        updates.invoiceNo = await generateSequentialInvoiceNo(false);
+        updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
         (updates as any).officialInvoiceNo = updates.invoiceNo;
       } else if (oldData.invoiceNo.startsWith('QT')) {
         updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
@@ -683,7 +683,11 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
     const orderForPdf: any = { ...orderData, id: orderSnap.id };
     orderForPdf.lang = lang === 'en' ? 'en' : 'bm';
     if (!orderForPdf.invoiceNo) {
-      orderForPdf.invoiceNo = `RW ${id.substring(0, 5).toUpperCase()}-PRE`;
+      orderForPdf.invoiceNo = await generateSequentialInvoiceNo(true, orderForPdf.eventDate || orderForPdf.date);
+      await db.collection('orders').doc(id).update({
+        invoiceNo: orderForPdf.invoiceNo,
+        updatedAt: FieldValue.serverTimestamp(),
+      }).catch((err) => console.warn('[Preliminary Invoice] Could not persist invoiceNo:', err));
     }
     const pdfBuffer = await generateServerInvoicePdf(orderForPdf, false);
 

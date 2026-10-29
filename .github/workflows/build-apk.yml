@@ -138,8 +138,12 @@ jobs:
             fi
           fi
 
+          VERSION_NAME=$(sed -n 's/^versionName=//p' android/version.properties)
+          VERSION_CODE=$(sed -n 's/^versionCode=//p' android/version.properties)
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          echo "✅ Version ready: $(sed -n 's/^versionName=//p' android/version.properties) ($(sed -n 's/^versionCode=//p' android/version.properties))"
+          echo "✅ Version ready: $VERSION_NAME ($VERSION_CODE)"
           echo "---- android/version.properties ----"
           cat android/version.properties || true
 

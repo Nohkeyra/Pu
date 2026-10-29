@@ -21,6 +21,7 @@ import { AdminOrdersTab } from './admin/AdminOrdersTab';
 import { AdminTablesTab } from './admin/AdminTablesTab';
 import AdminMenuTab from './admin/AdminMenuTab';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
+import { getDisplayInvoiceNo } from '@/lib/utils';
 
 // Hooks
 import { useAdminOrders } from '@/hooks/useAdminOrders';
@@ -32,12 +33,6 @@ const OrderDetailModal = lazyWithRetry(() => import('./admin/OrderDetailModal').
 const SendInvoiceModal = lazyWithRetry(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })), 'SendInvoiceModal');
 const AdminPdfShareModal = lazyWithRetry(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })), 'AdminPdfShareModal');
 const DeliveryMap = lazyWithRetry(() => import('./delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMap');
-
-const getDisplayInvoiceNo = (order: Order): string => {
-  if (order.invoiceNo) return order.invoiceNo;
-  if (order.id) return `RW ${order.id.substring(0, 5).toUpperCase()}`;
-  return 'RW -----';
-};
 
 export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void | Promise<void> }) {
   const { t, language } = useLanguage();
@@ -119,18 +114,21 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       total += roundedPrice * order.quantity;
     });
 
-    const invoiceNo = order.invoiceNo || `RW ${orderId.substring(0, 5).toUpperCase()}`;
+    const updatedInvoiceNo = order.invoiceNo
+      ? (order.invoiceNo.startsWith('QT') ? order.invoiceNo.replace(/^QT\s*/i, 'RW ') : order.invoiceNo)
+      : undefined;
+
     const success = await handleUpdateOrderStatus(orderId, {
       prices: mealPrices,
       totalAmount: Math.round(total * 100) / 100,
-      invoiceNo,
+      ...(updatedInvoiceNo ? { invoiceNo: updatedInvoiceNo } : {}),
       status: 'billed',
       approvedAt: order.approvedAt || new Date().toISOString(),
       billedAt: order.billedAt || new Date().toISOString(),
     }, language === 'bm' ? 'Harga Ditetapkan & Invois Dihasilkan' : 'Pricing Set & Order Billed');
 
     if (success) {
-      handleDownloadPDF({ ...order, prices: mealPrices, totalAmount: total, invoiceNo, status: 'billed' }, true);
+      handleDownloadPDF({ ...order, prices: mealPrices, totalAmount: total, invoiceNo: updatedInvoiceNo || getDisplayInvoiceNo(order), status: 'billed' }, true);
       setPrices({});
       setSelectedOrder(null);
       setIsDetailOpen(false);

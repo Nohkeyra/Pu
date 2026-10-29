@@ -34,44 +34,42 @@ export function useNetworkStatus() {
 
     checkStatus();
 
-    // Listeners
+    // Setup both Capacitor Network plugin listener and Web window listeners
     let isActive = true;
     let listenerHandle: { remove: () => void } | null = null;
+
+    const handleStatusChange = (isNowOnline: boolean) => {
+      if (!isActive) return;
+      const wasOnline = prevStatusRef.current;
+      
+      setIsOnline(isNowOnline);
+      prevStatusRef.current = isNowOnline;
+
+      if (wasOnline === null || wasOnline === isNowOnline) return;
+
+      if (!isNowOnline) {
+        toastRef.current({
+          title: 'Talian Terputus / Connection Lost',
+          description: 'Mod luar talian aktif. Sesetengah ciri mungkin tidak tersedia.',
+          variant: 'error',
+          duration: 5000
+        });
+      } else {
+        if (wasOnline === false) {
+          toastRef.current({
+            title: 'Talian Disambung / Connection Restored',
+            description: 'Anda kembali dalam talian.',
+            variant: 'success',
+            duration: 3000
+          });
+        }
+      }
+    };
+
     const setupListener = async () => {
       try {
         const handle = await Network.addListener('networkStatusChange', status => {
-          if (!isActive) return;
-          
-          const wasOnline = prevStatusRef.current;
-          const isNowOnline = status.connected;
-          
-          setIsOnline(isNowOnline);
-          prevStatusRef.current = isNowOnline;
-
-          // Skip if this is the first event and we are online
-          if (wasOnline === null) return;
-          
-          // Only show toast if state actually changed
-          if (wasOnline === isNowOnline) return;
-          
-          if (!isNowOnline) {
-            toastRef.current({
-              title: 'Talian Terputus / Connection Lost',
-              description: 'Mod luar talian aktif. Sesetengah ciri mungkin tidak tersedia.',
-              variant: 'error',
-              duration: 5000
-            });
-          } else {
-            // Only show "Restored" if we were previously offline
-            if (wasOnline === false) {
-              toastRef.current({
-                title: 'Talian Disambung / Connection Restored',
-                description: 'Anda kembali dalam talian.',
-                variant: 'success',
-                duration: 3000
-              });
-            }
-          }
+          handleStatusChange(status.connected);
         });
 
         if (!isActive) {
@@ -84,6 +82,12 @@ export function useNetworkStatus() {
       }
     };
 
+    const onWebOnline = () => handleStatusChange(true);
+    const onWebOffline = () => handleStatusChange(false);
+
+    window.addEventListener('online', onWebOnline);
+    window.addEventListener('offline', onWebOffline);
+
     setupListener();
 
     return () => {
@@ -91,6 +95,8 @@ export function useNetworkStatus() {
       if (listenerHandle) {
         listenerHandle.remove();
       }
+      window.removeEventListener('online', onWebOnline);
+      window.removeEventListener('offline', onWebOffline);
     };
   }, []);
 

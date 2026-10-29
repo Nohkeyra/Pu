@@ -16,6 +16,11 @@ lerna-debug.log*
 .env.*.local
 *.local
 *.session
+*.env_*.txt
+
+# AI Studio prompt media attachments & uploaded text assets
+public/assets/aistudio/
+android/app/src/main/assets/public/assets/aistudio/
 
 # Build output & temporary files
 dist/

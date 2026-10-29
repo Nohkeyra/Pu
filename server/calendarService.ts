@@ -6,14 +6,14 @@ import { getLocalOrders, saveLocalOrders } from "./localOrdersStore.js";
 export function getGoogleCalendarClient() {
   const rawEmail = process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
   let email = rawEmail ? rawEmail.trim() : undefined;
-  if (email && email.startsWith('"') && email.endsWith('"')) {
+  if (email && ((email.startsWith('"') && email.endsWith('"')) || (email.startsWith("'") && email.endsWith("'")))) {
     email = email.slice(1, -1).trim();
   }
 
   const rawPrivateKey = process.env.GOOGLE_CALENDAR_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
   let privateKey = rawPrivateKey ? rawPrivateKey.trim() : undefined;
   if (privateKey) {
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
       privateKey = privateKey.slice(1, -1).trim();
     }
     privateKey = privateKey.replace(/\\n/g, "\n");

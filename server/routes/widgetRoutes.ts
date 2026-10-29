@@ -332,7 +332,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     // Generate sequential invoice number (RW) or transition QT prefix to RW
     const invoiceNo = (order.invoiceNo && order.invoiceNo.startsWith('QT'))
       ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
-      : (order.invoiceNo || await generateSequentialInvoiceNo(false));
+      : (order.invoiceNo || await generateSequentialInvoiceNo(false, order.eventDate || order.date));
 
     // Make the eligibility check and billing transition one Firestore transaction.
     // A concurrent request will re-read the order and fail once another request bills it.
