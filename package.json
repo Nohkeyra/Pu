@@ -91,6 +91,7 @@
     "nodemailer": "10.2.1",
     "postcss": "^8.4.39",
     "proxy-addr": "2.0.8",
+    "punycode": "2.3.1",
     "react": "^18.3.1",
     "react-day-picker": "^10.0.1",
     "react-dom": "^18.3.1",
