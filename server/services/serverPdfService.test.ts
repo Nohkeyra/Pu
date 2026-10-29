@@ -49,21 +49,22 @@ describe('serverPdfService - Integrity & Validation', () => {
     expect(pdfBuffer.subarray(0, 5).toString()).toBe('%PDF-');
   });
 
-  it('enforces single client boundary on server consolidated invoice', async () => {
+  it('generates a valid Buffer for a multi-client server consolidated invoice', async () => {
     const differentClientOrder = {
       ...sampleOrder2,
       id: 'server-ord-3',
       to: 'Jabatan Perkhidmatan Awam',
     };
 
-    await expect(
-      generateServerConsolidatedInvoicePdf(
-        [sampleOrder1, differentClientOrder],
-        'RW 99998',
-        false,
-        'bm'
-      )
-    ).rejects.toThrow(/SATU syarikat\/klien sahaja/);
+    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
+      [sampleOrder1, differentClientOrder],
+      'RW 99998',
+      false,
+      'bm'
+    );
+    expect(pdfBuffer).toBeInstanceOf(Buffer);
+    expect(pdfBuffer.length).toBeGreaterThan(1000);
+    expect(pdfBuffer.subarray(0, 5).toString()).toBe('%PDF-');
   });
 
   it('rejects empty orders array for consolidated invoice', async () => {

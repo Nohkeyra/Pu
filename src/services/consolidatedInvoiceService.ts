@@ -57,16 +57,8 @@ export const generateConsolidatedInvoicePDF = (payload: ConsolidatedInvoicePaylo
       : 'No orders selected for consolidated invoice.');
   }
 
-  // Enforce single-client only. Consolidated invoices are per-client documents.
   const distinctClients = new Set(orders.map(o => o.to || '-'));
-  if (distinctClients.size > 1) {
-    const clientList = Array.from(distinctClients).join(', ');
-    throw new Error(lang === 'bm'
-      ? `Invois konsolidasi hanya boleh untuk SATU syarikat/klien sahaja. Pesanan yang dipilih merangkumi ${distinctClients.size} klien berbeza: ${clientList}. Sila pilih pesanan dari satu klien sahaja.`
-      : `Consolidated invoices can only be generated for a SINGLE company/client. The selected orders span ${distinctClients.size} different clients: ${clientList}. Please select orders from only one client.`);
-  }
-
-  const clientName = orders[0].to || '-';
+  const clientName = distinctClients.size > 1 ? Array.from(distinctClients).join(', ') : (orders[0].to || '-');
   const recipientText = clientName;
 
   const doc = new jsPDF({

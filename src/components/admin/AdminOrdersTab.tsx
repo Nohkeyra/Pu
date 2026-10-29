@@ -460,17 +460,6 @@ export function AdminOrdersTab({
                       setSelectedOrderIds(new Set());
                       return;
                     }
-                    const distinctClients = new Set(searchedOrders.map(o => o.to));
-                    if (distinctClients.size > 1) {
-                      toast({
-                        title: t('error') || 'Error',
-                        description: language === 'bm'
-                          ? 'Paparan semasa merangkumi lebih daripada satu klien. Sila gunakan tapisan Klien untuk pilih satu klien sahaja sebelum "Select All".'
-                          : 'The current view spans more than one client. Please use the Client filter to narrow to a single client before "Select All".',
-                        variant: 'error'
-                      });
-                      return;
-                    }
                     let toSelect = searchedOrders.filter(o => Boolean(o.id));
                     if (filterBySameEmail) {
                       const first = toSelect.find(o => o.email);

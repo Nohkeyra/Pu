@@ -347,23 +347,6 @@ export function AdminTablesTab({
       return;
     }
 
-    const selectedOrders = orders.filter(o => o.id && selectedIds.has(o.id));
-
-    // Mandatory Rule 16 single-client validation
-    const clients = new Set(
-      selectedOrders.map(o => (o.to || o.name || 'Majlis Persendirian').trim().toLowerCase())
-    );
-    if (clients.size > 1) {
-      toast({
-        title: isBm ? 'Klien Berbeza Dikesan' : 'Different Clients Detected',
-        description: isBm
-          ? 'Invois konsolidasi mestilah untuk klien/kementerian yang sama. Sila pilih pesanan untuk klien yang sama sahaja.'
-          : 'Consolidated invoices must be for a single client/ministry only. Please select orders for the same client.',
-        variant: 'warning',
-      });
-      return;
-    }
-
     if (prepareConsolidateModal) {
       prepareConsolidateModal();
     } else {

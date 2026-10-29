@@ -627,15 +627,6 @@ export async function generateServerConsolidatedInvoicePdf(
       : 'No orders selected for consolidated invoice.');
   }
 
-  // Enforce single-client only. Consolidated invoices are per-client documents.
-  const distinctClients = new Set(orders.map(o => o.to || '-'));
-  if (distinctClients.size > 1) {
-    const clientList = Array.from(distinctClients).join(', ');
-    throw new Error(lang === 'bm'
-      ? `Invois konsolidasi hanya boleh untuk SATU syarikat/klien sahaja. Pesanan yang dipilih merangkumi ${distinctClients.size} klien berbeza: ${clientList}. Sila pilih pesanan dari satu klien sahaja.`
-      : `Consolidated invoices can only be generated for a SINGLE company/client. The selected orders span ${distinctClients.size} different clients: ${clientList}. Please select orders from only one client.`);
-  }
-
   ensureImagesLoaded();
 
   // Consolidated invoices MUST be landscape A4 (297mm x 210mm)
@@ -684,8 +675,9 @@ export async function generateServerConsolidatedInvoicePdf(
   let pageNumber = 1;
   drawPageHeader(pageNumber);
 
-  const firstOrder = orders[0] || {};
-  const recipientText = (firstOrder.to || (lang === 'en' ? 'Valued Customer' : 'Pelanggan')) + (firstOrder.attn ? ` (Attn: ${firstOrder.attn})` : '');
+  const distinctClients = new Set(orders.map(o => o.to || '-'));
+  const clientName = distinctClients.size > 1 ? Array.from(distinctClients).join(', ') : (orders[0]?.to || '-');
+  const recipientText = clientName;
   drawCreamBox(doc, lang === 'en' ? 'TO' : 'KEPADA', recipientText, 15, 40, 267, 13, true);
 
   const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];

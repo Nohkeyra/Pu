@@ -197,6 +197,7 @@ export default function SettingsPage() {
   const [licensesModalOpen, setLicensesModalOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+  const [adminProfileModalOpen, setAdminProfileModalOpen] = useState(false);
 
   // Admin sub-menu active tab state ('appearance' | 'updates' | 'diagnostics')
   const [adminSubTab, setAdminSubTab] = useState<'appearance' | 'updates' | 'diagnostics'>('appearance');
@@ -1061,11 +1062,11 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={async () => {
                         await triggerLightImpact();
-                        navigate('/profile');
+                        setAdminProfileModalOpen(true);
                       }}
                       className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
                     >
-                      <span>{language === 'bm' ? 'Kemas Kini' : 'Update'}</span>
+                      <span>{language === 'bm' ? 'Lihat' : 'View'}</span>
                       <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                     </Button>
                   }
@@ -2067,6 +2068,79 @@ export default function SettingsPage() {
                 className="rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700"
               >
                 {language === 'bm' ? 'Padam & Log Keluar' : 'Purge & Sign Out'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG 7: ADMIN PROFILE INFO */}
+        <Dialog open={adminProfileModalOpen} onOpenChange={setAdminProfileModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-deep-forest dark:text-white">
+                <UserCircle className="w-5 h-5 text-amber-500" />
+                {language === 'bm' ? 'Maklumat Profil Pentadbir' : 'Admin Profile Info'}
+              </DialogTitle>
+              <DialogDescription>
+                {language === 'bm'
+                  ? 'Butiran akaun dan kebenaran pentadbir sistem Restoran Wawasan.'
+                  : 'System administrator account details and permissions.'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2 text-xs sm:text-sm">
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold font-display text-lg shrink-0">
+                  W
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-deep-forest dark:text-white text-sm">
+                    {language === 'bm' ? 'Pentadbir Wawasan' : 'Wawasan Administrator'}
+                  </p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 font-mono truncate">
+                    {currentUser?.email || RESTORAN_CONTACT.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-xl bg-muted/40 p-3 border border-stone/10">
+                <div className="flex justify-between py-1 border-b border-stone/10">
+                  <span className="text-stone-500">{language === 'bm' ? 'Peranan Sistem' : 'System Role'}:</span>
+                  <span className="font-bold text-deep-forest dark:text-white">{language === 'bm' ? 'Pentadbir Utama' : 'Super Administrator'}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-stone/10">
+                  <span className="text-stone-500">{language === 'bm' ? 'Status Akaun' : 'Account Status'}:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{language === 'bm' ? 'Aktif (Disahkan)' : 'Active (Verified)'}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-stone/10">
+                  <span className="text-stone-500">{language === 'bm' ? 'Log Masuk Pantas' : 'Biometric Auth'}:</span>
+                  <span className="font-bold text-deep-forest dark:text-white">{hasAdminBiometrics ? (language === 'bm' ? 'Didayakan' : 'Enabled') : (language === 'bm' ? 'Tidak Didayakan' : 'Disabled')}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-stone-500">{language === 'bm' ? 'Kebenaran' : 'Permissions'}:</span>
+                  <span className="font-bold text-deep-forest dark:text-white">{language === 'bm' ? 'Penuh (Catering, Menu, Invois)' : 'Full (Orders, Menu, Invoices)'}</span>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAdminProfileModalOpen(false)}
+                className="rounded-xl text-xs font-semibold"
+              >
+                {language === 'bm' ? 'Tutup' : 'Close'}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setAdminProfileModalOpen(false);
+                  navigate('/admin');
+                }}
+                className="rounded-xl text-xs font-bold bg-[var(--color-sunshine-cta)] text-charcoal hover:bg-[var(--color-sunshine-cta)]/90"
+              >
+                {language === 'bm' ? 'Buka Konsol Pentadbir' : 'Open Admin Console'}
               </Button>
             </DialogFooter>
           </DialogContent>

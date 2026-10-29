@@ -72,20 +72,21 @@ describe('consolidatedInvoiceService - Invoice Numbering & Integrity', () => {
     expect(doc.getNumberOfPages()).toBe(2); // 1 content page + 1 summary page
   });
 
-  it('throws descriptive error if orders belong to multiple distinct clients', () => {
+  it('generates valid PDF when orders belong to multiple distinct clients', () => {
     const multiClientOrder: Order = {
       ...sampleOrder2,
       id: 'ord-3',
       to: 'Jabatan Perdana Menteri'
     };
 
-    expect(() => {
-      generateConsolidatedInvoicePDF({
-        orders: [sampleOrder1, multiClientOrder],
-        includeNotes: false,
-        invoiceNo: 'RW 00099',
-        lang: 'bm'
-      });
-    }).toThrow(/SATU syarikat\/klien sahaja/);
+    const doc = generateConsolidatedInvoicePDF({
+      orders: [sampleOrder1, multiClientOrder],
+      includeNotes: false,
+      invoiceNo: 'RW 00099',
+      lang: 'bm'
+    });
+
+    expect(doc).toBeDefined();
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
   });
 });
