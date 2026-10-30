@@ -19,11 +19,14 @@ import {
 } from "firebase/auth";
 import { Capacitor } from '@capacitor/core';
 
-// F-01 (audit): hardcoded Firebase web API key + full config bundle
-// removed from the production source. All values are now sourced from
-// build-time VITE_FIREBASE_* env vars and the build FAILS if any are
-// missing in a production build. The AI-Studio sandbox overlay remains
-// gated to non-native, non-prod previews only.
+// Config resolution: build-time VITE_FIREBASE_* env vars win. When one is missing, the value
+// from the committed firebase-applet-config.json is used instead, and the build does NOT fail.
+// That is deliberate: a Firebase web API key is a public identifier (it ships inside every APK
+// and web bundle), and access is enforced by firestore.rules / storage.rules, not by hiding it.
+// Do not rely on this file to guarantee that production env vars were set.
+//
+// NOTE: the "sandbox" config below currently resolves to the same Firebase project as
+// production, so a local/AI-Studio preview reads and writes real data.
 
 import firebaseAppletConfig from "../firebase-applet-config.json";
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Sun, Moon, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, User as UserIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { useTheme } from '@/context/ThemeContext';
@@ -43,8 +44,6 @@ export interface PageShellProps {
   backHref?: string;
   /** Hide explicit back button (e.g. landing already shows global nav). */
   hideBack?: boolean;
-  /** Optional custom back click handler. */
-  onBack?: () => void;
   /** Right-side custom actions (rare). */
   actions?: ReactNode;
   /** Optional Batik overlay pattern intensity. */
@@ -68,12 +67,11 @@ export default function PageShell({
   variant = 'default',
   backHref,
   hideBack = false,
-  onBack,
   actions,
   showBatik = false,
 }: PageShellProps) {
   const { theme, toggleTheme } = useTheme();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const currentUser = useCurrentUser();
@@ -91,11 +89,6 @@ export default function PageShell({
     toggleTheme();
   }, [toggleTheme]);
 
-  const toggleLanguage = useCallback(async () => {
-    await triggerLightImpact();
-    setLanguage(language === 'en' ? 'bm' : 'en');
-  }, [language, setLanguage]);
-
   const handleAuth = useCallback(async () => {
     await triggerLightImpact();
     if (currentUser) {
@@ -112,10 +105,6 @@ export default function PageShell({
 
   const handleBack = useCallback(async () => {
     await triggerLightImpact();
-    if (onBack) {
-      onBack();
-      return;
-    }
     if (backHref) {
       navigate(backHref);
       return;
@@ -126,7 +115,7 @@ export default function PageShell({
     } else {
       navigate(homeRoute);
     }
-  }, [onBack, backHref, navigate, homeRoute]);
+  }, [backHref, navigate, homeRoute]);
 
   const variantClass =
     variant === 'centered'
@@ -137,106 +126,111 @@ export default function PageShell({
 
   return (
     <div className="page-shell min-h-screen relative bg-cream dark:bg-background flex flex-col">
-      {/* Signature Top Accent Brand Gradient Line (Aligned with Landing Page) */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-[1001] bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 pointer-events-none" />
-
-      {/* ---- Top App Shell Header (sticky topbar-shell) ---- */}
-      <header className="topbar-shell sticky top-0 z-40 transition-colors duration-200 pt-[calc(0.45rem+var(--sat))] pb-2 sm:pb-2.5">
-        <div className="content-container flex items-center justify-between gap-2.5 sm:gap-4">
-          
-          {/* Zone 1: Navigation Back + Brand Identity */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
-            {!hideBack && !isHome && (
-              <button
-                type="button"
-                onClick={handleBack}
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-[#1c2622]/90 flex items-center justify-center text-stone-700 dark:text-stone-200 hover:text-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)]/40 transition-all active:scale-95 shrink-0 shadow-2xs cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]"
-                aria-label={t('back') || 'Back'}
-                title={t('back') || 'Back'}
-              >
-                <ArrowLeft className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-              </button>
-            )}
-
-            <Link
-              to={homeRoute}
-              className="flex min-w-0 items-center gap-2 sm:gap-2.5 select-none"
-              aria-label="Restoran Wawasan Home"
+      {/* ---- Top App Shell Header (sticky) ---- */}
+      <header className="page-shell__header">
+        <div className="page-shell__main flex h-14 min-h-[44px] items-center gap-2 sm:gap-3">
+          {/* Back vs. Brand */}
+          {!hideBack && !isHome ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              onClick={handleBack}
+              className="icon-button-soft touch-target"
+              aria-label={t('back') || 'Back'}
             >
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/80 p-1 shadow-xs ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden shrink-0">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Link to={homeRoute} className="flex items-center gap-2 min-h-[44px]">
+              <div className="h-9 w-9 rounded-xl bg-white/80 p-0.5 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10 flex items-center justify-center overflow-hidden">
+                {/*
+                  Brand asset path preserved verbatim — visual logo /
+                  Malaysian heritage graphic must remain 100% intact.
+                */}
                 <TransparentLogo
                   src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-                  alt="Restoran Wawasan Logo"
+                  alt="Restoran Wawasan"
                   className="w-full h-full object-contain"
                 />
               </div>
-
-              <div className="min-w-0 flex-1">
-                <span className="block font-artistic text-sm sm:text-base md:text-lg font-bold page-header-text leading-tight truncate">
-                  Restoran Wawasan
-                </span>
-                <span className="block text-[10px] sm:text-xs font-accent font-bold uppercase tracking-wider text-[var(--color-sunshine-cta)] leading-none mt-0.5 truncate">
-                  {title || subtitle || 'Pak Usop'}
-                </span>
-              </div>
+              <span className="hidden sm:block text-sm font-extrabold tracking-tight text-deep-forest dark:text-white">
+                Restoran Wawasan
+              </span>
             </Link>
+          )}
+
+          {/* Title block */}
+          <div className="flex-1 min-w-0">
+            <h1
+              className={cn(
+                'page-header-text truncate text-base sm:text-lg font-semibold',
+                'leading-tight'
+              )}
+            >
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="page-header-text-muted truncate text-[12px] sm:text-[13px]">
+                {subtitle}
+              </p>
+            ) : null}
           </div>
 
-          {/* Zone 2: Consistent Right Actions (Aligned across all pages) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Right-side minimal actions */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {actions}
-
-            {/* Language Toggle (EN / BM) - Dedicated self-contained pill */}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
-              onClick={toggleLanguage}
-              className="h-9 sm:h-10 min-w-[58px] px-2 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-[#1c2622]/90 text-stone-700 dark:text-stone-200 font-bold text-xs flex items-center justify-center gap-1 shadow-2xs hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] transition-all active:scale-95 shrink-0 select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]"
-              aria-label="Toggle Language"
-              title={language === 'en' ? 'Tukar ke Bahasa Melayu' : 'Switch to English'}
+              onClick={async () => {
+                await triggerLightImpact();
+                navigate('/settings');
+              }}
+              className="icon-button-soft touch-target hidden sm:flex"
+              aria-label={t('nav_settings') || 'Settings'}
+              title={t('nav_settings') || 'Settings'}
             >
-              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-black' : 'text-stone-400 dark:text-stone-500 font-semibold'}>EN</span>
-              <span className="text-stone-300 dark:text-stone-600 font-normal">/</span>
-              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-black' : 'text-stone-400 dark:text-stone-500 font-semibold'}>BM</span>
-            </button>
-
-            {/* Theme Toggle (Day / Night) */}
-            <button
+              <SettingsIcon className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleThemeToggle}
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-[#1c2622]/90 flex items-center justify-center text-stone-700 dark:text-stone-200 hover:text-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)]/40 transition-all active:scale-95 shrink-0 shadow-2xs cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]"
+              className="icon-button-soft touch-target hidden sm:flex"
               aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
-              title={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
             >
               {theme === 'light' ? (
-                <Moon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                <Moon className="h-5 w-5" />
               ) : (
-                <Sun className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-[var(--color-sunshine-cta)]" />
+                <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
               )}
-            </button>
-
-            {/* Account / User Avatar */}
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={handleAuth}
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl border border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-[#1c2622]/90 flex items-center justify-center text-stone-700 dark:text-stone-200 hover:text-[var(--color-sunshine-cta)] hover:border-[var(--color-sunshine-cta)]/40 transition-all active:scale-95 shrink-0 shadow-2xs cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]"
+              className="icon-button-soft touch-target"
               aria-label={currentUser ? 'Account' : 'Sign in'}
-              title={currentUser ? 'Account' : 'Sign in'}
             >
               {currentUser ? (
-                <div className="flex h-6.5 w-6.5 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[10px] sm:text-xs font-black text-white shadow-xs">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] microcopy-12 font-black text-white">
                   {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                 </div>
               ) : (
-                <UserIcon className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-deep-forest dark:text-stone-300" />
+                <UserIcon className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       {/* ---- Eyebrow (optional) ---- */}
       {eyebrow ? (
-        <div className="content-container pt-3">
+        <div className="page-shell__main pt-4">
           <div className="microcopy-12-upper text-[var(--color-sunshine-cta)]">
             {eyebrow}
           </div>
@@ -244,7 +238,11 @@ export default function PageShell({
       ) : null}
 
       {/* ---- Main content area (uniform gutter) ---- */}
-      <div className={cn('content-container relative flex-grow', variantClass)}>
+      <div className={cn('page-shell__main relative flex-grow', variantClass)}>
+        {/*
+          Optional decorative Batik kept as a fixed background only —
+          image asset path / file is untouched.
+        */}
         {showBatik ? (
           <div
             aria-hidden="true"

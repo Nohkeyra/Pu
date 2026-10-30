@@ -18,6 +18,15 @@ const widgetPricingLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many widget requests. Please try again later.' },
 });
 
+// Same budget as the pricing widget endpoints (widgets refresh about every 30 minutes).
+// This route does a full collection scan, so it must not be the one unthrottled widget path.
+const widgetUpcomingLimiter = createDistributedRateLimiter({
+  prefix: 'widget_upcoming',
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  message: { success: false, error: 'Too many widget requests. Please try again later.' },
+});
+
 // ─── Admin authentication for privileged widget endpoints ─────────────────────
 // Requires verified Admin credentials (server-signed admin JWT or Firebase ID token).
 // A key embedded in a distributed APK is not an authentication factor.
@@ -83,7 +92,7 @@ function formatMealTypeBM(meals: any): string {
 // ─── 1. Upcoming orders widget (admin-authenticated) ──────────────────────────
 // Operational order data is restricted to authenticated administrators.
 // Enables scroll with configurable limit (default 50)
-router.get('/widget/upcoming-orders', async (req, res) => {
+router.get('/widget/upcoming-orders', widgetUpcomingLimiter, async (req, res) => {
   if (!(await verifyAdminAuth(req, res))) return;
 
   try {

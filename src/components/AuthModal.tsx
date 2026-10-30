@@ -419,8 +419,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           role="dialog"
           aria-modal="true"
           aria-label={mode === 'signin' ? t('Sign In', 'Log Masuk') : mode === 'signup' ? t('Register Account', 'Daftar Akaun Baru') : t('Reset Password', 'Set Semula Kata Laluan')}
-          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto overflow-hidden max-h-[90vh] flex flex-col"
+          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto max-sm:my-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:rounded-t-[2rem] overflow-hidden max-h-[90vh] max-sm:max-h-[92vh] flex flex-col"
         >
+          {/* Mobile Bottom Sheet Pull Pill */}
+          <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" aria-hidden="true" />
+
           {/* Batik Pattern Overlay */}
           <Batik3DMotion
             mode="background"

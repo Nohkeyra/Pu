@@ -100,14 +100,14 @@ export default function Header() {
     : 'inline-flex h-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 px-4 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-deep-forest/60 hover:text-[var(--color-sunshine-cta)] active:scale-[0.98] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   const mobileActionClass = isScrolled
-    ? 'icon-button-soft touch-target h-11 w-11 font-bold'
-    : 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-deep-forest/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
+    ? 'icon-button-soft h-10 w-10 sm:h-11 sm:w-11 font-bold'
+    : 'inline-flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl border border-tomato-burst/50 bg-deep-forest/40 text-white font-bold shadow-md backdrop-blur-xl transition-all duration-300 hover:bg-deep-forest/60 active:scale-[0.95] drop-shadow-[0_1px_2px_rgba(12,69,60,0.80)]';
 
   return (
     <>
       <div className="fixed top-0 left-0 right-0 h-1 z-[1001] bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500" />
       <header id="app-header" className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
-        <div className="content-container flex items-center justify-between gap-4">
+        <div className="content-container flex items-center justify-between gap-1.5 sm:gap-4 px-3.5 sm:px-6">
           <Link 
             to={currentUser ? '/home' : '/'} 
             className="flex shrink-0 items-center gap-2.5 sm:gap-3 select-none"
@@ -196,12 +196,12 @@ export default function Header() {
               size="sm"
               type="button"
               onClick={toggleLanguage}
-              className={`${desktopActionClass} min-w-[58px] gap-1.5 text-xs font-bold`}
+              className={`${desktopActionClass} gap-1.5 text-xs font-bold`}
               aria-label="Toggle Language"
             >
-              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-black' : ''}>EN</span>
+              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)]' : ''}>EN</span>
               <span className={isScrolled ? 'text-deep-forest/25 dark:text-white/25' : 'text-white/30'}>/</span>
-              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-black' : ''}>BM</span>
+              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)]' : ''}>BM</span>
             </Button>
 
             <NotificationBell

@@ -94,7 +94,7 @@ export function Step2DishSelection({
           )}
         </div>
         <div 
-          className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5 pb-2"
+          className="grid grid-cols-2 gap-2.5 pb-2"
           data-tour={isVeggie ? "step2-veggie-list" : "step2-dish-list"}
         >
           {categoryDishes.map((item, index) => {

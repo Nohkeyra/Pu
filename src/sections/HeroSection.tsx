@@ -76,7 +76,7 @@ const HeroSection = React.memo(() => {
         {/* Unified Brand Headline */}
         <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl select-none">
           <h1 
-            className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-[9.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]"
+            className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]"
             style={{
               textShadow: '0 4px 24px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.6)'
             }}

@@ -85,7 +85,8 @@ class TelemetryService {
 
       return res.status(statusCode).json({
         success: false,
-        error: err?.message || 'Internal Server Error',
+        // 5xx messages can carry Firestore paths / SMTP / config detail: keep them server-side.
+        error: statusCode >= 500 ? 'Internal Server Error' : (err?.message || 'Bad Request'),
         requestId,
       });
     };

@@ -274,7 +274,8 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       totalAmount,
     });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -501,7 +502,8 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
 
     return res.json({ success: true, message: 'Order updated successfully' });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders/update:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -573,7 +575,8 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
 
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders/cancel:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -612,7 +615,8 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
       message: 'Order removed successfully.',
     });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders/delete:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -643,7 +647,8 @@ router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
 
     return res.json({ success: true, message: 'Admin has been nudged!' });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders/poke:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -715,7 +720,8 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
 
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /orders/:id/send-preliminary-invoice:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -879,7 +885,8 @@ router.get('/calendar-sessions', calendarSessionsLimiter, async (req, res) => {
     return res.json({ success: true, sessions: dailySessions });
   } catch (err) {
     console.error('[Calendar Sessions API Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[orderRoutes] /calendar-sessions:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -907,7 +914,8 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
     return res.json({ success: true, orders });
   } catch (err) {
     console.error('[Calendar Orders API Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[orderRoutes] /calendar-orders:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -992,7 +1000,8 @@ router.get('/orders/:id/rider-location', async (req, res) => {
     });
   } catch (err) {
     console.error('[Get Rider Location API Error]:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[orderRoutes] /orders/:id/rider-location:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

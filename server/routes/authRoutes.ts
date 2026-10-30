@@ -291,7 +291,8 @@ router.post('/user/fcm-token', fcmTokenLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[FCM] Save user token failed:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[authRoutes] /user/fcm-token:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

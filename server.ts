@@ -211,6 +211,8 @@ async function startServer() {
   };
 
   app.get('/health', healthCheckHandler);
+  // docker-compose and nginx/nginx.conf probe /healthz; keep both paths answering.
+  app.get('/healthz', healthCheckHandler);
   app.get('/api/health', healthCheckHandler);
 
   // Digital Asset Links for Android App Links & Deep Linking verification

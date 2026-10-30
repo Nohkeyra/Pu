@@ -133,7 +133,8 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
 
     return res.json(result);
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: String(err?.message || err) });
+    console.error('[invoiceRoutes] /forward-order-whatsapp:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -231,7 +232,8 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     return res.send(pdfBuffer);
   } catch (err) {
     console.error('[Invoice API] Failed to render server invoice PDF:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[invoiceRoutes] /invoice/:orderId/pdf:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

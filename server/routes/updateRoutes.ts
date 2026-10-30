@@ -6,11 +6,36 @@ import { secureCompare } from './authRoutes.js';
 
 const router = Router();
 
+// The live-update channel tells every installed app where to download the new APK, so the
+// URL must be an asset of THIS repository's GitHub releases (what build-apk.yml publishes).
+// Android also refuses an update signed with a different key, but an allowlist stops the
+// download prompt from ever pointing somewhere else.
+const ALLOWED_APK_PATH_PREFIX = '/Nohkeyra/Pu/releases/download/';
+
+export function isAllowedApkUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === 'https:' &&
+      url.hostname === 'github.com' &&
+      url.port === '' &&
+      !url.username &&
+      !url.password &&
+      url.pathname.startsWith(ALLOWED_APK_PATH_PREFIX) &&
+      url.pathname.endsWith('.apk')
+    );
+  } catch {
+    return false;
+  }
+}
+
+const INVALID_APK_URL_MESSAGE = 'apkUrl must be an .apk asset from this repository\'s GitHub releases.';
+
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.141',
+  latestVersion: '1.3.137',
   minVersion: '1.2.0',
-  buildNumber: 273,
-  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.141/app-release-signed.apk',
+  buildNumber: 269,
+  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.137/app-release-signed.apk',
   bundleUrl: '',
   releaseNotes: [
     'Prestasi aplikasi & kestabilan haptik dipertingkatkan.',
@@ -78,6 +103,10 @@ router.post('/app-version/github-sync', async (req, res) => {
       publishedBy: 'GitHub Actions Auto-Sync'
     };
 
+    if (!isAllowedApkUrl(payload.apkUrl)) {
+      return res.status(400).json({ error: INVALID_APK_URL_MESSAGE });
+    }
+
     const db = getFirestore();
     await db.collection('app_config').doc('version').set(payload, { merge: true });
 
@@ -113,6 +142,10 @@ router.post('/app-version', verifyAdminToken, async (req, res) => {
       updatedAt: new Date().toISOString(),
       publishedBy: adminReq.adminPayload?.sub || adminReq.adminPayload?.jti || 'System Admin'
     };
+
+    if (!isAllowedApkUrl(payload.apkUrl)) {
+      return res.status(400).json({ error: INVALID_APK_URL_MESSAGE });
+    }
 
     const db = getFirestore();
     await db.collection('app_config').doc('version').set(payload, { merge: true });

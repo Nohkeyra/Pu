@@ -62,3 +62,13 @@ This is a coordinated server + Android change. Do not deploy only one side and a
 - `npm audit --omit=dev`: 4 moderate. `@hono/node-server` (via `@modelcontextprotocol/node`, `serveStatic` is not used by this repo) and `uuid` (via `exceljs`/`gaxios`, fix is a breaking `exceljs` downgrade). `npm audit fix` itself crashed in this environment; revisit on a normal machine.
 - UI helpers (Header, BottomNavigation, etc.) still infer "admin" from a stored token for display only; the server verifies every admin request.
 - Confirming deployed secrets, Firebase rules deployment and widget behaviour on a physical device must be done in the real environment.
+
+## Hardening batch (from external audit review)
+
+- `apkUrl` (both `/api/app-version` routes) must be an `.apk` under `https://github.com/Nohkeyra/Pu/releases/download/`; anything else returns 400.
+- `render.yaml` builds with `npm ci --include=dev` (lockfile enforced).
+- `/api/widget/upcoming-orders` now has the same rate limit as the pricing widget routes (60 / 15 min).
+- 500 responses on non-admin routes return a generic message; the detail is logged server-side. Admin-only routes still return detail for diagnosis.
+- `/healthz` answers like `/health` (docker-compose and nginx probe it).
+- `firebaseConfig.ts` comment now states the real behaviour (env first, committed applet config as fallback, sandbox == production project).
+- Not changed on purpose: guest order create/poke rules, helmet frame/CSP policy (needs per-host `frame-ancestors` and testing), branch protection, public calendar endpoints.

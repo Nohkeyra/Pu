@@ -79,26 +79,26 @@ const HighlightsSection = React.memo(() => {
               <motion.div
                 key={item.title}
                 variants={cardVariants}
-                className={`group relative overflow-hidden p-6 sm:p-7 md:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#161e1b] backdrop-blur-xl border border-[#ebe5df] dark:border-amber-500/20 transition-all duration-500 shadow-md dark:shadow-[0_12px_32px_-8px_rgba(246,153,19,0.12)] hover:shadow-xl hover:-translate-y-1 hover:border-[var(--color-sunshine-cta)]/50 ${item.className}`}
+                className={`group relative overflow-hidden p-8 rounded-[2rem] bg-white/90 dark:bg-card/40 backdrop-blur-xl border border-amber-500/20 dark:border-white/5 transition-all duration-500 shadow-[0_12px_32px_-8px_rgba(246,153,19,0.12)] hover:shadow-[0_24px_50px_-10px_rgba(233,98,18,0.22)] hover:border-amber-500/45 ${item.className}`}
               >
-                {/* Accent Gradient Hover Layer */}
+                {/* Accent Gradient */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
                 
-                {/* Background Watermark Icon */}
-                <div className="absolute right-[-4%] bottom-[-4%] w-32 h-32 opacity-[0.04] dark:opacity-[0.07] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
-                  <Icon className="w-full h-full text-[var(--color-sunshine-cta)]" />
+                {/* Background Pattern */}
+                <div className="absolute right-[-2%] bottom-[-2%] w-32 h-32 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
+                  <Icon className="w-full h-full" />
                 </div>
 
                 <div className="relative z-10 h-full flex flex-col justify-between">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-amber-50/80 dark:bg-[#0c100e] shadow-sm border border-amber-500/20 dark:border-amber-500/30 mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.iconColor}`}>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-charcoal/50 shadow-sm border border-amber-500/20 dark:border-white/5 mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.iconColor}`}>
                     <Icon className="w-7 h-7" />
                   </div>
                   
                   <div>
-                    <h3 className="font-artistic text-2xl lg:text-3xl text-[#121e1a] dark:text-[#ede5d8] leading-[1.15] mb-2.5 tracking-tight">
+                    <h3 className="font-artistic text-2xl lg:text-3xl text-charcoal dark:text-white leading-[1.1] mb-3 tracking-tighter">
                       {item.title}
                     </h3>
-                    <p className="text-sm lg:text-base text-[#52635b] dark:text-[#94a39a] leading-relaxed font-medium">
+                    <p className="text-sm lg:text-base text-deep-forest/85 dark:text-[#ede5d8]/85 leading-relaxed font-normal max-w-[80%]">
                       {item.subtitle}
                     </p>
                   </div>

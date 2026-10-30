@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
 import { cn, getAssetUrl } from '@/lib/utils';
+import { triggerLightImpact } from '@/lib/haptics';
 
 interface OrderState {
   eventType: 'pejabat' | 'lain' | '';
@@ -93,7 +94,7 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
           <Button
             type="button"
             variant="ghost"
@@ -218,7 +219,7 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
         </Label>
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
           <button
             type="button"
             data-tour="step1-prep-buffet"
@@ -243,9 +244,9 @@ export function Step1EventMeal({
             )}>
               <UtensilsCrossed className="w-4 h-4" />
             </div>
-            <div className="min-w-0 pr-4">
-              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white truncate">{tText('Buffet Style', 'Hidangan Bufet')}</span>
-              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
+            <div className="min-w-0 pr-2">
+              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Buffet Style', 'Hidangan Bufet')}</span>
+              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
             </div>
           </button>
 
@@ -273,9 +274,9 @@ export function Step1EventMeal({
             )}>
               <Package className="w-4 h-4" />
             </div>
-            <div className="min-w-0 pr-4">
-              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white truncate">{tText('Pre-Pack Box', 'Set Box')}</span>
-              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block truncate mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
+            <div className="min-w-0 pr-2">
+              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Pre-Pack Box', 'Set Box')}</span>
+              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
             </div>
           </button>
         </div>
@@ -297,7 +298,7 @@ export function Step1EventMeal({
             <button
               type="button"
               aria-label={tText('Decrease quantity', 'Kurangkan kuantiti')}
-              onClick={() => adjustGuests(-1)}
+              onClick={() => { triggerLightImpact(); adjustGuests(-1); }}
               className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
             >
               –
@@ -332,7 +333,7 @@ export function Step1EventMeal({
               type="button"
               data-tour="step1-guests-plus"
               aria-label={tText('Increase quantity', 'Tambah kuantiti')}
-              onClick={() => adjustGuests(1)}
+              onClick={() => { triggerLightImpact(); adjustGuests(1); }}
               className="w-11 h-11 rounded-xl bg-card dark:bg-stone-800 border border-stone/15 dark:border-white/10 flex items-center justify-center font-bold text-xl hover:border-crisp-carrot hover:text-crisp-carrot cursor-pointer transition-colors shadow-sm select-none active:scale-95 text-deep-forest dark:text-white"
             >
               +

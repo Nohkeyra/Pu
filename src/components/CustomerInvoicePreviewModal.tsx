@@ -116,11 +116,11 @@ export function CustomerInvoicePreviewModal({
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Pratonton Invois Katering Lipatan Kertas' : 'Origami Paper Catering Invoice Preview'}
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-6 overflow-y-auto max-sm:p-0 max-sm:items-end"
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl my-auto flex flex-col items-center justify-center relative"
+        className="w-full max-w-2xl my-auto max-sm:my-0 max-sm:mt-auto flex flex-col items-center justify-center relative"
         style={{ perspective: 1400 }}
         onClick={(e) => e.stopPropagation()}
       >
