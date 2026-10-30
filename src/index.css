@@ -156,22 +156,22 @@
     --safe-area-inset-right: var(--sar);
 
     /* Logo-Derived Brand Tokens (light) */
-    --color-deep-forest: #0c453c;
-    --color-forest: #0c453c;
-    --color-light-forest: rgba(12, 69, 60, 0.10);
-    --color-deep-forest-accent: #0c453c;
+    --color-deep-forest: #121e1a;
+    --color-forest: #121e1a;
+    --color-light-forest: rgba(18, 30, 26, 0.08);
+    --color-deep-forest-accent: #121e1a;
     --color-sunshine: #f69913;
     --color-honey: #f69913;
     --color-crisp-carrot: #e96212;
     --color-tomato-burst: #e03f14;
     --color-kiwi: #e96212;
     --color-fern: #e96212;
-    --color-sunshine-cta: #9a3412;
-    --color-sunshine-cta-bg: #9a3412;
+    --color-sunshine-cta: #e03f14;
+    --color-sunshine-cta-bg: #e03f14;
     --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #7c2d12;
-    --color-sunshine-cta-press: #602008;
-    --color-on-sunshine: #0c453c;
+    --color-sunshine-cta-hover: #c8340d;
+    --color-sunshine-cta-press: #a52809;
+    --color-on-sunshine: #121e1a;
     --color-on-crisp-carrot: #ffffff;
     --color-on-tomato-burst: #ffffff;
     --color-on-deep-forest: #ffffff;
@@ -190,50 +190,50 @@
     --radius-lg: 1rem;
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
-    /* Lively & Happening Warm Canvas Foundation */
-    --color-cream: #fffdf9;
-    --color-cream-dark: rgba(246, 153, 19, 0.10);
-    --color-charcoal: #0c453c;
-    --color-stone: rgba(12, 69, 60, 0.82);
-    --background: 38 60% 98%;
-    --foreground: 171 70% 16%;
-    --card: 0 0% 100%;
-    --card-foreground: 171 70% 16%;
+    /* Warm Parchment Foundation */
+    --color-cream: #fdfbf7;
+    --color-cream-dark: rgba(246, 153, 19, 0.08);
+    --color-charcoal: #121e1a;
+    --color-stone: #52635b;
+    --background: 40 40% 98%;     /* #FDFBF7 */
+    --foreground: 160 26% 9%;     /* #121E1A */
+    --card: 0 0% 100%;            /* #FFFFFF */
+    --card-foreground: 160 26% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 171 70% 16%;
-    --primary: 18 88% 44%;
+    --popover-foreground: 160 26% 9%;
+    --primary: 13 84% 48%;        /* #E03F14 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 38 92% 95%;
-    --secondary-foreground: 171 70% 16%;
-    --muted: 36 60% 95%;
-    --muted-foreground: 171 45% 24%;
-    --accent: 24 94% 50%;
+    --secondary: 40 30% 95%;
+    --secondary-foreground: 160 26% 9%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 156 10% 35%; /* #52635B */
+    --accent: 35 93% 52%;         /* #F69913 */
     --accent-foreground: 0 0% 100%;
     --destructive: 13 84% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 35 30% 88%;
-    --input: 35 30% 88%;
-    --ring: 24 94% 50%;
+    --border: 30 18% 90%;         /* #EBE5DF */
+    --input: 30 18% 90%;
+    --ring: 35 93% 52%;
     --radius: 0.5rem;
     --color-selection-bg: rgba(246, 153, 19, 0.32);
-    --color-selection-text: #0c453c;
+    --color-selection-text: #121e1a;
     --color-scrollbar-track: rgba(246, 153, 19, 0.05);
     --color-scrollbar-thumb: rgba(233, 98, 18, 0.35);
     --color-scrollbar-hover: #e96212;
     --color-input-bg: #ffffff;
-    --color-input-text: #0c453c;
-    --color-input-border: rgba(246, 153, 19, 0.30);
+    --color-input-text: #121e1a;
+    --color-input-border: #ebe5df;
     --color-input-focus-shadow: rgba(224, 63, 20, 0.25);
-    --color-header-bg: rgba(255, 253, 249, 0.94);
-    --color-header-border: rgba(246, 153, 19, 0.16);
+    --color-header-bg: rgba(253, 251, 247, 0.90);
+    --color-header-border: #ebe5df;
     --color-card-bg: #ffffff;
-    --color-card-border: rgba(246, 153, 19, 0.15);
+    --color-card-border: #ebe5df;
   }
 
   .dark {
-    /* Refined 4-Color Dark Mode: Obsidian Canvas, Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
+    /* Refined Dark Mode: Obsidian Canvas, Warm Alabaster Text, Amber Accents */
     --color-deep-forest: #ede5d8;
-    --color-forest: #1c2622;
+    --color-forest: #161e1b;
     --color-light-forest: rgba(246, 153, 19, 0.12);
     --color-deep-forest-accent: #f69913;
     --color-sunshine: #f69913;
@@ -242,11 +242,11 @@
     --color-tomato-burst: #e03f14;
     --color-kiwi: #e96212;
     --color-fern: #e96212;
-    --color-sunshine-cta: #a3310e;
-    --color-sunshine-cta-bg: #a3310e;
-    --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #882709;
-    --color-sunshine-cta-press: #6e1f06;
+    --color-sunshine-cta: #f69913;
+    --color-sunshine-cta-bg: #f69913;
+    --color-sunshine-cta-fg: #0c100e;
+    --color-sunshine-cta-hover: #e0880a;
+    --color-sunshine-cta-press: #c57500;
     --color-on-sunshine: #0c100e;
     --color-on-crisp-carrot: #ede5d8;
     --color-on-tomato-burst: #ede5d8;
@@ -254,29 +254,29 @@
 
     /* Background and surfaces */
     --color-cream: #0c100e;
-    --color-cream-dark: #151d1a;
+    --color-cream-dark: #161e1b;
     --color-charcoal: #0c100e;
-    --color-stone: #c2bbb0;
+    --color-stone: #94a39a;
 
     /* Tailwind / Radix HSL tokens for .dark */
-    --background: 156 18% 6%;     /* #0C100E */
+    --background: 156 18% 5%;     /* #0C100E */
     --foreground: 38 30% 89%;     /* #EDE5D8 */
-    --card: 160 15% 13%;          /* #1C2622 */
+    --card: 156 14% 10%;          /* #161E1B */
     --card-foreground: 38 30% 89%;/* #EDE5D8 */
-    --popover: 160 15% 13%;       /* #1C2622 */
+    --popover: 156 14% 10%;       /* #161E1B */
     --popover-foreground: 38 30% 89%;
-    --primary: 13 84% 48%;        /* #E03F14 */
-    --primary-foreground: 38 30% 89%;
-    --secondary: 160 12% 18%;     /* #26312D */
+    --primary: 35 93% 52%;        /* #F69913 */
+    --primary-foreground: 156 18% 5%;
+    --secondary: 156 12% 14%;
     --secondary-foreground: 38 30% 89%;
-    --muted: 160 10% 15%;
-    --muted-foreground: 38 20% 78%; /* #D6CFB9 */
+    --muted: 156 10% 12%;
+    --muted-foreground: 150 8% 61%; /* #94A39A */
     --accent: 35 93% 52%;         /* #F69913 */
-    --accent-foreground: 156 18% 6%;
+    --accent-foreground: 156 18% 5%;
     --destructive: 13 84% 48%;
     --destructive-foreground: 38 30% 89%;
-    --border: 160 10% 20%;
-    --input: 160 10% 20%;
+    --border: 156 10% 16%;
+    --input: 156 10% 16%;
     --ring: 35 93% 52%;
 
     --color-selection-bg: rgba(246, 153, 19, 0.40);
@@ -284,14 +284,14 @@
     --color-scrollbar-track: #0c100e;
     --color-scrollbar-thumb: rgba(246, 153, 19, 0.35);
     --color-scrollbar-hover: #f69913;
-    --color-input-bg: #151d1a;
+    --color-input-bg: #161e1b;
     --color-input-text: #ede5d8;
-    --color-input-border: rgba(246, 153, 19, 0.25);
+    --color-input-border: rgba(246, 153, 19, 0.20);
     --color-input-focus-shadow: rgba(246, 153, 19, 0.35);
-    --color-header-bg: rgba(12, 16, 14, 0.92);
-    --color-header-border: rgba(237, 229, 216, 0.08);
-    --color-card-bg: #1c2622;
-    --color-card-border: rgba(237, 229, 216, 0.08);
+    --color-header-bg: rgba(12, 16, 14, 0.85);
+    --color-header-border: rgba(246, 153, 19, 0.12);
+    --color-card-bg: #161e1b;
+    --color-card-border: rgba(246, 153, 19, 0.12);
   }
 
   * {
