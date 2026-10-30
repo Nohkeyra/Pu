@@ -647,17 +647,6 @@ export default function CalendarPage() {
     ? (selectedDaySessions.breakfast.pax + selectedDaySessions.lunch.pax + selectedDaySessions.hi_tea.pax)
     : 0;
 
-  const todayAction = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleToday}
-      className="text-xs font-semibold px-3 py-1.5 h-auto rounded-lg"
-    >
-      {tl('Today', 'Hari Ini')}
-    </Button>
-  );
-
   return (
     <ErrorBoundary>
       <PageShell
@@ -669,34 +658,40 @@ export default function CalendarPage() {
           : tl('Kitchen availability & bookings', 'Ketersediaan & tempahan')}
         showBatik={true}
         backHref="/home"
-        actions={todayAction}
       >
         <div className="w-full space-y-5 pb-20">
 
           {/* 1. CALENDAR CONTROLS & HEADER */}
-          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors duration-200">
-            <div className="flex items-center justify-between gap-4">
+          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-3.5 sm:p-5 shadow-xs transition-colors duration-200">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={handlePrevMonth}
-                className="rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
+                className="h-10 w-10 rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
                 aria-label={tl('Previous Month', 'Bulan Sebelumnya')}
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
 
-              <div className="text-center flex-1">
-                <h2 className="font-display font-bold text-lg sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
+              <div className="text-center flex-1 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3">
+                <h2 className="font-display font-bold text-base sm:text-xl md:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
                   {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
                 </h2>
+                <button
+                  type="button"
+                  onClick={handleToday}
+                  className="text-xs font-bold px-2.5 py-1 rounded-lg border border-amber-600/30 text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all active:scale-95 shrink-0"
+                >
+                  {tl('Today', 'Hari Ini')}
+                </button>
               </div>
 
               <Button
                 variant="secondary"
                 size="icon"
                 onClick={handleNextMonth}
-                className="rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
+                className="h-10 w-10 rounded-xl shrink-0 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200 dark:hover:bg-stone-700 border border-stone-200/60 dark:border-stone-700/60"
                 aria-label={tl('Next Month', 'Bulan Seterusnya')}
               >
                 <ChevronRight className="w-5 h-5" />
@@ -745,7 +740,7 @@ export default function CalendarPage() {
                 {prevMonthDays.map((pDay) => (
                   <div
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
+                    className="min-h-[56px] sm:min-h-[84px] md:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(pDay, 'd')}
@@ -776,7 +771,7 @@ export default function CalendarPage() {
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
                       className={cn(
-                        "min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60",
+                        "min-h-[56px] sm:min-h-[84px] md:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60",
                         isDaySelected 
                           ? "ring-2 ring-inset ring-crisp-carrot bg-orange-50/70 dark:bg-orange-950/30 z-10" 
                           : holiday
@@ -830,27 +825,27 @@ export default function CalendarPage() {
                         {hasOrders ? (
                           <div className="space-y-1">
                             {/* Meal Badges */}
-                            <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                               {sessions.breakfast.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-warning)] text-stone-950 dark:text-white shadow-2xs leading-none">
+                                <span className="px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-extrabold bg-[var(--color-warning)] text-stone-950 dark:text-white shadow-2xs leading-none">
                                   B
                                 </span>
                               )}
                               {sessions.lunch.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-success)] text-white shadow-2xs leading-none">
+                                <span className="px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-extrabold bg-[var(--color-success)] text-white shadow-2xs leading-none">
                                   L
                                 </span>
                               )}
                               {sessions.hi_tea.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-accent)] text-white shadow-2xs leading-none">
+                                <span className="px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-extrabold bg-[var(--color-accent)] text-white shadow-2xs leading-none">
                                   T
                                 </span>
                               )}
                             </div>
 
                             {/* Pax summary line */}
-                            <div className="text-xs font-bold tracking-tight text-stone-500 dark:text-stone-400 truncate flex items-center gap-1">
-                              <span className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums text-xs leading-none">
+                            <div className="text-[10px] sm:text-xs font-bold tracking-tight text-stone-500 dark:text-stone-400 truncate flex items-center gap-1">
+                              <span className="px-1 sm:px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums leading-none">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
                               <span className="hidden sm:inline opacity-75 font-medium text-xs">
@@ -870,7 +865,7 @@ export default function CalendarPage() {
                 {nextMonthDays.map((nDay) => (
                   <div
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
+                    className="min-h-[56px] sm:min-h-[84px] md:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(nDay, 'd')}
@@ -950,7 +945,7 @@ export default function CalendarPage() {
                     {getOrdersForDay(selectedDay).length === 0 ? (
                       <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
                         <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                          {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
+                          {tl('Booking is warmly welcomed. No events scheduled for this date yet.', 'Sedia menerima tempahan majlis anda. Tiada tempahan dijadualkan lagi.')}
                         </p>
                         <Button
                           variant="primary"

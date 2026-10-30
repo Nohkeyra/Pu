@@ -79,7 +79,7 @@ const HighlightsSection = React.memo(() => {
               <motion.div
                 key={item.title}
                 variants={cardVariants}
-                className={`group relative overflow-hidden p-8 rounded-[2rem] bg-white/90 dark:bg-card/40 backdrop-blur-xl border border-amber-500/20 dark:border-white/5 transition-all duration-500 shadow-[0_12px_32px_-8px_rgba(246,153,19,0.12)] hover:shadow-[0_24px_50px_-10px_rgba(233,98,18,0.22)] hover:border-amber-500/45 ${item.className}`}
+                className={`group relative overflow-hidden p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2rem] bg-white/90 dark:bg-card/40 backdrop-blur-xl border border-amber-500/20 dark:border-white/5 transition-all duration-500 shadow-[0_12px_32px_-8px_rgba(246,153,19,0.12)] hover:shadow-[0_24px_50px_-10px_rgba(233,98,18,0.22)] hover:border-amber-500/45 ${item.className}`}
               >
                 {/* Accent Gradient */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />

@@ -241,3 +241,34 @@ describe('legacy cleanup and unlock flag', () => {
     setAdminBiometricUnlocked(false);
   });
 });
+
+describe('widget token refresh sync', () => {
+  const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const jwt = (sub: string) => `${b64({ alg: 'none' })}.${b64({ sub })}.sig`;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(platform.isAndroidApk).mockReturnValue(false);
+    vi.mocked(preferences.setSecureItem).mockResolvedValue(undefined);
+  });
+
+  it('refreshes the stored token for the same admin user', async () => {
+    const { syncRefreshedAdminToken } = await import('./authService');
+    vi.mocked(preferences.getSecureItem).mockResolvedValue(jwt('admin-uid'));
+    const fresh = jwt('admin-uid') + 'x';
+
+    expect(await syncRefreshedAdminToken('admin-uid', fresh)).toBe(true);
+    expect(preferences.setSecureItem).toHaveBeenCalledWith(ADMIN_TOKEN_KEY, fresh);
+  });
+
+  it('never creates a session or syncs another user\'s token', async () => {
+    const { syncRefreshedAdminToken } = await import('./authService');
+
+    vi.mocked(preferences.getSecureItem).mockResolvedValue(null);
+    expect(await syncRefreshedAdminToken('admin-uid', jwt('admin-uid'))).toBe(false);
+
+    vi.mocked(preferences.getSecureItem).mockResolvedValue(jwt('admin-uid'));
+    expect(await syncRefreshedAdminToken('customer-uid', jwt('customer-uid'))).toBe(false);
+    expect(preferences.setSecureItem).not.toHaveBeenCalled();
+  });
+});

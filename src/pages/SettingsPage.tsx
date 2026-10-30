@@ -9,8 +9,8 @@ import { ColorSwatch } from '@/components/ui/color-swatch';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
+import PageShell from '@/components/PageShell';
 import {
-  ArrowLeft,
   Globe,
   Bell,
   Cpu,
@@ -79,18 +79,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-function BrandMark() {
-  return (
-    <div className="h-9 w-9 flex items-center justify-center">
-      <TransparentLogo
-        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-        alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
-      />
-    </div>
-  );
-}
 
 interface SettingsRowProps {
   icon: React.ElementType;
@@ -823,51 +811,13 @@ export default function SettingsPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-cream dark:bg-background pb-28 sm:pb-32 relative">
-        {/* Top Header */}
-        <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
-          <div className="max-w-3xl mx-auto flex items-center justify-between px-4 sm:px-6 min-h-[58px] sm:min-h-[64px]">
-            {/**
-             * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
-             * Semantic identity header & logo touch target navigating to /home.
-             * Not a standard action button; exempt from <Button> primitive migration.
-             */}
-            <button
-              type="button"
-              onClick={() => navigate('/home', { replace: true })}
-              className="touch-target-row flex items-center gap-2.5 group text-left"
-              aria-label="Go to home"
-            >
-              <BrandMark />
-              <div>
-                <span className="font-display font-bold text-lg page-header-text leading-tight block">
-                  Restoran Wawasan
-                </span>
-                <span className="block text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)] leading-none mt-0.5">
-                  Pak Usop
-                </span>
-              </div>
-            </button>
-
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                await triggerLightImpact();
-                navigate(-1);
-              }}
-              className="touch-target rounded-full h-9 px-3.5 text-stone-600 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white font-semibold text-xs"
-            >
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              {language === 'bm' ? 'Kembali' : 'Back'}
-            </Button>
-          </div>
-        </header>
-
+      <PageShell
+        title={language === 'bm' ? 'Tetapan' : 'Settings'}
+        subtitle={language === 'bm' ? 'Pilihan Aplikasi & Sistem' : 'Preferences & Diagnostics'}
+        backHref="/home"
+      >
         {/* Content Container */}
-        <div
-          className="pt-24 sm:pt-28 max-w-2xl mx-auto px-4 sm:px-6 space-y-6"
-          style={{ paddingTop: 'calc(76px + var(--sat, 0px))' }}
-        >
+        <div className="max-w-2xl mx-auto space-y-6 w-full py-4 pb-20">
           {/* Page Heading */}
           <div className="px-1 pt-1 pb-1">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-deep-forest dark:text-white tracking-tight">
@@ -2195,7 +2145,7 @@ export default function SettingsPage() {
           isOpen={diagnosticOpen}
           onClose={() => setDiagnosticOpen(false)}
         />
-      </div>
+      </PageShell>
     </ErrorBoundary>
   );
 }

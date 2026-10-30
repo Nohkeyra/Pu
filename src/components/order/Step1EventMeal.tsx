@@ -93,7 +93,7 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
           <Button
             type="button"
             variant="ghost"
@@ -218,7 +218,7 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
           {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
         </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
           <button
             type="button"
             data-tour="step1-prep-buffet"

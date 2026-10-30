@@ -3,6 +3,7 @@ package com.wawasanpakusop.app.widgets
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -29,6 +30,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.wawasanpakusop.app.MainActivity
 import com.wawasanpakusop.app.widget.OrderDetailActivity
 import com.wawasanpakusop.app.widget.WidgetUpdateService
@@ -108,7 +110,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#0B100E")))
+            .background(ColorProvider(Color(0xFF0B100E)))
             .padding(12.dp)
     ) {
         // Header
@@ -121,7 +123,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
             Text(
                 text = "🍽️ Tempahan Wawasan",
                 style = TextStyle(
-                    color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#E0E6E2")),
+                    color = ColorProvider(Color(0xFFE0E6E2)),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 ),
@@ -129,14 +131,14 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
             )
             Box(
                 modifier = GlanceModifier
-                    .background(androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#1B2E23")))
+                    .background(ColorProvider(Color(0xFF1B2E23)))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .clickable(refreshAction)
             ) {
                 Text(
                     text = "🔄 Segar",
                     style = TextStyle(
-                        color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#4ADE80")),
+                        color = ColorProvider(Color(0xFF4ADE80)),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -154,7 +156,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                 Text(
                     text = "Tiada tempahan akan datang.",
                     style = TextStyle(
-                        color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#8E9E95")),
+                        color = ColorProvider(Color(0xFF8E9E95)),
                         fontSize = 13.sp
                     )
                 )
@@ -180,7 +182,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                            .background(androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#141D17")))
+                            .background(ColorProvider(Color(0xFF141D17)))
                             .padding(10.dp)
                             .clickable(rowClick)
                     ) {
@@ -189,7 +191,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                                 Text(
                                     text = order.company,
                                     style = TextStyle(
-                                        color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#FFFFFF")),
+                                        color = ColorProvider(Color(0xFFFFFFFF)),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold
                                     ),
@@ -198,7 +200,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                                 Text(
                                     text = "${order.quantity} pax",
                                     style = TextStyle(
-                                        color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#38BDF8")),
+                                        color = ColorProvider(Color(0xFF38BDF8)),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -208,7 +210,7 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                             Text(
                                 text = "📅 ${order.dateLabel} • ⏰ ${order.timeLabel}",
                                 style = TextStyle(
-                                    color = androidx.glance.unit.ColorProvider(android.graphics.Color.parseColor("#A3B8AD")),
+                                    color = ColorProvider(Color(0xFFA3B8AD)),
                                     fontSize = 11.sp
                                 )
                             )

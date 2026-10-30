@@ -196,12 +196,12 @@ export default function Header() {
               size="sm"
               type="button"
               onClick={toggleLanguage}
-              className={`${desktopActionClass} gap-1.5 text-xs font-bold`}
+              className={`${desktopActionClass} min-w-[58px] gap-1.5 text-xs font-bold`}
               aria-label="Toggle Language"
             >
-              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)]' : ''}>EN</span>
+              <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-black' : ''}>EN</span>
               <span className={isScrolled ? 'text-deep-forest/25 dark:text-white/25' : 'text-white/30'}>/</span>
-              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)]' : ''}>BM</span>
+              <span className={language === 'bm' ? 'text-[var(--color-sunshine-cta)] font-black' : ''}>BM</span>
             </Button>
 
             <NotificationBell

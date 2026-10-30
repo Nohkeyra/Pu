@@ -16,7 +16,9 @@ import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/BatikMotionProvider';
 import { useBackgroundSync } from './hooks/useBackgroundSync';
 import { initInteractiveNotifications } from './services/interactiveNotifications';
-import { purgeLegacyPlaintextCredentials } from './services/authService';
+import { purgeLegacyPlaintextCredentials, syncRefreshedAdminToken } from './services/authService';
+import { onIdTokenChanged } from 'firebase/auth';
+import { auth } from './firebaseConfig';
 
 // Lazy-loaded secondary modals and diagnostics
 const GlobalInAppUpdateHandler = lazy(() => import('./components/GlobalInAppUpdateHandler'));
@@ -116,6 +118,12 @@ function App() {
     // Preferences/localStorage). Idempotent, cheap, never throws.
     void purgeLegacyPlaintextCredentials();
 
+    // Keep the native widget's admin token fresh while the app runs (Firebase rotates it hourly).
+    const unsubscribeIdToken = onIdTokenChanged(auth, (user) => {
+      if (!user) return;
+      void user.getIdToken().then((fresh) => syncRefreshedAdminToken(user.uid, fresh)).catch(() => undefined);
+    });
+
     // Background ping with 2.5s abort timeout to wake up backend immediately on app launch
     const healthController = new AbortController();
     const healthTimeout = setTimeout(() => healthController.abort(), 2500);
@@ -185,6 +193,7 @@ function App() {
     initializeNativePlugins();
 
     return () => {
+      unsubscribeIdToken();
       if (safeAreaListenerHandle) {
         safeAreaListenerHandle.remove();
       }

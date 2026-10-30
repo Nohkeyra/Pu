@@ -6,11 +6,10 @@ import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, User as UserIcon, LogIn, UserPlus, ArrowRight } from 'lucide-react';
-import { getAssetUrl } from '@/lib/utils';
+import { User as UserIcon, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
-import { TransparentLogo } from '@/components/TransparentLogo';
 import AuthModal from '@/components/AuthModal';
+import PageShell from '@/components/PageShell';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -42,54 +41,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative">
-      {/*
-        P0 — standardised dark-mode text colour override so header
-        label stays legible in both modes.  Page Shell-like surface
-        (.glass-header) is reused so behaviour matches other pages.
-      */}
-      <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
-        <div className="flex items-center justify-between px-4 sm:px-6 min-h-[60px] sm:min-h-[64px]">
-          {/**
-           * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
-           * Semantic brand logo and page-title touch target navigating to /home.
-           * Not a standard action button; exempt from <Button> primitive migration.
-           */}
-          <button
-            type="button"
-            onClick={() => navigate('/home')}
-            className="touch-target-row flex items-center gap-3 text-left"
-            aria-label="Go to home"
-          >
-            <div className="h-10 w-10 flex items-center justify-center">
-              {/*
-                Brand asset path preserved verbatim — visual logo /
-                Malaysian heritage graphic must remain 100% intact.
-              */}
-              <TransparentLogo
-                src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-                alt="Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <span className="font-display font-semibold text-xl page-header-text tracking-tight">
-                {t('nav_profile')}
-              </span>
-            </div>
-          </button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="touch-target-row rounded-full min-h-[44px] text-stone hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('back')}
-          </Button>
-        </div>
-      </header>
-
-      <div className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
+    <PageShell
+      title={t('nav_profile') || 'Profil'}
+      subtitle={language === 'bm' ? 'Papan Pemuka Pelanggan' : 'Customer Profile'}
+      backHref="/home"
+    >
+      <div className="max-w-4xl mx-auto space-y-6 w-full py-4 pb-20">
         {!currentUser ? (
           <Card className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -176,6 +133,6 @@ export default function ProfilePage() {
         onClose={() => setAuthModalOpen(false)}
         initialMode={authMode}
       />
-    </div>
+    </PageShell>
   );
 }

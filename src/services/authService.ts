@@ -629,6 +629,42 @@ export async function saveAdminToken(token: string): Promise<void> {
   }
 }
 
+/** Reads the subject (uid) from a JWT without verifying it. Used only to match tokens to a user. */
+function jwtSubject(token: string | null): string | null {
+  try {
+    if (!token) return null;
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(json) as { user_id?: string; sub?: string; uid?: string };
+    return payload.user_id || payload.sub || payload.uid || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Firebase rotates its ID token about hourly. The home-screen widget reads the copy in native
+ * storage, so without this it starts failing an hour after the admin last opened the app.
+ * Called from Firebase's token-change listener: refreshes the stored + native copy ONLY when
+ * an admin session already exists for the same Firebase user. It never creates a session,
+ * never fires the login-state event (that would re-verify and loop), and never syncs a
+ * customer's token.
+ */
+export async function syncRefreshedAdminToken(uid: string, freshToken: string): Promise<boolean> {
+  try {
+    const stored = await getStoredAdminToken();
+    if (!stored || !freshToken || stored === freshToken) return false;
+    if (jwtSubject(stored) !== uid) return false;
+    await setSecureItem(ADMIN_TOKEN_KEY, freshToken);
+    await syncAdminTokenToNative(freshToken);
+    return true;
+  } catch (err) {
+    console.warn('[AuthService] Could not refresh admin token copy:', err);
+    return false;
+  }
+}
+
 /**
  * Clear the admin session (server-side logout, stored token, native widget token).
  *
