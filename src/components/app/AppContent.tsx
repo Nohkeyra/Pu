@@ -264,7 +264,7 @@ export default function AppContent() {
         </div>
       </motion.div>
 
-      <div id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
+      <main id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
         <RouteErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
             <AnimatePresence mode="wait">
@@ -272,7 +272,7 @@ export default function AppContent() {
             </AnimatePresence>
           </Suspense>
         </RouteErrorBoundary>
-      </div>
+      </main>
       <BottomNavigation />
     </div>
   );

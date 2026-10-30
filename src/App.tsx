@@ -16,6 +16,7 @@ import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/BatikMotionProvider';
 import { useBackgroundSync } from './hooks/useBackgroundSync';
 import { initInteractiveNotifications } from './services/interactiveNotifications';
+import { purgeLegacyPlaintextCredentials } from './services/authService';
 
 // Lazy-loaded secondary modals and diagnostics
 const GlobalInAppUpdateHandler = lazy(() => import('./components/GlobalInAppUpdateHandler'));
@@ -110,6 +111,10 @@ function App() {
     // already keep Preferences and localStorage in lockstep on every actual
     // login/logout, so this boot-time sync was redundant as well as unsafe.
     // Removed rather than awaited/reordered to eliminate the race outright.
+
+    // Remove plaintext credentials written by older builds (e-mail/password copies in
+    // Preferences/localStorage). Idempotent, cheap, never throws.
+    void purgeLegacyPlaintextCredentials();
 
     // Background ping with 2.5s abort timeout to wake up backend immediately on app launch
     const healthController = new AbortController();

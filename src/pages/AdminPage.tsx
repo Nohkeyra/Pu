@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '@/components/AdminPanel';
 import AuthModal from '@/components/AuthModal';
@@ -27,6 +27,7 @@ export default function AdminPage() {
     user,
     isInitializing,
     hasAdminBiometrics,
+    isCheckingBiometrics,
     isBiometricLoading,
     error,
     authenticateBiometric,
@@ -54,6 +55,23 @@ export default function AdminPage() {
       });
     }
   }, [authenticateBiometric, t, toast]);
+
+  // Standard biometric flow: opening the admin gate on a device with biometrics enabled
+  // shows the system prompt once. Cancelling keeps the manual button and password login.
+  const autoPromptedRef = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated) {
+      autoPromptedRef.current = false; // re-arm so a later re-lock prompts again
+      return;
+    }
+    if (isInitializing || isCheckingBiometrics || !hasAdminBiometrics || autoPromptedRef.current) return;
+    const timer = window.setTimeout(() => {
+      if (autoPromptedRef.current || document.visibilityState !== 'visible') return;
+      autoPromptedRef.current = true;
+      void handleBiometricUnlock();
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [isAuthenticated, isInitializing, isCheckingBiometrics, hasAdminBiometrics, handleBiometricUnlock]);
 
   if (isInitializing) {
     return (
@@ -106,14 +124,13 @@ export default function AdminPage() {
               </Button>
             )}
 
-            {!user ? (
-              <Button 
-                onClick={() => setAuthOpen(true)} 
-                className="w-full bg-[var(--color-sunshine-cta)] text-white hover:opacity-90 font-medium h-11"
-              >
-                {t('Log In with Password', 'Log Masuk dengan Kata Laluan')}
-              </Button>
-            ) : (
+            <Button 
+              onClick={() => setAuthOpen(true)} 
+              className="w-full bg-[var(--color-sunshine-cta)] text-white hover:opacity-90 font-medium h-11"
+            >
+              {t('Log In with Password', 'Log Masuk dengan Kata Laluan')}
+            </Button>
+            {user && (
               <Button onClick={logout} variant="outline" className="w-full h-11">
                 {t('Sign Out', 'Log Keluar')}
               </Button>
@@ -129,6 +146,7 @@ export default function AdminPage() {
           onClose={() => setAuthOpen(false)}
           onSuccess={() => setAuthOpen(false)}
           isAdminAuth={true}
+          autoPromptBiometric={false}
         />
       </div>
     );

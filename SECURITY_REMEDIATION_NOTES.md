@@ -46,3 +46,19 @@ This is a coordinated server + Android change. Do not deploy only one side and a
 - Review broad origin suffixes in the central CORS allowlist separately. This patch removes the platform middleware's wildcard CORS override, but does not claim that every origin allowlist entry has been fully hardened.
 - Review the public contents of Firebase `app_config`, `settings`, and `restaurant_metadata` documents against the deployed rules.
 - Confirm deployed secrets, Firebase rules and API configuration in the real production environment without exposing secret values.
+
+## Biometric / session hardening (follow-up patch)
+
+- Biometric enrolment is opt-in, native Android keystore only, and confirmed with a fingerprint/face prompt before anything is saved. There is no plaintext fallback; `purgeLegacyPlaintextCredentials()` removes keys written by older builds on every boot (including an admin "token" that was really the password).
+- Opening the member sign-in form or the admin gate with biometrics enabled shows the system prompt once; cancelling falls back to the password form. Member and admin biometrics are fully separate.
+- A persisted Firebase/admin session no longer bypasses the admin biometric check: the admin panel stays locked until this app launch passes biometrics (or a fresh password login), and re-locks after 5 minutes in the background.
+- Logout keeps biometric enrolment; only the explicit "disable" switch deletes keystore credentials. Stale credentials (password changed) are removed automatically.
+- CORS: `claude.ai` / `anthropic.com` removed; any-port localhost only outside production. Platform detector no longer trusts every `*.google.com`; referer allow-list no longer lists claude.ai/anthropic.com.
+- Firestore: only `app_config/version` is public-read (rules not yet tested against the emulator or deployed).
+
+## Accepted / open items
+
+- `capacitor-native-biometric` 4.2.2 does not bind its Keystore key to user authentication (confirmed in its Java source), so the biometric check is an app-level gate. Hardware-bound protection needs a plugin or custom native code using `setUserAuthenticationRequired(true)`; not done here because it cannot be built or device-tested in this environment.
+- `npm audit --omit=dev`: 4 moderate. `@hono/node-server` (via `@modelcontextprotocol/node`, `serveStatic` is not used by this repo) and `uuid` (via `exceljs`/`gaxios`, fix is a breaking `exceljs` downgrade). `npm audit fix` itself crashed in this environment; revisit on a normal machine.
+- UI helpers (Header, BottomNavigation, etc.) still infer "admin" from a stored token for display only; the server verifies every admin request.
+- Confirming deployed secrets, Firebase rules deployment and widget behaviour on a physical device must be done in the real environment.

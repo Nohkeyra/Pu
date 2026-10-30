@@ -57,13 +57,16 @@ function isAllowedOrigin(origin: string): boolean {
   const ALLOWED_HOSTS = new Set([
     'aistudio.google.com',
     'ai.studio',
-    'claude.ai',
-    'anthropic.com',
-    'localhost',
-    '127.0.0.1',
   ]);
 
   if (ALLOWED_HOSTS.has(hostname)) return true;
+
+  // Any-port localhost is a development convenience only. In production a page served from
+  // a visitor's own machine must not pass CORS; the exact origins the APK and local
+  // tooling need are already listed in ALLOWED_ORIGINS above.
+  if (process.env.NODE_ENV !== 'production' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+    return true;
+  }
 
   // S-6 fix: *.onrender.com and *.run.app wildcards removed — any attacker-controlled
   // subdomain on those shared platforms would otherwise satisfy the CORS check.
@@ -71,8 +74,6 @@ function isAllowedOrigin(origin: string): boolean {
   if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
 
   if (hostname.endsWith('.aistudio.google.com')) return true;
-  if (hostname.endsWith('.claude.ai')) return true;
-  if (hostname.endsWith('.anthropic.com')) return true;
 
   return false;
 }

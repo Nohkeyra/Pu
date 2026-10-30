@@ -43,6 +43,9 @@ import {
   UserCircle,
 } from 'lucide-react';
 import { useAdminBiometric } from '@/hooks/useAdminBiometric';
+import { useCustomerBiometricEnrollment } from '@/hooks/useBiometricEnrollment';
+import { BiometricEnrollDialog } from '@/components/BiometricEnrollDialog';
+import { clearAdminSession } from '@/services/authService';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
@@ -177,7 +180,10 @@ export default function SettingsPage() {
   } = useSettings();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { hasAdminBiometrics, removeBiometrics } = useAdminBiometric({ autoRehydrate: false });
+  const { hasAdminBiometrics, isAvailable: adminBiometricsAvailable, removeBiometrics, checkBiometrics } = useAdminBiometric({ autoRehydrate: false });
+  const customerBiometric = useCustomerBiometricEnrollment();
+  const [adminEnrollOpen, setAdminEnrollOpen] = useState(false);
+  const [customerEnrollOpen, setCustomerEnrollOpen] = useState(false);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [activeVersion, setActiveVersion] = useState(CURRENT_APP_VERSION);
 
@@ -343,8 +349,10 @@ export default function SettingsPage() {
     await triggerMediumImpact();
     setSignOutConfirmOpen(false);
     try {
+      // Clears the admin session everywhere (Preferences + localStorage + native widget token)
+      // and keeps biometric enrolment so the next sign-in can use it.
+      await clearAdminSession();
       await signOut(auth);
-      localStorage.removeItem('wawasan_admin_token');
       sessionStorage.removeItem('wawasan_session_started');
       toast({
         title: language === 'bm' ? 'Log Keluar Berjaya' : 'Signed Out',
@@ -1028,7 +1036,7 @@ export default function SettingsPage() {
 
           {/* SECTION 1: ACCOUNT & SECURITY */}
           <SettingsSection title={language === 'bm' ? 'Akaun & Keselamatan' : 'Account & Security'}>
-            {isAdmin ? (
+            {isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email) ? (
               <>
                 <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-stone-200/70 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]">
                   <div className="flex items-center gap-3 min-w-0">
@@ -1073,36 +1081,14 @@ export default function SettingsPage() {
                 />
 
                 <SettingsRow
-                  icon={Shield}
-                  iconBg="bg-amber-500/10"
-                  iconColor="text-amber-600 dark:text-amber-400"
-                  title={language === 'bm' ? 'Konsol Pentadbir' : 'Admin Operations Console'}
-                  action={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        await triggerLightImpact();
-                        navigate('/admin');
-                      }}
-                      className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
-                    >
-                      <span>{language === 'bm' ? 'Buka' : 'Open'}</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                    </Button>
-                  }
-                />
-
-                <SettingsRow
                   icon={Fingerprint}
                   iconBg="bg-emerald-500/10"
                   iconColor="text-emerald-600 dark:text-emerald-400"
-                  title={language === 'bm' ? 'Log Masuk Cepat Biometrik' : 'Biometric Quick Login'}
+                  title={language === 'bm' ? 'Keselamatan Biometrik Admin' : 'Admin Biometric Security'}
                   action={
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-stone-500 font-medium">
-                        {hasAdminBiometrics ? (language === 'bm' ? 'Aktif' : 'Enabled') : (language === 'bm' ? 'Tidak Aktif' : 'Disabled')}
+                        {hasAdminBiometrics ? (language === 'bm' ? 'Aktif' : 'Enabled') : (language === 'bm' ? 'Sediakan' : 'Set Up')}
                       </span>
                       <Switch
                         checked={hasAdminBiometrics}
@@ -1116,11 +1102,17 @@ export default function SettingsPage() {
                               variant: 'success',
                             });
                           } else {
-                            toast({
-                              title: language === 'bm' ? 'Cara Mengaktifkan' : 'How to Enable',
-                              description: language === 'bm' ? 'Log masuk dengan kata laluan semasa log keluar untuk mendayakan biometrik.' : 'Sign in with password upon next sign in to store biometrics.',
-                              variant: 'success',
-                            });
+                            if (!adminBiometricsAvailable) {
+                              toast({
+                                title: language === 'bm' ? 'Biometrik Tidak Tersedia' : 'Biometrics Unavailable',
+                                description: language === 'bm'
+                                  ? 'Peranti ini tiada cap jari / Face ID yang didaftarkan, atau anda berada dalam pelayar web.'
+                                  : 'This device has no enrolled fingerprint / Face ID, or you are in a web browser.',
+                                variant: 'warning',
+                              });
+                              return;
+                            }
+                            setAdminEnrollOpen(true);
                           }
                         }}
                       />
@@ -1154,19 +1146,15 @@ export default function SettingsPage() {
               <>
                 <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-stone-200/70 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-[var(--color-sunshine-cta)]/15 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold font-display text-base shrink-0">
-                      {currentUser?.displayName
-                        ? currentUser.displayName.charAt(0).toUpperCase()
-                        : currentUser?.email
-                        ? currentUser.email.charAt(0).toUpperCase()
-                        : 'U'}
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold font-display text-base shrink-0">
+                      {currentUser.email?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-deep-forest dark:text-white truncate">
-                        {currentUser?.displayName || (language === 'bm' ? 'Pelanggan Wawasan' : 'Wawasan Customer')}
+                        {currentUser.displayName || (language === 'bm' ? 'Pengguna' : 'User')}
                       </p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
-                        {currentUser?.email || (language === 'bm' ? 'Sesi Aktif' : 'Active Session')}
+                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate font-mono">
+                        {currentUser.email}
                       </p>
                     </div>
                   </div>
@@ -1177,24 +1165,43 @@ export default function SettingsPage() {
                 </div>
 
                 <SettingsRow
-                  icon={UserCircle}
-                  iconBg="bg-[var(--color-sunshine-cta)]/10"
-                  iconColor="text-[var(--color-sunshine-cta)]"
-                  title={language === 'bm' ? 'Maklumat Profil' : 'Profile Information'}
+                  icon={Fingerprint}
+                  iconBg="bg-emerald-500/10"
+                  iconColor="text-emerald-600 dark:text-emerald-400"
+                  title={language === 'bm' ? 'Log Masuk Biometrik' : 'Biometric Login'}
                   action={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        await triggerLightImpact();
-                        navigate('/profile');
-                      }}
-                      className="h-8 px-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white flex items-center gap-1 rounded-xl"
-                    >
-                      <span>{language === 'bm' ? 'Kemas Kini' : 'Update'}</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={customerBiometric.enabled}
+                        onCheckedChange={async (checked) => {
+                          await triggerLightImpact();
+                          if (checked) {
+                            if (!customerBiometric.available) {
+                              toast({
+                                title: language === 'bm' ? 'Biometrik Tidak Tersedia' : 'Biometrics Unavailable',
+                                description: language === 'bm'
+                                  ? 'Peranti ini tiada cap jari / Face ID yang didaftarkan, atau anda berada dalam pelayar web.'
+                                  : 'This device has no enrolled fingerprint / Face ID, or you are in a web browser.',
+                                variant: 'warning',
+                              });
+                              return;
+                            }
+                            setCustomerEnrollOpen(true);
+                            return;
+                          }
+                          const removed = await customerBiometric.disable();
+                          toast({
+                            title: removed
+                              ? (language === 'bm' ? 'Biometrik Dinyahaktifkan' : 'Biometrics Disabled')
+                              : (language === 'bm' ? 'Gagal Menyahaktifkan' : 'Could not disable'),
+                            description: removed
+                              ? (language === 'bm' ? 'Kredensial biometrik dipadam daripada peranti ini.' : 'Biometric credentials removed from this device.')
+                              : (language === 'bm' ? 'Sila cuba lagi.' : 'Please try again.'),
+                            variant: removed ? 'success' : 'error',
+                          });
+                        }}
+                      />
+                    </div>
                   }
                 />
 
@@ -1982,6 +1989,33 @@ export default function SettingsPage() {
         </Dialog>
 
         {/* DIALOG 5: SIGN OUT CONFIRMATION */}
+        <BiometricEnrollDialog
+          open={adminEnrollOpen}
+          onOpenChange={setAdminEnrollOpen}
+          role="admin"
+          onEnabled={() => {
+            void checkBiometrics();
+            toast({
+              title: language === 'bm' ? 'Biometrik Diaktifkan' : 'Biometrics Enabled',
+              description: language === 'bm' ? 'Panel admin kini dibuka dengan cap jari / Face ID.' : 'The admin panel now unlocks with fingerprint / Face ID.',
+              variant: 'success',
+            });
+          }}
+        />
+        <BiometricEnrollDialog
+          open={customerEnrollOpen}
+          onOpenChange={setCustomerEnrollOpen}
+          role="customer"
+          onEnabled={() => {
+            void customerBiometric.refresh();
+            toast({
+              title: language === 'bm' ? 'Biometrik Diaktifkan' : 'Biometrics Enabled',
+              description: language === 'bm' ? 'Lain kali, log masuk dengan cap jari / Face ID.' : 'Next time, sign in with your fingerprint / Face ID.',
+              variant: 'success',
+            });
+          }}
+        />
+
         <Dialog open={signOutConfirmOpen} onOpenChange={setSignOutConfirmOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

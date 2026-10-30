@@ -2,8 +2,9 @@ import type { Request, Response, NextFunction } from 'express';
 
 export type ServerDetectedPlatform = 'android_apk' | 'google_ai_studio_preview' | 'webapp';
 
-const TRUSTED_PREVIEW_SUFFIXES = ['.run.app', '.ai.studio', '.google.com'];
-const TRUSTED_PREVIEW_HOSTS = new Set(['run.app', 'ai.studio', 'google.com']);
+// Narrowed: a bare '.google.com' suffix also matched user-content hosts such as sites/script.google.com.
+const TRUSTED_PREVIEW_SUFFIXES = ['.run.app', '.ai.studio', '.aistudio.google.com'];
+const TRUSTED_PREVIEW_HOSTS = new Set(['run.app', 'ai.studio', 'aistudio.google.com']);
 
 function parseHostname(urlOrHost: string): string | null {
   if (!urlOrHost) return null;

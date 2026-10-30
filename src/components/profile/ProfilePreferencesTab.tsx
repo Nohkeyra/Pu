@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Bell, Mail, Ban, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, Mail, Ban, Settings as SettingsIcon, Fingerprint } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/Toast';
+import { useCustomerBiometricEnrollment } from '@/hooks/useBiometricEnrollment';
+import { BiometricEnrollDialog } from '@/components/BiometricEnrollDialog';
 
 interface ProfilePreferencesTabProps {
   notifyOrderStatus: boolean;
@@ -28,6 +32,9 @@ export function ProfilePreferencesTab({
   t,
 }: ProfilePreferencesTabProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const biometric = useCustomerBiometricEnrollment();
+  const [enrollOpen, setEnrollOpen] = useState(false);
   return (
     <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
       <CardHeader className="pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
@@ -99,6 +106,51 @@ export function ProfilePreferencesTab({
             }}
           />
         </Card>
+
+        {/* Biometric Security: only offered on devices that actually have enrolled biometrics */}
+        {biometric.available && (
+          <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
+            <div className="space-y-0.5 pr-4">
+              <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
+                <Fingerprint className="w-4 h-4 text-primary shrink-0" />
+                <span>{t('Biometric Login Access', 'Log Masuk Biometrik')}</span>
+              </Label>
+              <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5 leading-relaxed">
+                {t('Use Fingerprint or Face ID for faster and secure access to your profile.', 'Gunakan Cap Jari atau Face ID untuk akses profil yang lebih pantas dan selamat.')}
+              </p>
+            </div>
+            <Switch
+              checked={biometric.enabled}
+              onCheckedChange={async (checked) => {
+                if (checked) {
+                  setEnrollOpen(true);
+                  return;
+                }
+                const removed = await biometric.disable();
+                toast({
+                  title: removed ? t('Biometrics Disabled', 'Biometrik Dinyahaktifkan') : t('Could not disable', 'Tidak dapat dinyahaktifkan'),
+                  description: removed
+                    ? t('Biometric credentials removed from this device.', 'Kredensial biometrik dipadam daripada peranti ini.')
+                    : t('Please try again.', 'Sila cuba lagi.'),
+                  variant: removed ? 'success' : 'error',
+                });
+              }}
+            />
+          </Card>
+        )}
+        <BiometricEnrollDialog
+          open={enrollOpen}
+          onOpenChange={setEnrollOpen}
+          role="customer"
+          onEnabled={() => {
+            void biometric.refresh();
+            toast({
+              title: t('Biometrics Enabled', 'Biometrik Diaktifkan'),
+              description: t('Next time, sign in with your fingerprint / Face ID.', 'Lain kali, log masuk dengan cap jari / Face ID.'),
+              variant: 'success',
+            });
+          }}
+        />
 
         {/* Full Application Settings Button */}
         <div className="pt-2">

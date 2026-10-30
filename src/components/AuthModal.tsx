@@ -26,17 +26,16 @@ import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
-import { getSecureItem } from '@/lib/preferences';
 import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 import { 
   checkBiometricAvailability, 
   storeCustomerBiometricCredentials,
-  storeAdminBiometricCredentials,
   authenticateCustomerWithBiometrics,
-  ADMIN_BIOMETRIC_PREF_KEY,
-  CUSTOMER_BIOMETRIC_PREF_KEY
+  deleteCustomerBiometricCredentials,
+  isAdminBiometricsEnabledOnDevice,
+  isCustomerBiometricsEnabledOnDevice,
+  isStaleCredentialError,
 } from '@/services/authService';
-import { isUserAdmin } from '@/constants/auth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -44,11 +43,17 @@ interface AuthModalProps {
   onSuccess?: () => void;
   initialMode?: 'signin' | 'signup' | 'forgot';
   isAdminAuth?: boolean;
+  /**
+   * Show the fingerprint / Face ID prompt automatically when the sign-in form
+   * opens and biometrics are enabled for this role (default true). The admin
+   * gate passes false because it has already prompted before opening this form.
+   */
+  autoPromptBiometric?: boolean;
 }
 
 type AuthMode = 'signin' | 'signup' | 'forgot';
 
-export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin', isAdminAuth = false }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin', isAdminAuth = false, autoPromptBiometric = true }: AuthModalProps) {
   const { language } = useLanguage();
   const { toast } = useToast();
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -69,7 +74,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const [initials, setInitials] = useState(''); // Initial Identifier
 
   // Biometric States
-  const [rememberBiometrics, setRememberBiometrics] = useState(true);
+  const [rememberBiometrics, setRememberBiometrics] = useState(false);
   const [isBiometricHardwareAvailable, setIsBiometricHardwareAvailable] = useState(false);
   const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
 
@@ -86,100 +91,141 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setAttn('');
     setDepartment('');
     setInitials('');
+    setRememberBiometrics(false);
   }, []);
 
   const { authenticateBiometric, loginWithPassword: loginAdminWithPassword } = useAdminBiometric({ autoRehydrate: false });
 
+  const biometricBusyRef = useRef(false);
+  const autoPromptedRef = useRef(false);
+
+  // Hardware + per-role enrolment. Admin form only ever looks at admin biometrics,
+  // member form only at member biometrics: no cross-role prompts.
+  const refreshBiometricState = useCallback(async (): Promise<boolean> => {
+    try {
+      const avail = await checkBiometricAvailability();
+      setIsBiometricHardwareAvailable(avail.isAvailable);
+      const enabled =
+        avail.isAvailable &&
+        (isAdminAuth ? await isAdminBiometricsEnabledOnDevice() : await isCustomerBiometricsEnabledOnDevice());
+      setHasStoredBiometrics(enabled);
+      return enabled;
+    } catch (err) {
+      console.warn('Failed to initialize biometrics:', err);
+      setHasStoredBiometrics(false);
+      return false;
+    }
+  }, [isAdminAuth]);
+
   const handleBiometricLogin = useCallback(async () => {
+    if (biometricBusyRef.current) return;
+    biometricBusyRef.current = true;
+    setIsLoading(true);
+
+    const finishSignedIn = (description: string) => {
+      triggerNotification(NotificationType.Success);
+      toast({ title: t('Success', 'Berjaya'), description, variant: 'success' });
+      resetForm();
+      onSuccess?.();
+      onClose();
+    };
+
     try {
       if (isAdminAuth) {
-        setIsLoading(true);
         const res = await authenticateBiometric({
-          reason: t('Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.', 'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.'),
-          title: t('Pengesahan Biometrik Admin', 'Pengesahan Biometrik Admin'),
+          reason: 'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.',
+          title: 'Pengesahan Biometrik Admin',
         });
         if (res.success) {
-          triggerNotification(NotificationType.Success);
-          toast({
-            title: t('Admin Access Granted', 'Akses Admin Diberikan'),
-            description: t('Successfully verified Admin biometrics!', 'Berjaya disahkan dengan Biometrik Admin!'),
-            variant: 'success'
-          });
-          resetForm();
-          onSuccess?.();
-          onClose();
-        } else {
-          setIsLoading(false);
-          if (res.error && !res.error.toLowerCase().includes('cancel')) {
-            toast({
-              title: t('Biometric Failed', 'Biometrik Gagal'),
-              description: res.error,
-              variant: 'error'
-            });
-          }
+          finishSignedIn(t('Successfully verified Admin biometrics!', 'Berjaya disahkan dengan Biometrik Admin!'));
+          return;
         }
-      } else {
-        setIsLoading(true);
-        const res = await authenticateCustomerWithBiometrics({
-          reason: t('Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.', 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.'),
-          title: t('Pengesahan Biometrik Pelanggan', 'Pengesahan Biometrik Pelanggan'),
-        });
-
-        if (res.success && res.creds) {
-          await signInWithEmailAndPassword(auth, res.creds.email, res.creds.password);
-          triggerNotification(NotificationType.Success);
-          toast({
-            title: t('Success', 'Berjaya'),
-            description: t('Successfully logged in with Biometrics!', 'Berjaya log masuk dengan Biometrik!'),
-            variant: 'success'
-          });
-          resetForm();
-          onSuccess?.();
-          onClose();
-        } else {
-          setIsLoading(false);
-          if (res.error && !res.error.toLowerCase().includes('cancel')) {
-            toast({
-              title: t('Biometric Failed', 'Biometrik Gagal'),
-              description: res.error,
-              variant: 'error'
-            });
-          }
-        }
-      }
-    } catch (err: any) {
-      console.warn('Biometric login failed:', err);
-      setIsLoading(false);
-      const errMsg = err?.message || '';
-      if (!errMsg.toLowerCase().includes('cancel') && !errMsg.toLowerCase().includes('user cancel')) {
+        if (res.cancelled) return; // user chose the password form instead
+        await refreshBiometricState(); // stale credentials may have been removed
         toast({
           title: t('Biometric Failed', 'Biometrik Gagal'),
-          description: t('Fingerprint / Face ID verification failed.', 'Pengesahan cap jari / wajah gagal.'),
+          description: res.error || t('Biometric verification failed.', 'Pengesahan biometrik gagal.'),
           variant: 'error'
         });
+        return;
       }
+
+      const res = await authenticateCustomerWithBiometrics({
+        reason: 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.',
+        title: 'Pengesahan Biometrik Pelanggan',
+      });
+
+      if (res.success && res.creds) {
+        try {
+          await signInWithEmailAndPassword(auth, res.creds.email, res.creds.password);
+        } catch (signErr) {
+          if (isStaleCredentialError(signErr)) {
+            // Password was changed elsewhere: the saved secret is dead, remove it and ask for the password.
+            await deleteCustomerBiometricCredentials();
+            setHasStoredBiometrics(false);
+            toast({
+              title: t('Sign in again', 'Sila Log Masuk Semula'),
+              description: t(
+                'Your password changed. Sign in with your password, then re-enable biometrics.',
+                'Kata laluan anda telah berubah. Log masuk dengan kata laluan, kemudian aktifkan semula biometrik.'
+              ),
+              variant: 'warning'
+            });
+            return;
+          }
+          throw signErr;
+        }
+        finishSignedIn(t('Successfully logged in with Biometrics!', 'Berjaya log masuk dengan Biometrik!'));
+        return;
+      }
+
+      if (res.cancelled) return;
+      await refreshBiometricState();
+      toast({
+        title: t('Biometric Failed', 'Biometrik Gagal'),
+        description: res.lockedOut
+          ? t('Biometrics are temporarily locked. Please use your password.', 'Biometrik dikunci sementara. Sila guna kata laluan.')
+          : t('Verification failed. You can sign in with your password.', 'Pengesahan gagal. Anda boleh log masuk dengan kata laluan.'),
+        variant: 'error'
+      });
+    } catch (err) {
+      console.warn('Biometric login failed:', err);
+      toast({
+        title: t('Biometric Failed', 'Biometrik Gagal'),
+        description: t('An unexpected error occurred during biometric verification.', 'Ralat tidak dijangka berlaku semasa pengesahan biometrik.'),
+        variant: 'error'
+      });
+    } finally {
+      biometricBusyRef.current = false;
+      setIsLoading(false);
     }
-  }, [t, toast, onSuccess, onClose, resetForm, isAdminAuth, authenticateBiometric]);
+  }, [t, toast, onSuccess, onClose, resetForm, isAdminAuth, authenticateBiometric, refreshBiometricState]);
+
+  // Always call the latest handler from timers without re-arming them.
+  const handleBiometricLoginRef = useRef(handleBiometricLogin);
+  useEffect(() => {
+    handleBiometricLoginRef.current = handleBiometricLogin;
+  }, [handleBiometricLogin]);
 
   useEffect(() => {
-    async function initBiometrics() {
-      try {
-        const avail = await checkBiometricAvailability();
-        setIsBiometricHardwareAvailable(avail.isAvailable);
-        
-        const prefKey = isAdminAuth ? ADMIN_BIOMETRIC_PREF_KEY : CUSTOMER_BIOMETRIC_PREF_KEY;
-        const enabled = await getSecureItem(prefKey);
-        if (enabled === 'true') {
-          setHasStoredBiometrics(true);
-        }
-      } catch (err) {
-        console.warn('Failed to initialize biometrics:', err);
-      }
-    }
     if (isOpen) {
-      initBiometrics();
+      void refreshBiometricState();
+    } else {
+      autoPromptedRef.current = false;
     }
-  }, [mode, isOpen, isAdminAuth, handleBiometricLogin]);
+  }, [isOpen, refreshBiometricState]);
+
+  // Standard biometric flow: opening the sign-in form with biometrics enabled shows the
+  // system prompt once. Cancelling leaves the password form (and a retry button) in place.
+  useEffect(() => {
+    if (!isOpen || !autoPromptBiometric || mode !== 'signin' || !hasStoredBiometrics) return;
+    const timer = window.setTimeout(() => {
+      if (autoPromptedRef.current || document.visibilityState !== 'visible') return;
+      autoPromptedRef.current = true;
+      void handleBiometricLoginRef.current();
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, autoPromptBiometric, mode, hasStoredBiometrics]);
 
   useEffect(() => {
     if (isOpen && initialMode) {
@@ -204,6 +250,32 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     return formatted.slice(0, 12);
   };
 
+  const notifyBiometricNotEnabled = () => {
+    toast({
+      title: t('Biometrics not enabled', 'Biometrik Tidak Diaktifkan'),
+      description: t(
+        'Fingerprint / Face ID was not confirmed. You can enable it later in Settings.',
+        'Cap jari / Face ID tidak disahkan. Anda boleh aktifkannya kemudian dalam Tetapan.'
+      ),
+      variant: 'info'
+    });
+  };
+
+  // Opt-in enrolment after a successful password login. Never blocks or fails the login itself.
+  const enrolCustomerBiometrics = async (emailValue: string, passwordValue: string) => {
+    const enrolled = await storeCustomerBiometricCredentials(emailValue, passwordValue);
+    await refreshBiometricState();
+    if (enrolled) {
+      toast({
+        title: t('Biometrics Enabled', 'Biometrik Diaktifkan'),
+        description: t('Next time, sign in with your fingerprint / Face ID.', 'Lain kali, log masuk dengan cap jari / Face ID.'),
+        variant: 'success'
+      });
+    } else {
+      notifyBiometricNotEnabled();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
@@ -223,24 +295,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         if (!password) throw new Error(t('Password is required', 'Kata laluan diperlukan'));
 
         if (isAdminAuth) {
-          const res = await loginAdminWithPassword(email, password, rememberBiometrics);
+          const wantsEnrolment = rememberBiometrics && isBiometricHardwareAvailable && !hasStoredBiometrics;
+          const res = await loginAdminWithPassword(email, password, wantsEnrolment);
           if (!res.success) {
             throw new Error(res.error || t('Invalid email or password.', 'E-mel atau kata laluan tidak sah.'));
+          }
+          if (wantsEnrolment) {
+            await refreshBiometricState();
+            if (res.biometricEnrolled === false) notifyBiometricNotEnabled();
           }
         } else {
           await signInWithEmailAndPassword(auth, email, password);
 
-          if (rememberBiometrics) {
-            try {
-              const isAdminUser = isUserAdmin(email);
-              if (isAdminUser) {
-                await storeAdminBiometricCredentials(email, password);
-              } else {
-                await storeCustomerBiometricCredentials(email, password);
-              }
-            } catch (bioErr) {
-              console.warn('Failed to store biometric credentials:', bioErr);
-            }
+          if (rememberBiometrics && isBiometricHardwareAvailable && !hasStoredBiometrics) {
+            await enrolCustomerBiometrics(email, password);
           }
         }
 
@@ -250,6 +318,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           description: t('Successfully signed in.', 'Berjaya log masuk.'),
           variant: 'success'
         });
+
         resetForm();
         onSuccess?.();
         onClose();
@@ -280,12 +349,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
         await setDoc(doc(db, 'users', user.uid), profileData);
 
-        if (rememberBiometrics) {
-          try {
-            await storeCustomerBiometricCredentials(email, password);
-          } catch (bioErr) {
-            console.warn('Failed to store customer biometric credentials during signup:', bioErr);
-          }
+        if (rememberBiometrics && isBiometricHardwareAvailable) {
+          await enrolCustomerBiometrics(email, password);
         }
 
         triggerNotification(NotificationType.Success);
@@ -311,7 +376,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
       console.error('Authentication Error:', err);
       const authError = err as { code?: string; message?: string };
       let errMsg = authError.message || '';
-      if (authError.code === 'auth/wrong-password' || authError.code === 'auth/user-not-found') {
+      if (isStaleCredentialError(err) && authError.code !== 'auth/user-disabled') {
         errMsg = t('Invalid email or password.', 'E-mel atau kata laluan tidak sah.');
       } else if (authError.code === 'auth/email-already-in-use') {
         errMsg = t('Email already in use.', 'E-mel ini sudah digunakan.');
@@ -577,7 +642,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                   </div>
 
                   {/* Remember Me with Biometrics Checkbox */}
-                  {isBiometricHardwareAvailable && (
+                  {isBiometricHardwareAvailable && !hasStoredBiometrics && (
                     <div className="flex items-center gap-2 pt-2 pb-1">
                       <input
                         id="remember-biometrics"
@@ -588,7 +653,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       />
                       <label htmlFor="remember-biometrics" className="text-xs font-semibold text-stone-600 dark:text-stone-400 cursor-pointer flex items-center gap-1.5">
                         <Fingerprint className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] animate-pulse shrink-0" />
-                        <span>{t('Remember with Fingerprint / Face ID', 'Ingat dengan Cap Jari / Face ID')}</span>
+                        <span>{t('Use Fingerprint / Face ID next time', 'Guna Cap Jari / Face ID lain kali')}</span>
                       </label>
                     </div>
                   )}

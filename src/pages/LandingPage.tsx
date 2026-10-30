@@ -26,7 +26,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
+    <div className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 z-[1002] bg-transparent origin-left"
         style={{ scaleX }}
@@ -84,6 +84,6 @@ export default function LandingPage() {
         </div>
       </div>
       <Footer />
-    </main>
+    </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   clearAdminSession,
   isAdminAuthenticated,
   ADMIN_TOKEN_KEY,
+  ADMIN_BIOMETRIC_PREF_KEY,
 } from './authService';
 import { NativeBiometric, BiometryType } from '@capacitor-community/native-biometric';
 import * as platform from '@/lib/platform';
@@ -127,7 +128,7 @@ describe('authService', () => {
       expect(result.errorCode).toBe('BIOMETRIC_UNAVAILABLE');
     });
 
-    it('succeeds when biometric verification passes and returns stored token', async () => {
+    it('succeeds when the system prompt passes, without reading or returning any token', async () => {
       vi.mocked(platform.isAndroidApk).mockReturnValue(true);
       vi.mocked(platform.isAIStudioPreview).mockReturnValue(false);
       vi.mocked(NativeBiometric.isAvailable).mockResolvedValue({
@@ -135,7 +136,6 @@ describe('authService', () => {
         biometryType: BiometryType.FINGERPRINT,
       });
       vi.mocked(NativeBiometric.verifyIdentity).mockResolvedValue(undefined as unknown as void);
-      vi.mocked(preferences.getSecureItem).mockResolvedValue('valid_admin_token_123');
 
       const result = await authenticateAdminWithBiometrics({
         title: 'Custom Admin Title',
@@ -143,7 +143,8 @@ describe('authService', () => {
 
       expect(result.success).toBe(true);
       expect(result.method).toBe('biometric');
-      expect(result.token).toBe('valid_admin_token_123');
+      expect(result.token).toBeUndefined();
+      expect(preferences.getSecureItem).not.toHaveBeenCalled();
       expect(NativeBiometric.verifyIdentity).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Custom Admin Title',
@@ -158,23 +159,44 @@ describe('authService', () => {
         isAvailable: true,
         biometryType: BiometryType.FINGERPRINT,
       });
-      vi.mocked(NativeBiometric.verifyIdentity).mockRejectedValue(new Error('User cancelled'));
+      vi.mocked(NativeBiometric.verifyIdentity).mockRejectedValue(
+        Object.assign(new Error('User cancelled'), { code: 16 })
+      );
 
       const result = await authenticateAdminWithBiometrics();
       expect(result.success).toBe(false);
       expect(result.errorCode).toBe('BIOMETRIC_FAILED');
       expect(result.error).toContain('User cancelled');
+      expect(result.cancelled).toBe(true);
     });
   });
 
   describe('verifyAdminMockFallback', () => {
-    it('returns existing stored token if available', async () => {
+    it('returns the stored token only when the server confirms it', async () => {
       vi.mocked(preferences.getSecureItem).mockResolvedValue('existing_stored_token');
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
 
       const result = await verifyAdminMockFallback();
       expect(result.success).toBe(true);
       expect(result.method).toBe('mock_fallback');
       expect(result.token).toBe('existing_stored_token');
+    });
+
+    it('rejects a stored token the server does not confirm', async () => {
+      vi.mocked(preferences.getSecureItem).mockResolvedValue('revoked_token');
+      vi.mocked(fetch).mockResolvedValue({ ok: false, json: async () => ({}) } as Response);
+
+      const result = await verifyAdminMockFallback();
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('FALLBACK_PASSWORD_REQUIRED');
+    });
+
+    it('rejects a stored token when the server cannot be reached', async () => {
+      vi.mocked(preferences.getSecureItem).mockResolvedValue('unverifiable_token');
+      vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+
+      const result = await verifyAdminMockFallback();
+      expect(result.success).toBe(false);
     });
 
     it('authenticates with fallback password via server API', async () => {
@@ -215,6 +237,7 @@ describe('authService', () => {
       });
       vi.mocked(NativeBiometric.verifyIdentity).mockResolvedValue(undefined as unknown as void);
       vi.mocked(preferences.getSecureItem).mockResolvedValue('admin_token_jwt');
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
 
       const result = await authenticateAdmin();
       expect(result.success).toBe(true);
@@ -225,6 +248,7 @@ describe('authService', () => {
     it('falls back to mock verification when biometrics is unavailable and fallback is allowed', async () => {
       vi.mocked(platform.isAndroidApk).mockReturnValue(false);
       vi.mocked(preferences.getSecureItem).mockResolvedValue('fallback_token');
+      vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
 
       const result = await authenticateAdmin({ allowMockFallback: true });
       expect(result.success).toBe(true);
@@ -234,19 +258,27 @@ describe('authService', () => {
   });
 
   describe('Credentials and Session Management', () => {
-    it('stores credentials natively when on Android', async () => {
+    it('enrols natively after a confirmation prompt and never touches the admin session token', async () => {
       vi.mocked(platform.isAndroidApk).mockReturnValue(true);
+      vi.mocked(NativeBiometric.isAvailable).mockResolvedValue({
+        isAvailable: true,
+        biometryType: BiometryType.FINGERPRINT,
+      });
+      vi.mocked(NativeBiometric.verifyIdentity).mockResolvedValue(undefined as unknown as void);
       vi.mocked(NativeBiometric.setCredentials).mockResolvedValue(undefined as unknown as void);
 
-      const success = await storeAdminBiometricCredentials('admin', 'secret_token');
+      const success = await storeAdminBiometricCredentials('admin@example.com', 'p@ssw0rd');
       expect(success).toBe(true);
       expect(NativeBiometric.setCredentials).toHaveBeenCalledWith(
-        expect.objectContaining({
-          username: 'admin',
-          password: 'secret_token',
-        })
+        expect.objectContaining({ username: 'admin@example.com', password: 'p@ssw0rd' })
       );
-      expect(preferences.setSecureItem).toHaveBeenCalledWith(ADMIN_TOKEN_KEY, 'secret_token');
+      // Confirmation prompt must come before anything is saved.
+      expect(vi.mocked(NativeBiometric.verifyIdentity).mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(NativeBiometric.setCredentials).mock.invocationCallOrder[0]
+      );
+      expect(preferences.setSecureItem).toHaveBeenCalledWith(ADMIN_BIOMETRIC_PREF_KEY, 'true');
+      // Regression: the password used to be written over the admin session token.
+      expect(preferences.setSecureItem).not.toHaveBeenCalledWith(ADMIN_TOKEN_KEY, expect.anything());
     });
 
     it('retrieves stored admin token and saves admin token', async () => {
@@ -258,7 +290,7 @@ describe('authService', () => {
       expect(preferences.setSecureItem).toHaveBeenCalledWith(ADMIN_TOKEN_KEY, 'new_token_789');
     });
 
-    it('retrieves biometric credentials natively and via fallback', async () => {
+    it('retrieves biometric credentials from the native keystore', async () => {
       vi.mocked(platform.isAndroidApk).mockReturnValue(true);
       vi.mocked(NativeBiometric.getCredentials).mockResolvedValue({
         username: 'superadmin',
@@ -277,9 +309,10 @@ describe('authService', () => {
       const deleted = await deleteAdminBiometricCredentials();
       expect(deleted).toBe(true);
       expect(NativeBiometric.deleteCredentials).toHaveBeenCalled();
+      expect(preferences.removeSecureItem).toHaveBeenCalledWith(ADMIN_BIOMETRIC_PREF_KEY);
     });
 
-    it('clears admin session completely', async () => {
+    it('clears the admin session but keeps biometric enrolment by default', async () => {
       vi.mocked(preferences.getSecureItem).mockResolvedValue('token_to_clear');
       vi.mocked(platform.isAndroidApk).mockReturnValue(true);
       vi.mocked(NativeBiometric.deleteCredentials).mockResolvedValue(undefined as unknown as void);
@@ -287,7 +320,19 @@ describe('authService', () => {
 
       await clearAdminSession();
       expect(preferences.removeSecureItem).toHaveBeenCalledWith(ADMIN_TOKEN_KEY);
+      expect(NativeBiometric.deleteCredentials).not.toHaveBeenCalled();
+      expect(preferences.removeSecureItem).not.toHaveBeenCalledWith(ADMIN_BIOMETRIC_PREF_KEY);
+    });
+
+    it('forgets biometric enrolment only when explicitly asked', async () => {
+      vi.mocked(preferences.getSecureItem).mockResolvedValue('token_to_clear');
+      vi.mocked(platform.isAndroidApk).mockReturnValue(true);
+      vi.mocked(NativeBiometric.deleteCredentials).mockResolvedValue(undefined as unknown as void);
+      vi.mocked(fetch).mockResolvedValue({ ok: true } as Response);
+
+      await clearAdminSession({ forgetBiometrics: true });
       expect(NativeBiometric.deleteCredentials).toHaveBeenCalled();
+      expect(preferences.removeSecureItem).toHaveBeenCalledWith(ADMIN_BIOMETRIC_PREF_KEY);
     });
 
     it('checks if admin is authenticated', async () => {

@@ -34,6 +34,86 @@ async function syncAdminTokenToNative(token: string | null): Promise<void> {
 }
 
 /**
+ * Legacy plaintext keys. Earlier builds copied the e-mail AND password into
+ * Capacitor Preferences / localStorage whenever the native keystore was
+ * unavailable (always true on web). They are never written any more and are
+ * purged on boot by purgeLegacyPlaintextCredentials().
+ */
+const LEGACY_PLAINTEXT_KEYS = [
+  'wawasan_admin_email',
+  'wawasan_admin_password',
+  'wawasan_customer_email',
+  'wawasan_customer_password',
+] as const;
+
+/** Admin must re-confirm biometrics after the app has been in the background this long. */
+export const ADMIN_RELOCK_AFTER_MS = 5 * 60 * 1000;
+
+// In-memory only: resets on every cold start / reload, which is exactly the
+// "unlock once per app launch" behaviour users expect from biometric apps.
+let adminBiometricUnlocked = false;
+export function isAdminBiometricUnlocked(): boolean {
+  return adminBiometricUnlocked;
+}
+export function setAdminBiometricUnlocked(value: boolean): void {
+  adminBiometricUnlocked = value;
+}
+
+/**
+ * Classifies a NativeBiometric rejection using the plugin's own
+ * BiometricAuthError codes (capacitor-native-biometric 4.x):
+ * 11 APP_CANCEL, 15 SYSTEM_CANCEL, 16 USER_CANCEL, 17 USER_FALLBACK = dismissed;
+ * 2 USER_LOCKOUT, 4 USER_TEMPORARY_LOCKOUT = locked out.
+ */
+export function classifyBiometricError(error: unknown): {
+  message: string;
+  cancelled: boolean;
+  lockedOut: boolean;
+} {
+  const e = (error ?? {}) as { message?: unknown; code?: unknown };
+  const message = typeof e.message === 'string' ? e.message : '';
+  const code = Number(e.code);
+  const cancelled = [11, 15, 16, 17].includes(code) || /cancel|dismiss/i.test(message);
+  const lockedOut = [2, 4].includes(code) || /lock(ed)?\s*out|too many/i.test(message);
+  return { message, cancelled, lockedOut };
+}
+
+/** Firebase errors that mean the stored e-mail/password no longer work (e.g. password changed). */
+export function isStaleCredentialError(error: unknown): boolean {
+  const code = (error as { code?: string } | undefined)?.code;
+  return (
+    code === 'auth/invalid-credential' ||
+    code === 'auth/wrong-password' ||
+    code === 'auth/user-not-found' ||
+    code === 'auth/user-disabled' ||
+    code === 'auth/invalid-login-credentials'
+  );
+}
+
+/**
+ * Remove plaintext credentials left behind by old builds, and any admin
+ * "token" that is not JWT-shaped (an old bug stored the admin PASSWORD under
+ * the admin token key). Safe to call repeatedly.
+ */
+export async function purgeLegacyPlaintextCredentials(): Promise<void> {
+  for (const key of LEGACY_PLAINTEXT_KEYS) {
+    try {
+      await removeSecureItem(key);
+    } catch (err) {
+      console.warn('[AuthService] Could not purge legacy credential key:', key, err);
+    }
+  }
+  try {
+    const token = await getSecureItem(ADMIN_TOKEN_KEY);
+    if (token && !/^[\w-]+\.[\w-]+\.[\w-]+$/.test(token)) {
+      await removeSecureItem(ADMIN_TOKEN_KEY);
+    }
+  } catch (err) {
+    console.warn('[AuthService] Could not validate stored admin token shape:', err);
+  }
+}
+
+/**
  * Types and Interfaces for Authentication & Biometric states
  */
 export interface BiometricAvailability {
@@ -52,6 +132,20 @@ export interface AdminAuthResult {
   error?: string;
   errorCode?: string | number;
   biometryType?: BiometryType | 'none' | 'unknown';
+  /** True when the user dismissed the system prompt (not an error: fall back to password quietly). */
+  cancelled?: boolean;
+  /** True when the OS locked biometrics after too many failures: password is the only way in. */
+  lockedOut?: boolean;
+  /** Password login only: whether biometric enrolment was requested and actually completed. */
+  biometricEnrolled?: boolean;
+}
+
+export interface CustomerBiometricResult {
+  success: boolean;
+  creds?: { email: string; password: string };
+  error?: string;
+  cancelled?: boolean;
+  lockedOut?: boolean;
 }
 
 export interface AdminBiometricAuthOptions {
@@ -123,8 +217,45 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 /**
- * Authenticates the admin using Native Biometrics (Fingerprint / Face ID).
- * If successful, attempts to retrieve the stored admin session token or verify stored credentials.
+ * Shows the system biometric prompt (fingerprint / face). It proves the person
+ * holding the phone is the enrolled owner and nothing else: it never returns a
+ * token or credentials. Callers fetch credentials afterwards.
+ */
+async function promptBiometric(
+  options: AdminBiometricAuthOptions,
+  defaults: { reason: string; title: string; description?: string }
+): Promise<
+  | { ok: true }
+  | { ok: false; error: string; cancelled: boolean; lockedOut: boolean }
+> {
+  try {
+    await NativeBiometric.verifyIdentity({
+      reason: options.reason || defaults.reason,
+      title: options.title || defaults.title,
+      subtitle: options.subtitle || 'Imbas cap jari atau pengecaman muka anda',
+      description: options.description || defaults.description,
+      negativeButtonText: options.negativeButtonText || 'Guna kata laluan',
+      maxAttempts: options.maxAttempts || 3,
+    });
+    return { ok: true };
+  } catch (error) {
+    const info = classifyBiometricError(error);
+    if (!info.cancelled) {
+      console.warn('[AuthService] Biometric verification failed:', error);
+    }
+    return {
+      ok: false,
+      error: info.message || 'Pengesahan biometrik dibatalkan atau gagal.',
+      cancelled: info.cancelled,
+      lockedOut: info.lockedOut,
+    };
+  }
+}
+
+/**
+ * Authenticates the admin with the system biometric prompt only.
+ * The admin session itself is (re)established by the caller from the
+ * credentials in the keystore; no token is read or returned here.
  */
 export async function authenticateAdminWithBiometrics(
   options: AdminBiometricAuthOptions = {}
@@ -141,47 +272,24 @@ export async function authenticateAdminWithBiometrics(
     };
   }
 
-  try {
-    // Trigger system biometric prompt
-    await NativeBiometric.verifyIdentity({
-      reason: options.reason || 'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.',
-      title: options.title || 'Pengesahan Biometrik Admin',
-      subtitle: options.subtitle || 'Imbas cap jari atau pengecaman muka anda',
-      description: options.description || 'Hanya kakitangan dan pentadbir yang diberi kuasa sahaja.',
-      negativeButtonText: options.negativeButtonText || 'Batal',
-      maxAttempts: options.maxAttempts || 3,
-    });
+  const result = await promptBiometric(options, {
+    reason: 'Sahkan identiti untuk mengakses panel kawalan admin Restoran Wawasan.',
+    title: 'Pengesahan Biometrik Admin',
+    description: 'Hanya kakitangan dan pentadbir yang diberi kuasa sahaja.',
+  });
 
-    // Biometric prompt succeeded, retrieve stored token or credentials
-    let storedToken = await getStoredAdminToken();
-
-    // Check if biometric credential store contains a valid token/credential
-    if (!storedToken) {
-      const creds = await getAdminBiometricCredentials();
-      if (creds?.password) {
-        storedToken = creds.password;
-        await saveAdminToken(storedToken);
-      }
-    }
-
-    return {
-      success: true,
-      method: 'biometric',
-      token: storedToken || undefined,
-      biometryType: availability.biometryType,
-    };
-  } catch (error) {
-    console.error('[AuthService] Biometric verification failed or was cancelled:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Pengesahan biometrik dibatalkan atau gagal.';
-
-    return {
-      success: false,
-      method: 'biometric',
-      error: errorMessage,
-      errorCode: 'BIOMETRIC_FAILED',
-      biometryType: availability.biometryType,
-    };
+  if (result.ok) {
+    return { success: true, method: 'biometric', biometryType: availability.biometryType };
   }
+  return {
+    success: false,
+    method: 'biometric',
+    error: result.error,
+    errorCode: result.lockedOut ? 'BIOMETRIC_LOCKOUT' : 'BIOMETRIC_FAILED',
+    cancelled: result.cancelled,
+    lockedOut: result.lockedOut,
+    biometryType: availability.biometryType,
+  };
 }
 
 /**
@@ -227,33 +335,31 @@ export async function verifyAdminMockFallback(fallbackPassword?: string): Promis
     }
   }
 
-  // If an existing token is already stored, validate and return session
+  // If an existing token is already stored, it only counts when the server confirms it.
   const storedToken = await getStoredAdminToken();
-  if (storedToken) {
-    if (typeof fetch === 'function') {
-      try {
-        const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
-          headers: { Authorization: `Bearer ${storedToken}` }
-        });
-        if (verifyRes && typeof verifyRes.ok === 'boolean' && verifyRes.ok) {
-          const verifyData = await verifyRes.json().catch(() => ({}));
-          if (verifyData?.firebaseCustomToken) {
-            try {
-              await signInWithCustomToken(auth, verifyData.firebaseCustomToken);
-            } catch (fbErr) {
-              console.warn('[Auth] Firebase Auth sync warning:', fbErr);
-            }
+  if (storedToken && typeof fetch === 'function') {
+    try {
+      const verifyRes = await fetch(getApiUrl('/api/admin/verify'), {
+        headers: { Authorization: `Bearer ${storedToken}` }
+      });
+      if (verifyRes && verifyRes.ok === true) {
+        const verifyData = await verifyRes.json().catch(() => ({}));
+        if (verifyData?.firebaseCustomToken) {
+          try {
+            await signInWithCustomToken(auth, verifyData.firebaseCustomToken);
+          } catch (fbErr) {
+            console.warn('[Auth] Firebase Auth sync warning:', fbErr);
           }
         }
-      } catch (e) {
-        console.warn('[Auth] Stored token verification check network issue:', e);
+        return {
+          success: true,
+          method: 'mock_fallback',
+          token: storedToken,
+        };
       }
+    } catch (e) {
+      console.warn('[Auth] Stored token verification check network issue:', e);
     }
-    return {
-      success: true,
-      method: 'mock_fallback',
-      token: storedToken,
-    };
   }
 
   return {
@@ -277,7 +383,12 @@ export async function authenticateAdmin(options: AdminAuthOptions = {}): Promise
   if (availability.isAvailable) {
     const biometricResult = await authenticateAdminWithBiometrics(promptOptions);
     if (biometricResult.success) {
-      return biometricResult;
+      // The prompt only proves presence; the session must still verify on the server.
+      const session = await verifyAdminMockFallback();
+      if (session.success) {
+        return { ...session, method: 'biometric', biometryType: biometricResult.biometryType };
+      }
+      return session;
     }
 
     // If biometrics failed and mock fallback is not permitted, return the failure
@@ -300,165 +411,162 @@ export async function authenticateAdmin(options: AdminAuthOptions = {}): Promise
   };
 }
 
+type BiometricRole = 'admin' | 'customer';
+
+const ROLE_CONFIG: Record<BiometricRole, { serverId: string; prefKey: string }> = {
+  admin: { serverId: ADMIN_BIOMETRIC_SERVER_ID, prefKey: ADMIN_BIOMETRIC_PREF_KEY },
+  customer: { serverId: CUSTOMER_BIOMETRIC_SERVER_ID, prefKey: CUSTOMER_BIOMETRIC_PREF_KEY },
+};
+
+export interface BiometricEnrollOptions extends AdminBiometricAuthOptions {
+  /** Skip the confirmation prompt (only for callers that just showed one). */
+  skipVerify?: boolean;
+}
+
 /**
- * Store admin credentials securely in hardware keychain via NativeBiometric plugin.
+ * Enrol a role for biometric login (opt-in).
+ * - Native Android keystore ONLY. There is no plaintext fallback: when the
+ *   keystore or biometrics are unavailable this returns false and stores nothing.
+ * - Asks for a fingerprint/face scan first, like banking apps do, so enrolment
+ *   proves the owner can actually use biometrics before anything is saved.
  */
+async function enrollBiometricCredentials(
+  role: BiometricRole,
+  username: string,
+  secret: string,
+  options: BiometricEnrollOptions
+): Promise<boolean> {
+  if (!isAndroidApk() || !username || !secret) return false;
+  const { serverId, prefKey } = ROLE_CONFIG[role];
+
+  try {
+    const availability = await checkBiometricAvailability();
+    if (!availability.isAvailable) return false;
+
+    if (!options.skipVerify) {
+      const prompt = await promptBiometric(options, {
+        reason: 'Sahkan cap jari / wajah anda untuk mengaktifkan log masuk biometrik.',
+        title: 'Aktifkan Log Masuk Biometrik',
+      });
+      if (!prompt.ok) return false;
+    }
+
+    await NativeBiometric.setCredentials({ server: serverId, username, password: secret });
+    await setSecureItem(prefKey, 'true');
+    return true;
+  } catch (error) {
+    console.warn(`[AuthService] Failed to enrol ${role} biometric credentials:`, error);
+    // Never leave a "enabled" flag behind without credentials to back it.
+    await removeSecureItem(prefKey).catch(() => undefined);
+    return false;
+  }
+}
+
+async function readBiometricCredentials(
+  role: BiometricRole
+): Promise<{ username: string; password: string } | null> {
+  if (!isAndroidApk()) return null;
+  try {
+    const creds = await NativeBiometric.getCredentials({ server: ROLE_CONFIG[role].serverId });
+    return creds && creds.username && creds.password
+      ? { username: creds.username, password: creds.password }
+      : null;
+  } catch (error) {
+    console.warn(`[AuthService] Failed to read ${role} biometric credentials:`, error);
+    return null;
+  }
+}
+
+async function isBiometricEnabledOnDevice(role: BiometricRole): Promise<boolean> {
+  try {
+    const flag = await getSecureItem(ROLE_CONFIG[role].prefKey);
+    if (flag !== 'true') return false;
+    return (await readBiometricCredentials(role)) !== null;
+  } catch (err) {
+    console.warn(`[AuthService] Failed to check ${role} biometric state:`, err);
+    return false;
+  }
+}
+
+async function deleteBiometricCredentials(role: BiometricRole): Promise<boolean> {
+  const { serverId, prefKey } = ROLE_CONFIG[role];
+  let keystoreCleared = true;
+  if (isAndroidApk()) {
+    try {
+      await NativeBiometric.deleteCredentials({ server: serverId });
+    } catch (error) {
+      // Plugin rejects when nothing is stored; that is already the desired end state.
+      console.warn(`[AuthService] deleteCredentials(${role}) reported:`, error);
+      keystoreCleared = false;
+    }
+  }
+  try {
+    await removeSecureItem(prefKey);
+    return true;
+  } catch (error) {
+    console.warn(`[AuthService] Failed to clear ${role} biometric flag:`, error);
+    return keystoreCleared;
+  }
+}
+
+/** Enrol the admin account (e-mail + password) in the hardware-backed keystore. */
 export async function storeAdminBiometricCredentials(
   username: string,
-  tokenOrSecret: string
+  password: string,
+  options: BiometricEnrollOptions = {}
 ): Promise<boolean> {
-  const isNative = isAndroidApk();
-  if (!isNative) {
-    await setSecureItem('wawasan_admin_email', username);
-    await setSecureItem('wawasan_admin_password', tokenOrSecret);
-    await setSecureItem(ADMIN_BIOMETRIC_PREF_KEY, 'true');
-    await setSecureItem(ADMIN_TOKEN_KEY, tokenOrSecret);
-    return true;
-  }
-
-  try {
-    await NativeBiometric.setCredentials({
-      server: ADMIN_BIOMETRIC_SERVER_ID,
-      username: username || 'admin',
-      password: tokenOrSecret,
-    });
-    await setSecureItem(ADMIN_BIOMETRIC_PREF_KEY, 'true');
-    await setSecureItem(ADMIN_TOKEN_KEY, tokenOrSecret);
-    return true;
-  } catch (error) {
-    console.warn('[AuthService] Failed to set native biometric credentials:', error);
-    await setSecureItem('wawasan_admin_email', username);
-    await setSecureItem('wawasan_admin_password', tokenOrSecret);
-    await setSecureItem(ADMIN_BIOMETRIC_PREF_KEY, 'true');
-    await setSecureItem(ADMIN_TOKEN_KEY, tokenOrSecret);
-    return false;
-  }
+  return enrollBiometricCredentials('admin', username, password, options);
 }
 
-/**
- * Retrieve admin credentials securely from hardware keychain.
- */
+/** Read admin credentials from the keystore. Returns null on web or when none are stored. */
 export async function getAdminBiometricCredentials(): Promise<{ username: string; password: string } | null> {
-  const isNative = isAndroidApk();
-  if (!isNative) {
-    const email = await getSecureItem('wawasan_admin_email');
-    const password = await getSecureItem('wawasan_admin_password');
-    if (email && password) {
-      return { username: email, password };
-    }
-    const token = await getStoredAdminToken();
-    return token ? { username: 'admin', password: token } : null;
-  }
-
-  try {
-    const creds = await NativeBiometric.getCredentials({
-      server: ADMIN_BIOMETRIC_SERVER_ID,
-    });
-    if (creds && creds.password) {
-      return { username: creds.username || 'admin', password: creds.password };
-    }
-    const fallbackEmail = await getSecureItem('wawasan_admin_email');
-    const fallbackPassword = await getSecureItem('wawasan_admin_password');
-    if (fallbackEmail && fallbackPassword) {
-      return { username: fallbackEmail, password: fallbackPassword };
-    }
-    return null;
-  } catch (error) {
-    console.warn('[AuthService] Failed to retrieve native biometric credentials:', error);
-    const fallbackEmail = await getSecureItem('wawasan_admin_email');
-    const fallbackPassword = await getSecureItem('wawasan_admin_password');
-    if (fallbackEmail && fallbackPassword) {
-      return { username: fallbackEmail, password: fallbackPassword };
-    }
-    const fallbackToken = await getStoredAdminToken();
-    return fallbackToken ? { username: 'admin', password: fallbackToken } : null;
-  }
+  return readBiometricCredentials('admin');
 }
 
 /**
- * Whether this device currently has admin biometric login enabled: the
- * admin previously opted in (ADMIN_BIOMETRIC_PREF_KEY === 'true') AND a
- * stored credential actually exists to unlock with.
- *
- * This exists so session-restoration code (see useAdminBiometric's
- * rehydrateSession) can tell whether a persisted admin token is allowed
- * to silently re-admit the user, or whether it must first require a
- * fresh biometric check. storeAdminBiometricCredentials() keeps a plain,
- * non-biometric-gated copy of the session token in Preferences/
- * localStorage (needed so a plain password-only admin login also has
- * normal "stay logged in" behavior); without this check, that copy would
- * make the fingerprint prompt purely cosmetic on any device where
- * biometrics were actually enabled.
+ * True only when the admin opted in AND credentials exist in the keystore.
+ * Session restore uses this to decide whether a persisted session may skip the
+ * biometric check (it may not when this is true).
  */
 export async function isAdminBiometricsEnabledOnDevice(): Promise<boolean> {
-  try {
-    const prefEnabled = await getSecureItem(ADMIN_BIOMETRIC_PREF_KEY);
-    if (prefEnabled !== 'true') return false;
-    const creds = await getAdminBiometricCredentials();
-    return Boolean(creds?.username && creds?.password);
-  } catch (err) {
-    console.warn('[AuthService] Failed to check admin biometrics enabled state:', err);
-    return false;
-  }
+  return isBiometricEnabledOnDevice('admin');
 }
 
-/**
- * Delete stored admin credentials from hardware keychain.
- */
+/** Delete stored admin credentials (explicit "disable biometrics" only). */
 export async function deleteAdminBiometricCredentials(): Promise<boolean> {
-  const isNative = isAndroidApk();
-  try {
-    if (isNative) {
-      await NativeBiometric.deleteCredentials({
-        server: ADMIN_BIOMETRIC_SERVER_ID,
-      });
-    }
-    await removeSecureItem(ADMIN_BIOMETRIC_PREF_KEY);
-    return true;
-  } catch (error) {
-    console.warn('[AuthService] Failed to delete native biometric credentials:', error);
-    return false;
-  }
+  return deleteBiometricCredentials('admin');
 }
 
-/**
- * Store customer credentials securely in hardware keychain.
- */
+/** Enrol the customer account (e-mail + password) in the hardware-backed keystore. */
 export async function storeCustomerBiometricCredentials(
   email: string,
-  password: string
+  password: string,
+  options: BiometricEnrollOptions = {}
 ): Promise<boolean> {
-  const isNative = isAndroidApk();
-  if (!isNative) {
-    await setSecureItem('wawasan_customer_email', email);
-    await setSecureItem('wawasan_customer_password', password);
-    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
-    return true;
-  }
+  return enrollBiometricCredentials('customer', email, password, options);
+}
 
-  try {
-    await NativeBiometric.setCredentials({
-      server: CUSTOMER_BIOMETRIC_SERVER_ID,
-      username: email,
-      password: password,
-    });
-    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
-    return true;
-  } catch (error) {
-    console.warn('[AuthService] Failed to set native customer biometric credentials:', error);
-    await setSecureItem('wawasan_customer_email', email);
-    await setSecureItem('wawasan_customer_password', password);
-    await setSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY, 'true');
-    return false;
-  }
+export async function getCustomerBiometricCredentials(): Promise<{ email: string; password: string } | null> {
+  const creds = await readBiometricCredentials('customer');
+  return creds ? { email: creds.username, password: creds.password } : null;
+}
+
+export async function isCustomerBiometricsEnabledOnDevice(): Promise<boolean> {
+  return isBiometricEnabledOnDevice('customer');
+}
+
+/** Delete stored customer credentials (explicit "disable biometrics" only). */
+export async function deleteCustomerBiometricCredentials(): Promise<boolean> {
+  return deleteBiometricCredentials('customer');
 }
 
 /**
- * Authenticates the customer using Native Biometrics (Fingerprint / Face ID).
+ * Authenticates the customer: system prompt first, then the stored credentials
+ * are handed back so the caller can sign in with Firebase.
  */
 export async function authenticateCustomerWithBiometrics(
   options: AdminBiometricAuthOptions = {}
-): Promise<{ success: boolean; creds?: { email: string; password: string }; error?: string }> {
+): Promise<CustomerBiometricResult> {
   const availability = await checkBiometricAvailability();
 
   if (!availability.isAvailable) {
@@ -468,84 +576,28 @@ export async function authenticateCustomerWithBiometrics(
     };
   }
 
-  try {
-    await NativeBiometric.verifyIdentity({
-      reason: options.reason || 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.',
-      title: options.title || 'Pengesahan Biometrik Pelanggan',
-      subtitle: options.subtitle || 'Imbas cap jari atau pengecaman muka anda',
-      negativeButtonText: options.negativeButtonText || 'Batal',
-      maxAttempts: options.maxAttempts || 3,
-    });
-
-    const creds = await getCustomerBiometricCredentials();
-    if (creds && creds.email && creds.password) {
-      return { success: true, creds };
-    }
-
+  const prompt = await promptBiometric(options, {
+    reason: 'Sahkan identiti untuk log masuk ke akaun Restoran Wawasan.',
+    title: 'Pengesahan Biometrik Pelanggan',
+  });
+  if (!prompt.ok) {
     return {
       success: false,
-      error: 'Tiada kredensial biometrik disimpan. Sila log masuk dengan kata laluan terlebih dahulu.',
-    };
-  } catch (error) {
-    console.error('[AuthService] Customer biometric verification failed or cancelled:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Pengesahan biometrik dibatalkan atau gagal.';
-    return {
-      success: false,
-      error: errorMessage,
+      error: prompt.error,
+      cancelled: prompt.cancelled,
+      lockedOut: prompt.lockedOut,
     };
   }
-}
 
-/**
- * Retrieve customer credentials securely from hardware keychain.
- */
-export async function getCustomerBiometricCredentials(): Promise<{ email: string; password: string } | null> {
-  const isNative = isAndroidApk();
-  if (!isNative) {
-    const email = await getSecureItem('wawasan_customer_email');
-    const password = await getSecureItem('wawasan_customer_password');
-    return email && password ? { email, password } : null;
-  }
+  const creds = await getCustomerBiometricCredentials();
+  if (creds) return { success: true, creds };
 
-  try {
-    const creds = await NativeBiometric.getCredentials({
-      server: CUSTOMER_BIOMETRIC_SERVER_ID,
-    });
-    if (creds && creds.password) {
-      return { email: creds.username, password: creds.password };
-    }
-    return null;
-  } catch (error) {
-    console.warn('[AuthService] Failed to retrieve native customer biometric credentials:', error);
-    const fallbackEmail = await getSecureItem('wawasan_customer_email');
-    const fallbackPassword = await getSecureItem('wawasan_customer_password');
-    return fallbackEmail && fallbackPassword ? { email: fallbackEmail, password: fallbackPassword } : null;
-  }
-}
-
-/**
- * Delete stored customer credentials from hardware keychain.
- */
-export async function deleteCustomerBiometricCredentials(): Promise<boolean> {
-  const isNative = isAndroidApk();
-  try {
-    if (isNative) {
-      try {
-        await NativeBiometric.deleteCredentials({
-          server: CUSTOMER_BIOMETRIC_SERVER_ID,
-        });
-      } catch (err) {
-        console.warn('[AuthService] NativeBiometric deleteCredentials failed:', err);
-      }
-    }
-    await removeSecureItem(CUSTOMER_BIOMETRIC_PREF_KEY);
-    await removeSecureItem('wawasan_customer_email');
-    await removeSecureItem('wawasan_customer_password');
-    return true;
-  } catch (error) {
-    console.warn('[AuthService] Failed to delete customer biometric credentials:', error);
-    return false;
-  }
+  // Flag said "enabled" but the keystore is empty (cleared data, restored phone): reset cleanly.
+  await deleteCustomerBiometricCredentials();
+  return {
+    success: false,
+    error: 'Tiada kredensial biometrik disimpan. Sila log masuk dengan kata laluan terlebih dahulu.',
+  };
 }
 
 /**
@@ -578,9 +630,13 @@ export async function saveAdminToken(token: string): Promise<void> {
 }
 
 /**
- * Clear admin session and revoke credentials.
+ * Clear the admin session (server-side logout, stored token, native widget token).
+ *
+ * Biometric enrolment is KEPT by default, like any banking app: signing out or an
+ * expired session must not silently turn biometric login off. Pass
+ * `{ forgetBiometrics: true }` only when the user explicitly disables it.
  */
-export async function clearAdminSession(): Promise<void> {
+export async function clearAdminSession(options: { forgetBiometrics?: boolean } = {}): Promise<void> {
   try {
     const token = await getStoredAdminToken();
     if (token) {
@@ -599,7 +655,10 @@ export async function clearAdminSession(): Promise<void> {
 
     await removeSecureItem(ADMIN_TOKEN_KEY);
     await syncAdminTokenToNative(null);
-    await deleteAdminBiometricCredentials();
+    setAdminBiometricUnlocked(false);
+    if (options.forgetBiometrics) {
+      await deleteAdminBiometricCredentials();
+    }
 
     try {
       localStorage.removeItem(ADMIN_TOKEN_KEY);
@@ -642,7 +701,10 @@ export const authService = {
   deleteAdminBiometricCredentials,
   storeCustomerBiometricCredentials,
   getCustomerBiometricCredentials,
+  isCustomerBiometricsEnabledOnDevice,
   deleteCustomerBiometricCredentials,
+  authenticateCustomerWithBiometrics,
+  purgeLegacyPlaintextCredentials,
   getStoredAdminToken,
   saveAdminToken,
   clearAdminSession,

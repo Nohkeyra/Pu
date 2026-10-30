@@ -238,7 +238,7 @@ export default function PageShell({
       ) : null}
 
       {/* ---- Main content area (uniform gutter) ---- */}
-      <main role="main" className={cn('page-shell__main relative flex-grow', variantClass)}>
+      <div className={cn('page-shell__main relative flex-grow', variantClass)}>
         {/*
           Optional decorative Batik kept as a fixed background only —
           image asset path / file is untouched.
@@ -257,7 +257,7 @@ export default function PageShell({
           </div>
         ) : null}
         {children}
-      </main>
+      </div>
 
       <AuthModal
         isOpen={authOpen}

@@ -15,8 +15,6 @@ const router = Router();
 const TRUSTED_REFERER_DOMAINS = new Set([
   'aistudio.google.com',
   'ai.studio',
-  'claude.ai',
-  'anthropic.com',
   'restoran-wawasan-bio.onrender.com',
   'restoran-wawasan.pxxl.click',
   'localhost',
@@ -57,7 +55,6 @@ export function isAllowedReferer(refererHeader: string | undefined, originHeader
     // S-6 fix: wildcard *.onrender.com / *.run.app removed; only the known production host is trusted.
     if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
     if (hostname.endsWith('.aistudio.google.com')) return true;
-    if (hostname.endsWith('.claude.ai')) return true;
 
     return false;
   } catch {

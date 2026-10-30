@@ -105,7 +105,7 @@ export default function Header() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 h-1 z-[1001] bg-transparent" />
+      <div className="fixed top-0 left-0 right-0 h-1 z-[1001] bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500" />
       <header id="app-header" className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
         <div className="content-container flex items-center justify-between gap-4">
           <Link 

@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebaseConfig';
 import AuthModal from '../components/AuthModal';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon, ArrowDown, Sparkles } from 'lucide-react';
+import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon, ArrowDown, Sparkles, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Batik3DMotion } from '../components/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
 import { Button } from '../components/ui/button';
+import { checkBiometricAvailability, isCustomerBiometricsEnabledOnDevice } from '../services/authService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -29,6 +30,36 @@ export default function LoginPage() {
   // had to scan their fingerprint twice in a row for one login. Removed
   // the dead biometric call here so tapping this icon just opens the Admin
   // Login screen, where the single real fingerprint scan lives.
+  const [isBiometricHardwareAvailable, setIsBiometricHardwareAvailable] = useState(false);
+  const [hasStoredBiometrics, setHasStoredBiometrics] = useState(false);
+
+  // The member sign-in button only reflects MEMBER biometrics. Admin biometrics live on the
+  // Admin screen (/admin), which prompts by itself, so they must not light up this button.
+  useEffect(() => {
+    let active = true;
+    async function checkBio() {
+      try {
+        const avail = await checkBiometricAvailability();
+        const enabled = avail.isAvailable && (await isCustomerBiometricsEnabledOnDevice());
+        if (!active) return;
+        setIsBiometricHardwareAvailable(avail.isAvailable);
+        setHasStoredBiometrics(enabled);
+      } catch (err) {
+        console.warn('LoginPage biometric check failed:', err);
+      }
+    }
+    checkBio();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Opening the modal is all that is needed: AuthModal shows the fingerprint / Face ID
+  // prompt by itself when member biometrics are enabled.
+  const handleQuickBiometricLogin = () => {
+    setAuthOpen(true);
+  };
+
   const handleAdminAccess = () => {
     navigate('/admin');
   };
@@ -100,8 +131,21 @@ export default function LoginPage() {
               </div>
 
               <div className="w-full space-y-3">
+                {/* Primary Biometric Button if available */}
+                {isBiometricHardwareAvailable && hasStoredBiometrics && (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleQuickBiometricLogin}
+                    className="w-full rounded-2xl min-h-[56px] shadow-lg gap-3 text-base font-bold bg-emerald-700 hover:bg-emerald-800 border-emerald-600/30"
+                  >
+                    <Fingerprint className="h-6 w-6 text-amber-300 animate-pulse" />
+                    {tLocal('Sign In with Biometrics', 'Log Masuk dengan Biometrik')}
+                  </Button>
+                )}
+
                 <Button
-                  variant="primary"
+                  variant={isBiometricHardwareAvailable && hasStoredBiometrics ? 'outline' : 'primary'}
                   size="lg"
                   onClick={() => {
                     if (auth.currentUser) {
