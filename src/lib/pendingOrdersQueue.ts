@@ -1,6 +1,20 @@
 import { Preferences } from '@capacitor/preferences';
 import { safeJsonStringify } from '@/lib/utils';
 import { getApiUrl } from '@/lib/api';
+import { auth } from '@/firebaseConfig';
+
+/** Authenticate only as the account that originally queued the order. */
+export async function getOrderSubmissionHeaders(payload: Record<string, unknown>): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const owner = payload.userId;
+  if (typeof owner === 'string' && owner) {
+    await auth.authStateReady();
+    const user = auth.currentUser;
+    if (!user || user.uid !== owner) throw new Error('Sign in to the original account to send this order.');
+    headers.Authorization = `Bearer ${await user.getIdToken()}`;
+  }
+  return headers;
+}
 
 const PENDING_ORDERS_STORAGE_KEY = 'wawasan_pending_orders';
 
@@ -144,7 +158,7 @@ export async function autoSyncPendingOrders(
 
         const response = await fetch(getApiUrl('/api/orders'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getOrderSubmissionHeaders(item.orderPayload),
           body: safeJsonStringify(item.orderPayload),
           signal: controller.signal,
         });
@@ -172,3 +186,4 @@ export async function autoSyncPendingOrders(
     isSyncing = false;
   }
 }
+

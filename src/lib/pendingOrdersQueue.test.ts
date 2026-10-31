@@ -6,7 +6,13 @@ import {
   removePendingOrder,
   clearPendingOrders,
   MAX_PENDING_ORDERS,
+  getOrderSubmissionHeaders,
 } from './pendingOrdersQueue';
+
+const firebaseMock = vi.hoisted(() => ({
+  auth: { currentUser: null as null | { uid: string; getIdToken: () => Promise<string> }, authStateReady: vi.fn().mockResolvedValue(undefined) },
+}));
+vi.mock('@/firebaseConfig', () => firebaseMock);
 
 // Mock Capacitor Preferences
 vi.mock('@capacitor/preferences', () => ({
@@ -21,6 +27,7 @@ describe('pendingOrdersQueue', () => {
   const mockStorage: Record<string, string> = {};
 
   beforeEach(() => {
+    firebaseMock.auth.currentUser = null;
     for (const key in mockStorage) {
       delete mockStorage[key];
     }
@@ -41,6 +48,23 @@ describe('pendingOrdersQueue', () => {
     });
 
     clearPendingOrders();
+  });
+
+  it('keeps guest submissions unauthenticated even if a user has signed in', async () => {
+    firebaseMock.auth.currentUser = { uid: 'other', getIdToken: async () => 'token' };
+    expect(await getOrderSubmissionHeaders({ userId: null })).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  it('uses the original user session for a queued order', async () => {
+    firebaseMock.auth.currentUser = { uid: 'owner', getIdToken: async () => 'owner-token' };
+    expect(await getOrderSubmissionHeaders({ userId: 'owner' })).toEqual({
+      'Content-Type': 'application/json', Authorization: 'Bearer owner-token',
+    });
+  });
+
+  it('keeps an order queued when the original account is not signed in', async () => {
+    firebaseMock.auth.currentUser = { uid: 'other', getIdToken: async () => 'other-token' };
+    await expect(getOrderSubmissionHeaders({ userId: 'owner' })).rejects.toThrow(/original account/);
   });
 
   it('starts with an empty queue', () => {
@@ -109,3 +133,4 @@ describe('pendingOrdersQueue', () => {
     expect(getPendingOrders()).toEqual([]);
   });
 });
+

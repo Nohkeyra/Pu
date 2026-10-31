@@ -2,17 +2,21 @@ package com.wawasanpakusop.app.widgets
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
+import androidx.glance.ImageProvider
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
@@ -32,6 +36,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.wawasanpakusop.app.MainActivity
+import com.wawasanpakusop.app.R
 import com.wawasanpakusop.app.widget.OrderDetailActivity
 import com.wawasanpakusop.app.widget.WidgetUpdateService
 import org.json.JSONArray
@@ -61,6 +66,7 @@ data class UpcomingOrderItem(
 )
 
 class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val orders = try {
@@ -101,71 +107,30 @@ class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
 
 @Composable
 fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
-    val refreshAction = actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>()
-    val openAppIntent = Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
-    val headerClickAction = actionStartActivity(openAppIntent)
-
     Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(ColorProvider(Color(0xFF0B100E)))
-            .padding(12.dp)
+        modifier = GlanceModifier.fillMaxSize()
+            .background(ImageProvider(R.drawable.widget_glass_background))
+            .padding(10.dp)
     ) {
-        // Header
-        Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .clickable(headerClickAction),
-            verticalAlignment = Alignment.Vertical.CenterVertically
-        ) {
-            Text(
-                text = "🍽️ Tempahan Wawasan",
-                style = TextStyle(
-                    color = ColorProvider(Color(0xFFE0E6E2)),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                modifier = GlanceModifier.defaultWeight()
-            )
-            Box(
-                modifier = GlanceModifier
-                    .background(ColorProvider(Color(0xFF1B2E23)))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .clickable(refreshAction)
-            ) {
-                Text(
-                    text = "🔄 Segar",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF4ADE80)),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = GlanceModifier.height(8.dp))
-
+        GlassWidgetHeader("TEMPAHAN AKAN DATANG", "TEMPAHAN", orders.size, actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>())
         if (orders.isEmpty()) {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
             Box(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 24.dp),
+                modifier = GlanceModifier.fillMaxSize()
+                    .background(ImageProvider(R.drawable.widget_glass_card))
+                    .clickable(actionStartActivity(intent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Tiada tempahan akan datang.",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF8E9E95)),
-                        fontSize = 13.sp
-                    )
-                )
+                Text("Tiada tempahan akan datang", style = TextStyle(color = widgetMuted, fontSize = 12.sp))
             }
         } else {
-            Column(modifier = GlanceModifier.fillMaxWidth()) {
-                val displayOrders = orders.take(4)
-                for (order in displayOrders) {
+            LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+                items(orders.size) { index ->
+                    val order = orders[index]
                     val detailIntent = Intent(context, OrderDetailActivity::class.java).apply {
+                        data = Uri.parse("wawasan-widget://upcoming/${Uri.encode(order.id)}")
                         putExtra("order_id", order.id)
                         putExtra("orderId", order.id)
                         putExtra("client_name", order.company)
@@ -176,45 +141,19 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                         putExtra("status", order.status)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
-                    val rowClick = actionStartActivity(detailIntent)
-
-                    Box(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .background(ColorProvider(Color(0xFF141D17)))
-                            .padding(10.dp)
-                            .clickable(rowClick)
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth().padding(bottom = 6.dp)
+                            .background(ImageProvider(R.drawable.widget_glass_card))
+                            .clickable(actionStartActivity(detailIntent)).padding(10.dp),
+                        verticalAlignment = Alignment.Vertical.CenterVertically
                     ) {
-                        Column(modifier = GlanceModifier.fillMaxWidth()) {
-                            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                                Text(
-                                    text = order.company,
-                                    style = TextStyle(
-                                        color = ColorProvider(Color(0xFFFFFFFF)),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    modifier = GlanceModifier.defaultWeight()
-                                )
-                                Text(
-                                    text = "${order.quantity} pax",
-                                    style = TextStyle(
-                                        color = ColorProvider(Color(0xFF38BDF8)),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                            }
-                            Spacer(modifier = GlanceModifier.height(2.dp))
-                            Text(
-                                text = "📅 ${order.dateLabel} • ⏰ ${order.timeLabel}",
-                                style = TextStyle(
-                                    color = ColorProvider(Color(0xFFA3B8AD)),
-                                    fontSize = 11.sp
-                                )
-                            )
+                        Column(modifier = GlanceModifier.defaultWeight()) {
+                            Text(order.company, maxLines = 1, style = TextStyle(color = widgetText, fontSize = 13.sp, fontWeight = FontWeight.Bold))
+                            Spacer(modifier = GlanceModifier.height(3.dp))
+                            Text("${order.dateLabel}  •  ${order.timeLabel}", maxLines = 1, style = TextStyle(color = widgetMuted, fontSize = 11.sp))
+                            Text("${order.quantity} orang", maxLines = 1, style = TextStyle(color = widgetMuted, fontSize = 10.sp))
                         }
+                        Text("›", style = TextStyle(color = widgetText, fontSize = 22.sp))
                     }
                 }
             }

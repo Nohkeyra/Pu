@@ -24,6 +24,7 @@ android/app/src/main/assets/public/assets/aistudio/
 
 # Build output & temporary files
 dist/
+server-dist/
 build/
 core
 core.*
@@ -67,3 +68,7 @@ blob-report/
 coverage/
 bun.lock
 
+
+
+# Local AI Studio work artifacts
+.aistudio/artifacts/

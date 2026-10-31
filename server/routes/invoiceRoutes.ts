@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import { verifyAdminToken, verifyAdminJwt } from '../adminAuth.js';
+import { verifyAdminToken, verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
 import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
@@ -27,7 +27,7 @@ export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerA
   }
 
   // 1. Check if token is a valid server-signed Admin JWT
-  const jwtPayload = verifyAdminJwt(token);
+  const jwtPayload = await verifyAdminJwtWithRevocation(token);
   if (jwtPayload && jwtPayload.admin === true) {
     return {
       isAdmin: true,
@@ -63,10 +63,10 @@ export function isOrderOwnedByCaller(order: Record<string, any>, auth: InvoiceCa
   const ownerUid = order.userId || order.uid || null;
   const orderEmail = (order.email || order.customerEmail || '').toLowerCase().trim();
 
-  const matchesUid = Boolean(auth.uid && ownerUid && auth.uid === ownerUid);
+  if (ownerUid) return Boolean(auth.uid && auth.uid === ownerUid);
   const matchesEmail = Boolean(auth.email && orderEmail && auth.email === orderEmail);
 
-  return matchesUid || matchesEmail;
+  return matchesEmail;
 }
 
 // Rate limiter for order forwarding
@@ -343,4 +343,5 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
 });
 
 export default router;
+
 

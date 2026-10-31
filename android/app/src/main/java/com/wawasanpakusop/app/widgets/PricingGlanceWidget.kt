@@ -2,15 +2,20 @@ package com.wawasanpakusop.app.widgets
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
+import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.GlanceModifier
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
@@ -32,6 +37,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.wawasanpakusop.app.MainActivity
+import com.wawasanpakusop.app.R
 import com.wawasanpakusop.app.security.SecureStorage
 import com.wawasanpakusop.app.widget.OfflinePricingQueue
 import com.wawasanpakusop.app.widget.PricingInputActivity
@@ -65,6 +71,7 @@ data class GlanceOrderItem(
 )
 
 class PricingGlanceWidget : GlanceAppWidget() {
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val orders: List<GlanceOrderItem> = try {
@@ -174,88 +181,30 @@ class PricingGlanceWidget : GlanceAppWidget() {
 
 @Composable
 fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
+    val compact = LocalSize.current.width < 260.dp
     Column(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp)
+        modifier = GlanceModifier.fillMaxSize()
+            .background(ImageProvider(R.drawable.widget_glass_background))
+            .padding(10.dp)
     ) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
-            verticalAlignment = Alignment.Vertical.CenterVertically
-        ) {
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = "Restoran Wawasan • Pricing (beta)",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Text(
-                    text = if (orders.isEmpty()) "✓ Tiada tempahan tertunggak" else "${orders.size} tempahan",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.secondary,
-                        fontSize = 11.sp
-                    )
-                )
-            }
-            Box(
-                modifier = GlanceModifier
-                    .clickable(actionRunCallback<RefreshGlanceActionCallback>())
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .background(GlanceTheme.colors.primaryContainer)
-            ) {
-                Text(
-                    text = "🔄 Muat Semula",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-            }
-        }
-
+        GlassWidgetHeader("HARGA TERTUNGGAK", "HARGA", orders.size, actionRunCallback<RefreshGlanceActionCallback>())
         if (orders.isEmpty()) {
-            val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             Box(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .clickable(actionStartActivity(openAppIntent))
-                    .padding(12.dp)
-                    .background(GlanceTheme.colors.surfaceVariant),
+                modifier = GlanceModifier.fillMaxSize()
+                    .background(ImageProvider(R.drawable.widget_glass_card))
+                    .clickable(actionStartActivity(intent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
-                    Text(
-                        text = "✓ Tiada tempahan tertunggak harga",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                    Spacer(modifier = GlanceModifier.height(4.dp))
-                    Text(
-                        text = "Ketik untuk Buka Aplikasi",
-                        style = TextStyle(
-                            color = GlanceTheme.colors.primary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
+                Text("✓  Tiada harga tertunggak", style = TextStyle(color = widgetMuted, fontSize = 12.sp))
             }
         } else {
             LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 items(orders.size) { index ->
-                    Column(modifier = GlanceModifier.fillMaxWidth()) {
-                        GlanceOrderRowItem(context, orders[index])
-                        Spacer(modifier = GlanceModifier.height(6.dp))
+                    Column(modifier = GlanceModifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                        GlanceOrderRowItem(context, orders[index], compact)
                     }
                 }
             }
@@ -264,8 +213,9 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
 }
 
 @Composable
-fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem) {
+fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem, compact: Boolean) {
     val inputIntent = Intent(context, PricingInputActivity::class.java).apply {
+        data = Uri.parse("wawasan-widget://pricing/${Uri.encode(order.id)}")
         putExtra("order_id", order.id)
         putExtra("company_name", order.company)
         putExtra("menu", order.menu)
@@ -274,48 +224,31 @@ fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem) {
         putExtra("is_billed", order.isBilled)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
-
     Row(
-        modifier = GlanceModifier
-            .fillMaxWidth()
-            .clickable(actionStartActivity(inputIntent))
-            .background(GlanceTheme.colors.surfaceVariant)
-            .padding(8.dp),
+        modifier = GlanceModifier.fillMaxWidth()
+            .background(ImageProvider(R.drawable.widget_glass_card))
+            .clickable(actionStartActivity(inputIntent)).padding(10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = "${order.company} • ${order.quantity} pax",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            Spacer(modifier = GlanceModifier.height(2.dp))
-            Text(
-                text = "${order.dateBadge}  ${order.menu}",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 11.sp
-                )
-            )
+            Text(order.company, maxLines = 1, style = TextStyle(color = widgetText, fontSize = 13.sp, fontWeight = FontWeight.Bold))
+            Spacer(modifier = GlanceModifier.height(3.dp))
+            Text("${order.dateBadge}  •  ${order.quantity} orang", maxLines = 1, style = TextStyle(color = widgetMuted, fontSize = 11.sp))
+            if (!compact) {
+                Text(order.menu, maxLines = 1, style = TextStyle(color = widgetMuted, fontSize = 10.sp))
+            }
         }
         Spacer(modifier = GlanceModifier.width(6.dp))
         Box(
-            modifier = GlanceModifier
-                .background(if (order.isBilled) GlanceTheme.colors.surface else GlanceTheme.colors.primary)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = GlanceModifier.background(ImageProvider(R.drawable.widget_amber_button))
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (order.isBilled) "DIBIL ✓" else "SET 💵",
-                style = TextStyle(
-                    color = if (order.isBilled) GlanceTheme.colors.onSurface else GlanceTheme.colors.onPrimary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                text = if (order.isBilled) "DIBIL ✓" else if (compact) "HARGA ›" else "Tetap harga ›",
+                maxLines = 1,
+                style = TextStyle(color = widgetAmberText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             )
         }
     }
 }
-

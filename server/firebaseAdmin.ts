@@ -10,6 +10,7 @@ let memoryFirestoreInstance: any = null;
 
 class MemoryFirestore {
   private collections = new Map<string, Map<string, any>>();
+  private transactionTail: Promise<void> = Promise.resolve();
 
   private getCol(name: string): Map<string, any> {
     if (!this.collections.has(name)) {
@@ -106,13 +107,24 @@ class MemoryFirestore {
   }
 
   async runTransaction<T>(updateFunction: (tx: any) => Promise<T>): Promise<T> {
-    const tx = {
-      get: async (ref: any) => ref.get(),
-      set: async (ref: any, data: any, options?: any) => ref.set(data, options),
-      update: async (ref: any, data: any) => ref.update(data),
-      delete: async (ref: any) => ref.delete(),
-    };
-    return await updateFunction(tx);
+    const previous = this.transactionTail;
+    let release!: () => void;
+    this.transactionTail = new Promise<void>(resolve => { release = resolve; });
+    await previous;
+    try {
+      const writes: Array<() => Promise<unknown>> = [];
+      const tx = {
+        get: async (ref: any) => ref.get(),
+        set: (ref: any, data: any, options?: any) => { writes.push(() => ref.set(data, options)); },
+        update: (ref: any, data: any) => { writes.push(() => ref.update(data)); },
+        delete: (ref: any) => { writes.push(() => ref.delete()); },
+      };
+      const result = await updateFunction(tx);
+      for (const write of writes) await write();
+      return result;
+    } finally {
+      release();
+    }
   }
 
   async getAll(...refs: any[]) {
@@ -441,4 +453,5 @@ export async function createOrder(orderData: OrderData): Promise<{ orderId: stri
 
   return { orderId: orderRef.id, invoiceNo: orderData.invoiceNo };
 }
+
 

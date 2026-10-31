@@ -899,7 +899,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       try {
         response = await fetch(getApiUrl('/api/orders'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(currentUser ? { Authorization: `Bearer ${await currentUser.getIdToken()}` } : {}),
+          },
           body: safeJsonStringify(orderData),
           signal: controller.signal
         });
@@ -1640,3 +1643,4 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     </>
   );
 }
+

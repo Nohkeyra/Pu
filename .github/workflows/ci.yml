@@ -60,6 +60,7 @@ jobs:
           name: dist
           path: |
             dist/
+            server-dist/
             client/dist/
           retention-days: 14
 
@@ -95,3 +96,4 @@ jobs:
         with:
           languages: javascript-typescript
       - uses: github/codeql-action/analyze@v3
+

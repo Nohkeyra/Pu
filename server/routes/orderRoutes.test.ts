@@ -45,6 +45,52 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
   });
 
   describe('Client / Guest Price & Total Manipulation Immunity', () => {
+    const orderPayload = {
+      name: 'Customer', contact: '+60123456789', email: 'customer@example.com',
+      eventDate: '2027-11-20', time: '12:00', quantity: 10, meals: ['lunch'],
+    };
+
+    it('creates only one order when the same request arrives concurrently', async () => {
+      const key = `concurrent_${Date.now()}`;
+      const requests = Array.from({ length: 4 }, () => fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...orderPayload, idempotencyKey: key }),
+      }));
+      const responses = await Promise.all(requests);
+      expect(responses.every(response => response.status === 200)).toBe(true);
+      const bodies = await Promise.all(responses.map(response => response.json()));
+      expect(new Set(bodies.map(body => body.id)).size).toBe(1);
+      expect(bodies.filter(body => body.duplicate === false)).toHaveLength(1);
+    });
+
+    it('rejects a claimed user without an authenticated session', async () => {
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...orderPayload, userId: 'victim' }),
+      });
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects an owner different from the verified user', async () => {
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('actual_user');
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test' },
+        body: JSON.stringify({ ...orderPayload, userId: 'victim' }),
+      });
+      expect(res.status).toBe(403);
+    });
+
+    it('stores the verified UID as the owner', async () => {
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('actual_user');
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test' },
+        body: JSON.stringify({ ...orderPayload, userId: 'actual_user' }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      const doc = await getFirestore().collection('orders').doc(json.id).get();
+      expect(doc.data()?.userId).toBe('actual_user');
+    });
     it('forces prices to {} and totalAmount to 0 on public order submission', async () => {
       const db = getFirestore();
 
@@ -269,3 +315,4 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     });
   });
 });
+

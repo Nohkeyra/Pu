@@ -9,6 +9,7 @@ import { safeJsonStringify, cn } from '@/lib/utils';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import {
   getPendingOrders,
+  getOrderSubmissionHeaders,
   removePendingOrder,
   type PendingOrder,
 } from '@/lib/pendingOrdersQueue';
@@ -60,7 +61,7 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
       try {
         response = await fetch(getApiUrl('/api/orders'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getOrderSubmissionHeaders(item.orderPayload),
           body: safeJsonStringify(item.orderPayload),
           signal: controller.signal,
         });
@@ -92,10 +93,12 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
       triggerNotification(NotificationType.Error);
       toast({
         title: tText('Still Couldn\'t Send', 'Masih Gagal Dihantar'),
-        description: tText(
-          'Connection may still be unstable. It will stay saved — try again shortly.',
-          'Sambungan mungkin masih tidak stabil. Ia akan kekal disimpan — cuba lagi sebentar lagi.'
-        ),
+        description: err instanceof Error && err.message.includes('original account')
+          ? tText('Sign in to the account used for this order, then try again.', 'Log masuk ke akaun asal tempahan ini, kemudian cuba lagi.')
+          : tText(
+              'Connection may still be unstable. It will stay saved — try again shortly.',
+              'Sambungan mungkin masih tidak stabil. Ia akan kekal disimpan — cuba lagi sebentar lagi.'
+            ),
         variant: 'error',
       });
     }
@@ -203,3 +206,4 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
 }
 
 export default PendingOrdersDialog;
+

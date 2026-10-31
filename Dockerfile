@@ -45,6 +45,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Copy only what runtime needs
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/server-dist ./server-dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 
@@ -57,4 +58,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 # tini = proper PID 1 signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/server.cjs"]
+CMD ["node", "server-dist/server.cjs"]
+

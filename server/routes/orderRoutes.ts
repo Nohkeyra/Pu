@@ -127,6 +127,14 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
 router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, res) => {
   try {
     const rawBody = req.body || {};
+    const hasAuthorization = Boolean(req.headers.authorization);
+    const callerUid = hasAuthorization ? await verifyCustomerIdToken(req) : null;
+    if ((hasAuthorization && !callerUid) || (rawBody.userId && !callerUid)) {
+      return res.status(401).json({ error: 'A valid customer session is required for this order.' });
+    }
+    if (rawBody.userId && rawBody.userId !== callerUid) {
+      return res.status(403).json({ error: 'Order owner does not match the customer session.' });
+    }
     const db = getFirestore();
 
     const derivedDate = deriveEventDate(rawBody) || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
@@ -177,7 +185,7 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
       dishes: processedDishes,
       veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],
       customMenu: typeof rawBody.customMenu === 'string' ? rawBody.customMenu.slice(0, 1000) : '',
-      userId: typeof rawBody.userId === 'string' ? rawBody.userId : null,
+      userId: callerUid,
       delivery: sanitizeDelivery(rawBody.delivery),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -192,37 +200,41 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
 
     if (idempotencyKey) {
       const idempRef = db.collection('idempotency_keys').doc(idempotencyKey);
-      const idempSnap = await idempRef.get();
-
-      if (idempSnap.exists) {
-        const idempData = idempSnap.data();
-        orderId = idempData?.orderId;
-        finalInvoiceNo = idempData?.invoiceNo || '';
-        isDuplicate = true;
-      } else {
-        finalInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
-        sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
-        (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
-
-        const orderRef = db.collection('orders').doc();
-        orderId = orderRef.id;
-
-        const batch = db.batch();
-        batch.set(orderRef, sanitizedOrderDoc);
-        // C-2 fix: expireAt enables Firestore TTL on this collection so stale keys
-        // are automatically deleted. Configure a TTL policy on the `expireAt` field
-        // for the `idempotency_keys` collection in Firestore console / terraform.
-        const idempExpireAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-        batch.set(idempRef, {
-          orderId,
-          invoiceNo: finalInvoiceNo,
+      const orderRef = db.collection('orders').doc();
+      // Reserve the invoice number outside the transaction. Concurrent retries may
+      // leave gaps in the sequence, but cannot create two orders for the same key.
+      const reservedInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
+      const transactionResult = await db.runTransaction(async (transaction) => {
+        const existing = await transaction.get(idempRef);
+        if (existing.exists) {
+          const data = existing.data();
+          if (!data?.orderId) throw new Error('Invalid idempotency record');
+          const existingOrder = await transaction.get(db.collection('orders').doc(data.orderId));
+          if (!existingOrder.exists) throw new Error('Idempotency record references a missing order');
+          const owner = existingOrder.data()?.userId || existingOrder.data()?.uid || null;
+          if (owner !== callerUid) return { conflict: true as const };
+          return { conflict: false as const, duplicate: true, orderId: data.orderId as string, invoiceNo: String(data.invoiceNo || '') };
+        }
+        const orderWithInvoice = { ...sanitizedOrderDoc, invoiceNo: reservedInvoiceNo, quoteNo: reservedInvoiceNo };
+        transaction.set(orderRef, orderWithInvoice);
+        transaction.set(idempRef, {
+          orderId: orderRef.id,
+          invoiceNo: reservedInvoiceNo,
           createdAt: FieldValue.serverTimestamp(),
           totalAmount,
           prices,
-          expireAt: idempExpireAt,
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         });
-        await batch.commit();
+        return { conflict: false as const, duplicate: false, orderId: orderRef.id, invoiceNo: reservedInvoiceNo };
+      });
+      if (transactionResult.conflict) {
+        return res.status(409).json({ error: 'This order key belongs to a different customer.' });
       }
+      orderId = transactionResult.orderId;
+      finalInvoiceNo = transactionResult.invoiceNo;
+      isDuplicate = transactionResult.duplicate;
+      sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
+      (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
     } else {
       finalInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
       sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
@@ -754,6 +766,7 @@ const calendarSessionsLimiter = createDistributedRateLimiter({
 });
 
 const calendarSessionsCacheMap = new Map<string, { data: Record<string, unknown>; expiresAt: number }>();
+const calendarOrdersCacheMap = new Map<string, { data: unknown[]; expiresAt: number }>();
 const CALENDAR_SESSIONS_CACHE_TTL_MS = 3 * 60 * 1000;
 const MAX_CALENDAR_CACHE_ENTRIES = 100;
 
@@ -780,6 +793,7 @@ function setCalendarSessionsCache(key: string, data: Record<string, unknown>): v
 
 export function invalidateCalendarSessionsCache(): void {
   calendarSessionsCacheMap.clear();
+  calendarOrdersCacheMap.clear();
 }
 
 // Calendar Notes Endpoints
@@ -898,6 +912,12 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
     const fromDate = typeof req.query.from === 'string' ? req.query.from.trim() : '';
     const toDate = typeof req.query.to === 'string' ? req.query.to.trim() : '';
 
+    const cacheKey = `${fromDate || 'all'}|${toDate || 'all'}`;
+    const cached = calendarOrdersCacheMap.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.json({ success: true, orders: cached.data });
+    }
+
     const snapshot = await db.collection('orders').get();
     const orders = snapshot.docs
       .filter(doc => !doc.data().deletedByAdmin)
@@ -911,6 +931,16 @@ router.get('/calendar-orders', calendarSessionsLimiter, async (req, res) => {
         && (!toDate || order.normalizedEventDate! <= toDate))
       .map(order => ({ id: order.id, status: order.status, eventDate: order.eventDate, meals: order.meals, guests: order.guests }));
 
+    const now = Date.now();
+    for (const [key, entry] of calendarOrdersCacheMap) {
+      if (entry.expiresAt <= now) calendarOrdersCacheMap.delete(key);
+    }
+    while (calendarOrdersCacheMap.size >= MAX_CALENDAR_CACHE_ENTRIES) {
+      const oldest = calendarOrdersCacheMap.keys().next().value;
+      if (!oldest) break;
+      calendarOrdersCacheMap.delete(oldest);
+    }
+    calendarOrdersCacheMap.set(cacheKey, { data: orders, expiresAt: now + CALENDAR_SESSIONS_CACHE_TTL_MS });
     return res.json({ success: true, orders });
   } catch (err) {
     console.error('[Calendar Orders API Error]:', err);
@@ -1006,3 +1036,4 @@ router.get('/orders/:id/rider-location', async (req, res) => {
 });
 
 export default router;
+

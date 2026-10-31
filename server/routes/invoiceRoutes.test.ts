@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
 import type { Server } from 'http';
 import invoiceRoutes, { isOrderOwnedByCaller } from './invoiceRoutes.js';
-import { signAdminJwt } from '../adminAuth.js';
+import { signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
 
@@ -54,10 +54,14 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       expect(isOrderOwnedByCaller(order, auth)).toBe(true);
     });
 
-    it('allows customer with matching email', () => {
+    it('rejects matching email when the order belongs to another user', () => {
       const order = { id: 'ord_1', userId: 'user_999', email: 'user@example.com' };
       const auth = { isAdmin: false, uid: 'user_123', email: 'user@example.com' };
-      expect(isOrderOwnedByCaller(order, auth)).toBe(true);
+      expect(isOrderOwnedByCaller(order, auth)).toBe(false);
+    });
+
+    it('allows a guest order to be matched by verified email', () => {
+      expect(isOrderOwnedByCaller({ email: 'user@example.com' }, { isAdmin: false, uid: 'user_123', email: 'user@example.com' })).toBe(true);
     });
 
     it('rejects foreign customer with different userId and email', () => {
@@ -68,6 +72,15 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
   });
 
   describe('GET /api/invoice/:orderId/pdf', () => {
+    it('rejects an admin JWT after it has been revoked', async () => {
+      const token = signAdminJwt({ uid: 'revoked_admin' });
+      const payload = verifyAdminJwt(token)!;
+      await getFirestore().collection('admin_revocations').doc(`jti_${payload.jti}`).set({ revoked: true });
+      const res = await fetch(`${baseUrl}/api/invoice/any_order/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(401);
+    });
     it('rejects unauthenticated request with 401', async () => {
       const res = await fetch(`${baseUrl}/api/invoice/order_123/pdf`);
       expect(res.status).toBe(401);
@@ -277,3 +290,4 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
     });
   });
 });
+

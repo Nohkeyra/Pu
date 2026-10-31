@@ -36,38 +36,15 @@ service cloud.firestore {
 
     match /orders/{orderId} {
 
-      // ID bounds (F-04 / C-03): regex-anchored so traversal/
-      // poison IDs are rejected upstream of any business logic.
-      // (Enforced by the `allow create` regex below.)
+      // Orders are created through the server API, including guest submissions.
+      // Admin SDK writes bypass these client security rules.
+      allow create: if false;
 
-      // Reads: customer sees only OWN orders; admins see all.
+      // Customers can read their own orders; admins can read all orders.
       allow read: if request.auth != null
                     && (isAdmin()
-                        || resource.data.uid      == request.auth.uid
-                        || resource.data.userId   == request.auth.uid);
-
-      allow create: if
-        orderId.matches('^[A-Za-z0-9_-]{5,50}$')
-        && request.resource.data.status == 'pending'
-        && request.resource.data.totalAmount == 0
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity > 0
-        && request.resource.data.quantity <= 10000
-        && request.resource.data.meals is list
-        && request.resource.data.meals.size() > 0
-        && request.resource.data.meals.size() <= 10
-        && request.resource.data.meals.toSet()
-             .difference(['breakfast','lunch','hi_tea'].toSet())
-             .size() == 0
-        && request.resource.data.name     is string && request.resource.data.name.size()     <= 150
-        && request.resource.data.email    is string && request.resource.data.email.size()    <= 150
-        && request.resource.data.contact  is string && request.resource.data.contact.size()  <= 50
-        && request.resource.data.to       is string && request.resource.data.to.size()       <= 150
-        && (!('attn'    in request.resource.data) || (request.resource.data.attn    is string && request.resource.data.attn.size()    <= 150))
-        && request.resource.data.location is string && request.resource.data.location.size() <= 300
-        && request.resource.data.menu     is string && request.resource.data.menu.size()     <= 200
-        && (!('notes'   in request.resource.data) || (request.resource.data.notes   is string && request.resource.data.notes.size()   <= 2000));
+                        || resource.data.uid == request.auth.uid
+                        || resource.data.userId == request.auth.uid);
 
       allow update: if isAdmin()
         && orderId.matches('^[A-Za-z0-9_-]{5,50}$')
@@ -169,3 +146,4 @@ service cloud.firestore {
     }
   }
 }
+
