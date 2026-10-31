@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction, useCallback } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { motion } from 'motion/react';
 import { 
   Loader2, 
@@ -69,19 +69,6 @@ export function Step3ContactDetails({
   t,
 }: Step3ContactDetailsProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  // Phone number masking helper: 012-345 6789
-  const formatPhoneNumber = useCallback((value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    let formatted = numbers;
-    if (numbers.length > 3) {
-      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    }
-    if (numbers.length > 6) {
-      formatted = `${numbers.slice(0, 3)}-${numbers.slice(3, 6)} ${numbers.slice(6, 10)}`;
-    }
-    return formatted.slice(0, 12);
-  }, []);
 
   const validateAndNext = async () => {
     const next: Record<string, string> = {};
@@ -321,8 +308,10 @@ export function Step3ContactDetails({
             id="contact-phone"
             data-tour="step3-contact"
             type="tel"
+            autoComplete="tel"
+            maxLength={50}
             value={orderState.contact}
-            onChange={(e) => setOrderState(prev => ({ ...prev, contact: formatPhoneNumber(e.target.value) }))}
+            onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
             placeholder={tText('e.g. 012-345 6789', 'Contoh: 012-345 6789')}
             aria-describedby={fieldErrors.contact ? 'contact-error' : undefined}
             className="h-11 rounded-xl font-sans"

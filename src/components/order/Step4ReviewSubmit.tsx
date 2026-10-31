@@ -1,8 +1,31 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Coffee, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
-import { getAssetUrl, resolveDishImage, formatDateDisplay } from '@/lib/utils';
+import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
+import { repairDishImage } from '@/lib/imageRepair';
+
+function ReviewMenuImage({ item }: { item: any }) {
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const image = typeof item.image === 'string' && item.image.trim()
+    ? repairDishImage(item, { useProxyForExternal: true, noFallback: true })
+    : '';
+  const url = image ? getAssetUrl(image) : '';
+  const isDrink = String(item.category || '').toLowerCase() === 'drinks';
+  return (
+    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/10">
+      {url && failedImage !== url ? (
+        <img src={url} alt="" width={40} height={40} loading="lazy" decoding="async"
+          className="h-full w-full object-cover" onError={() => setFailedImage(url)} />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-stone-300" aria-hidden="true">
+          {isDrink ? <Coffee className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export interface Step4ReviewSubmitProps {
   orderState: any;
@@ -59,9 +82,16 @@ export function Step4ReviewSubmit({
         
         {/* Event & Serve Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block mb-1">
-            {tText('Event Summary', 'Maklumat Majlis')}
-          </span>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+              {tText('Event Summary', 'Maklumat Majlis')}
+            </h3>
+            <button type="button" disabled={isSubmitting} onClick={() => setCurrentStep(1)}
+              aria-label={tText('Edit event summary', 'Ubah maklumat majlis')}
+              className="min-h-11 rounded-lg px-2 text-xs font-bold text-amber-800 hover:underline disabled:opacity-50 dark:text-amber-300">
+              {tText('Edit', 'Ubah')}
+            </button>
+          </div>
           <div className="flex justify-between items-center text-xs">
             <span className="text-stone-700 dark:text-stone-300 font-medium">{tText('Event Type', 'Jenis Majlis')}</span>
             <span className="font-bold text-deep-forest dark:text-white">
@@ -98,9 +128,16 @@ export function Step4ReviewSubmit({
 
         {/* Customer Billing Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
-          <span className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block mb-1">
-            {tText('Customer & Billing Info', 'Maklumat Pembayar')}
-          </span>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+              {tText('Customer & Billing Info', 'Maklumat Pembayar')}
+            </h3>
+            <button type="button" disabled={isSubmitting} onClick={() => setCurrentStep(3)}
+              aria-label={tText('Edit customer details', 'Ubah butiran pelanggan')}
+              className="min-h-11 rounded-lg px-2 text-xs font-bold text-amber-800 hover:underline disabled:opacity-50 dark:text-amber-300">
+              {tText('Edit', 'Ubah')}
+            </button>
+          </div>
           {orderState.eventType === 'pejabat' && (
             <>
               <div className="flex justify-between items-start text-xs gap-4">
@@ -139,6 +176,12 @@ export function Step4ReviewSubmit({
             <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Venue Location', 'Lokasi')}</span>
             <span className="font-bold text-deep-forest dark:text-white text-right">{orderState.location}</span>
           </div>
+          {orderState.notes?.trim() && (
+            <div className="border-t border-stone/10 pt-3 text-xs dark:border-white/10">
+              <p className="font-medium text-stone-700 dark:text-stone-300">{tText('Additional Notes', 'Nota Tambahan')}</p>
+              <p className="mt-1 whitespace-pre-wrap break-words font-semibold text-deep-forest dark:text-white">{orderState.notes}</p>
+            </div>
+          )}
         </div>
 
         {/* Selected Menu Dishes Summary */}
@@ -154,27 +197,27 @@ export function Step4ReviewSubmit({
           />
           <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
-          <span className="relative z-10 microcopy-12-upper font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider block mb-1">
-            {tText('Selected Dishes Menu', 'Senarai Hidangan')}
-          </span>
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            <h3 className="microcopy-12-upper font-black text-amber-200 uppercase tracking-wider">
+              {tText('Selected Dishes Menu', 'Senarai Hidangan')}
+            </h3>
+            <button type="button" disabled={isSubmitting} onClick={() => setCurrentStep(2)}
+              aria-label={tText('Edit selected menu', 'Ubah pilihan menu')}
+              className="min-h-11 rounded-lg px-2 text-xs font-bold text-amber-200 hover:underline disabled:opacity-50">
+              {tText('Edit', 'Ubah')}
+            </button>
+          </div>
           <div className="relative z-10 text-xs text-white space-y-2 font-semibold">
             {orderState.dishes.length > 0 && (
               <>
                 <p className="text-stone-300 microcopy-12 uppercase">{tText('Main Dishes & Drinks:', 'Hidangan & Minuman:')}</p>
                 <div className="space-y-1 pl-1">
-                  {orderState.dishes.map((d: any) => {
-                    const dishImg = resolveDishImage(d);
-                    return (
+                  {orderState.dishes.map((d: any) => (
                       <div key={d.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
-                        {dishImg && (
-                          <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
-                            <img src={getAssetUrl(dishImg)} alt="" width={32} height={32} loading="lazy" decoding="async" className="w-full h-full object-cover aspect-square" />
-                          </div>
-                        )}
+                        <ReviewMenuImage item={d} />
                         <span className="text-white font-medium flex-1 leading-tight">{tText(d.nameEn, d.nameBm)}</span>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
               </>
             )}
@@ -183,21 +226,20 @@ export function Step4ReviewSubmit({
               <>
                 <p className="text-stone-300 microcopy-12 uppercase pt-1">{tText('Vegetables & Add-ons:', 'Sayur & Tambahan:')}</p>
                 <div className="space-y-1 pl-1">
-                  {orderState.veggies.map((v: any) => {
-                    const dishImg = resolveDishImage(v);
-                    return (
+                  {orderState.veggies.map((v: any) => (
                       <div key={v.id} className="flex items-center gap-2.5 bg-white/10 border border-white/5 p-1.5 pr-2.5 rounded-lg text-xs">
-                        {dishImg && (
-                          <div className="w-8 h-8 rounded overflow-hidden bg-white/5 border border-white/10 shrink-0 relative">
-                            <img src={getAssetUrl(dishImg)} alt="" width={32} height={32} loading="lazy" decoding="async" className="w-full h-full object-cover aspect-square" />
-                          </div>
-                        )}
+                        <ReviewMenuImage item={v} />
                         <span className="text-white font-medium flex-1 leading-tight">{tText(v.nameEn, v.nameBm)}</span>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
               </>
+            )}
+            {orderState.customMenu?.trim() && (
+              <div className="border-t border-white/15 pt-3">
+                <p className="text-stone-300 microcopy-12 uppercase">{tText('Custom Menu Request:', 'Permintaan Menu Khas:')}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words font-medium text-white">{orderState.customMenu}</p>
+              </div>
             )}
           </div>
         </div>
