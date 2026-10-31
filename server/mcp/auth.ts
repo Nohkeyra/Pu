@@ -123,7 +123,7 @@ async function verifyAdminIdToken(idToken: string) {
     .map(value => value.trim().toLowerCase())
     .filter(Boolean);
 
-  if (decoded.admin === true || (!!email && allowed.includes(email))) return decoded;
+  if (decoded.admin === true || (decoded.email_verified === true && !!email && allowed.includes(email))) return decoded;
   throw new Error('This Firebase account is not authorized for Wawasan MCP.');
 }
 
@@ -562,3 +562,4 @@ export async function mcpBearerAuth(req: Request, res: Response, next: NextFunct
   };
   next();
 }
+

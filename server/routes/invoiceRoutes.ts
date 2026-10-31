@@ -43,7 +43,8 @@ export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerA
       .split(',')
       .map(e => e.trim().toLowerCase())
       .filter(Boolean);
-    const userEmail = decoded.email?.toLowerCase() || null;
+    // An email claim is not proof of ownership until Firebase verifies it.
+    const userEmail = decoded.email_verified === true ? decoded.email?.toLowerCase() || null : null;
     const isAdmin = decoded.admin === true || (userEmail !== null && adminEmails.includes(userEmail));
 
     return {
@@ -342,3 +343,4 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
 });
 
 export default router;
+

@@ -226,14 +226,48 @@ export function getLocalFallbackImagePath(dishHint?: string, categoryHint?: stri
   return path.join(publicDir, 'assets/dishes/vector/nasi_lemak.jpg');
 }
 
+// Resolve both the requested file and its asset directory so symlinks cannot
+// turn a public image request into a read outside the permitted directory.
+export async function getSafeLocalImagePath(assetPath: string): Promise<string | null> {
+  if (!(assetPath.startsWith('/assets/') || assetPath.startsWith('/photos/'))
+      || assetPath.includes('\\') || assetPath.includes('\0')
+      || assetPath.split('/').includes('..')
+      || !/\.(?:jpe?g|png|webp|gif|svg|avif|ico)$/i.test(assetPath)) {
+    return null;
+  }
+
+  const isWithin = (directory: string, file: string): boolean => {
+    const relative = path.relative(directory, file);
+    return relative !== '' && relative !== '..'
+      && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+  };
+
+  try {
+    const publicDir = await fs.promises.realpath(path.join(process.cwd(), 'public'));
+    const assetDir = await fs.promises.realpath(path.join(publicDir, assetPath.split('/')[1]));
+    if (!isWithin(publicDir, assetDir)) return null;
+
+    const candidate = path.resolve(publicDir, assetPath.slice(1));
+    if (!isWithin(assetDir, candidate)) return null;
+
+    const localPath = await fs.promises.realpath(candidate);
+    if (!isWithin(assetDir, localPath)) return null;
+    const stat = await fs.promises.stat(localPath);
+    return stat.isFile() ? localPath : null;
+  } catch {
+    // Missing, inaccessible, or invalid paths use the normal image fallback.
+    return null;
+  }
+}
+
 /**
  * Route: Image Proxy & Auto-Repair Endpoint
  * GET /api/images/proxy?url=<encoded_url>&dish=<dish_id>&category=<category>
  */
 router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Response) => {
-  const targetUrl = req.query.url as string | undefined;
-  const dish = req.query.dish as string | undefined;
-  const category = req.query.category as string | undefined;
+  const targetUrl = typeof req.query.url === 'string' ? req.query.url : undefined;
+  const dish = typeof req.query.dish === 'string' ? req.query.dish : undefined;
+  const category = typeof req.query.category === 'string' ? req.query.category : undefined;
 
   const serveRepairedFallback = () => {
     const fallbackPath = getLocalFallbackImagePath(dish, category);
@@ -249,13 +283,16 @@ router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Respons
 
   // If no target URL or it's a relative asset path, serve local fallback or file directly
   if (!targetUrl || !targetUrl.startsWith('http')) {
-    if (targetUrl && (targetUrl.startsWith('/assets/') || targetUrl.startsWith('/photos/'))) {
-      const localPath = path.join(process.cwd(), 'public', targetUrl.replace(/^\//, ''));
-      if (fs.existsSync(localPath)) {
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-        res.setHeader('X-Image-Repaired', 'false');
-        return fs.createReadStream(localPath).pipe(res);
-      }
+    const localPath = targetUrl ? await getSafeLocalImagePath(targetUrl) : null;
+    if (localPath) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('X-Image-Repaired', 'false');
+      return res.sendFile(localPath, (err) => {
+        if (err) {
+          if (res.headersSent) res.destroy();
+          else res.status(404).end();
+        }
+      });
     }
     return serveRepairedFallback();
   }
@@ -504,3 +541,4 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
 });
 
 export default router;
+

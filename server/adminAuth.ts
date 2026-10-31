@@ -174,7 +174,7 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
       const userEmail = decodedToken.email?.toLowerCase();
       
       if (decodedToken.admin !== true) {
-        if (userEmail && adminEmails.includes(userEmail)) {
+        if (decodedToken.email_verified === true && userEmail && adminEmails.includes(userEmail)) {
           // Safe custom claim update preserving existing claims and avoiding race conditions
           const userRecord = await getAuth(getAdminApp()).getUser(decodedToken.uid);
           const existingClaims = userRecord.customClaims || {};
@@ -194,4 +194,5 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
 
   return res.status(401).json({ error: "Unauthorized: Invalid or expired admin session token" });
 }
+
 

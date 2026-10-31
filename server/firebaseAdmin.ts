@@ -187,7 +187,7 @@ export function getAdminApp(): App {
   return adminApp;
 }
 
-export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email?: string; admin?: boolean } | null> {
+export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean } | null> {
   if (!idToken || typeof idToken !== "string") return null;
 
   if (!hasAdminCredentials()) {
@@ -199,7 +199,8 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: str
     return {
       uid: decoded.uid,
       email: decoded.email,
-      admin: Boolean(decoded.admin),
+      email_verified: decoded.email_verified === true,
+      admin: decoded.admin === true,
     };
   } catch (err) {
     console.warn("[Auth] Failed to verify Firebase ID token:", err instanceof Error ? err.message : err);
@@ -440,3 +441,4 @@ export async function createOrder(orderData: OrderData): Promise<{ orderId: stri
 
   return { orderId: orderRef.id, invoiceNo: orderData.invoiceNo };
 }
+

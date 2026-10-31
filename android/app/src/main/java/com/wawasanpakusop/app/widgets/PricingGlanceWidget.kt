@@ -15,6 +15,7 @@ import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
+import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -250,10 +251,13 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
                 }
             }
         } else {
-            val displayOrders = orders.take(3)
-            for (order in displayOrders) {
-                GlanceOrderRowItem(context, order)
-                Spacer(modifier = GlanceModifier.height(6.dp))
+            LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+                items(orders.size) { index ->
+                    Column(modifier = GlanceModifier.fillMaxWidth()) {
+                        GlanceOrderRowItem(context, orders[index])
+                        Spacer(modifier = GlanceModifier.height(6.dp))
+                    }
+                }
             }
         }
     }
@@ -314,3 +318,4 @@ fun GlanceOrderRowItem(context: Context, order: GlanceOrderItem) {
         }
     }
 }
+
