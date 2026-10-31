@@ -1,5 +1,7 @@
-import { Star, Eye, Send, Trash2, CalendarDays, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Star, Eye, Send, Trash2, CalendarDays, Users, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useLongPress } from '@/hooks/useLongPress';
 
 import type { Order } from '@/types';
@@ -31,6 +33,7 @@ export function AdminOrderRow({
   handleToggleOrderSelect, setStarredOrderIds, openOrderDetail, openSendDialog, handleDelete,
   setLongPressedOrder
 }: AdminOrderRowProps) {
+  const [actionsOpen, setActionsOpen] = useState(false);
   
   const longPressProps = useLongPress(
     () => { setLongPressedOrder(order); },
@@ -39,6 +42,7 @@ export function AdminOrderRow({
   );
 
   return (
+    <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
     <div style={style} className="px-2 sm:px-3 py-1.5">
       <div
         {...longPressProps}
@@ -46,11 +50,15 @@ export function AdminOrderRow({
       >
         <div className={`absolute inset-y-0 left-0 w-1 ${stripColor}`} />
         <div className="flex min-w-0 items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
-              <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />{formattedHeaderDate}
-            </span>
-            {getStatusBadge(order.status)}
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-bold leading-snug text-deep-forest dark:text-stone-50">{clientName}</h3>
+            {order.email && <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">{order.email}</p>}
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
+                <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />{formattedHeaderDate}
+              </span>
+              {getStatusBadge(order.status)}
+            </div>
           </div>
           <div className="shrink-0" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
             {isSelectMode ? (
@@ -73,8 +81,6 @@ export function AdminOrderRow({
           </div>
         </div>
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-bold leading-snug text-deep-forest dark:text-stone-50">{clientName}</h3>
-          {order.email && <p className="truncate text-xs text-stone-500 dark:text-stone-400">{order.email}</p>}
           <span className="sr-only">{relativeTime} {language === 'bm' ? 'yang lalu' : 'ago'}</span>
         </div>
         <div className="flex min-w-0 items-center justify-between gap-2" onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
@@ -90,17 +96,31 @@ export function AdminOrderRow({
               aria-label={`${language === 'bm' ? 'Lihat butiran' : 'View details'} ${clientName}`}>
               <Eye className="mr-1 h-4 w-4" aria-hidden="true" /><span>{language === 'bm' ? 'Lihat' : 'View'}</span>
             </Button>
-            <Button size="icon" variant="ghost" className="h-10 w-10 text-stone-600 dark:text-stone-300" onClick={() => openSendDialog(order)}
-              aria-label={language === 'bm' ? 'Hantar invois' : 'Send invoice'} title={language === 'bm' ? 'Hantar invois' : 'Send invoice'}>
-              <Send className="h-4 w-4" aria-hidden="true" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-10 w-10 text-stone-500 hover:text-rose-600 dark:text-stone-400" onClick={() => order.id && handleDelete(order.id)}
-              aria-label={language === 'bm' ? 'Padam tempahan' : 'Delete order'} title={language === 'bm' ? 'Padam tempahan' : 'Delete order'}>
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="text-stone-600 dark:text-stone-300"
+                aria-label={language === 'bm' ? 'Tindakan lain' : 'More actions'} title={language === 'bm' ? 'Tindakan lain' : 'More actions'}>
+                <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </DialogTrigger>
           </div>
         </div>
       </div>
     </div>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{language === 'bm' ? 'Tindakan pesanan' : 'Order actions'}</DialogTitle>
+        <DialogDescription className="break-words">{clientName}</DialogDescription>
+      </DialogHeader>
+      <div className="grid gap-2">
+        <Button type="button" variant="outline" className="justify-start" onClick={() => { setActionsOpen(false); openSendDialog(order); }}>
+          <Send className="h-4 w-4" aria-hidden="true" />{language === 'bm' ? 'Hantar invois' : 'Send invoice'}
+        </Button>
+        <Button type="button" variant="outline" className="justify-start text-rose-600 dark:text-rose-400" disabled={!order.id}
+          onClick={() => { setActionsOpen(false); if (order.id) handleDelete(order.id); }}>
+          <Trash2 className="h-4 w-4" aria-hidden="true" />{language === 'bm' ? 'Padam pesanan' : 'Delete order'}
+        </Button>
+      </div>
+    </DialogContent>
+    </Dialog>
   );
 }

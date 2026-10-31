@@ -69,7 +69,7 @@ export function AdminMenuItemRow({
         <button
           type="button"
           onClick={() => handleToggleAvailable(item)}
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+          className={`flex min-h-11 items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
             isVisible
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
               : 'bg-stone-200/60 text-stone-600 dark:bg-stone-800 dark:text-stone-400 border-stone-300/60 dark:border-stone-700 hover:bg-stone-200'
@@ -84,7 +84,7 @@ export function AdminMenuItemRow({
           ) : (
             <>
               <EyeOff className="w-3 h-3 text-stone-500 dark:text-stone-400" />
-              <span className="text-xs">{tText('Hidden', 'Sorot')}</span>
+              <span className="text-xs">{tText('Hidden', 'Sembunyi')}</span>
             </>
           )}
         </button>
@@ -94,7 +94,7 @@ export function AdminMenuItemRow({
           <button
             onClick={() => handleOpenEditModal(item)}
             aria-label={tText('Edit', 'Kemas kini')}
-            className="p-1.5 text-stone-400 hover:text-deep-forest dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
+            className="flex h-11 w-11 items-center justify-center text-stone-500 hover:text-deep-forest dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
             title={tText('Edit Item', 'Kemas kini Hidangan')}
           >
             <Edit2 className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export function AdminMenuItemRow({
           <button
             onClick={() => handleDeleteItem(item.id, displayName)}
             aria-label={tText('Delete', 'Padam')}
-            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors cursor-pointer"
+            className="flex h-11 w-11 items-center justify-center text-stone-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors cursor-pointer"
             title={tText('Delete Item', 'Padam Hidangan')}
           >
             <Trash2 className="w-3.5 h-3.5" />

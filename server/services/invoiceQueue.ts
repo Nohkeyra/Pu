@@ -365,6 +365,17 @@ export class DurableInvoiceOutboxService {
           `Pending jobs are preserved. Deploy the invoice_outbox indexes from firestore.indexes.json.` +
           (link ? ` Index link: ${link}` : '')
         );
+      } else if (this.isQuotaExhaustedError(err)) {
+        const waitMs = state.backoffMs;
+        state.blockedUntilMs = Date.now() + waitMs;
+        state.backoffMs = Math.min(waitMs * 2, DurableInvoiceOutboxService.BLOCK_MAX_MS);
+        const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'restoran-wawasan';
+        const databaseId = process.env.VITE_FIREBASE_DATABASE_ID || '(default)';
+        console.warn(
+          `[InvoiceOutbox] Firestore Quota Exceeded (RESOURCE_EXHAUSTED) on '${kind}' query; pausing worker cycle for ${Math.round(waitMs / 1000)}s. ` +
+          `Quota will reset tomorrow. Detailed pricing: https://firebase.google.com/pricing#cloud-firestore. ` +
+          `Console link: https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/data?openUpgradeDialog=true`
+        );
       } else {
         console.error(`[InvoiceOutbox] Process queue error (${kind}):`, err);
       }
@@ -375,6 +386,12 @@ export class DurableInvoiceOutboxService {
     const e = err as { code?: unknown; message?: unknown } | null;
     return e?.code === 9 || e?.code === 'failed-precondition' ||
       /FAILED_PRECONDITION/.test(String(e?.message ?? ''));
+  }
+
+  private isQuotaExhaustedError(err: unknown): boolean {
+    const e = err as { code?: unknown; message?: unknown } | null;
+    return e?.code === 8 || e?.code === 'resource-exhausted' ||
+      /RESOURCE_EXHAUSTED|Quota exceeded/i.test(String(e?.message ?? ''));
   }
 
   /**

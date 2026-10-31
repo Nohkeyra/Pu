@@ -243,6 +243,19 @@ describe('DurableInvoiceOutboxService', () => {
       expect(h.sendMail).toHaveBeenCalledTimes(1);
     });
 
+    it('pauses queries and logs warning when RESOURCE_EXHAUSTED (Quota exceeded) error occurs', async () => {
+      h.db.queryError = () => Object.assign(new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.'), { code: 8 });
+      await a.processQueue();
+      expect(h.db.queryLog).toHaveLength(2);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('RESOURCE_EXHAUSTED'));
+
+      for (let i = 0; i < 5; i++) {
+        vi.setSystemTime(Date.now() + 5_000);
+        await a.processQueue();
+      }
+      expect(h.db.queryLog).toHaveLength(2); // paused during 60s window
+    });
+
     it('does not pause on ordinary transient errors', async () => {
       h.db.queryError = () => new Error('network blip');
       await a.processQueue();
