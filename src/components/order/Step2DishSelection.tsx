@@ -7,8 +7,7 @@ import {
   Utensils,
   CakeSlice,
   ArrowLeft, 
-  ArrowRight,
-  Check
+  ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton, DishCardSkeleton } from '@/components/ui/Skeleton';
@@ -17,7 +16,6 @@ import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getAssetUrl } from '@/lib/utils';
-import { repairDishImage } from '@/lib/imageRepair';
 import { MenuItemCard } from '@/components/order/MenuItemCard';
 
 interface OrderState {
@@ -83,7 +81,7 @@ export function Step2DishSelection({
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2.5 sticky top-[72px] z-30 bg-cream/95 dark:bg-stone-950/95 backdrop-blur-md -mx-2 px-2 py-1">
+        <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2.5">
           <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block shrink-0`}>
             <span className="inline-flex items-center gap-1.5">{icon}<span>{title}</span></span>
           </Label>
@@ -172,7 +170,7 @@ export function Step2DishSelection({
 
           {visibleMenu.some(item => item.category === 'drinks') && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2 sticky top-[88px] z-30 bg-cream/95 dark:bg-background/95 backdrop-blur-sm -mx-1 px-1">
+              <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2">
                 <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block shrink-0">
                   <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Drinks Selection', 'Pilihan Minuman')}</span>
                 </Label>
@@ -197,48 +195,14 @@ export function Step2DishSelection({
                           setFieldError(null);
                           void handleToggleDish(item);
                         };
-                        const dishName = tText(item.nameEn, item.nameBm) || item.name;
-                        const dishImg = typeof item.image === 'string' && item.image.trim() ? repairDishImage(item, { useProxyForExternal: true, noFallback: true }) : '';
                         return (
-                          <div
+                          <MenuItemCard
                             key={item.id}
-                            className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
-                                        border border-white/10 bg-stone-900/40
-                                        hover:bg-stone-900/60 transition-colors
-                                        cursor-pointer min-h-[72px]
-                                        ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
-                            onClick={onToggle}
-                          >
-                            {/* Thumbnail */}
-                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
-                              {dishImg
-                                ? <img src={getAssetUrl(dishImg)} alt={dishName}
-                                       width={56}
-                                       height={56}
-                                       loading="lazy"
-                                       decoding="async"
-                                       className="w-full h-full object-cover aspect-square" />
-                                : <div className="w-full h-full flex items-center
-                                                   justify-center text-xl">🍽</div>}
-                            </div>
-
-                            {/* Name */}
-                            <div className="flex-1 min-w-0 pr-5">
-                              <span className="text-sm font-semibold leading-tight
-                                               line-clamp-2 block text-stone-900 dark:text-stone-100">
-                                {dishName}
-                              </span>
-                            </div>
-
-                            {/* Checkbox */}
-                            <div className="absolute top-2 right-2">
-                              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
-                                selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-                              }`}>
-                                {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
-                              </div>
-                            </div>
-                          </div>
+                            item={item}
+                            isSelected={selected}
+                            onToggle={onToggle}
+                            tText={tText}
+                          />
                         );
                       })}
                   </div>
@@ -259,48 +223,14 @@ export function Step2DishSelection({
                           setFieldError(null);
                           void handleToggleDish(item);
                         };
-                        const dishName = tText(item.nameEn, item.nameBm) || item.name;
-                        const dishImg = typeof item.image === 'string' && item.image.trim() ? repairDishImage(item, { useProxyForExternal: true, noFallback: true }) : '';
                         return (
-                          <div
+                          <MenuItemCard
                             key={item.id}
-                            className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl
-                                        border border-white/10 bg-stone-900/40
-                                        hover:bg-stone-900/60 transition-colors
-                                        cursor-pointer min-h-[72px]
-                                        ${selected ? 'ring-2 ring-amber-500 bg-amber-500/10' : ''}`}
-                            onClick={onToggle}
-                          >
-                            {/* Thumbnail */}
-                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-stone-800">
-                              {dishImg
-                                ? <img src={getAssetUrl(dishImg)} alt={dishName}
-                                       width={56}
-                                       height={56}
-                                       loading="lazy"
-                                       decoding="async"
-                                       className="w-full h-full object-cover aspect-square" />
-                                : <div className="w-full h-full flex items-center
-                                                   justify-center text-xl">🍽</div>}
-                            </div>
-
-                            {/* Name */}
-                            <div className="flex-1 min-w-0 pr-5">
-                              <span className="text-sm font-semibold leading-tight
-                                               line-clamp-2 block text-stone-900 dark:text-stone-100">
-                                {dishName}
-                              </span>
-                            </div>
-
-                            {/* Checkbox */}
-                            <div className="absolute top-2 right-2">
-                              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shadow-inner ${
-                                selected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-                              }`}>
-                                {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
-                              </div>
-                            </div>
-                          </div>
+                            item={item}
+                            isSelected={selected}
+                            onToggle={onToggle}
+                            tText={tText}
+                          />
                         );
                       })}
                   </div>
@@ -362,7 +292,7 @@ export function Step2DishSelection({
         </div>
 
         <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
-          <span className="text-xs font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider">
+          <span className="text-xs font-bold text-amber-200 uppercase tracking-wider">
             {tText('Price Estimation:', 'Anggaran Harga:')}
           </span>
           <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">

@@ -21,41 +21,27 @@ export const MenuItemCard = React.memo(
     const isDrink = String(item.category || '').toLowerCase() === 'drinks';
 
     return (
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         data-tour={dataTour}
         aria-pressed={isSelected}
-        aria-label={`${tText(item.nameEn, item.nameBm)}`}
+        aria-label={tText(item.nameEn, item.nameBm) || item.name}
         onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
         className={cn(
-          "p-2.5 sm:p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all duration-200 select-none min-h-[58px] hover:shadow-md active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500",
+          "group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2",
           isSelected 
-            ? "bg-amber-500/10 dark:bg-amber-500/15 border-amber-500 shadow-sm ring-1 ring-amber-500/30" 
-            : "bg-white dark:bg-stone-900/60 hover:bg-stone-50/80 dark:hover:bg-stone-800/80 border-stone-200/90 dark:border-stone-800 shadow-xs"
+            ? "bg-amber-50 dark:bg-stone-900 border-amber-500 shadow-sm ring-2 ring-amber-500/60"
+            : "bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 border-stone-200 dark:border-stone-700 shadow-xs"
         )}
       >
-        <div className={cn(
-          "w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all duration-200 shadow-inner",
-          isSelected ? "bg-amber-600 border-amber-600 text-white scale-110" : "border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-        )}>
-          {isSelected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
-        </div>
-        
-        <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-950 shrink-0 border border-stone-200/80 dark:border-stone-700/80 shadow-sm relative group-hover:border-amber-400/50 transition-colors">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-stone-100 dark:bg-stone-800">
           {imageUrl && failedImage !== imageUrl ? (
             <img
               src={imageUrl}
-              alt={tText(item.nameEn, item.nameBm)}
-              width={48}
-              height={48}
-              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 aspect-square"
+              alt=""
+              width={640}
+              height={480}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
@@ -66,15 +52,17 @@ export const MenuItemCard = React.memo(
               {isDrink ? <Coffee className="h-5 w-5" /> : <UtensilsCrossed className="h-5 w-5" />}
             </span>
           )}
-          <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-xl" />
+          <div className={cn("absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm",
+            isSelected ? "border-amber-600 bg-amber-600 text-white" : "border-white/80 bg-white/90 text-stone-600")}>
+            {isSelected ? <Check className="h-4 w-4" aria-hidden="true" /> : <span className="text-lg leading-none" aria-hidden="true">+</span>}
+          </div>
         </div>
-
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-bold block text-stone-900 dark:text-stone-100 truncate tracking-tight leading-snug">
-            {tText(item.nameEn, item.nameBm)}
+        <div className="flex min-h-[58px] w-full items-center px-3 py-2.5">
+          <span className="block break-words text-sm font-bold leading-snug text-stone-900 dark:text-stone-100">
+            {tText(item.nameEn, item.nameBm) || item.name}
           </span>
         </div>
-      </div>
+      </button>
     );
   }
 );
