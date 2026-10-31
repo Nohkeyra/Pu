@@ -584,10 +584,14 @@ export default function CalendarPage() {
   };
 
   const handleToday = async () => {
-    await triggerLightImpact();
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDay(today);
+    await handleDayClick(today);
+  };
+
+  const handleAdjacentDay = async (day: Date) => {
+    setCurrentDate(day);
+    await handleDayClick(day);
   };
 
   // Calendar calculations (Monday-first ISO grid)
@@ -663,10 +667,10 @@ export default function CalendarPage() {
       <PageShell
         title={tl('Catering Schedule', 'Jadual Katering')}
         subtitle={isAdmin 
-          ? tl('Kitchen booking management', 'Pengurusan tempahan dapur') 
+          ? tl('Review bookings and notes by date', 'Semak tempahan dan nota mengikut tarikh')
           : currentUser 
-          ? tl('Your catering dates & availability', 'Tarikh katering & ketersediaan') 
-          : tl('Kitchen availability & bookings', 'Ketersediaan & tempahan')}
+          ? tl('View your catering dates', 'Lihat tarikh katering anda')
+          : tl('Browse the catering schedule', 'Lihat jadual katering')}
         showBatik={true}
         backHref="/home"
         actions={todayAction}
@@ -674,7 +678,7 @@ export default function CalendarPage() {
         <div className="w-full space-y-5 pb-20">
 
           {/* 1. CALENDAR CONTROLS & HEADER */}
-          <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-4 sm:p-5 shadow-xs transition-colors duration-200">
+          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-50/80 via-white to-white p-4 shadow-xs transition-colors duration-200 dark:border-white/10 dark:from-stone-900 dark:via-card dark:to-card sm:p-5">
             <div className="flex items-center justify-between gap-4">
               <Button
                 variant="secondary"
@@ -686,10 +690,15 @@ export default function CalendarPage() {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
 
-              <div className="text-center flex-1">
+              <div className="min-w-0 text-center flex-1" aria-live="polite">
                 <h2 className="font-display font-bold text-lg sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
                   {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
                 </h2>
+                {selectedDay && (
+                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-300">
+                    {tl('Selected:', 'Dipilih:')} {format(selectedDay, 'd MMM yyyy', { locale: dateLocale })}
+                  </p>
+                )}
               </div>
 
               <Button
@@ -709,7 +718,7 @@ export default function CalendarPage() {
             <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs flex flex-col items-center justify-center space-y-4">
               <WawasanLoader size={64} />
               <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">
-                {tl('Loading kitchen calendar...', 'Memuatkan jadual dapur...')}
+                {tl('Loading calendar...', 'Memuatkan kalendar...')}
               </p>
             </div>
           ) : (
@@ -725,6 +734,7 @@ export default function CalendarPage() {
                 {weekdays.map((day, idx) => (
                   <div 
                     key={idx} 
+                    aria-label={day.full}
                     className={cn(
                       "relative z-10 py-2.5 sm:py-3 text-center text-xs sm:text-xs font-black tracking-widest uppercase select-none drop-shadow-xs",
                       day.weekend 
@@ -739,18 +749,21 @@ export default function CalendarPage() {
               </div>
 
               {/* Days Matrix */}
-              <div className="grid grid-cols-7 divide-x divide-y divide-stone-200/80 dark:divide-stone-800">
+              <div className="grid grid-cols-7 divide-x divide-y divide-stone-200/80 dark:divide-stone-800" aria-label={tl('Select a date', 'Pilih tarikh')}>
                 
                 {/* 1. Leading Prev Month Days (Batik Overlay + Stripe Shading) */}
                 {prevMonthDays.map((pDay) => (
-                  <div
+                  <button
+                    type="button"
                     key={`prev-${pDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
+                    onClick={() => handleAdjacentDay(pDay)}
+                    aria-label={`${format(pDay, 'EEEE, d MMMM yyyy', { locale: dateLocale })}, ${tl('previous month', 'bulan sebelumnya')}`}
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(pDay, 'd')}
                     </span>
-                  </div>
+                  </button>
                 ))}
 
                 {/* 2. Current Month Days */}
@@ -773,10 +786,19 @@ export default function CalendarPage() {
                      * Exempt from generic <Button> primitive migration.
                      */
                     <button
+                      type="button"
                       key={day.toISOString()}
                       onClick={() => handleDayClick(day)}
+                      aria-pressed={isDaySelected}
+                      aria-label={[
+                        format(day, 'EEEE, d MMMM yyyy', { locale: dateLocale }),
+                        ...(isCurrentDay ? [tl('Today', 'Hari ini')] : []),
+                        ...(holiday ? [holiday.nameBm] : []),
+                        ...(hasOrders ? [`${dayOrders.length} ${tl('bookings', 'tempahan')}`] : []),
+                        ...(dayNotes.length ? [tl('Has note', 'Ada nota')] : []),
+                      ].join(', ')}
                       className={cn(
-                        "min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60",
+                        "min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]",
                         isDaySelected 
                           ? "ring-2 ring-inset ring-crisp-carrot bg-orange-50/70 dark:bg-orange-950/30 z-10" 
                           : holiday
@@ -868,16 +890,33 @@ export default function CalendarPage() {
 
                 {/* 3. Trailing Next Month Days (Batik Overlay + Stripe Shading) */}
                 {nextMonthDays.map((nDay) => (
-                  <div
+                  <button
+                    type="button"
                     key={`next-${nDay.toISOString()}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5"
+                    onClick={() => handleAdjacentDay(nDay)}
+                    aria-label={`${format(nDay, 'EEEE, d MMMM yyyy', { locale: dateLocale })}, ${tl('next month', 'bulan seterusnya')}`}
+                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(nDay, 'd')}
                     </span>
-                  </div>
+                  </button>
                 ))}
 
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-stone-200/80 px-3 py-3 text-xs text-stone-600 dark:border-stone-800 dark:text-stone-300 sm:px-4">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-crisp-carrot" aria-hidden="true" />
+                  {tl('Today', 'Hari ini')}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-sm border-2 border-crisp-carrot" aria-hidden="true" />
+                  {tl('Selected', 'Dipilih')}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+                  {tl('Has note', 'Ada nota')}
+                </span>
               </div>
             </div>
           )}
@@ -905,8 +944,10 @@ export default function CalendarPage() {
                     </div>
                     <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                       {selectedDayTotalPax > 0 
-                        ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}` 
-                        : tl('No bookings scheduled', 'Tiada tempahan dijadualkan')}
+                        ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}`
+                        : getOrdersForDay(selectedDay).length > 0
+                        ? `${getOrdersForDay(selectedDay).length} ${tl('bookings', 'tempahan')}`
+                        : tl('No bookings found for this date', 'Tiada tempahan untuk tarikh ini')}
                     </p>
                   </div>
                 </div>
@@ -917,13 +958,13 @@ export default function CalendarPage() {
                       {selectedDaySessions.breakfast.pax > 0 && (
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-warning)] text-stone-950 flex items-center gap-1.5 shadow-xs">
                           <Coffee className="w-3.5 h-3.5" />
-                          <span>Breakfast: {selectedDaySessions.breakfast.pax}p</span>
+                          <span>{tl('Breakfast', 'Sarapan')}: {selectedDaySessions.breakfast.pax}p</span>
                         </span>
                       )}
                       {selectedDaySessions.lunch.pax > 0 && (
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-success)] text-white flex items-center gap-1.5 shadow-xs">
                           <Sun className="w-3.5 h-3.5" />
-                          <span>Lunch: {selectedDaySessions.lunch.pax}p</span>
+                          <span>{tl('Lunch', 'Tengah hari')}: {selectedDaySessions.lunch.pax}p</span>
                         </span>
                       )}
                       {selectedDaySessions.hi_tea.pax > 0 && (
@@ -943,14 +984,14 @@ export default function CalendarPage() {
                   <div className="lg:col-span-7 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                        {tl('Bookings for this day', 'Tempahan hari ini')} ({getOrdersForDay(selectedDay).length})
+                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({getOrdersForDay(selectedDay).length})
                       </span>
                     </div>
 
                     {getOrdersForDay(selectedDay).length === 0 ? (
                       <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
                         <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                          {tl('Kitchen is open with no orders scheduled yet.', 'Dapur dibuka tanpa tempahan dijadualkan.')}
+                          {tl('No bookings found for this date.', 'Tiada tempahan untuk tarikh ini.')}
                         </p>
                         <Button
                           variant="primary"

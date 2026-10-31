@@ -41,7 +41,10 @@ export const MenuItemCard = React.memo(
               alt=""
               width={640}
               height={480}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className={cn(
+                "h-full w-full transition-transform duration-500",
+                item.id === 'nasi_campur' ? "bg-stone-950 object-contain" : "object-cover group-hover:scale-105"
+              )}
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"

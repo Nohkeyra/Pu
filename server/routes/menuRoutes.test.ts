@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { correctDefaultMenuImage } from './menuRoutes.js';
 
 describe('correctDefaultMenuImage', () => {
+  it('upgrades the existing Nasi Campur default while preserving custom images and the source object', () => {
+    const existing = { id: 'nasi_campur', nameBm: 'Nasi Campur', image: '/assets/dishes/photos/nasi-campur.jpg' };
+    expect(correctDefaultMenuImage(existing).image).toBe('/assets/dishes/vector/nasi_campur_pilihan.webp');
+    expect(existing.image).toBe('/assets/dishes/photos/nasi-campur.jpg');
+    const custom = { ...existing, image: '/assets/custom/nasi-campur.jpg' };
+    expect(correctDefaultMenuImage(custom)).toBe(custom);
+    const renamed = { ...existing, nameBm: 'Nasi Lain' };
+    expect(correctDefaultMenuImage(renamed)).toBe(renamed);
+  });
+
   it('upgrades original and phase 1 placeholders without mutating the source', () => {
     for (const image of ['/assets/dishes/vector/pisang_goreng.jpg', '/assets/dishes/vector/popia.png']) {
       const item = { id: 'popia', nameBm: 'Popia', image };

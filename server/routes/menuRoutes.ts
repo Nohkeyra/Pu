@@ -8,6 +8,7 @@ const router = Router();
 // Upgrade only the known default placeholders. Preserve any custom image an
 // administrator has chosen, and never change the saved Firestore document.
 const MENU_IMAGE_CORRECTIONS: Record<string, { name: string; previous: readonly string[]; replacement: string }> = {
+  "nasi_campur": { name: "Nasi Campur", previous: ["/assets/dishes/photos/nasi-campur.jpg"], replacement: "/assets/dishes/vector/nasi_campur_pilihan.webp" },
   "mee_siam_sarapan": { name: "Mee Siam", previous: ["/assets/dishes/vector/laksa_johor.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
   "mee_siam_petang": { name: "Mee Siam", previous: ["/assets/dishes/vector/bihun_goreng.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
   "mee_rebus_sarapan": { name: "Mee Rebus", previous: ["/assets/dishes/vector/mee_kari.jpg"], replacement: "/assets/dishes/vector/mee_rebus.webp" },

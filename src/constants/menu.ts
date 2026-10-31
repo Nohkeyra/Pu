@@ -423,7 +423,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     descBm: 'Set hidangan lengkap Nasi Campur dengan pilihan lauk tengahari',
     price: 12.00,
     category: 'lunch',
-    image: '/assets/dishes/photos/nasi-campur.jpg'
+    image: '/assets/dishes/vector/nasi_campur_pilihan.webp'
   },
   {
     id: 'ayam_masak_kicap',
