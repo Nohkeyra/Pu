@@ -165,13 +165,13 @@ export function resolveDishImage(item: any): string {
       return '/assets/drinks/sirap_limau_vector.jpg';
     }
     if (id.includes('milo') || name.includes('milo')) {
-      return '/assets/drinks/milo_vector.jpg';
+      return '/assets/drinks/milo_vector.webp';
     }
     if (id.includes('nescafe') || name.includes('nescafe') || id.includes('kopi') || name.includes('kopi') || name.includes('coffee')) {
-      return '/assets/drinks/kopi_kampung_vector.jpg';
+      return '/assets/drinks/kopi_kampung_vector.webp';
     }
     if (id.includes('sirap_bandung') || name.includes('bandung')) {
-      return '/assets/drinks/sirap_bandung.jpg';
+      return '/assets/drinks/sirap_bandung.webp';
     }
     if (id.includes('jus') || name.includes('jus') || id.includes('oren') || name.includes('oren') || id.includes('peel_fresh') || id.includes('kordial')) {
       return '/assets/drinks/jus_oren_vector.jpg';
@@ -183,85 +183,85 @@ export function resolveDishImage(item: any): string {
       return '/assets/drinks/sirap_limau_vector.jpg';
     }
     if (id.includes('mineral') || name.includes('mineral') || id.includes('water') || name.includes('water') || id.includes('botol') || id.includes('tetra')) {
-      return '/assets/drinks/mineral_water_vector.jpg';
+      return '/assets/drinks/mineral_water_vector.webp';
     }
     if (id.includes('teh') || name.includes('teh') || name.includes('tea')) {
-      return '/assets/drinks/teh_tarik.jpg';
+      return '/assets/drinks/teh_tarik.webp';
     }
-    return '/assets/drinks/teh_tarik.jpg';
+    return '/assets/drinks/teh_tarik.webp';
   }
 
   // 2. Dish Specific Vector Illustrated Matches
   if (id.includes('boom') || name.includes('boom')) {
-    return '/assets/dishes/vector/roti_boom.jpg';
+    return '/assets/dishes/vector/roti_boom.webp';
   }
   if (id.includes('tosai') || name.includes('tosai') || name.includes('thosai')) {
-    return '/assets/dishes/vector/tosai.jpg';
+    return '/assets/dishes/vector/tosai.webp';
   }
   if (id.includes('mata_sapi') || name.includes('mata sapi') || name.includes('telur mata')) {
-    return '/assets/dishes/vector/telur_mata_sapi.jpg';
+    return '/assets/dishes/vector/telur_mata_sapi.webp';
   }
   if (id.includes('roti_canai') || name.includes('roti canai') || id.includes('roti_telur') || name.includes('roti telur') || id.includes('roti_sardin') || name.includes('roti sardin')) {
-    return '/assets/dishes/vector/roti_canai.jpg';
+    return '/assets/dishes/vector/roti_canai.webp';
   }
   if (id.includes('kuih') || name.includes('kuih') || name.includes('pisang_goreng') || name.includes('pisang')) {
-    return '/assets/dishes/vector/kuih_muih.jpg';
+    return '/assets/dishes/vector/kuih_muih.webp';
   }
   if (id.includes('nasi_lemak') || name.includes('nasi lemak')) {
-    return '/assets/dishes/vector/nasi_lemak.jpg';
+    return '/assets/dishes/vector/nasi_lemak.webp';
   }
   if (id.includes('lontong') || name.includes('lontong') || id.includes('lodeh')) {
-    return '/assets/dishes/vector/lontong.jpg';
+    return '/assets/dishes/vector/lontong.webp';
   }
   if (id.includes('asam_pedas') || name.includes('asam pedas') || name.includes('pari')) {
-    return '/assets/dishes/vector/asam_pedas.jpg';
+    return '/assets/dishes/vector/asam_pedas.webp';
   }
   if (id.includes('laksa_johor') || name.includes('laksa johor')) {
-    return '/assets/dishes/vector/laksa_johor.jpg';
+    return '/assets/dishes/vector/laksa_johor.webp';
   }
   if (id.includes('asam_laksa') || name.includes('asam laksa')) {
-    return '/assets/dishes/vector/asam_laksa.jpg';
+    return '/assets/dishes/vector/asam_laksa.webp';
   }
   if (id.includes('soto_ayam') || name.includes('soto ayam') || id.includes('mee_soto') || name.includes('soto')) {
-    return '/assets/dishes/vector/soto_ayam.jpg';
+    return '/assets/dishes/vector/soto_ayam.webp';
   }
   if (id.includes('bihun') || name.includes('bihun') || name.includes('vermicelli')) {
-    return '/assets/dishes/vector/bihun_goreng.jpg';
+    return '/assets/dishes/vector/bihun_goreng.webp';
   }
   if (id.includes('kuey_teow') || name.includes('kuey teow') || name.includes('char kway teow')) {
     return '/assets/dishes/vector/kuey_teow.jpg';
   }
   if (id.includes('mee_goreng') || name.includes('mee goreng') || id.includes('maggi') || name.includes('maggi')) {
-    return '/assets/dishes/vector/mee_goreng.jpg';
+    return '/assets/dishes/vector/mee_goreng.webp';
   }
   if (id.includes('mee_kari') || name.includes('mee kari') || name.includes('curry noodle')) {
-    return '/assets/dishes/vector/mee_kari.jpg';
+    return '/assets/dishes/vector/mee_kari.webp';
   }
   if (id.includes('mee') || name.includes('mee')) {
-    return '/assets/dishes/vector/mee_goreng.jpg';
+    return '/assets/dishes/vector/mee_goreng.webp';
   }
   if (id.includes('kari_kambing') || name.includes('kari kambing')) {
-    return '/assets/dishes/vector/kari_kambing.jpg';
+    return '/assets/dishes/vector/kari_kambing.webp';
   }
   if (id.includes('rendang') || name.includes('rendang') || id.includes('daging')) {
-    return '/assets/dishes/vector/rendang_daging.jpg';
+    return '/assets/dishes/vector/rendang_daging.webp';
   }
   if (id.includes('udang') || name.includes('udang') || id.includes('sotong') || name.includes('sotong')) {
-    return '/assets/dishes/vector/sambal_udang.jpg';
+    return '/assets/dishes/vector/sambal_udang.webp';
   }
   if (id.includes('ikan_keli') || name.includes('ikan keli') || name.includes('keli')) {
-    return '/assets/dishes/vector/ikan_keli.jpg';
+    return '/assets/dishes/vector/ikan_keli.webp';
   }
   if (id.includes('masak_lemak') || name.includes('masak lemak')) {
-    return '/assets/dishes/vector/masak_lemak.jpg';
+    return '/assets/dishes/vector/masak_lemak.webp';
   }
   if (id.includes('ayam_berempah') || name.includes('ayam berempah') || name.includes('ayam goreng')) {
-    return '/assets/dishes/vector/ayam_berempah.jpg';
+    return '/assets/dishes/vector/ayam_berempah.webp';
   }
   if (id.includes('briyani') || name.includes('briyani') || id.includes('nasi_minyak') || id.includes('nasi_tomato')) {
-    return '/assets/dishes/vector/nasi_briyani.jpg';
+    return '/assets/dishes/vector/nasi_briyani.webp';
   }
 
   // Fallback vector image
-  return '/assets/dishes/vector/nasi_lemak.jpg';
+  return '/assets/dishes/vector/nasi_lemak.webp';
 }
