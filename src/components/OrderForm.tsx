@@ -12,7 +12,7 @@ import {
 import { format } from 'date-fns';
 import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -38,6 +38,7 @@ import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
 import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
 import { useMobileKeyboard } from '@/hooks/useMobileKeyboard';
+import { useMascotStepTransition } from '@/hooks/useMascotStepTransition';
 import type { SavedLocation, Order } from '@/types';
 
 // TYPES
@@ -177,6 +178,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   });
 
+  const stepContentRef = useRef<HTMLDivElement>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const { videoRef: mascotVideoRef, navigate: navigateStep, busy: stepTransitionBusy, pulling: stepPulling, visible: mascotVisible, finishWithoutAnimation, pullDuration } = useMascotStepTransition(currentStep, setCurrentStep, demoActive);
+
+  useEffect(() => {
+    if (stepTransitionBusy) setPullDistance(stepContentRef.current?.getBoundingClientRect().width ?? 0);
+  }, [stepTransitionBusy]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   // C-03 (2026-08-06): stable per-attempt key so a retried/duplicate submit
   // (network timeout + retry, offline-queue replay) can't create a second
@@ -268,7 +277,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         handle = await App.addListener('backButton', () => {
           if (currentStep > 1 && currentStep < 5) {
             triggerLightImpact();
-            setCurrentStep(s => s - 1);
+            navigateStep(s => s - 1);
           }
         });
       } catch (err) {
@@ -282,7 +291,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         handle.remove();
       }
     };
-  }, [currentStep]);
+  }, [currentStep, navigateStep]);
 
   useEffect(() => {
     let isMounted = true;
@@ -725,7 +734,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         });
         return;
       }
-      if (!demoActive) setCurrentStep(2);
+      if (!demoActive) navigateStep(2);
       logOrderStep(2, 'dish_selection');
     }
 
@@ -733,7 +742,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       if (!demoActive && !effectiveState.dishes.length && !effectiveState.veggies.length && !effectiveState.customMenu?.trim()) {
         setOrderState(prev => ({ ...prev, customMenu: 'Set Box Makanan dan Minuman' }));
       }
-      if (!demoActive) setCurrentStep(3);
+      if (!demoActive) navigateStep(3);
       logOrderStep(3, 'contact_details');
     }
 
@@ -802,7 +811,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         return;
       }
 
-      if (!demoActive) setCurrentStep(4);
+      if (!demoActive) navigateStep(4);
       logOrderStep(4, 'review_submit');
     }
   };
@@ -1359,8 +1368,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             )}
 
             {/* Form Steps Container */}
-            <div className="p-6 sm:p-8">
-              <AnimatePresence mode="wait">
+            <div className="overflow-hidden p-6 sm:p-8" aria-busy={stepTransitionBusy} onKeyDownCapture={event => { if (stepTransitionBusy) { event.preventDefault(); event.stopPropagation(); } }}>
+              <motion.div ref={stepContentRef} key={effectiveStep} initial={false} animate={{ x: stepPulling ? '100%' : 0 }} transition={{ duration: pullDuration, ease: [0.5, 0.05, 0.25, 1] }} style={{ pointerEvents: stepTransitionBusy ? 'none' : undefined }}>
             
             {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
             {effectiveStep === 1 && (
@@ -1383,7 +1392,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 dynamicMenu={dynamicMenu}
                 handleToggleDish={handleToggleDish}
                 handleStepNext={handleStepNext}
-                setCurrentStep={setCurrentStep}
+                setCurrentStep={navigateStep}
                 triggerLightImpact={triggerLightImpact}
                 tText={tText}
                 t={t}
@@ -1400,7 +1409,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 isDetectingLocation={isDetectingLocation}
                 handleDetectLocation={handleDetectLocation}
                 handleStepNext={handleStepNext}
-                setCurrentStep={setCurrentStep}
+                setCurrentStep={navigateStep}
                 triggerLightImpact={triggerLightImpact}
                 currentUser={currentUser}
                 handleSyncFromActiveProfile={handleSyncFromActiveProfile}
@@ -1416,7 +1425,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 getMealTypesLabel={getMealTypesLabel}
                 isSubmitting={isSubmitting}
                 handleOrderSubmission={handleOrderSubmission}
-                setCurrentStep={setCurrentStep}
+                setCurrentStep={navigateStep}
                 triggerLightImpact={triggerLightImpact}
                 tText={tText}
                 t={t}
@@ -1437,7 +1446,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               />
             )}
 
-          </AnimatePresence>
+          </motion.div>
         </div>
 
         </div>
@@ -1579,6 +1588,21 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         />
       )}
 
+      <motion.video
+        ref={mascotVideoRef}
+        src={getAssetUrl('/assets/mascots/daun_penarik.webm')}
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+        onError={finishWithoutAnimation}
+        initial={false}
+        animate={{ x: stepPulling ? pullDistance : 0 }}
+        transition={{ duration: pullDuration, ease: [0.5, 0.05, 0.25, 1] }}
+        className="pointer-events-none fixed right-0 z-[60] w-[min(34vw,140px)]"
+        style={{ bottom: 'calc(130px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))', visibility: mascotVisible ? 'visible' : 'hidden' }}
+      />
+
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {effectiveStep <= 4 && (
         <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,8px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-deep-forest/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
@@ -1601,6 +1625,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             {effectiveStep < 4 ? (
               <Button
                 onClick={() => handleStepNext(effectiveStep)}
+                disabled={stepTransitionBusy}
                 className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
               >
                 <span>{tText('Next', 'Seterusnya')}</span>
