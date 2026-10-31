@@ -370,11 +370,23 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem('wawasan_language');
+      return saved === 'bm' || saved === 'en' ? saved : 'en';
+    } catch {
+      return 'en';
+    }
+  });
 
   // Sync <html lang> attribute for a11y and SEO
   useEffect(() => {
     document.documentElement.lang = language;
+    try {
+      localStorage.setItem('wawasan_language', language);
+    } catch {
+      // The selected language still works for this session.
+    }
   }, [language]);
 
   const t = (keyOrBm: string | number, fallbackEnOrBm?: string): string => {

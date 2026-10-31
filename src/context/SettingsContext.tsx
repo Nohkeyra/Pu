@@ -4,6 +4,7 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { normalizeStatusBarColor, needsDarkStatusBarIcons } from '@/lib/statusBarColors';
 import { getSoundProfile, setSoundProfile as persistSoundProfile, type SoundProfile } from '@/lib/haptics';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
@@ -422,9 +423,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (statusBarHidden) {
           await StatusBar.hide();
         } else {
+          const color = normalizeStatusBarColor(statusBarColor);
           await StatusBar.show();
-          await StatusBar.setStyle({ style: Style.Dark });
-          await StatusBar.setBackgroundColor({ color: statusBarColor });
+          await StatusBar.setStyle({
+            style: Capacitor.getPlatform() === 'android' && needsDarkStatusBarIcons(color) ? Style.Light : Style.Dark,
+          });
+          await StatusBar.setBackgroundColor({ color });
         }
       } catch (err) {
         console.warn('StatusBar plugin error:', err);
@@ -485,6 +489,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         resetUiToDefault,
       }}
     >
+      {Capacitor.getPlatform() === 'android' && !statusBarHidden && (
+        <div
+          aria-hidden="true"
+          data-testid="android-status-bar-backdrop"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[10000]"
+          style={{ height: 'var(--sat, env(safe-area-inset-top, 0px))', backgroundColor: normalizeStatusBarColor(statusBarColor) }}
+        />
+      )}
       {children}
     </SettingsContext.Provider>
   );

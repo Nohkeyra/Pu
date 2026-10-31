@@ -98,7 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Sync Capacitor Status Bar style on Android / iOS
-    if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('StatusBar')) {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() !== 'android' && Capacitor.isPluginAvailable('StatusBar')) {
       StatusBar.setStyle({
         style: theme === 'dark' ? Style.Dark : Style.Light,
       }).catch(() => {});

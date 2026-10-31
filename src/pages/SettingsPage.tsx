@@ -97,6 +97,7 @@ interface SettingsRowProps {
   iconBg?: string;
   iconColor?: string;
   title: string;
+  description?: string;
   action: React.ReactNode;
   isLast?: boolean;
 }
@@ -106,39 +107,43 @@ function SettingsRow({
   iconBg = 'bg-stone-100 dark:bg-stone-800',
   iconColor = 'text-stone-700 dark:text-stone-300',
   title,
+  description,
   action,
   isLast = false,
 }: SettingsRowProps) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 py-3.5 px-4 sm:px-5 transition-colors ${
+      className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-3.5 px-4 sm:px-5 transition-colors ${
         !isLast ? 'border-b border-stone-200/70 dark:border-white/5' : ''
       }`}
     >
-      <div className="flex items-center gap-3.5 min-w-0">
+      <div className="flex min-w-0 flex-[1_1_10rem] items-center gap-3.5">
         <div
           className={`w-9 h-9 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shrink-0 shadow-2xs`}
         >
           <Icon className="w-4 h-4" />
         </div>
-        <span className="text-sm font-semibold text-deep-forest dark:text-stone-100 truncate">
-          {title}
-        </span>
+        <div className="min-w-0">
+          <span className="block break-words text-sm font-semibold leading-snug text-deep-forest dark:text-stone-100">{title}</span>
+          {description && <span className="mt-1 block text-xs leading-snug text-stone-600 dark:text-stone-300">{description}</span>}
+        </div>
       </div>
-      <div className="shrink-0 flex items-center">{action}</div>
+      <div className="ml-auto flex max-w-full shrink-0 items-center">{action}</div>
     </div>
   );
 }
 
 function SettingsSection({
+  id,
   title,
   children,
 }: {
+  id?: string;
   title?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <section id={id} className="scroll-mt-24 space-y-2">
       {title && (
         <h2 className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
           {title}
@@ -147,7 +152,7 @@ function SettingsSection({
       <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xs overflow-hidden">
         {children}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -836,7 +841,7 @@ export default function SettingsPage() {
               type="button"
               onClick={() => navigate('/home', { replace: true })}
               className="touch-target-row flex items-center gap-2.5 group text-left"
-              aria-label="Go to home"
+              aria-label={language === 'bm' ? 'Pergi ke halaman utama' : 'Go to home'}
             >
               <BrandMark />
               <div>
@@ -875,10 +880,26 @@ export default function SettingsPage() {
             </h1>
             <p className="text-stone-500 dark:text-stone-400 text-xs sm:text-sm mt-0.5">
               {language === 'bm'
-                ? 'Pilihan aplikasi dan konfigurasi sistem.'
-                : 'Application preferences and system configuration.'}
+                ? 'Urus akaun, paparan dan pilihan aplikasi anda.'
+                : 'Manage your account, appearance and app preferences.'}
             </p>
           </div>
+
+          <nav aria-label={language === 'bm' ? 'Pergi ke bahagian tetapan' : 'Jump to settings section'} className="flex flex-wrap gap-2 px-1">
+            {[
+              { id: 'settings-account', label: language === 'bm' ? 'Akaun' : 'Account' },
+              { id: 'settings-appearance', label: language === 'bm' ? 'Paparan' : 'Appearance' },
+              { id: 'settings-notifications', label: language === 'bm' ? 'Notifikasi' : 'Notifications' },
+              { id: 'settings-support', label: language === 'bm' ? 'Sokongan' : 'Support' },
+            ].map(({ id, label }) => (
+              <button key={id} type="button" onClick={() => {
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+              }} className="min-h-11 rounded-xl border border-stone-200 bg-white px-3 text-xs font-semibold text-deep-forest shadow-xs transition-colors hover:border-amber-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-white/10 dark:bg-card dark:text-stone-100">
+                {label}
+              </button>
+            ))}
+          </nav>
 
           {/* ADMIN MANAGEMENT CARD (If Logged In) */}
           {(isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)) && (
@@ -1035,7 +1056,7 @@ export default function SettingsPage() {
           )}
 
           {/* SECTION 1: ACCOUNT & SECURITY */}
-          <SettingsSection title={language === 'bm' ? 'Akaun & Keselamatan' : 'Account & Security'}>
+          <SettingsSection id="settings-account" title={language === 'bm' ? 'Akaun & Keselamatan' : 'Account & Security'}>
             {isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email) ? (
               <>
                 <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-stone-200/70 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]">
@@ -1257,7 +1278,7 @@ export default function SettingsPage() {
           </SettingsSection>
 
           {/* SECTION 3: SUPPORT */}
-          <SettingsSection title={language === 'bm' ? 'Sokongan' : 'Support'}>
+          <SettingsSection id="settings-support" title={language === 'bm' ? 'Sokongan' : 'Support'}>
             <SettingsRow
               icon={AlertTriangle}
               iconBg="bg-amber-500/10"
@@ -1286,7 +1307,7 @@ export default function SettingsPage() {
                   size="sm"
                   className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
                   onClick={() => {
-                     window.open('https://wa.me/60123456789', '_blank');
+                     window.open(`https://wa.me/${RESTORAN_CONTACT.whatsappRaw}`, '_blank', 'noopener,noreferrer');
                   }}
                 >
                   {language === 'bm' ? 'WhatsApp' : 'WhatsApp'}
@@ -1296,7 +1317,7 @@ export default function SettingsPage() {
           </SettingsSection>
 
           {/* SECTION 4: PREFERENCES */}
-          <SettingsSection title={language === 'bm' ? 'Pilihan Paparan' : 'Preferences'}>
+          <SettingsSection id="settings-appearance" title={language === 'bm' ? 'Pilihan Paparan' : 'Preferences'}>
             {/* Language Selector */}
             <SettingsRow
               icon={Globe}
@@ -1305,6 +1326,7 @@ export default function SettingsPage() {
               title={language === 'bm' ? 'Bahasa' : 'Language'}
               action={
                 <SegmentedControl
+                  aria-label={language === 'bm' ? 'Bahasa' : 'Language'}
                   value={language}
                   onValueChange={(val) => handleLanguageChange(val as 'en' | 'bm')}
                 >
@@ -1326,6 +1348,7 @@ export default function SettingsPage() {
               title={language === 'bm' ? 'Tema Warna' : 'Appearance'}
               action={
                 <SegmentedControl
+                  aria-label={language === 'bm' ? 'Tema warna' : 'Appearance'}
                   value={theme}
                   onValueChange={async (val) => {
                     await triggerLightImpact();
@@ -1382,7 +1405,7 @@ export default function SettingsPage() {
 
           {/* SECTION 5: NOTIFICATIONS */}
           <div className="space-y-3">
-            <SettingsSection title={language === 'bm' ? 'Pemberitahuan' : 'Notifications'}>
+            <SettingsSection id="settings-notifications" title={language === 'bm' ? 'Pemberitahuan' : 'Notifications'}>
               <SettingsRow
                 icon={Bell}
                 iconBg="bg-rose-500/10"
@@ -1496,6 +1519,7 @@ export default function SettingsPage() {
                 iconBg="bg-orange-500/10"
                 iconColor="text-orange-600 dark:text-orange-400"
                 title={language === 'bm' ? 'Warna Bar Status' : 'Status Bar Color'}
+                description={language === 'bm' ? 'Bar jam dan bateri di bahagian atas app Android.' : 'The clock and battery bar at the top of the Android app.'}
                 isLast={true}
                 action={
                   <div className="flex items-center gap-1.5">
