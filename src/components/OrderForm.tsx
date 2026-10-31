@@ -730,6 +730,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
 
     if (step === 2) {
+      if (!demoActive && !effectiveState.dishes.length && !effectiveState.veggies.length && !effectiveState.customMenu?.trim()) {
+        setOrderState(prev => ({ ...prev, customMenu: 'Set Box Makanan dan Minuman' }));
+      }
       if (!demoActive) setCurrentStep(3);
       logOrderStep(3, 'contact_details');
     }
@@ -1585,9 +1588,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               <span>•</span>
               <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-sm font-extrabold text-[var(--color-sunshine-cta)] uppercase tracking-wider shrink-0">
-                {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+            <div className="flex items-baseline gap-1.5" aria-live="polite">
+              <span className="text-sm font-extrabold text-[var(--color-sunshine-cta)] tracking-wide">
+                {effectiveStep === 2
+                  ? tText(`${effectiveState.dishes.length + effectiveState.veggies.length} items selected`, `${effectiveState.dishes.length + effectiveState.veggies.length} hidangan dipilih`)
+                  : tText('Quotation Pending', 'Menunggu Sebut Harga')}
               </span>
             </div>
           </div>

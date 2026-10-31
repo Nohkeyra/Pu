@@ -7,7 +7,9 @@ import {
   Utensils,
   CakeSlice,
   ArrowLeft, 
-  ArrowRight
+  ArrowRight,
+  Search,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton, DishCardSkeleton } from '@/components/ui/Skeleton';
@@ -52,28 +54,47 @@ export function Step2DishSelection({
   t,
 }: Step2DishSelectionProps) {
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
   
   const visibleMenu = React.useMemo(() => {
     return dynamicMenu.filter(item => item.available !== false);
   }, [dynamicMenu]);
 
-  const totalSelectedDishes = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
+  const searchableMenu = React.useMemo(() => {
+    const term = search.trim().toLocaleLowerCase();
+    return visibleMenu.filter(item => (category === 'all' || item.category === category) && (!term || [item.name, item.nameEn, item.nameBm]
+      .some(name => typeof name === 'string' && name.toLocaleLowerCase().includes(term))));
+  }, [category, search, visibleMenu]);
+
+  const categoryOptions = [
+    { id: 'all', label: tText('All', 'Semua'), show: true },
+    { id: 'breakfast', label: tText('Breakfast', 'Sarapan'), show: orderState.mealTypes.includes('sarapan') },
+    { id: 'lunch', label: tText('Lunch', 'Tengah hari'), show: orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length },
+    { id: 'hi tea', label: 'Hi-Tea', show: orderState.mealTypes.includes('hitea') },
+    { id: 'drinks', label: tText('Drinks', 'Minuman'), show: visibleMenu.some(item => item.category === 'drinks') },
+  ].filter(option => option.show);
+
+  const matchingAvailable = searchableMenu.some(item => {
+    if (item.category === 'breakfast') return orderState.mealTypes.includes('sarapan');
+    if (item.category === 'lunch') return orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length;
+    if (item.category === 'hi tea') return orderState.mealTypes.includes('hitea');
+    if (item.category !== 'drinks') return false;
+    return ((!item.suitability || item.suitability === 'breakfast_hitea') && (orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length))
+      || (item.suitability === 'lunch' && (orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length));
+  });
+  const showHotDrinks = (orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length)
+    && searchableMenu.some(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability));
+  const showColdDrinks = (orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length)
+    && searchableMenu.some(item => item.category === 'drinks' && item.suitability === 'lunch');
 
   const validateAndNext = async () => {
-    const dishCount = (orderState.dishes?.length || 0) + (orderState.veggies?.length || 0);
-    const hasCustom = Boolean(orderState.customMenu?.trim());
-    if (dishCount === 0 && !hasCustom) {
-      setOrderState((prev: any) => ({
-        ...prev,
-        customMenu: "Set Box Makanan dan Minuman"
-      }));
-    }
     setFieldError(null);
     await handleStepNext(2);
   };
 
   const renderSection = (title: string, icon: React.ReactNode, category: string, colorClass: string, isFirstSection: boolean = false) => {
-    const categoryDishes = visibleMenu.filter(item => item.category === category);
+    const categoryDishes = searchableMenu.filter(item => item.category === category);
     if (!categoryDishes.length) return null;
 
     const selectedCount = orderState.dishes.filter(d => d.category === category).length;
@@ -87,7 +108,7 @@ export function Step2DishSelection({
           </Label>
           {selectedCount > 0 && (
             <span className="microcopy-12-upper font-bold px-3 py-1 rounded-full transition-colors text-white bg-amber-600 shadow-xs shrink-0 whitespace-nowrap">
-              {selectedCount} / {categoryDishes.length} {tText('Selected', 'Dipilih')}
+              {selectedCount} {tText('Selected', 'Dipilih')}
             </span>
           )}
         </div>
@@ -128,25 +149,44 @@ export function Step2DishSelection({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-6 text-left"
     >
-      <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
+      <div className="bg-[#fbf1df] dark:bg-[#242321] p-5 sm:p-6 rounded-3xl border border-[#eadbc7] dark:border-white/10 relative overflow-hidden">
         <div 
-          className="absolute inset-0 opacity-[0.22] pointer-events-none"
+          className="absolute inset-0 opacity-[0.06] dark:opacity-[0.10] pointer-events-none"
           style={{
             backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         />
-        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-        <div className="relative z-10">
-          <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-            {tText('Select Menu Dishes', 'Pilih Hidangan Lauk-Pauk')}
+        <div className="relative z-10 flex items-center gap-4">
+          <img src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')} alt="Restoran Wawasan" className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20" width={80} height={80} />
+          <div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-950 dark:text-stone-50">
+            {tText('Choose your dishes', 'Pilih hidangan')}
           </h2>
-          <p className="text-xs text-stone-300 font-light mt-1">
-            {tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}
+          <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed mt-1.5">
+            {tText('Choose a menu for your event.', 'Pilih menu untuk majlis anda.')}
           </p>
+          </div>
         </div>
       </div>
+      <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">{tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}</p>
+
+      {!menuLoading && (
+        <div className="space-y-2">
+          <label htmlFor="dish-search" className="text-sm font-semibold text-stone-700 dark:text-stone-200">{tText('Find a dish or drink', 'Cari hidangan atau minuman')}</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-500 dark:text-stone-400" aria-hidden="true" />
+            <input id="dish-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={tText('Search the menu...', 'Cari dalam menu...')} className="min-h-12 w-full rounded-2xl border border-stone-300 bg-white py-3 pl-12 pr-12 text-sm text-stone-900 shadow-sm outline-none placeholder:text-stone-500 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-white dark:placeholder:text-stone-400" />
+            {search && <button type="button" onClick={() => setSearch('')} aria-label={tText('Clear search', 'Padam carian')} className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-stone-600 hover:bg-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600 dark:text-stone-300 dark:hover:bg-stone-800"><X className="h-4 w-4" aria-hidden="true" /></button>}
+          </div>
+          {search.trim() && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{matchingAvailable ? tText('Showing matching items. Your selections are kept.', 'Memaparkan padanan. Pilihan anda dikekalkan.') : tText('No matching items in this category. Try another search or category.', 'Tiada padanan dalam kategori ini. Cuba carian atau kategori lain.')}</p>}
+          <div role="group" aria-label={tText('Menu categories', 'Kategori menu')} className="flex gap-2 overflow-x-auto py-1 [scrollbar-width:thin]">
+            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${category === option.id ? 'border-orange-600 bg-orange-600 text-white' : 'border-[#e8dac8] bg-[#f7edde] text-stone-700 hover:bg-[#efdfca] dark:border-stone-700 dark:bg-[#272522] dark:text-stone-200 dark:hover:bg-stone-700'}`}>{option.label}</button>)}
+          </div>
+          {!search.trim() && !matchingAvailable && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{tText('No items available in this category.', 'Tiada hidangan tersedia dalam kategori ini.')}</p>}
+        </div>
+      )}
 
       {menuLoading ? (
         <div className="space-y-4">
@@ -168,7 +208,7 @@ export function Step2DishSelection({
           {orderState.mealTypes.includes('hitea') && renderSection(tText('Hi-Tea Selection', 'Pilihan Hi-Tea'), <CakeSlice className="w-4 h-4" aria-hidden="true" />, 'hi tea', 'text-pink-500', !orderState.mealTypes.includes('sarapan') && !orderState.mealTypes.includes('tengahari'))}
           {!orderState.mealTypes.length && renderSection(tText('Menu Selection', 'Pilihan Menu'), <Utensils className="w-4 h-4" aria-hidden="true" />, 'lunch', 'text-orange-500', true)}
 
-          {visibleMenu.some(item => item.category === 'drinks') && (
+          {(showHotDrinks || showColdDrinks) && (
             <div className="space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2">
                 <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block shrink-0">
@@ -181,13 +221,13 @@ export function Step2DishSelection({
                 )}
               </div>
 
-              {(orderState.mealTypes.includes('sarapan') || orderState.mealTypes.includes('hitea') || !orderState.mealTypes.length) && (
+              {showHotDrinks && (
                 <div className="space-y-3">
                   <span className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block opacity-80">
                     <span className="inline-flex items-center gap-1.5"><Coffee className="w-4 h-4" aria-hidden="true" />{tText('Hot/Warm Drinks', 'Minuman Panas/Suam')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">
-                    {visibleMenu
+                    {searchableMenu
                       .filter(item => item.category === 'drinks' && (item.suitability === 'breakfast_hitea' || !item.suitability))
                       .map(item => {
                         const selected = orderState.dishes.some(x => x.id === item.id);
@@ -209,13 +249,13 @@ export function Step2DishSelection({
                 </div>
               )}
 
-              {(orderState.mealTypes.includes('tengahari') || !orderState.mealTypes.length) && (
+              {showColdDrinks && (
                 <div className="space-y-3 pt-2">
                   <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block opacity-80">
                     <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Refreshing Box/Cordial/Mineral Drinks', 'Minuman Kotak/Kordial/Mineral Segar')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">
-                    {visibleMenu
+                    {searchableMenu
                       .filter(item => item.category === 'drinks' && item.suitability === 'lunch')
                       .map(item => {
                         const selected = orderState.dishes.some(x => x.id === item.id);
@@ -322,25 +362,6 @@ export function Step2DishSelection({
         </Button>
       </ResponsiveButtonGroup>
 
-      {/* Floating Bottom Quick Action Bar for Mobile Ergonomics */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 md:hidden flex items-center justify-between gap-3 shadow-xl">
-        <div className="flex flex-col text-left">
-          <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider leading-none">
-            {tText('Selection', 'Pilihan')}
-          </span>
-          <span className="text-sm font-black text-stone-900 dark:text-white leading-tight mt-0.5">
-            {totalSelectedDishes} {tText('dishes', 'lauk')} ({orderState.guests} pax)
-          </span>
-        </div>
-        <Button
-          onClick={validateAndNext}
-          size="sm"
-          className="bg-amber-600 hover:bg-amber-700 text-white min-h-[44px] px-5 rounded-xl font-bold text-xs shadow-md shrink-0 flex items-center gap-1.5"
-        >
-          <span>{tText('Next', 'Seterusnya')}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Button>
-      </div>
     </motion.div>
   );
 }
