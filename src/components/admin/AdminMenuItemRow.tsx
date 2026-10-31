@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
 import { useLongPress } from '@/hooks/useLongPress';
+import { getAssetUrl } from '@/lib/utils';
 
 export function AdminMenuItemRow({
   item, tText, badge, displayName, altName, showAltName, isVisible,
   handleToggleAvailable, handleOpenEditModal, handleDeleteItem, setLongPressedItem
 }: any) {
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const imagePath = typeof item.image === 'string' ? item.image : '';
   
   const longPressProps = useLongPress(
     () => { setLongPressedItem(item); },
@@ -24,12 +28,16 @@ export function AdminMenuItemRow({
       {/* Left: Category Icon & Item Name & Price */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2 pointer-events-none">
         {/* Category Accent Indicator */}
-        <div 
-          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border text-xs font-bold ${badge.colorClass}`}
-          title={`${badge.num} - ${badge.name}`}
-        >
-          {badge.icon}
-        </div>
+        {imagePath && failedImage !== imagePath ? (
+          <img src={getAssetUrl(imagePath)} alt="" loading="lazy"
+            onError={() => setFailedImage(imagePath)}
+            className="h-10 w-10 shrink-0 rounded-lg border border-stone-200 object-cover dark:border-white/10" />
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-xs font-bold ${badge.colorClass}`}
+            title={`${badge.num} - ${badge.name}`}>
+            {badge.icon}
+          </div>
+        )}
 
         {/* Name and Price */}
         <div className="min-w-0 flex-1">
@@ -104,3 +112,4 @@ export function AdminMenuItemRow({
     </div>
   );
 }
+

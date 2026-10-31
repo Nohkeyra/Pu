@@ -10,9 +10,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: '/',
-    esbuild: {
-      drop: isProd ? ['console', 'debugger'] : [],
-    },
     define: {
       'process.env.GOOGLE_MAPS_PLATFORM_KEY': JSON.stringify(process.env.GOOGLE_MAPS_PLATFORM_KEY || '')
     },
@@ -53,11 +50,11 @@ export default defineConfig(({ mode }) => {
     copyPublicDir: true,
     chunkSizeWarningLimit: 1200,
     sourcemap: false,
-    minify: 'esbuild',
+    minify: 'oxc',
     cssMinify: 'esbuild',
     target: 'esnext',
     cssCodeSplit: true,
-    rollupOptions: {
+    rolldownOptions: {
       onwarn(warning, warn) {
         if (warning.code === 'EVAL' && (warning.id?.includes('node_modules') || warning.id?.includes('eruda'))) {
           return;
@@ -65,6 +62,12 @@ export default defineConfig(({ mode }) => {
         warn(warning);
       },
       output: {
+        minify: {
+          compress: {
+            dropConsole: isProd,
+            dropDebugger: isProd,
+          },
+        },
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('exceljs')) {
@@ -90,8 +93,8 @@ export default defineConfig(({ mode }) => {
             if (id.includes('gsap') || id.includes('canvas-confetti')) {
               return 'vendor-fx';
             }
-            // Date picker & calendar engines separated from root primitives
-            if (id.includes('date-fns') || id.includes('react-day-picker')) {
+            // Date engine separated from root primitives
+            if (id.includes('date-fns')) {
               return 'vendor-dates';
             }
             if (id.includes('@radix-ui')) {

@@ -270,6 +270,7 @@ router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Respons
   const category = typeof req.query.category === 'string' ? req.query.category : undefined;
 
   const serveRepairedFallback = () => {
+    if (req.query.noFallback === '1') return res.status(404).send('Image not available');
     const fallbackPath = getLocalFallbackImagePath(dish, category);
     if (fs.existsSync(fallbackPath)) {
       res.setHeader('Content-Type', 'image/jpeg');
@@ -541,4 +542,5 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
 });
 
 export default router;
+
 

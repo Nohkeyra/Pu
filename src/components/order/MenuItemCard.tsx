@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, Coffee, UtensilsCrossed } from 'lucide-react';
 import { cn, getAssetUrl } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
 
@@ -13,7 +13,12 @@ interface MenuItemCardProps {
 
 export const MenuItemCard = React.memo(
   function MenuItemCard({ item, isSelected, onToggle, tText, dataTour }: MenuItemCardProps) {
-    const dishImg = repairDishImage(item, { useProxyForExternal: true });
+    const [failedImage, setFailedImage] = React.useState<string | null>(null);
+    const dishImg = typeof item.image === 'string' && item.image.trim()
+      ? repairDishImage(item, { useProxyForExternal: true, noFallback: true })
+      : '';
+    const imageUrl = dishImg ? getAssetUrl(dishImg) : '';
+    const isDrink = String(item.category || '').toLowerCase() === 'drinks';
 
     return (
       <div
@@ -44,19 +49,23 @@ export const MenuItemCard = React.memo(
         </div>
         
         <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-950 shrink-0 border border-stone-200/80 dark:border-stone-700/80 shadow-sm relative group-hover:border-amber-400/50 transition-colors">
-          <img
-            src={getAssetUrl(dishImg || '/assets/dishes/vector/nasi_lemak.jpg')}
-            alt={tText(item.nameEn, item.nameBm)}
-            width={48}
-            height={48}
-            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 aspect-square"
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = getAssetUrl('/assets/dishes/vector/nasi_lemak.jpg');
-            }}
-          />
+          {imageUrl && failedImage !== imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={tText(item.nameEn, item.nameBm)}
+              width={48}
+              height={48}
+              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 aspect-square"
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onError={() => setFailedImage(imageUrl)}
+            />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400" aria-hidden="true">
+              {isDrink ? <Coffee className="h-5 w-5" /> : <UtensilsCrossed className="h-5 w-5" />}
+            </span>
+          )}
           <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-xl" />
         </div>
 
@@ -67,13 +76,7 @@ export const MenuItemCard = React.memo(
         </div>
       </div>
     );
-  },
-  (prev, next) => {
-    return (
-      prev.isSelected === next.isSelected &&
-      prev.item.id === next.item.id &&
-      prev.item.available === next.item.available
-    );
   }
 );
+
 

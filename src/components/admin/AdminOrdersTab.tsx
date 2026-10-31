@@ -484,6 +484,24 @@ export function AdminOrdersTab({
         )}
       </div>
 
+      {setStatusFilter && (
+        <div role="group" aria-label={language === 'bm' ? 'Penapis status pantas' : 'Quick status filters'} className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {[
+            { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
+            { id: 'pending', label: language === 'bm' ? 'Menunggu semakan' : 'Pending review' },
+            { id: 'approved', label: language === 'bm' ? 'Diluluskan' : 'Approved' },
+            { id: 'billed', label: language === 'bm' ? 'Dibilkan' : 'Billed' },
+          ].map(chip => (
+            <button key={chip.id} type="button" aria-pressed={statusFilter === chip.id} onClick={() => setStatusFilter(chip.id)}
+              className={`min-h-[44px] shrink-0 rounded-xl border px-4 text-xs font-semibold transition-colors ${statusFilter === chip.id
+                ? 'border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-300'
+                : 'border-stone-200 bg-white text-stone-700 hover:border-amber-400 dark:border-white/10 dark:bg-card dark:text-stone-300'}`}>
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Jotform-style Submissions List */}
       <div className="rounded-xl border border-[var(--color-light-forest)] dark:border-stone-800 bg-white dark:bg-card overflow-hidden shadow-xs">
         {searchedOrders.length === 0 ? (
@@ -503,7 +521,7 @@ export function AdminOrdersTab({
           />
         ) : (
           (() => {
-            const rowHeight = windowWidth < 420 ? 152 : windowWidth < 768 ? 138 : 122;
+            const rowHeight = windowWidth < 420 ? 204 : windowWidth < 768 ? 190 : 180;
             const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 900);
 
             return (
@@ -671,3 +689,4 @@ export function AdminOrdersTab({
   );
 }
 export default AdminOrdersTab;
+

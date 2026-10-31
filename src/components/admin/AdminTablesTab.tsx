@@ -272,12 +272,16 @@ export function AdminTablesTab({
 
   // Bulk Select
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      const allIds = new Set(paginatedOrders.map(o => o.id!).filter(Boolean));
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds(new Set());
-    }
+    const checked = e.target.checked;
+    setSelectedIds(previous => {
+      const next = new Set(previous);
+      paginatedOrders.forEach(order => {
+        if (!order.id) return;
+        if (checked) next.add(order.id);
+        else next.delete(order.id);
+      });
+      return next;
+    });
   };
 
   const handleSelectRow = (id: string) => {
@@ -613,7 +617,7 @@ export function AdminTablesTab({
             </div>
 
             {/* Density Selector */}
-            <div className="flex items-center bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl p-1">
+            <div className="hidden md:flex items-center bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl p-1">
               <button
                 onClick={() => setDensity('compact')}
                 title="Compact View"
@@ -724,14 +728,101 @@ export function AdminTablesTab({
                 onClick={() => setSelectedIds(new Set())}
                 className="px-2.5 py-1 bg-white/10 hover:bg-white/20 font-medium rounded-lg transition-all"
               >
-                Clear Selection
+                {isBm ? 'Kosongkan pilihan' : 'Clear selection'}
               </button>
             </div>
           </div>
         )}
 
+        {/* Compact, expandable records for smaller screens */}
+        <div className="md:hidden">
+          <div className="flex items-end gap-2 border-b border-stone/15 px-4 py-3 dark:border-white/10">
+            <label className="min-w-0 flex-1 text-xs font-medium text-deep-forest/70 dark:text-stone/70">
+              {isBm ? 'Susun mengikut' : 'Sort by'}
+              <select value={sortField} onChange={e => setSortField(e.target.value as SortField)} className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white">
+                <option value="createdAt">{isBm ? 'Tarikh hantar' : 'Submitted date'}</option>
+                <option value="to">{isBm ? 'Organisasi' : 'Organization'}</option>
+                <option value="name">{isBm ? 'Nama' : 'Name'}</option>
+                <option value="quantity">Pax</option>
+                <option value="totalAmount">{isBm ? 'Jumlah' : 'Total'}</option>
+                <option value="status">Status</option>
+              </select>
+            </label>
+            <button type="button" onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')} className="min-h-11 rounded-lg border border-stone/20 px-3 text-sm font-semibold text-deep-forest dark:border-white/10 dark:text-white" aria-label={isBm ? 'Tukar arah susunan' : 'Change sort direction'}>
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+          {paginatedOrders.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-deep-forest/60 dark:text-stone/60">
+              {isBm ? 'Tiada permohonan dijumpai. Cuba ubah carian atau penapis.' : 'No submissions found. Try changing your search or filters.'}
+            </p>
+          ) : (
+            <>
+              <label className="flex items-center gap-3 border-b border-stone/15 px-4 py-3 text-sm font-medium text-deep-forest/70 dark:border-white/10 dark:text-stone/70">
+                <input type="checkbox" checked={paginatedOrders.some(o => !!o.id) && paginatedOrders.filter(o => !!o.id).every(o => selectedIds.has(o.id!))} onChange={handleSelectAll} className="h-4 w-4 rounded border-stone/30" />
+                {isBm ? 'Pilih semua pada halaman ini' : 'Select all on this page'}
+              </label>
+              <div className="space-y-3 p-3">
+                {paginatedOrders.map((order, index) => {
+                  const isFinal = ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || '');
+                  const status = (order.status || 'pending').toLowerCase();
+                  const statusLabel: Record<string, string> = isBm
+                    ? { pending: 'Menunggu semakan', approved: 'Diluluskan', billed: 'Dibilkan', cancelled: 'Dibatalkan', cancel_requested: 'Permintaan batal' }
+                    : { pending: 'Pending review', approved: 'Approved', billed: 'Billed', cancelled: 'Cancelled', cancel_requested: 'Cancellation requested' };
+                  return (
+                    <article key={order.id || index} className="rounded-2xl border border-stone/15 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-card">
+                      <div className="flex items-start gap-3">
+                        <input type="checkbox" disabled={!order.id} checked={!!order.id && selectedIds.has(order.id)} onChange={() => order.id && handleSelectRow(order.id)} aria-label={isBm ? 'Pilih rekod' : 'Select record'} className="mt-1 h-4 w-4 shrink-0 rounded border-stone/30" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="break-words font-bold text-deep-forest dark:text-white">{order.to || order.name || (isBm ? 'Tanpa nama' : 'Unnamed')}</h3>
+                          {order.to && order.name && <p className="mt-0.5 break-words text-xs text-deep-forest/60 dark:text-stone/70">{order.name}</p>}
+                          {visibleColumns.has('dateTime') && <p className="mt-2 text-sm text-deep-forest/70 dark:text-stone/80">{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</p>}
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                            {visibleColumns.has('status') && <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-900 dark:bg-amber-900/30 dark:text-amber-300">{statusLabel[status] || status}</span>}
+                            {visibleColumns.has('quantity') && <span className="rounded-full bg-stone/10 px-2.5 py-1 font-semibold text-deep-forest dark:bg-white/10 dark:text-stone-100">{order.quantity || 0} pax</span>}
+                            {visibleColumns.has('totalAmount') && <span className="font-bold text-emerald-700 dark:text-emerald-400">{typeof order.totalAmount === 'number' ? `RM ${order.totalAmount.toFixed(2)}` : (isBm ? 'Jumlah belum ditetapkan' : 'Total pending')}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <details className="group mt-4 border-t border-stone/10 pt-3 dark:border-white/10">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-deep-forest dark:text-stone-100">
+                          {isBm ? 'Butiran dan tindakan' : 'Details and actions'}
+                          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <dl className="mt-4 grid grid-cols-1 gap-3 text-sm">
+                          {visibleColumns.has('meals') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Hidangan' : 'Meals'}</dt><dd className="mt-1 break-words text-deep-forest dark:text-stone-100">{(order.meals || []).join(', ') || '—'}</dd></div>}
+                          {visibleColumns.has('menu') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">Menu</dt><dd className="mt-1 whitespace-pre-wrap break-words text-deep-forest dark:text-stone-100">{order.menu || '—'}</dd></div>}
+                          {visibleColumns.has('preparationType') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Sajian' : 'Serving style'}</dt><dd className="mt-1 text-deep-forest dark:text-stone-100">{order.preparationType === 'meal_box' ? 'Meal Box' : 'Buffet'}</dd></div>}
+                          {visibleColumns.has('pricePerPax') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Harga per pax' : 'Price per pax'}</dt><dd className="mt-1 text-deep-forest dark:text-stone-100">{order.prices ? Object.entries(order.prices).map(([meal, price]) => `${meal}: RM ${price.toFixed(2)}`).join(' · ') : '—'}</dd></div>}
+                          {visibleColumns.has('invoiceNo') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'No. rujukan / invois' : 'Reference / invoice'}</dt><dd className="mt-1 break-all text-deep-forest dark:text-stone-100">{getDisplayInvoiceNo(order)}</dd></div>}
+                          {visibleColumns.has('createdAt') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Tarikh hantar' : 'Submitted'}</dt><dd className="mt-1 text-deep-forest dark:text-stone-100">{formatDateDisplay(order.createdAt)}</dd></div>}
+                          {visibleColumns.has('contact') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Telefon' : 'Phone'}</dt><dd className="mt-1 break-words text-deep-forest dark:text-stone-100">{order.contact || '—'}</dd></div>}
+                          {visibleColumns.has('email') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">Email</dt><dd className="mt-1 break-all text-deep-forest dark:text-stone-100">{order.email || '—'}</dd></div>}
+                          {visibleColumns.has('location') && <div><dt className="text-xs text-deep-forest/60 dark:text-stone/60">{isBm ? 'Lokasi' : 'Location'}</dt><dd className="mt-1 break-words text-deep-forest dark:text-stone-100">{order.location || '—'}</dd></div>}
+                        </dl>
+                        {visibleColumns.has('status') && order.id && <label className="mt-4 block text-xs font-medium text-deep-forest/70 dark:text-stone/70">{isBm ? 'Tukar status' : 'Change status'}
+                          <select disabled={updatingId === order.id} value={order.status || 'pending'} onChange={e => handleQuickStatusChange(order.id!, e.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white">
+                            {!['pending', 'approved', 'billed', 'cancelled'].includes(order.status || 'pending') && <option value={order.status}>{statusLabel[status] || order.status}</option>}
+                            <option value="pending">{statusLabel.pending}</option><option value="approved">{statusLabel.approved}</option><option value="billed">{statusLabel.billed}</option><option value="cancelled">{statusLabel.cancelled}</option>
+                          </select>
+                        </label>}
+                        {visibleColumns.has('actions') && <div className="mt-4 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => openOrderDetail(order)} className="min-h-11 rounded-lg bg-[var(--color-sunshine-cta)] px-3 text-sm font-bold text-charcoal">{isBm ? 'Lihat pesanan' : 'View order'}</button>
+                          <button type="button" onClick={() => handlePreviewPDF(order, isFinal)} className="min-h-11 rounded-lg border border-stone/20 px-3 text-sm dark:border-white/15 dark:text-white">{isBm ? 'Pratonton PDF' : 'Preview PDF'}</button>
+                          <button type="button" onClick={() => handleDownloadPDF(order, isFinal)} className="min-h-11 rounded-lg border border-stone/20 px-3 text-sm dark:border-white/15 dark:text-white">{isBm ? 'Muat turun' : 'Download'}</button>
+                          {order.id && <button type="button" onClick={() => handleDelete(order.id!)} className="min-h-11 rounded-lg border border-rose-500/30 px-3 text-sm text-rose-600 dark:text-rose-400">{isBm ? 'Padam' : 'Delete'}</button>}
+                        </div>}
+                      </details>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Interactive Data Table */}
-        <div className="overflow-x-auto min-h-[400px] scrollbar-thin">
+        <div className="hidden md:block overflow-x-auto min-h-[400px] scrollbar-thin">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-cream/70 dark:bg-white/5 border-b border-stone/15 dark:border-white/10 text-deep-forest/80 dark:text-stone/70 font-bold text-xs uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md">
@@ -739,7 +830,7 @@ export function AdminTablesTab({
                   <input
                     type="checkbox"
                     aria-label="Select all orders"
-                    checked={paginatedOrders.length > 0 && selectedIds.size === paginatedOrders.length}
+                    checked={paginatedOrders.some(o => !!o.id) && paginatedOrders.filter(o => !!o.id).every(o => selectedIds.has(o.id!))}
                     onChange={handleSelectAll}
                     className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
                   />
@@ -1261,3 +1352,4 @@ export function AdminTablesTab({
 }
 
 export default AdminTablesTab;
+

@@ -5,6 +5,56 @@ import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.ts';
 
 const router = Router();
 
+// Upgrade only the known default placeholders. Preserve any custom image an
+// administrator has chosen, and never change the saved Firestore document.
+const MENU_IMAGE_CORRECTIONS: Record<string, { name: string; previous: readonly string[]; replacement: string }> = {
+  "mee_siam_sarapan": { name: "Mee Siam", previous: ["/assets/dishes/vector/laksa_johor.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
+  "mee_siam_petang": { name: "Mee Siam", previous: ["/assets/dishes/vector/bihun_goreng.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
+  "mee_rebus_sarapan": { name: "Mee Rebus", previous: ["/assets/dishes/vector/mee_kari.jpg"], replacement: "/assets/dishes/vector/mee_rebus.webp" },
+  "mee_rebus_petang": { name: "Mee Rebus", previous: ["/assets/dishes/vector/mee_kari.jpg"], replacement: "/assets/dishes/vector/mee_rebus.webp" },
+  "mee_soto_sarapan": { name: "Mee Soto", previous: ["/assets/dishes/vector/soto_ayam.jpg"], replacement: "/assets/dishes/vector/mee_soto.webp" },
+  "mee_soto_petang": { name: "Mee Soto", previous: ["/assets/dishes/vector/soto_ayam.jpg"], replacement: "/assets/dishes/vector/mee_soto.webp" },
+  "bubur_ayam": { name: "Bubur Ayam", previous: ["/assets/dishes/vector/soto_ayam.jpg"], replacement: "/assets/dishes/vector/bubur_ayam.webp" },
+  "maggi_goreng": { name: "Maggi Goreng", previous: ["/assets/dishes/vector/mee_goreng.jpg"], replacement: "/assets/dishes/vector/maggi_goreng.webp" },
+  "roti_sardin": { name: "Roti Sardin", previous: ["/assets/dishes/vector/roti_canai.jpg"], replacement: "/assets/dishes/vector/roti_sardin.webp" },
+  "roti_telur": { name: "Roti Telur", previous: ["/assets/dishes/vector/roti_canai.jpg"], replacement: "/assets/dishes/vector/roti_telur.webp" },
+  "nasi_lemak_sambal_sotong": { name: "Nasi Lemak Sambal Sotong", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/nasi_lemak_sotong.webp" },
+  "nasi_lemak_ayam_goreng": { name: "Nasi Lemak Ayam Goreng", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/nasi_lemak_ayam.webp" },
+  "udang_goreng_tepung": { name: "Udang Goreng Tepung", previous: ["/assets/dishes/vector/sambal_udang.jpg"], replacement: "/assets/dishes/vector/udang_goreng_tepung.webp" },
+  "dendeng": { name: "Dendeng", previous: ["/assets/dishes/vector/rendang_daging.jpg"], replacement: "/assets/dishes/vector/dendeng.webp" },
+  "daging_masak_merah": { name: "Daging Masak Merah", previous: ["/assets/dishes/vector/rendang_daging.jpg"], replacement: "/assets/dishes/vector/daging_masak_merah.webp" },
+  "sambal_sotong": { name: "Sambal Sotong", previous: ["/assets/dishes/vector/sambal_udang.jpg"], replacement: "/assets/dishes/vector/sambal_sotong.webp" },
+  "daging_masak_hitam": { name: "Daging Masak Hitam", previous: ["/assets/dishes/vector/rendang_daging.jpg"], replacement: "/assets/dishes/vector/daging_masak_hitam.webp" },
+  "ikan_goreng_berlada": { name: "Ikan Goreng Berlada", previous: ["/assets/dishes/vector/ikan_keli.jpg"], replacement: "/assets/dishes/vector/ikan_goreng_berlada.webp" },
+  "ayam_paprik": { name: "Ayam Paprik", previous: ["/assets/dishes/vector/ayam_berempah.jpg"], replacement: "/assets/dishes/vector/ayam_paprik.webp" },
+  "rendang_ayam": { name: "Rendang Ayam", previous: ["/assets/dishes/vector/rendang_daging.jpg"], replacement: "/assets/dishes/vector/rendang_ayam.webp" },
+  "ayam_kurma": { name: "Ayam Kurma", previous: ["/assets/dishes/vector/ayam_berempah.jpg"], replacement: "/assets/dishes/vector/ayam_kurma.webp" },
+  "ayam_masak_kicap": { name: "Ayam Masak Kicap", previous: ["/assets/dishes/vector/ayam_berempah.jpg"], replacement: "/assets/dishes/vector/ayam_masak_kicap.webp" },
+  "ayam_masak_merah": { name: "Ayam Masak Merah", previous: ["/assets/dishes/vector/ayam_berempah.jpg"], replacement: "/assets/dishes/vector/ayam_masak_merah.webp" },
+  "nasi_goreng_kampung": { name: "Nasi Goreng Kampung", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/nasi_goreng_kampung.webp" },
+  "nasi_goreng_cina": { name: "Nasi Goreng Cina", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/nasi_goreng_cina.webp" },
+  "pucuk_paku_masak_lemak": { name: "Pucuk Paku Masak Lemak", previous: ["/assets/dishes/vector/masak_lemak.jpg"], replacement: "/assets/dishes/vector/pucuk_paku.webp" },
+  "kangkung_belacan": { name: "Kangkung Belacan", previous: ["/assets/dishes/vector/masak_lemak.jpg"], replacement: "/assets/dishes/vector/kangkung_belacan.webp" },
+  "sayur_campur": { name: "Sayur Campur", previous: ["/assets/dishes/vector/masak_lemak.jpg"], replacement: "/assets/dishes/vector/sayur_campur.webp" },
+  "nasi_tomato": { name: "Nasi Tomato", previous: ["/assets/dishes/vector/nasi_briyani.jpg"], replacement: "/assets/dishes/vector/nasi_tomato.webp" },
+  "taugeh_goreng": { name: "Taugeh Goreng", previous: ["/assets/dishes/vector/masak_lemak.jpg"], replacement: "/assets/dishes/vector/taugeh_goreng.webp" },
+  "bergedil": { name: "Bergedil", previous: ["/assets/dishes/vector/soto_ayam.jpg"], replacement: "/assets/dishes/vector/bergedil.webp" },
+  "rojak_buah": { name: "Rojak Buah", previous: ["/assets/dishes/vector/rojak_singapore.jpg"], replacement: "/assets/dishes/vector/rojak_buah.webp" },
+  "cucur_goreng_pisang": { name: "Cucur Goreng Pisang", previous: ["/assets/dishes/vector/pisang_goreng.jpg"], replacement: "/assets/dishes/vector/cucur_pisang.webp" },
+  "tetra_pak_mineral_water": { name: "Tetra Pak Mineral Water", previous: ["/assets/drinks/mineral_water_vector.jpg"], replacement: "/assets/drinks/tetra_mineral.webp" },
+  "popia": { name: "Popia", previous: ["/assets/dishes/vector/pisang_goreng.jpg", "/assets/dishes/vector/popia.png"], replacement: "/assets/dishes/vector/popia.webp" },
+  "telur_dadar": { name: "Telur Dadar", previous: ["/assets/dishes/vector/roti_canai.jpg", "/assets/dishes/vector/telur_dadar.png"], replacement: "/assets/dishes/vector/telur_dadar.webp" },
+  "samosa_kentang": { name: "Samosa Kentang", previous: ["/assets/dishes/vector/pisang_goreng.jpg", "/assets/dishes/vector/samosa_kentang.png"], replacement: "/assets/dishes/vector/samosa_kentang.webp" },
+  "air_kordial": { name: "Air Kordial", previous: ["/assets/drinks/sirap_bandung.jpg", "/assets/drinks/air_kordial.png"], replacement: "/assets/drinks/air_kordial.webp" },
+  "telur_mata_sapi_lunch": { name: "Telur Mata Sapi", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/telur_mata_sapi.jpg" },
+};
+
+export function correctDefaultMenuImage<T extends { id: string; nameBm?: unknown; image?: unknown }>(item: T): T {
+  const correction = MENU_IMAGE_CORRECTIONS[item.id];
+  const hasKnownPlaceholder = item.image == null || item.image === '' || (typeof item.image === 'string' && correction?.previous.includes(item.image));
+  if (!correction || item.nameBm !== correction.name || !hasKnownPlaceholder) return item;
+  return { ...item, image: correction.replacement };
+}
 const ALLOWED_CATEGORIES = new Set(['breakfast', 'lunch', 'hi tea', 'drinks']);
 const ALLOWED_SUITABILITY = new Set(['breakfast_hitea', 'lunch', undefined]);
 
@@ -87,11 +137,11 @@ router.get('/menu', async (_req, res) => {
     }
     const items = snap.docs.map(doc => {
       const data = doc.data();
-      return {
+      return correctDefaultMenuImage({
         id: doc.id,
         available: data.available !== undefined ? Boolean(data.available) : true,
         ...data
-      };
+      });
     });
     return res.json({ success: true, items, menuItems: items, isDefault: false });
   } catch {
@@ -273,3 +323,4 @@ router.post('/admin/menu/reset', verifyAdminToken, async (_req, res) => {
 });
 
 export default router;
+

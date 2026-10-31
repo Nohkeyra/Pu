@@ -198,7 +198,7 @@ export function Step2DishSelection({
                           void handleToggleDish(item);
                         };
                         const dishName = tText(item.nameEn, item.nameBm) || item.name;
-                        const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
+                        const dishImg = typeof item.image === 'string' && item.image.trim() ? repairDishImage(item, { useProxyForExternal: true, noFallback: true }) : '';
                         return (
                           <div
                             key={item.id}
@@ -260,7 +260,7 @@ export function Step2DishSelection({
                           void handleToggleDish(item);
                         };
                         const dishName = tText(item.nameEn, item.nameBm) || item.name;
-                        const dishImg = repairDishImage(item, { useProxyForExternal: true }) || item.image;
+                        const dishImg = typeof item.image === 'string' && item.image.trim() ? repairDishImage(item, { useProxyForExternal: true, noFallback: true }) : '';
                         return (
                           <div
                             key={item.id}
@@ -414,3 +414,4 @@ export function Step2DishSelection({
     </motion.div>
   );
 }
+

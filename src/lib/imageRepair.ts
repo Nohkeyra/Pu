@@ -5,6 +5,7 @@ export interface ImageRepairOptions {
   dishId?: string;
   category?: string;
   fallbackIcon?: 'utensils' | 'coffee' | 'drink' | 'food';
+  noFallback?: boolean;
 }
 
 /**
@@ -33,6 +34,7 @@ export function normalizeImageUrl(src: string): string {
 export function getProxiedOrRepairedImageUrl(src: string, options: ImageRepairOptions = {}): string {
   const normalized = normalizeImageUrl(src);
   if (!normalized) {
+    if (options.noFallback) return '';
     return getAssetUrl('/assets/dishes/vector/nasi_lemak.jpg');
   }
 
@@ -40,6 +42,7 @@ export function getProxiedOrRepairedImageUrl(src: string, options: ImageRepairOp
   if (options.useProxyForExternal && (normalized.startsWith('http://') || normalized.startsWith('https://'))) {
     const params = new URLSearchParams({
       url: normalized,
+      ...(options.noFallback ? { noFallback: '1' } : {}),
       ...(options.dishId ? { dish: options.dishId } : {}),
       ...(options.category ? { category: options.category } : {})
     });
@@ -56,16 +59,19 @@ export function getProxiedOrRepairedImageUrl(src: string, options: ImageRepairOp
  */
 export function repairDishImage(item: any, options: ImageRepairOptions = {}): string {
   if (!item) {
+    if (options.noFallback) return '';
     return getAssetUrl('/assets/dishes/vector/nasi_lemak.jpg');
   }
 
   // 1. If explicit valid image exists and isn't a broken photo path
   if (item.image && typeof item.image === 'string' && item.image.trim()) {
     const cleanImg = item.image.trim();
-    if (!cleanImg.includes('/photos/')) {
+    if (options.noFallback || !cleanImg.includes('/photos/')) {
       return getProxiedOrRepairedImageUrl(cleanImg, { ...options, dishId: item.id, category: item.category });
     }
   }
+
+  if (options.noFallback) return '';
 
   // 2. Resolve via smart vector image matcher in utils
   const resolved = resolveDishImage(item);
@@ -107,3 +113,4 @@ export function generateFallbackSvgDataUri(title: string, category: string = 'fo
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
+

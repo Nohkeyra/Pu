@@ -257,10 +257,12 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
       <motion.main className="[grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-1 tracking-tight">
-            {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : 'Submissions Table'}
+            {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : (language === 'en' ? 'Submissions' : 'Senarai Permohonan')}
           </h1>
           <p className="text-deep-forest/60 dark:text-stone-400 text-xs sm:text-sm">
-            {activeTab === 'orders' ? t('orders_subtitle') : 'Jotform-style submission grid with customizable columns.'}
+            {activeTab === 'orders' ? t('orders_subtitle') : activeTab === 'menu'
+              ? (language === 'en' ? 'Manage your menu items, prices and visibility.' : 'Urus item menu, harga dan paparan pelanggan.')
+              : (language === 'en' ? 'Search, review and manage submitted orders.' : 'Cari, semak dan urus pesanan yang diterima.')}
           </p>
         </div>
 
@@ -400,3 +402,4 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     </div>
   );
 }
+
