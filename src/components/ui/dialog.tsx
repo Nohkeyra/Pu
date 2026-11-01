@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import "./presentation.css"
 
 /**
  * Dialog — Radix-backed UI primitive.
@@ -58,7 +59,7 @@ const DialogContent = React.forwardRef<
       role="dialog"
       aria-modal="true"
       className={cn(
-        "bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border border-amber-500/25 dark:border-border p-6 shadow-[0_25px_60px_-15px_rgba(246,153,19,0.18)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] duration-200 outline-none sm:max-w-lg overflow-hidden border-t-batik",
+        "app-dialog-panel bg-card data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%_-_2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border border-amber-500/25 dark:border-border p-6 shadow-[0_25px_60px_-15px_rgba(246,153,19,0.18)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] duration-200 outline-none sm:max-w-lg max-h-[90dvh] overflow-y-auto overscroll-contain border-t-batik",
         className
       )}
       {...props}
@@ -84,7 +85,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     data-slot="dialog-header"
-    className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+    className={cn("flex flex-col gap-2 pr-10 text-left", className)}
     {...props}
   />
 )
@@ -96,7 +97,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     data-slot="dialog-footer"
-    className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+    className={cn("flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end", className)}
     {...props}
   />
 )
@@ -109,7 +110,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     data-slot="dialog-title"
-    className={cn("text-lg leading-none font-semibold page-header-text font-display", className)}
+    className={cn("text-xl leading-tight font-semibold page-header-text font-display", className)}
     {...props}
   />
 ))

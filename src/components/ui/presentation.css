@@ -1,0 +1,22 @@
+/* Shared presentation only: no authentication, tab selection, or dialog lifecycle changes. */
+.app-dialog-panel {box-shadow:0 20px 60px #0c100e33}
+.app-dialog-panel [data-slot=dialog-header] {min-width:0}
+.app-dialog-panel [data-slot=dialog-title] {overflow-wrap:anywhere}
+.app-dialog-panel [data-slot=dialog-description] {color:var(--color-text-soft)}
+.app-dialog-panel [data-slot=dialog-close] {z-index:1;color:var(--color-text-soft)}
+.app-dialog-panel [data-slot=dialog-footer]>button {min-height:44px;border-radius:12px}
+.app-segmented {min-width:0}
+.app-segmented [role=tab] {line-height:1.4}
+.app-auth-batik {position:absolute;top:0;right:0;width:160px;height:110px;opacity:.06;pointer-events:none;mask-image:linear-gradient(225deg,black,transparent 75%)}
+.app-auth-heading {min-width:0}
+.app-auth-heading h2 {overflow-wrap:anywhere}
+.app-auth-panel form input:focus-visible,.app-auth-panel form select:focus-visible {outline:2px solid var(--color-sunshine-cta);outline-offset:2px}
+.app-admin-tabs {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--color-surface-muted);border-color:var(--color-border);overflow:visible;box-shadow:none}
+.app-admin-tabs>button {min-width:0;min-height:48px;height:auto;white-space:normal;justify-content:center;gap:6px;padding:10px 7px;border-radius:10px;color:var(--color-text-soft);font-size:.75rem;font-weight:500;scale:1;transform:none;box-shadow:none}
+.app-admin-tabs>button[aria-pressed=true] {background:var(--color-surface);color:var(--color-sunshine-cta);font-weight:700;box-shadow:0 1px 4px #0000000d}
+.app-admin-tabs>button svg {color:inherit;width:16px;height:16px}
+.app-admin-tab-label {min-width:0;overflow-wrap:anywhere;text-align:left;line-height:1.4}
+.dark .app-admin-tabs>button[aria-pressed=true] {color:var(--color-sunshine)}
+@media(min-width:1024px) {.app-admin-tabs{display:flex;flex-direction:column;padding:4px;border:1px solid var(--color-border);border-radius:14px}.app-admin-tabs>button{justify-content:flex-start}}
+@media(max-width:350px) {.app-admin-tabs>button{flex-direction:column;gap:5px;padding-inline:3px}.app-admin-tab-label{text-align:center}}
+@media(prefers-reduced-motion:reduce) {.app-segmented [role=tab],.app-admin-tabs>button{transition:none}}

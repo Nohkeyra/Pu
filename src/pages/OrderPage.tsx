@@ -68,6 +68,7 @@ export default function OrderPage() {
         </motion.div>
 
         <CustomerPageHeader
+          backDestination="home"
           title={language === 'bm' ? 'Tempah katering' : 'Catering order'}
           subtitle={language === 'bm' ? 'Butiran majlis anda' : 'Your event details'}
           onBack={() => navigate('/home', { replace: true })}

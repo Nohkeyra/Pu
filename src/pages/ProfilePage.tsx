@@ -6,10 +6,10 @@ import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, User as UserIcon, LogIn, UserPlus, ArrowRight } from 'lucide-react';
-import { getAssetUrl } from '@/lib/utils';
+import { User as UserIcon, LogIn, UserPlus, ArrowRight, FileText, MapPin, Check } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
-import { TransparentLogo } from '@/components/TransparentLogo';
+import { CustomerPageHeader } from '@/components/CustomerPageHeader';
+import './customer-calendar-profile.css';
 import AuthModal from '@/components/AuthModal';
 
 export default function ProfilePage() {
@@ -42,76 +42,54 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative">
-      {/*
-        P0 — standardised dark-mode text colour override so header
-        label stays legible in both modes.  Page Shell-like surface
-        (.glass-header) is reused so behaviour matches other pages.
-      */}
-      <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
-        <div className="flex items-center justify-between px-4 sm:px-6 min-h-[60px] sm:min-h-[64px]">
-          {/**
-           * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
-           * Semantic brand logo and page-title touch target navigating to /home.
-           * Not a standard action button; exempt from <Button> primitive migration.
-           */}
-          <button
-            type="button"
-            onClick={() => navigate('/home')}
-            className="touch-target-row flex items-center gap-3 text-left"
-            aria-label="Go to home"
-          >
-            <div className="h-10 w-10 flex items-center justify-center">
-              {/*
-                Brand asset path preserved verbatim — visual logo /
-                Malaysian heritage graphic must remain 100% intact.
-              */}
-              <TransparentLogo
-                src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-                alt="Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <span className="font-display font-semibold text-xl page-header-text tracking-tight">
-                {t('nav_profile')}
-              </span>
-            </div>
-          </button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="touch-target-row rounded-full min-h-[44px] text-stone hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('back')}
-          </Button>
-        </div>
-      </header>
+    <div className="customer-page customer-profile-page relative">
+      <CustomerPageHeader
+          backDestination={window.history.state?.idx > 0 ? 'history' : 'home'}
+        title={t('nav_profile')}
+        subtitle={language === 'bm' ? 'Ruang anda bersama Wawasan' : 'Your space with Wawasan'}
+        onBack={() => {
+          if (window.history.state?.idx > 0) navigate(-1);
+          else navigate('/home');
+        }}
+        actions={[
+          ...(!currentUser ? [{ label: language === 'bm' ? 'Log masuk' : 'Sign in', onSelect: () => { setAuthMode('signin'); setAuthModalOpen(true); } }] : []),
+          { label: language === 'bm' ? 'Tempahan baharu' : 'New order', onSelect: () => navigate('/order') },
+          { label: language === 'bm' ? 'Tetapan' : 'Settings', onSelect: () => navigate('/settings') },
+        ]}
+      />
 
-      <div className="profile-page-content page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
+      <div className="customer-content customer-profile-content">
         {!currentUser ? (
-          <Card className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
-            <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Card className="customer-profile-access">
+            <div className="customer-profile-symbol">
               <UserIcon className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
             </div>
-            <h2 className="text-2xl font-display font-bold text-deep-forest dark:text-white mb-2">
-              {language === 'bm' ? 'Akses Tempahan Anda' : 'Access Your Bookings'}
+            <h2 className="customer-profile-access-title">
+              {language === 'bm' ? 'Tempahan anda, lebih teratur.' : 'Your orders, all in one place.'}
             </h2>
-            <p className="text-stone dark:text-stone/75 microcopy-14 mb-8 max-w-md mx-auto">
+            <p className="customer-profile-access-description">
               {language === 'bm'
-                ? 'Sila log masuk atau daftar akaun untuk melihat sejarah pesanan dan menguruskan dokumen katering rasmi anda.'
-                : 'Please sign in or register to view your order history and manage your professional catering documentation.'}
+                ? 'Log masuk untuk melihat tempahan, menyimpan lokasi dan mengurus maklumat anda.'
+                : 'Sign in to view orders, save locations and manage your details.'}
             </p>
 
-            <div className="space-y-4">
+            <ul className="customer-profile-benefits">
+              {[
+                { icon: FileText, label: language === 'bm' ? 'Semak status dan sejarah tempahan' : 'Check order status and history' },
+                { icon: MapPin, label: language === 'bm' ? 'Simpan lokasi untuk tempahan seterusnya' : 'Save locations for your next order' },
+                { icon: UserIcon, label: language === 'bm' ? 'Urus maklumat profil anda' : 'Manage your profile details' },
+              ].map(({ icon: Icon, label }) => (
+                <li key={label}><Icon aria-hidden="true" /><span>{label}</span><Check className="customer-profile-benefit-check" aria-hidden="true" /></li>
+              ))}
+            </ul>
+            <div className="customer-profile-entry-actions space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   onClick={() => {
                     setAuthMode('signin');
                     setAuthModalOpen(true);
                   }}
-                  className="btn-cta w-full py-4 min-h-[52px] rounded-2xl text-base font-bold flex items-center justify-center gap-2 shadow-md"
+                  className="customer-profile-signin w-full min-h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-5 h-5" />
                   <span>{language === 'bm' ? 'Log Masuk' : 'Sign In'}</span>
@@ -123,7 +101,7 @@ export default function ProfilePage() {
                     setAuthMode('signup');
                     setAuthModalOpen(true);
                   }}
-                  className="w-full py-4 min-h-[52px] rounded-2xl text-base font-bold border-stone/20 hover:border-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 flex items-center justify-center gap-2 text-deep-forest dark:text-white"
+                  className="customer-profile-register w-full min-h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
                 >
                   <UserPlus className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
                   <span>{language === 'bm' ? 'Daftar Akaun' : 'Sign Up'}</span>
@@ -138,8 +116,8 @@ export default function ProfilePage() {
                 >
                   <span>
                     {language === 'bm'
-                      ? 'Atau teruskan ke Borang Pesanan sebagai tetamu'
-                      : 'Or proceed directly to Order Form as a guest'}
+                      ? 'Tempah sebagai tetamu'
+                      : 'Order as a guest'}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 transition-transform group-hover:translate-x-1" />
                 </Button>
@@ -147,7 +125,7 @@ export default function ProfilePage() {
             </div>
           </Card>
         ) : (
-          <div className="profile-page-member">
+          <div className="customer-profile-member">
             <div className="relative">
               <UserProfileDashboard
                 isOpen={true}

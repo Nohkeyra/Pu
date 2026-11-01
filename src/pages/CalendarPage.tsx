@@ -63,7 +63,8 @@ import { cn, toJSDate } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
-import PageShell from '@/components/PageShell';
+import { CustomerPageHeader } from '@/components/CustomerPageHeader';
+import './customer-calendar-profile.css';
 import AuthModal from '@/components/AuthModal';
 import type { Order } from '@/types';
 
@@ -92,6 +93,8 @@ export default function CalendarPage() {
     hi_tea: { count: number; pax: number };
   }>>({});
   const [loading, setLoading] = useState(true);
+  const [calendarDataError, setCalendarDataError] = useState(false);
+  const [calendarRefresh, setCalendarRefresh] = useState(0);
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
@@ -119,25 +122,28 @@ export default function CalendarPage() {
   // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true);
+    setCalendarDataError(false);
     const fetchCalendarData = async () => {
       try {
         const [sessionsRes, ordersRes] = await Promise.all([
           fetch(getApiUrl('/api/calendar-sessions'), { signal: controller.signal }),
           fetch(getApiUrl('/api/calendar-orders'), { signal: controller.signal })
         ]);
-        const sessionsData = await sessionsRes.json();
-        if (sessionsData.success && sessionsData.sessions) {
-          setAggregatedSessions(sessionsData.sessions);
+        if (!sessionsRes.ok || !ordersRes.ok) throw new Error('Calendar request failed');
+        const [sessionsData, ordersData] = await Promise.all([sessionsRes.json(), ordersRes.json()]);
+        if (!sessionsData.success || !sessionsData.sessions || !ordersData.success || !Array.isArray(ordersData.orders)) {
+          throw new Error('Calendar response is incomplete');
         }
-        const ordersData = await ordersRes.json();
-        if (ordersData.success && Array.isArray(ordersData.orders)) {
-          setOrders(ordersData.orders);
-        }
+        if (controller.signal.aborted) return;
+        setAggregatedSessions(sessionsData.sessions);
+        setOrders(ordersData.orders);
       } catch (err) {
-        if ((err as Error)?.name === 'AbortError') return;
-        console.error("Failed to fetch server-side calendar data:", err);
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch server-side calendar data:', err);
+        setCalendarDataError(true);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchCalendarData();
@@ -145,7 +151,7 @@ export default function CalendarPage() {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [calendarRefresh]);
 
   // 2. Real-time direct Firestore bindings
   useEffect(() => {
@@ -665,22 +671,26 @@ export default function CalendarPage() {
 
   return (
     <ErrorBoundary>
-      <PageShell
-        title={tl('Catering Schedule', 'Jadual Katering')}
-        subtitle={isAdmin 
-          ? tl('Review bookings and notes by date', 'Semak tempahan dan nota mengikut tarikh')
-          : currentUser 
-          ? tl('View your catering dates', 'Lihat tarikh katering anda')
-          : tl('Browse the catering schedule', 'Lihat jadual katering')}
-        showBatik={true}
-        backHref="/home"
-        actions={todayAction}
-      >
-        <div className="w-full space-y-5 pb-20">
+      <div className="customer-page customer-calendar-page">
+        <CustomerPageHeader
+          backDestination="home"
+          title={tl('Catering schedule', 'Jadual katering')}
+          subtitle={tl('Bookings by date', 'Tempahan mengikut tarikh')}
+          onBack={() => navigate('/home')}
+          actions={[
+            { label: tl('Go to today', 'Kembali ke hari ini'), onSelect: () => { void handleToday(); } },
+            { label: currentUser ? tl('Your account', 'Akaun anda') : tl('Sign in', 'Log masuk'), onSelect: () => {
+              if (currentUser) navigate(isAdmin ? '/admin' : '/profile');
+              else setAuthModalOpen(true);
+            } },
+            { label: tl('Settings', 'Tetapan'), onSelect: () => navigate('/settings') },
+          ]}
+        />
+        <div className="customer-content customer-calendar-content space-y-5">
 
           {/* 1. CALENDAR CONTROLS & HEADER */}
-          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-50/80 via-white to-white p-4 shadow-xs transition-colors duration-200 dark:border-white/10 dark:from-stone-900 dark:via-card dark:to-card sm:p-5">
-            <div className="flex items-center justify-between gap-4">
+          <div className="customer-calendar-panel customer-calendar-toolbar">
+            <div className="customer-calendar-month">
               <Button
                 variant="secondary"
                 size="icon"
@@ -692,14 +702,9 @@ export default function CalendarPage() {
               </Button>
 
               <div className="min-w-0 text-center flex-1" aria-live="polite">
-                <h2 className="font-display font-bold text-lg sm:text-2xl text-stone-900 dark:text-stone-100 capitalize tracking-tight leading-tight">
+                <h2 className="customer-calendar-month-title">
                   {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
                 </h2>
-                {selectedDay && (
-                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-300">
-                    {tl('Selected:', 'Dipilih:')} {format(selectedDay, 'd MMM yyyy', { locale: dateLocale })}
-                  </p>
-                )}
               </div>
 
               <Button
@@ -712,7 +717,21 @@ export default function CalendarPage() {
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
+            <div className="customer-calendar-toolbar-foot">
+              <span>{selectedDay ? `${tl('Selected', 'Dipilih')}: ${format(selectedDay, 'd MMM yyyy', { locale: dateLocale })}` : tl('Choose a date', 'Pilih tarikh')}</span>
+              {todayAction}
+            </div>
           </div>
+
+          {calendarDataError && (
+            <div className="customer-calendar-error" role="alert">
+              <div>
+                <p>{tl('Calendar data is incomplete', 'Data jadual belum lengkap')}</p>
+                <span>{tl('Some booking data could not be loaded. Please try again.', 'Sebahagian data tempahan gagal dimuatkan. Sila cuba lagi.')}</span>
+              </div>
+              <Button type="button" variant="outline" onClick={() => setCalendarRefresh(value => value + 1)}>{tl('Try again', 'Cuba lagi')}</Button>
+            </div>
+          )}
 
           {/* 2. CALENDAR GRID WITH BATIK PATTERN OVERLAYS */}
           {loading ? (
@@ -723,10 +742,10 @@ export default function CalendarPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden transition-colors duration-200">
+            <div className="customer-calendar-panel overflow-hidden">
               
               {/* Weekdays Header Row with Batik Overlay */}
-              <div className="relative overflow-hidden grid grid-cols-7 border-b border-amber-900/10 dark:border-stone-800 bg-deep-forest text-amber-100 dark:bg-stone-900 dark:text-amber-200 shadow-inner">
+              <div className="customer-calendar-weekdays relative overflow-hidden grid grid-cols-7">
                 {/* Batik Background Layer for Weekday Header */}
                 <div 
                   className="absolute inset-0 pattern-batik opacity-35 dark:opacity-25 pointer-events-none mix-blend-overlay"
@@ -736,8 +755,9 @@ export default function CalendarPage() {
                   <div 
                     key={idx} 
                     aria-label={day.full}
+                    data-weekend={day.weekend}
                     className={cn(
-                      "relative z-10 py-2.5 sm:py-3 text-center text-xs sm:text-xs font-black tracking-widest uppercase select-none drop-shadow-xs",
+                      "customer-calendar-weekday relative z-10 py-2.5 sm:py-3 text-center text-xs sm:text-xs font-black tracking-widest uppercase select-none drop-shadow-xs",
                       day.weekend 
                         ? "text-rose-300 dark:text-rose-400 font-black" 
                         : "text-amber-100 dark:text-amber-200/90"
@@ -759,7 +779,7 @@ export default function CalendarPage() {
                     key={`prev-${pDay.toISOString()}`}
                     onClick={() => handleAdjacentDay(pDay)}
                     aria-label={`${format(pDay, 'EEEE, d MMMM yyyy', { locale: dateLocale })}, ${tl('previous month', 'bulan sebelumnya')}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
+                    className="customer-calendar-outside min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(pDay, 'd')}
@@ -799,7 +819,7 @@ export default function CalendarPage() {
                         ...(dayNotes.length ? [tl('Has note', 'Ada nota')] : []),
                       ].join(', ')}
                       className={cn(
-                        "min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]",
+                        "customer-calendar-day min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 flex flex-col justify-between transition-all text-left relative cursor-pointer group select-none bg-white hover:bg-stone-50/80 dark:bg-card dark:hover:bg-stone-800/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]",
                         isDaySelected 
                           ? "ring-2 ring-inset ring-crisp-carrot bg-orange-50/70 dark:bg-orange-950/30 z-10" 
                           : holiday
@@ -896,7 +916,7 @@ export default function CalendarPage() {
                     key={`next-${nDay.toISOString()}`}
                     onClick={() => handleAdjacentDay(nDay)}
                     aria-label={`${format(nDay, 'EEEE, d MMMM yyyy', { locale: dateLocale })}, ${tl('next month', 'bulan seterusnya')}`}
-                    className="min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
+                    className="customer-calendar-outside min-h-[64px] sm:min-h-[100px] p-1 sm:p-2.5 relative select-none overflow-hidden cal-striped-outside pattern-batik flex flex-col justify-start bg-amber-950/5 dark:bg-amber-100/5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-crisp-carrot focus-visible:outline-offset-[-2px]"
                   >
                     <span className="text-xs sm:text-xs font-semibold text-stone-400 dark:text-stone-500 tabular-nums relative z-10">
                       {format(nDay, 'd')}
@@ -924,10 +944,10 @@ export default function CalendarPage() {
 
           {/* 3. REFINED SELECTED DAY AGENDA */}
           {selectedDay && (
-            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden transition-colors duration-200">
+            <div className="customer-calendar-panel overflow-hidden">
               
               {/* Day Header */}
-              <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
+              <div className="customer-calendar-agenda-heading p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 shrink-0">
                     <CalendarIcon className="w-4 h-4 text-crisp-carrot" />
@@ -944,7 +964,9 @@ export default function CalendarPage() {
                       )}
                     </div>
                     <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      {selectedDayTotalPax > 0 
+                      {calendarDataError
+                        ? tl('Booking information could not be confirmed', 'Maklumat tempahan belum dapat dipastikan')
+                        : selectedDayTotalPax > 0
                         ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}`
                         : getOrdersForDay(selectedDay).length > 0
                         ? `${getOrdersForDay(selectedDay).length} ${tl('bookings', 'tempahan')}`
@@ -985,19 +1007,19 @@ export default function CalendarPage() {
                   <div className="lg:col-span-7 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({getOrdersForDay(selectedDay).length})
+                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({calendarDataError ? '—' : getOrdersForDay(selectedDay).length})
                       </span>
                     </div>
 
                     {getOrdersForDay(selectedDay).length === 0 ? (
-                      <div className="p-8 text-center rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 space-y-3">
+                      <div className="customer-calendar-empty p-6 text-center rounded-xl space-y-3">
                         <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                          {tl('No bookings found for this date.', 'Tiada tempahan untuk tarikh ini.')}
+                          {calendarDataError ? tl('Booking information could not be confirmed.', 'Maklumat tempahan belum dapat dipastikan.') : tl('No bookings found for this date.', 'Tiada tempahan untuk tarikh ini.')}
                         </p>
                         <Button
                           variant="primary"
                           size="sm"
-                          onClick={() => navigate(`/order?date=${format(selectedDay, 'yyyy-MM-dd')}`)}
+                          onClick={() => navigate('/order', { state: { reorderData: { date: format(selectedDay, 'yyyy-MM-dd') } } })}
                           className="gap-1.5 text-xs font-bold rounded-xl shadow-xs"
                         >
                           <Plus className="w-4 h-4" />
@@ -1451,7 +1473,7 @@ export default function CalendarPage() {
           />
 
         </div>
-      </PageShell>
+      </div>
     </ErrorBoundary>
   );
 }

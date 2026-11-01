@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, Moon, MoreHorizontal, Sun } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Home, Moon, MoreHorizontal, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -16,11 +16,12 @@ interface CustomerPageHeaderProps {
   title: string;
   subtitle: string;
   onBack: () => void;
+  backDestination?: 'home' | 'history';
   actions: { label: string; onSelect: () => void }[];
 }
 
 /** Shared page chrome. Brand artwork and its Uncial Antiqua wordmark are protected. */
-export function CustomerPageHeader({ title, subtitle, onBack, actions }: CustomerPageHeaderProps) {
+export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 'history', actions }: CustomerPageHeaderProps) {
   const { language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -65,8 +66,8 @@ export function CustomerPageHeader({ title, subtitle, onBack, actions }: Custome
         </Button>
       </div>
       <div className="customer-header-frame customer-page-bar">
-        <Button type="button" variant="ghost" size="icon" className="customer-header-icon customer-back" aria-label={bm ? 'Kembali' : 'Back'} onClick={() => { void triggerLightImpact(); onBack(); }}>
-          <ArrowLeft aria-hidden="true" />
+        <Button type="button" variant="ghost" size="icon" className="customer-header-icon customer-back" aria-label={backDestination === 'home' ? (bm ? 'Utama' : 'Home') : (bm ? 'Kembali' : 'Back')} title={backDestination === 'home' ? (bm ? 'Utama' : 'Home') : (bm ? 'Kembali' : 'Back')} onClick={() => { void triggerLightImpact(); onBack(); }}>
+          {backDestination === 'home' ? <Home aria-hidden="true" /> : <ArrowLeft aria-hidden="true" />}
         </Button>
         <div className="customer-page-title">
           <h1>{title}</h1>

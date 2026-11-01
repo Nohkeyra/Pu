@@ -24,7 +24,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import './ui/presentation.css';
 import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
 import { useAdminBiometric } from '@/hooks/useAdminBiometric';
 import { 
@@ -419,19 +419,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           role="dialog"
           aria-modal="true"
           aria-label={mode === 'signin' ? t('Sign In', 'Log Masuk') : mode === 'signup' ? t('Register Account', 'Daftar Akaun Baru') : t('Reset Password', 'Set Semula Kata Laluan')}
-          className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-10 flex-shrink-0 my-auto max-sm:my-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:rounded-t-[2rem] overflow-hidden max-h-[90vh] max-sm:max-h-[92vh] flex flex-col"
+          className="app-auth-panel relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl z-10 flex-shrink-0 my-auto max-sm:my-0 max-sm:mt-auto max-sm:rounded-b-none max-sm:rounded-t-[2rem] overflow-hidden max-h-[90vh] max-sm:max-h-[92vh] flex flex-col"
         >
           {/* Mobile Bottom Sheet Pull Pill */}
           <div className="w-12 h-1.5 bg-stone-300 dark:bg-stone-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" aria-hidden="true" />
 
-          {/* Batik Pattern Overlay */}
-          <Batik3DMotion
-            mode="background"
-            opacity={0.09}
-            mixBlendMode="overlay"
-            className="rounded-2xl"
-            maxRotation={10}
-          />
+          {/* Batik stays in the heading corner; form fields retain a calm surface. */}
+          <div className="app-auth-batik pattern-batik" aria-hidden="true" />
 
           {/* Accent Gold Line */}
           <div className="relative h-[3px] bg-gradient-to-r from-sunshine-cta via-honey to-sunshine-cta z-10 shrink-0" />
@@ -449,13 +443,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
           <div className="relative p-6 sm:p-8 z-10 overflow-y-auto flex-1">
             {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="font-display text-2xl font-bold text-foreground tracking-wide">
+            <div className="app-auth-heading text-left mb-6 pr-10">
+              <h2 className="font-display text-xl font-semibold text-foreground leading-tight">
                 {mode === 'signin' && t('Sign In', 'Log Masuk')}
                 {mode === 'signup' && t('Register Account', 'Daftar Akaun Baru')}
                 {mode === 'forgot' && t('Reset Password', 'Set Semula Kata Laluan')}
               </h2>
-              <p className="text-xs text-muted-foreground mt-1 font-sans">
+              <p className="text-sm leading-relaxed text-muted-foreground mt-2 font-sans">
                 {mode === 'signin' && t('Access your saved profile & catering invoice history', 'Akses profil & sejarah invois katering anda')}
                 {mode === 'signup' && t('Create a profile for instant billing auto-population', 'Daftar profil untuk automasi maklumat bil tempahan')}
                 {mode === 'forgot' && t('Enter your registered email to receive reset instructions', 'Masukkan e-mel anda untuk menerima arahan set semula')}

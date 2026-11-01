@@ -23,6 +23,7 @@ import { AdminTablesTab } from './admin/AdminTablesTab';
 import AdminMenuTab from './admin/AdminMenuTab';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 import { getDisplayInvoiceNo } from '@/lib/utils';
+import './ui/presentation.css';
 
 // Hooks
 import { useAdminOrders } from '@/hooks/useAdminOrders';
@@ -207,7 +208,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
           <p className="hidden lg:block text-xs font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider mb-3">
             {language === 'en' ? 'Administrative' : 'Pentadbiran'}
           </p>
-          <div className="flex flex-row lg:flex-col justify-center lg:justify-start gap-2 p-1 lg:p-0 bg-white dark:bg-card lg:bg-transparent rounded-2xl lg:rounded-none border border-stone-200/80 lg:border-0 dark:border-white/10 shadow-sm lg:shadow-none overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
+          <div className="app-admin-tabs flex flex-row lg:flex-col justify-center lg:justify-start gap-2 p-1 lg:p-0 bg-white dark:bg-card lg:bg-transparent rounded-2xl lg:rounded-none border border-stone-200/80 lg:border-0 dark:border-white/10 shadow-sm lg:shadow-none overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
             {[
               { id: 'orders' as const, label: t('orders'), icon: FileText, onClick: () => setActiveTab('orders'), badge: cancelRequests.length > 0 ? <Badge className="ml-auto bg-amber-500 text-stone-950 px-1.5 py-0.5 text-xs font-bold">{cancelRequests.length}</Badge> : null },
               { id: 'tables' as const, label: language === 'en' ? 'Tables View' : 'Paparan Jadual', icon: Table, onClick: () => setActiveTab('tables') },
@@ -218,6 +219,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               return (
                 <button
                   key={tab.id}
+                  type="button"
+                  aria-pressed={isActive}
                   onClick={tab.onClick}
                   className={`px-3.5 py-2.5 font-bold text-xs flex items-center gap-2.5 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 cursor-pointer select-none ${
                     isActive 
@@ -226,7 +229,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   }`}
                 >
                   <Icon className={`w-4 h-4 z-10 shrink-0 ${isActive ? 'text-white' : 'text-stone'}`} />
-                  <span className="z-10">{tab.label}</span>
+                  <span className="app-admin-tab-label z-10">{tab.label}</span>
                   {tab.badge}
                 </button>
               );

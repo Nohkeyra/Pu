@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { playClickSound } from '@/lib/haptics';
+import './presentation.css';
 
 interface SegmentedControlContextValue {
   value?: string;
@@ -29,7 +30,7 @@ export function SegmentedControl({
       <div
         role="tablist"
         className={cn(
-          'inline-flex items-center p-1 rounded-xl bg-[var(--color-surface-muted)] select-none',
+          'app-segmented inline-flex max-w-full flex-wrap items-center gap-1 p-1 rounded-[14px] border border-border bg-[var(--color-surface-muted)] select-none',
           className
         )}
         {...props}
@@ -69,10 +70,10 @@ export const SegmentedControlItem = React.forwardRef<
       aria-selected={isSelected}
       onClick={handleClick}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-bold transition-all duration-150 cursor-pointer disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] font-bold transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         context.size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-xs',
         isSelected
-          ? 'bg-[var(--color-bg)] text-[var(--color-text)] shadow-2xs font-bold'
+          ? 'bg-card text-[var(--color-sunshine-cta)] dark:text-sunshine shadow-2xs font-bold'
           : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] font-medium',
         className
       )}

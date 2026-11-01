@@ -825,6 +825,7 @@ export default function SettingsPage() {
     <ErrorBoundary>
       <div className="customer-page customer-settings-page relative">
         <CustomerPageHeader
+          backDestination={window.history.state?.idx > 0 ? 'history' : 'home'}
           title={language === 'bm' ? 'Tetapan' : 'Settings'}
           subtitle={language === 'bm' ? 'Pilihan aplikasi anda' : 'Make the app yours'}
           onBack={() => {
@@ -1523,7 +1524,7 @@ export default function SettingsPage() {
           {/* ADMIN MANAGEMENT CARD (If Logged In) */}
           {(isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)) && (
             <div className="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                     <Shield className="w-4 h-4" />
