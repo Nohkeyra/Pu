@@ -54,6 +54,8 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".rider.RiderLocationService" android:exported="false" android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -143,6 +145,8 @@
     <!-- Geolocation (@capacitor/geolocation) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <!-- Motion Sensors (@capacitor/motion) -->
     <!-- F-10: HIGH_SAMPLING_RATE_SENSORS removed; Batik3DMotion uses standard sensors. -->
@@ -156,6 +160,6 @@
 
     <!-- Background & Reliability Optimizations -->
     <!-- F-10: RECEIVE_BOOT_COMPLETED removed; no BOOT_COMPLETED receiver registered. -->
-    <!-- F-10: FOREGROUND_SERVICE removed; no foreground service declared. -->
+    <!-- Rider location uses an explicitly started foreground service; no boot restart. -->
     <!-- F-10: REQUEST_IGNORE_BATTERY_OPTIMIZATIONS removed; admin panel is on-demand. -->
 </manifest>

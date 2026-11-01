@@ -1,3 +1,4 @@
+import { canViewRiderTracking } from '@/lib/riderTracking';
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
@@ -248,7 +249,7 @@ export function OrderDetailModal({
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
                   </div>
-                  {handleUpdateStatus && selectedOrder.id && ['approved', 'billed', 'delivered'].includes(selectedOrder.status?.toLowerCase() || '') && (
+                  {handleUpdateStatus && selectedOrder.id && ['approved', 'billed', 'in_transit', 'delivered'].includes(selectedOrder.status?.toLowerCase() || '') && (
                     <div className="pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-2">
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">
                         {language === 'bm' ? 'Kemaskini Penghantaran :' : 'Update Delivery :'}
@@ -256,7 +257,7 @@ export function OrderDetailModal({
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           size="sm"
-                          disabled={isApproving || selectedOrder.status?.toLowerCase() === 'in_transit'}
+                          disabled={isApproving || !['approved', 'billed'].includes(selectedOrder.status?.toLowerCase() || '')}
                           onClick={() => handleUpdateStatus(selectedOrder.id!, 'in_transit')}
                           className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
                         >
@@ -273,20 +274,13 @@ export function OrderDetailModal({
                           <span>{language === 'bm' ? 'Dihantar / Selesai' : 'Mark Delivered'}</span>
                         </Button>
                       </div>
-                      {handleTrack && (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            onClose();
-                            handleTrack(selectedOrder);
-                          }}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold h-9 mt-2 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                        >
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span>{language === 'bm' ? 'Jejak & Geofence' : 'Track & Geofence'}</span>
-                        </Button>
-                      )}
+
                     </div>
+                  )}
+                  {handleTrack && selectedOrder.id && canViewRiderTracking(selectedOrder.status) && (
+                    <Button size="sm" onClick={() => { onClose(); handleTrack(selectedOrder); }} className="w-full min-h-11 rounded-xl bg-orange-600 hover:bg-orange-700 text-white gap-2">
+                      <MapPin className="w-4 h-4" />{language === 'bm' ? 'Jejak penghantaran' : 'Track delivery'}
+                    </Button>
                   )}
                 </div>
 

@@ -46,7 +46,9 @@ service cloud.firestore {
                         || resource.data.uid == request.auth.uid
                         || resource.data.userId == request.auth.uid);
 
+      // Rider telemetry is written only by the authenticated, validated server endpoints.
       allow update: if isAdmin()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['riderLocation', 'riderTrackingSession'])
         && orderId.matches('^[A-Za-z0-9_-]{5,50}$')
         && request.resource.data.name     == resource.data.name
         && request.resource.data.email    == resource.data.email

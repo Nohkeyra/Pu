@@ -1,3 +1,4 @@
+import type { RiderSession } from './lib/riderTracking';
 export interface NotificationSettings {
   orderStatus: boolean;
   billedUpdates: boolean;
@@ -82,6 +83,10 @@ export interface RiderLocation {
   riderName?: string;
   riderPhone?: string;
   accuracy?: number;
+  source?: 'gps';
+  capturedAt?: string;
+  sessionId?: string;
+  sequence?: number;
 }
 
 export interface Order {
@@ -119,6 +124,7 @@ export interface Order {
   status?: 'pending' | 'approved' | 'billed' | 'in_transit' | 'cancel_requested' | 'cancelled' | 'rejected' | 'delivered' | 'completed';
   rejectionReason?: string;
   riderLocation?: RiderLocation;
+  riderTrackingSession?: RiderSession;
   createdAt?: { seconds: number; nanoseconds: number } | string | Date;
   updatedAt?: { seconds: number; nanoseconds: number } | string | Date;
   approvedAt?: string;

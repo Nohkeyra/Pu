@@ -43,6 +43,8 @@ android {
         versionCode appVersionCode
         versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Public, trusted server origin. Never accept a token-bearing URL from the WebView.
+        buildConfigField 'String', 'RIDER_API_BASE_URL', groovy.json.JsonOutput.toJson(project.findProperty('riderApiBaseUrl') ?: 'https://restoran-wawasan-bio.onrender.com')
 
         // No privileged API secrets are embedded in the APK. Native widget actions
         // use the admin session token synced from the authenticated app session.

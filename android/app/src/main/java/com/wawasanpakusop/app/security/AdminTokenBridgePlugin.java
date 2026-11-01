@@ -25,6 +25,7 @@ public class AdminTokenBridgePlugin extends Plugin {
     @PluginMethod
     public void clearToken(PluginCall call) {
         try {
+            com.wawasanpakusop.app.rider.RiderLocationService.stopSharing(getContext());
             SecureStorage.saveAdminToken(getContext(), null);
             SecureStorage.saveString(getContext(), SecureStorage.KEY_CACHED_PRICING_ORDERS, null);
             SecureStorage.saveString(getContext(), "cached_pricing_orders_json", null);

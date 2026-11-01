@@ -1,4 +1,4 @@
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -87,6 +87,17 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  useEffect(() => {
+    const openRequestedOrder = () => {
+      const requested = sessionStorage.getItem('wawasan_open_rider_order');
+      const match = requested ? orders.find(order => order.id === requested) : null;
+      if (match) { sessionStorage.removeItem('wawasan_open_rider_order'); setTrackingOrder(match); }
+    };
+    openRequestedOrder();
+    window.addEventListener('rider:open-order', openRequestedOrder);
+    return () => window.removeEventListener('rider:open-order', openRequestedOrder);
+  }, [orders]);
+
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFromFilter, setDateFromFilter] = useState<string>('');
@@ -349,7 +360,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
               isAdmin={true}
               onClose={() => setTrackingOrder(null)}
               onUpdateStatus={async (id, status) => {
-                await handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`);
+                const updated = await handleUpdateOrderStatus(id, { status: status as any }, `Status updated to ${status}`);
+                if (!updated) throw new Error('Order status was not saved');
                 setTrackingOrder(prev => prev ? { ...prev, status: status as any } : null);
               }}
             />

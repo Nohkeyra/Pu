@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AdminTokenBridgePlugin.class);
+        registerPlugin(com.wawasanpakusop.app.rider.RiderTrackingPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Initialize centralized crash reporter for native threads and uncaught exceptions
@@ -28,6 +29,7 @@ public class MainActivity extends BridgeActivity {
             settings.setDatabaseEnabled(true);
             settings.setJavaScriptEnabled(true);
             settings.setLoadsImagesAutomatically(true);
+            settings.setUserAgentString(settings.getUserAgentString() + " RestoranWawasan/" + BuildConfig.VERSION_NAME + " (https://github.com/Nohkeyra/Pu)");
         }
 
         // Native back button handling for API 33+
@@ -61,7 +63,11 @@ public class MainActivity extends BridgeActivity {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
                 // Post to main queue without replacing BridgeWebViewClient
-                webView.post(() -> webView.evaluateJavascript("window.location.hash = '#/admin';", null));
+                String orderId = intent.getStringExtra("rider_order_id");
+                String script = orderId != null && orderId.matches("^[A-Za-z0-9_-]{1,100}$")
+                    ? "sessionStorage.setItem('wawasan_open_rider_order', " + org.json.JSONObject.quote(orderId) + "); window.location.hash = '#/admin'; window.dispatchEvent(new Event('rider:open-order'));"
+                    : "window.location.hash = '#/admin';";
+                webView.post(() -> webView.evaluateJavascript(script, null));
             }
         }
     }

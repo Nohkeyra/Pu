@@ -1,3 +1,4 @@
+import { canViewRiderTracking } from '@/lib/riderTracking';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -280,7 +281,7 @@ function OrderItem({
             </Button>
           )}
 
-          {order.id && (order.status === 'in_transit' || order.status === 'delivered' || order.status === 'billed' || order.status === 'approved') && setTrackingOrder && (
+          {order.id && canViewRiderTracking(order.status) && setTrackingOrder && (
             <Button
               onClick={(e) => {
                 e.stopPropagation();

@@ -674,6 +674,8 @@ export async function syncRefreshedAdminToken(uid: string, freshToken: string): 
  */
 export async function clearAdminSession(options: { forgetBiometrics?: boolean } = {}): Promise<void> {
   try {
+    const { stopRiderSharing } = await import('./riderTrackingService');
+    await stopRiderSharing();
     const token = await getStoredAdminToken();
     if (token) {
       try {
