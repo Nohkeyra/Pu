@@ -43,8 +43,8 @@ export function ProfileLocationsTab({
   t,
 }: ProfileLocationsTabProps) {
   return (
-    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
+    <Card className="profile-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="profile-section-header flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
         <div>
           <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
             {t('Saved Delivery Locations', 'Lokasi Penghantaran Tersimpan')}
@@ -137,7 +137,7 @@ export function ProfileLocationsTab({
             {savedLocations.map((loc) => (
               <Card
                 key={loc.id}
-                className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+                className={`profile-location-card p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
                   loc.isDefault
                     ? 'bg-stone-50/50 dark:bg-stone-900/30 border-stone-300 dark:border-stone-700 shadow-sm'
                     : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300 dark:hover:border-stone-800'
@@ -161,8 +161,8 @@ export function ProfileLocationsTab({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-white/5 text-xs">
-                  {!loc.isDefault ? (
+                <div className="profile-location-actions flex items-center justify-between pt-2 border-t border-stone-100 dark:border-white/5 text-xs">
+                  {!loc.isDefault && handleSetDefaultLocation ? (
                     <Button
                       variant="ghost"
                       type="button"
@@ -172,7 +172,7 @@ export function ProfileLocationsTab({
                       {t('Set as Default', 'Jadikan Utama')}
                     </Button>
                   ) : (
-                    <span className="text-stone-400 dark:text-stone-500 text-xs font-semibold">{t('Primary Address', 'Alamat Utama')}</span>
+                    <span className="text-stone-400 dark:text-stone-500 text-xs font-semibold">{loc.isDefault ? t('Primary Address', 'Alamat Utama') : ''}</span>
                   )}
 
                   <div className="flex items-center gap-1">
@@ -188,6 +188,7 @@ export function ProfileLocationsTab({
                       }}
                       className="h-7 w-7 text-stone-400 hover:text-deep-forest dark:hover:text-white rounded transition-colors"
                       title={t('Edit', 'Kemaskini')}
+                      aria-label={t(`Edit location ${loc.label}`, `Kemaskini lokasi ${loc.label}`)}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </Button>
@@ -198,6 +199,7 @@ export function ProfileLocationsTab({
                       onClick={() => handleDeleteLocation(loc.id)}
                       className="h-7 w-7 text-rose-400 hover:text-rose-600 rounded transition-colors"
                       title={t('Delete', 'Padam')}
+                      aria-label={t(`Delete location ${loc.label}`, `Padam lokasi ${loc.label}`)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>

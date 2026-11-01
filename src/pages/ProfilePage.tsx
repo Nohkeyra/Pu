@@ -89,7 +89,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div className="page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
+      <div className="profile-page-content page-shell__main pt-28 sm:pt-32 max-w-4xl mx-auto space-y-6 relative" style={{ paddingTop: 'calc(88px + var(--sat, 0px) + 1.5rem)' }}>
         {!currentUser ? (
           <Card className="bg-white dark:bg-card border border-border rounded-3xl p-8 sm:p-12 text-center shadow-sm max-w-lg mx-auto">
             <div className="w-16 h-16 bg-[var(--color-sunshine-cta)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -147,26 +147,15 @@ export default function ProfilePage() {
             </div>
           </Card>
         ) : (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-display font-bold text-deep-forest dark:text-white mb-1">
-                {language === 'bm' ? 'Papan Pemuka Anda' : 'Your Dashboard'}
-              </h1>
-              <p className="text-stone dark:text-stone/75 microcopy-14 font-medium">
-                {language === 'bm' 
-                  ? 'Urus profil anda dan jejak permintaan katering anda.' 
-                  : 'Manage your profile and track your catering requests.'}
-              </p>
-            </div>
-
-            <Card className="relative bg-white dark:bg-card rounded-3xl overflow-hidden border border-border shadow-lg p-0">
+          <div className="profile-page-member">
+            <div className="relative">
               <UserProfileDashboard
                 isOpen={true}
                 isEmbedded={true}
                 onClose={() => navigate('/home')}
                 onReorder={(data) => navigate('/order', { state: { reorderData: data } })}
               />
-            </Card>
+            </div>
           </div>
         )}
       </div>

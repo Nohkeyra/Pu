@@ -29,6 +29,7 @@ export function ProfilePreferencesTab({
   notifyCancelApproval,
   setNotifyCancelApproval,
   handleSavePreferences,
+  isSaving = false,
   t,
 }: ProfilePreferencesTabProps) {
   const navigate = useNavigate();
@@ -36,10 +37,10 @@ export function ProfilePreferencesTab({
   const biometric = useCustomerBiometricEnrollment();
   const [enrollOpen, setEnrollOpen] = useState(false);
   return (
-    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
+    <Card className="profile-section profile-preferences-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="profile-section-header pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
-          {t('Notification & Communication Preferences', 'Tetapan Notifikasi & Komunikasi')}
+          {t('Notification preferences', 'Pilihan notifikasi')}
         </CardTitle>
         <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
           {t('Manage how you receive order status alerts, invoice emails, and cancellation updates.', 'Urus saluran notifikasi pesanan dan invois anda.')}
@@ -48,7 +49,7 @@ export function ProfilePreferencesTab({
 
       <CardContent className="space-y-4 font-sans p-0 pt-0">
         {/* Order Status Notification */}
-        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
+        <Card variant="outlined" className="profile-preference flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Bell className="w-4 h-4 text-primary shrink-0" />
@@ -59,16 +60,16 @@ export function ProfilePreferencesTab({
             </p>
           </div>
           <Switch
+            aria-label={t('Order status alerts', 'Notifikasi status tempahan')}
             checked={notifyOrderStatus}
             onCheckedChange={(checked) => {
               setNotifyOrderStatus(checked);
-              setTimeout(() => handleSavePreferences(), 100);
             }}
           />
         </Card>
 
         {/* Invoice Email Updates */}
-        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
+        <Card variant="outlined" className="profile-preference flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Mail className="w-4 h-4 text-primary shrink-0" />
@@ -79,16 +80,16 @@ export function ProfilePreferencesTab({
             </p>
           </div>
           <Switch
+            aria-label={t('Invoice email updates', 'Pemberitahuan emel invois')}
             checked={notifyBilledUpdates}
             onCheckedChange={(checked) => {
               setNotifyBilledUpdates(checked);
-              setTimeout(() => handleSavePreferences(), 100);
             }}
           />
         </Card>
 
         {/* Cancel Approval Alerts */}
-        <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
+        <Card variant="outlined" className="profile-preference flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
           <div className="space-y-0.5 pr-4">
             <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
               <Ban className="w-4 h-4 text-primary shrink-0" />
@@ -99,17 +100,17 @@ export function ProfilePreferencesTab({
             </p>
           </div>
           <Switch
+            aria-label={t('Cancellation updates', 'Keputusan pembatalan')}
             checked={notifyCancelApproval}
             onCheckedChange={(checked) => {
               setNotifyCancelApproval(checked);
-              setTimeout(() => handleSavePreferences(), 100);
             }}
           />
         </Card>
 
         {/* Biometric Security: only offered on devices that actually have enrolled biometrics */}
         {biometric.available && (
-          <Card variant="outlined" className="flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
+          <Card variant="outlined" className="profile-preference flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
             <div className="space-y-0.5 pr-4">
               <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
                 <Fingerprint className="w-4 h-4 text-primary shrink-0" />
@@ -120,6 +121,7 @@ export function ProfilePreferencesTab({
               </p>
             </div>
             <Switch
+              aria-label={t('Biometric login', 'Log masuk biometrik')}
               checked={biometric.enabled}
               onCheckedChange={async (checked) => {
                 if (checked) {
@@ -151,6 +153,13 @@ export function ProfilePreferencesTab({
             });
           }}
         />
+
+        <Button type="button" onClick={handleSavePreferences} isLoading={isSaving} className="w-full">
+          {t('Save preferences', 'Simpan pilihan')}
+        </Button>
+        <p className="text-xs text-stone-600 dark:text-stone-300">
+          {t('Changes are saved when you select Save preferences.', 'Tekan Simpan pilihan untuk menyimpan perubahan notifikasi.')}
+        </p>
 
         {/* Full Application Settings Button */}
         <div className="pt-2">

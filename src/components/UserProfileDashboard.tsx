@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useId, Suspense, type CSSProperties } from 'react';
 import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -8,12 +8,8 @@ import { Button } from '@/components/ui/button';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { 
   User as UserIcon, 
-  History, 
   X, 
   LogOut,
-  Sliders,
-  MapPin,
-  Bell
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,6 +21,9 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { getApiUrl } from '@/lib/api';
+
+import { ProfileNavigation } from '@/components/profile/ProfileNavigation';
+import '@/components/profile/profile-dashboard.css';
 
 import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
@@ -44,6 +43,7 @@ interface UserProfileDashboardProps {
 
 export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmbedded = false }: UserProfileDashboardProps) {
   const { language, t: tGlobal } = useLanguage();
+  const profileId = useId();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -584,7 +584,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const content = (
     <div className={cn(
-      "relative w-full bg-cream dark:bg-background flex flex-col z-10",
+      "profile-dashboard relative w-full bg-cream dark:bg-background flex flex-col z-10",
       isEmbedded ? "h-auto" : "h-full max-w-xl border-l border-border shadow-2xl"
     )}>
       {/* Pull to Refresh Pak Usop Indicator */}
@@ -678,88 +678,48 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         </div>
       )}
 
-      {/* Tab Navigation Segmented Bar */}
-      <div className="p-3 sm:p-4 bg-stone-50/90 dark:bg-stone-900/40 border-b border-border">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-white dark:bg-card rounded-2xl border border-stone-200/80 dark:border-white/10 shadow-sm">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={cn(
-              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
-              activeTab === 'orders'
-                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
-            )}
-          >
-            <History className="w-4 h-4 shrink-0" />
-            <span className="truncate">{tGlobal('profile_submissions')}</span>
-            {orders.length > 0 && (
-              <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-xs font-mono shrink-0 font-bold",
-                activeTab === 'orders' ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
-              )}>
-                {orders.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={cn(
-              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
-              activeTab === 'profile'
-                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
-            )}
-          >
-            <Sliders className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('Billing Profile', 'Profil Bil')}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('locations')}
-            className={cn(
-              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
-              activeTab === 'locations'
-                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
-            )}
-          >
-            <MapPin className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('Locations', 'Lokasi')}</span>
-            {savedLocations.length > 0 && (
-              <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-xs font-mono shrink-0 font-bold",
-                activeTab === 'locations' ? "bg-white/20 text-white" : "bg-stone/15 text-stone-600 dark:text-stone-300"
-              )}>
-                {savedLocations.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('preferences')}
-            className={cn(
-              "min-w-0 py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all min-h-[42px] cursor-pointer select-none",
-              activeTab === 'preferences'
-                ? "bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]"
-                : "text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5"
-            )}
-          >
-            <Bell className="w-4 h-4 shrink-0" />
-            <span className="truncate">{t('Preferences', 'Tetapan')}</span>
-          </button>
+      <div className="profile-overview">
+        <div className="profile-welcome">
+          <div className="profile-avatar" aria-hidden="true">
+            {Array.from((profile?.name || currentUser?.displayName || 'W').trim())[0]?.toLocaleUpperCase() || 'W'}
+          </div>
+          <div className="min-w-0">
+            <p>{t('Welcome back,', 'Selamat kembali,')}</p>
+            <h2>{profile?.name || currentUser?.displayName || t('Welcome to Wawasan', 'Selamat datang ke Wawasan')}</h2>
+          </div>
         </div>
+        <section
+          className="profile-summary"
+          aria-label={t('Your account summary', 'Ringkasan akaun anda')}
+          style={{ '--profile-batik': `url("${getAssetUrl('/assets/heritage/batik_pattern.jpg')}")` } as CSSProperties}
+        >
+          <p>{t('YOUR SPACE WITH WAWASAN', 'RUANG ANDA BERSAMA WAWASAN')}</p>
+          <h3>{t('Orders in order.', 'Tempahan teratur.')}<br />{t('The same Wawasan flavour.', 'Rasa tetap Wawasan.')}</h3>
+          <dl className="profile-summary-counts">
+            <div><dt>{isLoadingOrders ? '—' : orders.length}</dt><dd>{t('orders', 'tempahan')}</dd></div>
+            <div><dt>{isLoadingProfile ? '—' : savedLocations.length}</dt><dd>{t('saved locations', 'lokasi disimpan')}</dd></div>
+          </dl>
+        </section>
       </div>
+      <ProfileNavigation idPrefix={profileId} value={activeTab} onChange={setActiveTab} t={t} />
 
       {/* Content Scrollable Area */}
       <motion.div 
         className={cn(
-          "flex-1 p-6 md:p-8 space-y-6 font-sans",
+          "profile-tab-content flex-1 space-y-6 font-sans",
           isEmbedded ? "overflow-y-visible" : "overflow-y-auto pb-24"
         )}
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
       >
+        <div
+          key={activeTab}
+          id={`${profileId}-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`${profileId}-tab-${activeTab}`}
+          className="profile-tab-panel"
+          tabIndex={0}
+        >
         {activeTab === 'orders' && (
           <ProfileOrdersTab
             orders={orders}
@@ -840,6 +800,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
             t={t}
           />
         )}
+        </div>
       </motion.div>
     </div>
   );
@@ -905,7 +866,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const confirmModal = (
     <Dialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} className="profile-customer-dialog">
         <DialogHeader>
           <DialogTitle>
             {confirmDialog?.type === 'cancel'

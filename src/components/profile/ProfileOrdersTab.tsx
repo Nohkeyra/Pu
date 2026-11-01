@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/Toast';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,10 +22,14 @@ import {
   Check,
   MessageCircle,
   Pencil,
-  Truck
+  Truck,
+  MoreHorizontal,
+  ChevronRight,
+  CalendarDays,
+  Users
 } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
-import { motion, useMotionValue, useTransform, animate } from 'motion/react';
+import { motion, useMotionValue, useTransform, useReducedMotion, animate, type Variants, type PanInfo } from 'motion/react';
 import type { Order } from '@/types';
 import { getDisplayInvoiceNo, formatDateDisplay } from '@/lib/utils';
 import { RESTORAN_CONTACT } from '@/constants/contact';
@@ -68,7 +72,7 @@ interface OrderItemProps {
   cancellingOrderId: string | null;
   deletingOrderId: string | null;
   t: (en: string, bm: string) => string;
-  itemVariants: any;
+  itemVariants: Variants;
 }
 
 function OrderItem({
@@ -89,13 +93,14 @@ function OrderItem({
   t,
   itemVariants
 }: OrderItemProps) {
+  const [actionsOpen, setActionsOpen] = useState(false);
   const x = useMotionValue(0);
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
   
   const isDeletable = Boolean(order.id && (order.status || '').toLowerCase() === 'billed');
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -80 && isDeletable) {
       // Trigger delete action
       setConfirmDialog({ type: 'delete', orderId: order.id! });
@@ -108,7 +113,7 @@ function OrderItem({
   };
 
   return (
-    <motion.div variants={itemVariants} className="relative w-full rounded-xl overflow-hidden touch-pan-y">
+    <motion.div variants={itemVariants} className="profile-order relative w-full overflow-hidden touch-pan-y">
       {/* Background Actions (Revealed on Swipe only when deletable) */}
       {isDeletable && (
         <div className="absolute inset-y-0 right-0 w-32 bg-rose-600 rounded-xl flex items-center justify-end px-6 z-0">
@@ -129,7 +134,7 @@ function OrderItem({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         style={{ x }}
-        className={`relative z-10 p-4 sm:p-5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+        className={`profile-order-card relative z-10 transition-colors ${
           isSelected
             ? 'bg-stone-50/50 dark:bg-stone-900/30 border-primary/50 ring-2 ring-primary/20 shadow-sm'
             : order.deletedByAdmin
@@ -137,72 +142,51 @@ function OrderItem({
             : 'bg-white dark:bg-card border-stone-200/80 dark:border-white/10 hover:border-stone-300 dark:hover:border-white/20'
         }`}
       >
-        <div 
-          onClick={() => {
-            if (isSelectMode && order.id) {
-              handleToggleOrderSelect(order.id);
-            } else {
-              setPreviewOrder(order);
-            }
-          }}
-          className="space-y-2 flex-1 cursor-pointer group/item min-w-0"
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            {isSelectMode && order.id && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggleOrderSelect(order.id!);
-                }}
-                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                  isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800'
-                }`}
-              >
-                {isSelected && <Check className="w-3.5 h-3.5" />}
-              </button>
-            )}
-            <span className="font-mono text-xs font-bold text-deep-forest dark:text-white bg-stone-100 dark:bg-stone-800/90 px-2.5 py-1 rounded border border-stone-200/80 dark:border-white/10">
-              {getDisplayInvoiceNo(order)}
-            </span>
-            {getStatusBadge(order.status)}
-            {(order.status || '').toLowerCase() === 'billed' && (
-              <Badge className="bg-stone-500/10 text-stone-600 dark:text-stone-300 border-stone-500/20 text-xs font-bold gap-1">
-                <Trash2 className="w-3 h-3" />
-                <span>{t('Billed · Can remove from history', 'Dibilkan · Boleh padam dari sejarah')}</span>
-              </Badge>
-            )}
-            <span className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal ml-auto sm:ml-0">
-              {formatDateDisplay(order.eventDate || order.dateTime || order.date || order.createdAt)}
-            </span>
-          </div>
-
-          <div>
-            <h4 className="text-sm sm:text-base font-bold text-deep-forest dark:text-white group-hover/item:text-primary transition-colors truncate">
-              {order.eventType === 'pejabat' ? t('Office Feast', 'Jamuan Pejabat') : t('Private Event', 'Majlis Katering')} ({order.guests} pax)
-            </h4>
-            <p className="text-xs text-stone-600 dark:text-stone-400 font-normal line-clamp-1 mt-0.5">
-              {order.dishes && order.dishes.length > 0 ? order.dishes.join(', ') : t('Standard Catering Package', 'Pakej Katering Standard')}
-            </p>
-          </div>
-
-          {(order.status || '').toLowerCase() === 'billed' && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-stone-50 dark:bg-stone-900/40 border border-stone-200 dark:border-stone-700/50 text-xs text-stone-700 dark:text-stone-300">
-              <Trash2 className="w-4 h-4 shrink-0 text-stone-500" />
-              <p className="flex-1">
-                {t(
-                  'This order has been billed. You can remove it from your history.',
-                  'Tempahan ini telah dibilkan. Anda boleh memadamkannya daripada sejarah anda.'
-                )}
-              </p>
-            </div>
-          )}
+        <div className="profile-order-top">
+          <span className="profile-order-ref">{getDisplayInvoiceNo(order)}</span>
+          <span className="profile-order-status">{getStatusBadge(order.status)}</span>
         </div>
-
-        <div 
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 flex-wrap justify-start sm:justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-white/5 shrink-0"
-        >
+        <div className="min-w-0">
+          <h4 className="profile-order-title">
+            {order.eventType === 'pejabat' ? t('Office Feast', 'Jamuan Pejabat') : t('Private Event', 'Majlis Katering')}
+          </h4>
+          <div className="profile-order-meta">
+            <span><CalendarDays className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />{formatDateDisplay(order.eventDate || order.dateTime || order.date || order.createdAt)}</span>
+            <span><Users className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />{order.guests} {t('guests', 'orang')}</span>
+          </div>
+          <p className="profile-order-dishes line-clamp-2">
+            {order.dishes && order.dishes.length > 0 ? order.dishes.join(', ') : t('Standard Catering Package', 'Pakej Katering Standard')}
+          </p>
+        </div>
+        {isSelectMode && order.id && (
+          <label className="profile-order-select">
+            <input type="checkbox" checked={isSelected} onChange={() => handleToggleOrderSelect(order.id!)} />
+            {t('Select this order', 'Pilih tempahan ini')}
+          </label>
+        )}
+        <div className="profile-order-footer">
+          <Button type="button" size="sm" onClick={() => setPreviewOrder(order)}>
+            {t('View details', 'Lihat butiran')}<ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </Button>
+          <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" size="icon" className="profile-order-more"
+                aria-label={t(`Actions for order ${getDisplayInvoiceNo(order)}`, `Tindakan tempahan ${getDisplayInvoiceNo(order)}`)}>
+                <MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="profile-order-action-sheet">
+              <DialogHeader>
+                <DialogTitle>{t('Order actions', 'Tindakan tempahan')}</DialogTitle>
+                <DialogDescription>{getDisplayInvoiceNo(order)}</DialogDescription>
+              </DialogHeader>
+              <div className="profile-order-actions" onClickCapture={(event) => {
+                const target = event.target;
+                if (target instanceof Element) {
+                  const button = target.closest('button');
+                  if (button && !button.disabled) setActionsOpen(false);
+                }
+              }}>
           {(order.status || '').toLowerCase() === 'billed' && order.id && (
             <Button
               onClick={(e) => {
@@ -338,6 +322,9 @@ function OrderItem({
               </Button>
             </>
           )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </motion.div>
     </motion.div>
@@ -364,6 +351,7 @@ export function ProfileOrdersTab({
   t,
 }: ProfileOrdersTabProps) {
   const { toast } = useToast();
+  const reduceMotion = useReducedMotion();
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [editTime, setEditTime] = useState('');
@@ -428,7 +416,7 @@ export function ProfileOrdersTab({
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 15, scale: 0.98 },
     visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
@@ -441,7 +429,7 @@ export function ProfileOrdersTab({
         return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Approved', 'Diluluskan')}</Badge>;
       case 'in_transit':
         return (
-          <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold animate-pulse inline-flex items-center gap-1">
+          <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold motion-safe:animate-pulse inline-flex items-center gap-1">
             <Truck className="w-3 h-3" />
             <span>{t('In Transit', 'Dalam Perjalanan')}</span>
           </Badge>
@@ -464,12 +452,12 @@ export function ProfileOrdersTab({
   };
 
   return (
-    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
+    <Card className="profile-section profile-orders-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="profile-section-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <div>
           <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
             <History className="w-5 h-5 text-primary" />
-            <span>{t('Catering Order History', 'Sejarah Tempahan Katering')}</span>
+            <span>{t('Your orders', 'Tempahan anda')}</span>
           </CardTitle>
           <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('View past catering orders, request invoice PDFs, or reorder favorite menus.', 'Semak tempahan lalu, muat turun invois, atau hantar semula tempahan.')}
@@ -477,7 +465,7 @@ export function ProfileOrdersTab({
         </div>
 
         {orders.length > 1 && (
-          <div className="flex items-center gap-2">
+          <div className="profile-order-tools">
             {!isSelectMode ? (
               <Button
                 onClick={() => setIsSelectMode(true)}
@@ -540,7 +528,7 @@ export function ProfileOrdersTab({
         <motion.div 
           className="space-y-4"
           variants={listVariants}
-          initial="hidden"
+          initial={reduceMotion ? false : "hidden"}
           animate="visible"
         >
           {orders.map((order, idx) => {
@@ -572,22 +560,23 @@ export function ProfileOrdersTab({
 
       {/* Edit Pending Order Modal */}
       <Dialog open={!!editingOrder} onOpenChange={(open: boolean) => !open && setEditingOrder(null)}>
-        <DialogContent className="max-w-md bg-card border-stone-200 dark:border-white/10 text-deep-forest dark:text-white rounded-2xl">
+        <DialogContent className="profile-order-edit-sheet max-w-md bg-card border-stone-200 dark:border-white/10 text-deep-forest dark:text-white rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <Pencil className="w-4 h-4 text-amber-500" />
-              <span>{t('Kemas Kini Nota & Masa Tempahan', 'Update Order Notes & Serving Time')}</span>
+              <span>{t('Update order notes & serving time', 'Kemas kini nota & masa sajian')}</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-stone-500 dark:text-stone-400">
-              {t('Tukar arahan khas atau masa sajian sebelum pihak restoran mengesahkan tempahan ini.', 'Modify special notes or serving time before restaurant confirms this order.')}
+              {t('Modify special notes or serving time before the restaurant confirms this order.', 'Tukar arahan khas atau masa sajian sebelum restoran mengesahkan tempahan ini.')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider">{t('Masa Sajian / Serving Time', 'Masa Sajian / Serving Time')}</Label>
+              <Label htmlFor="profile-order-time" className="text-xs font-bold uppercase tracking-wider">{t('Serving time', 'Masa sajian')}</Label>
               <Input 
-                type="time" 
+                type="time"
+                id="profile-order-time"
                 value={editTime}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditTime(e.target.value)}
                 className="rounded-xl h-11 font-sans"
@@ -595,11 +584,12 @@ export function ProfileOrdersTab({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider">{t('Nota Tambahan / Special Notes', 'Nota Tambahan / Special Notes')}</Label>
+              <Label htmlFor="profile-order-notes" className="text-xs font-bold uppercase tracking-wider">{t('Special notes', 'Nota tambahan')}</Label>
               <Textarea
+                id="profile-order-notes"
                 value={editNotes}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditNotes(e.target.value)}
-                placeholder={t('Taip nota khas (cth: Perlu meja buffet, kurang pedas, dll)', 'Type special instructions (e.g. less spicy, buffet table needed)')}
+                placeholder={t('Type special instructions (e.g. less spicy)', 'Taip arahan khas (cth: kurang pedas)')}
                 className="rounded-xl min-h-[90px] font-sans"
               />
             </div>
@@ -611,7 +601,7 @@ export function ProfileOrdersTab({
               onClick={() => setEditingOrder(null)}
               className="rounded-xl border-stone-200 dark:border-stone-700 font-bold text-xs"
             >
-              {t('Batal', 'Cancel')}
+              {t('Cancel', 'Batal')}
             </Button>
             <Button
               onClick={handleSavePendingEdit}
@@ -619,7 +609,7 @@ export function ProfileOrdersTab({
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs gap-1.5"
             >
               {isSavingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              <span>{t('Simpan Perubahan', 'Save Changes')}</span>
+              <span>{t('Save changes', 'Simpan perubahan')}</span>
             </Button>
           </DialogFooter>
         </DialogContent>

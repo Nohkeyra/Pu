@@ -52,11 +52,11 @@ export function ProfileInfoTab({
   t,
 }: ProfileInfoTabProps) {
   return (
-    <Card className="bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
+    <Card className="profile-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
+      <CardHeader className="profile-section-header flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
         <div>
           <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
-            {t('Personal & Organization Profile', 'Profil Peribadi & Organisasi')}
+            {t('Your details', 'Maklumat anda')}
           </CardTitle>
           <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
             {t('Default contact details used for quick catering invoice generation.', 'Maklumat perhubungan utama untuk penjanaan invois katering.')}
@@ -73,7 +73,7 @@ export function ProfileInfoTab({
             <span>{t('Edit Profile', 'Kemaskini')}</span>
           </Button>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="profile-info-actions">
             <Button
               onClick={() => setIsEditing(false)}
               variant="ghost"
@@ -100,7 +100,7 @@ export function ProfileInfoTab({
         <div className="space-y-1.5">
           <Label htmlFor="profile-fullname" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <UserIcon className="w-3.5 h-3.5 text-primary" />
-            <span>{t('Full Name / Nama Penuh', 'Nama Penuh *')}</span>
+            <span>{t('Full name *', 'Nama penuh *')}</span>
           </Label>
           {isEditing ? (
             <Input
@@ -111,7 +111,7 @@ export function ProfileInfoTab({
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.name || '—'}
             </p>
           )}
@@ -121,7 +121,7 @@ export function ProfileInfoTab({
         <div className="space-y-1.5">
           <Label htmlFor="profile-phone" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5 text-primary" />
-            <span>{t('Phone Number / Nombor Telefon', 'Nombor Telefon *')}</span>
+            <span>{t('Phone number *', 'Nombor telefon *')}</span>
           </Label>
           {isEditing ? (
             <Input
@@ -143,7 +143,7 @@ export function ProfileInfoTab({
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.contact || '—'}
             </p>
           )}
@@ -153,7 +153,7 @@ export function ProfileInfoTab({
         <div className="space-y-1.5">
           <Label htmlFor="profile-company-select" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Building className="w-3.5 h-3.5 text-primary" />
-            <span>{t('Company / Ministry / Organisasi', 'Syarikat / Kementerian')}</span>
+            <span>{t('Company / Ministry', 'Syarikat / kementerian')}</span>
           </Label>
           {isEditing ? (
             <div className="space-y-2">
@@ -207,7 +207,7 @@ export function ProfileInfoTab({
               )}
             </div>
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.to || '—'}
             </p>
           )}
@@ -217,7 +217,7 @@ export function ProfileInfoTab({
         <div className="space-y-1.5">
           <Label htmlFor="profile-department" className="text-xs font-bold text-stone dark:text-stone-300 flex items-center gap-1.5">
             <Briefcase className="w-3.5 h-3.5 text-primary" />
-            <span>{t('Division / Department', 'Bahagian / Jabatan (Billing)')}</span>
+            <span>{t('Division / Department', 'Bahagian / jabatan')}</span>
           </Label>
           {isEditing ? (
             <Input
@@ -228,7 +228,7 @@ export function ProfileInfoTab({
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.department || profile?.division || '—'}
             </p>
           )}
@@ -249,7 +249,7 @@ export function ProfileInfoTab({
               className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
             />
           ) : (
-            <p className="text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
               {profile?.attn || '—'}
             </p>
           )}
