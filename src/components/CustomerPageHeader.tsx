@@ -71,6 +71,9 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
         </Button>
         <div className="customer-page-title">
           <h1>{title}</h1>
+          <svg aria-hidden="true" viewBox="0 0 180 12" className="block h-1.5 w-24 text-[var(--customer-accent)] mt-0.5 opacity-85">
+            <path d="M 3 9 Q 90 -3 177 7" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+          </svg>
           <p>{subtitle}</p>
         </div>
         <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>

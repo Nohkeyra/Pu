@@ -84,10 +84,24 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Menu utama' : 'Main menu'}
-      className="fixed inset-0 z-[1100] xl:hidden bg-[#fdfbf7] dark:bg-[#0c100e] text-deep-forest dark:text-[#ede5d8] transition-colors duration-200"
+      className="fixed inset-0 z-[1100] xl:hidden bg-[#fff6e4] dark:bg-[#191612] text-deep-forest dark:text-[#ede5d8] transition-colors duration-200 border-t-2 border-[var(--color-sunshine-cta)]/40"
     >
-      {/* Subtle Background Pattern */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pattern-batik" />
+      {/* Top Batik Accent Hairline */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-1 bg-[url('/assets/heritage/batik_vector_pattern.jpg')] bg-repeat-x opacity-75 z-20"
+        style={{ backgroundSize: '120px auto' }}
+        aria-hidden="true"
+      />
+
+      {/* Atmospheric Batik Watermark Background */}
+      <div 
+        className="pointer-events-none absolute inset-0 opacity-[0.045] dark:opacity-[0.07] pattern-batik-hd" 
+        style={{
+          maskImage: 'radial-gradient(circle at 80% 20%, black 50%, transparent 95%)',
+          WebkitMaskImage: 'radial-gradient(circle at 80% 20%, black 50%, transparent 95%)',
+        }}
+        aria-hidden="true"
+      />
 
       <div className="relative flex h-full flex-col px-6 pb-8 pt-[calc(1.25rem+var(--sat))]">
         {/* Close Button */}
@@ -99,7 +113,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             await triggerLightImpact();
             onClose();
           }}
-          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-stone/15 bg-white text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8]"
+          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(223,113,15,0.20)] bg-white/90 text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] dark:border-white/10 dark:bg-[#221c17] dark:text-[#ede5d8]"
           aria-label={language === 'bm' ? 'Tutup menu' : 'Close menu'}
         >
           <X className="h-5 w-5" />
@@ -110,9 +124,9 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
           <Link 
             to={currentUser ? '/home' : '/'} 
             onClick={onClose} 
-            className="mb-6 flex items-center gap-3 select-none"
+            className="mb-6 flex items-center gap-3 select-none group"
           >
-            <div className="h-12 w-12 rounded-2xl bg-white/80 dark:bg-[#1c2622] p-1.5 shadow-sm ring-1 ring-black/5 dark:ring-amber-500/20 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-2xl bg-white/90 dark:bg-[#221c17] p-1.5 shadow-sm ring-1 ring-amber-500/20 flex items-center justify-center transition-transform group-hover:scale-105">
               <TransparentLogo
                 src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                 alt="Restoran Wawasan Logo"
@@ -120,12 +134,17 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               />
             </div>
             <div>
-              <span className="block text-xl font-bold font-display text-deep-forest dark:text-[#ede5d8] tracking-tight">
+              <span className="block text-xl font-bold font-artistic text-deep-forest dark:text-[#ede5d8] tracking-tight">
                 Restoran Wawasan
               </span>
-              <span className="block text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)] mt-0.5">
-                Pak Usop
-              </span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)]">
+                  Pak Usop
+                </span>
+                <svg width="48" height="6" viewBox="0 0 180 12" fill="none" aria-hidden="true" className="overflow-visible text-[var(--color-sunshine-cta)] opacity-80">
+                  <path d="M 3 9 Q 90 -3 177 7" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+              </div>
             </div>
           </Link>
 

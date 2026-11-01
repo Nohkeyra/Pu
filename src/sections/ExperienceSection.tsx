@@ -2,6 +2,7 @@ import React from 'react';
 import { Sparkles, Heart, Flame, HandHeart } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'motion/react';
+import BatikParallaxContainer from '@/components/BatikParallaxContainer';
 
 const PRINCIPLES = [
   {
@@ -74,9 +75,15 @@ const ExperienceSection = React.memo(() => {
   };
 
   return (
-    <section id="experience" className="section-padding bg-cream dark:bg-background relative">
+    <section id="experience" className="section-padding bg-cream dark:bg-background relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      <div className="content-container">
+      {/* Subtle parallax batik motif creating depth as user scrolls through dining heritage pillars */}
+      <BatikParallaxContainer
+        className="pointer-events-none absolute inset-0 z-0"
+        opacity={0.05}
+        speed={0.14}
+      />
+      <div className="content-container relative z-10">
         
         <motion.div 
           variants={headerVariants}

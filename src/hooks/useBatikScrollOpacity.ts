@@ -27,9 +27,16 @@ export function useBatikScrollOpacity() {
       const bottomProgress = Math.min(1, Math.max(0, 1 - distanceFromBottom / footerThreshold));
       const bottomOpacity = bottomProgress.toFixed(3);
 
+      // --- Batik Parallax Offset for .batik-container Elements ---
+      const prefersReducedMotion = typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const parallaxFactor = prefersReducedMotion ? 0 : 0.08;
+      const parallaxY = `${(scrollY * parallaxFactor).toFixed(2)}px`;
+
       // Update CSS variables on document element for synchronized CSS transitions
       document.documentElement.style.setProperty('--batik-top-opacity', topOpacity);
       document.documentElement.style.setProperty('--batik-bottom-opacity', bottomOpacity);
+      document.documentElement.style.setProperty('--batik-parallax-y', parallaxY);
     };
 
     const handleScroll = () => {

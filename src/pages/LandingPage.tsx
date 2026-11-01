@@ -32,7 +32,7 @@ export default function LandingPage() {
           <HeroSection />
           <HighlightsSection />
           <MenuSection />
-          <div className="landing-heritage-rule" aria-hidden="true" />
+          <div className="landing-heritage-rule batik-container" aria-hidden="true" />
           <StorySection />
           <ExperienceSection />
           <ReviewsSection />

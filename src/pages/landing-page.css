@@ -1,23 +1,23 @@
-/* Landing-only presentation: retain brand typography, artwork and shared page styles. */
+/* Landing presentation: aligned with splashscreen warmth, authentic batik & protected brand typography. */
 .landing-page {
-  --landing-canvas: #fffdf9;
-  --landing-surface: #fff;
-  --landing-soft: #f6f1e6;
-  --landing-ink: #183e32;
-  --landing-muted: #5b685e;
-  --landing-line: #dedfd3;
-  --landing-accent: #a3310e;
+  --landing-canvas: #fff6e4;
+  --landing-surface: #fffdfa;
+  --landing-soft: #fbf0d9;
+  --landing-ink: #173b2a;
+  --landing-muted: #704b30;
+  --landing-line: #ecdcc3;
+  --landing-accent: #df710f;
   background: var(--landing-canvas);
   color: var(--landing-ink);
 }
 .dark .landing-page {
-  --landing-canvas: #0c100e;
-  --landing-surface: #1c2622;
-  --landing-soft: #151d1a;
-  --landing-ink: #ede5d8;
-  --landing-muted: #bdbbb0;
-  --landing-line: #35433b;
-  --landing-accent: #ffc17b;
+  --landing-canvas: #191612;
+  --landing-surface: #241f19;
+  --landing-soft: #1d1813;
+  --landing-ink: #fff6e2;
+  --landing-muted: #d6cfb9;
+  --landing-line: #3d3227;
+  --landing-accent: #ffa42c;
 }
 .landing-page .content-container {
   max-width: 1280px;
@@ -71,12 +71,24 @@
 }
 .landing-hero-batik {
   position: absolute;
-  inset: 0 0 0 40%;
-  background-size: cover;
+  inset: 0;
+  background-size: clamp(140px, 30vw, 240px) auto;
+  background-repeat: repeat;
   background-position: center;
-  opacity: 0.15;
+  opacity: 0.22;
+  mask-image: radial-gradient(ellipse at 80% 50%, black 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse at 80% 50%, black 40%, transparent 95%);
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
+}
+@media (max-width: 1023px) {
+  .landing-hero-batik {
+    inset: 0;
+    opacity: 0.18;
+    background-size: clamp(120px, 35vw, 180px) auto;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 90%);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, transparent 90%);
+  }
 }
 .landing-hero-copy {
   position: relative;
@@ -394,24 +406,33 @@
   gap: 8px;
   flex: none;
   min-height: 44px;
-  padding: 11px 15px;
+  padding: 11px 16px;
   border: 1px solid var(--landing-line);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--landing-ink);
   font-size: 11px;
   font-weight: 600;
   background: var(--landing-surface);
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-menu-categories button:hover {
+  border-color: var(--landing-accent);
+  background: var(--landing-soft);
 }
 .landing-menu-categories button[aria-pressed='true'] {
-  background: #254c39;
-  color: #fff9e9;
-  border-color: #254c39;
+  background: linear-gradient(135deg, #173b2a 0%, #204e38 100%);
+  color: #fff6e4;
+  border-color: #173b2a;
+  box-shadow: 0 4px 16px rgba(23, 59, 42, 0.22);
 }
 .dark .landing-menu-categories button[aria-pressed='true'] {
-  background: #c1d4a8;
-  color: #153723;
-  border-color: #c1d4a8;
+  background: linear-gradient(135deg, #df710f 0%, #d66b0c 100%);
+  color: #191612;
+  border-color: #df710f;
+  font-weight: 700;
+  box-shadow: 0 4px 18px rgba(223, 113, 15, 0.35);
 }
 .landing-menu-search {
   position: relative;
@@ -626,6 +647,17 @@
   margin: 35px auto 0;
   max-width: 1184px;
 }
+.landing-heritage-rule.batik-container {
+  will-change: background-position;
+  background-position: center calc(50% + var(--batik-parallax-y, 0px) * 0.25);
+  transition: opacity 0.3s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-heritage-rule.batik-container {
+    background-position: center center !important;
+    will-change: auto !important;
+  }
+}
 .landing-page :is(#story, #experience, #reviews, #visit) {
   background: var(--landing-canvas);
   padding-block: 64px;
@@ -663,6 +695,16 @@
   opacity: 0.1;
   pointer-events: none;
   mask-image: linear-gradient(90deg, transparent 35%, black);
+}
+.landing-footer-batik.batik-container {
+  will-change: background-position;
+  background-position: center calc(50% + var(--batik-parallax-y, 0px) * 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-footer-batik.batik-container {
+    background-position: center center !important;
+    will-change: auto !important;
+  }
 }
 @media (max-width: 1023px) {
   .landing-hero-frame {

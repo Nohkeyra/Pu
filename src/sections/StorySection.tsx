@@ -3,6 +3,7 @@ import { Award } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import ResponsiveImage from '@/components/ResponsiveImage';
 import { motion } from 'motion/react';
+import BatikParallaxContainer from '@/components/BatikParallaxContainer';
 
 const StorySection = React.memo(() => {
   const { t, language } = useLanguage();
@@ -41,8 +42,14 @@ const StorySection = React.memo(() => {
   };
 
   return (
-    <section id="story" className="section-padding bg-cream dark:bg-background relative">
-      <div className="content-container">
+    <section id="story" className="section-padding bg-cream dark:bg-background relative overflow-hidden">
+      {/* Subtle parallax batik motif creating depth as user scrolls through heritage history */}
+      <BatikParallaxContainer
+        className="pointer-events-none absolute inset-0 z-0"
+        opacity={0.06}
+        speed={0.16}
+      />
+      <div className="content-container relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center">
           
           <motion.div 

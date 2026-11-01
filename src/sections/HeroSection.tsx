@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import React, { useRef } from 'react';
+import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUpRight, MapPin, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,16 +14,29 @@ const HeroSection = React.memo(() => {
   const { t, language } = useLanguage();
   const bm = language === 'bm';
   const reduceMotion = useReducedMotion();
+  const heroRef = useRef<HTMLElement>(null);
+
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+
+  const heroBatikY = useTransform(
+    heroScrollProgress,
+    [0, 1],
+    reduceMotion ? [0, 0] : [0, 32]
+  );
 
   return (
-    <section className="landing-hero" aria-labelledby="landing-brand-title">
+    <section ref={heroRef} className="landing-hero" aria-labelledby="landing-brand-title">
       <div className="content-container">
         <div className="landing-hero-frame">
-          <div
-            className="landing-hero-batik"
+          <motion.div
+            className="landing-hero-batik batik-container"
             aria-hidden="true"
             style={{
               backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})`,
+              y: heroBatikY,
             }}
           />
           <motion.div
@@ -43,6 +56,9 @@ const HeroSection = React.memo(() => {
             >
               {t('hero_title') || 'Restoran Wawasan'}
             </h1>
+            <svg aria-hidden="true" viewBox="0 0 180 12" className="block h-2 w-32 sm:w-44 text-[#df710f] dark:text-[#ffa42c] mb-5">
+              <path d="M 3 9 Q 90 -3 177 7" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+            </svg>
             <p className="landing-hero-description">{t('hero_description')}</p>
             <div className="landing-hero-actions">
               <Link to="/order" className="landing-button landing-button-primary">

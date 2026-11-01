@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Home, Utensils, Settings, User, Shield, Calendar } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { cn } from '@/lib/utils';
+import { cn, getAssetUrl } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
 import { triggerLightImpact } from '@/lib/haptics';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -97,12 +97,22 @@ export default function BottomNavigation() {
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-        className="pointer-events-auto w-full max-w-xl border-t sm:border-x border-amber-500/20 bg-white/95 sm:rounded-t-[2rem] shadow-[0_-12px_36px_rgba(246,153,19,0.14)] backdrop-blur-md dark:border-white/10 dark:bg-card/95"
+        className="pointer-events-auto relative w-full max-w-xl border-t sm:border-x border-[#df710f]/25 bg-[#fffdfa]/95 sm:rounded-t-[2.2rem] shadow-[0_-12px_36px_rgba(223,113,15,0.16)] backdrop-blur-xl dark:border-amber-500/25 dark:bg-[#1a1612]/95 overflow-hidden"
         style={{
           paddingBottom: 'max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 8px)',
           isolation: 'isolate',
         }}
       >
+        {/* Authentic Malaysian Batik hairline top accent */}
+        <div
+          className="pointer-events-none absolute top-0 left-0 right-0 h-[2px] opacity-75 z-20"
+          style={{
+            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})`,
+            backgroundSize: '120px auto',
+            backgroundRepeat: 'repeat',
+          }}
+          aria-hidden="true"
+        />
         <nav id="bottom-navigation" aria-label="Main Navigation" className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
         {tabs.map((tab) => {
           const isActive = currentTabId === tab.id;

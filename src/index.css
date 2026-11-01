@@ -191,12 +191,12 @@
     --radius-lg: 1rem;
     --radius-xl: 1.25rem;
     --radius-2xl: 1.5rem;
-    /* Lively & Happening Warm Canvas Foundation */
-    --color-cream: #fffdf9;
+    /* Lively & Happening Warm Canvas Foundation (aligned with Splashscreen) */
+    --color-cream: #fff6e4;
     --color-cream-dark: rgba(246, 153, 19, 0.10);
     --color-charcoal: #0c453c;
     --color-stone: rgba(12, 69, 60, 0.82);
-    --background: 38 60% 98%;
+    --background: 40 85% 95%;
     --foreground: 171 70% 16%;
     --card: 0 0% 100%;
     --card-foreground: 171 70% 16%;
@@ -225,14 +225,14 @@
     --color-input-text: #0c453c;
     --color-input-border: rgba(246, 153, 19, 0.30);
     --color-input-focus-shadow: rgba(224, 63, 20, 0.25);
-    --color-header-bg: rgba(255, 253, 249, 0.94);
+    --color-header-bg: rgba(255, 246, 228, 0.94);
     --color-header-border: rgba(246, 153, 19, 0.16);
     --color-card-bg: #ffffff;
     --color-card-border: rgba(246, 153, 19, 0.15);
   }
 
   .dark {
-    /* Refined 4-Color Dark Mode: Obsidian Canvas, Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
+    /* Refined 4-Color Dark Mode: Espresso Obsidian (#191612), Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
     --color-deep-forest: #ede5d8;
     --color-forest: #1c2622;
     --color-light-forest: rgba(246, 153, 19, 0.12);
@@ -253,14 +253,14 @@
     --color-on-tomato-burst: #ede5d8;
     --color-on-deep-forest: #0c100e;
 
-    /* Background and surfaces */
-    --color-cream: #0c100e;
-    --color-cream-dark: #151d1a;
-    --color-charcoal: #0c100e;
+    /* Background and surfaces (aligned with Splashscreen espresso) */
+    --color-cream: #191612;
+    --color-cream-dark: #221c17;
+    --color-charcoal: #191612;
     --color-stone: #c2bbb0;
 
     /* Tailwind / Radix HSL tokens for .dark */
-    --background: 156 18% 6%;     /* #0C100E */
+    --background: 30 16% 9%;      /* #191612 */
     --foreground: 38 30% 89%;     /* #EDE5D8 */
     --card: 160 15% 13%;          /* #1C2622 */
     --card-foreground: 38 30% 89%;/* #EDE5D8 */
@@ -430,10 +430,26 @@
       inset 0 1px 0 0 rgba(246, 153, 19, 0.10);
   }
 
-  /* Batik Pattern Overlays — image assets preserved verbatim */
+  /* Batik Pattern Overlays — responsive clamp-based scaling for seamless mobile & desktop rendering */
   .pattern-batik {
     background-image: url("/assets/heritage/batik_pattern.jpg");
-    background-size: 140px auto;
+    background-size: clamp(110px, 20vw, 150px) auto;
+    background-attachment: scroll;
+    background-position: center;
+    background-repeat: repeat;
+  }
+
+  .pattern-batik-hd {
+    background-image: url("/assets/heritage/batik_pattern_hd.jpg");
+    background-size: clamp(130px, 24vw, 190px) auto;
+    background-attachment: scroll;
+    background-position: center;
+    background-repeat: repeat;
+  }
+
+  .pattern-batik-vector {
+    background-image: url("/assets/heritage/batik_vector_pattern.jpg");
+    background-size: clamp(100px, 18vw, 140px) auto;
     background-attachment: scroll;
     background-position: center;
     background-repeat: repeat;
@@ -443,6 +459,23 @@
     position: relative;
     mask-image: radial-gradient(circle at center, black 80%, transparent 100%);
     -webkit-mask-image: radial-gradient(circle at center, black 80%, transparent 100%);
+  }
+
+  .batik-parallax-layer {
+    position: absolute;
+    inset: -32px;
+    pointer-events: none;
+    will-change: transform;
+    transform: translate3d(0, var(--batik-parallax-y, 0px), 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .batik-parallax-layer {
+      transform: none !important;
+      will-change: auto !important;
+    }
   }
 
   .border-b-batik {
@@ -455,8 +488,8 @@
     left: 0;
     right: 0;
     height: 3px;
-    background-image: url("/assets/heritage/batik_pattern.jpg");
-    background-size: 120px auto;
+    background-image: url("/assets/heritage/batik_vector_pattern.jpg");
+    background-size: clamp(100px, 18vw, 140px) auto;
     background-position: center;
     background-repeat: repeat;
     opacity: 0.95;
@@ -474,8 +507,8 @@
     left: 0;
     right: 0;
     height: 3px;
-    background-image: url("/assets/heritage/batik_pattern.jpg");
-    background-size: 120px auto;
+    background-image: url("/assets/heritage/batik_vector_pattern.jpg");
+    background-size: clamp(100px, 18vw, 140px) auto;
     background-position: center;
     background-repeat: repeat;
     opacity: 0.95;
@@ -491,7 +524,7 @@
     position: absolute;
     inset: -2px;
     background-image: url("/assets/heritage/batik_pattern.jpg");
-    background-size: 120px auto;
+    background-size: clamp(100px, 18vw, 130px) auto;
     background-position: center;
     background-repeat: repeat;
     opacity: 0.95;
@@ -510,8 +543,8 @@
     left: 0;
     right: 0;
     height: 4px;
-    background-image: url("/assets/heritage/batik_pattern.jpg");
-    background-size: 120px auto;
+    background-image: url("/assets/heritage/batik_vector_pattern.jpg");
+    background-size: clamp(100px, 18vw, 130px) auto;
     background-position: center;
     background-repeat: repeat;
     opacity: 1;
@@ -1142,11 +1175,16 @@ html.theme-transitioning *::after {
 
 .batik-watermark {
   background-image: url('/assets/heritage/batik_vector_pattern.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
+  background-size: clamp(140px, 22vw, 220px) auto;
+  background-repeat: repeat;
   background-position: center;
-  opacity: 0.035;
+  opacity: 0.045;
   pointer-events: none;
+  mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+}
+.dark .batik-watermark {
+  opacity: 0.06;
 }
 
 @media (prefers-reduced-motion: reduce) {

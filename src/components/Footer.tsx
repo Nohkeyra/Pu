@@ -29,7 +29,7 @@ export default function Footer() {
 
   return (
     <footer id="app-footer" className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
-      <div className="landing-footer-batik" aria-hidden="true" style={{ backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})` }} />
+      <div className="landing-footer-batik batik-container" aria-hidden="true" style={{ backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})` }} />
 
       <div className="content-container relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">
