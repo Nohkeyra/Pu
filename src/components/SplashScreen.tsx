@@ -50,32 +50,53 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex min-h-[100dvh] flex-col items-center overflow-hidden bg-[#102b22] text-white"
+      className="fixed inset-0 z-[9999] flex min-h-[100dvh] flex-col items-center overflow-hidden bg-[#fff6e4] text-[#173b2a] dark:bg-[#191612] dark:text-[#fff6e2]"
       initial={false}
       animate={{ opacity: exiting ? 0 : 1 }}
       transition={{ duration: reduceMotion ? 0 : 0.25 }}
       aria-label={bm ? 'Skrin pembukaan Restoran Wawasan' : 'Restoran Wawasan opening screen'}
     >
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(244,183,62,0.16),transparent_55%)]" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`, backgroundSize: '320px auto' }} />
-      {!reduceMotion && (
-        <motion.div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.55, 0.3, 0] }} transition={{ duration: 1.6, times: [0, 0.25, 0.7, 1] }}>
-          {[12, 23, 35, 48, 61, 73, 85].map((top, index) => (
-            <motion.span key={top} className="absolute h-px bg-gradient-to-r from-transparent via-amber-100/70 to-transparent" style={{ top: `${top}%`, width: `${45 + (index % 3) * 15}%`, right: '-60%', transform: 'rotate(-12deg)' }} animate={{ x: [0, '-300vw'] }} transition={{ duration: 0.6 + (index % 3) * 0.12, delay: 0.12 + index * 0.045, ease: 'easeIn' }} />
-          ))}
-        </motion.div>
-      )}
+      <style>{`@font-face{font-family:'WawasanWelcome';src:url('${getAssetUrl('/assets/fonts/Pacifico-Regular.ttf')}') format('truetype');font-display:swap}
+        @keyframes splash-foliage-sway{0%,100%{transform:rotate(0deg)}35%{transform:rotate(.8deg)}70%{transform:rotate(-.55deg)}}
+        @keyframes splash-flower-sway{0%,100%{transform:rotate(0deg)}35%{transform:rotate(-.65deg)}70%{transform:rotate(.5deg)}}
+        .splash-foliage{transform-box:view-box;transform-origin:0 0;animation:splash-foliage-sway 3.2s ease-in-out infinite}
+        .splash-flower{transform-box:view-box;transform-origin:100% 100%;animation:splash-flower-sway 3.4s ease-in-out infinite}
+        @media(prefers-reduced-motion:reduce){.splash-foliage,.splash-flower{animation:none}}
+      `}</style>
+      <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 720 1280" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="splash-cut-fade"><stop offset="65%" stopColor="black" /><stop offset="100%" stopColor="white" /></radialGradient>
+          <radialGradient id="splash-part-fade"><stop offset="65%" stopColor="white" /><stop offset="100%" stopColor="black" /></radialGradient>
+          <mask id="splash-static-background" maskUnits="userSpaceOnUse">
+            <rect width="720" height="1280" fill="white" />
+            <ellipse cx="0" cy="0" rx="270" ry="245" fill="url(#splash-cut-fade)" />
+            <ellipse cx="720" cy="1280" rx="265" ry="260" fill="url(#splash-cut-fade)" />
+          </mask>
+          <mask id="splash-top-foliage" maskUnits="userSpaceOnUse"><rect width="720" height="1280" fill="black" /><ellipse cx="0" cy="0" rx="270" ry="245" fill="url(#splash-part-fade)" /></mask>
+          <mask id="splash-bottom-flower" maskUnits="userSpaceOnUse"><rect width="720" height="1280" fill="black" /><ellipse cx="720" cy="1280" rx="265" ry="260" fill="url(#splash-part-fade)" /></mask>
+        </defs>
+        <image href={getAssetUrl('/assets/illustrations/splash-wawasan-light.webp')} width="720" height="1280" mask="url(#splash-static-background)" className="dark:hidden" />
+        <image href={getAssetUrl('/assets/illustrations/splash-wawasan-dark.webp')} width="720" height="1280" mask="url(#splash-static-background)" className="hidden dark:block" />
+        <g className="splash-foliage">
+          <image href={getAssetUrl('/assets/illustrations/splash-wawasan-light.webp')} width="720" height="1280" mask="url(#splash-top-foliage)" className="dark:hidden" />
+          <image href={getAssetUrl('/assets/illustrations/splash-wawasan-dark.webp')} width="720" height="1280" mask="url(#splash-top-foliage)" className="hidden dark:block" />
+        </g>
+        <g className="splash-flower">
+          <image href={getAssetUrl('/assets/illustrations/splash-wawasan-light.webp')} width="720" height="1280" mask="url(#splash-bottom-flower)" className="dark:hidden" />
+          <image href={getAssetUrl('/assets/illustrations/splash-wawasan-dark.webp')} width="720" height="1280" mask="url(#splash-bottom-flower)" className="hidden dark:block" />
+        </g>
+      </svg>
 
       <button
         type="button"
         onClick={complete}
-        className="absolute right-4 z-20 flex min-h-11 items-center rounded-full border border-white/25 bg-black/20 px-4 text-xs font-semibold text-white transition-colors hover:bg-black/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+        className="absolute right-4 z-20 flex min-h-11 items-center rounded-full border border-[#a55a1d]/25 bg-[#fffaf0]/80 px-4 text-xs font-semibold text-[#61330f] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-200/25 dark:bg-black/25 dark:text-amber-100 dark:hover:bg-black/40"
         style={{ top: 'calc(0.75rem + var(--safe-area-inset-top, 0px))' }}
       >
         {bm ? 'Langkau' : 'Skip'}
       </button>
 
-      <div className="relative z-10 flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-3 px-6 pb-16 pt-16 text-center sm:gap-5" style={{ paddingTop: 'calc(4rem + var(--safe-area-inset-top, 0px))', paddingBottom: 'calc(4rem + var(--safe-area-inset-bottom, 0px))' }}>
+      <div className="relative z-10 flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-4 px-6 pb-16 pt-16 text-center sm:gap-5" style={{ paddingTop: 'calc(4rem + var(--safe-area-inset-top, 0px))', paddingBottom: 'calc(4rem + var(--safe-area-inset-bottom, 0px))' }}>
         <motion.img
           src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')}
           alt="Restoran Wawasan"
@@ -83,41 +104,33 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
           height={512}
           initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : 1.25, ease: [0.22, 1, 0.36, 1] }}
-          className="h-auto w-[min(44vw,170px)] shrink-0 object-contain"
+          transition={{ duration: reduceMotion ? 0 : 0.6, delay: reduceMotion ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="h-auto max-h-[32dvh] w-[min(70vw,260px)] shrink-0 object-contain"
           draggable={false}
         />
 
-        <div className="relative flex h-[min(37dvh,250px)] w-full items-center justify-center">
-          <motion.div aria-hidden="true" className="absolute aspect-square h-[86%] rounded-full border border-amber-200/30 bg-[#f8efd9] shadow-[0_12px_50px_rgba(0,0,0,0.18)]" initial={reduceMotion ? false : { scale: 0.55, opacity: 0 }} animate={reduceMotion ? { scale: 1, opacity: 1 } : { scale: [0.55, 1.1, 1], opacity: [0, 1, 1] }} transition={{ duration: reduceMotion ? 0 : 0.65, delay: reduceMotion ? 0 : 0.6, times: [0, 0.65, 1] }} />
-          {!reduceMotion && <motion.div aria-hidden="true" className="absolute aspect-square h-[86%] rounded-full border-2 border-amber-200/80" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: [0.7, 1.35], opacity: [0, 0.65, 0] }} transition={{ duration: 0.7, delay: 0.85, times: [0, 0.2, 1] }} />}
-          <motion.img
-            src={getAssetUrl('/assets/mascots/daun_rider.webp')}
-            alt={bm ? 'Maskot Daun Wawasan menunggang motor dengan beg GrabFood' : 'Daun Wawasan mascot riding a motorcycle with a GrabFood bag'}
-            width={900}
-            height={822}
-            initial={reduceMotion ? false : { opacity: 0, x: '110%', y: 35, rotate: -12, scale: 1.25 }}
-            animate={reduceMotion ? { opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 } : { opacity: [0, 1, 1, 1, 1], x: ['110%', '18%', '-5%', '2%', '0%'], y: [35, -8, 3, -3, 0], rotate: [-12, -6, 3, -1, 0], scale: [1.25, 1.08, 1.02, 1, 1] }}
-            transition={{ duration: reduceMotion ? 0 : 1.35, times: [0, 0.4, 0.65, 0.8, 1], ease: 'easeOut' }}
-            className="relative h-full w-full object-contain drop-shadow-[0_8px_8px_rgba(0,0,0,0.18)]"
-            draggable={false}
-          />
-        </div>
-
-        <motion.div className="space-y-1.5" initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.45, delay: reduceMotion ? 0 : 1.45 }}>
-          <h1 className="font-display text-xl font-bold tracking-tight text-[#fff6e2] sm:text-2xl">
-            {bm ? 'Selamat datang!' : 'Welcome!'}
+        <div className="space-y-1">
+          <h1 aria-label={bm ? 'Selamat datang!' : 'Welcome!'} className="text-2xl leading-snug text-[#173b2a] dark:text-[#fff6e2] sm:text-3xl" style={{ fontFamily: "'WawasanWelcome', cursive" }}>
+            <motion.span aria-hidden="true" className="inline-block" initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reduceMotion ? 0 : 0.45, delay: reduceMotion ? 0 : 1.3, ease: [0.22, 1, 0.36, 1] }}>
+              {bm ? 'Selamat' : 'Welcome'}
+            </motion.span>
+            <motion.span aria-hidden="true" className="inline-block whitespace-pre" initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reduceMotion ? 0 : 0.45, delay: reduceMotion ? 0 : 1.46, ease: [0.22, 1, 0.36, 1] }}>
+              {bm ? ' datang!' : '!'}
+            </motion.span>
           </h1>
-          <p className="text-sm font-medium text-amber-100/80">
+          <svg aria-hidden="true" viewBox="0 0 180 12" className="mx-auto block h-2 w-36 text-[#df710f] dark:text-[#ffa42c]">
+            <motion.path d="M 3 9 Q 90 -3 177 7" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.48, delay: reduceMotion ? 0 : 1.68, ease: 'easeOut' }} />
+          </svg>
+          <motion.p className="text-sm font-medium text-[#704b30] dark:text-amber-100/80" initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.38, delay: reduceMotion ? 0 : 1.85 }}>
             {bm ? 'Dari Wawasan, dengan rasa.' : 'From Wawasan, with flavour.'}
-          </p>
-        </motion.div>
+          </motion.p>
+        </div>
       </div>
 
-      <div role="status" aria-live="polite" className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-2 pb-5 text-xs font-semibold text-amber-100/80" style={{ paddingBottom: 'calc(1.25rem + var(--safe-area-inset-bottom, 0px))' }}>
-        <span>{isLoading ? (bm ? 'Menyediakan aplikasi…' : 'Preparing the app…') : (bm ? 'Sedia' : 'Ready')}</span>
-        <span aria-hidden="true" className="h-1 w-20 overflow-hidden rounded-full bg-white/15">
-          <motion.span className="block h-full w-1/2 rounded-full bg-amber-300" animate={reduceMotion ? { opacity: 1 } : { x: ['-100%', '200%'] }} transition={reduceMotion ? { duration: 0 } : { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }} />
+      <div role="status" aria-live="polite" className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-2 pb-5 text-xs font-semibold text-[#704b30] dark:text-amber-100/80" style={{ paddingBottom: 'calc(1.25rem + var(--safe-area-inset-bottom, 0px))' }}>
+        <span className="rounded-full bg-[#fff6e4]/90 px-3 py-1 dark:bg-[#191612]/90">{isLoading ? (bm ? 'Menyediakan aplikasi…' : 'Preparing the app…') : (bm ? 'Sedia' : 'Ready')}</span>
+        <span aria-hidden="true" className="h-1 w-20 overflow-hidden rounded-full bg-[#aa6b36]/20 dark:bg-white/15">
+          <motion.span className="block h-full w-1/2 rounded-full bg-[#d66b0c] dark:bg-amber-300" animate={reduceMotion ? { opacity: 1 } : { x: ['-100%', '200%'] }} transition={reduceMotion ? { duration: 0 } : { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }} />
         </span>
       </div>
     </motion.div>
