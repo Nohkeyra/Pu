@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Badge } from '@/components/ui/badge';
+import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { useToast } from '@/components/ui/Toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,9 @@ import { launchWhatsApp } from '@/lib/nativeService';
 interface ProfileOrdersTabProps {
   orders: Order[];
   isLoadingOrders: boolean;
+  language: 'en' | 'bm';
+  ordersError?: boolean;
+  onRetryOrders?: () => void;
   selectedOrders: Set<string>;
   isSelectMode: boolean;
   setIsSelectMode: (val: boolean | ((prev: boolean) => boolean)) => void;
@@ -334,6 +338,9 @@ function OrderItem({
 export function ProfileOrdersTab({
   orders,
   isLoadingOrders,
+  language,
+  ordersError = false,
+  onRetryOrders,
   selectedOrders,
   isSelectMode,
   setIsSelectMode,
@@ -421,35 +428,9 @@ export function ProfileOrdersTab({
     visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'billed':
-        return <Badge className="bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 text-xs font-bold">{t('Billed', 'Telah Diinvois')}</Badge>;
-      case 'approved':
-        return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold">{t('Approved', 'Diluluskan')}</Badge>;
-      case 'in_transit':
-        return (
-          <Badge className="bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 text-xs font-bold motion-safe:animate-pulse inline-flex items-center gap-1">
-            <Truck className="w-3 h-3" />
-            <span>{t('In Transit', 'Dalam Perjalanan')}</span>
-          </Badge>
-        );
-      case 'delivered':
-        return (
-          <Badge className="bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-bold inline-flex items-center gap-1">
-            <Check className="w-3 h-3" />
-            <span>{t('Delivered', 'Selesai Dihantar')}</span>
-          </Badge>
-        );
-      case 'cancelled':
-        return <Badge variant="outline" className="border-stone-400 text-stone-500 text-xs font-bold">{t('Cancelled', 'Dibatalkan')}</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="text-xs font-bold">{t('Rejected', 'Ditolak')}</Badge>;
-      case 'pending':
-      default:
-        return <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-xs font-bold">{t('Pending Review', 'Dalam Semakan')}</Badge>;
-    }
-  };
+  const getStatusBadge = (status?: string) => (
+    <OrderStatusBadge status={status} language={language} />
+  );
 
   return (
     <Card className="profile-section profile-orders-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
@@ -511,11 +492,21 @@ export function ProfileOrdersTab({
 
       <CardContent className="p-0 pt-0 space-y-4">
 
+      {ordersError && (
+        <ErrorState
+          title={t('Could not load orders', 'Tempahan tidak dapat dimuatkan')}
+          description={orders.length
+            ? t('Showing previously loaded orders. Check your connection and try again.', 'Memaparkan rekod yang dimuatkan sebelum ini. Semak sambungan dan cuba lagi.')
+            : t('Your order history is temporarily unavailable. Check your connection and try again.', 'Sejarah tempahan belum dapat dibaca. Semak sambungan dan cuba lagi.')}
+          onRetry={onRetryOrders}
+          retryLabel={t('Try again', 'Cuba lagi')}
+        />
+      )}
       {isLoadingOrders ? (
         <div className="flex flex-col items-center justify-center py-10 space-y-2">
           <WawasanLoader size={52} />
         </div>
-      ) : orders.length === 0 ? (
+      ) : ordersError && orders.length === 0 ? null : orders.length === 0 ? (
         <EmptyState
           icon={<Utensils className="w-10 h-10 opacity-70" aria-hidden />}
           title={t('No Past Orders Found', 'Tiada Rekod Tempahan')}

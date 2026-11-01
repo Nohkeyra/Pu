@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type CSSProperties } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -66,27 +66,12 @@ export function Step1EventMeal({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -16 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-6 text-left"
+      className="customer-step-one text-left"
     >
-      <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-        {/* Background Batik Pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.22] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
-        <div className="relative z-10">
-          <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
-            {tText('Select Event Type', 'Pilih Jenis Majlis')}
-          </h2>
-          <p className="text-xs text-stone-300 font-light mt-1">
-            {tText('Choose your catering hosting style.', 'Sila tentukan jenis majlis catering anda.')}
-          </p>
-        </div>
+      <div className="customer-step-heading" style={{ '--customer-batik': `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})` } as CSSProperties}>
+        <span>{tText('START WITH YOUR EVENT', 'MULAKAN DENGAN MAJLIS ANDA')}</span>
+        <h2>{tText('What are you planning?', 'Untuk acara yang mana?')}</h2>
+        <p>{tText('Choose your event type and the meals you need.', 'Pilih jenis majlis dan sajian yang diperlukan.')}</p>
       </div>
 
       {/* Event Type option cards */}
@@ -102,26 +87,26 @@ export function Step1EventMeal({
             aria-checked={orderState.eventType === 'pejabat'}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'pejabat' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
-              "p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
+              "customer-choice p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
               orderState.eventType === 'pejabat' 
                 ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30" 
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
             )}
           >
             {orderState.eventType === 'pejabat' && (
-              <div className="absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
                 <Check className="w-3 h-3" />
               </div>
             )}
             <div className={cn(
-              "w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
+              "customer-choice-icon w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
               orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Briefcase className="w-4.5 h-4.5" />
             </div>
             <div className="w-full">
-              <span className="text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-              <span className="text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
+              <span className="customer-choice-title text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Office Feast', 'Jamuan Pejabat')}</span>
+              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
             </div>
           </Button>
 
@@ -132,26 +117,26 @@ export function Step1EventMeal({
             aria-checked={orderState.eventType === 'lain'}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'lain' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
-              "p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
+              "customer-choice p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
               orderState.eventType === 'lain' 
                 ? "bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30" 
                 : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
             )}
           >
             {orderState.eventType === 'lain' && (
-              <div className="absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
                 <Check className="w-3 h-3" />
               </div>
             )}
             <div className={cn(
-              "w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
+              "customer-choice-icon w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
               orderState.eventType === 'lain' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Smile className="w-4.5 h-4.5" />
             </div>
             <div className="w-full">
-              <span className="text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Private Events', 'Majlis Katering')}</span>
-              <span className="text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
+              <span className="customer-choice-title text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Private Events', 'Majlis Katering')}</span>
+              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
             </div>
           </Button>
         </div>
@@ -165,7 +150,7 @@ export function Step1EventMeal({
             {tText('Meals / Sajian', 'Pilihan Sajian *')}
           </Label>
           <span className="text-xs text-stone font-normal">
-            {tText('Multi-select enabled', 'Boleh pilih > 1')}
+            {tText('Choose one or more', 'Boleh pilih lebih daripada satu')}
           </span>
         </div>
         
@@ -186,26 +171,26 @@ export function Step1EventMeal({
                 aria-pressed={isSelected}
                 onClick={() => { handleToggleMeal(mealId); setFieldErrors((e) => ({ ...e, mealTypes: undefined })); }}
                 className={cn(
-                  "p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[96px] cursor-pointer relative select-none active:scale-[0.99]",
+                  "customer-choice customer-meal-choice p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[96px] cursor-pointer relative select-none active:scale-[0.99]",
                   isSelected 
                     ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20" 
                     : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
                 )}
               >
                 {isSelected && (
-                  <div className="absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                  <div className="customer-choice-check absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
                     <Check className="w-2.5 h-2.5" />
                   </div>
                 )}
                 <div className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
+                  "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
                   isSelected ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                 )}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="w-full mt-1">
-                  <span className="text-xs font-bold block leading-tight text-deep-forest dark:text-white truncate">{m.label()}</span>
-                  <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-none font-medium block mt-1">{m.time}</span>
+                  <span className="customer-choice-title text-xs font-bold block leading-tight text-deep-forest dark:text-white truncate">{m.label()}</span>
+                  <span className="customer-choice-description text-xs text-stone/85 dark:text-stone-300/85 leading-none font-medium block mt-1">{m.time}</span>
                 </div>
               </button>
             );
@@ -214,76 +199,8 @@ export function Step1EventMeal({
         {fieldErrors.mealTypes && <FormError message={fieldErrors.mealTypes} />}
       </div>
 
-      {/* Serving Style / Preparation Type */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
-          {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
-        </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
-          <button
-            type="button"
-            data-tour="step1-prep-buffet"
-            role="radio"
-            aria-checked={orderState.preparationType === 'buffet'}
-            onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'buffet' }))}
-            className={cn(
-              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
-              orderState.preparationType === 'buffet'
-                ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
-                : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-            )}
-          >
-            {orderState.preparationType === 'buffet' && (
-              <div className="absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
-                <Check className="w-2.5 h-2.5" />
-              </div>
-            )}
-            <div className={cn(
-              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-              orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-            )}>
-              <UtensilsCrossed className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 pr-2">
-              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Buffet Style', 'Hidangan Bufet')}</span>
-              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            data-tour="step1-prep-mealbox"
-            role="radio"
-            aria-checked={orderState.preparationType === 'meal_box'}
-            onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'meal_box' }))}
-            className={cn(
-              "p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
-              orderState.preparationType === 'meal_box'
-                ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
-                : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
-            )}
-          >
-            {orderState.preparationType === 'meal_box' && (
-              <div className="absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
-                <Check className="w-2.5 h-2.5" />
-              </div>
-            )}
-            <div className={cn(
-              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-              orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
-            )}>
-              <Package className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 pr-2">
-              <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Pre-Pack Box', 'Set Box')}</span>
-              <span className="text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
-            </div>
-          </button>
-        </div>
-      </div>
-
       {/* Quantity Counter */}
-      <div className="bg-muted/70 border border-stone/15 dark:border-white/10 p-4 rounded-2xl space-y-3 dark:bg-stone-800/40">
+      <div className="customer-quantity space-y-3">
         <div className="flex justify-between items-center flex-wrap gap-2">
           <div>
             <Label htmlFor="guests-input" className="text-sm font-bold text-deep-forest dark:text-white">
@@ -294,7 +211,7 @@ export function Step1EventMeal({
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
+          <div className="customer-quantity-controls flex items-center" role="group" aria-label={tText('Quantity', 'Kuantiti')}>
             <button
               type="button"
               aria-label={tText('Decrease quantity', 'Kurangkan kuantiti')}
@@ -344,11 +261,79 @@ export function Step1EventMeal({
         {fieldErrors.mealTypes && <FormError message={fieldErrors.mealTypes} />}
       </div>
 
+      {/* Serving Style / Preparation Type */}
+      <div className="customer-serving space-y-1.5">
+        <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
+          {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
+        </Label>
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+          <button
+            type="button"
+            data-tour="step1-prep-buffet"
+            role="radio"
+            aria-checked={orderState.preparationType === 'buffet'}
+            onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'buffet' }))}
+            className={cn(
+              "customer-choice customer-serving-choice p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
+              orderState.preparationType === 'buffet'
+                ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
+                : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
+            )}
+          >
+            {orderState.preparationType === 'buffet' && (
+              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                <Check className="w-2.5 h-2.5" />
+              </div>
+            )}
+            <div className={cn(
+              "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+              orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+            )}>
+              <UtensilsCrossed className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 pr-2">
+              <span className="customer-choice-title text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Buffet Style', 'Hidangan Bufet')}</span>
+              <span className="customer-choice-description text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Tray / buffet setup', 'Dulang & meja bufet')}</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            data-tour="step1-prep-mealbox"
+            role="radio"
+            aria-checked={orderState.preparationType === 'meal_box'}
+            onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'meal_box' }))}
+            className={cn(
+              "customer-choice customer-serving-choice p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
+              orderState.preparationType === 'meal_box'
+                ? "bg-crisp-carrot/12 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/20"
+                : "bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50"
+            )}
+          >
+            {orderState.preparationType === 'meal_box' && (
+              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                <Check className="w-2.5 h-2.5" />
+              </div>
+            )}
+            <div className={cn(
+              "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+              orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+            )}>
+              <Package className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 pr-2">
+              <span className="customer-choice-title text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white whitespace-normal break-words">{tText('Pre-Pack Box', 'Set Box')}</span>
+              <span className="customer-choice-description text-xs text-stone/85 dark:text-stone-300/85 font-normal block whitespace-normal break-words mt-0.5">{tText('Packed boxes', 'Bungkus individu')}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Next Button */}
       <Button
         onClick={validateAndNext}
         data-tour="step1-next"
-        className="w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
+        className="customer-step-next w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
       >
         {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
         <ArrowRight className="w-4 h-4 ml-1.5" />

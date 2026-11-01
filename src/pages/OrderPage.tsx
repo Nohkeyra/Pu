@@ -1,41 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { useTheme } from '@/context/ThemeContext';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sun, Moon, User as UserIcon, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import OrderForm from '@/components/OrderForm';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
-import { TransparentLogo } from '@/components/TransparentLogo';
+import { CustomerPageHeader } from '@/components/CustomerPageHeader';
 import AuthModal from '@/components/AuthModal';
 import UserProfileDashboard from '@/components/UserProfileDashboard';
 import { Batik3DMotion } from '@/components/Batik3DMotion';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { motion } from 'motion/react';
-import { triggerLightImpact } from '@/lib/haptics';
-
-function BrandMark() {
-  return (
-    <div className="h-10 w-10 flex items-center justify-center">
-      {/*
-        Brand asset path preserved verbatim — visual logo /
-        Malaysian heritage graphic must remain 100% intact.
-      */}
-      <TransparentLogo
-        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-        alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
-      />
-    </div>
-  );
-}
 
 export default function OrderPage() {
-  const { t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
+  const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const initialData = location.state?.reorderData;
@@ -62,7 +42,7 @@ export default function OrderPage() {
 
   return (
     <ErrorBoundary>
-    <main className="min-h-screen bg-cream dark:bg-background pattern-dots relative">
+    <div className="customer-page customer-order-page relative">
         {/* Pull to Refresh Indicator */}
         <motion.div
           className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
@@ -87,106 +67,29 @@ export default function OrderPage() {
           </div>
         </motion.div>
 
-        {/*
-          P0 — standardised dark-mode text colour override so header
-          label and "Pak Usop" eyebrow stay legible on dark surfaces.
-        */}
-        <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
-          <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 min-h-[60px] sm:min-h-[64px]">
-            {/**
-             * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
-             * Semantic multi-line logo & identity header touch target navigating to /home.
-             * Not a standard action button; exempt from <Button> primitive migration.
-             */}
-            <button
-              type="button"
-              onClick={async () => {
-                await triggerLightImpact();
-                navigate('/home', { replace: true });
-              }}
-              className="touch-target-row flex items-center gap-3 group text-left"
-              aria-label="Go to home"
-            >
-              <BrandMark />
-              <div>
-                <span className="font-artistic text-base sm:text-xl page-header-text leading-none tracking-tight block">
-                  Restoran Wawasan
-                </span>
-                <span className="microcopy-12-upper block text-[var(--color-sunshine-cta)] leading-tight mt-0.5 font-semibold">
-                  Pak Usop
-                </span>
-              </div>
-            </button>
+        <CustomerPageHeader
+          title={language === 'bm' ? 'Tempah katering' : 'Catering order'}
+          subtitle={language === 'bm' ? 'Butiran majlis anda' : 'Your event details'}
+          onBack={() => navigate('/home', { replace: true })}
+          actions={[
+            { label: currentUser ? (language === 'bm' ? 'Akaun anda' : 'Your account') : (language === 'bm' ? 'Log masuk' : 'Sign in'), onSelect: () => {
+              if (!currentUser) { setAuthModalOpen(true); return; }
+              const admin = currentUser.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
+              if (admin) navigate('/admin'); else setProfileDashboardOpen(true);
+            } },
+            { label: language === 'bm' ? 'Tetapan' : 'Settings', onSelect: () => navigate('/settings') },
+            { label: language === 'bm' ? 'Halaman utama' : 'Home', onSelect: () => navigate('/home') },
+          ]}
+        />
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  await triggerLightImpact();
-                  toggleTheme();
-                }}
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
-                )}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  await triggerLightImpact();
-                  if (currentUser) {
-                    const isAdmin = currentUser.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
-                    if (isAdmin) {
-                      navigate('/admin');
-                    } else {
-                      setProfileDashboardOpen(true);
-                    }
-                  } else {
-                    setAuthModalOpen(true);
-                  }
-                }}
-                aria-label={currentUser ? 'Account' : 'Sign in'}
-              >
-                {currentUser ? (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] microcopy-12 font-black text-white">
-                    {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
-                  </div>
-                ) : (
-                  <UserIcon className="w-5 h-5" />
-                )}
-              </Button>
-
-              {/* P0 — semantic back button + 44 px tap target. */}
-              <Button
-                variant="ghost"
-                onClick={async () => {
-                  await triggerLightImpact();
-                  navigate('/home', { replace: true });
-                }}
-                className="touch-target-row text-stone hover:text-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/10 rounded-full min-h-[44px]"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {t('back')}
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <motion.main
+        <motion.div
           key={refreshKey}
-          className="page-shell__main pt-20 sm:pt-24 pb-[calc(180px+env(safe-area-inset-bottom,16px))] relative"
-          style={{ paddingTop: 'calc(72px + var(--sat, 0px) + 1rem)' }}
+          className="customer-content relative"
           animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
           transition={{ type: 'spring', stiffness: 400, damping: 40 }}
         >
           <OrderForm initialData={initialData} />
-        </motion.main>
+        </motion.div>
 
         <footer className="bg-deep-forest dark:bg-card border-t border-amber-500/20 pt-10 pb-[calc(110px+env(safe-area-inset-bottom,16px))] mt-14 relative overflow-hidden">
           {/* Cinematic Deep Dark Batik Background Layer (Matching HeroSection) */}
@@ -232,7 +135,7 @@ export default function OrderPage() {
             navigate('/order', { state: { reorderData: orderData } });
           }}
         />
-      </main>
+      </div>
     </ErrorBoundary>
   );
 }

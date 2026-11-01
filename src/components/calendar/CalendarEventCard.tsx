@@ -2,7 +2,7 @@ import { Clock, MapPin, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLongPress } from '@/hooks/useLongPress';
 import { triggerLightImpact } from '@/lib/haptics';
-import { cn } from '@/lib/utils';
+import { OrderStatusBadge } from '@/components/OrderStatusBadge';
 import type { Order } from '@/types';
 
 interface CalendarEventCardProps {
@@ -19,6 +19,7 @@ interface CalendarEventCardProps {
 export function CalendarEventCard({
   order,
   isAdmin,
+  language,
   tl,
   totalPax,
   eventTime,
@@ -45,19 +46,7 @@ export function CalendarEventCard({
         <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
           #{order.invoiceNo || order.id?.slice(0, 8).toUpperCase()}
         </span>
-        <span
-          className={cn(
-            'text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize shadow-2xs',
-            order.status === 'approved' && 'bg-emerald-500 text-white',
-            order.status === 'pending' && 'bg-amber-500 text-white',
-            order.status === 'billed' && 'bg-blue-600 text-white',
-            order.status === 'cancel_requested' && 'bg-rose-500 text-white animate-pulse',
-            order.status === 'cancelled' && 'bg-stone-500 text-white',
-            (order.status as string) === 'completed' && 'bg-stone-600 text-white'
-          )}
-        >
-          {order.status}
-        </span>
+        <OrderStatusBadge status={order.status} language={language} />
       </div>
 
       <div className="flex items-start justify-between gap-2">

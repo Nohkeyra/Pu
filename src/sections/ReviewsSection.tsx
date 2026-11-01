@@ -10,7 +10,6 @@ const REVIEWS = [
     text: "The food is delicious..the fried bananas and banana pancakes are also delicious..the pancakes have less flour & the bananas taste sweet..the food is just like our parents cooked..the prices are reasonable..just parking is a little difficult..just parking on the side of the road..you're out of luck if you get a ticket..hehe..",
     name: 'Miss Sya',
     rating: 5,
-    date: '4 weeks ago',
     tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
@@ -18,7 +17,6 @@ const REVIEWS = [
     text: "Had a wonderful lunch at Restoran Wawasan Pak Usop! The chicken and catfish were absolutely delicious, and they even treated me to a fresh jackfruit dessert. What impressed me the most was their kindness. When I had a problem with my payment, they simply told me, \"It's okay, just enjoy your meal.\"",
     name: 'hugh ahn',
     rating: 5,
-    date: '2 months ago',
     tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
@@ -26,7 +24,6 @@ const REVIEWS = [
     text: "We came here for breakfast on a friday to try out the mee rebus, but did know that mee rebus is only served on Thursdays. So we had the Soto and nasi lemak, instead... Anyway, it has a great view of Putrajaya Lake.",
     name: 'Rahmah Ramli',
     rating: 4,
-    date: '4 months ago',
     tag: 'Dine-in • Breakfast',
     source: 'Google Maps'
   },
@@ -34,7 +31,6 @@ const REVIEWS = [
     text: "I happend to see this restaurant on google map and decided to try, The Food was SO GOOD and even the drink. The price is really cheap def recommended 👌👌",
     name: 'Buachompoo Rerksuitthirat',
     rating: 5,
-    date: '5 months ago',
     tag: 'Dine-in • Lunch',
     source: 'Google Maps'
   },
@@ -42,7 +38,6 @@ const REVIEWS = [
     text: "I ordered Soto Ayam, topped with delicious deep-fried potato dumplings, for RM8.50. It was filled with lots of toppings, including potatoes and kamaboko fish cakes. It's closed on the weekend, so I was glad I went during the only time I could.",
     name: '大渕真志',
     rating: 5,
-    date: '8 months ago',
     tag: 'Dine-in • Soto Ayam',
     source: 'Google Maps'
   },
@@ -50,7 +45,6 @@ const REVIEWS = [
     text: "Soto Ayam was delicious. The price is really good for the area where is located.",
     name: 'Carol Pitta',
     rating: 5,
-    date: 'a year ago',
     tag: 'Dine-in • Soto Ayam',
     source: 'Google Maps'
   },
@@ -58,14 +52,13 @@ const REVIEWS = [
     text: "Best to eat here, the food is delicious. Pak Usop is friendly and accommodating. Cheap price is worth it. Can repeat",
     name: 'Sarina Yusuf',
     rating: 5,
-    date: 'a year ago',
     tag: 'Dine-in • Breakfast',
     source: 'Google Maps'
   },
 ];
 
 const ReviewsSection = React.memo(() => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [slidesToShow, setSlidesToShow] = useState(3);
 
   useEffect(() => {
@@ -143,8 +136,8 @@ const ReviewsSection = React.memo(() => {
             <div className="flex items-center gap-3 bg-cream-dark/60 dark:bg-card/80 backdrop-blur-md border border-deep-forest/10 dark:border-white/10 rounded-2xl px-5 py-3 shadow-lg">
               <Star className="w-5 h-5 text-[var(--color-sunshine-cta)] fill-sunshine animate-pulse" />
               <div className="flex flex-col">
-                <span className="font-bold text-deep-forest dark:text-white leading-none">4.9</span>
-                <span className="text-deep-forest/50 dark:text-stone-400 microcopy-12-upper uppercase font-bold tracking-widest mt-1">Rating</span>
+                <span className="font-bold text-deep-forest dark:text-white leading-none">{REVIEWS.length}</span>
+                <span className="text-deep-forest/50 dark:text-stone-400 microcopy-12-upper uppercase font-bold tracking-widest mt-1">{language === 'bm' ? 'Petikan ulasan' : 'Review excerpts'}</span>
               </div>
             </div>
             
@@ -167,6 +160,11 @@ const ReviewsSection = React.memo(() => {
           </motion.div>
         </motion.div>
 
+        <p className="mb-6 text-center text-sm leading-relaxed text-deep-forest/80 dark:text-stone-300">
+          {language === 'bm'
+            ? 'Petikan ulasan yang disimpan daripada bahan sedia ada. Ini bukan rating atau suapan langsung Google Maps.'
+            : 'Saved review excerpts from existing material. This is not a live Google Maps rating or feed.'}
+        </p>
         {/* Carousel */}
         <div
           ref={containerRef}

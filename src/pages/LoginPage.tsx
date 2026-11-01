@@ -116,7 +116,7 @@ export default function LoginPage() {
               </div>
 
               <div className="mb-6 space-y-2">
-                <div className="subtle-chip">Since 1986</div>
+                <div className="subtle-chip">{tLocal('Since 1986', 'Sejak 1986')}</div>
                 <h1 className="font-artistic text-3xl tracking-tight text-deep-forest dark:text-white">
                   Restoran Wawasan
                 </h1>
@@ -124,9 +124,8 @@ export default function LoginPage() {
                   Pak Usop
                 </p>
                 <div className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-deep-forest/80 dark:text-white/80 space-y-0.5">
-                  <p>Tak nak serabut campur</p>
-                  <p>urusan personal &amp; kerja ?</p>
-                  <p className="font-bold text-[var(--color-sunshine-cta)] pt-1 flex items-center justify-center gap-1">Register <ArrowDown className="w-4 h-4" aria-hidden="true" /><Sparkles className="w-4 h-4" aria-hidden="true" /></p>
+                  <p>{tLocal('Keep your personal and event details organised.', 'Urus maklumat diri dan tempahan dengan mudah.')}</p>
+                  <p className="font-bold text-[var(--color-sunshine-cta)] pt-1 flex items-center justify-center gap-1">{tLocal('Sign in or create an account', 'Log masuk atau daftar akaun')} <ArrowDown className="w-4 h-4" aria-hidden="true" /><Sparkles className="w-4 h-4" aria-hidden="true" /></p>
                 </div>
               </div>
 

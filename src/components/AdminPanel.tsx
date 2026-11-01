@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { OrderStatusBadge } from '@/components/OrderStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
@@ -149,27 +150,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
     setIsDetailOpen(true);
   };
 
-  const getStatusBadge = (status?: string) => {
-    const s = status ? status.toLowerCase() : '';
-    switch (s) {
-      case 'cancel_requested':
-        return <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-bold animate-pulse shadow-xs whitespace-nowrap">{t('cancel_requested')}</Badge>;
-      case 'billed':
-        return <Badge className="bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 font-semibold shadow-xs whitespace-nowrap">{t('billed')}</Badge>;
-      case 'approved':
-        return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold shadow-xs whitespace-nowrap">{t('approved')}</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-500/30 font-semibold whitespace-nowrap">{t('cancelled')}</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30 font-semibold whitespace-nowrap">{t('rejected')}</Badge>;
-      case 'in_transit':
-        return <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30 font-semibold animate-pulse whitespace-nowrap">{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</Badge>;
-      case 'delivered':
-        return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold whitespace-nowrap">{language === 'bm' ? 'Dihantar' : 'Delivered'}</Badge>;
-      default:
-        return <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 font-semibold whitespace-nowrap">{t('pending')}</Badge>;
-    }
-  };
+  const getStatusBadge = (status?: string) => <OrderStatusBadge status={status} language={language} />;
 
   const filteredOrders = filterAdminOrders({
     orders,

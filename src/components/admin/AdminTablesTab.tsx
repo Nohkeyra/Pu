@@ -1,3 +1,5 @@
+import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { getOrderStatus } from '@/lib/orderStatus';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -765,10 +767,6 @@ export function AdminTablesTab({
               <div className="space-y-3 p-3">
                 {paginatedOrders.map((order, index) => {
                   const isFinal = ['approved', 'diluluskan', 'billed', 'dibilkan'].includes(order.status || '');
-                  const status = (order.status || 'pending').toLowerCase();
-                  const statusLabel: Record<string, string> = isBm
-                    ? { pending: 'Menunggu semakan', approved: 'Diluluskan', billed: 'Dibilkan', cancelled: 'Dibatalkan', cancel_requested: 'Permintaan batal' }
-                    : { pending: 'Pending review', approved: 'Approved', billed: 'Billed', cancelled: 'Cancelled', cancel_requested: 'Cancellation requested' };
                   return (
                     <article key={order.id || index} className="rounded-2xl border border-stone/15 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-card">
                       <div className="flex items-start gap-3">
@@ -778,7 +776,7 @@ export function AdminTablesTab({
                           {order.to && order.name && <p className="mt-0.5 break-words text-xs text-deep-forest/60 dark:text-stone/70">{order.name}</p>}
                           {visibleColumns.has('dateTime') && <p className="mt-2 text-sm text-deep-forest/70 dark:text-stone/80">{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</p>}
                           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                            {visibleColumns.has('status') && <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-900 dark:bg-amber-900/30 dark:text-amber-300">{statusLabel[status] || status}</span>}
+                            {visibleColumns.has('status') && <OrderStatusBadge status={order.status} language={language} />}
                             {visibleColumns.has('quantity') && <span className="rounded-full bg-stone/10 px-2.5 py-1 font-semibold text-deep-forest dark:bg-white/10 dark:text-stone-100">{order.quantity || 0} pax</span>}
                             {visibleColumns.has('totalAmount') && <span className="font-bold text-emerald-700 dark:text-emerald-400">{typeof order.totalAmount === 'number' ? `RM ${order.totalAmount.toFixed(2)}` : (isBm ? 'Jumlah belum ditetapkan' : 'Total pending')}</span>}
                           </div>
@@ -802,8 +800,8 @@ export function AdminTablesTab({
                         </dl>
                         {visibleColumns.has('status') && order.id && <label className="mt-4 block text-xs font-medium text-deep-forest/70 dark:text-stone/70">{isBm ? 'Tukar status' : 'Change status'}
                           <select disabled={updatingId === order.id} value={order.status || 'pending'} onChange={e => handleQuickStatusChange(order.id!, e.target.value)} className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white">
-                            {!['pending', 'approved', 'billed', 'cancelled'].includes(order.status || 'pending') && <option value={order.status}>{statusLabel[status] || order.status}</option>}
-                            <option value="pending">{statusLabel.pending}</option><option value="approved">{statusLabel.approved}</option><option value="billed">{statusLabel.billed}</option><option value="cancelled">{statusLabel.cancelled}</option>
+                            {!['pending', 'approved', 'billed', 'cancelled'].includes(order.status || 'pending') && <option value={order.status}>{getOrderStatus(order.status, language).label}</option>}
+                            <option value="pending">{getOrderStatus('pending', language).label}</option><option value="approved">{getOrderStatus('approved', language).label}</option><option value="billed">{getOrderStatus('billed', language).label}</option><option value="cancelled">{getOrderStatus('cancelled', language).label}</option>
                           </select>
                         </label>}
                         {visibleColumns.has('actions') && <div className="mt-4 flex flex-wrap gap-2">
@@ -1071,20 +1069,14 @@ export function AdminTablesTab({
                               disabled={updatingId === order.id}
                               value={order.status || 'pending'}
                               onChange={(e) => handleQuickStatusChange(order.id!, e.target.value)}
-                              className={`text-xs font-semibold rounded-lg px-2 py-1 border border-stone/20 dark:border-white/10 focus:outline-none cursor-pointer ${
-                                (order.status || 'pending') === 'approved'
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
-                                  : (order.status || 'pending') === 'billed'
-                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                                  : (order.status || 'pending') === 'cancelled'
-                                  ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300'
-                                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                              }`}
+                              aria-label={isBm ? 'Tukar status tempahan' : 'Change order status'}
+                              className={`min-h-11 text-xs font-semibold rounded-lg px-2 py-1 border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer ${getOrderStatus(order.status, language).className}`}
                             >
-                              <option value="pending">Pending</option>
-                              <option value="approved">Approved</option>
-                              <option value="billed">Billed</option>
-                              <option value="cancelled">Cancelled</option>
+                              {!['pending', 'approved', 'billed', 'cancelled'].includes(order.status || 'pending') && <option value={order.status}>{getOrderStatus(order.status, language).label}</option>}
+                              <option value="pending">{getOrderStatus('pending', language).label}</option>
+                              <option value="approved">{getOrderStatus('approved', language).label}</option>
+                              <option value="billed">{getOrderStatus('billed', language).label}</option>
+                              <option value="cancelled">{getOrderStatus('cancelled', language).label}</option>
                             </select>
                           </div>
                         </td>

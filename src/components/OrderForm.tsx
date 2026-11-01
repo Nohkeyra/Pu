@@ -10,7 +10,7 @@ import {
   Ghost
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
+import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
 import { motion } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
@@ -1166,42 +1166,45 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
       <div 
-        className="w-full max-w-6xl mx-auto font-sans space-y-6 pb-24 lg:pb-0 transition-all duration-200"
+        className="customer-order-form flex flex-col w-full max-w-6xl mx-auto font-sans pb-24 lg:pb-0 transition-all duration-200"
         style={{
           paddingBottom: isKeyboardVisible ? `${keyboardHeight + 80}px` : undefined
         }}
       >
         
-        {/* Sign In / Sign Up banner for unauthenticated guests */}
-        {!currentUser && (
-          <div className="bg-[var(--color-sunshine-cta)]/10 border border-[var(--color-sunshine-cta)]/25 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-3 text-deep-forest dark:text-stone-200">
-              <div className="w-9 h-9 rounded-xl bg-[var(--color-sunshine-cta)]/15 flex items-center justify-center shrink-0">
-                <UserIcon className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
-              </div>
-              <p className="text-xs font-medium">
-                <span className="font-bold block text-sm text-deep-forest dark:text-white">
-                  {tText('Have an account with Restoran Wawasan?', 'Ada akaun dengan Restoran Wawasan?')}
-                </span>
-                {tText('Sign in or register to auto-fill your saved profile & billing details.', 'Log masuk atau daftar untuk isi automatik maklumat profil & bil anda.')}
-              </p>
+        {effectiveStep <= 4 && (
+          <nav className="customer-order-progress" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+            <div className="customer-progress-copy" role="status">
+              <span>{tText('STEP', 'LANGKAH')} <strong>{effectiveStep} / 4</strong></span>
+              <span>{tText('Event → Menu → Details → Review', 'Majlis → Menu → Butiran → Semak')}</span>
             </div>
-            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-              <Button
-                type="button"
-                onClick={() => { setAuthMode('signin'); setAuthModalOpen(true); }}
-                className="btn-cta px-4 py-2 min-h-[40px] h-auto rounded-xl text-xs font-bold flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <span>{tText('Sign In', 'Log Masuk')}</span>
-              </Button>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}
-                className="px-4 py-2 min-h-[40px] h-auto rounded-xl text-xs font-bold border-stone/20 hover:border-[var(--color-sunshine-cta)] bg-white dark:bg-card text-deep-forest dark:text-white hover:bg-stone-50 dark:hover:bg-stone-800 flex-1 sm:flex-initial flex items-center justify-center gap-1.5"
-              >
-                <span>{tText('Sign Up', 'Daftar')}</span>
-              </Button>
+            <div className="customer-progress-track" aria-hidden="true">
+              {[1, 2, 3, 4].map(step => <span key={step} data-complete={step <= effectiveStep} />)}
+            </div>
+            {(draftSavedAt && !initialData) || (hasSeenDemo && !demoActive) ? (
+              <div className="customer-progress-extras">
+                {draftSavedAt && !initialData ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{tText('Draft saved', 'Draf disimpan')}</span>
+                    <Button variant="ghost" type="button" onClick={handleDiscardDraft}>{tText('Clear draft', 'Padam draf')}</Button>
+                  </div>
+                ) : <span />}
+                {hasSeenDemo && !demoActive && (
+                  <Button variant="ghost" type="button" onClick={handleStartDemo} aria-label={tText('Watch demo', 'Tonton demo')}>
+                    <Ghost className="h-4 w-4" aria-hidden="true" />Demo
+                  </Button>
+                )}
+              </div>
+            ) : null}
+          </nav>
+        )}
+
+        {!currentUser && (
+          <div className="customer-guest-banner">
+            <span><UserIcon className="h-4 w-4" aria-hidden="true" />{tText('Order as a guest', 'Tempah sebagai tetamu')}</span>
+            <div className="flex items-center gap-1">
+              <Button type="button" variant="ghost" onClick={() => { setAuthMode('signin'); setAuthModalOpen(true); }}>{tText('Sign in', 'Log masuk')}</Button>
+              <Button type="button" variant="ghost" onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}>{tText('Sign up', 'Daftar')}</Button>
             </div>
           </div>
         )}
@@ -1212,163 +1215,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Left Column: Stepper Wizard & Inputs Panel */}
-          <div className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl overflow-hidden">
+          <div className="customer-form-panel lg:col-span-7 xl:col-span-8 overflow-hidden">
             
-            {/* Progress Bar Indicator */}
-            {effectiveStep <= 4 && (
-              <div className="px-4 sm:px-6 pt-5 pb-4 bg-muted/40 dark:bg-stone-900/40 border-b border-stone/10 dark:border-white/5" role="navigation" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
-                {draftSavedAt && !initialData && (
-                  <div className="flex items-center justify-between mb-3 bg-stone-100/70 dark:bg-stone-800/60 px-3 py-1.5 rounded-xl border border-stone/15 dark:border-white/10" role="status">
-                    <p className="text-xs font-semibold text-stone-600 dark:text-stone-300 flex items-center gap-1.5 truncate mr-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-                      <span className="truncate">{tText('Draft saved on this device', 'Draf disimpan pada peranti ini')}</span>
-                    </p>
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      onClick={handleDiscardDraft}
-                      className="text-xs h-auto p-0 font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 shrink-0 underline cursor-pointer select-none px-1 py-0.5"
-                    >
-                      {tText('Clear Draft', 'Padam Draf')}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Mobile Compact Progress Header (Below sm) */}
-                <div className="sm:hidden space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-black tracking-wider uppercase bg-crisp-carrot/15 text-crisp-carrot dark:bg-crisp-carrot/20">
-                        {tText(`Step ${effectiveStep} of 4`, `Langkah ${effectiveStep} / 4`)}
-                      </span>
-                      <motion.span
-                        key={effectiveStep}
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="text-xs font-bold text-deep-forest dark:text-stone-100"
-                      >
-                        {effectiveStep === 1 && tText('Event Setup', 'Jenis Majlis')}
-                        {effectiveStep === 2 && tText('Dish Selection', 'Pilih Menu')}
-                        {effectiveStep === 3 && tText('Contact & Delivery', 'Maklumat & Lokasi')}
-                        {effectiveStep === 4 && tText('Review & Submit', 'Semak & Hantar')}
-                      </motion.span>
-                    </div>
-
-                    {hasSeenDemo && !demoActive && (
-                      <Button
-                        variant="outline"
-                        type="button"
-                        onClick={handleStartDemo}
-                        className="text-xs h-auto font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        <><Ghost className="w-4 h-4" aria-hidden="true" /><span>{tText('Watch demo', 'Tonton demo')}</span></>
-                      </Button>
-                    )}
-                  </div>
-                  {/* Visual Step Progress Capsules */}
-                  <div className="grid grid-cols-4 gap-1.5 w-full">
-                    {[1, 2, 3, 4].map((stepNum) => {
-                      const isPast = effectiveStep > stepNum;
-                      const isCurrent = effectiveStep === stepNum;
-                      return (
-                        <div
-                          key={stepNum}
-                          className="h-1.5 rounded-full bg-stone-200 dark:bg-stone-800 relative overflow-hidden"
-                        >
-                          <motion.div
-                            initial={{ width: "0%" }}
-                            animate={{ width: isPast || isCurrent ? "100%" : "0%" }}
-                            transition={{ duration: 0.35, ease: "easeInOut" }}
-                            className={cn(
-                              "absolute inset-0 rounded-full",
-                              isPast ? "bg-deep-forest dark:bg-emerald-500" : "bg-crisp-carrot"
-                            )}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Tablet / Desktop Stepper (sm and above) */}
-                <div className="hidden sm:flex items-center justify-between">
-                  {[
-                    { s: 1, label: tText('Event', 'Jenis') },
-                    { s: 2, label: tText('Menu', 'Menu') },
-                    { s: 3, label: tText('Billing', 'Butiran') },
-                    { s: 4, label: tText('Review', 'Semakan') }
-                  ].map((item, idx) => {
-                    const isCurrent = effectiveStep === item.s;
-                    const isDone = effectiveStep > item.s;
-                    return (
-                      <div key={item.s} className="flex items-center flex-1 last:flex-none">
-                        <div className="flex flex-col items-center gap-1.5 relative z-10">
-                          <motion.div
-                            aria-current={isCurrent ? 'step' : undefined}
-                            animate={{
-                              scale: isCurrent ? 1.12 : 1.0,
-                            }}
-                            transition={{ type: "spring", stiffness: 450, damping: 24 }}
-                            className={cn(
-                              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border transition-colors duration-300",
-                              isCurrent
-                                ? "bg-crisp-carrot border-crisp-carrot text-white shadow-[0_0_16px_rgba(233,98,18,0.45)] ring-4 ring-amber-500/25"
-                                : isDone
-                                  ? "bg-deep-forest border-deep-forest text-white dark:bg-emerald-600 dark:border-emerald-600"
-                                  : "bg-card dark:bg-stone-800 border-amber-500/20 dark:border-stone-700 text-stone-400"
-                            )}
-                          >
-                            {isDone ? (
-                              <motion.div
-                                initial={{ scale: 0, rotate: -20 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Check className="w-4 h-4" />
-                              </motion.div>
-                            ) : (
-                              item.s
-                            )}
-                          </motion.div>
-                          <span className={cn(
-                            "microcopy-12-upper font-semibold transition-colors duration-300",
-                            isCurrent ? "text-crisp-carrot font-bold" : "text-stone-500 dark:text-stone-400"
-                          )}>
-                            {item.label}
-                          </span>
-                        </div>
-
-                        {idx < 3 && (
-                          <div className="flex-1 h-[2px] mx-3 bg-stone-200 dark:bg-stone-800 relative -translate-y-3.5" aria-hidden="true">
-                            <motion.div
-                              className="absolute inset-y-0 left-0 bg-deep-forest dark:bg-emerald-600"
-                              initial={{ width: "0%" }}
-                              animate={{ width: isDone ? '100%' : '0%' }}
-                              transition={{ duration: 0.4, ease: "easeInOut" }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {hasSeenDemo && !demoActive && (
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={handleStartDemo}
-                      className="ml-4 text-xs h-auto font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 bg-amber-100/80 dark:bg-amber-950/50 border-amber-300/80 dark:border-amber-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
-                    >
-                      <><Ghost className="w-4 h-4" aria-hidden="true" /><span>{tText('Watch demo', 'Tonton demo')}</span></>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Form Steps Container */}
-            <div className="overflow-hidden p-6 sm:p-8" aria-busy={stepTransitionBusy} onKeyDownCapture={event => { if (stepTransitionBusy) { event.preventDefault(); event.stopPropagation(); } }}>
+            <div className="customer-step-content overflow-hidden" aria-busy={stepTransitionBusy} onKeyDownCapture={event => { if (stepTransitionBusy) { event.preventDefault(); event.stopPropagation(); } }}>
               <motion.div ref={stepContentRef} key={effectiveStep} initial={false} animate={{ x: stepPulling ? '100%' : 0 }} transition={{ duration: pullDuration, ease: [0.5, 0.05, 0.25, 1] }} style={{ pointerEvents: stepTransitionBusy ? 'none' : undefined }}>
             
             {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
@@ -1605,48 +1455,43 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {effectiveStep <= 4 && (
-        <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom,8px))] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 lg:hidden border border-white/20 bg-deep-forest/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 flex items-center justify-between gap-3 text-white">
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1.5 microcopy-12-upper text-stone-300 font-semibold uppercase tracking-wider truncate">
-              <span>{effectiveState.guests} pax</span>
-              <span>•</span>
-              <span className="truncate">{getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}</span>
+        <div className="customer-order-action lg:hidden">
+          <div className="customer-order-action-inner">
+            <div className="customer-order-action-summary" aria-live="polite">
+              <span>{tText('EVENT SUMMARY', 'RINGKASAN MAJLIS')}</span>
+              <strong>{tText(`${effectiveState.guests} guests · ${effectiveState.mealTypes.length} meals`, `${effectiveState.guests} orang · ${effectiveState.mealTypes.length} sajian`)}</strong>
+              <small>{effectiveStep === 2
+                ? tText(`${effectiveState.dishes.length + effectiveState.veggies.length} items selected`, `${effectiveState.dishes.length + effectiveState.veggies.length} hidangan dipilih`)
+                : tText('Quotation pending', 'Menunggu sebut harga')}</small>
             </div>
-            <div className="flex items-baseline gap-1.5" aria-live="polite">
-              <span className="text-sm font-extrabold text-[var(--color-sunshine-cta)] tracking-wide">
-                {effectiveStep === 2
-                  ? tText(`${effectiveState.dishes.length + effectiveState.veggies.length} items selected`, `${effectiveState.dishes.length + effectiveState.veggies.length} hidangan dipilih`)
-                  : tText('Quotation Pending', 'Menunggu Sebut Harga')}
-              </span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {effectiveStep < 4 ? (
-              <Button
-                onClick={() => handleStepNext(effectiveStep)}
-                disabled={stepTransitionBusy}
-                className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
-              >
-                <span>{tText('Next', 'Seterusnya')}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleOrderSubmission}
-                disabled={isSubmitting}
-                className="bg-crisp-carrot hover:bg-crisp-carrot/90 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-crisp flex items-center gap-1 cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <span>{tText('Submit', 'Hantar')}</span>
-                    <Check className="w-3.5 h-3.5" />
-                  </>
-                )}
-              </Button>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {effectiveStep < 4 ? (
+                <Button
+                  onClick={() => handleStepNext(effectiveStep)}
+                  disabled={stepTransitionBusy}
+                  className="customer-next-button flex items-center gap-2"
+                >
+                  <span>{tText('Next', 'Seterusnya')}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleOrderSubmission}
+                  disabled={isSubmitting}
+                  className="customer-next-button flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>{tText('Submit', 'Hantar')}</span>
+                      <Check className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

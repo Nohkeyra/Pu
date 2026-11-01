@@ -1,3 +1,4 @@
+import { useLanguage } from '@/context/LanguageContext';
 import { Star, Quote, MapPin } from 'lucide-react';
 
 interface ReviewCardProps {
@@ -10,6 +11,7 @@ interface ReviewCardProps {
 }
 
 export default function ReviewCard({ text, name, rating, date, tag, source = 'Google Review' }: ReviewCardProps) {
+  const { language } = useLanguage();
   return (
     <div className="group relative bg-white/95 dark:bg-card/60 backdrop-blur-md rounded-2xl p-7 min-h-[340px] flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 border border-amber-500/20 dark:border-white/10 shadow-[0_10px_30px_-5px_rgba(246,153,19,0.10)] hover:shadow-[0_22px_45px_-8px_rgba(233,98,18,0.18)] hover:border-amber-500/45 hover:bg-amber-500/[0.03]">
       <div>
@@ -65,7 +67,7 @@ export default function ReviewCard({ text, name, rating, date, tag, source = 'Go
             {name}
           </p>
           <span className="font-sans font-semibold text-xs text-deep-forest/75 dark:text-stone-300 uppercase tracking-wider block">
-            Verified Google Local Guide
+            {language === 'bm' ? 'Petikan ulasan tersimpan' : 'Saved review excerpt'}
           </span>
         </div>
       </div>

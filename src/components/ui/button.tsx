@@ -22,9 +22,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[var(--color-sunshine-cta)] text-white hover:bg-[color-mix(in_srgb,var(--color-sunshine-cta)_88%,black)] shadow-xs hover:shadow-md",
+          "bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:bg-[var(--color-sunshine-cta-hover)] active:bg-[var(--color-sunshine-cta-press)] shadow-xs hover:shadow-md",
         default:
-          "bg-[var(--color-sunshine-cta)] text-white hover:bg-[color-mix(in_srgb,var(--color-sunshine-cta)_88%,black)] shadow-xs hover:shadow-md",
+          "bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:bg-[var(--color-sunshine-cta-hover)] active:bg-[var(--color-sunshine-cta-press)] shadow-xs hover:shadow-md",
         secondary:
           "bg-[var(--color-surface-muted)] text-[var(--color-text)] border border-[var(--color-border)] hover:bg-[var(--color-surface)] shadow-xs",
         ghost:

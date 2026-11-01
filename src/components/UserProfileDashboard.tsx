@@ -1,10 +1,11 @@
-import { useState, useEffect, useId, Suspense, type CSSProperties } from 'react';
+import { useState, useEffect, useId, useRef, useCallback, Suspense, type CSSProperties } from 'react';
 import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
+import WawasanLoader from '@/components/WawasanLoader';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { 
   User as UserIcon, 
@@ -50,6 +51,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState(false);
+  const [ordersRetryKey, setOrdersRetryKey] = useState(0);
+  const ordersOwnerRef = useRef<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'locations' | 'preferences'>('orders');
 
@@ -88,11 +92,12 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
-  const fetchUserProfile = async (user: User) => {
+  const fetchUserProfile = useCallback(async (user: User) => {
     setIsLoadingProfile(true);
     try {
       const docRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(docRef);
+      if (auth.currentUser?.uid !== user.uid) return;
       if (docSnap.exists()) {
         const data = docSnap.data() as UserProfile;
         setProfile(data);
@@ -114,53 +119,66 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     } catch (err) {
       console.error('Error fetching user profile:', err);
     } finally {
-      setIsLoadingProfile(false);
+      if (auth.currentUser?.uid === user.uid) setIsLoadingProfile(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let disposed = false;
+    let revision = 0;
     let unsubscribeOrders: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      const requestRevision = ++revision;
+      unsubscribeOrders?.();
+      unsubscribeOrders = undefined;
       setCurrentUser(user);
+      setOrdersError(false);
       if (user) {
+        if (ordersOwnerRef.current !== user.uid) {
+          setOrders([]);
+          setProfile(null);
+          setSavedLocations([]);
+          ordersOwnerRef.current = user.uid;
+        }
         setIsLoadingOrders(true);
         await fetchUserProfile(user);
-        
+        if (disposed || requestRevision !== revision) return;
+
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
         unsubscribeOrders = onSnapshot(q, (querySnapshot) => {
+          if (disposed || requestRevision !== revision) return;
           const fetchedOrders: Order[] = [];
           querySnapshot.forEach((docSnap) => {
             const data = docSnap.data() as Order;
-            if (!data.deletedByUser) {
-              fetchedOrders.push({ id: docSnap.id, ...data });
-            }
+            if (!data.deletedByUser) fetchedOrders.push({ ...data, id: docSnap.id });
           });
           fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
           setOrders(fetchedOrders);
+          setOrdersError(false);
           setIsLoadingOrders(false);
         }, (err) => {
+          if (disposed || requestRevision !== revision) return;
           console.error('Error fetching orders in realtime:', err);
+          setOrdersError(true);
           setIsLoadingOrders(false);
         });
       } else {
+        ordersOwnerRef.current = null;
         setProfile(null);
         setOrders([]);
         setSavedLocations([]);
-        if (unsubscribeOrders) {
-          unsubscribeOrders();
-          unsubscribeOrders = undefined;
-        }
+        setIsLoadingOrders(false);
       }
     });
 
     return () => {
+      disposed = true;
+      revision += 1;
       unsubscribeAuth();
-      if (unsubscribeOrders) {
-        unsubscribeOrders();
-      }
+      unsubscribeOrders?.();
     };
-  }, []);
+  }, [fetchUserProfile, ordersRetryKey]);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
@@ -596,28 +614,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         }}
       >
         <div className="relative overflow-hidden w-20 h-20 sm:w-24 sm:h-24 rounded-b-[2rem] bg-amber-500/10 shadow-lg border-b border-l border-r border-[var(--color-sunshine-cta)]/30 flex items-end justify-center backdrop-blur-md pb-2">
-          <motion.img 
-            src={getAssetUrl('/assets/brand/pak_usop.png')}
-            alt="Pak Usop"
-            className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md origin-bottom"
-            animate={{
-              scale: isRefreshing ? [1, 1.1, 1] : 1,
-              rotate: isRefreshing ? [-5, 5, -5] : 0,
-            }}
-            transition={isRefreshing ? { repeat: Infinity, duration: 0.8, ease: "easeInOut" } : {}}
-            onError={(e) => {
-              // Fallback to chef hat icon if image isn't placed yet
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).parentElement?.classList.add('pak-usop-fallback');
-            }}
-          />
-          {/* Fallback text if image doesn't exist */}
-          <div className="pak-usop-text-fallback hidden absolute bottom-3 text-xs font-black text-amber-600 uppercase tracking-widest text-center w-full">
-            {isRefreshing ? 'Refreshing...' : 'Pull!'}
-          </div>
-          <style>{`
-            .pak-usop-fallback .pak-usop-text-fallback { display: block !important; }
-          `}</style>
+          <WawasanLoader size={64} />
+          <span className="sr-only">{isRefreshing ? t('Refreshing', 'Memuat semula') : t('Pull to refresh', 'Tarik untuk muat semula')}</span>
         </div>
       </motion.div>
 
@@ -696,7 +694,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <p>{t('YOUR SPACE WITH WAWASAN', 'RUANG ANDA BERSAMA WAWASAN')}</p>
           <h3>{t('Orders in order.', 'Tempahan teratur.')}<br />{t('The same Wawasan flavour.', 'Rasa tetap Wawasan.')}</h3>
           <dl className="profile-summary-counts">
-            <div><dt>{isLoadingOrders ? '—' : orders.length}</dt><dd>{t('orders', 'tempahan')}</dd></div>
+            <div><dt>{isLoadingOrders || ordersError ? '—' : orders.length}</dt><dd>{t('orders', 'tempahan')}</dd></div>
             <div><dt>{isLoadingProfile ? '—' : savedLocations.length}</dt><dd>{t('saved locations', 'lokasi disimpan')}</dd></div>
           </dl>
         </section>
@@ -724,6 +722,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           <ProfileOrdersTab
             orders={orders}
             isLoadingOrders={isLoadingOrders}
+            ordersError={ordersError}
+            onRetryOrders={() => setOrdersRetryKey(value => value + 1)}
+            language={language}
             selectedOrders={selectedOrders}
             isSelectMode={isSelectMode}
             setIsSelectMode={setIsSelectMode}

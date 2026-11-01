@@ -4,12 +4,13 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { getAccentTokens } from '@/lib/uiColors';
 import { normalizeStatusBarColor, needsDarkStatusBarIcons } from '@/lib/statusBarColors';
 import { getSoundProfile, setSoundProfile as persistSoundProfile, type SoundProfile } from '@/lib/haptics';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
-export const DEFAULT_MAIN_COLOR = '#a3310e'; // Wawasan High Contrast Terracotta (#a3310e > 7.2:1 contrast ratio)
+export const DEFAULT_MAIN_COLOR = '#a3310e'; // Wawasan terracotta; foreground is chosen by getAccentTokens.
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
 export const DEFAULT_CARD_SCALE = 1.0;        // 100% scale
 export const DEFAULT_BATIK_COLOR = '#E6C387';  // Kunyit Gold
@@ -300,11 +301,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     if (customMainColor) {
-      root.style.setProperty('--color-sunshine-cta', customMainColor);
-      root.style.setProperty('--color-sunshine-cta-bg', customMainColor);
-      root.style.setProperty('--color-sunshine-cta-hover', customMainColor);
-      root.style.setProperty('--primary', customMainColor);
-      root.style.setProperty('--ring', customMainColor);
+      Object.entries(getAccentTokens(customMainColor)).forEach(([property, value]) => {
+        root.style.setProperty(property, value);
+      });
       if (isLoaded) {
         setSecureItem('app_custom_main_color', customMainColor);
       }
@@ -384,11 +383,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setFontSizeState('base');
 
     const root = document.documentElement;
-    root.style.removeProperty('--color-sunshine-cta');
-    root.style.removeProperty('--color-sunshine-cta-bg');
-    root.style.removeProperty('--color-sunshine-cta-hover');
-    root.style.removeProperty('--primary');
-    root.style.removeProperty('--ring');
+    Object.entries(getAccentTokens(DEFAULT_MAIN_COLOR)).forEach(([property, value]) => {
+      root.style.setProperty(property, value);
+    });
     root.style.fontSize = `${DEFAULT_FONT_SIZE_PX}px`;
     root.style.setProperty('--app-card-scale', '1');
     root.style.setProperty('--menu-card-scale', '1');

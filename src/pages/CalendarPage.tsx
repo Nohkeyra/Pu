@@ -1,3 +1,4 @@
+import { OrderStatusBadge } from '@/components/OrderStatusBadge';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -1197,14 +1198,7 @@ export default function CalendarPage() {
                         #{selectedOrder.invoiceNo || selectedOrder.id?.slice(0, 8).toUpperCase()}
                       </p>
                     </div>
-                    <span className={cn(
-                      "text-xs font-semibold px-2 py-0.5 rounded-full capitalize",
-                      selectedOrder.status === 'approved' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-                      selectedOrder.status === 'pending' && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                      selectedOrder.status === 'billed' && "bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                    )}>
-                      {selectedOrder.status}
-                    </span>
+                    <OrderStatusBadge status={selectedOrder.status} language={language} />
                   </div>
 
                   {/* Details */}
@@ -1316,15 +1310,7 @@ export default function CalendarPage() {
                       {tl('Quick Actions', 'Tindakan Pantas')}: #{quickActionEvent?.invoiceNo || quickActionEvent?.id?.slice(0, 8).toUpperCase()}
                     </DialogTitle>
                     {quickActionEvent && (
-                      <span className={cn(
-                        "text-xs font-extrabold px-2.5 py-0.5 rounded-full capitalize",
-                        quickActionEvent.status === 'approved' && "bg-emerald-500 text-white",
-                        quickActionEvent.status === 'pending' && "bg-amber-500 text-white",
-                        quickActionEvent.status === 'billed' && "bg-blue-600 text-white",
-                        (quickActionEvent.status as string) === 'completed' && "bg-stone-600 text-white"
-                      )}>
-                        {quickActionEvent.status}
-                      </span>
+                      <OrderStatusBadge status={quickActionEvent.status} language={language} />
                     )}
                   </div>
                   <DialogDescription className="text-stone-500 font-medium">

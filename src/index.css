@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @import "../styles.css";
+@import "./brand-fonts.css";
 
 /* Tailwind v4: restore v3 `darkMode: ["class"]` behaviour (dark: follows .dark, not OS setting) */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -565,23 +566,23 @@
    * ---------------------------------------------------------------- */
   .btn-cta {
     background-color: var(--color-sunshine-cta-bg);
-    color: #ffffff !important;
+    color: var(--color-sunshine-cta-fg) !important;
     border: 1px solid transparent;
     box-shadow: 0 6px 14px -2px rgba(163, 49, 14, 0.35);
     transition: background-color 0.18s ease, transform 0.18s ease, color 0.18s ease;
   }
   .btn-cta:hover {
     background-color: var(--color-sunshine-cta-hover);
-    color: #ffffff !important;
+    color: var(--color-sunshine-cta-fg) !important;
   }
   .btn-cta:active {
     background-color: var(--color-sunshine-cta-press);
-    color: #ffffff !important;
+    color: var(--color-sunshine-cta-fg) !important;
     transform: translateY(1px);
   }
   .dark .btn-cta {
     background-color: var(--color-sunshine-cta-bg);
-    color: #ffffff !important;
+    color: var(--color-sunshine-cta-fg) !important;
     box-shadow: 0 6px 14px -2px rgba(163, 49, 14, 0.40);
   }
 

@@ -7,16 +7,16 @@
   --rw-cream: #FAF7F1;
 
   /* Semantic */
-  --color-bg: #FFFFFF;
-  --color-surface: #FAF7F1;
-  --color-surface-muted: #F2EDE3;
-  --color-text: #1A1816;
-  --color-text-soft: #6B6560;
-  --color-text-muted: #9A938A;
+  --color-bg: hsl(var(--background));
+  --color-surface: hsl(var(--card));
+  --color-surface-muted: hsl(var(--muted));
+  --color-text: hsl(var(--foreground));
+  --color-text-soft: hsl(var(--muted-foreground));
+  --color-text-muted: hsl(var(--muted-foreground));
   --color-accent: var(--color-sunshine-cta);
   --color-accent-deep: #725014;
-  --color-border: #E8E2D6;
-  --color-border-strong: #D4CCBC;
+  --color-border: hsl(var(--border));
+  --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
 
   /* Status */
   --color-success: #2E7D4F;
@@ -31,18 +31,18 @@
 
 /* Dark mode */
 .dark {
-  --dark-bg: #1A1816;
-  --dark-surface: #242220;
-  --dark-text: #F5F1E8;
-  --dark-border: #3A3634;
+  --dark-bg: hsl(var(--background));
+  --dark-surface: hsl(var(--card));
+  --dark-text: hsl(var(--foreground));
+  --dark-border: hsl(var(--border));
 
   /* Semantic overrides in dark mode */
   --color-bg: var(--dark-bg);
   --color-surface: var(--dark-surface);
-  --color-surface-muted: #2E2A27;
+  --color-surface-muted: hsl(var(--muted));
   --color-text: var(--dark-text);
-  --color-text-soft: #B8B2A8;
-  --color-text-muted: #8C857D;
+  --color-text-soft: hsl(var(--muted-foreground));
+  --color-text-muted: hsl(var(--muted-foreground));
   --color-border: var(--dark-border);
-  --color-border-strong: #4F4A47;
+  --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
 }

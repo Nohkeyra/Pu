@@ -9,8 +9,8 @@ import { ColorSwatch } from '@/components/ui/color-swatch';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/TransparentLogo';
+import { CustomerPageHeader } from '@/components/CustomerPageHeader';
 import {
-  ArrowLeft,
   Globe,
   Bell,
   Cpu,
@@ -80,18 +80,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 
-function BrandMark() {
-  return (
-    <div className="h-9 w-9 flex items-center justify-center">
-      <TransparentLogo
-        src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
-        alt="Restoran Wawasan Logo"
-        className="w-full h-full object-contain"
-      />
-    </div>
-  );
-}
-
 interface SettingsRowProps {
   icon: React.ElementType;
   iconBg?: string;
@@ -113,22 +101,22 @@ function SettingsRow({
 }: SettingsRowProps) {
   return (
     <div
-      className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-3.5 px-4 sm:px-5 transition-colors ${
+      className={`settings-row flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-3.5 px-4 sm:px-5 transition-colors ${
         !isLast ? 'border-b border-stone-200/70 dark:border-white/5' : ''
       }`}
     >
-      <div className="flex min-w-0 flex-[1_1_10rem] items-center gap-3.5">
+      <div className="settings-row-copy flex min-w-0 flex-[1_1_10rem] items-center gap-3.5">
         <div
           className={`w-9 h-9 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shrink-0 shadow-2xs`}
         >
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0">
-          <span className="block break-words text-sm font-semibold leading-snug text-deep-forest dark:text-stone-100">{title}</span>
-          {description && <span className="mt-1 block text-xs leading-snug text-stone-600 dark:text-stone-300">{description}</span>}
+          <span className="settings-row-title block break-words text-sm font-semibold leading-snug text-deep-forest dark:text-stone-100">{title}</span>
+          {description && <span className="settings-row-description mt-1 block text-xs leading-snug text-stone-600 dark:text-stone-300">{description}</span>}
         </div>
       </div>
-      <div className="ml-auto flex max-w-full shrink-0 items-center">{action}</div>
+      <div className="settings-row-action ml-auto flex max-w-full shrink-0 items-center">{action}</div>
     </div>
   );
 }
@@ -143,13 +131,13 @@ function SettingsSection({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 space-y-2">
+    <section id={id} className="settings-section space-y-2">
       {title && (
         <h2 className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
           {title}
         </h2>
       )}
-      <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xs overflow-hidden">
+      <div className="settings-section-card bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-2xl shadow-xs overflow-hidden">
         {children}
       </div>
     </section>
@@ -214,6 +202,13 @@ export default function SettingsPage() {
   const [adminSubTab, setAdminSubTab] = useState<'appearance' | 'updates' | 'diagnostics'>('appearance');
   const [previewUpdateConfig, setPreviewUpdateConfig] = useState<AppVersionConfig | null>(null);
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [activeSettingsSection, setActiveSettingsSection] = useState('settings-account');
+
+  const jumpToSettings = (id: string) => {
+    setActiveSettingsSection(id);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   // Measure cache size
   const calculateCacheSize = useCallback(async () => {
@@ -828,232 +823,34 @@ export default function SettingsPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-cream dark:bg-background pb-28 sm:pb-32 relative">
-        {/* Top Header */}
-        <header className="glass-header fixed top-0 left-0 right-0 z-50 pt-[var(--sat)]">
-          <div className="max-w-3xl mx-auto flex items-center justify-between px-4 sm:px-6 min-h-[58px] sm:min-h-[64px]">
-            {/**
-             * DESIGN-SYSTEM-EXCEPTION: Brand Nav Wrapper
-             * Semantic identity header & logo touch target navigating to /home.
-             * Not a standard action button; exempt from <Button> primitive migration.
-             */}
-            <button
-              type="button"
-              onClick={() => navigate('/home', { replace: true })}
-              className="touch-target-row flex items-center gap-2.5 group text-left"
-              aria-label={language === 'bm' ? 'Pergi ke halaman utama' : 'Go to home'}
-            >
-              <BrandMark />
-              <div>
-                <span className="font-display font-bold text-lg page-header-text leading-tight block">
-                  Restoran Wawasan
-                </span>
-                <span className="block text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-sunshine-cta)] leading-none mt-0.5">
-                  Pak Usop
-                </span>
-              </div>
-            </button>
+      <div className="customer-page customer-settings-page relative">
+        <CustomerPageHeader
+          title={language === 'bm' ? 'Tetapan' : 'Settings'}
+          subtitle={language === 'bm' ? 'Pilihan aplikasi anda' : 'Make the app yours'}
+          onBack={() => {
+            if (window.history.state?.idx > 0) navigate(-1);
+            else navigate('/home', { replace: true });
+          }}
+          actions={[
+            { label: language === 'bm' ? 'Akaun anda' : 'Your account', onSelect: () => jumpToSettings('settings-account') },
+            { label: language === 'bm' ? 'Soalan lazim' : 'Frequently asked questions', onSelect: () => setFaqModalOpen(true) },
+            { label: language === 'bm' ? 'Halaman utama' : 'Home', onSelect: () => navigate('/home') },
+          ]}
+        />
 
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                await triggerLightImpact();
-                navigate(-1);
-              }}
-              className="touch-target rounded-full h-9 px-3.5 text-stone-600 dark:text-stone-300 hover:text-deep-forest dark:hover:text-white font-semibold text-xs"
-            >
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              {language === 'bm' ? 'Kembali' : 'Back'}
-            </Button>
-          </div>
-        </header>
-
-        {/* Content Container */}
-        <div
-          className="pt-24 sm:pt-28 max-w-2xl mx-auto px-4 sm:px-6 space-y-6"
-          style={{ paddingTop: 'calc(76px + var(--sat, 0px))' }}
-        >
-          {/* Page Heading */}
-          <div className="px-1 pt-1 pb-1">
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-deep-forest dark:text-white tracking-tight">
-              {language === 'bm' ? 'Tetapan' : 'Settings'}
-            </h1>
-            <p className="text-stone-500 dark:text-stone-400 text-xs sm:text-sm mt-0.5">
-              {language === 'bm'
-                ? 'Urus akaun, paparan dan pilihan aplikasi anda.'
-                : 'Manage your account, appearance and app preferences.'}
-            </p>
-          </div>
-
-          <nav aria-label={language === 'bm' ? 'Pergi ke bahagian tetapan' : 'Jump to settings section'} className="flex flex-wrap gap-2 px-1">
+        <div className="customer-content customer-settings-content">
+          <nav aria-label={language === 'bm' ? 'Pergi ke bahagian tetapan' : 'Jump to settings section'} className="customer-settings-tabs">
             {[
               { id: 'settings-account', label: language === 'bm' ? 'Akaun' : 'Account' },
               { id: 'settings-appearance', label: language === 'bm' ? 'Paparan' : 'Appearance' },
               { id: 'settings-notifications', label: language === 'bm' ? 'Notifikasi' : 'Notifications' },
               { id: 'settings-support', label: language === 'bm' ? 'Sokongan' : 'Support' },
             ].map(({ id, label }) => (
-              <button key={id} type="button" onClick={() => {
-                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-              }} className="min-h-11 rounded-xl border border-stone-200 bg-white px-3 text-xs font-semibold text-deep-forest shadow-xs transition-colors hover:border-amber-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-white/10 dark:bg-card dark:text-stone-100">
+              <button key={id} type="button" onClick={() => jumpToSettings(id)} aria-current={activeSettingsSection === id ? 'true' : undefined}>
                 {label}
               </button>
             ))}
           </nav>
-
-          {/* ADMIN MANAGEMENT CARD (If Logged In) */}
-          {(isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)) && (
-            <div className="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-deep-forest dark:text-white">
-                      {language === 'bm' ? 'Kawalan Pentadbir' : 'Admin Controls'}
-                    </h2>
-                    <span className="text-xs text-stone-500 dark:text-stone-400">
-                      {language === 'bm' ? 'Penyesuaian UI & Diagnostik' : 'UI Customization & Diagnostics'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Sub Tab Segmented Control */}
-                <SegmentedControl
-                  value={adminSubTab}
-                  onValueChange={async (val) => {
-                    await triggerLightImpact();
-                    setAdminSubTab(val as 'appearance' | 'updates' | 'diagnostics');
-                  }}
-                  size="sm"
-                >
-                  <SegmentedControlItem value="appearance">
-                    <Palette className="w-3.5 h-3.5 inline mr-1" />
-                    UI
-                  </SegmentedControlItem>
-                  <SegmentedControlItem value="updates">
-                    <Radio className="w-3.5 h-3.5 inline mr-1" />
-                    Updates
-                  </SegmentedControlItem>
-                  <SegmentedControlItem value="diagnostics">
-                    <Terminal className="w-3.5 h-3.5 inline mr-1" />
-                    Diag
-                  </SegmentedControlItem>
-                </SegmentedControl>
-              </div>
-
-              {/* Tab Content 1: Appearance Customizer */}
-              {adminSubTab === 'appearance' && (
-                <div className="space-y-4 pt-2 border-t border-amber-500/20">
-                  {/* Theme Accent Color */}
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs font-semibold text-deep-forest dark:text-stone-200 flex items-center gap-1.5">
-                      <Paintbrush className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      {language === 'bm' ? 'Warna Aksen' : 'Accent Color'}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {[
-                        { name: 'Terracotta', hex: '#a3310e' },
-                        { name: 'Gold', hex: '#f69913' },
-                        { name: 'Forest', hex: '#0c453c' },
-                        { name: 'Carrot', hex: '#e96212' },
-                        { name: 'Tomato', hex: '#e03f14' },
-                      ].map((preset) => (
-                        <ColorSwatch
-                          key={preset.hex}
-                          value={preset.hex}
-                          title={preset.name}
-                          selected={customMainColor.toLowerCase() === preset.hex.toLowerCase()}
-                          onSelect={async (hex) => {
-                            await triggerLightImpact();
-                            setCustomMainColor(hex);
-                          }}
-                        />
-                      ))}
-                      <div className="relative ml-1">
-                        <input
-                          type="color"
-                          value={/^#[0-9A-Fa-f]{6}$/.test(customMainColor) ? customMainColor.toLowerCase() : '#000000'}
-                          onChange={(e) => {
-                            setCustomMainColor(e.target.value.toUpperCase());
-                          }}
-                          className="w-6 h-6 rounded-full cursor-pointer border border-border p-0 bg-transparent overflow-hidden"
-                          aria-label="Custom color"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reset Defaults */}
-                  <div className="flex justify-end pt-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={async () => {
-                        await triggerMediumImpact();
-                        await resetUiToDefault();
-                        toast({
-                          title: language === 'bm' ? 'Tetapan Diset Semula' : 'Reset Complete',
-                          description: language === 'bm' ? 'Warna dan saiz telah kembali ke asal.' : 'Theme parameters restored to default.',
-                          variant: 'success'
-                        });
-                      }}
-                      className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1 p-0 h-auto"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      {language === 'bm' ? 'Seta Semula' : 'Reset to Default'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab Content 2: In-App Updates */}
-              {adminSubTab === 'updates' && (
-                <div className="pt-2 border-t border-amber-500/20">
-                  <AdminUpdatesTab
-                    adminToken={adminToken}
-                    onPreviewModal={(config) => setPreviewUpdateConfig(config)}
-                  />
-                </div>
-              )}
-
-              {/* Tab Content 3: System Diagnostics */}
-              {adminSubTab === 'diagnostics' && (
-                <div className="pt-2 border-t border-amber-500/20">
-                  <AdminDiagnosticsTab
-                    diagFirebase={diagFirebase}
-                    diagFcm={diagFcm}
-                    diagCalendar={diagCalendar}
-                    diagPdf={diagPdf}
-                    diagNative={diagNative}
-                    diagEmail={diagEmail}
-                    diagTests={diagTests}
-                    testEmailAddress={testEmailAddress}
-                    isSendingTestEmail={isSendingTestEmail}
-                    testPushTitle={testPushTitle}
-                    testPushBody={testPushBody}
-                    isSendingTestPush={isSendingTestPush}
-                    erudaEnabled={erudaEnabled}
-                    runAllDiagnostics={runAllDiagnostics}
-                    runFirebaseDiag={runFirebaseDiag}
-                    runFcmDiag={runFcmDiag}
-                    runCalendarDiag={runCalendarDiag}
-                    runPdfDiag={runPdfDiag}
-                    runNativeDiag={runNativeDiag}
-                    runSendTestEmail={runSendTestEmail}
-                    runSendTestPush={runSendTestPush}
-                    runFeatureTest={runFeatureTest}
-                    toggleEruda={toggleEruda}
-                    setTestEmailAddress={setTestEmailAddress}
-                    setTestPushTitle={setTestPushTitle}
-                    setTestPushBody={setTestPushBody}
-                    setDiagTests={setDiagTests}
-                  />
-                </div>
-              )}
-            </div>
-          )}
 
           {/* SECTION 1: ACCOUNT & SECURITY */}
           <SettingsSection id="settings-account" title={language === 'bm' ? 'Akaun & Keselamatan' : 'Account & Security'}>
@@ -1249,71 +1046,17 @@ export default function SettingsPage() {
                 />
               </>
             ) : (
-                <div className="p-4 sm:p-5 text-center">
-                   <p className="text-sm text-stone-600 dark:text-stone-400">
-                      {language === 'bm' ? 'Log masuk untuk mengurus akaun' : 'Sign in to manage account'}
-                   </p>
+                <div className="settings-row flex items-center gap-3">
+                  <UserCircle className="h-8 w-8 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="settings-row-title font-semibold">{language === 'bm' ? 'Semuanya dalam satu akaun' : 'Everything in one account'}</p>
+                    <p className="settings-row-description mt-1">{language === 'bm' ? 'Profil dan tempahan lebih mudah diurus.' : 'Manage your profile and orders in one place.'}</p>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" aria-label={language === 'bm' ? 'Log masuk' : 'Sign in'} onClick={() => navigate('/login')}>
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </Button>
                 </div>
             )}
-          </SettingsSection>
-
-          {/* SECTION 2: PRIVACY & DATA */}
-          <SettingsSection title={language === 'bm' ? 'Privasi & Data' : 'Privacy & Data'}>
-            <SettingsRow
-              icon={ShieldCheck}
-              iconBg="bg-blue-500/10"
-              iconColor="text-blue-600 dark:text-blue-400"
-              title={language === 'bm' ? 'Analitik Penggunaan' : 'Usage Analytics'}
-              isLast={true}
-              action={
-                <Switch
-                  checked={!developerMode}
-                  onCheckedChange={async (checked) => {
-                    await triggerLightImpact();
-                    setDeveloperMode(!checked);
-                  }}
-                />
-              }
-            />
-          </SettingsSection>
-
-          {/* SECTION 3: SUPPORT */}
-          <SettingsSection id="settings-support" title={language === 'bm' ? 'Sokongan' : 'Support'}>
-            <SettingsRow
-              icon={AlertTriangle}
-              iconBg="bg-amber-500/10"
-              iconColor="text-amber-600 dark:text-amber-400"
-              title={language === 'bm' ? 'Soalan Lazim (FAQ)' : 'FAQ'}
-              action={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
-                  onClick={() => setFaqModalOpen(true)}
-                >
-                  {language === 'bm' ? 'Buka' : 'Open'}
-                </Button>
-              }
-            />
-            <SettingsRow
-              icon={Smartphone}
-              iconBg="bg-emerald-500/10"
-              iconColor="text-emerald-600 dark:text-emerald-400"
-              title={language === 'bm' ? 'Hubungi Kami' : 'Contact Support'}
-              isLast={true}
-              action={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
-                  onClick={() => {
-                     window.open(`https://wa.me/${RESTORAN_CONTACT.whatsappRaw}`, '_blank', 'noopener,noreferrer');
-                  }}
-                >
-                  {language === 'bm' ? 'WhatsApp' : 'WhatsApp'}
-                </Button>
-              }
-            />
           </SettingsSection>
 
           {/* SECTION 4: PREFERENCES */}
@@ -1423,6 +1166,66 @@ export default function SettingsPage() {
             </SettingsSection>
             <DeviceOsSettingsCard />
           </div>
+
+
+          {/* SECTION 2: PRIVACY & DATA */}
+          <SettingsSection title={language === 'bm' ? 'Privasi & Data' : 'Privacy & Data'}>
+            <SettingsRow
+              icon={ShieldCheck}
+              iconBg="bg-blue-500/10"
+              iconColor="text-blue-600 dark:text-blue-400"
+              title={language === 'bm' ? 'Analitik Penggunaan' : 'Usage Analytics'}
+              isLast={true}
+              action={
+                <Switch
+                  checked={!developerMode}
+                  onCheckedChange={async (checked) => {
+                    await triggerLightImpact();
+                    setDeveloperMode(!checked);
+                  }}
+                />
+              }
+            />
+          </SettingsSection>
+
+          {/* SECTION 3: SUPPORT */}
+          <SettingsSection id="settings-support" title={language === 'bm' ? 'Sokongan' : 'Support'}>
+            <SettingsRow
+              icon={AlertTriangle}
+              iconBg="bg-amber-500/10"
+              iconColor="text-amber-600 dark:text-amber-400"
+              title={language === 'bm' ? 'Soalan Lazim (FAQ)' : 'FAQ'}
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
+                  onClick={() => setFaqModalOpen(true)}
+                >
+                  {language === 'bm' ? 'Buka' : 'Open'}
+                </Button>
+              }
+            />
+            <SettingsRow
+              icon={Smartphone}
+              iconBg="bg-emerald-500/10"
+              iconColor="text-emerald-600 dark:text-emerald-400"
+              title={language === 'bm' ? 'Hubungi Kami' : 'Contact Support'}
+              isLast={true}
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs font-bold text-stone-700 dark:text-stone-300"
+                  onClick={() => {
+                     window.open(`https://wa.me/${RESTORAN_CONTACT.whatsappRaw}`, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  {language === 'bm' ? 'WhatsApp' : 'WhatsApp'}
+                </Button>
+              }
+            />
+          </SettingsSection>
 
           {/* SECTION 6: HAPTICS & AUDIO */}
           <SettingsSection title={language === 'bm' ? 'Maklum Balas Sentuhan & Bunyi' : 'Haptics & Audio'}>
@@ -1717,6 +1520,161 @@ export default function SettingsPage() {
             </>
           )}
 
+          {/* ADMIN MANAGEMENT CARD (If Logged In) */}
+          {(isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)) && (
+            <div className="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-deep-forest dark:text-white">
+                      {language === 'bm' ? 'Kawalan Pentadbir' : 'Admin Controls'}
+                    </h2>
+                    <span className="text-xs text-stone-500 dark:text-stone-400">
+                      {language === 'bm' ? 'Penyesuaian UI & Diagnostik' : 'UI Customization & Diagnostics'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sub Tab Segmented Control */}
+                <SegmentedControl
+                  value={adminSubTab}
+                  onValueChange={async (val) => {
+                    await triggerLightImpact();
+                    setAdminSubTab(val as 'appearance' | 'updates' | 'diagnostics');
+                  }}
+                  size="sm"
+                >
+                  <SegmentedControlItem value="appearance">
+                    <Palette className="w-3.5 h-3.5 inline mr-1" />
+                    UI
+                  </SegmentedControlItem>
+                  <SegmentedControlItem value="updates">
+                    <Radio className="w-3.5 h-3.5 inline mr-1" />
+                    Updates
+                  </SegmentedControlItem>
+                  <SegmentedControlItem value="diagnostics">
+                    <Terminal className="w-3.5 h-3.5 inline mr-1" />
+                    Diag
+                  </SegmentedControlItem>
+                </SegmentedControl>
+              </div>
+
+              {/* Tab Content 1: Appearance Customizer */}
+              {adminSubTab === 'appearance' && (
+                <div className="space-y-4 pt-2 border-t border-amber-500/20">
+                  {/* Theme Accent Color */}
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold text-deep-forest dark:text-stone-200 flex items-center gap-1.5">
+                      <Paintbrush className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      {language === 'bm' ? 'Warna Aksen' : 'Accent Color'}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {[
+                        { name: 'Terracotta', hex: '#a3310e' },
+                        { name: 'Gold', hex: '#f69913' },
+                        { name: 'Forest', hex: '#0c453c' },
+                        { name: 'Carrot', hex: '#e96212' },
+                        { name: 'Tomato', hex: '#e03f14' },
+                      ].map((preset) => (
+                        <ColorSwatch
+                          key={preset.hex}
+                          value={preset.hex}
+                          title={preset.name}
+                          selected={customMainColor.toLowerCase() === preset.hex.toLowerCase()}
+                          onSelect={async (hex) => {
+                            await triggerLightImpact();
+                            setCustomMainColor(hex);
+                          }}
+                        />
+                      ))}
+                      <div className="relative ml-1">
+                        <input
+                          type="color"
+                          value={/^#[0-9A-Fa-f]{6}$/.test(customMainColor) ? customMainColor.toLowerCase() : '#000000'}
+                          onChange={(e) => {
+                            setCustomMainColor(e.target.value.toUpperCase());
+                          }}
+                          className="w-6 h-6 rounded-full cursor-pointer border border-border p-0 bg-transparent overflow-hidden"
+                          aria-label="Custom color"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reset Defaults */}
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        await triggerMediumImpact();
+                        await resetUiToDefault();
+                        toast({
+                          title: language === 'bm' ? 'Tetapan Diset Semula' : 'Reset Complete',
+                          description: language === 'bm' ? 'Warna dan saiz telah kembali ke asal.' : 'Theme parameters restored to default.',
+                          variant: 'success'
+                        });
+                      }}
+                      className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1 p-0 h-auto"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      {language === 'bm' ? 'Seta Semula' : 'Reset to Default'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content 2: In-App Updates */}
+              {adminSubTab === 'updates' && (
+                <div className="pt-2 border-t border-amber-500/20">
+                  <AdminUpdatesTab
+                    adminToken={adminToken}
+                    onPreviewModal={(config) => setPreviewUpdateConfig(config)}
+                  />
+                </div>
+              )}
+
+              {/* Tab Content 3: System Diagnostics */}
+              {adminSubTab === 'diagnostics' && (
+                <div className="pt-2 border-t border-amber-500/20">
+                  <AdminDiagnosticsTab
+                    diagFirebase={diagFirebase}
+                    diagFcm={diagFcm}
+                    diagCalendar={diagCalendar}
+                    diagPdf={diagPdf}
+                    diagNative={diagNative}
+                    diagEmail={diagEmail}
+                    diagTests={diagTests}
+                    testEmailAddress={testEmailAddress}
+                    isSendingTestEmail={isSendingTestEmail}
+                    testPushTitle={testPushTitle}
+                    testPushBody={testPushBody}
+                    isSendingTestPush={isSendingTestPush}
+                    erudaEnabled={erudaEnabled}
+                    runAllDiagnostics={runAllDiagnostics}
+                    runFirebaseDiag={runFirebaseDiag}
+                    runFcmDiag={runFcmDiag}
+                    runCalendarDiag={runCalendarDiag}
+                    runPdfDiag={runPdfDiag}
+                    runNativeDiag={runNativeDiag}
+                    runSendTestEmail={runSendTestEmail}
+                    runSendTestPush={runSendTestPush}
+                    runFeatureTest={runFeatureTest}
+                    toggleEruda={toggleEruda}
+                    setTestEmailAddress={setTestEmailAddress}
+                    setTestPushTitle={setTestPushTitle}
+                    setTestPushBody={setTestPushBody}
+                    setDiagTests={setDiagTests}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+
           {/* SECTION 9: APP INFO & VERSION */}
           <div className="pt-2 pb-6 flex flex-col items-center justify-center text-center space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 shadow-2xs flex items-center justify-center p-2.5">
@@ -1821,7 +1779,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 onClick={() => setPrivacyModalOpen(false)}
-                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 rounded-xl text-xs h-9"
+                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:brightness-105 rounded-xl text-xs h-9"
               >
                 {language === 'bm' ? 'Faham & Tutup' : 'Understood'}
               </Button>
@@ -1894,7 +1852,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 onClick={() => setTermsModalOpen(false)}
-                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 rounded-xl text-xs h-9"
+                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:brightness-105 rounded-xl text-xs h-9"
               >
                 {language === 'bm' ? 'Tutup' : 'Close'}
               </Button>
@@ -1944,7 +1902,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 onClick={() => setLicensesModalOpen(false)}
-                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 rounded-xl text-xs h-9"
+                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:brightness-105 rounded-xl text-xs h-9"
               >
                 {language === 'bm' ? 'Tutup' : 'Close'}
               </Button>
@@ -2004,7 +1962,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 onClick={() => setFaqModalOpen(false)}
-                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-deep-forest hover:brightness-105 rounded-xl text-xs h-9"
+                className="w-full sm:w-auto font-bold bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:brightness-105 rounded-xl text-xs h-9"
               >
                 {language === 'bm' ? 'Tutup' : 'Close'}
               </Button>
@@ -2196,7 +2154,7 @@ export default function SettingsPage() {
                   setAdminProfileModalOpen(false);
                   navigate('/admin');
                 }}
-                className="rounded-xl text-xs font-bold bg-[var(--color-sunshine-cta)] text-charcoal hover:bg-[var(--color-sunshine-cta)]/90"
+                className="rounded-xl text-xs font-bold bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:bg-[var(--color-sunshine-cta)]/90"
               >
                 {language === 'bm' ? 'Buka Konsol Pentadbir' : 'Open Admin Console'}
               </Button>
