@@ -3,7 +3,7 @@ import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReviewCard from '@/components/ReviewCard';
 import { useCarousel } from '@/hooks/useCarousel';
 import { useLanguage } from '@/context/LanguageContext';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 
 const REVIEWS = [
   {
@@ -59,6 +59,7 @@ const REVIEWS = [
 
 const ReviewsSection = React.memo(() => {
   const { t, language } = useLanguage();
+  const reduceMotion = useReducedMotion();
   const [slidesToShow, setSlidesToShow] = useState(3);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ const ReviewsSection = React.memo(() => {
   } = useCarousel({
     totalSlides: REVIEWS.length,
     slidesToShow,
-    autoPlayInterval: 5000,
+    autoPlayInterval: reduceMotion ? 0 : 5000,
   });
 
   const headerVariants = {

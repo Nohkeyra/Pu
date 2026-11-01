@@ -1,132 +1,116 @@
-
 import React from 'react';
-import { motion, useScroll, useTransform, type Variants } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, UtensilsCrossed } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
-import { Batik3DMotion } from '../components/Batik3DMotion';
-import { getAssetUrl } from '../lib/utils';
+import { ArrowDown, ArrowUpRight, MapPin, UtensilsCrossed } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { MENU_ITEMS } from '@/constants/menu';
+import ResponsiveImage from '@/components/ResponsiveImage';
+import { getAssetUrl } from '@/lib/utils';
+
+const featuredDish = MENU_ITEMS.find((item) => item.id === 'nasi-campur')!;
+const featuredDrink = MENU_ITEMS.find((item) => item.id === 'teh-tarik')!;
 
 const HeroSection = React.memo(() => {
-  const { t } = useLanguage();
-  const { scrollY } = useScroll();
-  
-  // Direct linear scroll transforms for smooth native performance without physics spring lag
-  const y = useTransform(scrollY, [0, 800], [0, 160]);
-  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-  const scale = useTransform(scrollY, [0, 300], [1, 0.96]);
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
-      opacity: 1, 
-      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } 
-    }
-  };
+  const { t, language } = useLanguage();
+  const bm = language === 'bm';
+  const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative w-full overflow-hidden bg-deep-forest dark:bg-[#0c100e] pt-[calc(6rem+var(--sat,0px))] sm:pt-36 pb-[calc(6rem+var(--sab,0px))] sm:pb-28 min-h-[100dvh] flex flex-col justify-start sm:justify-center items-center">
-      {/* Cinematic Deep Dark Full-Bleed Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-deep-forest dark:bg-[#0c100e]">
-        {/* Batik Background - Restored authentic Malaysian heritage artwork with 3D tilt */}
-        <motion.div 
-          style={{ y, opacity, scale }} 
-          className="batik-fade-transition absolute inset-0 z-0 transform-gpu overflow-hidden"
-        >
-          <Batik3DMotion
-            mode="img"
-            src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')}
-            maxRotation={12}
-            imgClassName="opacity-40 sm:opacity-55 dark:opacity-30 dark:sm:opacity-42 contrast-[1.12] saturate-[1.18] dark:brightness-105 transition-opacity duration-700 pointer-events-none"
-          />
-        </motion.div>
-
-        {/* Dynamic Atmospheric Overlays: gentle framing that keeps text crystal-clear without drowning the batik */}
-        <div className="absolute inset-0 bg-gradient-to-b from-deep-forest/50 via-deep-forest/15 to-deep-forest/80 dark:from-[#0c100e]/60 dark:via-[#0c100e]/15 dark:to-[#0c100e]/85 z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#0c453c]/30 via-transparent to-amber-950/20 dark:from-[#101915]/50 dark:to-transparent z-0 pointer-events-none" />
-        {/* Soft center vignette to ensure foreground elements are crystal clear */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(10,28,24,0.6)_100%)] dark:bg-[radial-gradient(ellipse_at_center,transparent_25%,rgba(12,16,14,0.7)_100%)] z-0 pointer-events-none" />
-        
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 pattern-dots opacity-10 [mask-image:radial-gradient(circle_at_center,black_30%,transparent_90%)] pointer-events-none z-10" />
-        
-        {/* Bottom dissolving gradient seamlessly fading to page canvas */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-cream dark:from-[#0c100e] via-cream/60 dark:via-[#0c100e]/60 to-transparent z-10 pointer-events-none" />
-      </div>
-
-      {/* Static ambient radial glows - zero CPU frame overhead in Android APK */}
-      <div className="absolute top-[20%] left-[5%] w-[40vw] h-[40vw] max-w-[500px] rounded-full bg-amber-500/10 [filter:blur(80px)] pointer-events-none z-0" />
-      <div className="absolute bottom-[10%] right-[5%] w-[35vw] h-[35vw] max-w-[450px] rounded-full bg-[#e03f14]/10 [filter:blur(80px)] pointer-events-none z-0" />
-
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="content-container flex flex-col items-center text-center relative z-20 w-full pt-12 sm:pt-20 pb-8 sm:pb-12 px-4 sm:px-6"
-      >
-        {/* Unified Brand Headline */}
-        <motion.div variants={itemVariants} className="mb-4 sm:mb-6 max-w-5xl select-none">
-          <h1 
-            className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]"
+    <section className="landing-hero" aria-labelledby="landing-brand-title">
+      <div className="content-container">
+        <div className="landing-hero-frame">
+          <div
+            className="landing-hero-batik"
+            aria-hidden="true"
             style={{
-              textShadow: '0 4px 24px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.6)'
+              backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})`,
             }}
+          />
+          <motion.div
+            className="landing-hero-copy"
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
           >
-            {t('hero_title') || 'Restoran Wawasan'}
-          </h1>
-        </motion.div>
-        
-        {/* Refined Description */}
-        <motion.p 
-          variants={itemVariants}
-          className="text-sm sm:text-base md:text-xl text-amber-50 dark:text-[#ede5d8] max-w-[65ch] mx-auto font-medium mb-8 sm:mb-10 leading-relaxed bg-[#0a1c18]/90 dark:bg-[#0c100e]/90 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-white/15 dark:border-amber-500/20 shadow-2xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] transform-gpu"
-        >
-          {t('hero_description')}
-        </motion.p>
-        
-        {/* Action Cluster */}
-        <motion.div 
-          variants={itemVariants} 
-          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full sm:w-auto px-4 sm:px-0 max-w-md sm:max-w-none z-30 flex-wrap"
-        >
-          <a 
-            href="#menu" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta-hover)] text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,transform,box-shadow] duration-200 ease-out active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-xl shadow-[var(--color-sunshine-cta)]/25"
+            <p className="landing-hero-kicker">
+              <span />
+              {bm ? 'Dari Wawasan, dengan rasa.' : 'From Wawasan, with flavour.'}
+            </p>
+            <h1
+              id="landing-brand-title"
+              className="font-artistic text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7.5rem] text-white dark:text-[#fcf8f0] tracking-wide leading-[1.1] sm:leading-[1] text-balance drop-shadow-[0_4px_32px_rgba(0,0,0,0.95)]"
+              style={{ textShadow: '0 4px 24px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.6)' }}
+            >
+              {t('hero_title') || 'Restoran Wawasan'}
+            </h1>
+            <p className="landing-hero-description">{t('hero_description')}</p>
+            <div className="landing-hero-actions">
+              <Link to="/order" className="landing-button landing-button-primary">
+                <UtensilsCrossed size={18} aria-hidden="true" />
+                {t('order_catering_btn')}
+                <ArrowUpRight size={18} aria-hidden="true" />
+              </Link>
+              <a href="#menu" className="landing-button landing-button-outline">
+                {t('explore_menu_btn')}
+                <ArrowDown size={17} aria-hidden="true" />
+              </a>
+            </div>
+            <div className="landing-hero-location">
+              <MapPin size={15} aria-hidden="true" />
+              <span>Menara PjH · Putrajaya</span>
+              <span className="landing-hero-since">{bm ? 'Sejak 1986' : 'Since 1986'}</span>
+            </div>
+          </motion.div>
+          <motion.figure
+            className="landing-hero-figure"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.65 }}
           >
-            <UtensilsCrossed className="w-5 h-5 transition-transform duration-200 group-hover:rotate-12" />
-            <span>{t('explore_menu_btn')}</span>
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+            <div className="landing-feature-photo">
+              <ResponsiveImage
+                src={featuredDish.image || ''}
+                alt={bm ? featuredDish.nameBm : featuredDish.nameEn}
+                width={800}
+                height={640}
+                aspectRatio="5/4"
+                lazy={false}
+                fetchPriority="high"
+                objectFit="cover"
+                containerClassName="landing-feature-image"
+              />
+            </div>
+            <figcaption className="landing-feature-caption">
+              <div>
+                <span>{bm ? 'DARI MENU KAMI' : 'FROM OUR MENU'}</span>
+                <strong>{bm ? featuredDish.nameBm : featuredDish.nameEn}</strong>
+              </div>
+              <a
+                href="#menu"
+                aria-label={bm ? 'Lihat Nasi Campur dalam menu' : 'Explore Nasi Campur on the menu'}
+              >
+                <ArrowUpRight size={23} aria-hidden="true" />
+              </a>
+            </figcaption>
+            <div className="landing-hero-drink" aria-hidden="true">
+              <img src={getAssetUrl(featuredDrink.image || '')} alt="" width={120} height={120} />
+              <span>Teh Tarik Kaw</span>
+            </div>
+          </motion.figure>
+        </div>
+        <p className="landing-hero-note">
+          <span>
+            {bm
+              ? 'Sajian harian. Majlis istimewa. Rasa yang sama dekat di hati.'
+              : 'Everyday meals. Special gatherings. The same familiar flavour.'}
+          </span>
+          <a href="#visit">
+            {bm ? 'Jemput datang' : 'Come visit'}
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
-
-          <Link 
-            to="/order" 
-            className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-7 py-3.5 sm:py-4 bg-[#1c2622] hover:bg-[#26312d] border border-amber-400/40 hover:border-amber-400/70 text-[#ede5d8] rounded-2xl font-bold text-base overflow-hidden transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out active:scale-[0.97] transform-gpu [backface-visibility:hidden] shadow-lg"
-          >
-            <span>{t('order_catering_btn')}</span>
-          </Link>
-        </motion.div>
-
-        {/* Scroll Hint */}
-        <motion.div 
-          variants={itemVariants}
-          className="mt-8 sm:mt-14 flex flex-col items-center gap-2 sm:gap-3 text-amber-300/90"
-        >
-          <div className="w-px h-8 sm:h-10 bg-gradient-to-b from-amber-400 to-transparent" />
-          <span className="text-xs sm:text-xs font-bold uppercase tracking-[0.25em] text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">{t('scroll_explore')}</span>
-        </motion.div>
-      </motion.div>
+        </p>
+      </div>
     </section>
   );
 });
-
 export default HeroSection;
-

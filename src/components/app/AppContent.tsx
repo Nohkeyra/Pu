@@ -36,7 +36,7 @@ function SmoothScrollHandler() {
         if (href && href !== '#' && !href.startsWith('#/')) {
           e.preventDefault();
           const el = document.querySelector(href);
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
+          if (el) el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
         }
       }
     };

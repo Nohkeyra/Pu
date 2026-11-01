@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Menu, User as UserIcon, Sun, Moon, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -39,9 +39,11 @@ function BrandMark() {
   );
 }
 
-export default function Header() {
-  const isScrolled = useHeaderScroll();
+export default function Header({ variant = 'default' }: { variant?: 'default' | 'landing' }) {
+  const scrolled = useHeaderScroll();
+  const isScrolled = variant === 'landing' || scrolled;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobileMenu = useCallback(() => setMobileOpen(false), []);
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -106,7 +108,7 @@ export default function Header() {
   return (
     <>
       <div className="fixed top-0 left-0 right-0 h-1 z-[1001] bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500" />
-      <header id="app-header" className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
+      <header data-member={Boolean(currentUser)} id="app-header" className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
         <div className="content-container flex items-center justify-between gap-1.5 sm:gap-4 px-3.5 sm:px-6">
           <Link 
             to={currentUser ? '/home' : '/'} 
@@ -164,7 +166,7 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 xl:flex shrink-0">
+          <div className="landing-header-actions hidden items-center gap-2 xl:flex shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -186,7 +188,7 @@ export default function Header() {
               type="button"
               onClick={handleThemeToggle}
               className={desktopActionClass}
-              aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
+              aria-label={theme === 'light' ? (language === 'bm' ? 'Tukar ke tema gelap' : 'Switch to dark theme') : (language === 'bm' ? 'Tukar ke tema cerah' : 'Switch to light theme')}
             >
               {theme === 'light' ? <Moon className="h-4.5 w-4.5" /> : <Sun className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />}
             </Button>
@@ -215,7 +217,7 @@ export default function Header() {
               type="button"
               onClick={handleAuthClick}
               className={`${desktopActionClass} gap-2 text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
-              aria-label={currentUser ? 'Account' : 'Sign in'}
+              aria-label={currentUser ? (language === 'bm' ? 'Akaun' : 'Account') : (language === 'bm' ? 'Log masuk' : 'Sign in')}
             >
               {currentUser ? (
                 <>
@@ -241,8 +243,8 @@ export default function Header() {
               size="icon"
               type="button"
               onClick={handleThemeToggle}
-              className={`${mobileActionClass} focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
-              aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
+              className={`${mobileActionClass} landing-header-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)]/40`}
+              aria-label={theme === 'light' ? (language === 'bm' ? 'Tukar ke tema gelap' : 'Switch to dark theme') : (language === 'bm' ? 'Tukar ke tema cerah' : 'Switch to light theme')}
             >
               {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
             </Button>
@@ -258,8 +260,8 @@ export default function Header() {
               size="icon"
               type="button"
               onClick={handleAuthClick}
-              className={mobileActionClass}
-              aria-label={currentUser ? 'Account' : 'Sign in'}
+              className={`${mobileActionClass} ${variant === 'landing' ? 'landing-header-account' : ''}`}
+              aria-label={currentUser ? (language === 'bm' ? 'Akaun' : 'Account') : (language === 'bm' ? 'Log masuk' : 'Sign in')}
             >
               {currentUser ? (
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
@@ -279,7 +281,7 @@ export default function Header() {
                 setMobileOpen(true);
               }}
               className={mobileActionClass}
-              aria-label="Open menu"
+              aria-label={language === 'bm' ? 'Buka menu' : 'Open menu'}
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -291,7 +293,7 @@ export default function Header() {
         <Suspense fallback={null}>
           <MobileMenu
             isOpen={mobileOpen}
-            onClose={() => setMobileOpen(false)}
+            onClose={closeMobileMenu}
             links={NAV_LINKS.map((link) => ({
               ...link,
               label: link.label.charAt(0).toUpperCase() + link.label.slice(1),

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -35,28 +36,39 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
   };
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      if (overlayRef.current && itemsRef.current) {
-        gsap.fromTo(
-          overlayRef.current,
-          { opacity: 0 },
-          { opacity: 1, duration: 0.22, ease: 'power2.out' }
-        );
-        gsap.fromTo(
-          itemsRef.current.children,
-          { x: 20, opacity: 0 },
-          { x: 0, opacity: 1, duration: 0.28, stagger: 0.03, ease: 'power2.out' }
-        );
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = 'hidden';
+    const overlay = overlayRef.current;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animations = gsap.context(() => {
+      if (overlay && itemsRef.current && !reduceMotion) {
+        gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: .2 });
+        gsap.fromTo(itemsRef.current.children, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: .22, stagger: .025 });
       }
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
+    }, overlayRef);
+    overlay?.querySelector<HTMLElement>('button')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); }
+      if (event.key !== 'Tab' || !overlay) return;
+      const controls = [...overlay.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),[tabindex="0"]')].filter(element => element.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     };
-  }, [isOpen]);
+    const desktop = window.matchMedia('(min-width: 1280px)');
+    const closeOnDesktop = () => { if (desktop.matches) onClose(); };
+    desktop.addEventListener('change', closeOnDesktop);
+    overlay?.addEventListener('keydown', onKey);
+    return () => {
+      desktop.removeEventListener('change', closeOnDesktop);
+      animations.revert();
+      overlay?.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -66,13 +78,13 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Menu utama' : 'Main menu'}
-      className="fixed inset-0 z-[1100] md:hidden bg-[#fdfbf7] dark:bg-[#0c100e] text-deep-forest dark:text-[#ede5d8] transition-colors duration-200"
+      className="fixed inset-0 z-[1100] xl:hidden bg-[#fdfbf7] dark:bg-[#0c100e] text-deep-forest dark:text-[#ede5d8] transition-colors duration-200"
     >
       {/* Subtle Background Pattern */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pattern-batik" />
@@ -211,14 +223,14 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
 
             {/* Download APK */}
             <a
-              href="https://github.com/Nohkeyra/Pu/releases/latest/download/app-release.apk"
+              href="https://github.com/Nohkeyra/Pu/releases/latest/download/app-release-signed.apk"
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
               className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
             >
               <Download className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
-              <span>Download APK</span>
+              <span>{language === 'bm' ? 'Muat turun APK' : 'Download APK'}</span>
             </a>
 
             {/* Admin Login */}
@@ -233,6 +245,6 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
           </div>
         </nav>
       </div>
-    </div>
+    </div>, document.body
   );
 }

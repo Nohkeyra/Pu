@@ -1,115 +1,64 @@
 import React from 'react';
-import { Coffee, MapPin, UtensilsCrossed } from 'lucide-react';
+import { ArrowUpRight, Coffee, MapPin, UtensilsCrossed } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { motion, type Variants } from 'motion/react';
 
 const HighlightsSection = React.memo(() => {
   const { language } = useLanguage();
-  const isBm = language === 'bm';
-
+  const bm = language === 'bm';
   const highlights = [
     {
       icon: Coffee,
-      title: isBm ? 'Sarapan Legenda' : 'Legendary Breakfast',
-      subtitle: isBm ? 'Lontong, soto, teh tarik dan banyak lagi.' : 'Lontong, soto, teh tarik and more.',
-      className: "md:col-span-2 md:row-span-1",
-      accent: "from-amber-500/10 to-transparent",
-      iconColor: "text-amber-500"
+      title: bm ? 'Sarapan & sajian harian' : 'Breakfast & everyday favourites',
+      description: bm
+        ? 'Lontong, soto, teh tarik dan banyak lagi.'
+        : 'Lontong, soto, teh tarik and more.',
+      href: '#menu',
     },
     {
       icon: UtensilsCrossed,
-      title: isBm ? 'Mesyuarat & Katering' : 'Meeting Packs & Catering',
-      subtitle: isBm ? 'Sesuai untuk pejabat, agensi dan acara.' : 'Built for offices, agencies and events.',
-      className: "md:col-span-1 md:row-span-2",
-      accent: "from-emerald-500/10 to-transparent",
-      iconColor: "text-emerald-500"
+      title: bm ? 'Katering untuk majlis anda' : 'Catering for your gathering',
+      description: bm
+        ? 'Pilihan untuk pejabat, mesyuarat dan acara.'
+        : 'Options for offices, meetings and events.',
+      href: '/order',
     },
     {
       icon: MapPin,
-      title: isBm ? 'Di Tengah Putrajaya' : 'In the Heart of Putrajaya',
-      subtitle: isBm ? 'Aras B3, Menara PjH, Presint 2.' : 'Level B3, Menara PjH, Presint 2.',
-      className: "md:col-span-2 md:row-span-1",
-      accent: "from-tomato-burst/10 to-transparent",
-      iconColor: "text-tomato-burst"
+      title: bm ? 'Singgah di Putrajaya' : 'Find us in Putrajaya',
+      description: bm ? 'Aras B3, Menara PjH, Presint 2.' : 'Level B3, Menara PjH, Precinct 2.',
+      href: '#visit',
     },
   ];
-
-  const containerVariants: Variants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const cardVariants: Variants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.16, 1, 0.3, 1]
-      },
-    },
-  };
-
   return (
-    <section className="py-24 bg-cream dark:bg-charcoal relative z-20 overflow-hidden">
-      {/* Decorative warm background elements */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-60">
-        <div className="absolute top-[20%] left-[-10%] w-[450px] h-[450px] bg-amber-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[20%] right-[-10%] w-[450px] h-[450px] bg-orange-500/10 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="content-container">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 lg:gap-6"
-        >
-          {highlights.map((item) => {
-            const Icon = item.icon;
-            
-            return (
-              <motion.div
-                key={item.title}
-                variants={cardVariants}
-                className={`group relative overflow-hidden p-8 rounded-[2rem] bg-white/90 dark:bg-card/40 backdrop-blur-xl border border-amber-500/20 dark:border-white/5 transition-all duration-500 shadow-[0_12px_32px_-8px_rgba(246,153,19,0.12)] hover:shadow-[0_24px_50px_-10px_rgba(233,98,18,0.22)] hover:border-amber-500/45 ${item.className}`}
-              >
-                {/* Accent Gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
-                
-                {/* Background Pattern */}
-                <div className="absolute right-[-2%] bottom-[-2%] w-32 h-32 opacity-[0.03] dark:opacity-[0.05] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
-                  <Icon className="w-full h-full" />
-                </div>
-
-                <div className="relative z-10 h-full flex flex-col justify-between">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-charcoal/50 shadow-sm border border-amber-500/20 dark:border-white/5 mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.iconColor}`}>
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-artistic text-2xl lg:text-3xl text-charcoal dark:text-white leading-[1.1] mb-3 tracking-tighter">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm lg:text-base text-deep-forest/85 dark:text-[#ede5d8]/85 leading-relaxed font-normal max-w-[80%]">
-                      {item.subtitle}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+    <section className="landing-highlights" aria-label={bm ? 'Terokai Wawasan' : 'Explore Wawasan'}>
+      <div className="content-container landing-highlights-grid">
+        {highlights.map(({ icon: Icon, title, description, href }, index) => {
+          const content = (
+            <>
+              <span className="landing-highlight-icon">
+                <Icon size={23} aria-hidden="true" />
+              </span>
+              <span className="landing-highlight-copy">
+                <small>0{index + 1}</small>
+                <strong>{title}</strong>
+                <span>{description}</span>
+              </span>
+              <ArrowUpRight className="landing-highlight-arrow" size={18} aria-hidden="true" />
+            </>
+          );
+          return href.startsWith('#') ? (
+            <a className="landing-highlight" href={href} key={href}>
+              {content}
+            </a>
+          ) : (
+            <Link className="landing-highlight" to={href} key={href}>
+              {content}
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
 });
-
 export default HighlightsSection;
