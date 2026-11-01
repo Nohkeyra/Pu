@@ -76,6 +76,19 @@ something unless it actually happened.
 
 ## Working Loop
 
+### Protected brand typography — explicit owner requirement
+
+Preserve the existing typography of the "Restoran Wawasan" brand name and logo.
+The existing `font-artistic` / "Uncial Antiqua" wordmark styling is intentional
+brand identity, not obsolete UI to replace during redesign or cleanup. Do not
+substitute Outfit, Plus Jakarta Sans, or another typeface for this brand styling,
+or alter the logo artwork, unless the owner explicitly requests that change.
+Retain the existing presentation of brand text on each screen; do not use a
+general UI consistency pass as authorization to redesign the wordmark.
+UI typography improvements may apply to labels, forms, buttons and content
+without changing the protected brand styling. If fonts are self-hosted for
+offline reliability, preserve the original font, license and visual appearance.
+
 Use fewer stages for trivial work; the full loop for complex/risky work.
 
 **Before non-trivial changes:**
