@@ -5,8 +5,8 @@
   --heritage-hero-bg: var(--landing-canvas);
   --heritage-hero-ink: var(--landing-ink);
   --heritage-hero-muted: var(--landing-muted);
-  --heritage-art-opacity: 0.31;
-  --heritage-overlay: rgba(255, 246, 228, 0.62);
+  --heritage-art-opacity: 0.40;
+  --heritage-overlay: rgba(255, 246, 228, 0.18);
   --heritage-description-bg: rgba(255, 253, 250, 0.88);
   --heritage-description-border: rgba(112, 75, 48, 0.24);
   --heritage-secondary-bg: var(--landing-surface);
@@ -19,8 +19,8 @@
   --heritage-hero-bg: var(--landing-canvas);
   --heritage-hero-ink: var(--landing-ink);
   --heritage-hero-muted: #e8dfcf;
-  --heritage-art-opacity: 0.48;
-  --heritage-overlay: rgba(25, 22, 18, 0.63);
+  --heritage-art-opacity: 0.30;
+  --heritage-overlay: rgba(25, 22, 18, 0.15);
   --heritage-description-bg: rgba(36, 31, 25, 0.88);
   --heritage-description-border: rgba(255, 246, 228, 0.16);
   --heritage-secondary-bg: var(--landing-surface);
@@ -50,7 +50,7 @@
 .heritage-hero-scene {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
   overflow: hidden;
   background: var(--heritage-hero-bg);
@@ -299,4 +299,11 @@
 @media (prefers-reduced-motion: reduce) {
   .heritage-hero-artwork { will-change: auto; }
   .landing-page .heritage-hero-action { transition: none; }
+}
+
+/* Match the original hero's batik image opacity at sm (>=640px).
+   The base values above reproduce the original mobile opacity. */
+@media (min-width: 640px) {
+  .landing-page { --heritage-art-opacity: 0.55; }
+  .dark .landing-page { --heritage-art-opacity: 0.42; }
 }
