@@ -6,27 +6,31 @@ import { cn } from "@/lib/utils"
 
 /**
  * Card Variants based on Restoran Wawasan Design System
- * Uses:
- *  - Border radius: --radius-lg (8px)
- *  - Shadows: --shadow-xs, --shadow-sm, --shadow-md
- *  - Colors: --color-surface, --color-bg, --color-border, --color-border-strong
+ * Implements:
+ *  - .card-happening for vibrant golden hover glow and organic 24px/28px radii
+ *  - .panel-surface for rich custard/espresso backdrop-blur panels
+ *  - Responsive padding and splashscreen typography hierarchy
  */
 const cardVariants = cva(
-  "rounded-lg transition-all duration-200 text-[var(--color-text)] overflow-hidden",
+  "rounded-2xl sm:rounded-3xl transition-all duration-300 text-[var(--color-text)] overflow-hidden",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-xs)]",
+          "card-happening",
+        happening:
+          "card-happening",
+        panel:
+          "panel-surface",
         outlined:
-          "bg-[var(--color-bg)] border border-[var(--color-border-strong)] shadow-none",
+          "bg-card border border-[rgba(223,113,15,0.22)] dark:border-white/10 shadow-none",
         elevated:
-          "bg-[var(--color-surface)] border border-[var(--color-border)] shadow-[var(--shadow-md)]",
+          "card-happening shadow-xl",
       },
       padding: {
         none: "p-0",
-        sm: "p-3",
-        md: "p-4 sm:p-5",
+        sm: "p-3 sm:p-4",
+        md: "p-5 sm:p-6",
         lg: "p-6 sm:p-8",
       },
     },
@@ -80,7 +84,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
     <div
       ref={ref}
       data-slot="card-header"
-      className={cn("flex flex-col space-y-1.5 pb-3 border-b border-[var(--color-border)]/50", className)}
+      className={cn("flex flex-col space-y-1.5 pb-4 border-b border-[rgba(223,113,15,0.14)] dark:border-white/10", className)}
       {...props}
     />
   )
@@ -100,7 +104,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
     <h3
       ref={ref}
       data-slot="card-title"
-      className={cn("font-semibold text-lg leading-tight tracking-tight text-[var(--color-text)]", className)}
+      className={cn("font-display font-bold text-lg sm:text-xl leading-tight tracking-tight text-[var(--color-text)] dark:text-[#ede5d8]", className)}
       {...props}
     />
   )
@@ -120,7 +124,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionPr
     <p
       ref={ref}
       data-slot="card-description"
-      className={cn("text-sm text-[var(--color-text-soft)]", className)}
+      className={cn("text-sm text-[var(--color-text-soft)] dark:text-stone-300/80 leading-relaxed", className)}
       {...props}
     />
   )
@@ -140,7 +144,7 @@ const CardBody = React.forwardRef<HTMLDivElement, CardBodyProps>(
     <div
       ref={ref}
       data-slot="card-body"
-      className={cn("pt-3 flex-1", className)}
+      className={cn("pt-4 flex-1", className)}
       {...props}
     />
   )
@@ -166,7 +170,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
     <div
       ref={ref}
       data-slot="card-footer"
-      className={cn("flex items-center pt-3 mt-auto border-t border-[var(--color-border)]/50", className)}
+      className={cn("flex items-center pt-4 mt-auto border-t border-[rgba(223,113,15,0.14)] dark:border-white/10", className)}
       {...props}
     />
   )

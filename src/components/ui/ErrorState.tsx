@@ -26,13 +26,13 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center py-12 px-6 bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl border border-rose-200/60 dark:border-rose-900/40",
+        "card-happening flex flex-col items-center justify-center text-center py-12 px-6 bg-rose-50/60 dark:bg-rose-950/25 rounded-3xl border border-rose-300/60 dark:border-rose-900/40",
         className
       )}
       role="alert"
     >
       <AlertTriangle className="w-9 h-9 text-rose-500 mb-3" aria-hidden />
-      <h3 className="text-base font-display font-bold text-deep-forest dark:text-white">
+      <h3 className="text-base font-display font-bold text-deep-forest dark:text-[#ede5d8]">
         {title}
       </h3>
       {description && (

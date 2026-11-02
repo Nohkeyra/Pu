@@ -26,15 +26,15 @@ const buttonVariants = cva(
         default:
           "bg-[var(--color-sunshine-cta)] text-[color:var(--color-sunshine-cta-fg)] hover:bg-[var(--color-sunshine-cta-hover)] active:bg-[var(--color-sunshine-cta-press)] shadow-xs hover:shadow-md",
         secondary:
-          "bg-[var(--color-surface-muted)] text-[var(--color-text)] border border-[var(--color-border)] hover:bg-[var(--color-surface)] shadow-xs",
+          "bg-[var(--color-surface-muted)] text-[var(--color-text)] border border-[rgba(223,113,15,0.18)] hover:bg-[var(--color-surface)] shadow-xs",
         ghost:
-          "bg-transparent text-[var(--color-text)] hover:bg-black/5 dark:text-white dark:hover:bg-white/10",
+          "bg-transparent text-[var(--color-text)] hover:bg-black/5 dark:text-[#ede5d8] dark:hover:bg-white/10",
         danger:
           "bg-[var(--color-danger)] text-white hover:bg-[color-mix(in_srgb,var(--color-danger)_88%,black)] shadow-xs hover:shadow-md",
         destructive:
           "bg-[var(--color-danger)] text-white hover:bg-[color-mix(in_srgb,var(--color-danger)_88%,black)] shadow-xs hover:shadow-md",
         outline:
-          "border border-[var(--color-border-strong)] bg-card text-[var(--color-text)] hover:bg-[var(--color-surface-muted)] dark:text-white",
+          "border border-[rgba(223,113,15,0.22)] bg-card text-[var(--color-text)] hover:bg-[var(--color-surface-muted)] hover:border-[rgba(223,113,15,0.40)] dark:text-[#ede5d8] dark:border-white/10",
         link:
           "text-[var(--color-sunshine-cta)] underline-offset-4 hover:underline font-bold",
       },

@@ -794,44 +794,45 @@
   }
 
   .panel-surface {
-    background-color: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(246, 153, 19, 0.18);
+    background-color: rgba(255, 246, 228, 0.95);
+    border: 1px solid rgba(223, 113, 15, 0.18);
     border-radius: 28px;
     backdrop-filter: blur(20px);
     box-shadow: 
-      0 18px 40px -10px rgba(246, 153, 19, 0.10),
-      0 6px 18px -4px rgba(12, 69, 60, 0.06);
+      0 18px 40px -10px rgba(223, 113, 15, 0.12),
+      0 6px 18px -4px rgba(23, 59, 42, 0.08);
   }
   .dark .panel-surface {
-    background-color: rgba(26, 34, 31, 0.92);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    background-color: rgba(25, 22, 18, 0.95);
+    border-color: rgba(255, 164, 44, 0.15);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   }
 
   /* Happening Light Mode Card Glow & Vibrant Atmosphere */
   .card-happening {
     background: #ffffff;
-    border: 1px solid rgba(246, 153, 19, 0.20);
+    border: 1px solid rgba(223, 113, 15, 0.18);
+    border-radius: 24px;
     box-shadow: 
-      0 10px 25px -5px rgba(246, 153, 19, 0.10),
+      0 10px 25px -5px rgba(223, 113, 15, 0.10),
       0 4px 12px -2px rgba(233, 98, 18, 0.06);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .card-happening:hover {
-    border-color: rgba(233, 98, 18, 0.40);
+    border-color: rgba(223, 113, 15, 0.38);
     box-shadow: 
-      0 20px 35px -8px rgba(246, 153, 19, 0.18),
+      0 20px 35px -8px rgba(223, 113, 15, 0.18),
       0 8px 18px -4px rgba(224, 63, 20, 0.12);
     transform: translateY(-2px);
   }
   .dark .card-happening {
-    background: #1c2622;
-    border-color: rgba(237, 229, 216, 0.10);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+    background: #221c17;
+    border-color: rgba(255, 164, 44, 0.14);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.40);
   }
   .dark .card-happening:hover {
-    border-color: rgba(246, 153, 19, 0.35);
-    box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.50);
+    border-color: rgba(255, 164, 44, 0.35);
+    box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.55);
   }
 
   .subtle-chip {

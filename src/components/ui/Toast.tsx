@@ -99,10 +99,10 @@ interface ToastItemProps { toast: ToastMessage; onDismiss: (id: string) => void;
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   const { id, title, description, variant = 'info' } = toast;
   const variants = {
-    success: { Icon: CheckCircle2, iconClass: 'text-[var(--color-success)]',  stripe: 'bg-[var(--color-success)]',  surface: 'bg-card border-[color-mix(in_srgb,var(--color-success)_22%,transparent)]' },
-    error:   { Icon: XCircle,         iconClass: 'text-[var(--color-error)]',    stripe: 'bg-[var(--color-error)]',    surface: 'bg-[var(--color-error-soft)] border border-[var(--color-error)] text-[var(--color-error)]'   },
-    warning: { Icon: AlertTriangle,   iconClass: 'text-[var(--color-warning)]',  stripe: 'bg-[var(--color-warning)]',  surface: 'bg-card border-[color-mix(in_srgb,var(--color-warning)_22%,transparent)]' },
-    info:    { Icon: Info,            iconClass: 'text-[var(--color-sunshine-cta)]',                 stripe: 'bg-[var(--color-sunshine-cta)]',                 surface: 'bg-card border-[var(--color-sunshine-cta)]/20' },
+    success: { Icon: CheckCircle2, iconClass: 'text-[var(--color-success)]',  stripe: 'bg-[var(--color-success)]',  surface: 'card-happening border-[color-mix(in_srgb,var(--color-success)_28%,transparent)]' },
+    error:   { Icon: XCircle,         iconClass: 'text-[var(--color-error)]',    stripe: 'bg-[var(--color-error)]',    surface: 'card-happening bg-rose-50/90 dark:bg-rose-950/40 border border-[var(--color-error)]/40 text-[var(--color-error)]'   },
+    warning: { Icon: AlertTriangle,   iconClass: 'text-[var(--color-warning)]',  stripe: 'bg-[var(--color-warning)]',  surface: 'card-happening border-[color-mix(in_srgb,var(--color-warning)_28%,transparent)]' },
+    info:    { Icon: Info,            iconClass: 'text-[var(--color-sunshine-cta)]',                 stripe: 'bg-[var(--color-sunshine-cta)]',                 surface: 'panel-surface border-[var(--color-sunshine-cta)]/25' },
   } as const;
   const V = variants[variant];
   const Icon = V.Icon;
@@ -116,7 +116,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
       className={cn(
-        "pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg transition-all duration-200 max-w-full relative overflow-hidden",
+        "pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-xl transition-all duration-300 max-w-full relative overflow-hidden backdrop-blur-md",
         V.surface
       )}
     >

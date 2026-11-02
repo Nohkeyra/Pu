@@ -30,7 +30,7 @@ export function SegmentedControl({
       <div
         role="tablist"
         className={cn(
-          'app-segmented inline-flex max-w-full flex-wrap items-center gap-1 p-1 rounded-[14px] border border-border bg-[var(--color-surface-muted)] select-none',
+          'app-segmented inline-flex max-w-full flex-wrap items-center gap-1.5 p-1.5 rounded-2xl border border-[rgba(223,113,15,0.20)] dark:border-white/10 bg-[rgba(255,246,228,0.7)] dark:bg-[rgba(25,22,18,0.7)] backdrop-blur-md select-none shadow-sm',
           className
         )}
         {...props}
@@ -70,10 +70,10 @@ export const SegmentedControlItem = React.forwardRef<
       aria-selected={isSelected}
       onClick={handleClick}
       className={cn(
-        'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[10px] font-bold transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-        context.size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-xs',
+        'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+        context.size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-2 text-xs sm:text-sm',
         isSelected
-          ? 'bg-card text-[var(--color-sunshine-cta)] dark:text-sunshine shadow-2xs font-bold'
+          ? 'card-happening bg-white dark:bg-[#221c17] text-[var(--color-sunshine-cta)] dark:text-sunshine shadow-xs font-bold'
           : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] font-medium',
         className
       )}

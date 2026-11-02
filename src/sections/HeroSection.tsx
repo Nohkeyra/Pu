@@ -8,6 +8,7 @@ import ResponsiveImage from '@/components/ResponsiveImage';
 import { getAssetUrl } from '@/lib/utils';
 
 const featuredDish = MENU_ITEMS.find((item) => item.id === 'nasi-campur')!;
+const HERO_IMAGE = '/assets/dishes/photos/wawasan-craft.webp';
 const featuredDrink = MENU_ITEMS.find((item) => item.id === 'teh-tarik')!;
 
 const HeroSection = React.memo(() => {
@@ -85,7 +86,7 @@ const HeroSection = React.memo(() => {
           >
             <div className="landing-feature-photo">
               <ResponsiveImage
-                src={featuredDish.image || ''}
+                src={HERO_IMAGE}
                 alt={bm ? featuredDish.nameBm : featuredDish.nameEn}
                 width={800}
                 height={640}
@@ -96,18 +97,6 @@ const HeroSection = React.memo(() => {
                 containerClassName="landing-feature-image"
               />
             </div>
-            <figcaption className="landing-feature-caption">
-              <div>
-                <span>{bm ? 'DARI MENU KAMI' : 'FROM OUR MENU'}</span>
-                <strong>{bm ? featuredDish.nameBm : featuredDish.nameEn}</strong>
-              </div>
-              <a
-                href="#menu"
-                aria-label={bm ? 'Lihat Nasi Campur dalam menu' : 'Explore Nasi Campur on the menu'}
-              >
-                <ArrowUpRight size={23} aria-hidden="true" />
-              </a>
-            </figcaption>
             <div className="landing-hero-drink" aria-hidden="true">
               <img src={getAssetUrl(featuredDrink.image || '')} alt="" width={120} height={120} />
               <span>Teh Tarik Kaw</span>

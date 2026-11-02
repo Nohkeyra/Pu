@@ -24,7 +24,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
  */
 export function DishCardSkeleton() {
   return (
-    <div className="p-3 rounded-2xl border border-stone-200/60 dark:border-stone-800/80 bg-white/50 dark:bg-stone-900/40 flex items-center gap-3">
+    <div className="card-happening p-3.5 rounded-2xl flex items-center gap-3">
       <Skeleton className="w-5 h-5 rounded-lg shrink-0" />
       <Skeleton className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl shrink-0" />
       <div className="flex-1 min-w-0 space-y-1.5">
@@ -40,7 +40,7 @@ export function DishCardSkeleton() {
  */
 export function OrderCardSkeleton() {
   return (
-    <div className="p-4 rounded-[22px] bg-white dark:bg-card border border-stone-200/60 dark:border-stone-800 space-y-3">
+    <div className="card-happening p-5 rounded-3xl space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5 flex-1">
           <Skeleton className="h-4 w-40 rounded-md" />
