@@ -1,0 +1,302 @@
+/* Original Wawasan batik hero — theme-aware, no boxed hero and no fixed emerald background.
+   Uses the existing landing palette for light/dark mode, and the existing batik asset.
+   Scope: the hero and its initial transparent header ONLY. */
+.landing-page {
+  --heritage-hero-bg: var(--landing-canvas);
+  --heritage-hero-ink: var(--landing-ink);
+  --heritage-hero-muted: var(--landing-muted);
+  --heritage-art-opacity: 0.31;
+  --heritage-overlay: rgba(255, 246, 228, 0.62);
+  --heritage-description-bg: rgba(255, 253, 250, 0.88);
+  --heritage-description-border: rgba(112, 75, 48, 0.24);
+  --heritage-secondary-bg: var(--landing-surface);
+  --heritage-secondary-border: var(--landing-line);
+  --heritage-secondary-ink: var(--landing-ink);
+  --heritage-header-control-bg: rgba(255, 253, 250, 0.74);
+  --heritage-header-control-border: rgba(112, 75, 48, 0.4);
+}
+.dark .landing-page {
+  --heritage-hero-bg: var(--landing-canvas);
+  --heritage-hero-ink: var(--landing-ink);
+  --heritage-hero-muted: #e8dfcf;
+  --heritage-art-opacity: 0.48;
+  --heritage-overlay: rgba(25, 22, 18, 0.63);
+  --heritage-description-bg: rgba(36, 31, 25, 0.88);
+  --heritage-description-border: rgba(255, 246, 228, 0.16);
+  --heritage-secondary-bg: var(--landing-surface);
+  --heritage-secondary-border: rgba(255, 246, 228, 0.35);
+  --heritage-secondary-ink: var(--landing-ink);
+  --heritage-header-control-bg: rgba(36, 31, 25, 0.76);
+  --heritage-header-control-border: rgba(255, 246, 228, 0.64);
+}
+.landing-page .landing-hero.heritage-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin: 0;
+  padding: calc(116px + var(--sat, 0px)) 0 calc(120px + var(--sab, 0px));
+  color: var(--heritage-hero-ink);
+  background: var(--heritage-hero-bg);
+}
+
+.heritage-hero-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--heritage-hero-bg);
+}
+
+.heritage-hero-artwork {
+  position: absolute;
+  inset: -3% 0;
+  transform-origin: center center;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Batik3DMotion owns the actual image; no replacement patterns or new assets. */
+.heritage-hero-artwork .heritage-hero-batik-image {
+  opacity: var(--heritage-art-opacity);
+  filter: contrast(1.06) saturate(1.02);
+}
+
+.heritage-hero-shading,
+.heritage-hero-vignette,
+.heritage-hero-dissolve {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.heritage-hero-shading {
+  /* Batik remains visible while the current theme determines surface colour. */
+  background: linear-gradient(180deg,
+    var(--heritage-overlay) 0%,
+    transparent 38%,
+    var(--heritage-overlay) 100%);
+}
+
+.heritage-hero-vignette {
+  background: radial-gradient(ellipse at 50% 38%,
+    transparent 24%, var(--heritage-overlay) 100%);
+}
+
+.heritage-hero-dissolve {
+  top: auto;
+  height: clamp(140px, 25vh, 340px);
+  background: linear-gradient(to bottom, transparent 0%,
+    color-mix(in srgb, var(--landing-canvas), transparent 86%) 35%,
+    color-mix(in srgb, var(--landing-canvas), transparent 38%) 75%,
+    var(--landing-canvas) 100%);
+}
+
+.landing-page .heritage-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px;
+  margin: auto;
+  padding: 36px clamp(20px, 4vw, 48px) 20px;
+  text-align: center;
+}
+
+.landing-page .heritage-hero-title {
+  max-width: 100%;
+  margin: 0 0 clamp(22px, 4vw, 34px);
+  font-size: clamp(2.45rem, 7.1vw, 6.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: var(--heritage-hero-ink);
+  text-wrap: balance;
+  text-shadow: 0 2px 22px var(--heritage-hero-bg);
+}
+
+.landing-page .heritage-hero-description {
+  max-width: 680px;
+  margin: 0 0 clamp(24px, 4vw, 38px);
+  padding: 18px clamp(18px, 3vw, 26px);
+  border: 1px solid var(--heritage-description-border);
+  border-radius: 24px;
+  background: var(--heritage-description-bg);
+  color: var(--heritage-hero-ink);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  font-size: clamp(0.95rem, 1.65vw, 1.18rem);
+  line-height: 1.65;
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+.landing-page .heritage-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.landing-page .heritage-hero-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 56px;
+  min-width: 225px;
+  padding: 15px 26px;
+  border-radius: 19px;
+  font-size: 1rem;
+  line-height: 1.3;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color .2s, border-color .2s, transform .2s;
+}
+
+.landing-page .heritage-hero-action-primary {
+  color: #191612;
+  background: var(--landing-accent);
+  border: 1px solid var(--landing-accent);
+}
+.landing-page .heritage-hero-action-primary:hover { filter: brightness(1.08); }
+.landing-page .heritage-hero-action-secondary {
+  color: var(--heritage-secondary-ink);
+  background: var(--heritage-secondary-bg);
+  border: 1px solid var(--heritage-secondary-border);
+}
+.landing-page .heritage-hero-action-secondary:hover { filter: brightness(0.97); }
+.landing-page .heritage-hero-action:active { transform: scale(.985); }
+
+.landing-page .heritage-hero-scroll-hint {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 48px;
+  margin-top: clamp(32px, 5vw, 54px);
+  color: var(--landing-accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+.heritage-hero-scroll-line {
+  display: block;
+  width: 1px;
+  height: 35px;
+  background: linear-gradient(to bottom, var(--landing-accent), transparent);
+}
+
+/* The existing Header's default variant becomes transparent at page top and
+   switches to its normal scrolled surface after the built-in threshold. */
+.landing-page #app-header:not(.topbar-shell) {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  padding-top: calc(15px + var(--sat, 0px));
+  padding-bottom: 12px;
+}
+.landing-page #app-header:not(.topbar-shell) .icon-button-soft {
+  background: var(--heritage-header-control-bg);
+  border-color: var(--heritage-header-control-border);
+  color: var(--heritage-hero-ink);
+  border-radius: 999px;
+}
+.landing-page #app-header:not(.topbar-shell) .landing-header-actions button,
+.landing-page #app-header:not(.topbar-shell) .flex.xl\:hidden > button {
+  border-radius: 999px;
+}
+
+/* Header brand and controls stay legible in both themes while unscrolled. */
+.landing-page #app-header:not(.topbar-shell) .font-artistic {
+  color: var(--heritage-hero-ink);
+  text-shadow: 0 1px 12px var(--heritage-hero-bg);
+}
+.landing-page #app-header:not(.topbar-shell) .landing-header-actions button,
+.landing-page #app-header:not(.topbar-shell) .flex.xl\:hidden > button {
+  background: var(--heritage-header-control-bg);
+  color: var(--heritage-hero-ink);
+  border-color: var(--heritage-header-control-border);
+}
+.landing-page #app-header:not(.topbar-shell) .landing-header-actions button:hover,
+.landing-page #app-header:not(.topbar-shell) .flex.xl\:hidden > button:hover {
+  filter: brightness(0.95);
+}
+.landing-page #app-header:not(.topbar-shell) #desktop-navigation {
+  background: var(--heritage-header-control-bg);
+  border-color: var(--heritage-header-control-border);
+}
+.landing-page #app-header:not(.topbar-shell) #desktop-navigation a {
+  color: var(--heritage-hero-ink);
+  text-shadow: none;
+}
+.landing-page #app-header:not(.topbar-shell) #desktop-navigation a:hover {
+  background: var(--landing-soft);
+}
+
+/* Below 400px, keep the updated landing page's compact header behavior:
+   the account action remains accessible through the mobile menu. */
+@media (max-width: 399px) {
+  .landing-page #app-header > .content-container > div:last-child > button:nth-last-of-type(2) {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) {
+  .landing-page .landing-hero.heritage-hero {
+    padding-top: calc(126px + var(--sat, 0px));
+    padding-bottom: 110px;
+  }
+}
+@media (max-width: 639px) {
+  .landing-page .landing-hero.heritage-hero {
+    padding-top: calc(128px + var(--sat, 0px));
+    padding-bottom: calc(175px + var(--sab, 0px));
+  }
+  .landing-page .heritage-hero-content {
+    padding: 18px 20px 24px;
+    margin: 0 auto auto;
+  }
+  .landing-page .heritage-hero-title {
+    font-size: clamp(2.3rem, 9.5vw, 4.15rem);
+    letter-spacing: -0.035em;
+    margin-bottom: 22px;
+  }
+  .landing-page .heritage-hero-description {
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+    padding: 16px 18px;
+    border-radius: 23px;
+    margin-bottom: 28px;
+  }
+  .landing-page .heritage-hero-actions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 12px;
+    max-width: 430px;
+  }
+  .landing-page .heritage-hero-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 56px;
+    font-size: 1rem;
+  }
+  .landing-page .heritage-hero-scroll-hint { margin-top: 36px; }
+  .heritage-hero-artwork .heritage-hero-batik-image { opacity: var(--heritage-art-opacity); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heritage-hero-artwork { will-change: auto; }
+  .landing-page .heritage-hero-action { transition: none; }
+}
