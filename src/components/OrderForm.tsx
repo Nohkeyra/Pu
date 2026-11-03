@@ -1303,7 +1303,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
         {/* Right Column: Interactive Sticky Live Summary Card */}
         <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-28 space-y-4">
-          <div className="bg-card rounded-2xl border border-stone/15 dark:border-white/10 shadow-xl p-5 sm:p-6 overflow-hidden relative">
+          <div className="customer-live-summary rounded-2xl border shadow-xl p-5 sm:p-6 overflow-hidden relative">
             {/* Card Title Header */}
             <div className="flex justify-between items-center pb-3 mb-4 border-b border-stone/10">
               <div className="flex items-center gap-2">

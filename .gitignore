@@ -72,3 +72,9 @@ bun.lock
 
 # Local AI Studio work artifacts
 .aistudio/artifacts/
+
+# Pre-cleanup backup snapshots and parts
+*.zip
+wawasan-pre-cleanup-snapshot.zip
+wawasan-backup.part*
+*.part*

@@ -1,4 +1,6 @@
 import { Facebook } from 'lucide-react';
+import { useRef } from 'react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetUrl } from '../lib/utils';
@@ -18,6 +20,11 @@ function BrandMark() {
 
 export default function Footer() {
   const { t, language } = useLanguage();
+  const footerRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: footerRef, offset: ['start end', 'end end'] });
+  const artworkOpacity = useTransform(scrollYProgress, [0, 0.35, 1], reduceMotion ? [0.32, 0.32, 0.32] : [0.38, 0.28, 0]);
+  const artworkY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 45]);
   const bm = language === 'bm';
   const NAV_LINKS = [
     { label: t('our_story'), href: '#story' },
@@ -28,8 +35,10 @@ export default function Footer() {
   ];
 
   return (
-    <footer id="app-footer" className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
-      <div className="landing-footer-batik batik-container" aria-hidden="true" style={{ backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')})` }} />
+    <footer ref={footerRef} id="app-footer" className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
+      <motion.div className="landing-footer-batik" aria-hidden="true" style={{ opacity: artworkOpacity, y: artworkY }}>
+        <img src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} alt="" draggable={false} />
+      </motion.div>
 
       <div className="content-container relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start mb-16">

@@ -22,3 +22,7 @@ playwright-report
 test-results
 android
 ios
+*.zip
+wawasan-pre-cleanup-snapshot.zip
+wawasan-backup.part*
+*.part*
