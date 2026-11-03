@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/brand/TransparentLogo';
 import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
+import CustomerPageFloral from '@/components/layout/CustomerPageFloral';
 import {
   Globe,
   Bell,
@@ -1714,6 +1715,8 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+
+        <CustomerPageFloral />
 
         {/* DIALOG 1: PRIVACY POLICY */}
         <Dialog open={privacyModalOpen} onOpenChange={setPrivacyModalOpen}>
