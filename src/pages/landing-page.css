@@ -1003,41 +1003,20 @@
   border-color: var(--landing-line);
 }
 
-/* Landing footer: reuse the hero's authentic batik asset (already supplied
-   by Footer.tsx). Adjust visibility and scale only; preserve footer colors,
-   text contrast, spacing and all navigation. */
+/* V9 — single full-bleed heritage artwork, not a tiled wallpaper.
+   Opacity and scroll fade are controlled only by Footer.tsx (Motion),
+   avoiding the old V7 fixed-opacity CSS overrides. */
 .landing-page #app-footer .landing-footer-batik {
-  background-size: clamp(320px, 55vw, 760px) auto;
-  background-repeat: repeat;
-  opacity: .30;
-  mask-image: linear-gradient(90deg, transparent 4%, black 50%, black 100%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 4%, black 50%, black 100%);
-}
-.dark .landing-page #app-footer .landing-footer-batik { opacity: .25; }
-@media (max-width: 767px) {
-  .landing-page #app-footer .landing-footer-batik {
-    background-size: 420px auto;
-    opacity: .22;
-    mask-image: linear-gradient(180deg, transparent 5%, black 60%, black 100%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 5%, black 60%, black 100%);
-  }
-  .dark .landing-page #app-footer .landing-footer-batik { opacity: .19; }
-}
-
-/* V8: One full-bleed hero-matched batik image; scroll fade is owned by Footer.tsx.
-   Do not tile or apply a competing fixed opacity/mask. */
-.landing-page #app-footer .landing-footer-batik,
-.dark .landing-page #app-footer .landing-footer-batik {
   position: absolute;
-  inset: 0;
+  inset: -3% 0;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   background: none;
-  background-image: none;
-  mask-image: none;
-  -webkit-mask-image: none;
+  /* Spatial dissolve: no hard seam where the map ends and footer begins. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, rgba(0,0,0,.12) 55px, rgba(0,0,0,.48) 125px, rgba(0,0,0,.85) 195px, black 260px);
+  mask-image: linear-gradient(to bottom, transparent 0px, rgba(0,0,0,.12) 55px, rgba(0,0,0,.48) 125px, rgba(0,0,0,.85) 195px, black 260px);
   transform-origin: center;
-  z-index: 0;
 }
 .landing-page #app-footer .landing-footer-batik img {
   display: block;
@@ -1045,12 +1024,6 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
+  filter: contrast(1.06) saturate(1.02);
   user-select: none;
-}
-@media (max-width: 767px) {
-  .landing-page #app-footer .landing-footer-batik,
-  .dark .landing-page #app-footer .landing-footer-batik {
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
 }

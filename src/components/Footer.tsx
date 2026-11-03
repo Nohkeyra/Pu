@@ -23,8 +23,8 @@ export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: footerRef, offset: ['start end', 'end end'] });
-  const artworkOpacity = useTransform(scrollYProgress, [0, 0.35, 1], reduceMotion ? [0.32, 0.32, 0.32] : [0.38, 0.28, 0]);
-  const artworkY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 45]);
+  const artworkOpacity = useTransform(scrollYProgress, [0, 0.45, 0.8, 1], reduceMotion ? [0.68, 0.68, 0.68, 0.68] : [0.76, 0.72, 0.52, 0.32]);
+  const artworkY = useTransform(scrollYProgress, [0, 1], reduceMotion ? [0, 0] : [0, 24]);
   const bm = language === 'bm';
   const NAV_LINKS = [
     { label: t('our_story'), href: '#story' },
