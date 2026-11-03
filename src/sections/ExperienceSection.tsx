@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles, Heart, Flame, HandHeart } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion } from 'motion/react';
-import BatikParallaxContainer from '@/components/BatikParallaxContainer';
+import BatikParallaxContainer from '@/components/brand/BatikParallaxContainer';
 
 const PRINCIPLES = [
   {

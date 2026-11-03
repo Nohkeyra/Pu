@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebaseConfig';
-import AuthModal from '../components/AuthModal';
+import AuthModal from '../components/auth/AuthModal';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon, ArrowDown, Sparkles, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Batik3DMotion } from '../components/Batik3DMotion';
+import { Batik3DMotion } from '../components/brand/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { checkBiometricAvailability, isCustomerBiometricsEnabledOnDevice } from '../services/authService';

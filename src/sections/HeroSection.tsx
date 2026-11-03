@@ -3,7 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Link } from 'react-router-dom';
 import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import { Batik3DMotion } from '@/components/brand/Batik3DMotion';
 import { getAssetUrl } from '@/lib/utils';
 
 /**

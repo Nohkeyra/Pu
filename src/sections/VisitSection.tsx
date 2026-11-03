@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, type Variants } from 'motion/react';
 import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import ResponsiveImage from '@/components/ResponsiveImage';
+import ResponsiveImage from '@/components/ui/ResponsiveImage';
 
 const VisitSection = React.memo(() => {
   const { language } = useLanguage();

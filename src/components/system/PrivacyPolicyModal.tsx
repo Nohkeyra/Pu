@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { getAssetUrl } from '@/lib/utils';
-import { TransparentLogo } from '@/components/TransparentLogo';
+import { TransparentLogo } from '@/components/brand/TransparentLogo';
 
 interface PrivacyPolicyModalProps {
   isOpen: boolean;

@@ -5,8 +5,8 @@ import { auth, db } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
-import WawasanLoader from '@/components/WawasanLoader';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import WawasanLoader from '@/components/brand/WawasanLoader';
+import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
 import { 
   User as UserIcon, 
   X, 
@@ -32,7 +32,7 @@ import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTa
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const CustomerInvoicePreviewModal = lazyWithRetry(() => import('@/components/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })), 'CustomerInvoicePreviewModal');
+const CustomerInvoicePreviewModal = lazyWithRetry(() => import('@/components/order/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })), 'CustomerInvoicePreviewModal');
 const DeliveryMap = lazyWithRetry(() => import('@/components/delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMapCustomer');
 
 interface UserProfileDashboardProps {

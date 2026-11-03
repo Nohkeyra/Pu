@@ -29,7 +29,7 @@ import {
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn, getAssetUrl } from '@/lib/utils';
-import type { OrderState } from '@/components/OrderForm';
+import type { OrderState } from '@/components/order/OrderForm';
 
 interface SavedLocation {
   id: string;

@@ -1,4 +1,4 @@
-import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { getOrderStatus } from '@/lib/orderStatus';
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';

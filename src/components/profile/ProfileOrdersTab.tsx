@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useToast } from '@/components/ui/Toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -30,7 +30,7 @@ import {
   CalendarDays,
   Users
 } from 'lucide-react';
-import WawasanLoader from '@/components/WawasanLoader';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 import { motion, useMotionValue, useTransform, useReducedMotion, animate, type Variants, type PanInfo } from 'motion/react';
 import type { Order } from '@/types';
 import { getDisplayInvoiceNo, formatDateDisplay } from '@/lib/utils';

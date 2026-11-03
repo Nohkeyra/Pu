@@ -17,11 +17,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
-import WawasanLoader from '@/components/WawasanLoader';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
-import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 
 interface OrderDetailModalProps {
   isOpen: boolean;

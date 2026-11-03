@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Bell, Mail, Ban, Settings as SettingsIcon, Fingerprint } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/Toast';
-import { useCustomerBiometricEnrollment } from '@/hooks/useBiometricEnrollment';
-import { BiometricEnrollDialog } from '@/components/BiometricEnrollDialog';
+import { useCustomerBiometricEnrollment } from '@/hooks/native/useBiometricEnrollment';
+import { BiometricEnrollDialog } from '@/components/auth/BiometricEnrollDialog';
 
 interface ProfilePreferencesTabProps {
   notifyOrderStatus: boolean;

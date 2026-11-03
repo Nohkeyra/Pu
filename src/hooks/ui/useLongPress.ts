@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { triggerMediumImpact } from '../lib/haptics';
+import { triggerMediumImpact } from '../../lib/haptics';
 
 interface UseLongPressOptions {
   isPreventDefault?: boolean;

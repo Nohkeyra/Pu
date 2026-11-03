@@ -6,7 +6,7 @@ import './wawasan-page-backgrounds.css';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';
-import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { ErrorBoundary } from './components/system/ErrorBoundary.tsx';
 
 // Strip/disable console.log and debug statements for production builds
 if (import.meta.env.PROD) {

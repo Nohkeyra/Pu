@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { WifiOff, Send } from "lucide-react"
-import { useNetworkStatus } from "@/hooks/useNetworkStatus"
+import { useNetworkStatus } from "@/hooks/native/useNetworkStatus"
 import { getPendingOrdersCount } from "@/lib/pendingOrdersQueue"
 import { cn } from "@/lib/utils"
 

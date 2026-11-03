@@ -1,8 +1,8 @@
 import { Clock, MapPin, ArrowRight, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useLongPress } from '@/hooks/useLongPress';
+import { useLongPress } from '@/hooks/ui/useLongPress';
 import { triggerLightImpact } from '@/lib/haptics';
-import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import type { Order } from '@/types';
 
 interface CalendarEventCardProps {

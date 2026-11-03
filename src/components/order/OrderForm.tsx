@@ -11,20 +11,20 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
-import { CustomerInvoicePreviewModal } from '@/components/CustomerInvoicePreviewModal';
+import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoicePreviewModal';
 import { motion } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
-import AuthModal from './AuthModal';
+import AuthModal from '../auth/AuthModal';
 import { OrderFormTip } from '@/components/order/OrderFormTip';
-import { Step1EventMeal } from './order/Step1EventMeal';
-import { Step2DishSelection } from './order/Step2DishSelection';
-import { Step3ContactDetails } from './order/Step3ContactDetails';
-import { Step4ReviewSubmit } from './order/Step4ReviewSubmit';
-import { Step5OrderSuccess } from './order/Step5OrderSuccess';
+import { Step1EventMeal } from './Step1EventMeal';
+import { Step2DishSelection } from './Step2DishSelection';
+import { Step3ContactDetails } from './Step3ContactDetails';
+import { Step4ReviewSubmit } from './Step4ReviewSubmit';
+import { Step5OrderSuccess } from './Step5OrderSuccess';
 import { DemoOverlay } from '@/ghost/DemoOverlay';
 import { DEFAULT_MENU_ITEMS, type MenuItem } from '@/constants/menu';
 import { SAVED_COMPANIES } from '@/constants/companies';
@@ -37,8 +37,8 @@ import { addPendingOrder } from '@/lib/pendingOrdersQueue';
 import { logOrderStep, logOrderSubmitted } from '@/services/analyticsService';
 import { recordException } from '@/services/crashlyticsService';
 import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
-import { useMobileKeyboard } from '@/hooks/useMobileKeyboard';
-import { useMascotStepTransition } from '@/hooks/useMascotStepTransition';
+import { useMobileKeyboard } from '@/hooks/native/useMobileKeyboard';
+import { useMascotStepTransition } from '@/hooks/ui/useMascotStepTransition';
 import type { SavedLocation, Order } from '@/types';
 
 // TYPES

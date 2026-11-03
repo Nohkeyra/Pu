@@ -6,23 +6,23 @@ import { SafeArea } from 'capacitor-plugin-safe-area';
 import { Capacitor } from '@capacitor/core';
 import { ToastProvider } from './components/ui/Toast';
 import { TooltipProvider } from './components/ui/tooltip';
-import PushNotificationHandler from './components/PushNotificationHandler';
-import NativeBackButtonHandler from './components/NativeBackButtonHandler';
-import NativeAppListeners from './components/NativeAppListeners';
-import { useBatikScrollOpacity } from './hooks/useBatikScrollOpacity';
-import CateringSplashScreen from './components/SplashScreen';
+import PushNotificationHandler from './components/notifications/PushNotificationHandler';
+import NativeBackButtonHandler from './components/system/NativeBackButtonHandler';
+import NativeAppListeners from './components/system/NativeAppListeners';
+import { useBatikScrollOpacity } from './hooks/ui/useBatikScrollOpacity';
+import CateringSplashScreen from './components/brand/SplashScreen';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
-import { BatikMotionProvider } from './components/BatikMotionProvider';
-import { useBackgroundSync } from './hooks/useBackgroundSync';
+import { BatikMotionProvider } from './components/brand/BatikMotionProvider';
+import { useBackgroundSync } from './hooks/native/useBackgroundSync';
 import { initInteractiveNotifications } from './services/interactiveNotifications';
 import { purgeLegacyPlaintextCredentials, syncRefreshedAdminToken } from './services/authService';
 import { onIdTokenChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 
 // Lazy-loaded secondary modals and diagnostics
-const GlobalInAppUpdateHandler = lazy(() => import('./components/GlobalInAppUpdateHandler'));
-const PrivacyPolicyModal = lazy(() => import('./components/PrivacyPolicyModal'));
+const GlobalInAppUpdateHandler = lazy(() => import('./components/system/GlobalInAppUpdateHandler'));
+const PrivacyPolicyModal = lazy(() => import('./components/system/PrivacyPolicyModal'));
 const FallbackDashboard = lazy(() => import('./components/app/FallbackDashboard'));
 
 // Speed Insights wrapper

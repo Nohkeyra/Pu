@@ -2,9 +2,9 @@ import { Facebook } from 'lucide-react';
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
-import { getAssetUrl } from '../lib/utils';
-import { TransparentLogo } from './TransparentLogo';
+import { useLanguage } from '../../context/LanguageContext';
+import { getAssetUrl } from '../../lib/utils';
+import { TransparentLogo } from '../brand/TransparentLogo';
 
 function BrandMark() {
   return (

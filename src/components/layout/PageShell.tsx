@@ -8,12 +8,12 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
-import AuthModal from './AuthModal';
+import AuthModal from '../auth/AuthModal';
 import {
   getAssetUrl,
 } from '@/lib/utils';
-import { TransparentLogo } from './TransparentLogo';
-import { Batik3DMotion } from './Batik3DMotion';
+import { TransparentLogo } from '../brand/TransparentLogo';
+import { Batik3DMotion } from '../brand/Batik3DMotion';
 
 /* -------------------------------------------------------------------------
  * P0 — Unified Page Shell

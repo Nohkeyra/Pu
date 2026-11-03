@@ -24,9 +24,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
-import './ui/presentation.css';
-import { useOverlayAccessibility } from '@/hooks/useOverlayAccessibility';
-import { useAdminBiometric } from '@/hooks/useAdminBiometric';
+import '../ui/presentation.css';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
+import { useAdminBiometric } from '@/hooks/admin/useAdminBiometric';
 import { 
   checkBiometricAvailability, 
   storeCustomerBiometricCredentials,

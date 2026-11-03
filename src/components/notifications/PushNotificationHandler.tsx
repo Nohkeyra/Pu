@@ -1,4 +1,4 @@
-import { useNativeNotifications } from '@/hooks/useNativeNotifications';
+import { useNativeNotifications } from '@/hooks/native/useNativeNotifications';
 
 function PushNotificationHandler() {
   useNativeNotifications();

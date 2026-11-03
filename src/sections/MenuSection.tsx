@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Coffee, Flame, Search, Sparkles, UtensilsCrossed, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { MENU_ITEMS, type FeaturedMenuItem } from '@/constants/menu';
-import ResponsiveImage from '@/components/ResponsiveImage';
+import ResponsiveImage from '@/components/ui/ResponsiveImage';
 import { triggerLightImpact } from '@/lib/haptics';
 
 const MenuCard = React.memo(

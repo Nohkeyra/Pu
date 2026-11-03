@@ -1,16 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AdminPanel from '@/components/AdminPanel';
-import AuthModal from '@/components/AuthModal';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import WawasanLoader from '@/components/WawasanLoader';
+import AdminPanel from '@/components/admin/AdminPanel';
+import AuthModal from '@/components/auth/AuthModal';
+import { ErrorBoundary } from '@/components/system/ErrorBoundary';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Fingerprint, Lock, Loader2 } from 'lucide-react';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { useLanguage } from '@/context/LanguageContext';
-import { useAdminBiometric } from '@/hooks/useAdminBiometric';
+import { useAdminBiometric } from '@/hooks/admin/useAdminBiometric';
 
 export default function AdminPage() {
   const navigate = useNavigate();

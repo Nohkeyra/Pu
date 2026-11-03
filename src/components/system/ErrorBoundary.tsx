@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { recordException } from '../services/crashlyticsService';
-import { ErrorState } from './ui/ErrorState';
+import { recordException } from '../../services/crashlyticsService';
+import { ErrorState } from '../ui/ErrorState';
 
 interface Props {
   children?: ReactNode;

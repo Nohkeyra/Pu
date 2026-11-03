@@ -4,17 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import { useHeaderScroll } from '@/hooks/useHeaderScroll';
+import { useHeaderScroll } from '@/hooks/ui/useHeaderScroll';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
-import { TransparentLogo } from './TransparentLogo';
-import { NotificationBell } from './NotificationBell';
+import { TransparentLogo } from '../brand/TransparentLogo';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 const MobileMenu = lazy(() => import('./MobileMenu'));
-const AuthModal = lazy(() => import('./AuthModal'));
-const UserProfileDashboard = lazy(() => import('./UserProfileDashboard'));
+const AuthModal = lazy(() => import('../auth/AuthModal'));
+const UserProfileDashboard = lazy(() => import('../profile/UserProfileDashboard'));
 
 const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
   { label: 'story', href: '#story' },

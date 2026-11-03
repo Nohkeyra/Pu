@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Star, Eye, Send, Trash2, CalendarDays, Users, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useLongPress } from '@/hooks/useLongPress';
+import { useLongPress } from '@/hooks/ui/useLongPress';
 
 import type { Order } from '@/types';
 

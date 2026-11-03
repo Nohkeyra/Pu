@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TransparentLogo } from '@/components/TransparentLogo';
+import { TransparentLogo } from '@/components/brand/TransparentLogo';
 import { getAssetUrl } from '@/lib/utils';
 import { 
   LogOut, 

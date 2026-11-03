@@ -1,4 +1,4 @@
-import { useNativeBackButton } from '@/hooks/useNativeBackButton';
+import { useNativeBackButton } from '@/hooks/native/useNativeBackButton';
 
 function NativeBackButtonHandler() {
   useNativeBackButton();

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import CustomerFooter from '@/components/CustomerFooter';
+import CustomerFooter from '@/components/layout/CustomerFooter';
 
 interface CustomerPageLayoutProps {
   children: ReactNode;

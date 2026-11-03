@@ -1,6 +1,6 @@
 import { useLanguage } from '@/context/LanguageContext';
 import { getAssetUrl } from '@/lib/utils';
-import '../pages/customer-footer.css';
+import '../../pages/customer-footer.css';
 
 /** Shared, theme-aware footer for customer workflows. BottomNavigation stays separate. */
 export default function CustomerFooter() {

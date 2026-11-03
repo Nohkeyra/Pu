@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import WawasanLoader from '@/components/WawasanLoader';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 
 interface AdminPdfShareModalProps {
   isOpen: boolean;

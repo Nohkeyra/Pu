@@ -5,16 +5,16 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
 import { cn } from '@/lib/utils';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import WawasanLoader from '@/components/WawasanLoader';
+import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 import { RefreshCw } from 'lucide-react';
 import { logScreenView, setAnalyticsUserId } from '@/services/analyticsService';
 import { setCrashlyticsUserId } from '@/services/crashlyticsService';
 
 // Components
-import { OfflineBanner } from '@/components/OfflineBanner';
-import ScrollToTopButton from '@/components/ScrollToTopButton';
-import BottomNavigation from '@/components/BottomNavigation';
+import { OfflineBanner } from '@/components/system/OfflineBanner';
+import ScrollToTopButton from '@/components/layout/ScrollToTopButton';
+import BottomNavigation from '@/components/layout/BottomNavigation';
 
 // Helper components that were in App.tsx
 function ScrollToTop() {

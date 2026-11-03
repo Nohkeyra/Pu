@@ -2,8 +2,8 @@ import { useEffect, useState, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
@@ -13,28 +13,28 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useNavigate } from 'react-router-dom';
-import WawasanLoader from '@/components/WawasanLoader';
-import { Batik3DMotion } from '@/components/Batik3DMotion';
+import WawasanLoader from '@/components/brand/WawasanLoader';
+import { Batik3DMotion } from '@/components/brand/Batik3DMotion';
 import { getApiUrl } from '@/lib/api';
 import type { Order } from '@/types';
-import { AdminHeader } from './admin/AdminHeader';
-import { AdminOrdersTab } from './admin/AdminOrdersTab';
-import { AdminTablesTab } from './admin/AdminTablesTab';
-import AdminMenuTab from './admin/AdminMenuTab';
+import { AdminHeader } from './AdminHeader';
+import { AdminOrdersTab } from './AdminOrdersTab';
+import { AdminTablesTab } from './AdminTablesTab';
+import AdminMenuTab from './AdminMenuTab';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 import { getDisplayInvoiceNo } from '@/lib/utils';
-import './ui/presentation.css';
+import '../ui/presentation.css';
 
 // Hooks
-import { useAdminOrders } from '@/hooks/useAdminOrders';
-import { useAdminPdf } from '@/hooks/useAdminPdf';
-import { useAdminMessaging } from '@/hooks/useAdminMessaging';
+import { useAdminOrders } from '@/hooks/admin/useAdminOrders';
+import { useAdminPdf } from '@/hooks/admin/useAdminPdf';
+import { useAdminMessaging } from '@/hooks/admin/useAdminMessaging';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const OrderDetailModal = lazyWithRetry(() => import('./admin/OrderDetailModal').then(m => ({ default: m.OrderDetailModal })), 'OrderDetailModal');
-const SendInvoiceModal = lazyWithRetry(() => import('./admin/SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })), 'SendInvoiceModal');
-const AdminPdfShareModal = lazyWithRetry(() => import('./admin/AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })), 'AdminPdfShareModal');
-const DeliveryMap = lazyWithRetry(() => import('./delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMap');
+const OrderDetailModal = lazyWithRetry(() => import('./OrderDetailModal').then(m => ({ default: m.OrderDetailModal })), 'OrderDetailModal');
+const SendInvoiceModal = lazyWithRetry(() => import('./SendInvoiceModal').then(m => ({ default: m.SendInvoiceModal })), 'SendInvoiceModal');
+const AdminPdfShareModal = lazyWithRetry(() => import('./AdminPdfShareModal').then(m => ({ default: m.AdminPdfShareModal })), 'AdminPdfShareModal');
+const DeliveryMap = lazyWithRetry(() => import('../delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMap');
 
 export default function AdminPanel({ adminToken, onLogout }: { adminToken?: string; onLogout?: () => void | Promise<void> }) {
   const { t, language } = useLanguage();

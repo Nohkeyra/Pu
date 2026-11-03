@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNativeAppState } from '@/hooks/useNativeAppState';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { useDeepLinks } from '@/hooks/useDeepLinks';
+import { useNativeAppState } from '@/hooks/native/useNativeAppState';
+import { useNetworkStatus } from '@/hooks/native/useNetworkStatus';
+import { useDeepLinks } from '@/hooks/native/useDeepLinks';
 import { Motion } from '@capacitor/motion';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
 import { getPendingOrdersCount, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
-import { PendingOrdersDialog } from '@/components/PendingOrdersDialog';
+import { PendingOrdersDialog } from '@/components/order/PendingOrdersDialog';
 
 /**
  * An invisible component that wraps native listeners 

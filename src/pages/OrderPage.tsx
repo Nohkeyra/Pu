@@ -4,13 +4,13 @@ import { RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import OrderForm from '@/components/OrderForm';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { CustomerPageHeader } from '@/components/CustomerPageHeader';
-import CustomerPageLayout from '@/components/CustomerPageLayout';
-import AuthModal from '@/components/AuthModal';
-import UserProfileDashboard from '@/components/UserProfileDashboard';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import OrderForm from '@/components/order/OrderForm';
+import { ErrorBoundary } from '@/components/system/ErrorBoundary';
+import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
+import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
+import AuthModal from '@/components/auth/AuthModal';
+import UserProfileDashboard from '@/components/profile/UserProfileDashboard';
+import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
 import { motion } from 'motion/react';
 
 export default function OrderPage() {

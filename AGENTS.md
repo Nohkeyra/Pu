@@ -21,6 +21,8 @@ Act as an evidence-driven agent. Never treat a plausible change as a verified re
 
 **Directories**: `/src`, `/server`, `/android`, `/scripts`, `/public`, `/e2e`
 
+**Repository organization:** See `docs/repository-architecture.md` before relocating modules. For source moves, update static/dynamic imports, migrate tests with their module, and run `npm run lint:structure`. Never leave duplicate compatibility implementations just to preserve old paths.
+
 ---
 
 ## Read Additional Docs When Relevant

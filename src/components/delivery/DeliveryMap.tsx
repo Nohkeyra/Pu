@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Check, CircleStop, Crosshair, MapPin, MessageCircle, Navigation, Phone, Radio, ShieldCheck, Truck, WifiOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/context/LanguageContext';
-import { useRiderTracking } from '@/hooks/useRiderTracking';
+import { useRiderTracking } from '@/hooks/delivery/useRiderTracking';
 import { canStartRiderTracking, distanceMetres, formatRiderDistance, isFreshRiderLocation, validCoordinates } from '@/lib/riderTracking';
 import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
 import { isNativeRider, RiderTrackingError, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';

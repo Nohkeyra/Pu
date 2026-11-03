@@ -376,7 +376,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       if (validationError) return res.status(400).json({ error: validationError });
       const orderRef = db.collection('orders').doc(orderId);
       const result = await commitAdminOrderMutation(orderRef, data);
-      if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+      if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
       const { oldData, updates } = result;
 
       if (data.status && data.status !== oldData.status) {
@@ -446,7 +446,7 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
   try {
     const orderRef = db.collection('orders').doc(orderId);
     const result = await commitAdminOrderMutation(orderRef, { status });
-    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
     const { oldData, updates } = result;
 
     if (status && status !== oldData.status) {
@@ -506,7 +506,7 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
       tx.update(orderRef, updates);
       return { oldData, updates };
     });
-    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
     const { oldData, updates } = result;
     invalidateCalendarSessionsCache();
     syncGoogleCalendarEvent(orderId, { ...oldData, ...updates, id: orderId }).catch(err => {
@@ -548,7 +548,7 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
       tx.update(orderRef, updates);
       return { oldData, updates };
     });
-    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
     const { oldData, updates } = result;
     const mergedOrderData = { ...oldData, ...updates, id: orderId, status: 'cancel_requested' };
     invalidateCalendarSessionsCache();
@@ -609,7 +609,7 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
       });
       return { deleted: true } as const;
     });
-    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
     invalidateCalendarSessionsCache();
     return res.json({ success: true, message: 'Order removed successfully.' });
   } catch (err) {
@@ -643,7 +643,7 @@ router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
       });
       return { success: true } as const;
     });
-    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    if ('error' in result) return res.status(result.httpStatus || 400).json({ error: result.error });
     return res.json({ success: true, message: 'Admin has been nudged!' });
   } catch (err) {
     console.error('[orderRoutes] /orders/poke:', err);

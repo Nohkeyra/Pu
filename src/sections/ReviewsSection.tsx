@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
-import ReviewCard from '@/components/ReviewCard';
-import { useCarousel } from '@/hooks/useCarousel';
+import ReviewCard from '@/components/marketing/ReviewCard';
+import { useCarousel } from '@/hooks/ui/useCarousel';
 import { useLanguage } from '@/context/LanguageContext';
 import { motion, useReducedMotion } from 'motion/react';
 

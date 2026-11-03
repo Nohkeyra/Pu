@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useReducedMotion, useTransform } from 'motion/react';
-import { useDeviceMotion3D, useBatikVisibilityRef } from '@/hooks/useDeviceMotion3D';
+import { useDeviceMotion3D, useBatikVisibilityRef } from '@/hooks/ui/useDeviceMotion3D';
 import { getAssetUrl } from '@/lib/utils';
 
 interface Batik3DMotionProps {

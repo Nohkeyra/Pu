@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { useInAppUpdates } from '@/hooks/useInAppUpdates';
+import { useInAppUpdates } from '@/hooks/native/useInAppUpdates';
 
 const InAppUpdateModal = lazy(() => import('./InAppUpdateModal'));
 const InAppUpdateBanner = lazy(() => import('./InAppUpdateBanner'));

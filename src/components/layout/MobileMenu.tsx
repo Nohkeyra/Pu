@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import type { User } from 'firebase/auth';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
-import { TransparentLogo } from './TransparentLogo';
+import { TransparentLogo } from '../brand/TransparentLogo';
 
 interface MobileMenuProps {
   isOpen: boolean;

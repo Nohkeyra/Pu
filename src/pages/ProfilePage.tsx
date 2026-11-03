@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
-import UserProfileDashboard from '@/components/UserProfileDashboard';
+import UserProfileDashboard from '@/components/profile/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { User as UserIcon, LogIn, UserPlus, ArrowRight, FileText, MapPin, Check } from 'lucide-react';
-import WawasanLoader from '@/components/WawasanLoader';
-import { CustomerPageHeader } from '@/components/CustomerPageHeader';
-import CustomerPageLayout from '@/components/CustomerPageLayout';
+import WawasanLoader from '@/components/brand/WawasanLoader';
+import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
+import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
 import './customer-calendar-profile.css';
-import AuthModal from '@/components/AuthModal';
+import AuthModal from '@/components/auth/AuthModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();

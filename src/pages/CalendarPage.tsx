@@ -1,4 +1,4 @@
-import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -8,7 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getApiUrl } from '@/lib/api';
 import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
-import WawasanLoader from '@/components/WawasanLoader';
+import WawasanLoader from '@/components/brand/WawasanLoader';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -60,13 +60,13 @@ import {
 import { ms, enUS } from 'date-fns/locale';
 import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
 import { cn, toJSDate } from '@/lib/utils';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
-import { CustomerPageHeader } from '@/components/CustomerPageHeader';
-import CustomerPageLayout from '@/components/CustomerPageLayout';
+import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
+import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
 import './customer-calendar-profile.css';
-import AuthModal from '@/components/AuthModal';
+import AuthModal from '@/components/auth/AuthModal';
 import type { Order } from '@/types';
 
 const cateringBanner = '/assets/ui/catering_banner.jpg';

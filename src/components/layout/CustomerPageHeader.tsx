@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import { TransparentLogo } from '@/components/TransparentLogo';
+import { TransparentLogo } from '@/components/brand/TransparentLogo';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
-import './customer-pages.css';
+import '../customer-pages.css';
 
 interface CustomerPageHeaderProps {
   title: string;

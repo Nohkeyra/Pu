@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
-import { useLongPress } from '@/hooks/useLongPress';
+import { useLongPress } from '@/hooks/ui/useLongPress';
 import { getAssetUrl } from '@/lib/utils';
 
 export function AdminMenuItemRow({

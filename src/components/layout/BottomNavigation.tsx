@@ -24,17 +24,17 @@ function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
 function prefetchTabModule(path: string) {
   try {
     if (path.includes('order')) {
-      import('../pages/OrderPage').catch(() => {});
+      import('../../pages/OrderPage').catch(() => {});
     } else if (path.includes('calendar')) {
-      import('../pages/CalendarPage').catch(() => {});
+      import('../../pages/CalendarPage').catch(() => {});
     } else if (path.includes('profile')) {
-      import('../pages/ProfilePage').catch(() => {});
+      import('../../pages/ProfilePage').catch(() => {});
     } else if (path.includes('settings')) {
-      import('../pages/SettingsPage').catch(() => {});
+      import('../../pages/SettingsPage').catch(() => {});
     } else if (path.includes('admin')) {
-      import('../pages/AdminPage').catch(() => {});
+      import('../../pages/AdminPage').catch(() => {});
     } else if (path.includes('home') || path.includes('main')) {
-      import('../pages/LandingPage').catch(() => {});
+      import('../../pages/LandingPage').catch(() => {});
     }
   } catch {
     // Best-effort prefetch

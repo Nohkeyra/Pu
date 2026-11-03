@@ -1,9 +1,9 @@
 import React from 'react';
 import { Award } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import ResponsiveImage from '@/components/ResponsiveImage';
+import ResponsiveImage from '@/components/ui/ResponsiveImage';
 import { motion } from 'motion/react';
-import BatikParallaxContainer from '@/components/BatikParallaxContainer';
+import BatikParallaxContainer from '@/components/brand/BatikParallaxContainer';
 
 const StorySection = React.memo(() => {
   const { t, language } = useLanguage();

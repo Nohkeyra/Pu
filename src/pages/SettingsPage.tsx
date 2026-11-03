@@ -6,10 +6,10 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl, SegmentedControlItem } from '@/components/ui/segmented-control';
 import { ColorSwatch } from '@/components/ui/color-swatch';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
-import { TransparentLogo } from '@/components/TransparentLogo';
-import { CustomerPageHeader } from '@/components/CustomerPageHeader';
+import { TransparentLogo } from '@/components/brand/TransparentLogo';
+import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
 import {
   Globe,
   Bell,
@@ -42,9 +42,9 @@ import {
   LogOut,
   UserCircle,
 } from 'lucide-react';
-import { useAdminBiometric } from '@/hooks/useAdminBiometric';
-import { useCustomerBiometricEnrollment } from '@/hooks/useBiometricEnrollment';
-import { BiometricEnrollDialog } from '@/components/BiometricEnrollDialog';
+import { useAdminBiometric } from '@/hooks/admin/useAdminBiometric';
+import { useCustomerBiometricEnrollment } from '@/hooks/native/useBiometricEnrollment';
+import { BiometricEnrollDialog } from '@/components/auth/BiometricEnrollDialog';
 import { clearAdminSession } from '@/services/authService';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -56,15 +56,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CURRENT_APP_VERSION, getInstalledAppInfo, type AppVersionConfig } from '@/services/updateService';
 import { AdminDiagnosticsTab } from '@/components/admin/AdminDiagnosticsTab';
 import { AdminUpdatesTab } from '@/components/admin/AdminUpdatesTab';
-import { DeviceOsSettingsCard } from '@/components/DeviceOsSettingsCard';
-import InAppUpdateModal from '@/components/InAppUpdateModal';
+import { DeviceOsSettingsCard } from '@/components/system/DeviceOsSettingsCard';
+import InAppUpdateModal from '@/components/system/InAppUpdateModal';
 import { isUserAdmin } from '@/constants/auth';
 
 import { RESTORAN_CONTACT } from '@/constants/contact';
 
 import { getApiUrl } from '@/lib/api';
 import { removeSecureItem } from '@/lib/preferences';
-import { DiagnosticConsole } from '@/components/DiagnosticConsole';
+import { DiagnosticConsole } from '@/components/system/DiagnosticConsole';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import {
