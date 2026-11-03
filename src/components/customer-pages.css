@@ -287,3 +287,95 @@
   min-width: 0;
   white-space: normal;
 }
+
+/* Customer Settings: use the same surfaces and controls as the Order page.
+   Scoped deliberately; status/feedback colors remain semantic. */
+.customer-settings-page .settings-section-card,
+.customer-settings-page .settings-row {
+  background: var(--customer-surface);
+  color: var(--customer-ink);
+}
+.customer-settings-page .settings-section-card {
+  border-color: var(--customer-line);
+}
+.customer-settings-page .settings-row:not(:last-child) {
+  border-bottom-color: var(--customer-line);
+}
+.customer-settings-page .settings-row-action .app-segmented {
+  background: var(--customer-soft);
+  border-color: var(--customer-line);
+  box-shadow: none;
+}
+.customer-settings-page .settings-row-action .app-segmented [role="tab"] {
+  color: var(--customer-muted);
+  background: transparent;
+}
+.customer-settings-page .settings-row-action .app-segmented [role="tab"][aria-selected="true"] {
+  color: var(--customer-accent);
+  background: var(--customer-surface);
+  border: 1px solid var(--customer-line);
+}
+.customer-settings-page .settings-row-action input[type="range"] {
+  accent-color: var(--customer-accent);
+}
+
+/* Wawasan Heritage Atmosphere v2 — Order page only.
+   The previous version painted the artwork on ::before at z-index:-1,
+   behind the opaque page canvas. Use a dedicated foreground canvas layer,
+   but keep it BELOW all interactive content. */
+.customer-order-page {
+  --heritage-artwork: url('/assets/heritage/wawasan-splash-light.webp');
+}
+.dark .customer-order-page {
+  --heritage-artwork: url('/assets/heritage/wawasan-splash-dark.webp');
+}
+/* Retain the global low-contrast batik background, but prevent the old
+   image layer from competing with the dedicated splash composition. */
+.customer-order-page::before { opacity: 0; }
+.customer-order-page::after {
+  content: '';
+  position: fixed;
+  inset: var(--customer-header-height) 0 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: var(--heritage-artwork);
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: center top;
+  opacity: .72;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+}
+.dark .customer-order-page::after { opacity: .76; }
+/* Keep content above decoration; the header and sticky action bar already
+   establish their own stacking levels. */
+.customer-order-page > .customer-content,
+.customer-order-page > main {
+  position: relative;
+  z-index: 1;
+}
+/* Give the progress card a translucent heritage treatment, without making
+   form fields translucent or sacrificing contrast. */
+.customer-order-page .customer-order-progress {
+  background: color-mix(in srgb, var(--customer-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--customer-accent) 22%, var(--customer-line));
+  box-shadow: 0 10px 30px rgba(83,43,12,.10);
+}
+.customer-order-page .customer-form-panel {
+  background: var(--customer-surface);
+  border-color: color-mix(in srgb, var(--customer-accent) 17%, var(--customer-line));
+  box-shadow: 0 12px 34px rgba(83,43,12,.10);
+}
+.dark .customer-order-page .customer-order-progress,
+.dark .customer-order-page .customer-form-panel {
+  box-shadow: 0 14px 36px rgba(0,0,0,.25);
+}
+@media (min-width: 768px) {
+  .customer-order-page::after {
+    background-size: min(100%, 900px) auto;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .customer-order-page::after { opacity: .35; }
+  .customer-order-page .customer-order-progress { background: var(--customer-surface); }
+}

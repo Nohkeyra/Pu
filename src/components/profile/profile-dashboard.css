@@ -127,3 +127,31 @@ body:has(.profile-order-action-sheet, .profile-order-edit-sheet, .profile-custom
   .profile-tab-panel { animation: profile-panel-enter .18s ease-out; }
   @keyframes profile-panel-enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 }
+
+/* Customer Profile: inherit the customer shell's warm surface system.
+   These rules apply only inside the customer profile, not admin surfaces. */
+.customer-profile-page .profile-dashboard {
+  --profile-muted: var(--customer-muted);
+  --profile-soft: var(--customer-soft);
+  --profile-border: var(--customer-line);
+  color: var(--customer-ink);
+}
+.customer-profile-page .profile-summary {
+  background: var(--customer-surface);
+  color: var(--customer-ink);
+  border-color: var(--customer-line);
+}
+.customer-profile-page .profile-summary > p,
+.customer-profile-page .profile-summary-counts dd { color: var(--customer-muted); }
+.customer-profile-page .profile-summary-counts { border-top-color: var(--customer-line); }
+.customer-profile-page .profile-tabs [aria-selected="true"],
+.customer-profile-page .profile-dashboard .profile-section,
+.customer-profile-page .profile-order-card {
+  background: var(--customer-surface);
+  border-color: var(--customer-line);
+  color: var(--customer-ink);
+}
+.customer-profile-page .profile-tabs [aria-selected="true"] { color: var(--customer-accent); }
+.customer-profile-page .profile-dashboard .profile-section [data-slot="card-title"] {
+  color: var(--customer-ink);
+}
