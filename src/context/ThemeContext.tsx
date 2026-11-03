@@ -52,6 +52,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   const transitionTimerRef = useRef<{ fade?: ReturnType<typeof setTimeout>; end?: ReturnType<typeof setTimeout> }>({});
+  // Prevent an older asynchronous preference read from undoing a user's action
+  // or a newer Firestore branding snapshot during initial hydration.
+  const themeChangedRef = useRef(false);
+  const accentChangedRef = useRef(false);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+
 
   // Cleanup pending transition timers on unmount
   useEffect(() => {
@@ -62,31 +68,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Load initial theme and accent from Capacitor preferences asynchronously on mount
-  // to avoid native WebView race conditions and override any stale/empty localStorage state
+  // Hydrate the native preference store without racing user input or branding sync.
   useEffect(() => {
+    let active = true;
     const loadDurableTheme = async () => {
       try {
         const savedTheme = await getSecureItem('app_theme');
-        if (savedTheme === 'light' || savedTheme === 'dark') {
+        if (active && !themeChangedRef.current && (savedTheme === 'light' || savedTheme === 'dark')) {
           setTheme(savedTheme);
-        } else {
-          setTheme('dark');
         }
         const savedAccent = await getSecureItem('app_accent');
-        if (savedAccent === 'kiwi' || savedAccent === 'sunshine') {
+        if (active && !accentChangedRef.current && (savedAccent === 'kiwi' || savedAccent === 'sunshine')) {
           setAccentState(savedAccent);
         }
       } catch (err) {
         console.warn('Failed to load theme/accent from preferences on mount:', err);
+      } finally {
+        if (active) setPreferencesLoaded(true);
       }
     };
-    loadDurableTheme();
+    void loadDurableTheme();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
     // Sync to localStorage / secure storage
-    setSecureItem('app_theme', theme);
+    if (preferencesLoaded) void setSecureItem('app_theme', theme);
     
     // Apply class to document.documentElement
     if (theme === 'dark') {
@@ -103,11 +110,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         style: theme === 'dark' ? Style.Dark : Style.Light,
       }).catch(() => {});
     }
-  }, [theme]);
+  }, [theme, preferencesLoaded]);
 
   useEffect(() => {
     // Sync accent to localStorage / secure storage
-    setSecureItem('app_accent', accent);
+    if (preferencesLoaded) void setSecureItem('app_accent', accent);
     
     // Apply class to document.documentElement
     if (accent === 'kiwi') {
@@ -115,7 +122,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       document.documentElement.classList.remove('accent-kiwi');
     }
-  }, [accent]);
+  }, [accent, preferencesLoaded]);
 
   // Firestore real-time listener for app branding accent color
   useEffect(() => {
@@ -135,6 +142,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             if (docSnap.exists()) {
               const data = docSnap.data();
               if (data && (data.accent === 'kiwi' || data.accent === 'sunshine')) {
+                accentChangedRef.current = true;
                 setAccentState(data.accent);
               }
             }
@@ -172,6 +180,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       targetTheme: nextTheme,
     });
 
+    themeChangedRef.current = true;
     setTheme(nextTheme);
 
     // Phase 1: Hold heavy blur backdrop overlay over viewport while colors switch, then start fading out
@@ -205,10 +214,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setAccent = (newAccent: AccentColor) => {
+    accentChangedRef.current = true;
     setAccentState(newAccent);
   };
 
   const updateAccentInDb = async (newAccent: AccentColor, adminToken?: string) => {
+    accentChangedRef.current = true;
     setAccentState(newAccent);
     try {
       const response = await fetch(getApiUrl('/api/admin/branding'), {

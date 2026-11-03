@@ -26,24 +26,8 @@
   --customer-selected: #2e241b;
 }
 
-/* Splashscreen atmospheric authentic batik backdrop across customer pages */
-.customer-page::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url('/assets/heritage/batik_pattern_hd.jpg');
-  background-size: clamp(140px, 25vw, 240px) auto;
-  background-repeat: repeat;
-  background-position: center;
-  opacity: 0.038;
-  mask-image: radial-gradient(circle at 50% 20%, black 50%, transparent 95%);
-  -webkit-mask-image: radial-gradient(circle at 50% 20%, black 50%, transparent 95%);
-  pointer-events: none;
-  z-index: -1;
-}
-.dark .customer-page::before {
-  opacity: 0.055;
-}
+/* Customer-page ambient batik is defined solely in wawasan-page-backgrounds.css.
+   Do not add another .customer-page::before layer here. */
 
 .customer-header-frame,.customer-content {width:100%;margin-inline:auto;padding-inline:20px;max-width:72rem}
 .customer-page-header {
@@ -319,8 +303,10 @@
   accent-color: var(--customer-accent);
 }
 
-/* Wawasan Heritage Floral V4 — decorative-only. No existing theme or UI colors altered. */
-.customer-order-page::after { content: none !important; }
+/* Active Order Page floral layout (replaces the conflicting V4–V7 overrides).
+   The left ornament belongs to the order intro; the right ornament belongs to
+   CustomerPageLayout's pre-footer slot. Neither creates another visual layer. */
+.customer-order-page::after { content: none; }
 .customer-order-page .customer-botanical-decoration {
   --wawasan-leaf: #244b2b;
   --wawasan-leaf-edge: #ad8c38;
@@ -333,84 +319,27 @@
   right: 0;
   height: 180px;
   z-index: 0;
+  overflow: hidden;
   color: #ba7828;
   pointer-events: none;
-  overflow: hidden;
 }
-.customer-order-page .wawasan-batik-flower { position: absolute; width: 180px; height: 140px; }
-.customer-order-page .wawasan-batik-flower--left { left: -35px; top: 0; }
-.customer-order-page .wawasan-batik-flower--right { right: -35px; top: 20px; }
-.customer-order-page .wawasan-batik-wave { position: absolute; width: 100%; height: 34px; bottom: 0; opacity: .55; }
-.customer-order-page > .customer-content { position: relative; z-index: 2; }
-@media (max-width: 767px) {
-  .customer-order-page .customer-botanical-decoration { top: 455px; height: 120px; }
-  .customer-order-page .wawasan-batik-flower { width: 120px; height: 94px; }
-  .customer-order-page .wawasan-batik-flower--left { left: -48px; top: 0; }
-  .customer-order-page .wawasan-batik-flower--right { right: -48px; top: 8px; }
-  .customer-order-page .wawasan-batik-wave { height: 18px; opacity: .35; }
-}
-
-/* V5: keep V4 artwork, but reveal complete small ornaments in the quiet gap
-   before the order form rather than clipping them behind the form card.
-   Decorative positioning only; no theme tokens or order behavior changed. */
-@media (max-width: 767px) {
-  .customer-order-page .customer-botanical-decoration {
-    top: 190px;
-    height: 96px;
-    overflow: visible;
-    z-index: 3;
-  }
-  .customer-order-page .wawasan-batik-flower {
-    width: 76px;
-    height: 59px;
-    opacity: .78;
-  }
-  .customer-order-page .wawasan-batik-flower--left {
-    left: 4px;
-    top: 12px;
-  }
-  .customer-order-page .wawasan-batik-flower--right {
-    right: 4px;
-    top: 26px;
-  }
-  .customer-order-page .wawasan-batik-wave { display: none; }
-}
-
-/* V6: right flower moves to the quiet space immediately above the footer.
-   The user's yellow annotation is a position reference ONLY, never artwork.
-   Preserve the left flower, original colors, form and navigation. */
-@media (max-width: 767px) {
-  .customer-order-page .customer-botanical-decoration {
-    top: 0;
-    bottom: 0;
-    height: auto;
-    overflow: visible;
-    z-index: 3;
-  }
-  .customer-order-page .wawasan-batik-flower--left {
-    left: 4px;
-    top: 202px;
-  }
-  .customer-order-page .wawasan-batik-flower--right {
-    right: 4px;
-    top: auto;
-    bottom: calc(305px + var(--sab, 0px));
-  }
-}
-
-/* V7: Footer-edge anchor for the right floral ornament. Unlike the earlier
-   absolute page positioning, this slot follows content height and sits
-   immediately before the customer footer at every scroll length. */
-.customer-order-page .wawasan-batik-flower--right {
+.customer-order-page .wawasan-batik-flower {
   position: absolute;
-  width: clamp(126px, 18vw, 170px);
-  height: auto;
-  right: -10px;
-  bottom: -2px;
-  top: auto;
-  left: auto;
-  opacity: .86;
+  width: 180px;
+  height: 140px;
 }
+.customer-order-page .customer-botanical-decoration .wawasan-batik-flower--left {
+  left: -35px;
+  top: 0;
+}
+.customer-order-page .wawasan-batik-wave {
+  position: absolute;
+  width: 100%;
+  height: 34px;
+  bottom: 0;
+  opacity: .55;
+}
+.customer-order-page > .customer-content { position: relative; z-index: 2; }
 .customer-order-page .customer-pre-footer-decoration {
   position: relative;
   height: 0;
@@ -419,21 +348,45 @@
   pointer-events: none;
 }
 .customer-order-page .wawasan-order-footer-flower {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 120px;
-  pointer-events: none;
-  color: #ba7828;
   --wawasan-leaf: #244b2b;
   --wawasan-leaf-edge: #ad8c38;
   --wawasan-leaf-vein: #77964a;
   --wawasan-flower: #9b2f17;
   --wawasan-flower-core: #d69b35;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 120px;
+  color: #ba7828;
+  pointer-events: none;
+}
+.customer-order-page .wawasan-order-footer-flower .wawasan-batik-flower--right {
+  top: auto;
+  bottom: -2px;
+  right: -10px;
+  left: auto;
+  width: clamp(126px, 18vw, 170px);
+  height: auto;
+  opacity: .86;
 }
 @media (max-width: 767px) {
-  .customer-order-page .wawasan-batik-flower--right {
+  .customer-order-page .customer-botanical-decoration {
+    top: 0;
+    bottom: 0;
+    height: auto;
+    overflow: visible;
+    z-index: 0;
+  }
+  .customer-order-page .customer-botanical-decoration .wawasan-batik-flower--left {
+    left: 4px;
+    top: 202px;
+    width: 76px;
+    height: 59px;
+    opacity: .78;
+  }
+  .customer-order-page .wawasan-batik-wave { display: none; }
+  .customer-order-page .wawasan-order-footer-flower .wawasan-batik-flower--right {
     width: clamp(112px, 31vw, 145px);
     right: -12px;
     bottom: -3px;

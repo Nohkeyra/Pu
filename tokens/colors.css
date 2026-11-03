@@ -8,13 +8,20 @@
 
   /* Semantic */
   --color-bg: hsl(var(--background));
-  --color-surface: hsl(var(--card));
-  --color-surface-muted: hsl(var(--muted));
-  --color-text: hsl(var(--foreground));
-  --color-text-soft: hsl(var(--muted-foreground));
-  --color-text-muted: hsl(var(--muted-foreground));
-  --color-accent: var(--color-sunshine-cta);
-  --color-accent-deep: #725014;
+  --wawasan-source-color-surface: hsl(var(--card));
+  --color-surface: var(--wawasan-source-color-surface);
+  --wawasan-source-color-surface-muted: hsl(var(--muted));
+  --color-surface-muted: var(--wawasan-source-color-surface-muted);
+  --wawasan-source-color-text: hsl(var(--foreground));
+  --color-text: var(--wawasan-source-color-text);
+  --wawasan-source-color-text-soft: hsl(var(--muted-foreground));
+  --color-text-soft: var(--wawasan-source-color-text-soft);
+  --wawasan-source-color-text-muted: hsl(var(--muted-foreground));
+  --color-text-muted: var(--wawasan-source-color-text-muted);
+  --wawasan-source-color-accent: var(--color-sunshine-cta);
+  --color-accent: var(--wawasan-source-color-accent);
+  --wawasan-source-color-accent-deep: #725014;
+  --color-accent-deep: var(--wawasan-source-color-accent-deep);
   --color-border: hsl(var(--border));
   --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
 
@@ -38,11 +45,16 @@
 
   /* Semantic overrides in dark mode */
   --color-bg: var(--dark-bg);
-  --color-surface: var(--dark-surface);
-  --color-surface-muted: hsl(var(--muted));
-  --color-text: var(--dark-text);
-  --color-text-soft: hsl(var(--muted-foreground));
-  --color-text-muted: hsl(var(--muted-foreground));
+  --wawasan-source-color-surface: var(--dark-surface);
+  --color-surface: var(--wawasan-source-color-surface);
+  --wawasan-source-color-surface-muted: hsl(var(--muted));
+  --color-surface-muted: var(--wawasan-source-color-surface-muted);
+  --wawasan-source-color-text: var(--dark-text);
+  --color-text: var(--wawasan-source-color-text);
+  --wawasan-source-color-text-soft: hsl(var(--muted-foreground));
+  --color-text-soft: var(--wawasan-source-color-text-soft);
+  --wawasan-source-color-text-muted: hsl(var(--muted-foreground));
+  --color-text-muted: var(--wawasan-source-color-text-muted);
   --color-border: var(--dark-border);
   --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
 }

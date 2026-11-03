@@ -42,7 +42,8 @@ class MemoryFirestore {
           }
         },
         update: async (data: any) => {
-          const existing = col.get(docId) || {};
+          if (!col.has(docId)) throw new Error(`NOT_FOUND: Document ${name}/${docId} does not exist`);
+          const existing = col.get(docId);
           col.set(docId, { ...existing, ...data });
         },
         delete: async () => {
@@ -51,26 +52,78 @@ class MemoryFirestore {
       };
     };
 
-    const colRef = {
-      doc: (id?: string) => createDocRef(id),
-      add: async (data: any) => {
-        const ref = createDocRef();
-        col.set(ref.id, { ...data });
-        return ref;
-      },
-      get: async () => {
-        const docs = Array.from(col.entries()).map(([id, data]) => ({
-          id,
-          data: () => ({ ...data }),
-          exists: true,
-        }));
-        return { docs, empty: docs.length === 0, size: docs.length };
-      },
-      orderBy: () => colRef,
-      limit: () => colRef,
-      where: () => colRef,
-      startAfter: () => colRef,
+    // Immutable query descriptors mimic Firestore chaining. Previously these were
+    // no-ops, so tests could pass with records a real Firestore query excludes.
+    type Filter = { field: string; operator: string; expected: any };
+    const makeQuery = (filters: Filter[] = [], ordering: Array<{ field: string; direction: string }> = [], maxResults?: number, cursor?: any): any => {
+      const readField = (record: any, field: string) => field.split('.').reduce((value, key) => value?.[key], record);
+      const compare = (a: any, b: any): number => {
+        if (a === b) return 0;
+        if (a === undefined || a === null) return -1;
+        if (b === undefined || b === null) return 1;
+        if (typeof a === 'number' && typeof b === 'number') return a < b ? -1 : 1;
+        return String(a).localeCompare(String(b));
+      };
+      return {
+        doc: (id?: string) => createDocRef(id),
+        add: async (data: any) => {
+          const ref = createDocRef();
+          col.set(ref.id, { ...data });
+          return ref;
+        },
+        where: (field: string, operator: string, expected: any) => {
+          if (!['==', '<', '<=', '>', '>=', 'in'].includes(operator)) {
+            throw new Error(`Unsupported MemoryFirestore where operator: ${operator}`);
+          }
+          return makeQuery([...filters, { field, operator, expected }], ordering, maxResults, cursor);
+        },
+        orderBy: (field: string, direction = 'asc') => makeQuery(filters, [...ordering, { field, direction }], maxResults, cursor),
+        limit: (count: number) => {
+          if (!Number.isSafeInteger(count) || count < 0) throw new Error('Invalid query limit');
+          return makeQuery(filters, ordering, count, cursor);
+        },
+        startAfter: (value: any) => makeQuery(filters, ordering, maxResults, value),
+        get: async () => {
+          let rows = Array.from(col.entries()).map(([id, data]) => ({ id, data, ref: createDocRef(id) }));
+          for (const { field, operator, expected } of filters) {
+            rows = rows.filter(({ data }) => {
+              const actual = readField(data, field);
+              if (actual === undefined) return false;
+              if (operator === '==') return actual === expected;
+              if (operator === 'in') return Array.isArray(expected) && expected.includes(actual);
+              const diff = compare(actual, expected);
+              if (operator === '<') return diff < 0;
+              if (operator === '<=') return diff <= 0;
+              if (operator === '>') return diff > 0;
+              return diff >= 0;
+            });
+          }
+          if (ordering.length) {
+            rows = rows.filter(({ data }) => ordering.every(({ field }) => readField(data, field) !== undefined));
+            rows.sort((a, b) => {
+              for (const { field, direction } of ordering) {
+                const diff = compare(readField(a.data, field), readField(b.data, field));
+                if (diff) return direction === 'desc' ? -diff : diff;
+              }
+              return a.id.localeCompare(b.id);
+            });
+          }
+          if (cursor !== undefined && ordering.length) {
+            const values = cursor && typeof cursor.data === 'function'
+              ? ordering.map(({ field }) => readField(cursor.data(), field))
+              : [cursor];
+            rows = rows.filter(({ data }) => ordering.some(({ field, direction }, i) => {
+              const diff = compare(readField(data, field), values[i]);
+              return (direction === 'desc' ? -diff : diff) > 0;
+            }));
+          }
+          if (maxResults !== undefined) rows = rows.slice(0, maxResults);
+          const docs = rows.map(({ id, data, ref }) => ({ id, ref, data: () => ({ ...data }), exists: true }));
+          return { docs, empty: docs.length === 0, size: docs.length };
+        },
+      };
     };
+    const colRef = makeQuery();
     return colRef;
   }
 
@@ -90,7 +143,8 @@ class MemoryFirestore {
       update: (ref: any, data: any) => {
         operations.push(() => {
           const col = this.getCol(ref._colName || 'orders');
-          const existing = col.get(ref.id) || {};
+          if (!col.has(ref.id)) throw new Error(`NOT_FOUND: Document ${ref._colName || 'orders'}/${ref.id} does not exist`);
+          const existing = col.get(ref.id);
           col.set(ref.id, { ...existing, ...data });
         });
       },

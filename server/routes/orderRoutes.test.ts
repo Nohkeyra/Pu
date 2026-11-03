@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
 import type { Server } from 'http';
-import orderRoutes, { deriveEventDate } from './orderRoutes.js';
+import orderRoutes, { deriveEventDate, validateAdminOrderUpdate } from './orderRoutes.js';
 import { signAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
@@ -49,6 +49,33 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     if (server) {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
+  });
+
+  describe('Admin update field constraints', () => {
+    it('rejects mutations to server-owned order identity and deletion flags', () => {
+      expect(validateAdminOrderUpdate({ userId: 'different-user' })).toContain('Unsupported');
+      expect(validateAdminOrderUpdate({ deletedByAdmin: false })).toContain('Unsupported');
+      expect(validateAdminOrderUpdate({ createdAt: '2020-01-01' })).toContain('Unsupported');
+      expect(validateAdminOrderUpdate({ 'prices.lunch': 0 })).toContain('Unsupported');
+    });
+
+    it('accepts existing admin billing payloads, rejects nonfinite prices and totals', () => {
+      expect(validateAdminOrderUpdate({
+        status: 'billed', prices: { lunch: 14.5 }, totalAmount: 145,
+        invoiceNo: 'RW 2026-00001', approvedAt: new Date().toISOString(),
+      })).toBeNull();
+      expect(validateAdminOrderUpdate({ prices: { lunch: Infinity } })).toBeTruthy();
+      expect(validateAdminOrderUpdate({ totalAmount: NaN })).toBeTruthy();
+    });
+
+    it('rejects protected-field writes at the HTTP boundary', async () => {
+      const res = await fetch(`${baseUrl}/api/admin/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ action: 'update', orderId: 'any', data: { userId: 'attacker' } }),
+      });
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('Client / Guest Price & Total Manipulation Immunity', () => {
@@ -312,7 +339,53 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       expect(json.success).toBe(true);
 
       const check = await db.collection('orders').doc('billed_own_order').get();
-      expect(check.exists).toBe(false);
+      expect(check.exists).toBe(true);
+      expect(check.data()?.deletedByUser).toBe(true);
+    });
+  });
+
+  it('preserves invoiced records when admin removes a customer-hidden order', async () => {
+    const db = getFirestore();
+    await db.collection('orders').doc('invoiced_retained').set({
+      userId: 'owner', status: 'billed', invoiceNo: 'RW 991', deletedByUser: true,
+    });
+    const response = await fetch(`${baseUrl}/api/admin/orders`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', orderId: 'invoiced_retained' }),
+    });
+    expect(response.status).toBe(200);
+    const saved = await db.collection('orders').doc('invoiced_retained').get();
+    expect(saved.exists).toBe(true);
+    expect(saved.data()?.deletedByAdmin).toBe(true);
+    expect(saved.data()?.invoiceNo).toBe('RW 991');
+  });
+
+  describe('Customer poke ownership', () => {
+    it('rejects unauthenticated access to guest orders', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('guest_poke').set({ status: 'pending', userId: null });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue(null);
+      const res = await fetch(`${baseUrl}/api/orders/poke`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: 'guest_poke' }),
+      });
+      expect(res.status).toBe(403);
+      const check = await db.collection('orders').doc('guest_poke').get();
+      expect(check.data()?.lastPokedAt).toBeUndefined();
+    });
+
+    it('only lets the authenticated owner poke a named order', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('owned_poke').set({ status: 'pending', userId: 'owner_1' });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('owner_2');
+      const request = () => fetch(`${baseUrl}/api/orders/poke`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: 'owned_poke' }),
+      });
+      expect((await request()).status).toBe(403);
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('owner_1');
+      expect((await request()).status).toBe(200);
     });
   });
 

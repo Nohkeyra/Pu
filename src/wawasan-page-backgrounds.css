@@ -1,13 +1,11 @@
-/* Wawasan customer-page background finishing layer.
-   Scope: Order, Calendar, Profile, Settings (all use .customer-page).
-   Landing hero/footer, admin, auth, card surfaces and brand colors are untouched.
-   Original decorative assets only; no new images or runtime logic. */
-.customer-page {
-  isolation: isolate;
-}
-
-/* Override only the existing ambient batik pseudo-element, not content layers. */
+/* Single source of truth for customer ambient batik background.
+   This includes the positioning that formerly lived in customer-pages.css. */
 .customer-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image: url('/assets/heritage/batik_vector_pattern.jpg');
   background-size: clamp(340px, 75vw, 720px) auto;
   background-repeat: repeat;
@@ -16,11 +14,7 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 74%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 74%, transparent 100%);
 }
-.dark .customer-page::before {
-  opacity: .105;
-}
-
-/* A gentler, larger-scale composition for narrow screens. */
+.dark .customer-page::before { opacity: .105; }
 @media (max-width: 639px) {
   .customer-page::before {
     background-size: 440px auto;
@@ -29,8 +23,6 @@
   }
   .dark .customer-page::before { opacity: .095; }
 }
-
-/* Motion-free decorative layer; respects existing light/dark palettes. */
 @media (prefers-reduced-motion: reduce) {
   .customer-page::before { animation: none; transition: none; }
 }
@@ -41,6 +33,7 @@
 .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
   > .customer-content {
   position: relative;
+  isolation: isolate;
 }
 
 .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
@@ -57,7 +50,7 @@
   pointer-events: none;
   user-select: none;
   opacity: .86;
-  z-index: 2;
+  z-index: -1;
 }
 
 /* The first ornament echoes the approved small flower on Order. */

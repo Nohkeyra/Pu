@@ -258,6 +258,36 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
   }
 });
 
+// The admin UI updates status and billing fields only. Never spread arbitrary
+// request keys into Firestore: that permits changes to ownership, deletion flags,
+// creation timestamps, and other server-owned invariants.
+const ADMIN_ORDER_MUTABLE_FIELDS = new Set([
+  'status', 'prices', 'totalAmount', 'approvedAt', 'billedAt', 'invoiceNo',
+]);
+
+export function validateAdminOrderUpdate(data: unknown): string | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return 'Order update data must be an object';
+  const entries = Object.entries(data);
+  if (entries.length === 0) return 'Order update data cannot be empty';
+  for (const [key, value] of entries) {
+    if (!ADMIN_ORDER_MUTABLE_FIELDS.has(key) || key.includes('.')) return `Unsupported order update field: ${key}`;
+    if (key === 'status' && (typeof value !== 'string' || !value.trim())) return 'Invalid order status';
+    if (key === 'prices' && (value === null || typeof value !== 'object' || Array.isArray(value) ||
+      Object.entries(value).some(([meal, price]) => !meal || typeof price !== 'number' || !Number.isFinite(price) || price < 0))) {
+      return 'Invalid meal prices';
+    }
+    if (key === 'totalAmount' && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
+      return 'Invalid total amount';
+    }
+    if ((key === 'approvedAt' || key === 'billedAt') &&
+      (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) return `Invalid ${key}`;
+    if (key === 'invoiceNo' && (typeof value !== 'string' || !/^((QT|RW)\s+[\w-]+)$/.test(value))) {
+      return 'Invalid invoice number';
+    }
+  }
+  return null;
+}
+
 // Re-read and validate status inside the same Firestore transaction as the write.
 // Reserve a new invoice number before entering the transaction because the
 // invoice generator uses its own Firestore transaction. Unused reservations can
@@ -342,9 +372,8 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
     }
 
     if (action === 'update' && orderId) {
-      if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return res.status(400).json({ error: 'Order update data must be an object' });
-      }
+      const validationError = validateAdminOrderUpdate(data);
+      if (validationError) return res.status(400).json({ error: validationError });
       const orderRef = db.collection('orders').doc(orderId);
       const result = await commitAdminOrderMutation(orderRef, data);
       if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
@@ -374,23 +403,26 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
     if (action === 'delete' && orderId) {
       const orderRef = db.collection('orders').doc(orderId);
-      const snap = await orderRef.get();
-      if (!snap.exists) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      const orderData = snap.data() as OrderData;
-      const ownerUid = orderData.userId || orderData.uid || null;
-
-      if (!ownerUid || orderData.deletedByUser) {
-        await orderRef.delete();
-      } else {
-        await orderRef.update({
-          deletedByAdmin: true,
-          deletedByAdminAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
+      // Keep billed/invoiced records for administrative history even when
+      // both customer and admin have removed the item from their own views.
+      const result = await db.runTransaction(async tx => {
+        const snap = await tx.get(orderRef);
+        if (!snap.exists) return { missing: true } as const;
+        const orderData = snap.data() as OrderData;
+        const ownerUid = orderData.userId || orderData.uid || null;
+        const hasInvoice = Boolean(orderData.invoiceNo || (orderData as any).officialInvoiceNo);
+        if ((!ownerUid || orderData.deletedByUser) && !hasInvoice && orderData.status !== 'billed') {
+          tx.delete(orderRef);
+        } else {
+          tx.update(orderRef, {
+            deletedByAdmin: true,
+            deletedByAdminAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+        return { missing: false } as const;
+      });
+      if (result.missing) return res.status(404).json({ error: 'Order not found' });
 
       invalidateCalendarSessionsCache();
       return res.json({ success: true, message: 'Order deleted on admin side' });
@@ -568,7 +600,13 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
       if (String(orderData.status || '').toLowerCase() !== 'billed') {
         return { error: 'You can only remove an order from your history after it has been billed by the restaurant.', httpStatus: 403 } as const;
       }
-      tx.delete(orderRef);
+      // Removing an invoice from the customer history must not destroy the
+      // financial/order record that administration may still need.
+      tx.update(orderRef, {
+        deletedByUser: true,
+        deletedByUserAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
       return { deleted: true } as const;
     });
     if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
@@ -580,31 +618,32 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
   }
 });
 
-// Customer Poke Admin
+// Only an authenticated owner can nudge admin for an order. A guest order
+// without an authenticated owner must not be mutable by anyone knowing its ID.
 router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
-  const { orderId } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId is required' });
-  const db = getFirestore();
+  const { orderId } = req.body || {};
+  if (typeof orderId !== 'string' || !orderId.trim()) return res.status(400).json({ error: 'orderId is required' });
+  const callerUid = await verifyCustomerIdToken(req);
+  if (!callerUid) return res.status(403).json({ error: 'Not authorized to poke this order' });
 
   try {
+    const db = getFirestore();
     const orderRef = db.collection('orders').doc(orderId);
-    const snap = await orderRef.get();
-    if (!snap.exists) return res.status(404).json({ error: 'Order not found' });
-
-    const ownerData = snap.data() as OrderData;
-    const ownerUid = ownerData.userId || ownerData.uid || null;
-    if (ownerUid) {
-      const callerUid = await verifyCustomerIdToken(req);
-      if (!callerUid || callerUid !== ownerUid) {
-        return res.status(403).json({ error: 'Not authorized to poke this order' });
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+      const data = snap.data() as OrderData;
+      const ownerUid = data.userId || data.uid || null;
+      if (!ownerUid || ownerUid !== callerUid || data.deletedByUser || data.deletedByAdmin) {
+        return { error: 'Not authorized to poke this order', httpStatus: 403 } as const;
       }
-    }
-
-    await orderRef.update({
-      lastPokedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      tx.update(orderRef, {
+        lastPokedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { success: true } as const;
     });
-
+    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
     return res.json({ success: true, message: 'Admin has been nudged!' });
   } catch (err) {
     console.error('[orderRoutes] /orders/poke:', err);

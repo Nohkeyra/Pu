@@ -1,9 +1,15 @@
 :root {
   /* Radius Scale */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-full: 999px;
+  --wawasan-source-radius-sm: 4px;
+  --radius-sm: var(--wawasan-source-radius-sm);
+  --wawasan-source-radius-md: 6px;
+  --radius-md: var(--wawasan-source-radius-md);
+  --wawasan-source-radius-lg: 8px;
+  --radius-lg: var(--wawasan-source-radius-lg);
+  --wawasan-source-radius-xl: 12px;
+  --radius-xl: var(--wawasan-source-radius-xl);
+  --wawasan-source-radius-2xl: 16px;
+  --radius-2xl: var(--wawasan-source-radius-2xl);
+  --wawasan-source-radius-full: 999px;
+  --radius-full: var(--wawasan-source-radius-full);
 }

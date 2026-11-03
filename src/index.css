@@ -14,15 +14,15 @@
   --color-brand-charcoal: var(--rw-charcoal);
   --color-brand-cream: var(--rw-cream);
 
-  --color-surface: var(--color-surface);
-  --color-surface-muted: var(--color-surface-muted);
+  --color-surface: var(--wawasan-source-color-surface);
+  --color-surface-muted: var(--wawasan-source-color-surface-muted);
 
-  --color-text: var(--color-text);
-  --color-text-soft: var(--color-text-soft);
-  --color-text-muted: var(--color-text-muted);
+  --color-text: var(--wawasan-source-color-text);
+  --color-text-soft: var(--wawasan-source-color-text-soft);
+  --color-text-muted: var(--wawasan-source-color-text-muted);
 
-  --color-accent: var(--color-accent);
-  --color-accent-deep: var(--color-accent-deep);
+  --color-accent: var(--wawasan-source-color-accent);
+  --color-accent-deep: var(--wawasan-source-color-accent-deep);
 
   --color-status-success: var(--color-success);
   --color-status-success-soft: var(--color-success-soft);
@@ -33,31 +33,31 @@
   --color-status-error: var(--color-error);
   --color-status-error-soft: var(--color-error-soft);
 
-  --color-deep-forest: var(--color-deep-forest);
-  --color-deep-forest-accent: var(--color-deep-forest-accent);
+  --color-deep-forest: var(--wawasan-source-color-deep-forest);
+  --color-deep-forest-accent: var(--wawasan-source-color-deep-forest-accent);
   --color-forest-green: var(--color-forest);
-  --color-light-forest: var(--color-light-forest);
+  --color-light-forest: var(--wawasan-source-color-light-forest);
 
-  --color-sunshine: var(--color-sunshine);
-  --color-honey: var(--color-honey);
-  --color-crisp-carrot: var(--color-crisp-carrot);
-  --color-tomato-burst: var(--color-tomato-burst);
-  --color-kiwi: var(--color-kiwi);
+  --color-sunshine: var(--wawasan-source-color-sunshine);
+  --color-honey: var(--wawasan-source-color-honey);
+  --color-crisp-carrot: var(--wawasan-source-color-crisp-carrot);
+  --color-tomato-burst: var(--wawasan-source-color-tomato-burst);
+  --color-kiwi: var(--wawasan-source-color-kiwi);
   --color-fern: var(--color-kiwi);
 
-  --color-sunshine-cta: var(--color-sunshine-cta);
-  --color-sunshine-cta-bg: var(--color-sunshine-cta-bg);
-  --color-sunshine-cta-fg: var(--color-sunshine-cta-fg);
-  --color-sunshine-cta-hover: var(--color-sunshine-cta-hover);
-  --color-sunshine-cta-press: var(--color-sunshine-cta-press);
-  --color-on-sunshine: var(--color-on-sunshine);
-  --color-on-crisp-carrot: var(--color-on-crisp-carrot);
-  --color-on-tomato-burst: var(--color-on-tomato-burst);
-  --color-on-deep-forest: var(--color-on-deep-forest);
+  --color-sunshine-cta: var(--wawasan-source-color-sunshine-cta);
+  --color-sunshine-cta-bg: var(--wawasan-source-color-sunshine-cta-bg);
+  --color-sunshine-cta-fg: var(--wawasan-source-color-sunshine-cta-fg);
+  --color-sunshine-cta-hover: var(--wawasan-source-color-sunshine-cta-hover);
+  --color-sunshine-cta-press: var(--wawasan-source-color-sunshine-cta-press);
+  --color-on-sunshine: var(--wawasan-source-color-on-sunshine);
+  --color-on-crisp-carrot: var(--wawasan-source-color-on-crisp-carrot);
+  --color-on-tomato-burst: var(--wawasan-source-color-on-tomato-burst);
+  --color-on-deep-forest: var(--wawasan-source-color-on-deep-forest);
 
-  --color-cream: var(--color-cream);
-  --color-cream-dark: var(--color-cream-dark);
-  --color-charcoal: var(--color-charcoal);
+  --color-cream: var(--wawasan-source-color-cream);
+  --color-cream-dark: var(--wawasan-source-color-cream-dark);
+  --color-charcoal: var(--wawasan-source-color-charcoal);
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -81,18 +81,18 @@
   --font-accent: "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace";
   --font-urban: "Plus Jakarta Sans", "system-ui", "sans-serif";
 
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-2xl: var(--radius-2xl);
-  --radius-full: var(--radius-full);
+  --radius-sm: var(--wawasan-source-radius-sm);
+  --radius-md: var(--wawasan-source-radius-md);
+  --radius-lg: var(--wawasan-source-radius-lg);
+  --radius-xl: var(--wawasan-source-radius-xl);
+  --radius-2xl: var(--wawasan-source-radius-2xl);
+  --radius-full: var(--wawasan-source-radius-full);
   --radius-xs: calc(var(--radius) - 6px);
 
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
+  --shadow-sm: var(--wawasan-source-shadow-sm);
+  --shadow-md: var(--wawasan-source-shadow-md);
+  --shadow-lg: var(--wawasan-source-shadow-lg);
+  --shadow-xl: var(--wawasan-source-shadow-xl);
 
   @keyframes bounce-down {
     0%, 100% { transform: translateY(0); }
@@ -157,25 +157,42 @@
     --safe-area-inset-right: var(--sar);
 
     /* Logo-Derived Brand Tokens (light) */
-    --color-deep-forest: #0c453c;
+    --wawasan-source-color-deep-forest: #0c453c;
+    --color-deep-forest: var(--wawasan-source-color-deep-forest);
     --color-forest: #0c453c;
-    --color-light-forest: rgba(12, 69, 60, 0.10);
-    --color-deep-forest-accent: #0c453c;
-    --color-sunshine: #f69913;
-    --color-honey: #f69913;
-    --color-crisp-carrot: #e96212;
-    --color-tomato-burst: #e03f14;
-    --color-kiwi: #e96212;
+    --wawasan-source-color-light-forest: rgba(12, 69, 60, 0.10);
+    --color-light-forest: var(--wawasan-source-color-light-forest);
+    --wawasan-source-color-deep-forest-accent: #0c453c;
+    --color-deep-forest-accent: var(--wawasan-source-color-deep-forest-accent);
+    --wawasan-source-color-sunshine: #f69913;
+    --color-sunshine: var(--wawasan-source-color-sunshine);
+    --wawasan-source-color-honey: #f69913;
+    --color-honey: var(--wawasan-source-color-honey);
+    --wawasan-source-color-crisp-carrot: #e96212;
+    --color-crisp-carrot: var(--wawasan-source-color-crisp-carrot);
+    --wawasan-source-color-tomato-burst: #e03f14;
+    --color-tomato-burst: var(--wawasan-source-color-tomato-burst);
+    --wawasan-source-color-kiwi: #e96212;
+    --color-kiwi: var(--wawasan-source-color-kiwi);
     --color-fern: #e96212;
-    --color-sunshine-cta: #9a3412;
-    --color-sunshine-cta-bg: #9a3412;
-    --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #7c2d12;
-    --color-sunshine-cta-press: #602008;
-    --color-on-sunshine: #0c453c;
-    --color-on-crisp-carrot: #ffffff;
-    --color-on-tomato-burst: #ffffff;
-    --color-on-deep-forest: #ffffff;
+    --wawasan-source-color-sunshine-cta: #9a3412;
+    --color-sunshine-cta: var(--wawasan-source-color-sunshine-cta);
+    --wawasan-source-color-sunshine-cta-bg: #9a3412;
+    --color-sunshine-cta-bg: var(--wawasan-source-color-sunshine-cta-bg);
+    --wawasan-source-color-sunshine-cta-fg: #ffffff;
+    --color-sunshine-cta-fg: var(--wawasan-source-color-sunshine-cta-fg);
+    --wawasan-source-color-sunshine-cta-hover: #7c2d12;
+    --color-sunshine-cta-hover: var(--wawasan-source-color-sunshine-cta-hover);
+    --wawasan-source-color-sunshine-cta-press: #602008;
+    --color-sunshine-cta-press: var(--wawasan-source-color-sunshine-cta-press);
+    --wawasan-source-color-on-sunshine: #0c453c;
+    --color-on-sunshine: var(--wawasan-source-color-on-sunshine);
+    --wawasan-source-color-on-crisp-carrot: #ffffff;
+    --color-on-crisp-carrot: var(--wawasan-source-color-on-crisp-carrot);
+    --wawasan-source-color-on-tomato-burst: #ffffff;
+    --color-on-tomato-burst: var(--wawasan-source-color-on-tomato-burst);
+    --wawasan-source-color-on-deep-forest: #ffffff;
+    --color-on-deep-forest: var(--wawasan-source-color-on-deep-forest);
     --app-card-scale: 1;
     --menu-card-scale: 1;
     --app-font-size: 16px;
@@ -186,15 +203,23 @@
     --space-5: 1.25rem;
     --space-6: 1.5rem;
     --space-8: 2rem;
-    --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --radius-lg: 1rem;
-    --radius-xl: 1.25rem;
-    --radius-2xl: 1.5rem;
+    --wawasan-source-radius-sm: 0.5rem;
+    --radius-sm: var(--wawasan-source-radius-sm);
+    --wawasan-source-radius-md: 0.75rem;
+    --radius-md: var(--wawasan-source-radius-md);
+    --wawasan-source-radius-lg: 1rem;
+    --radius-lg: var(--wawasan-source-radius-lg);
+    --wawasan-source-radius-xl: 1.25rem;
+    --radius-xl: var(--wawasan-source-radius-xl);
+    --wawasan-source-radius-2xl: 1.5rem;
+    --radius-2xl: var(--wawasan-source-radius-2xl);
     /* Lively & Happening Warm Canvas Foundation (aligned with Splashscreen) */
-    --color-cream: #fff6e4;
-    --color-cream-dark: rgba(246, 153, 19, 0.10);
-    --color-charcoal: #0c453c;
+    --wawasan-source-color-cream: #fff6e4;
+    --color-cream: var(--wawasan-source-color-cream);
+    --wawasan-source-color-cream-dark: rgba(246, 153, 19, 0.10);
+    --color-cream-dark: var(--wawasan-source-color-cream-dark);
+    --wawasan-source-color-charcoal: #0c453c;
+    --color-charcoal: var(--wawasan-source-color-charcoal);
     --color-stone: rgba(12, 69, 60, 0.82);
     --background: 40 85% 95%;
     --foreground: 171 70% 16%;
@@ -233,30 +258,50 @@
 
   .dark {
     /* Refined 4-Color Dark Mode: Espresso Obsidian (#191612), Warm Parchment Text, Kunyit Gold & Sambal Terracotta */
-    --color-deep-forest: #ede5d8;
+    --wawasan-source-color-deep-forest: #ede5d8;
+    --color-deep-forest: var(--wawasan-source-color-deep-forest);
     --color-forest: #1c2622;
-    --color-light-forest: rgba(246, 153, 19, 0.12);
-    --color-deep-forest-accent: #f69913;
-    --color-sunshine: #f69913;
-    --color-honey: #f69913;
-    --color-crisp-carrot: #e96212;
-    --color-tomato-burst: #e03f14;
-    --color-kiwi: #e96212;
+    --wawasan-source-color-light-forest: rgba(246, 153, 19, 0.12);
+    --color-light-forest: var(--wawasan-source-color-light-forest);
+    --wawasan-source-color-deep-forest-accent: #f69913;
+    --color-deep-forest-accent: var(--wawasan-source-color-deep-forest-accent);
+    --wawasan-source-color-sunshine: #f69913;
+    --color-sunshine: var(--wawasan-source-color-sunshine);
+    --wawasan-source-color-honey: #f69913;
+    --color-honey: var(--wawasan-source-color-honey);
+    --wawasan-source-color-crisp-carrot: #e96212;
+    --color-crisp-carrot: var(--wawasan-source-color-crisp-carrot);
+    --wawasan-source-color-tomato-burst: #e03f14;
+    --color-tomato-burst: var(--wawasan-source-color-tomato-burst);
+    --wawasan-source-color-kiwi: #e96212;
+    --color-kiwi: var(--wawasan-source-color-kiwi);
     --color-fern: #e96212;
-    --color-sunshine-cta: #a3310e;
-    --color-sunshine-cta-bg: #a3310e;
-    --color-sunshine-cta-fg: #ffffff;
-    --color-sunshine-cta-hover: #882709;
-    --color-sunshine-cta-press: #6e1f06;
-    --color-on-sunshine: #0c100e;
-    --color-on-crisp-carrot: #ede5d8;
-    --color-on-tomato-burst: #ede5d8;
-    --color-on-deep-forest: #0c100e;
+    --wawasan-source-color-sunshine-cta: #a3310e;
+    --color-sunshine-cta: var(--wawasan-source-color-sunshine-cta);
+    --wawasan-source-color-sunshine-cta-bg: #a3310e;
+    --color-sunshine-cta-bg: var(--wawasan-source-color-sunshine-cta-bg);
+    --wawasan-source-color-sunshine-cta-fg: #ffffff;
+    --color-sunshine-cta-fg: var(--wawasan-source-color-sunshine-cta-fg);
+    --wawasan-source-color-sunshine-cta-hover: #882709;
+    --color-sunshine-cta-hover: var(--wawasan-source-color-sunshine-cta-hover);
+    --wawasan-source-color-sunshine-cta-press: #6e1f06;
+    --color-sunshine-cta-press: var(--wawasan-source-color-sunshine-cta-press);
+    --wawasan-source-color-on-sunshine: #0c100e;
+    --color-on-sunshine: var(--wawasan-source-color-on-sunshine);
+    --wawasan-source-color-on-crisp-carrot: #ede5d8;
+    --color-on-crisp-carrot: var(--wawasan-source-color-on-crisp-carrot);
+    --wawasan-source-color-on-tomato-burst: #ede5d8;
+    --color-on-tomato-burst: var(--wawasan-source-color-on-tomato-burst);
+    --wawasan-source-color-on-deep-forest: #0c100e;
+    --color-on-deep-forest: var(--wawasan-source-color-on-deep-forest);
 
     /* Background and surfaces (aligned with Splashscreen espresso) */
-    --color-cream: #191612;
-    --color-cream-dark: #221c17;
-    --color-charcoal: #191612;
+    --wawasan-source-color-cream: #191612;
+    --color-cream: var(--wawasan-source-color-cream);
+    --wawasan-source-color-cream-dark: #221c17;
+    --color-cream-dark: var(--wawasan-source-color-cream-dark);
+    --wawasan-source-color-charcoal: #191612;
+    --color-charcoal: var(--wawasan-source-color-charcoal);
     --color-stone: #c2bbb0;
 
     /* Tailwind / Radix HSL tokens for .dark */

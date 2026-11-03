@@ -51,3 +51,53 @@ describe('generateSequentialInvoiceNo - Architectural Scheme', () => {
   });
 });
 
+
+
+describe('MemoryFirestore query semantics', () => {
+  it('filters == and in, applies limit, and exposes document references', async () => {
+    const db = getFirestore();
+    const col = db.collection('query_semantics_orders');
+    await col.doc('a').set({ status: 'pending', amount: 10 });
+    await col.doc('b').set({ status: 'approved', amount: 20 });
+    await col.doc('c').set({ status: 'completed', amount: 30 });
+    const pending = await col.where('status', '==', 'pending').get();
+    expect(pending.docs.map(d => d.id)).toEqual(['a']);
+    const active = await col.where('status', 'in', ['pending', 'approved']).limit(1).get();
+    expect(active.size).toBe(1);
+    expect(['a', 'b']).toContain(active.docs[0].id);
+    expect(active.docs[0].ref.id).toBe(active.docs[0].id);
+  });
+
+  it('uses immutable queries and supports numeric comparison and ordering', async () => {
+    const db = getFirestore();
+    const col = db.collection('query_semantics_limits');
+    await col.doc('a').set({ resetTimeMs: 100 });
+    await col.doc('b').set({ resetTimeMs: 300 });
+    await col.doc('c').set({ resetTimeMs: 200 });
+    const expired = await col.where('resetTimeMs', '<', 250).orderBy('resetTimeMs').get();
+    expect(expired.docs.map(d => d.id)).toEqual(['a', 'c']);
+    const recent = await col.orderBy('resetTimeMs', 'desc').limit(2).get();
+    expect(recent.docs.map(d => d.id)).toEqual(['b', 'c']);
+    const all = await col.get();
+    expect(all.size).toBe(3);
+  });
+});
+
+
+describe('MemoryFirestore update existence semantics', () => {
+  it('does not create missing documents when using update()', async () => {
+    const col = getFirestore().collection('missing_update_semantics');
+    await expect(col.doc('missing').update({ status: 'approved' })).rejects.toThrow('NOT_FOUND');
+    const missing = await col.doc('missing').get();
+    expect(missing.exists).toBe(false);
+  });
+
+  it('does not create missing documents through batch.update()', async () => {
+    const db = getFirestore();
+    const ref = db.collection('missing_update_batch').doc('missing');
+    const batch = db.batch();
+    batch.update(ref, { status: 'approved' });
+    await expect(batch.commit()).rejects.toThrow('NOT_FOUND');
+    expect((await ref.get()).exists).toBe(false);
+  });
+});
