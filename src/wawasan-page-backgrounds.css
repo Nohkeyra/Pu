@@ -1,0 +1,36 @@
+/* Wawasan customer-page background finishing layer.
+   Scope: Order, Calendar, Profile, Settings (all use .customer-page).
+   Landing hero/footer, admin, auth, card surfaces and brand colors are untouched.
+   Original decorative assets only; no new images or runtime logic. */
+.customer-page {
+  isolation: isolate;
+}
+
+/* Override only the existing ambient batik pseudo-element, not content layers. */
+.customer-page::before {
+  background-image: url('/assets/heritage/batik_vector_pattern.jpg');
+  background-size: clamp(340px, 75vw, 720px) auto;
+  background-repeat: repeat;
+  background-position: 50% 0;
+  opacity: .075;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 74%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 74%, transparent 100%);
+}
+.dark .customer-page::before {
+  opacity: .105;
+}
+
+/* A gentler, larger-scale composition for narrow screens. */
+@media (max-width: 639px) {
+  .customer-page::before {
+    background-size: 440px auto;
+    background-position: 50% 10%;
+    opacity: .065;
+  }
+  .dark .customer-page::before { opacity: .095; }
+}
+
+/* Motion-free decorative layer; respects existing light/dark palettes. */
+@media (prefers-reduced-motion: reduce) {
+  .customer-page::before { animation: none; transition: none; }
+}

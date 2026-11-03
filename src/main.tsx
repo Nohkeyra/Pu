@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './wawasan-page-backgrounds.css';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';
@@ -23,7 +24,7 @@ if (typeof window !== 'undefined' && (
   window.location.hostname.includes('aistudio') ||
   localStorage.getItem('wawasan_eruda_enabled') === 'true'
 )) {
-  // Check if window.fetch descriptor allows write/configuration before loading eruda to prevent TypeError in sandboxed iframes
+  // Check if window.fetch descriptor allows write/configuration before loading eruda in sandboxed iframes
   const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
   const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
 
@@ -33,7 +34,7 @@ if (typeof window !== 'undefined' && (
         try {
           eruda.default.init();
         } catch {
-          // In sandboxed environments where window properties cannot be modified, silently fall back
+          // Ignore in restricted sandbox environments
         }
       }
     }).catch(() => {
