@@ -187,7 +187,7 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
         const hasPrices = d.prices && Object.keys(d.prices).length > 0 && Number(d.totalAmount) > 0;
 
         // Skip orders that are already billed or priced
-        if (isBilled || (hasPrices && d.status !== 'pending' && d.status !== 'approved')) {
+        if (isBilled || hasPrices) {
           return null;
         }
 
