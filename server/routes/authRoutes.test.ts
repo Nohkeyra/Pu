@@ -123,7 +123,7 @@ describe('Admin Authentication & Security', () => {
       expect(data.success).toBe(false);
     });
 
-    it('POST /api/admin/login accepts correct password, mints token with custom claims', async () => {
+    it('POST /api/admin/login accepts correct password, mints server JWT and conditionally returns Firebase custom token', async () => {
       const res = await fetch(`${baseUrl}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,9 +136,16 @@ describe('Admin Authentication & Security', () => {
       expect(data.admin).toBe(true);
       expect(data.customClaims).toEqual({ admin: true });
       expect(data.token).toBeDefined();
-      expect(data.firebaseCustomToken).toBeDefined();
 
-      // Verify the minted token contains the admin claim
+      // Firebase custom token is optional: only returned when Firebase Admin
+      // credentials exist and createCustomToken succeeds. Never substitute a
+      // server JWT for it because they are different token types.
+      if (data.firebaseCustomToken !== undefined) {
+        expect(typeof data.firebaseCustomToken).toBe('string');
+        expect(data.firebaseCustomToken.length).toBeGreaterThan(0);
+      }
+
+      // Verify the minted server JWT contains the admin claim.
       const verified = verifyAdminJwt(data.token);
       expect(verified?.admin).toBe(true);
     });
@@ -207,4 +214,3 @@ describe('Admin Authentication & Security', () => {
     });
   });
 });
-
