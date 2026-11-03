@@ -1,12 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
 import type { Server } from 'http';
-import orderRoutes from './orderRoutes.js';
+import orderRoutes, { deriveEventDate } from './orderRoutes.js';
 import { signAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
 
 describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', () => {
+  it('normalizes the same supported dates as the order validator', () => {
+    expect(deriveEventDate({ eventDate: '25/12/2026' })).toBe('2026-12-25');
+    expect(deriveEventDate({ eventDate: '31/01/2027' })).toBe('2027-01-31');
+    expect(deriveEventDate({ eventDate: '2026-02-31' })).toBeNull();
+    expect(deriveEventDate({ eventDate: '2026-12-25' })).toBe('2026-12-25');
+  });
+
   let app: express.Express;
   let server: Server;
   let baseUrl: string;
@@ -45,6 +52,59 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
   });
 
   describe('Client / Guest Price & Total Manipulation Immunity', () => {
+    it('rejects missing status in admin status updates instead of writing undefined', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('status_missing_test').set({ status: 'pending' });
+      const res = await fetch(`${baseUrl}/api/admin/orders/status_missing_test/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+      const doc = await db.collection('orders').doc('status_missing_test').get();
+      expect(doc.data()?.status).toBe('pending');
+    });
+
+    it('serializes competing admin status updates using a Firestore transaction', async () => {
+      const orderId = `admin_race_${Date.now()}`;
+      const db = getFirestore();
+      await db.collection('orders').doc(orderId).set({
+        status: 'pending',
+        invoiceNo: 'RW 0001',
+        eventDate: '2027-11-20',
+      });
+
+      // Both actions are permitted from pending, but neither terminal status
+      // may transition to the other. A stale get() -> update() race would
+      // incorrectly allow both writes.
+      const headers = {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      };
+      const [patchResult, postResult] = await Promise.all([
+        fetch(`${baseUrl}/api/admin/orders/${orderId}/status`, {
+          method: 'PATCH', headers, body: JSON.stringify({ status: 'cancelled' }),
+        }),
+        fetch(`${baseUrl}/api/admin/orders`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ action: 'update', orderId, data: { status: 'rejected' } }),
+        }),
+      ]);
+
+      expect([patchResult.status, postResult.status].sort()).toEqual([200, 400]);
+      const saved = await db.collection('orders').doc(orderId).get();
+      expect(['cancelled', 'rejected']).toContain(saved.data()?.status);
+    });
+
+    it('rejects non-object admin order updates with 400', async () => {
+      const res = await fetch(`${baseUrl}/api/admin/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ action: 'update', orderId: 'test_id', data: null }),
+      });
+      expect(res.status).toBe(400);
+    });
+
     const orderPayload = {
       name: 'Customer', contact: '+60123456789', email: 'customer@example.com',
       eventDate: '2027-11-20', time: '12:00', quantity: 10, meals: ['lunch'],

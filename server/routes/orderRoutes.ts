@@ -42,46 +42,13 @@ function sanitizeDelivery(raw: unknown): Record<string, string | number | boolea
   return Object.keys(allowed).length > 0 ? allowed : null;
 }
 
-export function deriveEventDate(body: any): string | null {
-  if (!body) return null;
-  const raw = body.eventDate || body.date || body.dateTime;
-  if (!raw) return null;
-
-  // 1. Direct YYYY-MM-DD string
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return toISODateString(trimmed);
-    }
-  }
-
-  // 2. Extract from various formats
-  try {
-    let d: Date | null = null;
-    if (raw instanceof Date) {
-      d = raw;
-    } else if (typeof raw === 'object' && raw !== null) {
-      // Handle Firestore Timestamp {seconds, nanoseconds} or {_seconds, _nanoseconds}
-      const seconds = typeof raw.seconds === 'number' ? raw.seconds : (typeof raw._seconds === 'number' ? raw._seconds : null);
-      if (seconds !== null) {
-        d = new Date(seconds * 1000);
-      } else if (typeof raw.toDate === 'function') {
-        d = raw.toDate();
-      }
-    } else if (typeof raw === 'string' || typeof raw === 'number') {
-      d = new Date(raw);
-    }
-
-    if (!d || isNaN(d.getTime())) return null;
-    
-    // Format to YYYY-MM-DD in MYT
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch {
-    return null;
-  }
+export function deriveEventDate(body: unknown): string | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const input = body as { eventDate?: unknown; date?: unknown; dateTime?: unknown };
+  // Keep the same precedence and calendar validation as validateOrderPayload.
+  // In particular, new Date('25/12/2026') is invalid in Node despite being
+  // an accepted DD/MM/YYYY date in the shared date utility.
+  return toISODateString(input.eventDate ?? input.date ?? input.dateTime);
 }
 
 const createOrderLimiter = createDistributedRateLimiter({
@@ -291,6 +258,54 @@ router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, 
   }
 });
 
+// Re-read and validate status inside the same Firestore transaction as the write.
+// Reserve a new invoice number before entering the transaction because the
+// invoice generator uses its own Firestore transaction. Unused reservations can
+// produce harmless sequence gaps but cannot overwrite a concurrent status.
+async function commitAdminOrderMutation(orderRef: any, data: Record<string, any>) {
+  const db = getFirestore();
+  const initial = await orderRef.get();
+  if (!initial.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+
+  const initialOrder = initial.data() as OrderData;
+  let reservedInvoiceNo: string | undefined;
+  if ((data.status === 'approved' || data.status === 'billed') && !initialOrder.invoiceNo) {
+    reservedInvoiceNo = await generateSequentialInvoiceNo(false, initialOrder.eventDate || initialOrder.date);
+  }
+
+  return db.runTransaction(async (tx: any) => {
+    const fresh = await tx.get(orderRef);
+    if (!fresh.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+    const oldData = fresh.data() as OrderData;
+    if (data.status !== undefined &&
+        (typeof data.status !== 'string' ||
+          !isValidStatusTransition(oldData.status || 'pending', data.status))) {
+      return {
+        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
+        httpStatus: 400,
+      } as const;
+    }
+
+    const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
+    if (data.status === 'approved' || data.status === 'billed') {
+      if (!oldData.invoiceNo) {
+        if (!reservedInvoiceNo) {
+          // Another writer cleared the invoice after the first read.
+          return { error: 'Invoice changed concurrently; retry the request', httpStatus: 409 } as const;
+        }
+        updates.invoiceNo = reservedInvoiceNo;
+        (updates as any).officialInvoiceNo = reservedInvoiceNo;
+      } else if (oldData.invoiceNo.startsWith('QT')) {
+        updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
+        (updates as any).officialInvoiceNo = updates.invoiceNo;
+      }
+    }
+
+    tx.update(orderRef, updates);
+    return { oldData, updates };
+  });
+}
+
 // Admin Fetch/Update/Delete Orders
 router.post('/admin/orders', verifyAdminToken, async (req, res) => {
   const { action, orderId, data } = req.body;
@@ -327,30 +342,13 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
     }
 
     if (action === 'update' && orderId) {
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return res.status(400).json({ error: 'Order update data must be an object' });
+      }
       const orderRef = db.collection('orders').doc(orderId);
-      const oldSnap = await orderRef.get();
-      if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
-
-      const oldData = oldSnap.data() as OrderData;
-      if (data.status && !isValidStatusTransition(oldData.status || 'pending', data.status)) {
-        return res.status(400).json({
-          error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
-        });
-      }
-
-      const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
-
-      if (data.status === 'approved' || data.status === 'billed') {
-        if (!oldData.invoiceNo) {
-          updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
-          (updates as any).officialInvoiceNo = updates.invoiceNo;
-        } else if (oldData.invoiceNo.startsWith('QT')) {
-          updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
-          (updates as any).officialInvoiceNo = updates.invoiceNo;
-        }
-      }
-
-      await orderRef.update(updates);
+      const result = await commitAdminOrderMutation(orderRef, data);
+      if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+      const { oldData, updates } = result;
 
       if (data.status && data.status !== oldData.status) {
         const transporter = createBrevoTransporter();
@@ -407,34 +405,17 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 // Admin Quick Status Change
 router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res) => {
   const { orderId } = req.params;
-  const { status } = req.body;
+  const { status } = req.body || {};
+  if (typeof status !== 'string' || !status.trim()) {
+    return res.status(400).json({ error: 'A valid status is required' });
+  }
   const db = getFirestore();
 
   try {
     const orderRef = db.collection('orders').doc(orderId);
-    const oldSnap = await orderRef.get();
-    if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
-
-    const oldData = oldSnap.data() as OrderData;
-    if (status && !isValidStatusTransition(oldData.status || 'pending', status)) {
-      return res.status(400).json({
-        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${status}'`,
-      });
-    }
-
-    const updates: Partial<OrderData> = { status, updatedAt: FieldValue.serverTimestamp() };
-
-    if (status === 'approved' || status === 'billed') {
-      if (!oldData.invoiceNo) {
-        updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
-        (updates as any).officialInvoiceNo = updates.invoiceNo;
-      } else if (oldData.invoiceNo.startsWith('QT')) {
-        updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
-        (updates as any).officialInvoiceNo = updates.invoiceNo;
-      }
-    }
-
-    await orderRef.update(updates);
+    const result = await commitAdminOrderMutation(orderRef, { status });
+    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    const { oldData, updates } = result;
 
     if (status && status !== oldData.status) {
       const transporter = createBrevoTransporter();
@@ -461,57 +442,44 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
   }
 });
 
-// Customer Update Request
+// Customer update: authenticate before transaction, then check ownership and
+// pending status against the same snapshot used for the write.
 router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
-  const { orderId, notes, time } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId is required' });
-  const db = getFirestore();
+  const { orderId, notes, time } = req.body || {};
+  if (typeof orderId !== 'string' || !orderId.trim()) return res.status(400).json({ error: 'orderId is required' });
+  const callerUid = await verifyCustomerIdToken(req);
+  if (!callerUid) return res.status(403).json({ error: 'Not authorized to update this order' });
 
   try {
+    const db = getFirestore();
     const orderRef = db.collection('orders').doc(orderId);
-    const oldSnap = await orderRef.get();
-    if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
-
-    const oldData = oldSnap.data() as OrderData;
-    const ownerUid = oldData.userId || oldData.uid || null;
-
-    const callerUid = await verifyCustomerIdToken(req);
-    if (!ownerUid || !callerUid || callerUid !== ownerUid) {
-      return res.status(403).json({ error: 'Not authorized to update this order' });
-    }
-
-    if (oldData.status !== 'pending') {
-      return res.status(400).json({
-        error: `Cannot update order in '${oldData.status}' status. Only pending orders can be updated.`,
-      });
-    }
-
-    const updates: Partial<OrderData> = {
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-
-    if (typeof notes === 'string') {
-      updates.notes = notes.slice(0, 5000);
-    }
-    
-    if (typeof time === 'string') {
-      updates.time = time.slice(0, 20);
-      
-      const dateVal = (oldData as any).eventDate || oldData.date;
-      if (dateVal && typeof dateVal === 'string') {
-        updates.dateTime = `${dateVal}T${updates.time}:00+08:00`;
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+      const oldData = snap.data() as OrderData;
+      const ownerUid = oldData.userId || oldData.uid || null;
+      if (!ownerUid || ownerUid !== callerUid) {
+        return { error: 'Not authorized to update this order', httpStatus: 403 } as const;
       }
-    }
-
-    await orderRef.update(updates);
-    const mergedOrderData = { ...oldData, ...updates, id: orderId };
-
+      if (oldData.status !== 'pending') {
+        return { error: `Cannot update order in '${oldData.status}' status. Only pending orders can be updated.`, httpStatus: 400 } as const;
+      }
+      const updates: Partial<OrderData> = { updatedAt: FieldValue.serverTimestamp() };
+      if (typeof notes === 'string') updates.notes = notes.slice(0, 5000);
+      if (typeof time === 'string') {
+        updates.time = time.slice(0, 20);
+        const dateVal = (oldData as any).eventDate || oldData.date;
+        if (dateVal && typeof dateVal === 'string') updates.dateTime = `${dateVal}T${updates.time}:00+08:00`;
+      }
+      tx.update(orderRef, updates);
+      return { oldData, updates };
+    });
+    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    const { oldData, updates } = result;
     invalidateCalendarSessionsCache();
-
-    syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
+    syncGoogleCalendarEvent(orderId, { ...oldData, ...updates, id: orderId }).catch(err => {
       console.error('[Calendar] Failed to auto-sync calendar event on update request:', err);
     });
-
     return res.json({ success: true, message: 'Order updated successfully' });
   } catch (err) {
     console.error('[orderRoutes] /orders/update:', err);
@@ -519,72 +487,59 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
   }
 });
 
-// Customer Cancel Request
+// Customer cancel request: make the transition and ownership check atomic.
 router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
-  const { orderId } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId is required' });
-  const db = getFirestore();
+  const { orderId } = req.body || {};
+  if (typeof orderId !== 'string' || !orderId.trim()) return res.status(400).json({ error: 'orderId is required' });
+  const callerUid = await verifyCustomerIdToken(req);
+  if (!callerUid) return res.status(403).json({ error: 'Not authorized to cancel this order' });
 
   try {
+    const db = getFirestore();
     const orderRef = db.collection('orders').doc(orderId);
-    const oldSnap = await orderRef.get();
-    if (!oldSnap.exists) return res.status(404).json({ error: 'Order not found' });
-
-    const oldData = oldSnap.data() as OrderData;
-    const ownerUid = oldData.userId || oldData.uid || null;
-
-    const callerUid = await verifyCustomerIdToken(req);
-    if (!ownerUid || !callerUid || callerUid !== ownerUid) {
-      return res.status(403).json({ error: 'Not authorized to cancel this order' });
-    }
-
-    if (!isValidStatusTransition(oldData.status || 'pending', 'cancel_requested')) {
-      return res.status(400).json({
-        error: `Cannot request cancellation for order in '${oldData.status || 'pending'}' status.`,
-      });
-    }
-
-    const updates: Partial<OrderData> = {
-      status: 'cancel_requested',
-      cancelRequestedAt: new Date().toISOString(),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-
-    await orderRef.update(updates);
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+      const oldData = snap.data() as OrderData;
+      const ownerUid = oldData.userId || oldData.uid || null;
+      if (!ownerUid || ownerUid !== callerUid) {
+        return { error: 'Not authorized to cancel this order', httpStatus: 403 } as const;
+      }
+      if (!isValidStatusTransition(oldData.status || 'pending', 'cancel_requested') || oldData.status === 'cancel_requested') {
+        return { error: `Cannot request cancellation for order in '${oldData.status || 'pending'}' status.`, httpStatus: 400 } as const;
+      }
+      const updates: Partial<OrderData> = {
+        status: 'cancel_requested',
+        cancelRequestedAt: new Date().toISOString(),
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      tx.update(orderRef, updates);
+      return { oldData, updates };
+    });
+    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    const { oldData, updates } = result;
     const mergedOrderData = { ...oldData, ...updates, id: orderId, status: 'cancel_requested' };
-
     invalidateCalendarSessionsCache();
 
     const transporter = createBrevoTransporter();
     const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
     await notifyCustomerOfStatusChange(
-      transporter,
-      mergedOrderData,
-      'cancel_requested',
-      senderEmail,
-      process.env.SMTP_USER,
-      process.env.SMTP_PASS
+      transporter, mergedOrderData, 'cancel_requested', senderEmail,
+      process.env.SMTP_USER, process.env.SMTP_PASS
     ).catch(err => console.error('[Email] Failed to notify cancel request:', err));
 
-    // FCM: Notify admin topic of cancellation request
     sendNotificationToTopic(
-      'new_orders',
-      '⚠️ Permintaan Pembatalan Tempahan',
+      'new_orders', '⚠️ Permintaan Pembatalan Tempahan',
       `Pelanggan ${mergedOrderData.name || 'Pelanggan'} memohon pembatalan tempahan ${mergedOrderData.invoiceNo || orderId}.`,
       {
-        type: 'cancel_requested',
-        orderId: String(orderId),
+        type: 'cancel_requested', orderId: String(orderId),
         invoiceNo: String(mergedOrderData.invoiceNo || ''),
         customerName: String(mergedOrderData.name || ''),
       }
-    ).catch(err => {
-      console.error('[FCM] Failed to send cancel request push to admin topic:', err);
-    });
-
+    ).catch(err => console.error('[FCM] Failed to send cancel request push to admin topic:', err));
     syncGoogleCalendarEvent(orderId, mergedOrderData).catch(err => {
       console.error('[Calendar] Failed to auto-sync calendar event on cancel request:', err);
     });
-
     return res.json({ success: true });
   } catch (err) {
     console.error('[orderRoutes] /orders/cancel:', err);
@@ -592,40 +547,33 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
   }
 });
 
-// Customer Order Delete
+// Customer deletion: ownership and billed status must still hold at commit time.
 router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
-  const { orderId } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId is required' });
-  const db = getFirestore();
+  const { orderId } = req.body || {};
+  if (typeof orderId !== 'string' || !orderId.trim()) return res.status(400).json({ error: 'orderId is required' });
+  const callerUid = await verifyCustomerIdToken(req);
+  if (!callerUid) return res.status(403).json({ error: 'Not authorized to delete this order' });
 
   try {
+    const db = getFirestore();
     const orderRef = db.collection('orders').doc(orderId);
-    const snap = await orderRef.get();
-    if (!snap.exists) return res.status(404).json({ error: 'Order not found' });
-
-    const orderData = snap.data() as OrderData;
-    const ownerUid = orderData.userId || orderData.uid || null;
-
-    const callerUid = await verifyCustomerIdToken(req);
-    if (!ownerUid || !callerUid || callerUid !== ownerUid) {
-      return res.status(403).json({ error: 'Not authorized to delete this order' });
-    }
-
-    // Policy: customer may delete only after admin has set status to 'billed'.
-    // Hard-delete so the order is removed for both customer and admin (synced).
-    const status = (orderData.status || '').toLowerCase();
-    if (status !== 'billed') {
-      return res.status(403).json({
-        error: 'You can only remove an order from your history after it has been billed by the restaurant.',
-      });
-    }
-
-    await orderRef.delete();
-    invalidateCalendarSessionsCache();
-    return res.json({
-      success: true,
-      message: 'Order removed successfully.',
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) return { error: 'Order not found', httpStatus: 404 } as const;
+      const orderData = snap.data() as OrderData;
+      const ownerUid = orderData.userId || orderData.uid || null;
+      if (!ownerUid || ownerUid !== callerUid) {
+        return { error: 'Not authorized to delete this order', httpStatus: 403 } as const;
+      }
+      if (String(orderData.status || '').toLowerCase() !== 'billed') {
+        return { error: 'You can only remove an order from your history after it has been billed by the restaurant.', httpStatus: 403 } as const;
+      }
+      tx.delete(orderRef);
+      return { deleted: true } as const;
     });
+    if ('error' in result) return res.status(result.httpStatus).json({ error: result.error });
+    invalidateCalendarSessionsCache();
+    return res.json({ success: true, message: 'Order removed successfully.' });
   } catch (err) {
     console.error('[orderRoutes] /orders/delete:', err);
     return res.status(500).json({ error: 'Internal server error' });

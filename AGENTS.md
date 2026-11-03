@@ -29,10 +29,10 @@ Read the associated spec **before** changing the area:
 
 | Area | Read first |
 |---|---|
-| Individual or consolidated invoice | `docs/INVOICE_SPECS.md` |
-| Design system / UI kit | `docs/DESIGN_SYSTEM_SKILL.md` |
-| Auth / Firebase / security | `docs/SECURITY_SPEC.md` |
-| Android build / release | `docs/BUILD.md` + `docs/CI_CD_COMPLETE.md` |
+| Individual or consolidated invoice | `server/services/serverPdfService.ts`, `src/services/consolidatedInvoiceService.ts` |
+| Design system / UI kit | `tokens/`, `docs/UIUX_AUDIT_FIXES.md` |
+| Auth / Firebase / security | `firestore.rules`, `server/adminAuth.ts`, `server/routes/authRoutes.ts` |
+| Android build / release | `scripts/build-apk.sh`, `.github/workflows/build-apk.yml` |
 | WhatsApp / Email / Calendar | `AGENTS.md` (this file) |
 
 Do not attempt work in these areas without reading the corresponding spec.
@@ -132,7 +132,7 @@ Do not hide errors, suppress warnings, or add random retries just to pass a chec
 
 ## Security — Basics
 
-Full detail in `docs/SECURITY_SPEC.md`. Never:
+For current enforcement, inspect `firestore.rules` and `server/adminAuth.ts`. Never:
 
 - expose secrets, credentials, or Firebase Admin SDK credentials
 - commit credentials or log tokens, private keys, or JWT secrets
