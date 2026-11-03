@@ -1,1 +1,0 @@
-Wawasan Heritage Atmosphere V2 — Order page only. Replace these 3 files at their original paths. Uses user-provided splash artwork. No TS/logic changes. Visual integration in actual app not yet verified.

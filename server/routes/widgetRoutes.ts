@@ -50,8 +50,10 @@ export async function verifyAdminAuth(req: any, res: any): Promise<boolean> {
           .split(',')
           .map(e => e.trim().toLowerCase())
           .filter(Boolean);
-        const userEmail = decoded.email?.toLowerCase();
-        const isAdmin = decoded.admin === true || (userEmail && adminEmails.includes(userEmail));
+        // Only a verified Firebase email can satisfy the admin email allowlist.
+        // An unverified email claim is not proof that the caller owns the address.
+        const userEmail = decoded.email_verified === true ? decoded.email?.toLowerCase() : undefined;
+        const isAdmin = decoded.admin === true || (Boolean(userEmail) && adminEmails.includes(userEmail!));
         if (isAdmin) {
           req.user = decoded;
           return true;

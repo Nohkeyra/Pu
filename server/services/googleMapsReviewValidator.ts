@@ -20,14 +20,21 @@ export interface VerificationResult {
   verifiedAt: string;
 }
 
-const REVIEW_SECRET_KEY = process.env.GOOGLE_MAPS_REVIEW_SECRET || 'wawasan-maps-review-secure-hmac-key-2026';
+function getReviewSecret(): string | null {
+  const key = process.env.GOOGLE_MAPS_REVIEW_SECRET?.trim();
+  // A publicly known fallback secret makes all purported review signatures forgeable.
+  return key && key.length >= 32 ? key : null;
+}
 
 /**
  * Generates an HMAC-SHA256 verification signature for authentic Google Places API responses.
  */
 export function signGooglePlacesReview(review: { placeId: string; authorName: string; rating: number; time: number; text?: string }): string {
-  const payload = `${review.placeId}:${review.authorName}:${review.rating}:${review.time}`;
-  return crypto.createHmac('sha256', REVIEW_SECRET_KEY).update(payload).digest('hex');
+  const secret = getReviewSecret();
+  if (!secret) throw new Error('GOOGLE_MAPS_REVIEW_SECRET must be configured with at least 32 characters');
+  // Bind the displayed review text as well as its identity/rating to the signature.
+  const payload = JSON.stringify([review.placeId, review.authorName, review.rating, review.time, review.text ?? '']);
+  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
 }
 
 /**
@@ -42,7 +49,7 @@ export function verifyGoogleMapsReviewOrigin(review: GooglePlaceReviewInput): Ve
   }
 
   // Check explicit source labeling
-  if (review.source === 'mock_local' || review.source === 'unknown') {
+  if (review.source !== 'google_places_api') {
     return {
       isValid: false,
       isLiveGooglePlaces: false,
@@ -52,19 +59,12 @@ export function verifyGoogleMapsReviewOrigin(review: GooglePlaceReviewInput): Ve
   }
 
   // Verify mandatory Google Places properties
-  if (!review.placeId || typeof review.placeId !== 'string' || !review.placeId.startsWith('ChI')) {
-    // Note: Google Place IDs typically start with ChI... but let's be robust
-    if (!review.placeId || review.placeId.length < 10) {
-      return {
-        isValid: false,
-        isLiveGooglePlaces: false,
-        error: 'Rejected: Missing or invalid Google Place ID format',
-        verifiedAt: now
-      };
-    }
+  // Place IDs vary; require a non-trivial string rather than relying on a prefix.
+  if (typeof review.placeId !== 'string' || review.placeId.trim().length < 10) {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Rejected: Missing or invalid Google Place ID', verifiedAt: now };
   }
 
-  if (typeof review.rating !== 'number' || review.rating < 1 || review.rating > 5) {
+  if (!Number.isFinite(review.rating) || review.rating < 1 || review.rating > 5) {
     return {
       isValid: false,
       isLiveGooglePlaces: false,
@@ -73,7 +73,7 @@ export function verifyGoogleMapsReviewOrigin(review: GooglePlaceReviewInput): Ve
     };
   }
 
-  if (!review.authorName || review.authorName.trim().length === 0) {
+  if (typeof review.authorName !== 'string' || review.authorName.trim().length === 0) {
     return {
       isValid: false,
       isLiveGooglePlaces: false,
@@ -82,33 +82,32 @@ export function verifyGoogleMapsReviewOrigin(review: GooglePlaceReviewInput): Ve
     };
   }
 
-  // Verify cryptographic signature if present
-  if (review.signature) {
-    const expectedSignature = signGooglePlacesReview({
-      placeId: review.placeId,
-      authorName: review.authorName,
-      rating: review.rating,
-      time: review.time
-    });
+  if (!Number.isSafeInteger(review.time) || review.time <= 0 || typeof review.text !== 'string') {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Rejected: Invalid review timestamp or text', verifiedAt: now };
+  }
 
-    if (review.signature !== expectedSignature) {
-      return {
-        isValid: false,
-        isLiveGooglePlaces: false,
-        error: 'Rejected: Cryptographic signature mismatch (possible tampering or synthetic mock injection)',
-        verifiedAt: now
-      };
-    }
-  } else {
-    // If no signature is provided for a live requirement, check if it claims to be from API
-    if (review.source === 'google_places_api' && !process.env.ALLOW_UNSIGNED_API_REVIEWS) {
-      return {
-        isValid: false,
-        isLiveGooglePlaces: false,
-        error: 'Rejected: Google Places API review lacks mandatory cryptographic signature',
-        verifiedAt: now
-      };
-    }
+  // Fail closed: a source label or an environment flag cannot prove provenance.
+  if (!getReviewSecret()) {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Review verification secret not configured', verifiedAt: now };
+  }
+  if (!review.signature) {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Rejected: Google Places API review lacks mandatory cryptographic signature', verifiedAt: now };
+  }
+  if (!/^[a-f0-9]{64}$/i.test(review.signature)) {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Rejected: Invalid signature format', verifiedAt: now };
+  }
+
+  const expectedSignature = signGooglePlacesReview({
+    placeId: review.placeId,
+    authorName: review.authorName,
+    rating: review.rating,
+    time: review.time,
+    text: review.text
+  });
+  const provided = Buffer.from(review.signature, 'hex');
+  const expected = Buffer.from(expectedSignature, 'hex');
+  if (!crypto.timingSafeEqual(provided, expected)) {
+    return { isValid: false, isLiveGooglePlaces: false, error: 'Rejected: Cryptographic signature mismatch', verifiedAt: now };
   }
 
   return {

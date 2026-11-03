@@ -34,3 +34,77 @@
 @media (prefers-reduced-motion: reduce) {
   .customer-page::before { animation: none; transition: none; }
 }
+
+/* Heritage florals — reuse the exact six-petal / two-leaf artwork language from
+   OrderPage on the other customer pages.  These layers do not participate in
+   layout, focus order, navigation or application state. */
+.customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+  > .customer-content {
+  position: relative;
+}
+
+.customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+  > .customer-content::before,
+.customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+  > .customer-content::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: clamp(108px, 17vw, 170px);
+  aspect-ratio: 220 / 170;
+  height: auto;
+  background: url('/assets/heritage/wawasan-batik-flower.svg') center / contain no-repeat;
+  pointer-events: none;
+  user-select: none;
+  opacity: .86;
+  z-index: 2;
+}
+
+/* The first ornament echoes the approved small flower on Order. */
+.customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+  > .customer-content::before {
+  top: calc(var(--customer-header-height, 144px) + 40px);
+  left: 0;
+  width: clamp(80px, 11vw, 122px);
+  opacity: .74;
+}
+
+/* Second ornament occupies the existing lower content padding, just above the
+   shared footer (or bottom navigation on Settings); it cannot cover a form. */
+.customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+  > .customer-content::after {
+  bottom: 10px;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+/* Settings has no shared CustomerFooter: lift its corner flower away from the
+   fixed mobile navigation instead of introducing new layout elements. */
+.customer-settings-page > .customer-content::after { bottom: 72px; }
+
+@media (max-width: 767px) {
+  .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+    > .customer-content::before {
+    top: calc(var(--customer-header-height, 144px) + 38px);
+    left: 2px;
+    width: 80px;
+    opacity: .76;
+  }
+  .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+    > .customer-content::after {
+    width: clamp(116px, 31vw, 145px);
+    right: -10px;
+    bottom: 6px;
+  }
+  .customer-settings-page > .customer-content::after { bottom: 72px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+    > .customer-content::before,
+  .customer-page:is(.customer-calendar-page, .customer-profile-page, .customer-settings-page)
+    > .customer-content::after {
+    animation: none;
+    transition: none;
+  }
+}

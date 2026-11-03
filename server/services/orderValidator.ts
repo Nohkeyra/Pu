@@ -1,3 +1,5 @@
+import { toISODateString } from '../../src/lib/dateUtils.js';
+
 export interface ValidationError {
   field: string;
   message: string;
@@ -6,7 +8,7 @@ export interface ValidationError {
 export function validateOrderPayload(body: any): { valid: boolean; errors: ValidationError[] } {
   const errors: ValidationError[] = [];
 
-  if (!body || typeof body !== 'object') {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return { valid: false, errors: [{ field: 'root', message: 'Request body is required' }] };
   }
 
@@ -32,14 +34,17 @@ export function validateOrderPayload(body: any): { valid: boolean; errors: Valid
     errors.push({ field: 'email', message: 'Email exceeds maximum length (150 characters)' });
   }
 
-  const dateVal = body.eventDate || body.date || body.dateTime;
-  if (!dateVal || (typeof dateVal !== 'string' && !(dateVal instanceof Date))) {
+  // Date.parse alone can normalize impossible dates; reuse the strict app date utility.
+  const dateVal = body.eventDate ?? body.date ?? body.dateTime;
+  if ((typeof dateVal !== 'string' && !(dateVal instanceof Date)) || !toISODateString(dateVal)) {
     errors.push({ field: 'date', message: 'Valid date is required' });
   }
 
-  const qty = Number(body.quantity ?? body.guests ?? body.pax);
-  if (isNaN(qty) || qty <= 0) {
-    errors.push({ field: 'quantity', message: 'Quantity / pax must be a positive number' });
+  // Pax represent people: reject fractions, non-finite values and object coercion.
+  const rawQuantity = body.quantity ?? body.guests ?? body.pax;
+  const qty = (typeof rawQuantity === 'string' || typeof rawQuantity === 'number') ? Number(rawQuantity) : NaN;
+  if (!Number.isSafeInteger(qty) || qty <= 0) {
+    errors.push({ field: 'quantity', message: 'Quantity / pax must be a positive whole number' });
   } else if (qty > 10000) {
     errors.push({ field: 'quantity', message: 'Quantity / pax exceeds maximum allowable value (10000)' });
   }

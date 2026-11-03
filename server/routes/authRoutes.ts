@@ -66,7 +66,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
     return res.json({
       success: true,
       token,
-      firebaseCustomToken: firebaseCustomToken || token,
+      ...(firebaseCustomToken ? { firebaseCustomToken } : {}),
       customClaims: { admin: true },
       admin: true,
     });
