@@ -80,6 +80,8 @@ export function CalendarEventCard({
       <div
         className="pt-2 border-t border-stone-100 dark:border-stone-800 flex flex-wrap justify-between items-center gap-2"
         onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onPointerCancel={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
         <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">

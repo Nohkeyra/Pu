@@ -14,6 +14,7 @@ export function useLongPress(
   const timeout = useRef<NodeJS.Timeout>();
   const target = useRef<EventTarget>();
   const isLongPress = useRef(false);
+  const isCancelled = useRef(false);
 
   const startPos = useRef<{ x: number; y: number } | null>(null);
 
@@ -25,7 +26,9 @@ export function useLongPress(
           once: true,
         });
       }
+      if (timeout.current) clearTimeout(timeout.current);
       isLongPress.current = false;
+      isCancelled.current = false;
       target.current = event.target;
       if ('clientX' in event) {
         startPos.current = { x: event.clientX, y: event.clientY };
@@ -46,16 +49,17 @@ export function useLongPress(
       if (timeout.current) {
         clearTimeout(timeout.current);
       }
-      if (shouldTriggerClick && !isLongPress.current) {
+      timeout.current = undefined;
+      if (shouldTriggerClick && target.current && !isLongPress.current && !isCancelled.current) {
         onClick(event);
       }
-      if (isPreventDefault && target.current) {
+      if (!shouldTriggerClick) isCancelled.current = true;
+      startPos.current = null;
+      const eventTarget = target.current;
+      target.current = undefined;
+      if (isPreventDefault && eventTarget) {
         setTimeout(() => {
-          if (target.current) {
-            target.current.removeEventListener('contextmenu', preventDefault, {
-              capture: true,
-            });
-          }
+          eventTarget.removeEventListener('contextmenu', preventDefault, { capture: true });
         }, 100);
       }
     },
@@ -77,12 +81,13 @@ export function useLongPress(
     const dx = currentX - startPos.current.x;
     const dy = currentY - startPos.current.y;
     if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      isCancelled.current = true;
       clear(e, false);
     }
   }, [clear]);
 
   return {
-    onPointerDown: (e: React.PointerEvent) => start(e),
+    onPointerDown: (e: React.PointerEvent) => { if (e.isPrimary && e.button === 0) start(e); },
     onPointerUp: (e: React.PointerEvent) => clear(e),
     onPointerLeave: (e: React.PointerEvent) => clear(e, false),
     onPointerMove: (e: React.PointerEvent) => move(e),

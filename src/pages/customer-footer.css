@@ -61,6 +61,10 @@
 }
 
 
-/* Normal document flow; fixed bottom navigation remains independent. */
-.customer-page { min-height: 100dvh; }
+/* Normal document flow; keep the shared footer at the bottom of short pages. */
+.customer-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
 .customer-page > .customer-brand-footer { margin-top: auto; }
