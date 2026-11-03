@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { motion, useTransform } from 'motion/react';
+import { motion, useReducedMotion, useTransform } from 'motion/react';
 import { useDeviceMotion3D, useBatikVisibilityRef } from '@/hooks/useDeviceMotion3D';
 import { getAssetUrl } from '@/lib/utils';
 
@@ -36,6 +36,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isVisibleRef = useBatikVisibilityRef();
+  const reduceMotion = useReducedMotion();
 
   // F-DUP: freeze this instance's tilt output at 0 while it's off-screen or
   // hidden behind another element (e.g. a page's batik layer sitting behind
@@ -56,7 +57,8 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
     return () => observer.disconnect();
   }, [isVisibleRef]);
 
-  const { rotateX, rotateY } = useDeviceMotion3D(maxRotation, isVisibleRef);
+  // Respect OS reduced-motion preferences for every batik instance.
+  const { rotateX, rotateY } = useDeviceMotion3D(reduceMotion ? 0 : maxRotation, isVisibleRef);
   
   // Subtle translation parallax for extra 3D depth
   const moveX = useTransform(rotateY, (rY) => rY * 0.65);
@@ -85,7 +87,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             scale: 1.1,
             maskImage,
             WebkitMaskImage: maskImage,
-            willChange: 'transform',
+            willChange: reduceMotion ? 'auto' : 'transform',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             ...style,
@@ -116,7 +118,7 @@ export const Batik3DMotion: React.FC<Batik3DMotionProps> = ({
             maskImage,
             WebkitMaskImage: maskImage,
             opacity,
-            willChange: 'transform',
+            willChange: reduceMotion ? 'auto' : 'transform',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             ...style,

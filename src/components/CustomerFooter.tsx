@@ -17,7 +17,7 @@ export default function CustomerFooter() {
       <div className="customer-brand-footer__content">
         <p className="customer-brand-footer__name">Restoran Wawasan Pak Usop</p>
         <p className="customer-brand-footer__tagline">
-          {bm ? 'Sajian warisan sejak 1986' : 'Heritage flavours since 1986'}
+          {bm ? 'Cita rasa warisan' : 'Heritage flavours'}
         </p>
         <div className="customer-brand-footer__rule" aria-hidden="true" />
         <p className="customer-brand-footer__copyright">

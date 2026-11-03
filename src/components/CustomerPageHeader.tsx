@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { ArrowLeft, ChevronRight, Home, Moon, MoreHorizontal, Sun } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { TransparentLogo } from '@/components/TransparentLogo';
-import CustomerFooter from '@/components/CustomerFooter';
 import { getAssetUrl } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
 import './customer-pages.css';
@@ -23,22 +21,15 @@ interface CustomerPageHeaderProps {
 }
 
 /**
- * Customer page header and shared footer host.
- * The footer is mounted after the page's content, without changing
- * the Order, Profile or Calendar business logic.
+ * Shared customer page header. Page structure and footer are owned by CustomerPageLayout.
  */
 export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 'history', actions }: CustomerPageHeaderProps) {
   const { language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation();
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [footerHost, setFooterHost] = useState<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement>(null);
 
-  const hasSharedFooter = ['/order', '/profile', '/calendar'].some(
-    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
-  );
 
   // Keep content clear when larger text or a device inset makes the header taller.
   useEffect(() => {
@@ -52,21 +43,6 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
     return () => observer.disconnect();
   }, []);
 
-  // Shared footer sits at the end of each customer page, immediately before
-  // the existing fixed BottomNavigation. No page-specific files are modified.
-  useEffect(() => {
-    if (!hasSharedFooter) return;
-    const page = headerRef.current?.closest<HTMLElement>('.customer-page');
-    if (!page) return;
-    const host = document.createElement('div');
-    host.className = 'customer-brand-footer-host';
-    page.appendChild(host);
-    setFooterHost(host);
-    return () => {
-      setFooterHost(null);
-      host.remove();
-    };
-  }, [hasSharedFooter]);
 
   const bm = language === 'bm';
 
@@ -127,7 +103,6 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
           </Dialog>
         </div>
       </header>
-      {footerHost && createPortal(<CustomerFooter />, footerHost)}
     </>
   );
 }

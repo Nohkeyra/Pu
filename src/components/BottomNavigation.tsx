@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Home, Utensils, Settings, User, Shield, Calendar } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn, getAssetUrl } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
 import { triggerLightImpact } from '@/lib/haptics';
 import { onAuthStateChanged } from 'firebase/auth';
+import './bottom-navigation-polish.css';
 
 // Helper to determine tab ID from pathname
 function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
@@ -44,6 +45,7 @@ export default function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
@@ -94,10 +96,10 @@ export default function BottomNavigation() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex justify-center">
       <motion.div
-        initial={{ y: 24, opacity: 0 }}
+        initial={reduceMotion ? false : { y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-        className="pointer-events-auto relative w-full max-w-xl border-t sm:border-x border-[#df710f]/25 bg-[#fffdfa]/95 sm:rounded-t-[2.2rem] shadow-[0_-12px_36px_rgba(223,113,15,0.16)] backdrop-blur-xl dark:border-amber-500/25 dark:bg-[#1a1612]/95 overflow-hidden"
+        transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 360, damping: 28 }}
+        className="wawasan-bottom-nav pointer-events-auto relative w-full max-w-xl border-t sm:border-x sm:rounded-t-[2.2rem] shadow-[0_-12px_36px_rgba(223,113,15,0.16)] backdrop-blur-xl overflow-hidden"
         style={{
           paddingBottom: 'max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 8px)',
           isolation: 'isolate',
@@ -121,7 +123,7 @@ export default function BottomNavigation() {
           return (
             <motion.button
               key={tab.id}
-              whileTap={{ scale: 0.93 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.93 }}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
               onMouseEnter={() => prefetchTabModule(tab.path)}
@@ -148,13 +150,13 @@ export default function BottomNavigation() {
                   <motion.div
                     layoutId="activeTabPill"
                     className="absolute inset-0 rounded-full border border-amber-500/35 bg-amber-500/15 dark:bg-amber-500/20 shadow-[0_2px_14px_rgba(246,153,19,0.25)]"
-                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 450, damping: 32 }}
                   />
                 )}
                 <motion.div
                   initial={false}
-                  animate={isActive ? { scale: 1.1, y: -0.5 } : { scale: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 480, damping: 26 }}
+                  animate={reduceMotion ? { scale: 1, y: 0 } : isActive ? { scale: 1.1, y: -0.5 } : { scale: 1, y: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 480, damping: 26 }}
                   className="relative z-10 flex items-center justify-center"
                 >
                   <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
@@ -163,10 +165,10 @@ export default function BottomNavigation() {
 
               <motion.span
                 initial={false}
-                animate={isActive ? { y: 0, opacity: 1 } : { y: 0.5, opacity: 0.85 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
+                animate={reduceMotion ? { y: 0, opacity: 1 } : isActive ? { y: 0, opacity: 1 } : { y: 0.5, opacity: 0.85 }}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
                 className={cn(
-                  'nav-label relative z-10 transition-colors duration-200 text-[11px] sm:text-xs leading-tight tracking-normal whitespace-nowrap text-center max-w-full px-0.5',
+                  'nav-label relative z-10 transition-colors duration-200 text-[11px] sm:text-xs leading-tight tracking-normal text-center max-w-full px-0.5 break-words',
                   isActive
                     ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
                     : 'nav-label-inactive text-deep-forest/85 dark:text-[#ede5d8]/80 font-medium'

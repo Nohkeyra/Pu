@@ -7,7 +7,7 @@
   padding: 30px 20px calc(112px + var(--sab, env(safe-area-inset-bottom, 0px)));
   border-top: 1px solid var(--customer-line, rgba(112,75,48,.2));
   background: var(--customer-surface, #fffdfa);
-  color: var(--customer-ink, #173b2a);
+  color: var(--customer-ink, #30251d);
 }
 .dark .customer-brand-footer {
   background: var(--customer-surface, #241f19);
@@ -16,7 +16,7 @@
 .customer-brand-footer__batik {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   background-position: center top;
   background-size: clamp(160px, 30vw, 240px) auto;
   background-repeat: repeat;
@@ -28,6 +28,7 @@
 .dark .customer-brand-footer__batik { opacity: .11; }
 .customer-brand-footer__content {
   position: relative;
+  z-index: 1;
   width: min(100%, 720px);
   margin-inline: auto;
   text-align: center;
@@ -60,12 +61,6 @@
 }
 
 
-/* Order's old local footer is superseded by the unified customer footer.
-   Its underlying business logic and page content remain untouched. */
-.customer-order-page > footer:not(.customer-brand-footer) {
-  display: none;
-}
-
-.customer-brand-footer-host {
-  margin-top: auto;
-}
+/* Normal document flow; fixed bottom navigation remains independent. */
+.customer-page { min-height: 100dvh; }
+.customer-page > .customer-brand-footer { margin-top: auto; }

@@ -1453,6 +1453,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         style={{ bottom: 'calc(130px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))', visibility: mascotVisible ? 'visible' : 'hidden' }}
       />
 
+      {/* Screen-reader feedback during asynchronous order submission. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {isSubmitting ? tText('Submitting your order. Please wait.', 'Menghantar tempahan anda. Sila tunggu.') : ''}
+      </span>
+
       {/* Sticky Mobile Price Bar (< lg breakpoint) */}
       {effectiveStep <= 4 && (
         <div className="customer-order-action lg:hidden">
@@ -1478,7 +1483,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               ) : (
                 <Button
                   onClick={handleOrderSubmission}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || stepTransitionBusy}
+                  aria-busy={isSubmitting}
                   className="customer-next-button flex items-center gap-2"
                 >
                   {isSubmitting ? (

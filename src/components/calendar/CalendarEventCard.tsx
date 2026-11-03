@@ -1,4 +1,4 @@
-import { Clock, MapPin, ArrowRight } from 'lucide-react';
+import { Clock, MapPin, ArrowRight, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLongPress } from '@/hooks/useLongPress';
 import { triggerLightImpact } from '@/lib/haptics';
@@ -78,13 +78,28 @@ export function CalendarEventCard({
       </div>
 
       <div
-        className="pt-2 border-t border-stone-100 dark:border-stone-800 flex justify-between items-center"
+        className="pt-2 border-t border-stone-100 dark:border-stone-800 flex flex-wrap justify-between items-center gap-2"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-[10px] text-stone-400 font-medium">
+        <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
           {tl('Hold for quick actions', 'Tekan lama untuk menu pantas')}
         </span>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await triggerLightImpact();
+              onLongPress(order);
+            }}
+            className="min-h-11 px-2 text-xs font-semibold text-stone-700 dark:text-stone-200"
+            aria-label={tl('Open quick actions', 'Buka tindakan pantas')}
+          >
+            <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
+            <span>{tl('Actions', 'Tindakan')}</span>
+          </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -92,11 +107,12 @@ export function CalendarEventCard({
             await triggerLightImpact();
             onOpenDetails(order);
           }}
-          className="text-xs font-bold text-crisp-carrot hover:underline gap-1 p-0 h-auto cursor-pointer"
+          className="text-xs font-bold text-crisp-carrot hover:underline gap-1 px-2 min-h-11 cursor-pointer"
         >
           {tl('View Details', 'Lihat Butiran')}
-          <ArrowRight className="w-3.5 h-3.5" />
+          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </Button>
+        </div>
       </div>
     </div>
   );

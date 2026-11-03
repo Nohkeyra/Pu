@@ -1,0 +1,25 @@
+/* Shared customer navigation tokens: same original warm cream/charcoal palette. */
+.wawasan-bottom-nav {
+  --nav-surface: #fffdfa;
+  --nav-line: rgba(223, 113, 15, .25);
+  background: color-mix(in srgb, var(--nav-surface) 95%, transparent);
+  border-color: var(--nav-line);
+}
+.dark .wawasan-bottom-nav {
+  --nav-surface: #1a1612;
+  --nav-line: rgba(245, 158, 11, .25);
+}
+.wawasan-bottom-nav .nav-label {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  max-height: 2.6em;
+  line-height: 1.3;
+}
+@media (max-width: 359px) {
+  .wawasan-bottom-nav .nav-label { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wawasan-bottom-nav :is(button, .nav-label) {
+    transition-duration: 0.01ms !important;
+  }
+}

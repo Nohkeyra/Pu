@@ -64,6 +64,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { CustomerPageHeader } from '@/components/CustomerPageHeader';
+import CustomerPageLayout from '@/components/CustomerPageLayout';
 import './customer-calendar-profile.css';
 import AuthModal from '@/components/AuthModal';
 import type { Order } from '@/types';
@@ -671,7 +672,7 @@ export default function CalendarPage() {
 
   return (
     <ErrorBoundary>
-      <div className="customer-page customer-calendar-page">
+      <CustomerPageLayout className="customer-calendar-page">
         <CustomerPageHeader
           backDestination="home"
           title={tl('Catering schedule', 'Jadual katering')}
@@ -1473,7 +1474,7 @@ export default function CalendarPage() {
           />
 
         </div>
-      </div>
+      </CustomerPageLayout>
     </ErrorBoundary>
   );
 }

@@ -307,3 +307,19 @@
   .landing-page { --heritage-art-opacity: 0.55; }
   .dark .landing-page { --heritage-art-opacity: 0.42; }
 }
+
+/* Phase 3: accessible interaction states without changing heritage artwork. */
+.landing-page .heritage-hero-action:focus-visible,
+.landing-page .heritage-hero-scroll-hint:focus-visible {
+  outline: 3px solid var(--heritage-hero-ink);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page .heritage-hero-action,
+  .landing-page .heritage-hero-scroll-hint,
+  .landing-page .heritage-hero-scroll-line {
+    animation: none !important;
+    transition: none !important;
+  }
+}

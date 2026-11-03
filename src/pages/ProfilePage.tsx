@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { User as UserIcon, LogIn, UserPlus, ArrowRight, FileText, MapPin, Check } from 'lucide-react';
 import WawasanLoader from '@/components/WawasanLoader';
 import { CustomerPageHeader } from '@/components/CustomerPageHeader';
+import CustomerPageLayout from '@/components/CustomerPageLayout';
 import './customer-calendar-profile.css';
 import AuthModal from '@/components/AuthModal';
 
@@ -42,7 +43,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="customer-page customer-profile-page relative">
+    <CustomerPageLayout className="customer-profile-page relative">
       <CustomerPageHeader
           backDestination={window.history.state?.idx > 0 ? 'history' : 'home'}
         title={t('nav_profile')}
@@ -143,6 +144,6 @@ export default function ProfilePage() {
         onClose={() => setAuthModalOpen(false)}
         initialMode={authMode}
       />
-    </div>
+    </CustomerPageLayout>
   );
 }

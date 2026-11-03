@@ -272,3 +272,18 @@
 .customer-page .settings-row-action input[type=range]::-webkit-slider-thumb {appearance:none;width:18px;height:18px;margin-top:-7px;border:0;border-radius:50%;background:var(--customer-accent)}
 .customer-page .settings-row-action input[type=range]::-moz-range-track {height:4px;border-radius:99px;background:var(--customer-line)}
 .customer-page .settings-row-action input[type=range]::-moz-range-thumb {width:18px;height:18px;border:0;border-radius:50%;background:var(--customer-accent)}
+
+/* Fasa 2: shared navigation semantics; the palette remains identical to the
+   existing customer light/dark surfaces. These aliases are intentionally scoped. */
+.customer-page {
+  --customer-focus-ring: var(--customer-accent);
+}
+.customer-page :is(button, a, input, select, textarea, [role="tab"]):focus-visible {
+  outline: 3px solid var(--customer-focus-ring);
+  outline-offset: 3px;
+}
+/* Ensure tab labels remain legible when system text is enlarged. */
+.customer-page .customer-settings-tabs button {
+  min-width: 0;
+  white-space: normal;
+}
