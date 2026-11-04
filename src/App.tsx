@@ -91,6 +91,12 @@ function App() {
       if (isFreshSession) {
         sessionStorage.setItem('wawasan_app_initialized', 'true');
         sessionStorage.setItem('wawasan_guest_allowed', 'true');
+
+        // On cold app restart, reset any WebView-restored route back to home page
+        const currentHash = window.location.hash;
+        if (currentHash && currentHash !== '#/' && currentHash !== '#/home' && !currentHash.includes('?')) {
+          window.location.hash = '#/home';
+        }
       }
     } catch (err) {
       console.warn('Session storage init error:', err);

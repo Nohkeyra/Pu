@@ -26,23 +26,25 @@ const MenuCard = React.memo(
           </span>
         )}
       </div>
-      <div className="landing-menu-body">
-        <h3>{bm ? item.nameBm : item.nameEn}</h3>
-        <p>{bm ? item.descBm : item.descEn}</p>
-      </div>
-      <div className="landing-menu-footer">
-        <span>
-          <small>{bm ? 'Harga bermula' : 'Starting from'}</small>
-          <strong>RM {item.price.toFixed(2)}</strong>
-        </span>
-        <button
-          type="button"
-          onClick={onOrder}
-          aria-label={`${bm ? 'Tempah' : 'Order'} ${bm ? item.nameBm : item.nameEn}`}
-        >
-          <span>{bm ? 'Tempah' : 'Order'}</span>
-          <ArrowRight size={16} aria-hidden="true" />
-        </button>
+      <div className="landing-menu-overlay">
+        <div className="landing-menu-body">
+          <h3>{bm ? item.nameBm : item.nameEn}</h3>
+          <p>{bm ? item.descBm : item.descEn}</p>
+        </div>
+        <div className="landing-menu-footer">
+          <span>
+            <small>{bm ? 'Harga bermula' : 'Starting from'}</small>
+            <strong>RM {item.price.toFixed(2)}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={onOrder}
+            aria-label={`${bm ? 'Tempah' : 'Order'} ${bm ? item.nameBm : item.nameEn}`}
+          >
+            <span>{bm ? 'Tempah' : 'Order'}</span>
+            <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </article>
   )

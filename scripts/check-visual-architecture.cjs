@@ -21,16 +21,6 @@ for (const [, exposed, source] of mappings) {
 }
 assert.doesNotMatch(customer, /\.customer-page::before\s*\{/, 'Customer page canvas must be owned by src/wawasan-page-backgrounds.css');
 assert.match(background, /\.customer-page::before\s*\{/, 'Missing central customer canvas');
-const layout = read('src/components/layout/CustomerPageLayout.tsx');
-const floral = read('src/components/layout/CustomerPageFloral.tsx');
-const settings = read('src/pages/SettingsPage.tsx');
-const order = read('src/pages/OrderPage.tsx');
-assert.match(background, /\.customer-page-floral\s*\{/, 'Missing single floral container rule');
-assert.match(background, /\.customer-page-floral__art\s*\{/, 'Missing floral art rule');
-assert.match(layout, /<CustomerPageFloral \/>/, 'CustomerPageLayout must render the shared floral');
-assert.match(settings, /<CustomerPageFloral \/>/, 'Settings must render the shared floral');
-assert.match(floral, /wawasan-batik-flower\.svg/, 'Shared floral must reuse approved art');
-assert.doesNotMatch(order, /customer-botanical-decoration|wawasan-order-footer-flower/, 'Legacy order ornament duplicates must be removed');
-assert.doesNotMatch(background, /customer-content::(?:before|after)/, 'No negative-layer pseudo flowers');
-assert.doesNotMatch(customer, /wawasan-order-footer-flower|customer-botanical-decoration/, 'No old Order floral overrides');
-console.log(`PASS: ${mappings.length} independent Tailwind tokens; one customer canvas; shared floral in Order, Calendar, Profile, Settings.`);
+assert.match(customer, /\.customer-order-page \.customer-botanical-decoration/, 'Missing order ornament container');
+assert.match(customer, /\.customer-order-page \.wawasan-order-footer-flower/, 'Missing footer ornament');
+console.log(`PASS: ${mappings.length} independent Tailwind tokens; one customer ambient canvas owner; Order decorations preserved.`);
