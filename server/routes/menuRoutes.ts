@@ -8,7 +8,6 @@ const router = Router();
 // Upgrade only the known default placeholders. Preserve any custom image an
 // administrator has chosen, and never change the saved Firestore document.
 const MENU_IMAGE_CORRECTIONS: Record<string, { name: string; previous: readonly string[]; replacement: string }> = {
-  "nasi_campur": { name: "Nasi Campur", previous: ["/assets/dishes/photos/nasi-campur.jpg"], replacement: "/assets/dishes/vector/nasi_campur_pilihan.webp" },
   "mee_siam_sarapan": { name: "Mee Siam", previous: ["/assets/dishes/vector/laksa_johor.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
   "mee_siam_petang": { name: "Mee Siam", previous: ["/assets/dishes/vector/bihun_goreng.jpg"], replacement: "/assets/dishes/vector/mee_siam.webp" },
   "mee_rebus_sarapan": { name: "Mee Rebus", previous: ["/assets/dishes/vector/mee_kari.jpg"], replacement: "/assets/dishes/vector/mee_rebus.webp" },
@@ -50,51 +49,11 @@ const MENU_IMAGE_CORRECTIONS: Record<string, { name: string; previous: readonly 
   "telur_mata_sapi_lunch": { name: "Telur Mata Sapi", previous: ["/assets/dishes/vector/nasi_lemak.jpg"], replacement: "/assets/dishes/vector/telur_mata_sapi.jpg" },
 };
 
-// Only upgrade known original images for the matching default menu item. A custom
-// image, a renamed item, and Firestore data itself are left untouched.
-const TRANSPARENT_DEFAULT_IMAGES: Record<string, string> = {
-  '/assets/dishes/vector/asam_laksa.jpg': '/assets/dishes/vector/asam_laksa.webp',
-  '/assets/dishes/vector/asam_pedas.jpg': '/assets/dishes/vector/asam_pedas.webp',
-  '/assets/dishes/vector/ayam_berempah.jpg': '/assets/dishes/vector/ayam_berempah.webp',
-  '/assets/dishes/vector/lontong.jpg': '/assets/dishes/vector/lontong.webp',
-  '/assets/dishes/vector/masak_lemak.jpg': '/assets/dishes/vector/masak_lemak.webp',
-  '/assets/dishes/vector/rojak_singapore.jpg': '/assets/dishes/vector/rojak_singapore.webp',
-  '/assets/dishes/vector/rendang_daging.jpg': '/assets/dishes/vector/rendang_daging.webp',
-  '/assets/drinks/kopi_kampung_vector.jpg': '/assets/drinks/kopi_kampung_vector.webp',
-  '/assets/drinks/milo_vector.jpg': '/assets/drinks/milo_vector.webp',
-  '/assets/dishes/vector/ikan_keli.jpg': '/assets/dishes/vector/ikan_keli.webp',
-  '/assets/dishes/vector/bihun_goreng.jpg': '/assets/dishes/vector/bihun_goreng.webp',
-  '/assets/dishes/vector/mee_goreng.jpg': '/assets/dishes/vector/mee_goreng.webp',
-  '/assets/dishes/vector/mee_kari.jpg': '/assets/dishes/vector/mee_kari.webp',
-  '/assets/dishes/vector/roti_canai.jpg': '/assets/dishes/vector/roti_canai.webp',
-  '/assets/drinks/mineral_water_vector.jpg': '/assets/drinks/mineral_water_vector.webp',
-  '/assets/drinks/sirap_bandung.jpg': '/assets/drinks/sirap_bandung.webp',
-  '/assets/dishes/vector/kuih_muih.jpg': '/assets/dishes/vector/kuih_muih.webp',
-  '/assets/dishes/vector/kari_kambing.jpg': '/assets/dishes/vector/kari_kambing.webp',
-  '/assets/dishes/vector/nasi_briyani.jpg': '/assets/dishes/vector/nasi_briyani.webp',
-  '/assets/dishes/vector/sambal_udang.jpg': '/assets/dishes/vector/sambal_udang.webp',
-  '/assets/dishes/vector/soto_ayam.jpg': '/assets/dishes/vector/soto_ayam.webp',
-  '/assets/dishes/vector/telur_mata_sapi.jpg': '/assets/dishes/vector/telur_mata_sapi.webp',
-  '/assets/drinks/teh_tarik.jpg': '/assets/drinks/teh_tarik.webp',
-  '/assets/dishes/vector/laksa_johor.jpg': '/assets/dishes/vector/laksa_johor.webp',
-  '/assets/dishes/vector/nasi_lemak.jpg': '/assets/dishes/vector/nasi_lemak.webp',
-  '/assets/dishes/vector/pisang_goreng.jpg': '/assets/dishes/vector/pisang_goreng.webp',
-  '/assets/dishes/vector/tosai.jpg': '/assets/dishes/vector/tosai.webp',
-  '/assets/dishes/vector/roti_boom.jpg': '/assets/dishes/vector/roti_boom.webp',
-};
-
 export function correctDefaultMenuImage<T extends { id: string; nameBm?: unknown; image?: unknown }>(item: T): T {
   const correction = MENU_IMAGE_CORRECTIONS[item.id];
   const hasKnownPlaceholder = item.image == null || item.image === '' || (typeof item.image === 'string' && correction?.previous.includes(item.image));
-  const corrected = correction && item.nameBm === correction.name && hasKnownPlaceholder
-    ? { ...item, image: correction.replacement }
-    : item;
-  const defaultItem = DEFAULT_MENU_ITEMS.find((entry) => entry.id === corrected.id);
-  const transparent = typeof corrected.image === 'string' ? TRANSPARENT_DEFAULT_IMAGES[corrected.image] : undefined;
-  if (defaultItem && corrected.nameBm === defaultItem.nameBm && transparent && transparent === defaultItem.image) {
-    return { ...corrected, image: transparent };
-  }
-  return corrected;
+  if (!correction || item.nameBm !== correction.name || !hasKnownPlaceholder) return item;
+  return { ...item, image: correction.replacement };
 }
 const ALLOWED_CATEGORIES = new Set(['breakfast', 'lunch', 'hi tea', 'drinks']);
 const ALLOWED_SUITABILITY = new Set(['breakfast_hitea', 'lunch', undefined]);
