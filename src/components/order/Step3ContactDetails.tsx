@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { motion } from 'motion/react';
 import { 
   Loader2, 
@@ -30,6 +30,7 @@ import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn, getAssetUrl } from '@/lib/utils';
 import type { OrderState } from '@/components/order/OrderForm';
+import type { OrderContactField, OrderContactErrors } from '@/lib/orderContactValidation';
 
 interface SavedLocation {
   id: string;
@@ -51,6 +52,8 @@ interface Step3ContactDetailsProps {
   handleSyncFromActiveProfile?: () => void;
   tText: (en: string, bm: string) => string;
   t: (key: string) => string;
+  fieldErrors: OrderContactErrors;
+  clearFieldError: (field: OrderContactField) => void;
 }
 
 export function Step3ContactDetails({
@@ -67,45 +70,11 @@ export function Step3ContactDetails({
   handleSyncFromActiveProfile,
   tText,
   t,
+  fieldErrors,
+  clearFieldError,
 }: Step3ContactDetailsProps) {
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  const validateAndNext = async () => {
-    const next: Record<string, string> = {};
-    if (orderState.eventType === 'pejabat') {
-      if (!orderState.companyName) {
-        next.companyName = tText('Please select or enter a company/department.', 'Sila pilih atau masukkan syarikat/jabatan.');
-      } else if (orderState.companyName === 'other' && !orderState.customCompany?.trim()) {
-        next.customCompany = tText('Please enter the company/department name.', 'Sila masukkan nama syarikat/jabatan.');
-      }
-    }
-    if (!orderState.name?.trim()) {
-      next.name = tText('Please enter your full name.', 'Sila masukkan nama penuh anda.');
-    }
-    if (!orderState.contact?.trim() || orderState.contact.replace(/\D/g, '').length < 10) {
-      next.contact = tText('Please enter a valid phone number.', 'Sila masukkan nombor telefon yang sah.');
-    }
-    if (!orderState.email?.trim()) {
-      next.email = tText('Please enter your email for invoices.', 'Sila masukkan emel untuk invois.');
-    } else if ((orderState.email || '').trim().toLowerCase() !== (orderState.confirmEmail || '').trim().toLowerCase()) {
-      next.confirmEmail = tText('Email confirmation does not match.', 'Pengesahan emel tidak sepadan.');
-    }
-    if (!orderState.date) {
-      next.date = tText('Please select the event date.', 'Sila pilih tarikh majlis.');
-    }
-    if (!orderState.time) {
-      next.time = tText('Please select the event time.', 'Sila pilih masa majlis.');
-    }
-    if (!orderState.location?.trim()) {
-      next.location = tText('Please enter the delivery/pickup location.', 'Sila masukkan lokasi.');
-    }
-    if (!orderState.delivery) {
-      next.delivery = tText('Please choose delivery or pickup.', 'Sila pilih hantar atau ambil sendiri.');
-    }
-    setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
-    await handleStepNext(3);
-  };
+  // The sticky mobile action and the in-form action must validate identically.
+  const validateAndNext = () => handleStepNext(3);
 
   return (
     <motion.div
@@ -173,7 +142,7 @@ export function Step3ContactDetails({
 
             {/* Ministry / Main Organization */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider flex items-center justify-between">
+              <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider flex items-center justify-between">
                 <span>{tText('Company / Ministry / Main Agency *', 'Syarikat / Kementerian / Agensi Utama *')}</span>
               </Label>
               {isProfileLoading ? (
@@ -182,14 +151,14 @@ export function Step3ContactDetails({
                 <>
                   <Select
                     value={orderState.companyName}
-                    onValueChange={(val) => setOrderState(prev => ({ ...prev, companyName: val }))}
+                    onValueChange={(val) => { clearFieldError('companyName'); setOrderState(prev => ({ ...prev, companyName: val })); }}
                     required
                   >
-                    <SelectTrigger aria-describedby={fieldErrors.companyName ? 'company-error' : undefined} className="w-full h-11 rounded-xl border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-950/60 text-deep-forest dark:text-[#ede5d8] focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs text-sm font-medium">
+                    <SelectTrigger id="order-company-select" aria-invalid={Boolean(fieldErrors.companyName)} aria-describedby={fieldErrors.companyName ? 'company-error' : undefined} className="w-full h-11 rounded-xl border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-950/60 text-deep-forest dark:text-[var(--ui-legacy-white)] focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs text-sm font-medium">
                       <SelectValue placeholder={`-- ${tText('Select Organization', 'Pilih Jabatan')} --`} />
                     </SelectTrigger>
                     <SelectContent 
-                      className="w-[var(--radix-select-trigger-width)] max-h-64 sm:max-h-72 overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-900 shadow-2xl p-1.5 z-[100]"
+                      className="w-[var(--radix-select-trigger-width)] max-h-64 sm:max-h-72 overflow-y-auto rounded-xl border border-stone-200 dark:border-stone-700/80 bg-white dark:bg-stone-900 shadow-2xl p-1.5 z-[var(--rw-z-popover)]"
                       position="popper"
                       sideOffset={4}
                     >
@@ -206,7 +175,7 @@ export function Step3ContactDetails({
                           <SelectItem 
                             key={idx} 
                             value={company} 
-                            className="py-2.5 px-2.5 my-0.5 rounded-lg text-deep-forest dark:text-[#ede5d8] focus:bg-amber-500/10 dark:focus:bg-amber-500/15 cursor-pointer text-left"
+                            className="py-2.5 px-2.5 my-0.5 rounded-lg text-deep-forest dark:text-[var(--ui-legacy-white)] focus:bg-amber-500/10 dark:focus:bg-amber-500/15 cursor-pointer text-left"
                           >
                             <div className="flex flex-col text-left pr-2 max-w-full overflow-hidden">
                               <span className="font-semibold text-xs sm:text-sm text-stone-900 dark:text-stone-100 leading-snug truncate">
@@ -242,8 +211,9 @@ export function Step3ContactDetails({
                       <Input
                         id="custom-company-input"
                         value={orderState.customCompany}
-                        onChange={(e) => setOrderState(prev => ({ ...prev, customCompany: e.target.value }))}
+                        onChange={(e) => { clearFieldError('customCompany'); setOrderState(prev => ({ ...prev, customCompany: e.target.value })); }}
                         placeholder={tText('Type Company/Department Name', 'Taip nama syarikat atau kementerian')}
+                        aria-invalid={Boolean(fieldErrors.customCompany)}
                         aria-describedby={fieldErrors.customCompany ? 'custom-company-error' : undefined}
                         required
                         className="mt-2 h-11 rounded-xl font-sans bg-white dark:bg-stone-950/60 border-stone-200 dark:border-stone-700/80 focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 shadow-xs"
@@ -258,7 +228,7 @@ export function Step3ContactDetails({
 
             {/* Division / Department (Optional) */}
             <div className="space-y-1.5">
-              <Label htmlFor="order-department" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+              <Label htmlFor="order-department" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
                 {tText('Division / Department / Branch (Optional)', 'Bahagian / Jabatan / Cawangan (Pilihan)')}
               </Label>
               <Input
@@ -272,7 +242,7 @@ export function Step3ContactDetails({
 
             {/* Attention To */}
             <div className="space-y-1.5">
-              <Label htmlFor="order-attn" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+              <Label htmlFor="order-attn" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
                 {tText('Attn / U.P (Optional)', 'Attn / U.P (Pilihan)')}
               </Label>
               <Input
@@ -288,13 +258,14 @@ export function Step3ContactDetails({
 
         {/* Name Input */}
         <div className="space-y-1.5">
-          <Label htmlFor="contact-name" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
+          <Label htmlFor="contact-name" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">{tText('Full Name', 'Nama Penuh *')}</Label>
           <Input
             id="contact-name"
             data-tour="step3-name"
             value={orderState.name}
-            onChange={(e) => setOrderState(prev => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => { clearFieldError('name'); setOrderState(prev => ({ ...prev, name: e.target.value })); }}
             placeholder={tText('e.g. Ahmad bin Abdullah', 'Contoh: Ahmad bin Abdullah')}
+            aria-invalid={Boolean(fieldErrors.name)}
             aria-describedby={fieldErrors.name ? 'name-error' : undefined}
             className="h-11 rounded-xl font-sans"
           />
@@ -303,7 +274,7 @@ export function Step3ContactDetails({
 
         {/* Phone Input */}
         <div className="space-y-1.5">
-          <Label htmlFor="contact-phone" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
+          <Label htmlFor="contact-phone" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">{tText('Contact Phone', 'Nombor Telefon *')}</Label>
           <Input
             id="contact-phone"
             data-tour="step3-contact"
@@ -311,8 +282,9 @@ export function Step3ContactDetails({
             autoComplete="tel"
             maxLength={50}
             value={orderState.contact}
-            onChange={(e) => setOrderState(prev => ({ ...prev, contact: e.target.value }))}
+            onChange={(e) => { clearFieldError('contact'); setOrderState(prev => ({ ...prev, contact: e.target.value })); }}
             placeholder={tText('e.g. 012-345 6789', 'Contoh: 012-345 6789')}
+            aria-invalid={Boolean(fieldErrors.contact)}
             aria-describedby={fieldErrors.contact ? 'contact-error' : undefined}
             className="h-11 rounded-xl font-sans"
           />
@@ -322,28 +294,30 @@ export function Step3ContactDetails({
         {/* Email & Confirm Email Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="contact-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
+            <Label htmlFor="contact-email" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">{tText('Email Address', 'Alamat E-mel *')}</Label>
             <Input
               id="contact-email"
               data-tour="step3-email"
               type="email"
               value={orderState.email}
-              onChange={(e) => setOrderState(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => { clearFieldError('email'); clearFieldError('confirmEmail'); setOrderState(prev => ({ ...prev, email: e.target.value })); }}
               placeholder={tText('e.g. ahmad@gmail.com', 'Contoh: ahmad@gmail.com')}
+              aria-invalid={Boolean(fieldErrors.email)}
               aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               className="h-11 rounded-xl font-sans"
             />
             {fieldErrors.email && <FormError id="email-error" message={fieldErrors.email} />}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
+            <Label htmlFor="contact-confirm-email" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">{tText('Confirm Email', 'Sahkan E-mel *')}</Label>
             <Input
               id="contact-confirm-email"
               data-tour="step3-confirm-email"
               type="email"
               value={orderState.confirmEmail}
-              onChange={(e) => setOrderState(prev => ({ ...prev, confirmEmail: e.target.value }))}
+              onChange={(e) => { clearFieldError('confirmEmail'); setOrderState(prev => ({ ...prev, confirmEmail: e.target.value })); }}
               placeholder={tText('Re-type email address', 'Ulang alamat e-mel')}
+              aria-invalid={Boolean(fieldErrors.confirmEmail)}
               aria-describedby={fieldErrors.confirmEmail ? 'confirm-email-error' : undefined}
               className="h-11 rounded-xl font-sans"
             />
@@ -360,7 +334,7 @@ export function Step3ContactDetails({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                    <Label htmlFor="event-date" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
                       {tText('Event Date', 'Tarikh Majlis *')}
                     </Label>
                     <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -373,14 +347,15 @@ export function Step3ContactDetails({
                     type="date"
                     value={orderState.date}
                     min={minBookingDate}
-                    onChange={(e) => setOrderState(prev => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) => { clearFieldError('date'); setOrderState(prev => ({ ...prev, date: e.target.value })); }}
+                    aria-invalid={Boolean(fieldErrors.date)}
                     aria-describedby={fieldErrors.date ? 'date-error' : undefined}
                     className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
                   />
                   {fieldErrors.date && <FormError id="date-error" message={fieldErrors.date} />}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+                  <Label htmlFor="event-time" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
                     {tText('Serving Time', 'Masa Majlis *')}
                   </Label>
                   <input
@@ -388,7 +363,8 @@ export function Step3ContactDetails({
                     data-tour="step3-time"
                     type="time"
                     value={orderState.time}
-                    onChange={(e) => setOrderState(prev => ({ ...prev, time: e.target.value }))}
+                    onChange={(e) => { clearFieldError('time'); setOrderState(prev => ({ ...prev, time: e.target.value })); }}
+                    aria-invalid={Boolean(fieldErrors.time)}
                     aria-describedby={fieldErrors.time ? 'time-error' : undefined}
                     className="w-full h-11 px-4 border border-stone/20 bg-card text-deep-forest dark:text-white dark:bg-stone-800 rounded-xl font-sans text-sm focus:outline-none focus:border-crisp-carrot focus:ring-2 focus:ring-crisp-carrot/10"
                   />
@@ -421,7 +397,7 @@ export function Step3ContactDetails({
         {/* Geolocation Autocomplete Venue Location */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <Label htmlFor="contact-location" className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+            <Label htmlFor="contact-location" className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
               {tText('Event Venue Address', 'Lokasi / Alamat Majlis *')}
             </Label>
             <button
@@ -453,7 +429,7 @@ export function Step3ContactDetails({
                 <button
                   key={loc.id}
                   type="button"
-                  onClick={() => setOrderState(prev => ({ ...prev, location: loc.address }))}
+                  onClick={() => { clearFieldError('location'); setOrderState(prev => ({ ...prev, location: loc.address })); }}
                   className={cn(
                     "px-3 py-1.5 bg-cream/30 dark:bg-card border border-stone/10 hover:border-[var(--color-sunshine-cta)] microcopy-12 font-medium rounded-xl text-deep-forest transition-all cursor-pointer",
                     orderState.location === loc.address && "border-[var(--color-sunshine-cta)] bg-[var(--color-sunshine-cta)]/5 ring-1 ring-[var(--color-sunshine-cta)]"
@@ -469,8 +445,9 @@ export function Step3ContactDetails({
             id="contact-location"
             data-tour="step3-location"
             value={orderState.location}
-            onChange={(e) => setOrderState(prev => ({ ...prev, location: e.target.value }))}
+            onChange={(e) => { clearFieldError('location'); setOrderState(prev => ({ ...prev, location: e.target.value })); }}
             placeholder={tText('e.g. No 10, Jalan Presint 8, Putrajaya', 'Contoh: No 10, Jalan Presint 8, Putrajaya')}
+            aria-invalid={Boolean(fieldErrors.location)}
             aria-describedby={fieldErrors.location ? 'location-error' : undefined}
             className="rounded-xl min-h-[70px] font-sans"
           />
@@ -479,14 +456,14 @@ export function Step3ContactDetails({
 
         {/* Delivery vs Pickup Method Cards */}
         <div className="space-y-1.5 pt-1">
-          <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">{tText('Delivery Method', 'Kaedah Penghantaran *')}</Label>
+          <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">{tText('Delivery Method', 'Kaedah Penghantaran *')}</Label>
 
           <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Delivery method', 'Kaedah Penghantaran')} data-tour="step3-delivery">
             <button
               type="button"
               role="radio"
               aria-checked={orderState.delivery === 'delivery'}
-              onClick={() => setOrderState(prev => ({ ...prev, delivery: 'delivery' }))}
+              onClick={() => { clearFieldError('delivery'); setOrderState(prev => ({ ...prev, delivery: 'delivery' })); }}
               className={cn(
                 "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]",
                 orderState.delivery === 'delivery'
@@ -507,7 +484,7 @@ export function Step3ContactDetails({
               type="button"
               role="radio"
               aria-checked={orderState.delivery === 'pickup'}
-              onClick={() => setOrderState(prev => ({ ...prev, delivery: 'pickup' }))}
+              onClick={() => { clearFieldError('delivery'); setOrderState(prev => ({ ...prev, delivery: 'pickup' })); }}
               className={cn(
                 "p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]",
                 orderState.delivery === 'pickup'
@@ -563,7 +540,7 @@ export function Step3ContactDetails({
         <Button
           onClick={validateAndNext}
           data-tour="step3-next"
-          className="flex-1 bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm shadow-crisp"
+          className="flex-1 bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm shadow-crisp"
         >
           {tText('Next: Review', 'Seterusnya: Semak')}
           <ArrowRight className="w-4 h-4 ml-1.5" />

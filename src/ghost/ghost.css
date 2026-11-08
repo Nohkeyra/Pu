@@ -1,7 +1,7 @@
 /* Ghost Demo System Styles */
 
 .ghost-target {
-  outline: 2px dashed #f59e0b !important;
+  outline: 2px dashed var(--ui-yellow) !important;
   outline-offset: 3px !important;
   border-radius: 8px !important;
   transition: outline 0.2s ease-in-out;
@@ -14,13 +14,13 @@
 
 @keyframes ghostPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-shadow-ink) 70.0%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+    box-shadow: 0 0 0 10px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 

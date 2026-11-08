@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, Home, Moon, MoreHorizontal, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '@/firebaseConfig';
+import { Capacitor } from '@capacitor/core';
+import { getCustomerHomePath } from '@/lib/appEntryRoutes';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -17,13 +20,14 @@ interface CustomerPageHeaderProps {
   subtitle: string;
   onBack: () => void;
   backDestination?: 'home' | 'history';
+  showBack?: boolean;
   actions: { label: string; onSelect: () => void }[];
 }
 
 /**
  * Shared customer page header. Page structure and footer are owned by CustomerPageLayout.
  */
-export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 'history', actions }: CustomerPageHeaderProps) {
+export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 'history', showBack = true, actions }: CustomerPageHeaderProps) {
   const { language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -38,6 +42,12 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
     if (!header || !page) return;
     const measure = () => page.style.setProperty('--customer-header-height', `${header.getBoundingClientRect().height}px`);
     measure();
+    // Older embedded browsers may not expose ResizeObserver. Keep the safe
+    // initial measurement and adapt to rotation without crashing the header.
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', measure);
+      return () => window.removeEventListener('resize', measure);
+    }
     const observer = new ResizeObserver(measure);
     observer.observe(header, { box: 'border-box' });
     return () => observer.disconnect();
@@ -52,7 +62,7 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
         <div className="customer-header-frame customer-brand-bar">
           <button
             type="button"
-            onClick={() => navigate('/home', { replace: true })}
+            onClick={() => navigate(getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(auth.currentUser)), { replace: true })}
             className="customer-brand"
             aria-label={bm ? 'Restoran Wawasan — halaman utama' : 'Restoran Wawasan — home'}
           >
@@ -62,46 +72,44 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
               <span className="customer-brand-caption">Pak Usop</span>
             </span>
           </button>
-          <Button
-            type="button" variant="ghost" size="icon" className="customer-header-icon customer-theme-toggle"
-            aria-label={theme === 'light' ? (bm ? 'Tukar ke tema gelap' : 'Switch to dark theme') : (bm ? 'Tukar ke tema cerah' : 'Switch to light theme')}
-            onClick={() => { void triggerLightImpact(); toggleTheme(); }}
-          >
-            {theme === 'light' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
-          </Button>
-        </div>
-        <div className="customer-header-frame customer-page-bar">
-          <Button type="button" variant="ghost" size="icon" className="customer-header-icon customer-back" aria-label={backDestination === 'home' ? (bm ? 'Utama' : 'Home') : (bm ? 'Kembali' : 'Back')} title={backDestination === 'home' ? (bm ? 'Utama' : 'Home') : (bm ? 'Kembali' : 'Back')} onClick={() => { void triggerLightImpact(); onBack(); }}>
-            {backDestination === 'home' ? <Home aria-hidden="true" /> : <ArrowLeft aria-hidden="true" />}
-          </Button>
-          <div className="customer-page-title">
-            <h1>{title}</h1>
-            <svg aria-hidden="true" viewBox="0 0 180 12" className="block h-1.5 w-24 text-[var(--customer-accent)] mt-0.5 opacity-85">
-              <path d="M 3 9 Q 90 -3 177 7" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
-            </svg>
-            <p>{subtitle}</p>
+          <div className="customer-brand-actions">
+            <Button
+              type="button" variant="ghost" size="icon" className="customer-header-icon customer-theme-toggle"
+              aria-label={theme === 'light' ? (bm ? 'Tukar ke tema gelap' : 'Switch to dark theme') : (bm ? 'Tukar ke tema cerah' : 'Switch to light theme')}
+              onClick={() => { void triggerLightImpact(); toggleTheme(); }}
+            >
+              {theme === 'light' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+            </Button>
+            <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" className="customer-header-icon customer-more" aria-label={bm ? 'Tindakan halaman' : 'Page actions'}>
+                  <MoreHorizontal aria-hidden="true" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{bm ? 'Tindakan halaman' : 'Page actions'}</DialogTitle>
+                  <DialogDescription>{bm ? 'Pilih tindakan untuk halaman ini.' : 'Choose an action for this page.'}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-1">
+                  {showBack && (
+                    <Button type="button" variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal rounded-xl px-3 py-3 text-left" onClick={() => { setActionsOpen(false); void triggerLightImpact(); onBack(); }}>
+                      <span>{backDestination === 'home' ? (bm ? 'Halaman utama' : 'Home') : (bm ? 'Kembali' : 'Back')}</span>
+                      {backDestination === 'home' ? <Home className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" /> : <ArrowLeft className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" />}
+                    </Button>
+                  )}
+                  {actions.map(({ label, onSelect }) => (
+                    <Button key={label} type="button" variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal rounded-xl px-3 py-3 text-left" onClick={() => { setActionsOpen(false); onSelect(); }}>
+                      <span>{label}</span><ChevronRight className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" />
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
-            <DialogTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" className="customer-header-icon customer-more" aria-label={bm ? 'Tindakan halaman' : 'Page actions'}>
-                <MoreHorizontal aria-hidden="true" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{bm ? 'Tindakan halaman' : 'Page actions'}</DialogTitle>
-                <DialogDescription>{bm ? 'Pilih tindakan untuk halaman ini.' : 'Choose an action for this page.'}</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-1">
-                {actions.map(({ label, onSelect }) => (
-                  <Button key={label} type="button" variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal rounded-xl px-3 py-3 text-left" onClick={() => { setActionsOpen(false); onSelect(); }}>
-                    <span>{label}</span><ChevronRight className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" />
-                  </Button>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
+        {/* Keep a semantic page title without a redundant visible header block. */}
+        <div className="sr-only"><h1>{title}</h1><p>{subtitle}</p></div>
       </header>
     </>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Plus, 
   Edit2, 
@@ -71,6 +71,7 @@ export default function AdminMenuTab({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isRepairingImages, setIsRepairingImages] = useState(false);
+  const pendingToggles = useRef(new Set<string>());
 
   const tText = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -162,13 +163,16 @@ export default function AdminMenuTab({
   };
 
   const handleToggleAvailable = async (item: MenuItem) => {
+    // Guard against overlapping writes for the same menu item.
+    if (pendingToggles.current.has(item.id)) return;
+    pendingToggles.current.add(item.id);
     const newStatus = item.available === false ? true : false;
     
     // Optimistic update
     setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, available: newStatus } : i));
 
     try {
-      const response = await fetch(getApiUrl(`/api/admin/menu/${item.id}/toggle`), {
+      const response = await fetch(getApiUrl(`/api/admin/menu/${encodeURIComponent(item.id)}/toggle`), {
         method: 'PATCH',
         headers: {
           ...authHeaders(),
@@ -178,16 +182,11 @@ export default function AdminMenuTab({
       });
 
       if (!response.ok) {
-        // Fallback PUT if PATCH isn't available
-        await fetch(getApiUrl(`/api/admin/menu/${item.id}`), {
-          method: 'PUT',
-          headers: {
-            ...authHeaders(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ ...item, available: newStatus })
-        });
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || `HTTP ${response.status}`);
       }
+      const result = await response.json().catch(() => ({}));
+      if (result.success === false) throw new Error(result.error || 'Menu update rejected');
 
       toast({
         title: newStatus 
@@ -209,12 +208,14 @@ export default function AdminMenuTab({
         description: String(err),
         variant: 'error'
       });
+    } finally {
+      pendingToggles.current.delete(item.id);
     }
   };
 
   const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formState.nameEn || !formState.nameBm || formState.price <= 0) {
+    if (!formState.nameEn.trim() || !formState.nameBm.trim() || !Number.isFinite(formState.price) || formState.price <= 0 || formState.price > 9999) {
       toast({
         title: tText('Validation Error', 'Ralat Pengesahan'),
         description: tText('Please fill in both name fields and set a valid price.', 'Sila isi kedua-dua medan nama dan tetapkan harga yang sah.'),
@@ -246,7 +247,7 @@ export default function AdminMenuTab({
       });
 
       if (!response.ok) {
-        const errData = await response.json();
+        const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to save menu item');
       }
 
@@ -658,14 +659,16 @@ export default function AdminMenuTab({
 
       {/* Form Dialog/Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[2000]">
-          <div className="bg-white dark:bg-card border border-stone-200 dark:border-stone-800 max-w-md w-full rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-[2000]" role="presentation">
+          <div role="dialog" aria-modal="true" aria-labelledby="admin-menu-dialog-title" className="bg-white dark:bg-card border border-stone-200 dark:border-stone-800 max-w-md w-full rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-5 py-3.5 border-b border-stone-200 dark:border-stone-800 flex justify-between items-center bg-stone-50 dark:bg-stone-900/50">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-deep-forest dark:text-white flex items-center gap-1.5">
+              <h3 id="admin-menu-dialog-title" className="text-xs font-bold uppercase tracking-wider text-deep-forest dark:text-white flex items-center gap-1.5">
                 <Utensils className="w-3.5 h-3.5 text-amber-500" />
                 {editingItem ? tText('Update Menu Item', 'Kemas kini Sajian Menu') : tText('Add New Menu Item', 'Tambah Sajian Menu Baru')}
               </h3>
-              <button 
+              <button
+                type="button"
+                aria-label={tText('Close menu editor', 'Tutup editor menu')}
                 onClick={() => setIsModalOpen(false)}
                 className="text-stone-400 hover:text-deep-forest dark:hover:text-white transition-colors cursor-pointer p-1 rounded-md"
               >

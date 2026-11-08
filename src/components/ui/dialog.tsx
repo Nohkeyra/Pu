@@ -39,7 +39,7 @@ const DialogOverlay = React.forwardRef<
     ref={ref}
     data-slot="dialog-overlay"
     className={cn(
-      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-[200] bg-deep-forest/80 backdrop-blur-sm",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none fixed inset-0 z-[var(--rw-z-dialog-backdrop)] bg-deep-forest/80 backdrop-blur-sm",
       className
     )}
     {...props}
@@ -59,7 +59,7 @@ const DialogContent = React.forwardRef<
       role="dialog"
       aria-modal="true"
       className={cn(
-        "app-dialog-panel panel-surface data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%_-_2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl p-6 duration-200 outline-none sm:max-w-lg max-h-[90dvh] overflow-y-auto overscroll-contain border-t-batik",
+        "app-dialog-panel panel-surface data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[var(--rw-z-dialog)] grid w-full max-w-[calc(100%_-_2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl duration-200 outline-none sm:max-w-lg overflow-y-auto overscroll-contain border-t-batik p-4 sm:p-6 motion-reduce:animate-none",
         className
       )}
       {...props}

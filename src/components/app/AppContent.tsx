@@ -1,6 +1,6 @@
 import { useEffect, useState, Suspense, ReactNode } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
@@ -34,9 +34,15 @@ function SmoothScrollHandler() {
       if (anchor) {
         const href = anchor.getAttribute('href');
         if (href && href !== '#' && !href.startsWith('#/')) {
-          e.preventDefault();
-          const el = document.querySelector(href);
-          if (el) el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+          // Use the ID API: a valid fragment can contain CSS selector characters.
+          // Let the browser handle unknown fragments natively.
+          let id = href.slice(1);
+          try { id = decodeURIComponent(id); } catch { /* Keep literal fragment. */ }
+          const el = document.getElementById(id);
+          if (el) {
+            e.preventDefault();
+            el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+          }
         }
       }
     };
@@ -101,13 +107,14 @@ function SessionGuard({ children }: { children: ReactNode }) {
 }
 
 function PageTransition({ children }: { children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
   const isNative = Capacitor.isNativePlatform();
   return (
     <motion.div
-      initial={{ opacity: 0, y: isNative ? 4 : 8, scale: 0.995 }}
+      initial={reduceMotion ? false : { opacity: 0, y: isNative ? 4 : 8, scale: 0.995 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: isNative ? -4 : -6, scale: 0.995 }}
-      transition={{ duration: isNative ? 0.12 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+      exit={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: isNative ? -4 : -6, scale: 0.995 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: isNative ? 0.12 : 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="flex-grow flex flex-col w-full h-full relative"
     >
       {children}
@@ -118,6 +125,7 @@ function PageTransition({ children }: { children: ReactNode }) {
 // Actual AppContent component
 import React, { Component } from 'react';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import { getNativeStartRoute } from '@/lib/appEntryRoutes';
 
 interface RouteErrorBoundaryProps {
   children: ReactNode;
@@ -167,7 +175,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
               <button
                 type="button"
                 onClick={() => this.setState({ hasError: false, error: null })}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#9a3412] hover:bg-[#7c2d12] text-white font-medium text-sm transition-colors cursor-pointer min-h-[48px]"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--ui-action)] text-[var(--ui-on-action)] hover:brightness-105 font-medium text-sm transition-colors cursor-pointer min-h-[48px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-action)]"
               >
                 Cuba Lagi
               </button>
@@ -188,6 +196,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
 }
 
 const LoginPageComp = lazyWithRetry(() => import('@/pages/LoginPage'), 'LoginPage');
+const CustomerDashboardComp = lazyWithRetry(() => import('@/pages/CustomerDashboard'), 'CustomerDashboard');
 const LandingPageComp = lazyWithRetry(() => import('@/pages/LandingPage'), 'LandingPage');
 const OrderPageComp = lazyWithRetry(() => import('@/pages/OrderPage'), 'OrderPage');
 const AdminPageComp = lazyWithRetry(() => import('@/pages/AdminPage'), 'AdminPage');
@@ -195,12 +204,36 @@ const ProfilePageComp = lazyWithRetry(() => import('@/pages/ProfilePage'), 'Prof
 const SettingsPageComp = lazyWithRetry(() => import('@/pages/SettingsPage'), 'SettingsPage');
 const CalendarPageComp = lazyWithRetry(() => import('@/pages/CalendarPage'), 'CalendarPage');
 
+// The public URL keeps LandingPage. Native cold starts wait for Firebase session
+// restoration before choosing Login, Customer Dashboard or Admin.
+function AppEntry() {
+  const isNative = Capacitor.isNativePlatform();
+  const [ready, setReady] = useState(!isNative);
+  const [customerSignedIn, setCustomerSignedIn] = useState(false);
+
+  useEffect(() => {
+    if (!isNative) return;
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      setCustomerSignedIn(Boolean(user));
+      setReady(true);
+    }, () => setReady(true));
+    return unsubscribe;
+  }, [isNative]);
+
+  if (!isNative) return <PageTransition><LandingPageComp /></PageTransition>;
+  if (!ready) return <div className="min-h-[50vh] flex items-center justify-center"><WawasanLoader size={80} /></div>;
+  let hasAdminSession = false;
+  try { hasAdminSession = Boolean(localStorage.getItem('wawasan_admin_token')); } catch { /* storage unavailable */ }
+  return <Navigate to={getNativeStartRoute(customerSignedIn, hasAdminSession)} replace />;
+}
+
 function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
   return (
     <Routes location={location} key={location.pathname}>
-      <Route path="/" element={<PageTransition><LandingPageComp /></PageTransition>} />
-      <Route path="/home" element={<PageTransition><LandingPageComp /></PageTransition>} />
-      <Route path="/main" element={<PageTransition><LandingPageComp /></PageTransition>} />
+      <Route path="/" element={<AppEntry />} />
+      <Route path="/home" element={<AppEntry />} />
+      <Route path="/main" element={<AppEntry />} />
+      <Route path="/app" element={<PageTransition><CustomerDashboardComp /></PageTransition>} />
       <Route path="/order" element={<PageTransition><OrderPageComp /></PageTransition>} />
       <Route path="/login" element={<PageTransition><LoginPageComp /></PageTransition>} />
       <Route path="/profile" element={<SessionGuard><PageTransition><ProfilePageComp /></PageTransition></SessionGuard>} />
@@ -214,6 +247,10 @@ function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
 
 export default function AppContent() {
   const location = useLocation();
+  const isStandaloneScreen = location.pathname === '/login' || (!Capacitor.isNativePlatform() && ['/', '/home', '/main'].includes(location.pathname));
+  // Presentation marker only: native customer screens manage their own dock clearance.
+  const isCustomerScreen = ['/app', '/order', '/profile', '/calendar', '/settings'].includes(location.pathname);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -239,7 +276,7 @@ export default function AppContent() {
       {/* Accessible Skip Link for Screen Readers and Keyboard Navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-[#0c453c] focus:text-white focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-[#9a3412] focus:outline-none transition-all min-h-[48px] inline-flex items-center"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-[var(--ui-action)] focus:text-[var(--ui-on-action)] focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-[var(--ui-orange)] focus:outline-none transition-all min-h-[48px] inline-flex items-center"
       >
         Skip to main content / Langkau ke kandungan utama
       </a>
@@ -251,12 +288,15 @@ export default function AppContent() {
 
       <motion.div 
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
-        initial={{ opacity: 0, y: -20, scale: 0.8 }}
-        animate={{ 
-          opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
-          y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
-          scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
-        }}
+        initial={reduceMotion ? false : { opacity: 0, y: -20, scale: 0.8 }}
+        animate={reduceMotion
+          ? { opacity: pullDistance > 10 || isRefreshing ? 1 : 0, y: 0, scale: 1 }
+          : {
+              opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
+              y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
+              scale: pullDistance > 10 || isRefreshing ? 1 : 0.8
+            }}
+        transition={reduceMotion ? { duration: 0 } : undefined}
       >
         <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md shadow-lg border border-amber-500/20 px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium text-amber-700 dark:text-amber-400">
           <RefreshCw className={cn("w-4 h-4 text-amber-600 dark:text-amber-400", isRefreshing && "animate-spin")} />
@@ -264,7 +304,7 @@ export default function AppContent() {
         </div>
       </motion.div>
 
-      <main id="main-content" tabIndex={-1} className="flex-grow relative pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))] focus:outline-none">
+      <main id="main-content" tabIndex={-1} className={cn('flex-grow relative focus:outline-none', isCustomerScreen && 'wawasan-customer-main', !isStandaloneScreen && 'pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]')}>
         <RouteErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
             <AnimatePresence mode="wait">
@@ -273,7 +313,7 @@ export default function AppContent() {
           </Suspense>
         </RouteErrorBoundary>
       </main>
-      <BottomNavigation />
+      {!isStandaloneScreen && <BottomNavigation />}
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoiceP
 import { motion } from 'motion/react';
 import { getApiUrl, fetchWithCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onAuthStateChanged, sendEmailVerification, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AuthModal from '../auth/AuthModal';
@@ -25,11 +25,11 @@ import { Step2DishSelection } from './Step2DishSelection';
 import { Step3ContactDetails } from './Step3ContactDetails';
 import { Step4ReviewSubmit } from './Step4ReviewSubmit';
 import { Step5OrderSuccess } from './Step5OrderSuccess';
+import { LivingPaperOrderScene } from './LivingPaperOrderScene';
 import { DemoOverlay } from '@/ghost/DemoOverlay';
 import { DEFAULT_MENU_ITEMS, type MenuItem } from '@/constants/menu';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { Capacitor } from '@capacitor/core';
-import { App } from '@capacitor/app';
 import { Geolocation } from '@capacitor/geolocation';
 import { buildShareableUrl } from '@/lib/share';
 import { triggerNotification, NotificationType, triggerLightImpact } from '@/lib/haptics';
@@ -40,6 +40,8 @@ import { SET_BOX_MENU_TITLE } from '@/services/orderCalculation';
 import { useMobileKeyboard } from '@/hooks/native/useMobileKeyboard';
 import { useMascotStepTransition } from '@/hooks/ui/useMascotStepTransition';
 import type { SavedLocation, Order } from '@/types';
+import { validateOrderContactDetails, ORDER_CONTACT_FOCUS_IDS, type OrderContactField, type OrderContactErrors } from '@/lib/orderContactValidation';
+import { evaluateVerifiedOrderAccess } from '@/lib/verifiedOrdering';
 
 // TYPES
 export interface OrderState {
@@ -85,25 +87,84 @@ function generateUUID(): string {
   });
 }
 
+/**
+ * Restore only recognized order fields from an older or current draft.
+ * localStorage is untrusted and can contain partially-written or outdated JSON.
+ */
+function parseStoredOrderDraft(value: string): Partial<OrderState> | null {
+  const parsed: unknown = JSON.parse(value);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const record = parsed as Record<string, unknown>;
+  const draft: Partial<OrderState> = {};
+
+  if (record.eventType === '' || record.eventType === 'pejabat' || record.eventType === 'lain') {
+    draft.eventType = record.eventType;
+  }
+  if (Array.isArray(record.mealTypes)) {
+    draft.mealTypes = record.mealTypes.filter((item): item is OrderState['mealTypes'][number] =>
+      item === 'sarapan' || item === 'tengahari' || item === 'hitea'
+    );
+  }
+  if (record.preparationType === 'buffet' || record.preparationType === 'meal_box') {
+    draft.preparationType = record.preparationType;
+  }
+  if (typeof record.guests === 'number' && Number.isFinite(record.guests)) {
+    draft.guests = Math.min(5000, Math.max(1, Math.floor(record.guests)));
+  }
+  const validItems = (items: unknown): OrderState['dishes'] =>
+    Array.isArray(items)
+      ? items.filter((item): item is OrderState['dishes'][number] =>
+          !!item && typeof item === 'object' && typeof item.id === 'string' && item.id.length > 0
+        )
+      : [];
+  if (Array.isArray(record.dishes)) draft.dishes = validItems(record.dishes);
+  if (Array.isArray(record.veggies)) draft.veggies = validItems(record.veggies);
+  const stringFields = [
+    'name', 'contact', 'email', 'confirmEmail', 'date', 'time', 'location',
+    'notes', 'companyName', 'customCompany', 'department', 'initials', 'attn', 'customMenu',
+  ] as const;
+  for (const field of stringFields) {
+    if (typeof record[field] === 'string') draft[field] = record[field];
+  }
+  if (record.delivery === 'pickup' || record.delivery === 'delivery') {
+    draft.delivery = record.delivery;
+  }
+  return draft;
+}
+
 export default function OrderForm({ initialData }: OrderFormProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { keyboardHeight, isKeyboardVisible } = useMobileKeyboard();
+  const { isKeyboardVisible } = useMobileKeyboard();
 
-  // Auto scroll focused inputs into view to ensure visibility above mobile keyboard
+  // Only scroll when a focused field would actually be obscured by the IME.
   useEffect(() => {
+    let focusTimer: ReturnType<typeof setTimeout> | undefined;
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
-        setTimeout(() => {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      }
+      if (!target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+      if (focusTimer) clearTimeout(focusTimer);
+      focusTimer = setTimeout(() => {
+        if (!target.isConnected || document.activeElement !== target) return;
+        const viewport = window.visualViewport;
+        const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+        const rect = target.getBoundingClientRect();
+        const lowerLimit = visibleBottom - 24;
+        const upperLimit = 90;
+        if (rect.bottom > lowerLimit) {
+          window.scrollBy({ top: rect.bottom - lowerLimit, behavior: 'smooth' });
+        } else if (rect.top < upperLimit) {
+          window.scrollBy({ top: rect.top - upperLimit, behavior: 'smooth' });
+        }
+      }, 320);
     };
     document.addEventListener('focusin', handleFocusIn);
-    return () => document.removeEventListener('focusin', handleFocusIn);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      if (focusTimer) clearTimeout(focusTimer);
+    };
   }, []);
-  
+
   const [currentStep, setCurrentStep] = useState<number>(() => {
     if (initialData) return 1;
     try {
@@ -149,35 +210,35 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       return { ...defaultState, ...(initialData as Partial<OrderState>) };
     }
 
-    try {
-      const saved = localStorage.getItem('wawasan_order_draft_state');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return {
-            ...defaultState,
-            ...parsed,
-          };
-        }
+    // Current draft takes priority; legacy storage is used only as a fallback.
+    // Read during initialization so a mount-time effect cannot overwrite newer data.
+    for (const key of ['wawasan_order_draft_state', 'wawasan_order_draft']) {
+      try {
+        const saved = localStorage.getItem(key);
+        if (!saved) continue;
+        const restored = parseStoredOrderDraft(saved);
+        if (restored) return { ...defaultState, ...restored };
+      } catch (err) {
+        console.warn(`Failed to restore order draft from ${key}:`, err);
       }
-    } catch (err) {
-      console.warn('Failed to parse draft state:', err);
     }
     return defaultState;
   });
 
   // Ghost Demo Shadow State
+  const [contactFieldErrors, setContactFieldErrors] = useState<OrderContactErrors>({});
+  const clearContactFieldError = useCallback((field: OrderContactField) => {
+    setContactFieldErrors(previous => {
+      if (!previous[field]) return previous;
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
   const [demoActive, setDemoActive] = useState(false);
   const [demoState, setDemoState] = useState<Partial<OrderState>>({});
   const [demoStep, setDemoStep] = useState(1);
-  const [hasSeenDemo, setHasSeenDemo] = useState<boolean>(() => {
-    try {
-      return Boolean(localStorage.getItem('wawasan_ghost_demo_seen_v1'));
-    } catch {
-      return false;
-    }
-  });
-
   const stepContentRef = useRef<HTMLDivElement>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const { videoRef: mascotVideoRef, navigate: navigateStep, busy: stepTransitionBusy, pulling: stepPulling, visible: mascotVisible, finishWithoutAnimation, pullDuration } = useMascotStepTransition(currentStep, setCurrentStep, demoActive);
@@ -198,6 +259,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [verificationBusy, setVerificationBusy] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -223,12 +285,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     setDemoActive(false);
     setDemoState({});
     setDemoStep(1);
-    try {
-      localStorage.setItem('wawasan_ghost_demo_seen_v1', '1');
-      setHasSeenDemo(true);
-    } catch (e) {
-      console.warn('Failed to set ghost demo seen flag:', e);
-    }
   }, []);
 
   const handleStartDemo = useCallback(() => {
@@ -237,20 +293,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     setDemoActive(true);
   }, []);
 
-  // Auto-play ghost demo on first visit
-  useEffect(() => {
-    try {
-      const seen = localStorage.getItem('wawasan_ghost_demo_seen_v1');
-      if (!seen && !initialData) {
-        const timer = setTimeout(() => {
-          setDemoActive(true);
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    } catch (e) {
-      console.warn('Failed to check ghost demo seen flag:', e);
-    }
-  }, [initialData]);
+  // Demo is opt-in; do not interrupt a customer's first order or draft.
 
   // Automatically scroll page to top whenever step changes
   useEffect(() => {
@@ -262,36 +305,32 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     try {
       localStorage.removeItem('wawasan_order_draft_step');
       localStorage.removeItem('wawasan_order_draft_state');
+      localStorage.removeItem('wawasan_order_draft');
     } catch (err) {
       console.warn('Failed to clear draft:', err);
     }
   };
 
-  // Handle mobile / hardware back button step navigation in form
+  // NativeBackButtonHandler owns the only Capacitor Back listener.
+  // This cancelable DOM event gives the wizard priority over browser history.
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    
-    let handle: any = null;
-    const setupBackButton = async () => {
-      try {
-        handle = await App.addListener('backButton', () => {
-          if (currentStep > 1 && currentStep < 5) {
-            triggerLightImpact();
-            navigateStep(s => s - 1);
-          }
-        });
-      } catch (err) {
-        console.warn('Failed to add backButton listener:', err);
+    const handleOrderStepBack = (event: Event) => {
+      if (demoActive) {
+        event.preventDefault();
+        handleEndDemo();
+        return;
+      }
+      if (currentStep > 1 && currentStep < 5) {
+        event.preventDefault();
+        if (!stepTransitionBusy) {
+          triggerLightImpact();
+          navigateStep(step => step - 1);
+        }
       }
     };
-    setupBackButton();
-
-    return () => {
-      if (handle && typeof handle.remove === 'function') {
-        handle.remove();
-      }
-    };
-  }, [currentStep, navigateStep]);
+    document.addEventListener('wawasan:order-step-back', handleOrderStepBack);
+    return () => document.removeEventListener('wawasan:order-step-back', handleOrderStepBack);
+  }, [currentStep, demoActive, handleEndDemo, navigateStep, stepTransitionBusy]);
 
   useEffect(() => {
     let isMounted = true;
@@ -362,15 +401,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     
     setOrderState(prev => ({
       ...prev,
-      companyName: isKnownCompany ? userTo : (userTo ? 'other' : prev.companyName),
-      customCompany: !isKnownCompany && userTo ? userTo : prev.customCompany,
-      department: profile.department || profile.division || prev.department,
-      initials: profile.initials || profile.initialIdentifier || prev.initials,
-      attn: profile.attn || prev.attn,
-      name: profile.name || prev.name,
-      contact: profile.contact || prev.contact,
-      email: profile.email || prev.email,
-      confirmEmail: profile.email || prev.confirmEmail,
+      companyName: prev.companyName || (isKnownCompany ? userTo : (userTo ? 'other' : '')),
+      customCompany: prev.customCompany || (!isKnownCompany && userTo ? userTo : ''),
+      department: prev.department || profile.department || profile.division || '',
+      initials: prev.initials || profile.initials || profile.initialIdentifier || '',
+      attn: prev.attn || profile.attn || '',
+      name: prev.name || profile.name || '',
+      contact: prev.contact || profile.contact || '',
+      email: prev.email || profile.email || '',
+      confirmEmail: prev.confirmEmail || profile.email || '',
     }));
   };
 
@@ -508,77 +547,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   }, [initialData, dynamicMenu]);
 
-  // Load draft from localStorage on mount if no initialData
-  useEffect(() => {
-    if (!initialData) {
-      try {
-        const savedDraft = localStorage.getItem('wawasan_order_draft');
-        if (savedDraft) {
-          const parsed = JSON.parse(savedDraft);
-          if (parsed && typeof parsed === 'object') {
-            setOrderState(prev => {
-              const safeParsed: Partial<OrderState> = {};
-              
-              if (parsed.eventType === 'pejabat' || parsed.eventType === 'lain' || parsed.eventType === '') {
-                safeParsed.eventType = parsed.eventType;
-              }
-              if (Array.isArray(parsed.mealTypes)) {
-                safeParsed.mealTypes = parsed.mealTypes.filter((m: any) => m === 'sarapan' || m === 'tengahari' || m === 'hitea');
-              } else {
-                safeParsed.mealTypes = prev.mealTypes || [];
-              }
-              if (parsed.preparationType === 'buffet' || parsed.preparationType === 'meal_box') {
-                safeParsed.preparationType = parsed.preparationType;
-              }
-              if (typeof parsed.guests === 'number' && !isNaN(parsed.guests)) {
-                safeParsed.guests = parsed.guests;
-              }
-              if (Array.isArray(parsed.dishes)) {
-                safeParsed.dishes = parsed.dishes.filter((d: any) => d && typeof d === 'object' && d.id);
-              } else {
-                safeParsed.dishes = prev.dishes || [];
-              }
-              if (Array.isArray(parsed.veggies)) {
-                safeParsed.veggies = parsed.veggies.filter((v: any) => v && typeof v === 'object' && v.id);
-              } else {
-                safeParsed.veggies = prev.veggies || [];
-              }
-              
-              // String fields
-              const fields = [
-                'name', 'contact', 'email', 'confirmEmail', 'date', 'time', 
-                'location', 'delivery', 'notes', 'companyName', 'customCompany', 'department', 'initials', 'attn', 'customMenu'
-              ];
-              fields.forEach(f => {
-                if (typeof parsed[f] === 'string') {
-                  (safeParsed as any)[f] = parsed[f];
-                }
-              });
-              
-              return {
-                ...prev,
-                ...safeParsed
-              };
-            });
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load order draft from localStorage:', e);
-      }
-    }
-  }, [initialData]);
-
-  // Save draft to localStorage on change
-  useEffect(() => {
-    if (!initialData) {
-      try {
-        localStorage.setItem('wawasan_order_draft', JSON.stringify(orderState));
-      } catch (e) {
-        console.error('Failed to save order draft to localStorage:', e);
-      }
-    }
-  }, [orderState, initialData]);
-
   // Auto Geolocate Reverse Address lookup
   const handleDetectLocation = async () => {
     try {
@@ -673,8 +641,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const handleDiscardDraft = async () => {
     if (demoActive) return;
     await triggerLightImpact();
-    localStorage.removeItem('wawasan_order_draft_step');
-    localStorage.removeItem('wawasan_order_draft_state');
+    clearOrderDraft();
+    setContactFieldErrors({});
     setDraftSavedAt(null);
     setCurrentStep(1);
     setOrderState({
@@ -747,78 +715,70 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
 
     if (step === 3) {
-      // Validate customer & billing info
-      if (effectiveState.eventType === 'pejabat') {
-        if (!effectiveState.companyName) {
-          triggerWarning();
-          toast({
-            title: tText('Company Billing Info', 'Nama Syarikat/Jabatan'),
-            description: tText('Please select or specify your department billing address.', 'Sila pilih atau nyatakan jabatan untuk rujukan bil.'),
-            variant: 'warning'
+      const errors = validateOrderContactDetails(effectiveState, tText);
+      setContactFieldErrors(errors);
+      const firstInvalidField = (Object.keys(errors) as OrderContactField[])[0];
+      if (firstInvalidField) {
+        triggerWarning();
+        toast({
+          title: tText('Check booking details', 'Semak butiran tempahan'),
+          description: errors[firstInvalidField],
+          variant: 'warning',
+        });
+        const targetId = ORDER_CONTACT_FOCUS_IDS[firstInvalidField];
+        if (targetId) {
+          requestAnimationFrame(() => {
+            const target = document.getElementById(targetId);
+            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target?.focus({ preventScroll: true });
           });
-          return;
         }
-        if (effectiveState.companyName === 'other' && !effectiveState.customCompany) {
-          triggerWarning();
-          toast({
-            title: tText('Company Name Needed', 'Nama Jabatan'),
-            description: tText('Please write your department or company name.', 'Sila masukkan nama syarikat/jabatan secara manual.'),
-            variant: 'warning'
-          });
-          return;
-        }
-      }
-
-      if (!effectiveState.name.trim()) {
-        triggerWarning();
-        toast({ title: tText('Name Needed', 'Nama Diperlukan'), description: tText('Please enter your full name.', 'Sila masukkan nama penuh anda.'), variant: 'warning' });
         return;
       }
-
-      if (!effectiveState.contact.trim()) {
-        triggerWarning();
-        toast({ title: tText('Contact Needed', 'No. Telefon Diperlukan'), description: tText('Please enter a valid phone number.', 'Sila masukkan nombor telefon yang sah.'), variant: 'warning' });
-        return;
-      }
-
-      if (!effectiveState.email.trim()) {
-        triggerWarning();
-        toast({ title: tText('Email Needed', 'Emel Diperlukan'), description: tText('Please enter your email address for invoices.', 'Sila masukkan alamat emel anda untuk penerimaan invois.'), variant: 'warning' });
-        return;
-      }
-
-      if ((effectiveState.email || '').trim().toLowerCase() !== (effectiveState.confirmEmail || '').trim().toLowerCase()) {
-        triggerWarning();
-        toast({ title: tText('Email Mismatch', 'Emel Tidak Sepadan'), description: tText('The confirm email field does not match.', 'Alamat emel pengesahan tidak sepadan.'), variant: 'warning' });
-        return;
-      }
-
-      if (!effectiveState.date) {
-        triggerWarning();
-        toast({ title: tText('Date Required', 'Tarikh Diperlukan'), description: tText('Please choose your event date.', 'Sila pilih tarikh majlis anda.'), variant: 'warning' });
-        return;
-      }
-
-      if (!effectiveState.time) {
-        triggerWarning();
-        toast({ title: tText('Time Required', 'Masa Diperlukan'), description: tText('Please select a serving time.', 'Sila tetapkan masa majlis anda.'), variant: 'warning' });
-        return;
-      }
-
-      if (!effectiveState.location.trim()) {
-        triggerWarning();
-        toast({ title: tText('Location Required', 'Lokasi Diperlukan'), description: tText('Please enter your event location or address.', 'Sila isi alamat atau lokasi majlis.'), variant: 'warning' });
-        return;
-      }
-
       if (!demoActive) navigateStep(4);
       logOrderStep(4, 'review_submit');
     }
   };
 
+  const resendVerificationEmail = async () => {
+    const user = auth.currentUser;
+    if (!user) { setAuthMode('signin'); setAuthModalOpen(true); return; }
+    setVerificationBusy(true);
+    try {
+      await sendEmailVerification(user);
+      toast({ title: tText('Check your inbox', 'Semak peti masuk'), description: tText('A verification link has been sent. Open it, then come back and submit.', 'Pautan pengesahan dihantar. Buka pautan tersebut, kemudian kembali untuk menghantar.'), variant: 'info' });
+    } catch (error) {
+      toast({ title: tText('Could not send verification', 'Gagal menghantar pengesahan'), description: error instanceof Error ? error.message : String(error), variant: 'error' });
+    } finally {
+      setVerificationBusy(false);
+    }
+  };
+
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
-    if (demoActive) return;
+    if (demoActive || isSubmitting) return;
+    const signedInUser = auth.currentUser;
+    if (!signedInUser) {
+      setAuthMode('signin');
+      setAuthModalOpen(true);
+      toast({ title: tText('Sign in to send', 'Log masuk untuk menghantar'), description: tText('Your draft stays here. Sign in or register before sending your catering request.', 'Draf kekal di sini. Log masuk atau daftar sebelum menghantar permohonan katering.'), variant: 'info' });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      // Firebase refresh is needed when the email verification link was just opened.
+      await signedInUser.reload();
+      const access = evaluateVerifiedOrderAccess({ uid: signedInUser.uid, emailVerified: signedInUser.emailVerified });
+      if (!access.allowed) {
+        toast({ title: tText('Email verification required', 'Sahkan alamat e-mel'), description: tText('Verify your email, then tap Submit again.', 'Sahkan e-mel anda, kemudian tekan Hantar sekali lagi.'), variant: 'warning' });
+        return;
+      }
+    } catch (error) {
+      toast({ title: tText('Verification unavailable', 'Pengesahan tidak tersedia'), description: error instanceof Error ? error.message : String(error), variant: 'error' });
+      return;
+    } finally {
+      setIsSubmitting(false);
+    }
     setIsSubmitting(true);
     // F-OFFLINE (audit 2026-08-11): orderData itself is built inside the try
     // block below and is out of scope in catch. This holds a reference to
@@ -897,7 +857,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         dishes: orderState.dishes,
         veggies: orderState.veggies,
         customMenu: orderState.customMenu,
-        userId: currentUser?.uid || null,
+        userId: signedInUser.uid,
         delivery: orderState.delivery,
         idempotencyKey: idempotencyKeyRef.current
       };
@@ -913,7 +873,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(currentUser ? { Authorization: `Bearer ${await currentUser.getIdToken()}` } : {}),
+            Authorization: `Bearer ${await signedInUser.getIdToken(true)}`,
           },
           body: safeJsonStringify(orderData),
           signal: controller.signal
@@ -953,13 +913,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const bookingReference = finalInvoiceNo || generatedOrderId;
 
       setReferenceNumber(bookingReference);
-
-      // Clear draft storage upon successful order
-      try {
-        localStorage.removeItem('wawasan_order_draft');
-      } catch {
-        // ignore
-      }
 
       const createdOrder: Order = {
         // F-DISHES-TYPE (2026-08-18): orderData.dishes holds rich client-side
@@ -1007,7 +960,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         try {
           emailResponse = await fetch(getApiUrl(`/api/orders/${generatedOrderId}/send-preliminary-invoice`), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await signedInUser.getIdToken(true)}` },
             body: safeJsonStringify({
               email: orderData.email,
               name: orderData.name,
@@ -1096,6 +1049,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleResetForm = () => {
+    setContactFieldErrors({});
     clearOrderDraft();
     idempotencyKeyRef.current = generateUUID();
     setOrderState({
@@ -1162,18 +1116,25 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   return (
     <>
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={authMode} />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialMode={authMode} onSuccess={() => setCurrentUser(auth.currentUser)} />
 
       {/* Main Container with responsive layout: full width header, split 2-column view on desktop */}
       <div 
-        className="customer-order-form flex flex-col w-full max-w-6xl mx-auto font-sans pb-24 lg:pb-0 transition-all duration-200"
-        style={{
-          paddingBottom: isKeyboardVisible ? `${keyboardHeight + 80}px` : undefined
-        }}
+        className="customer-order-form flex flex-col w-full max-w-6xl mx-auto font-sans transition-all duration-200"
+        data-keyboard-visible={isKeyboardVisible}
       >
         
+        <LivingPaperOrderScene
+          step={effectiveStep}
+          language={language}
+          dishes={effectiveState.dishes}
+          veggies={effectiveState.veggies}
+          customMenu={effectiveState.customMenu}
+          isDemo={demoActive}
+        />
+
         {effectiveStep <= 4 && (
-          <nav className="customer-order-progress" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+          <nav id="wawasan-order-wizard" className="customer-order-progress" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
             <div className="customer-progress-copy" role="status">
               <span>{tText('STEP', 'LANGKAH')} <strong>{effectiveStep} / 4</strong></span>
               <span>{tText('Event → Menu → Details → Review', 'Majlis → Menu → Butiran → Semak')}</span>
@@ -1181,7 +1142,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             <div className="customer-progress-track" aria-hidden="true">
               {[1, 2, 3, 4].map(step => <span key={step} data-complete={step <= effectiveStep} />)}
             </div>
-            {(draftSavedAt && !initialData) || (hasSeenDemo && !demoActive) ? (
+            {!demoActive && !initialData && (
               <div className="customer-progress-extras">
                 {draftSavedAt && !initialData ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -1189,23 +1150,28 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     <Button variant="ghost" type="button" onClick={handleDiscardDraft}>{tText('Clear draft', 'Padam draf')}</Button>
                   </div>
                 ) : <span />}
-                {hasSeenDemo && !demoActive && (
-                  <Button variant="ghost" type="button" onClick={handleStartDemo} aria-label={tText('Watch demo', 'Tonton demo')}>
-                    <Ghost className="h-4 w-4" aria-hidden="true" />Demo
-                  </Button>
-                )}
+                <Button variant="ghost" type="button" onClick={handleStartDemo} aria-label={tText('Watch demo', 'Tonton demo')}>
+                  <Ghost className="h-4 w-4" aria-hidden="true" />{tText('Demo', 'Demo')}
+                </Button>
               </div>
-            ) : null}
+            )}
           </nav>
         )}
 
         {!currentUser && (
           <div className="customer-guest-banner">
-            <span><UserIcon className="h-4 w-4" aria-hidden="true" />{tText('Order as a guest', 'Tempah sebagai tetamu')}</span>
+            <span><UserIcon className="h-4 w-4" aria-hidden="true" />{tText('Draft mode — sign in to submit', 'Mod draf — log masuk untuk hantar')}</span>
             <div className="flex items-center gap-1">
               <Button type="button" variant="ghost" onClick={() => { setAuthMode('signin'); setAuthModalOpen(true); }}>{tText('Sign in', 'Log masuk')}</Button>
               <Button type="button" variant="ghost" onClick={() => { setAuthMode('signup'); setAuthModalOpen(true); }}>{tText('Sign up', 'Daftar')}</Button>
             </div>
+          </div>
+        )}
+
+        {currentUser && !currentUser.emailVerified && (
+          <div className="mx-3 my-3 flex flex-col gap-2 rounded-xl border border-[var(--ui-border)] bg-[var(--color-surface-muted)] p-3 sm:flex-row sm:items-center sm:justify-between" role="status">
+            <p className="text-sm text-[var(--color-text)]">{tText('You can prepare your order, but please verify your email before sending.', 'Anda boleh menyediakan tempahan, tetapi sila sahkan e-mel sebelum menghantarnya.')}</p>
+            <Button type="button" variant="outline" size="sm" disabled={verificationBusy} onClick={resendVerificationEmail}>{verificationBusy ? tText('Sending…', 'Menghantar…') : tText('Resend verification', 'Hantar semula pengesahan')}</Button>
           </div>
         )}
 
@@ -1265,6 +1231,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 handleSyncFromActiveProfile={handleSyncFromActiveProfile}
                 tText={tText}
                 t={t}
+                fieldErrors={contactFieldErrors}
+                clearFieldError={clearContactFieldError}
               />
             )}
 
@@ -1374,15 +1342,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   </div>
                 ) : (
                   <span className="microcopy-12 text-stone italic block">
-                    {tText('Select dishes in Step 2 or auto default to Box Set.', 'Pilih lauk di Langkah 2 atau ditetapkan lalai ke Set Kotak.')}
+                    {tText('Select dishes in Step 2 or use the Box Set.', 'Pilih lauk di Langkah 2 atau gunakan Set Kotak.')}
                   </span>
                 )}
               </div>
 
               {/* Estimation Total Calculation */}
-              <div className="bg-charcoal text-white p-4 rounded-xl border border-charcoal/80 relative overflow-hidden mt-4 space-y-2">
+              <div className="customer-quote-box p-4 rounded-xl border relative overflow-hidden mt-4 space-y-2">
                 <div 
-                  className="absolute inset-0 opacity-[0.2] pointer-events-none"
+                  className="customer-quote-batik absolute inset-0 pointer-events-none"
                   style={{
                     backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
                     backgroundSize: 'cover',
@@ -1398,13 +1366,49 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   </span>
                 </div>
 
-                <div className="relative z-10 flex justify-between items-baseline pt-1 border-t border-white/10">
-                  <span className="text-xs font-extrabold text-white uppercase tracking-wider">
-                    {tText('Catering Price:', 'Harga Katering:')}
-                  </span>
-                  <span className="text-sm font-bold text-[var(--color-sunshine-cta)] uppercase tracking-wider font-display">
-                    {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                  </span>
+                <div className="relative z-10 flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                  <div className="min-w-0 flex flex-col gap-0.5 lg:flex-1 lg:flex-row lg:items-baseline lg:justify-between lg:gap-3">
+                    <span className="text-xs font-extrabold uppercase tracking-wider">
+                      {tText('Catering Price:', 'Harga Katering:')}
+                    </span>
+                    <span className="customer-quote-status text-xs font-bold uppercase tracking-wider font-display lg:text-sm">
+                      {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+                    </span>
+                  </div>
+
+                  {/* Mobile progression action belongs to the quote panel, not a floating footer. */}
+                  {effectiveStep <= 4 && (
+                    <div className="shrink-0 lg:hidden">
+                      {effectiveStep < 4 ? (
+                        <Button
+                          type="button"
+                          onClick={() => handleStepNext(effectiveStep)}
+                          disabled={stepTransitionBusy}
+                          className="customer-next-button flex items-center gap-2"
+                        >
+                          <span>{tText('Next', 'Seterusnya')}</span>
+                          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={handleOrderSubmission}
+                          disabled={isSubmitting || stepTransitionBusy}
+                          aria-busy={isSubmitting}
+                          className="customer-next-button flex items-center gap-2"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <>
+                              <span>{tText('Submit', 'Hantar')}</span>
+                              <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1414,9 +1418,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                   href="https://wa.me/60173157731?text=Hai%20Pak%20Usop%20%2F%20Restoran%20Wawasan,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+                  className="customer-whatsapp-inquiry w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
                 >
-                  <Phone className="w-3.5 h-3.5 text-white" />
+                  <Phone className="w-3.5 h-3.5" />
                   <span>{tText('Direct WhatsApp Inquiry', 'Tanya Direct WhatsApp')}</span>
                 </a>
               </div>
@@ -1457,50 +1461,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       <span role="status" aria-live="polite" className="sr-only">
         {isSubmitting ? tText('Submitting your order. Please wait.', 'Menghantar tempahan anda. Sila tunggu.') : ''}
       </span>
-
-      {/* Sticky Mobile Price Bar (< lg breakpoint) */}
-      {effectiveStep <= 4 && (
-        <div className="customer-order-action lg:hidden">
-          <div className="customer-order-action-inner">
-            <div className="customer-order-action-summary" aria-live="polite">
-              <span>{tText('EVENT SUMMARY', 'RINGKASAN MAJLIS')}</span>
-              <strong>{tText(`${effectiveState.guests} guests · ${effectiveState.mealTypes.length} meals`, `${effectiveState.guests} orang · ${effectiveState.mealTypes.length} sajian`)}</strong>
-              <small>{effectiveStep === 2
-                ? tText(`${effectiveState.dishes.length + effectiveState.veggies.length} items selected`, `${effectiveState.dishes.length + effectiveState.veggies.length} hidangan dipilih`)
-                : tText('Quotation pending', 'Menunggu sebut harga')}</small>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {effectiveStep < 4 ? (
-                <Button
-                  onClick={() => handleStepNext(effectiveStep)}
-                  disabled={stepTransitionBusy}
-                  className="customer-next-button flex items-center gap-2"
-                >
-                  <span>{tText('Next', 'Seterusnya')}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleOrderSubmission}
-                  disabled={isSubmitting || stepTransitionBusy}
-                  aria-busy={isSubmitting}
-                  className="customer-next-button flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <>
-                      <span>{tText('Submit', 'Hantar')}</span>
-                      <Check className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Ghost Demo Overlay & Floating Skip Button */}
       {demoActive && (

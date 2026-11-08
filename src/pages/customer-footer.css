@@ -5,13 +5,13 @@
   overflow: hidden;
   margin-top: clamp(24px, 5vw, 48px);
   padding: 30px 20px calc(112px + var(--sab, env(safe-area-inset-bottom, 0px)));
-  border-top: 1px solid var(--customer-line, rgba(112,75,48,.2));
-  background: var(--customer-surface, #fffdfa);
-  color: var(--customer-ink, #30251d);
+  border-top: 1px solid var(--customer-line, color-mix(in srgb, var(--ui-orange) 20.0%, transparent));
+  background: var(--customer-surface, var(--ui-surface));
+  color: var(--customer-ink, var(--ui-ink));
 }
 .dark .customer-brand-footer {
-  background: var(--customer-surface, #241f19);
-  color: var(--customer-ink, #fff6e2);
+  background: var(--customer-surface, var(--ui-canvas));
+  color: var(--customer-ink, var(--ui-yellow));
 }
 .customer-brand-footer__batik {
   position: absolute;
@@ -21,8 +21,8 @@
   background-size: clamp(160px, 30vw, 240px) auto;
   background-repeat: repeat;
   opacity: .075;
-  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 88%);
-  mask-image: linear-gradient(to bottom, #000, transparent 88%);
+  -webkit-mask-image: linear-gradient(to bottom, var(--ui-ink), transparent 88%);
+  mask-image: linear-gradient(to bottom, var(--ui-ink), transparent 88%);
   pointer-events: none;
 }
 .dark .customer-brand-footer__batik { opacity: .11; }
@@ -41,7 +41,7 @@
 }
 .customer-brand-footer__tagline {
   margin-top: 5px;
-  color: var(--customer-muted, #704b30);
+  color: var(--customer-muted, var(--ui-action));
   font-size: 12px;
   line-height: 1.6;
 }
@@ -49,10 +49,10 @@
   height: 1px;
   margin: 18px auto 12px;
   width: min(100%, 320px);
-  background: var(--customer-line, #ecdcc3);
+  background: var(--customer-line, var(--ui-yellow));
 }
 .customer-brand-footer__copyright {
-  color: var(--customer-muted, #704b30);
+  color: var(--customer-muted, var(--ui-action));
   font-size: 11px;
   line-height: 1.6;
 }

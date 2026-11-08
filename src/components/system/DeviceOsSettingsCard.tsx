@@ -209,7 +209,7 @@ export function DeviceOsSettingsCard() {
   };
 
   return (
-    <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+    <div className="device-os-settings-card bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">

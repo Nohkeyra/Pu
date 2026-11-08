@@ -10,7 +10,7 @@ import {
 } from './pendingOrdersQueue';
 
 const firebaseMock = vi.hoisted(() => ({
-  auth: { currentUser: null as null | { uid: string; getIdToken: () => Promise<string> }, authStateReady: vi.fn().mockResolvedValue(undefined) },
+  auth: { currentUser: null as null | { uid: string; emailVerified: boolean; reload: () => Promise<void>; getIdToken: (forceRefresh?: boolean) => Promise<string> }, authStateReady: vi.fn().mockResolvedValue(undefined) },
 }));
 vi.mock('@/firebaseConfig', () => firebaseMock);
 
@@ -50,20 +50,29 @@ describe('pendingOrdersQueue', () => {
     clearPendingOrders();
   });
 
-  it('keeps guest submissions unauthenticated even if a user has signed in', async () => {
-    firebaseMock.auth.currentUser = { uid: 'other', getIdToken: async () => 'token' };
-    expect(await getOrderSubmissionHeaders({ userId: null })).toEqual({ 'Content-Type': 'application/json' });
+  it('requires sign-in even for a legacy guest draft', async () => {
+    await expect(getOrderSubmissionHeaders({ userId: null })).rejects.toThrow(/Sign in/);
+  });
+
+  it('lets a verified member explicitly send a legacy guest draft', async () => {
+    firebaseMock.auth.currentUser = { uid: 'other', emailVerified: true, reload: async () => {}, getIdToken: async () => 'token' };
+    expect(await getOrderSubmissionHeaders({ userId: null })).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer token' });
+  });
+
+  it('blocks unverified members from sending a queued order', async () => {
+    firebaseMock.auth.currentUser = { uid: 'other', emailVerified: false, reload: async () => {}, getIdToken: async () => 'token' };
+    await expect(getOrderSubmissionHeaders({ userId: 'other' })).rejects.toThrow(/Verify your email/);
   });
 
   it('uses the original user session for a queued order', async () => {
-    firebaseMock.auth.currentUser = { uid: 'owner', getIdToken: async () => 'owner-token' };
+    firebaseMock.auth.currentUser = { uid: 'owner', emailVerified: true, reload: async () => {}, getIdToken: async () => 'owner-token' };
     expect(await getOrderSubmissionHeaders({ userId: 'owner' })).toEqual({
       'Content-Type': 'application/json', Authorization: 'Bearer owner-token',
     });
   });
 
   it('keeps an order queued when the original account is not signed in', async () => {
-    firebaseMock.auth.currentUser = { uid: 'other', getIdToken: async () => 'other-token' };
+    firebaseMock.auth.currentUser = { uid: 'other', emailVerified: true, reload: async () => {}, getIdToken: async () => 'other-token' };
     await expect(getOrderSubmissionHeaders({ userId: 'owner' })).rejects.toThrow(/original account/);
   });
 

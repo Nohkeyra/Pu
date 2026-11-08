@@ -182,8 +182,8 @@ export default function MenuSection() {
             </h3>
             <p>
               {bm
-                ? 'Pilih menu dan hantar permintaan katering. Anda juga boleh menempah sebagai pelawat.'
-                : 'Choose a menu and submit your catering request. Guest orders are welcome too.'}
+                ? 'Teroka menu dan sediakan draf katering. Log masuk serta sahkan e-mel sebelum menghantar permohonan.'
+                : 'Explore the menu and prepare a catering draft. Sign in and verify your email to send your request.'}
             </p>
           </div>
           <Link to="/order" className="landing-button landing-button-primary">

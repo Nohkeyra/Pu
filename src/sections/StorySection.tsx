@@ -108,13 +108,13 @@ const StorySection = React.memo(() => {
             </motion.h2>
             
             <div className="space-y-6 mb-12">
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[var(--ui-legacy-white)]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p1')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[var(--ui-legacy-white)]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p2')}
               </motion.p>
-              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[#ede5d8]/80 leading-relaxed font-light max-w-[70ch]">
+              <motion.p variants={itemVariants} className="font-body text-lg text-deep-forest/70 dark:text-[var(--ui-legacy-white)]/80 leading-relaxed font-light max-w-[70ch]">
                 {t('story_p3')}
               </motion.p>
             </div>
@@ -125,7 +125,7 @@ const StorySection = React.memo(() => {
                   <span className="font-display font-black text-3xl md:text-4xl bg-gradient-to-r from-amber-600 via-[var(--color-sunshine-cta)] to-amber-500 bg-clip-text text-transparent">
                     {stat.number}
                   </span>
-                  <span className="block font-sans font-bold text-xs uppercase tracking-wider text-deep-forest dark:text-[#ede5d8] mt-2">
+                  <span className="block font-sans font-bold text-xs uppercase tracking-wider text-deep-forest dark:text-[var(--ui-legacy-white)] mt-2">
                     {stat.label}
                   </span>
                 </div>

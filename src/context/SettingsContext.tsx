@@ -4,16 +4,15 @@ import { setSecureItem, getSecureItem, removeSecureItem } from '@/lib/preference
 import { setKeepAwake } from '@/lib/nativeService';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
-import { getAccentTokens } from '@/lib/uiColors';
 import { normalizeStatusBarColor, needsDarkStatusBarIcons } from '@/lib/statusBarColors';
 import { getSoundProfile, setSoundProfile as persistSoundProfile, type SoundProfile } from '@/lib/haptics';
 
 export type FontSizeOption = 'sm' | 'base' | 'lg' | 'xl';
 
-export const DEFAULT_MAIN_COLOR = '#a3310e'; // Wawasan terracotta; foreground is chosen by getAccentTokens.
+export const DEFAULT_MAIN_COLOR = 'orange'; // Palette role, theme-aware; never a free-form hex value.
 export const DEFAULT_FONT_SIZE_PX = 16;       // 16px
 export const DEFAULT_CARD_SCALE = 1.0;        // 100% scale
-export const DEFAULT_BATIK_COLOR = '#E6C387';  // Kunyit Gold
+export const DEFAULT_BATIK_COLOR = '#FF6B00'; // Theme-aware CSS maps this to the active palette.
 export const DEFAULT_BATIK_DENSITY = 4;        // 4x4 Grid
 
 interface SettingsContextType {
@@ -56,6 +55,16 @@ interface SettingsContextType {
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+
+type PaletteRole = 'orange' | 'yellow' | 'green';
+
+function resolvePaletteRole(color: string): PaletteRole {
+  const c = color.trim().toLowerCase();
+  if (['yellow', '#ffc247', '#ffb02e', '#f69913', '#e6c387'].includes(c)) return 'yellow';
+  if (['green', '#268a38', '#186b45', '#0c453c'].includes(c)) return 'green';
+  return 'orange';
+}
+
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
@@ -100,9 +109,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const [statusBarColor, setStatusBarColor] = useState(() => {
     try {
-      return localStorage.getItem('statusBarColor') || '#a3310e';
+      return localStorage.getItem('statusBarColor') || (localStorage.getItem('app_theme') === 'light' ? '#FFF8EC' : '#211A19');
     } catch {
-      return '#a3310e';
+      return '#211A19';
     }
   });
 
@@ -188,7 +197,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   
   const [customMainColor, setCustomMainColorState] = useState<string>(() => {
-    try { return localStorage.getItem('app_custom_main_color') || DEFAULT_MAIN_COLOR; }
+    try { return resolvePaletteRole(localStorage.getItem('app_custom_main_color') || DEFAULT_MAIN_COLOR); }
     catch { return DEFAULT_MAIN_COLOR; }
   });
   
@@ -207,8 +216,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [customBatikColor, setCustomBatikColorState] = useState<string>(() => {
-    try { return localStorage.getItem('app_custom_batik_color') || DEFAULT_BATIK_COLOR; }
-    catch { return DEFAULT_BATIK_COLOR; }
+    try { return resolvePaletteRole(localStorage.getItem('app_custom_batik_color') || DEFAULT_BATIK_COLOR); }
+    catch { return resolvePaletteRole(DEFAULT_BATIK_COLOR); }
   });
 
   const [batikDensity, setBatikDensityState] = useState<number>(() => {
@@ -242,8 +251,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       // Load custom UI settings from Preferences (SharedPreferences wrapper)
       try {
         const savedColor = await getSecureItem('app_custom_main_color');
-        if (savedColor && savedColor.startsWith('#')) {
-          setCustomMainColorState(savedColor);
+        if (savedColor) {
+          setCustomMainColorState(resolvePaletteRole(savedColor));
         }
 
         const savedFontSize = await getSecureItem('app_custom_font_size_px');
@@ -263,8 +272,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         const savedBatikColor = await getSecureItem('app_custom_batik_color');
-        if (savedBatikColor && savedBatikColor.startsWith('#')) {
-          setCustomBatikColorState(savedBatikColor);
+        if (savedBatikColor) {
+          setCustomBatikColorState(resolvePaletteRole(savedBatikColor));
         }
 
         const savedBatikDensity = await getSecureItem('app_custom_batik_density');
@@ -297,17 +306,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
   }, [checkAdminStatus]);
 
-  // Apply custom main color live across CSS variables
+  // A palette role survives light/dark changes without injecting arbitrary inline
+  // colors that would bypass the four-colour design system.
   useEffect(() => {
-    const root = document.documentElement;
-    if (customMainColor) {
-      Object.entries(getAccentTokens(customMainColor)).forEach(([property, value]) => {
-        root.style.setProperty(property, value);
-      });
-      if (isLoaded) {
-        setSecureItem('app_custom_main_color', customMainColor);
-      }
+    const role = resolvePaletteRole(customMainColor);
+    document.documentElement.dataset.wawasanAccent = role;
+    for (const property of ['--color-sunshine-cta', '--color-sunshine-cta-bg', '--color-sunshine-cta-fg', '--color-sunshine-cta-hover', '--color-sunshine-cta-press', '--primary', '--primary-foreground', '--ring']) {
+      document.documentElement.style.removeProperty(property);
     }
+    if (isLoaded) void setSecureItem('app_custom_main_color', role);
   }, [customMainColor, isLoaded]);
 
   // Apply custom font size live across root rem/px scale
@@ -333,9 +340,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   // Apply custom Batik accent color live
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--batik-accent-color', customBatikColor);
+    root.style.setProperty('--batik-accent-color', `var(--ui-${resolvePaletteRole(customBatikColor)})`);
     if (isLoaded) {
-      setSecureItem('app_custom_batik_color', customBatikColor);
+      void setSecureItem('app_custom_batik_color', resolvePaletteRole(customBatikColor));
     }
   }, [customBatikColor, isLoaded]);
 
@@ -350,7 +357,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Handlers for live updates
   const setCustomMainColor = (color: string) => {
-    setCustomMainColorState(color);
+    setCustomMainColorState(resolvePaletteRole(color));
   };
 
   const setCustomFontSizePx = (size: number) => {
@@ -366,7 +373,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setCustomBatikColor = (color: string) => {
-    setCustomBatikColorState(color);
+    setCustomBatikColorState(resolvePaletteRole(color));
   };
 
   const setBatikDensity = (density: number) => {
@@ -378,18 +385,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setCustomMainColorState(DEFAULT_MAIN_COLOR);
     setCustomFontSizePxState(DEFAULT_FONT_SIZE_PX);
     setCustomCardSizeScaleState(DEFAULT_CARD_SCALE);
-    setCustomBatikColorState(DEFAULT_BATIK_COLOR);
+    setCustomBatikColorState(resolvePaletteRole(DEFAULT_BATIK_COLOR));
     setBatikDensityState(DEFAULT_BATIK_DENSITY);
     setFontSizeState('base');
 
     const root = document.documentElement;
-    Object.entries(getAccentTokens(DEFAULT_MAIN_COLOR)).forEach(([property, value]) => {
-      root.style.setProperty(property, value);
-    });
+    root.dataset.wawasanAccent = 'orange';
+    for (const property of ['--color-sunshine-cta', '--color-sunshine-cta-bg', '--color-sunshine-cta-fg', '--color-sunshine-cta-hover', '--color-sunshine-cta-press', '--primary', '--primary-foreground', '--ring']) {
+      root.style.removeProperty(property);
+    }
     root.style.fontSize = `${DEFAULT_FONT_SIZE_PX}px`;
     root.style.setProperty('--app-card-scale', '1');
     root.style.setProperty('--menu-card-scale', '1');
-    root.style.setProperty('--batik-accent-color', DEFAULT_BATIK_COLOR);
+    root.style.setProperty('--batik-accent-color', 'var(--ui-orange)');
     root.style.setProperty('--batik-density', String(DEFAULT_BATIK_DENSITY));
 
     await removeSecureItem('app_custom_main_color');
@@ -420,7 +428,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (statusBarHidden) {
           await StatusBar.hide();
         } else {
-          const color = normalizeStatusBarColor(statusBarColor);
+          const color = normalizeStatusBarColor(statusBarColor, document.documentElement.classList.contains('dark') ? 'dark' : 'light');
           await StatusBar.show();
           await StatusBar.setStyle({
             style: Capacitor.getPlatform() === 'android' && needsDarkStatusBarIcons(color) ? Style.Light : Style.Dark,

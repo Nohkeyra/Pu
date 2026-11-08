@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebaseConfig';
@@ -315,7 +316,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         triggerNotification(NotificationType.Success);
         toast({
           title: t('Success', 'Berjaya'),
-          description: t('Successfully signed in.', 'Berjaya log masuk.'),
+          description: !isAdminAuth && auth.currentUser && !auth.currentUser.emailVerified
+            ? t('Sign-in successful. Verify your email before submitting orders.', 'Log masuk berjaya. Sahkan e-mel sebelum menghantar tempahan.')
+            : t('Successfully signed in.', 'Berjaya log masuk.'),
           variant: 'success'
         });
 
@@ -349,6 +352,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
         await setDoc(doc(db, 'users', user.uid), profileData);
 
+        // A Firebase sign-up is authenticated but not yet email-verified.
+        // Sending an order remains blocked on both client and server until verified.
+        let verificationSent = false;
+        try {
+          await sendEmailVerification(user);
+          verificationSent = true;
+        } catch (verificationError) {
+          console.warn('Could not send email verification link:', verificationError);
+        }
+
         if (rememberBiometrics && isBiometricHardwareAvailable) {
           await enrolCustomerBiometrics(email, password);
         }
@@ -356,7 +369,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
         triggerNotification(NotificationType.Success);
         toast({
           title: t('Account Created', 'Akaun Dicipta'),
-          description: t('Profile saved successfully.', 'Profil berjaya disimpan.'),
+          description: verificationSent
+            ? t('Check your email to verify your account before submitting orders.', 'Sila semak e-mel untuk mengesahkan akaun sebelum menghantar tempahan.')
+            : t('Account saved. Open Order to resend your email verification link.', 'Akaun disimpan. Buka Tempahan untuk menghantar semula pautan pengesahan.'),
           variant: 'success'
         });
         resetForm();

@@ -1,12 +1,15 @@
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { db, auth } from '@/firebaseConfig';
+import { Capacitor } from '@capacitor/core';
+import { getCustomerHomePath } from '@/lib/appEntryRoutes';
 import { useLanguage } from '@/context/LanguageContext';
 import { getApiUrl } from '@/lib/api';
 import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
+import { mergeCalendarOrders } from '@/lib/calendarOrderVisibility';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import WawasanLoader from '@/components/brand/WawasanLoader';
 import { 
@@ -86,7 +89,8 @@ export default function CalendarPage() {
   const dateLocale = language === 'bm' ? ms : enUS;
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [publicOrders, setPublicOrders] = useState<Order[]>([]);
+  const [authorizedOrders, setAuthorizedOrders] = useState<{ scope: string; items: Order[] } | null>(null);
   const [calendarNotes, setCalendarNotes] = useState<CalendarNote[]>([]);
   const [aggregatedSessions, setAggregatedSessions] = useState<Record<string, {
     breakfast: { count: number; pax: number };
@@ -120,6 +124,35 @@ export default function CalendarPage() {
 
   const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
+  const calendarMonth = format(currentDate, 'yyyy-MM');
+  const loadNotesFromApi = useCallback(async (signal?: AbortSignal) => {
+    if (!isAdmin && !currentUser) return;
+    const token = isAdmin
+      ? localStorage.getItem('wawasan_admin_token') || (await currentUser?.getIdToken())
+      : await currentUser!.getIdToken();
+    if (!token || signal?.aborted) return;
+    try {
+      const response = await fetch(getApiUrl(`/api/calendar-notes?month=${calendarMonth}`), {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      if (!result.success || !Array.isArray(result.notes)) throw new Error('Unexpected note response');
+      if (!signal?.aborted) setCalendarNotes(result.notes);
+    } catch (error) {
+      if (!signal?.aborted) console.warn('Calendar note API fallback unavailable:', error);
+    }
+  }, [calendarMonth, currentUser, isAdmin]);
+  const authorizedScope = isAdmin ? 'admin' : currentUser?.uid ?? null;
+  const ownOrders = authorizedScope && authorizedOrders?.scope === authorizedScope ? authorizedOrders.items : null;
+  const orders = useMemo(() => {
+    // Admin stream is authoritative after its first snapshot. Members and guests
+    // retain public (PII-stripped) events; only owned records gain extra details.
+    if (isAdmin && ownOrders) return ownOrders;
+    return mergeCalendarOrders(publicOrders, ownOrders ?? []);
+  }, [isAdmin, ownOrders, publicOrders]);
+
   // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API
   useEffect(() => {
     const controller = new AbortController();
@@ -138,7 +171,7 @@ export default function CalendarPage() {
         }
         if (controller.signal.aborted) return;
         setAggregatedSessions(sessionsData.sessions);
-        setOrders(ordersData.orders);
+        setPublicOrders(ordersData.orders);
       } catch (err) {
         if (controller.signal.aborted) return;
         console.error('Failed to fetch server-side calendar data:', err);
@@ -156,6 +189,8 @@ export default function CalendarPage() {
 
   // 2. Real-time direct Firestore bindings
   useEffect(() => {
+    setAuthorizedOrders(null);
+    const notesController = new AbortController();
     let unsubscribeOrders1 = () => {};
     let unsubscribeOrders2 = () => {};
     let unsubscribeNotes = () => {};
@@ -173,7 +208,7 @@ export default function CalendarPage() {
           list.push({ ...data, id: docSnap.id });
         });
         // Calendar events are selected by event date, not creation recency; do not drop older orders here.
-        setOrders(sortOrdersByCreatedAt(list, 'desc'));
+        setAuthorizedOrders({ scope: 'admin', items: sortOrdersByCreatedAt(list, 'desc') });
         setLoading(false);
       }, (err) => {
         console.warn("Order stream permission note:", err);
@@ -190,6 +225,7 @@ export default function CalendarPage() {
         setCalendarNotes(list);
       }, (err) => {
         console.warn("Notes stream permission note:", err);
+        void loadNotesFromApi(notesController.signal);
       });
     } else if (currentUser) {
       const ordersCol = collection(db, 'orders');
@@ -204,7 +240,7 @@ export default function CalendarPage() {
         snapshot2?.forEach((docSnap: any) => {
           map.set(docSnap.id, { ...(docSnap.data() as Order), id: docSnap.id });
         });
-        setOrders(Array.from(map.values()));
+        setAuthorizedOrders({ scope: currentUser.uid, items: Array.from(map.values()).filter(order => !order.deletedByAdmin) });
         setLoading(false);
       };
 
@@ -232,20 +268,22 @@ export default function CalendarPage() {
         setCalendarNotes(list);
       }, (err) => {
         console.warn("Member notes stream permission note:", err);
+        void loadNotesFromApi(notesController.signal);
       });
     } else {
       // Unauthenticated visitor
-      setOrders([]);
+      setAuthorizedOrders(null);
       setCalendarNotes([]);
       setLoading(false);
     }
 
     return () => {
+      notesController.abort();
       unsubscribeOrders1();
       unsubscribeOrders2();
       unsubscribeNotes();
     };
-  }, [currentUser, isAdmin]);
+  }, [currentUser, isAdmin, calendarRefresh, loadNotesFromApi]);
 
   // Normalize and extract Date string YYYY-MM-DD from an Order
   const getOrderDateString = (order: Order): string | null => {
@@ -288,6 +326,15 @@ export default function CalendarPage() {
     return oDateStr ? format(parseISO(oDateStr), 'EEEE, dd MMM yyyy', { locale: dateLocale }) : '';
   };
 
+  const formatNoteTimestamp = (value: string): string => {
+    try {
+      const parsed = parseISO(value);
+      return Number.isNaN(parsed.getTime()) ? '—' : format(parsed, 'hh:mm a');
+    } catch {
+      return '—';
+    }
+  };
+
   const handleQuickUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
       const adminToken = localStorage.getItem('wawasan_admin_token');
@@ -301,7 +348,9 @@ export default function CalendarPage() {
         body: JSON.stringify({ status: newStatus })
       });
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o));
+        setAuthorizedOrders(prev => prev ? { ...prev, items: prev.items.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o) } : prev);
+        setPublicOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o));
+        setCalendarRefresh(prev => prev + 1);
         toast({
           title: language === 'bm' ? 'Status Dikemas kini' : 'Status Updated',
           description: language === 'bm' ? `Status acara ditukar kepada ${newStatus}.` : `Event status changed to ${newStatus}.`,
@@ -514,22 +563,30 @@ export default function CalendarPage() {
 
   // Save/Update note in Firestore via Express API
   const handleSaveNote = async () => {
-    if (!currentUser || !selectedDay) return;
+    if ((!currentUser && !isAdmin) || !selectedDay) return;
     setIsSavingNote(true);
 
     try {
       const dateStr = format(selectedDay, 'yyyy-MM-dd');
-      const uid = isAdmin ? 'admin' : currentUser.uid;
+      const uid = isAdmin ? 'admin' : currentUser!.uid;
       const docId = `${uid}_${dateStr}`;
 
-      const token = localStorage.getItem('wawasan_admin_token') || '';
+      const token = isAdmin
+        ? localStorage.getItem('wawasan_admin_token') || (await currentUser?.getIdToken())
+        : await currentUser!.getIdToken();
+      if (!token) throw new Error('Authentication required');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        Authorization: `Bearer ${token}`,
       };
 
-      if (!noteText.trim()) {
-        const res = await fetch(getApiUrl(`/api/calendar-notes/${docId}`), {
+      const deletingNote = !noteText.trim();
+      if (deletingNote) {
+        if (!calendarNotes.some(note => note.id === docId)) {
+          toast({ title: tl('No note to remove', 'Tiada nota untuk dipadam') });
+          return;
+        }
+        const res = await fetch(getApiUrl(`/api/calendar-notes/${encodeURIComponent(docId)}`), {
           method: 'DELETE',
           headers
         });
@@ -546,10 +603,13 @@ export default function CalendarPage() {
         if (!res.ok) throw new Error('Failed to save note');
       }
 
+      await loadNotesFromApi();
       await triggerMediumImpact();
-      setIsSavingNote(false);
+      toast({ title: deletingNote ? tl('Note deleted', 'Nota dipadam') : tl('Note saved', 'Nota disimpan'), variant: 'success' });
     } catch (error) {
-      console.error("Failed to save calendar note via API:", error);
+      console.error('Failed to save calendar note via API:', error);
+      toast({ title: tl('Could not save note', 'Gagal menyimpan nota'), variant: 'error' });
+    } finally {
       setIsSavingNote(false);
     }
   };
@@ -558,20 +618,27 @@ export default function CalendarPage() {
   const handleDeleteNote = async (noteId: string) => {
     await triggerLightImpact();
     try {
-      const token = localStorage.getItem('wawasan_admin_token') || '';
+      if (!currentUser && !isAdmin) return;
+      const token = isAdmin
+        ? localStorage.getItem('wawasan_admin_token') || (await currentUser?.getIdToken())
+        : await currentUser!.getIdToken();
+      if (!token) throw new Error('Authentication required');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        Authorization: `Bearer ${token}`,
       };
-      const res = await fetch(getApiUrl(`/api/calendar-notes/${noteId}`), {
+      const res = await fetch(getApiUrl(`/api/calendar-notes/${encodeURIComponent(noteId)}`), {
         method: 'DELETE',
         headers
       });
       if (!res.ok) throw new Error('Failed to delete note');
+      await loadNotesFromApi();
       await triggerMediumImpact();
       setNoteText('');
+      toast({ title: tl('Note deleted', 'Nota dipadam'), variant: 'success' });
     } catch (error) {
-      console.error("Failed to delete note via API:", error);
+      console.error('Failed to delete calendar note via API:', error);
+      toast({ title: tl('Could not delete note', 'Gagal memadam nota'), variant: 'error' });
     }
   };
 
@@ -677,7 +744,7 @@ export default function CalendarPage() {
           backDestination="home"
           title={tl('Catering schedule', 'Jadual katering')}
           subtitle={tl('Bookings by date', 'Tempahan mengikut tarikh')}
-          onBack={() => navigate('/home')}
+          onBack={() => navigate(getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(currentUser)))}
           actions={[
             { label: tl('Go to today', 'Kembali ke hari ini'), onSelect: () => { void handleToday(); } },
             { label: currentUser ? tl('Your account', 'Akaun anda') : tl('Sign in', 'Log masuk'), onSelect: () => {
@@ -1059,7 +1126,7 @@ export default function CalendarPage() {
                       </span>
                     </div>
 
-                    {!currentUser ? (
+                    {!currentUser && !isAdmin ? (
                       <div className="p-5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5">
                         <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
                           {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
@@ -1105,10 +1172,10 @@ export default function CalendarPage() {
                                       </span>
                                     )}
                                     <span>•</span>
-                                    <span>{format(parseISO(n.updatedAt), 'hh:mm a')}</span>
+                                    <span>{formatNoteTimestamp(n.updatedAt)}</span>
                                   </span>
 
-                                  {(isAdmin || n.userId === currentUser.uid) && (
+                                  {(isAdmin || n.userId === currentUser?.uid) && (
                                     <Button
                                       variant="ghost"
                                       size="icon"

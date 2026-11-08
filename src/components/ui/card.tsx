@@ -104,7 +104,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
     <h3
       ref={ref}
       data-slot="card-title"
-      className={cn("font-display font-bold text-lg sm:text-xl leading-tight tracking-tight text-[var(--color-text)] dark:text-[#ede5d8]", className)}
+      className={cn("font-display font-bold text-lg sm:text-xl leading-tight tracking-tight text-[var(--color-text)] dark:text-[var(--ui-legacy-white)]", className)}
       {...props}
     />
   )

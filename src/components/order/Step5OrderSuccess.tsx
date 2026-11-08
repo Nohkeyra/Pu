@@ -81,7 +81,7 @@ export function Step5OrderSuccess({
       transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       className="space-y-5 text-center"
     >
-      <section aria-labelledby="booking-sent-heading" className="relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-[#fff8ec] px-5 pb-6 pt-3 text-center shadow-sm dark:border-amber-400/15 dark:bg-[#201b16] sm:px-8">
+      <section aria-labelledby="booking-sent-heading" className="relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-[var(--ui-surface)] px-5 pb-6 pt-3 text-center shadow-sm dark:border-amber-400/15 dark:bg-[var(--ui-canvas)] sm:px-8">
         <div aria-hidden="true" className="pointer-events-none absolute -left-14 top-16 h-40 w-40 rounded-full bg-orange-200/35 blur-3xl dark:bg-orange-500/10" />
         <div aria-hidden="true" className="pointer-events-none absolute -right-12 top-4 h-36 w-36 rounded-full bg-amber-200/40 blur-3xl dark:bg-amber-400/10" />
         <div className="relative mx-auto max-w-md">
@@ -94,12 +94,12 @@ export function Step5OrderSuccess({
               height={600}
               className="block h-auto w-full object-contain"
             />
-            <span aria-hidden="true" className="absolute right-[9%] top-[9%] flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-white bg-[#377a2a] text-white shadow-md dark:border-[#201b16]">
+            <span aria-hidden="true" className="absolute right-[9%] top-[9%] flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-white bg-[var(--ui-green)] text-white shadow-md dark:border-[var(--ui-border)]">
               <Check className="h-6 w-6" strokeWidth={3} />
             </span>
           </div>
-          <h2 id="booking-sent-heading" className="font-display text-3xl font-black leading-tight tracking-tight text-[#183d2b] dark:text-[#fff5e7] sm:text-4xl">
-            {tText('Booking request', 'Tempahan')} <span className="text-[#d54d00] dark:text-[#ff9a2a]">{tText('sent!', 'dihantar!')}</span>
+          <h2 id="booking-sent-heading" className="font-display text-3xl font-black leading-tight tracking-tight text-[var(--ui-green)] dark:text-[var(--ui-legacy-white)] sm:text-4xl">
+            {tText('Booking request', 'Tempahan')} <span className="text-[var(--ui-orange)] dark:text-[var(--ui-orange)]">{tText('sent!', 'dihantar!')}</span>
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300">
             {tText('Thank you! We will review your booking and get in touch to confirm.', 'Terima kasih! Kami akan semak tempahan anda dan menghubungi anda untuk pengesahan.')}
@@ -111,26 +111,26 @@ export function Step5OrderSuccess({
         </div>
       </section>
 
-      <section id="booking-summary" aria-labelledby="booking-summary-heading" className="scroll-mt-24 rounded-2xl border border-orange-200/70 bg-[#fffaf2] p-4 text-left shadow-sm dark:border-white/10 dark:bg-[#211e1b] sm:p-5">
+      <section id="booking-summary" aria-labelledby="booking-summary-heading" className="scroll-mt-24 rounded-2xl border border-orange-200/70 bg-[var(--ui-surface)] p-4 text-left shadow-sm dark:border-white/10 dark:bg-[var(--ui-canvas)] sm:p-5">
         <h3 id="booking-summary-heading" className="mb-1 text-xs font-bold uppercase tracking-wider text-stone-600 dark:text-stone-300">{tText('Booking details', 'Butiran tempahan')}</h3>
         <div className="flex items-center gap-3 border-b border-orange-100 py-3 dark:border-white/10">
           <ClipboardList className="h-5 w-5 shrink-0 text-orange-700 dark:text-amber-400" aria-hidden="true" />
           <div className="min-w-0 flex-1 text-sm text-stone-700 dark:text-stone-300">{tText('Reference number', 'Nombor rujukan')}</div>
-          <strong className="select-all break-all text-right text-sm text-[#183d2b] dark:text-white">{referenceNumber}</strong>
+          <strong className="select-all break-all text-right text-sm text-[var(--ui-green)] dark:text-white">{referenceNumber}</strong>
         </div>
         <div className="flex items-center gap-3 border-b border-orange-100 py-3 dark:border-white/10">
           <CalendarDays className="h-5 w-5 shrink-0 text-orange-700 dark:text-amber-400" aria-hidden="true" />
           <div className="min-w-0 flex-1 text-sm text-stone-700 dark:text-stone-300">{tText('Event date', 'Tarikh majlis')}</div>
-          <strong className="text-right text-sm text-[#183d2b] dark:text-white">{orderState.date}</strong>
+          <strong className="text-right text-sm text-[var(--ui-green)] dark:text-white">{orderState.date}</strong>
         </div>
         <div className="flex items-center gap-3 pt-3">
           <UsersRound className="h-5 w-5 shrink-0 text-orange-700 dark:text-amber-400" aria-hidden="true" />
           <div className="min-w-0 flex-1 text-sm text-stone-700 dark:text-stone-300">{tText('Guests', 'Bilangan tetamu')}</div>
-          <strong className="text-right text-sm text-[#183d2b] dark:text-white">{orderState.guests} {tText('people', 'orang')}</strong>
+          <strong className="text-right text-sm text-[var(--ui-green)] dark:text-white">{orderState.guests} {tText('people', 'orang')}</strong>
         </div>
       </section>
 
-      <a href="#booking-more-details" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#ed6500] px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#c94f00] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">
+      <a href="#booking-more-details" className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--ui-action)] px-4 py-3 text-sm font-bold text-[var(--ui-on-action)] shadow-sm transition-colors hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">
         {tText('View more details', 'Lihat butiran lanjut')} <ArrowDown className="h-4 w-4" aria-hidden="true" />
       </a>
 
@@ -254,9 +254,9 @@ export function Step5OrderSuccess({
               message
             });
           }}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-13 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+          className="w-full bg-[var(--ui-ink)] hover:brightness-110 text-[var(--ui-canvas)] h-13 rounded-2xl font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
         >
-          <MessageCircle className="w-5 h-5 text-white fill-white" />
+          <MessageCircle className="w-5 h-5 text-current" />
           <span>{tText('Forward Order to WhatsApp (017-3157731)', 'Hantar Tempahan ke WhatsApp (017-3157731)')}</span>
         </Button>
 

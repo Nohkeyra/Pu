@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 490" role="img" aria-labelledby="title desc">
+  <title id="title">Kraft lunch box with nasi lemak</title>
+  <desc id="desc">Layered cut-paper illustration of a kraft takeaway box filled with nasi lemak, chicken, cucumber, egg, sambal and pandan leaves.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f9d9a4"/><stop offset=".52" stop-color="#dba368"/><stop offset="1" stop-color="#bb7742"/></linearGradient>
+    <linearGradient id="paperFront" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#edbf82"/><stop offset=".48" stop-color="#d49a60"/><stop offset="1" stop-color="#bc7e43"/></linearGradient>
+    <linearGradient id="paperLid" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f9dcad"/><stop offset=".6" stop-color="#deb17a"/><stop offset="1" stop-color="#c18450"/></linearGradient>
+    <linearGradient id="tray" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a45e2f"/><stop offset="1" stop-color="#784221"/></linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7caa45"/><stop offset=".48" stop-color="#357a3a"/><stop offset="1" stop-color="#1d4e2c"/></linearGradient>
+    <linearGradient id="rice" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#fffdf4"/><stop offset=".52" stop-color="#f4f0dc"/><stop offset="1" stop-color="#e3d9be"/></linearGradient>
+    <radialGradient id="sambal" cx=".3" cy=".2" r=".9"><stop stop-color="#ff6b39"/><stop offset=".48" stop-color="#d83918"/><stop offset="1" stop-color="#982411"/></radialGradient>
+    <radialGradient id="chicken" cx=".25" cy=".17" r=".85"><stop stop-color="#ffca6c"/><stop offset=".48" stop-color="#c77527"/><stop offset="1" stop-color="#8d421c"/></radialGradient>
+    <radialGradient id="yolk" cx=".28" cy=".3" r=".8"><stop stop-color="#fff1a3"/><stop offset=".6" stop-color="#ffc23b"/><stop offset="1" stop-color="#e9951e"/></radialGradient>
+    <filter id="drop" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="10"/><feOffset dx="7" dy="11" result="offset"/><feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".21" numOctaves="1" seed="5" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".07"/></feComponentTransfer><feBlend in="SourceGraphic" mode="multiply"/></filter>
+  </defs>
+  <!-- warm halo is intentionally restrained, so light and dark cards both work -->
+  <ellipse cx="339" cy="448" rx="218" ry="28" fill="#4e2816" opacity=".16"/>
+  <!-- banana leaf cut-paper edges peeking out beyond box -->
+  <path d="M140 347C85 324 67 272 95 226c59 19 106 53 122 108Z" fill="#386b35" stroke="#1d502a" stroke-width="5"/>
+  <path d="M98 236c46 35 72 67 105 105" fill="none" stroke="#a3c26a" stroke-width="3" opacity=".8"/>
+  <path d="M490 367c52-36 87-91 64-144-67 21-101 75-114 134Z" fill="url(#leaf)" stroke="#23552c" stroke-width="5"/>
+  <path d="M548 236c-24 40-51 79-95 121" fill="none" stroke="#b2ce78" stroke-width="3" opacity=".82"/>
+  <!-- hinged open lid with visible folds and inner shadow -->
+  <g filter="url(#drop)">
+    <path d="M271 195 342 68 517 35 548 210 506 246Z" fill="url(#paperLid)" stroke="#a96b37" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M342 68 362 95 494 72 517 35" fill="#ffe5b7" stroke="#b37d4a" stroke-width="3"/>
+    <path d="M362 95 401 209 506 246 494 72Z" fill="#c98d57" opacity=".55"/>
+    <path d="M281 190 363 103 486 82 515 214 485 227Z" fill="#bc854f" opacity=".22"/>
+    <path d="M340 77 516 45" fill="none" stroke="#fff0cb" stroke-width="3" opacity=".75"/>
+  </g>
+  <!-- back side of food tray -->
+  <path d="M181 246 465 194 542 260 262 317Z" fill="url(#tray)" stroke="#a36d3b" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M197 243 457 205 526 257 264 304Z" fill="#d9a36b" stroke="#f3d2a0" stroke-width="6" stroke-linejoin="round"/>
+  <!-- broad folded banana leaf underneath rice -->
+  <path d="M234 280c45-88 182-110 247-44-52 38-123 63-217 81Z" fill="url(#leaf)" stroke="#25592e" stroke-width="5"/>
+  <path d="M242 290c76-35 148-49 219-47" stroke="#b8d279" stroke-width="3" opacity=".8" fill="none"/>
+  <path d="M332 270c14-45 39-81 77-103 19 51 3 88-29 112Z" fill="url(#leaf)" stroke="#275f31" stroke-width="4"/>
+  <path d="M367 273c0-57 16-89 41-106" stroke="#c6db88" stroke-width="3" fill="none"/>
+  <!-- cucumber, layered skin, pale flesh and seeds -->
+  <g transform="rotate(-23 240 265)">
+    <ellipse cx="229" cy="273" rx="34" ry="21" fill="#25692e" stroke="#1a5026" stroke-width="4"/>
+    <ellipse cx="229" cy="273" rx="26" ry="16" fill="#c6d99a" stroke="#9cbf64" stroke-width="3"/>
+    <ellipse cx="229" cy="273" rx="12" ry="8" fill="#ebedb7"/>
+    <path d="M217 270 225 269m8-1 8 2m-18 7 6-1m4 2 6-1" stroke="#8da95b" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(11 215 289)">
+    <ellipse cx="212" cy="294" rx="30" ry="18" fill="#276b31" stroke="#1c5026" stroke-width="4"/>
+    <ellipse cx="212" cy="294" rx="23" ry="13" fill="#d1e1a3" stroke="#94b867" stroke-width="2"/>
+    <ellipse cx="212" cy="294" rx="11" ry="7" fill="#eef0c2"/>
+  </g>
+  <!-- crispy chicken, alternating golden cut-paper edge layers -->
+  <g transform="translate(440 245) rotate(-8)">
+    <path d="M-42 35Q-65 15-49-17Q-38-41-4-40Q19-53 42-28Q65-11 51 20Q43 47 14 49Q-14 57-42 35Z" fill="#833b1d" stroke="#743516" stroke-width="5"/>
+    <path d="M-39 26Q-53 7-38-21Q-25-39 2-32Q23-48 39-20Q52-2 42 20Q35 37 9 37Q-20 45-39 26Z" fill="url(#chicken)" stroke="#e3a04a" stroke-width="4"/>
+    <path d="M-31-7Q-8-26 18-17M-17 14Q5-4 31 7M-12 31Q8 17 26 23" stroke="#f7c16b" stroke-width="6" stroke-linecap="round" opacity=".82" fill="none"/>
+    <path d="M-30 12 0 24M10-26 25-10M-43-5l17-8M29 33l10-13" stroke="#95451e" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- fragrant molded rice, individual grains illustrated; never black -->
+  <path d="M269 279c-4-42 20-75 73-86 49-11 96 15 106 48 8 30-12 66-51 78-64 19-118 5-128-40Z" fill="#d7c6a4" stroke="#fdfaf0" stroke-width="5"/>
+  <path d="M266 267c-3-42 28-71 81-77 52-4 92 23 97 58 4 33-22 57-69 66-62 10-105-6-109-47Z" fill="url(#rice)" stroke="#fffdf2" stroke-width="6"/>
+  <g stroke="#d2c9ab" stroke-width="2.5" stroke-linecap="round" opacity=".85" fill="none">
+    <path d="m298 228 8 3m13-18 9 3m19 1 6-6m26 10 8 5m19 10 9-3m-121 20 9-5m35 4 9 3m26-9 9-4m29 7 10 1m-96 29 8 4m23-7 8-5m27 9 8-5m31-4 8 4m-70 23 8-5m29-7 8 4m-44-62 8 3m48 34 7-6m-86 6 8-4m94 0 8 3"/>
+  </g>
+  <g fill="#fffef8" opacity=".95"><ellipse cx="311" cy="237" rx="4" ry="2" transform="rotate(25 311 237)"/><ellipse cx="336" cy="223" rx="5" ry="2" transform="rotate(-19 336 223)"/><ellipse cx="355" cy="268" rx="5" ry="2" transform="rotate(32 355 268)"/><ellipse cx="404" cy="260" rx="4" ry="2" transform="rotate(-26 404 260)"/><ellipse cx="324" cy="279" rx="4" ry="2" transform="rotate(40 324 279)"/></g>
+  <!-- pandan leaf garnish on top of rice -->
+  <path d="M353 222c-6-35 6-61 24-80 11 30 1 62-24 80Z" fill="#2f783a" stroke="#1e5c2e" stroke-width="3"/>
+  <path d="M355 220c21-27 44-35 60-36-8 28-34 41-60 36Z" fill="#4b974b" stroke="#1e6333" stroke-width="3"/>
+  <path d="M354 217c1-38 18-60 23-75m-21 74 57-31" stroke="#b2d486" stroke-width="2" opacity=".8" fill="none"/>
+  <!-- sambal in glossy red irregular paper-cut dollop -->
+  <g transform="translate(277 305) rotate(8)">
+    <path d="M-53-4Q-48-32-15-27Q-2-39 18-30Q36-37 49-13Q63 9 38 21Q15 35-16 27Q-51 25-53-4Z" fill="#8e2613" stroke="#702111" stroke-width="5"/>
+    <path d="M-47-8Q-35-26-13-21Q-2-29 14-23Q31-26 44-10Q51 3 35 16Q18 26-9 20Q-39 21-47-8Z" fill="url(#sambal)" stroke="#ef6c35" stroke-width="3"/>
+    <path d="M-27-12Q-13-20-1-15m20-2 9 7m-42 25 13-2" stroke="#ffa14c" stroke-width="4" stroke-linecap="round" opacity=".72" fill="none"/>
+    <g fill="#71230c"><circle cx="-28" cy="5" r="3"/><circle cx="8" cy="6" r="3"/><circle cx="23" cy="-5" r="2.5"/></g>
+  </g>
+  <!-- boiled egg half, yolk raised -->
+  <g transform="translate(465 305) rotate(-14)">
+    <ellipse rx="38" ry="27" fill="#c8a276" opacity=".45" cy="7"/>
+    <ellipse rx="38" ry="26" fill="#f9f5df" stroke="#e2d8bc" stroke-width="4"/>
+    <ellipse rx="20" ry="17" fill="url(#yolk)" stroke="#eab245" stroke-width="2"/>
+    <path d="M-10-7q8-8 18-4" stroke="#fff0a1" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- peanuts little cut-paper forms -->
+  <g fill="#b66b35" stroke="#8e4a29" stroke-width="2"><ellipse cx="369" cy="323" rx="13" ry="7" transform="rotate(-17 369 323)"/><ellipse cx="392" cy="318" rx="12" ry="7" transform="rotate(19 392 318)"/><ellipse cx="407" cy="327" rx="11" ry="7" transform="rotate(-29 407 327)"/><ellipse cx="388" cy="335" rx="11" ry="7" transform="rotate(28 388 335)"/></g>
+  <g stroke="#e4aa60" stroke-width="2" opacity=".8"><path d="m362 323 12-4m12-3 10 5m-1 13-11-4"/></g>
+  <!-- forward folded panel hides lower part of food, adds dimension -->
+  <g filter="url(#drop)">
+    <path d="M172 292 538 274 521 421 219 449Z" fill="url(#paperFront)" stroke="#9b6338" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M172 292 217 322 219 449 174 412Z" fill="#ae6d39" stroke="#8f572e" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M217 322 538 274 532 294 219 343Z" fill="#f2c78f" opacity=".84"/>
+    <path d="M221 342 524 298" fill="none" stroke="#f4d49e" stroke-width="3" opacity=".7"/>
+    <path d="M239 430 508 405" fill="none" stroke="#9b5b2f" stroke-width="2" opacity=".35"/>
+    <path d="M174 409 219 444" fill="none" stroke="#d69b61" stroke-width="3"/>
+    <g transform="translate(362 375) rotate(-5)">
+      <path d="M-91 4H91" stroke="#9c663f" stroke-width="1.5" opacity=".34"/>
+      <path d="M-40-19c7-10 20-10 28 0m11-5c12-15 25-13 33 0" fill="none" stroke="#6f442d" stroke-width="3" stroke-linecap="round" opacity=".65"/>
+      <text text-anchor="middle" y="24" font-family="Arial, sans-serif" font-weight="800" font-size="24" letter-spacing="3.2" fill="#693e28">WAWASAN</text>
+      <text text-anchor="middle" y="44" font-family="Arial, sans-serif" font-weight="700" font-size="9" letter-spacing="3" fill="#8a5939">KATERING</text>
+    </g>
+  </g>
+  <!-- small cut-paper star motif near the box, not competing with food -->
+  <path d="m133 178 7 14 15 6-15 6-7 15-7-15-15-6 15-6Z" fill="#f0ad37" stroke="#cd7c20" stroke-width="2"/>
+  <circle cx="149" cy="167" r="4" fill="#ec6a32"/>
+  <path d="M493 112q9-7 17-3" fill="none" stroke="#fff3d7" stroke-linecap="round" stroke-width="3" opacity=".7"/>
+</svg>

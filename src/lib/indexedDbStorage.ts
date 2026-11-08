@@ -40,7 +40,7 @@ export interface OrderDraft {
 
 export interface SyncQueueItem {
   id: string;
-  type: 'review_submission' | 'favorite_dish' | 'contact_inquiry';
+  type: 'review_submission' | 'favorite_dish' | 'contact_inquiry' | (string & {});
   payload: Record<string, unknown>;
   createdAt: number;
   retries: number;
@@ -193,12 +193,17 @@ export async function enqueueBackgroundSync(
   }
 }
 
+export type SyncHandlerResult = boolean | 'unsupported' | 'skip';
+
 /**
- * Drains and executes pending background sync items
+ * Drains and executes pending background sync items.
+ * - Return true: item processed successfully, removed from queue.
+ * - Return false: transient failure, retries incremented (dropped after 5 retries).
+ * - Return 'unsupported' | 'skip': item is not processed or handled by this worker, preserved intact in queue without deleting or incrementing retries.
  */
 export async function processBackgroundSyncQueue(
-  handler: (item: SyncQueueItem) => Promise<boolean>
-): Promise<{ processed: number; failed: number }> {
+  handler: (item: SyncQueueItem) => Promise<SyncHandlerResult>
+): Promise<{ processed: number; failed: number; skipped?: number }> {
   try {
     const db = await openDatabase();
     const tx = db.transaction('sync_queue', 'readwrite');
@@ -212,15 +217,16 @@ export async function processBackgroundSyncQueue(
 
     let processed = 0;
     let failed = 0;
+    let skipped = 0;
 
     for (const item of items) {
       try {
-        const success = await handler(item);
-        if (success) {
+        const result = await handler(item);
+        if (result === true) {
           const deleteTx = db.transaction('sync_queue', 'readwrite');
           deleteTx.objectStore('sync_queue').delete(item.id);
           processed++;
-        } else {
+        } else if (result === false) {
           item.retries += 1;
           if (item.retries > 5) {
             // Drop unrecoverable items after 5 retries
@@ -231,15 +237,18 @@ export async function processBackgroundSyncQueue(
             updateTx.objectStore('sync_queue').put(item);
           }
           failed++;
+        } else {
+          // Unsupported or skipped item: preserve in queue without deleting or incrementing retries
+          skipped++;
         }
       } catch {
         failed++;
       }
     }
 
-    return { processed, failed };
+    return { processed, failed, skipped };
   } catch (err) {
     console.debug('Background sync processing error:', err);
-    return { processed: 0, failed: 0 };
+    return { processed: 0, failed: 0, skipped: 0 };
   }
 }

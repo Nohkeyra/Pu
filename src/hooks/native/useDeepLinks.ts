@@ -14,7 +14,7 @@ import { Capacitor } from '@capacitor/core';
 // any path parsed out of the incoming URL with no validation — allow-list
 // it to the app's known routes so an attacker-crafted deep link can only
 // ever land on a route the app already exposes, never an arbitrary string.
-const ALLOWED_DEEP_LINK_ROUTES = new Set(['/order', '/admin', '/login', '/profile', '/settings', '/']);
+const ALLOWED_DEEP_LINK_ROUTES = new Set(['/order', '/admin', '/login', '/profile', '/settings', '/app', '/']);
 
 function sanitizeDeepLinkPath(path: string): string | null {
   // Strip query/hash for the allow-list check; React Router only needs the

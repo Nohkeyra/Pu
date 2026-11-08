@@ -18,9 +18,11 @@ export interface InvoiceCallerAuth {
 
 export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerAuth | null> {
   const authHeader = req.headers.authorization;
+  // Tokens must be carried in the Authorization header, not the URL.
+  // Query-string credentials can leak through logs, copied links and browser history.
   const token = authHeader?.startsWith('Bearer ')
     ? authHeader.slice(7).trim()
-    : (typeof req.query.token === 'string' ? req.query.token.trim() : null);
+    : null;
 
   if (!token) {
     return null;

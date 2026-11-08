@@ -92,7 +92,7 @@ export function AdminOrderRow({
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
             <Button size="sm" onClick={() => openOrderDetail(order)}
-              className="min-h-[40px] rounded-xl bg-[#c94b16] px-2.5 text-xs font-bold text-white hover:bg-[#aa3d10]"
+              className="min-h-[48px] rounded-xl bg-[var(--ui-action)] px-2.5 text-xs font-bold text-[var(--ui-on-action)] hover:brightness-105"
               aria-label={`${language === 'bm' ? 'Lihat butiran' : 'View details'} ${clientName}`}>
               <Eye className="mr-1 h-4 w-4" aria-hidden="true" /><span>{language === 'bm' ? 'Lihat' : 'View'}</span>
             </Button>

@@ -84,7 +84,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
       role="dialog"
       aria-modal="true"
       aria-label={language === 'bm' ? 'Menu utama' : 'Main menu'}
-      className="fixed inset-0 z-[1100] xl:hidden bg-[#fff6e4] dark:bg-[#191612] text-deep-forest dark:text-[#ede5d8] transition-colors duration-200 border-t-2 border-[var(--color-sunshine-cta)]/40"
+      className="fixed inset-0 z-[1100] xl:hidden bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] text-deep-forest dark:text-[var(--ui-legacy-white)] transition-colors duration-200 border-t-2 border-[var(--color-sunshine-cta)]/40"
     >
       {/* Top Batik Accent Hairline */}
       <div 
@@ -113,7 +113,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             await triggerLightImpact();
             onClose();
           }}
-          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(223,113,15,0.20)] bg-white/90 text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] dark:border-white/10 dark:bg-[#221c17] dark:text-[#ede5d8]"
+          className="absolute right-6 top-[calc(1rem+var(--sat))] flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(223,113,15,0.20)] bg-white/90 text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:text-[var(--color-sunshine-cta)] dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)]"
           aria-label={language === 'bm' ? 'Tutup menu' : 'Close menu'}
         >
           <X className="h-5 w-5" />
@@ -126,7 +126,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             onClick={onClose} 
             className="mb-6 flex items-center gap-3 select-none group"
           >
-            <div className="h-12 w-12 rounded-2xl bg-white/90 dark:bg-[#221c17] p-1.5 shadow-sm ring-1 ring-amber-500/20 flex items-center justify-center transition-transform group-hover:scale-105">
+            <div className="h-12 w-12 rounded-2xl bg-white/90 dark:bg-[var(--ui-canvas)] p-1.5 shadow-sm ring-1 ring-amber-500/20 flex items-center justify-center transition-transform group-hover:scale-105">
               <TransparentLogo
                 src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                 alt="Restoran Wawasan Logo"
@@ -134,7 +134,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               />
             </div>
             <div>
-              <span className="block text-xl font-bold font-artistic text-deep-forest dark:text-[#ede5d8] tracking-tight">
+              <span className="block text-xl font-bold font-artistic text-deep-forest dark:text-[var(--ui-legacy-white)] tracking-tight">
                 Restoran Wawasan
               </span>
               <div className="flex items-center gap-2 mt-0.5">
@@ -157,7 +157,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                     key={link.href}
                     to={link.href}
                     onClick={onClose}
-                    className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-sunshine-cta)] px-6 py-3 font-bold text-[#ede5d8] shadow-md transition-all duration-300 hover:brightness-105 active:scale-[0.99]"
+                    className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-sunshine-cta)] px-6 py-3 font-bold text-[var(--ui-on-action)] shadow-md transition-all duration-300 hover:brightness-105 active:scale-[0.99]"
                   >
                     {t(link.label as Parameters<typeof t>[0])}
                     <ArrowRight className="h-5 w-5" />
@@ -170,7 +170,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                   key={link.href}
                   href={link.href}
                   onClick={onClose}
-                  className="flex min-h-[48px] items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-lg font-semibold text-deep-forest dark:text-[#ede5d8] transition-all duration-200 hover:border-[var(--color-sunshine-cta)]/20 hover:bg-stone-100/80 hover:text-[var(--color-sunshine-cta)] dark:hover:bg-[#1c2622] dark:hover:text-[var(--color-sunshine-cta)] active:scale-[0.99]"
+                  className="flex min-h-[48px] items-center justify-between rounded-2xl border border-transparent px-4 py-3 text-lg font-semibold text-deep-forest dark:text-[var(--ui-legacy-white)] transition-all duration-200 hover:border-[var(--color-sunshine-cta)]/20 hover:bg-stone-100/80 hover:text-[var(--color-sunshine-cta)] dark:hover:bg-[var(--ui-canvas)] dark:hover:text-[var(--color-sunshine-cta)] active:scale-[0.99]"
                 >
                   <span>{t(link.label as Parameters<typeof t>[0]) || link.label}</span>
                   <ArrowRight className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
@@ -186,11 +186,11 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               variant="outline"
               type="button"
               onClick={handleAuth}
-              className="flex w-full min-h-[48px] items-center justify-center gap-2.5 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+              className="flex w-full min-h-[48px] items-center justify-center gap-2.5 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)] dark:hover:bg-[var(--ui-canvas)]"
             >
               {currentUser ? (
                 <>
-                  <div className="flex min-h-[32px] min-w-[32px] h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-xs font-black text-[#ede5d8]">
+                  <div className="flex min-h-[32px] min-w-[32px] h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-xs font-black text-[var(--ui-on-action)]">
                     {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                   <span>{language === 'bm' ? 'Akaun / Papan Pemuka' : 'Account / Dashboard'}</span>
@@ -210,7 +210,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                 variant="outline"
                 type="button"
                 onClick={toggleLanguage}
-                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)] dark:hover:bg-[var(--ui-canvas)]"
               >
                 <span className="tracking-wider text-xs">
                   <span className={language === 'en' ? 'text-[var(--color-sunshine-cta)] font-extrabold' : 'text-stone-400 dark:text-stone-500'}>EN</span>
@@ -224,7 +224,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
                 variant="outline"
                 type="button"
                 onClick={handleThemeToggle}
-                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)] dark:hover:bg-[var(--ui-canvas)]"
               >
                 {theme === 'dark' ? (
                   <>
@@ -246,7 +246,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
-              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8] dark:hover:bg-[#26312d]"
+              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-semibold text-deep-forest shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)] dark:hover:bg-[var(--ui-canvas)]"
             >
               <Download className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
               <span>{language === 'bm' ? 'Muat turun APK' : 'Download APK'}</span>
@@ -256,7 +256,7 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
             <Link
               to="/admin"
               onClick={onClose}
-              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-medium text-stone-600 shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[#1c2622] dark:text-[#ede5d8]/80 dark:hover:bg-[#26312d]"
+              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-stone/15 bg-white text-sm font-medium text-stone-600 shadow-sm hover:border-[var(--color-sunshine-cta)]/40 hover:bg-stone-50 active:scale-[0.99] transition-all dark:border-white/10 dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-legacy-white)]/80 dark:hover:bg-[var(--ui-canvas)]"
             >
               <Shield className="h-4 w-4 text-[var(--color-sunshine-cta)]" />
               <span>{t('admin_login')}</span>

@@ -61,7 +61,7 @@ export default function InAppUpdateBanner({
                   await triggerLightImpact();
                   onOpenModal();
                 }}
-                className="bg-[var(--color-sunshine-cta)] hover:bg-[var(--color-sunshine-cta)]/90 text-deep-forest font-bold text-xs h-8 px-3 rounded-xl flex items-center gap-1 shadow"
+                className="bg-[var(--color-sunshine-cta)] hover:brightness-105 text-[var(--ui-on-action)] font-bold text-xs min-h-[48px] px-3 rounded-xl flex items-center gap-1 shadow"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
                 <span>{isBM ? 'Pasang' : 'Install'}</span>

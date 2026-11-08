@@ -157,34 +157,40 @@ export class FirestoreDistributedStore implements Store {
   // Firestore, so other instances eventually see it. Deliberately not
   // awaited by callers — that would defeat the point of the fast path.
   private syncIncrementInBackground(key: string, resetTimeMs: number): void {
-    const docId = this.getDocId(key);
-    const db = getFirestore();
-    const docRef = db.collection('rate_limits').doc(docId);
+    // This path is best-effort. The local fallback must remain usable even if
+    // acquiring Firestore throws synchronously (e.g. missing credentials).
+    try {
+      const docId = this.getDocId(key);
+      const db = getFirestore();
+      const docRef = db.collection('rate_limits').doc(docId);
 
-    db.runTransaction(async (transaction) => {
-      const snap = await transaction.get(docRef);
-      if (snap.exists) {
-        const data = snap.data() as Partial<DistributedRateLimitDoc>;
-        const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
-        if (storedResetTime > 0 && storedResetTime === resetTimeMs) {
-          transaction.update(docRef, {
-            totalHits: (data?.totalHits || 0) + 1,
-            updatedAt: Timestamp.now(),
-          });
-          return;
+      void db.runTransaction(async (transaction) => {
+        const snap = await transaction.get(docRef);
+        if (snap.exists) {
+          const data = snap.data() as Partial<DistributedRateLimitDoc>;
+          const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
+          if (storedResetTime > 0 && storedResetTime === resetTimeMs) {
+            transaction.update(docRef, {
+              totalHits: (data?.totalHits || 0) + 1,
+              updatedAt: Timestamp.now(),
+            });
+            return;
+          }
         }
-      }
-      transaction.set(docRef, {
-        key,
-        prefix: this.prefix,
-        totalHits: 1,
-        resetTimeMs,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+        transaction.set(docRef, {
+          key,
+          prefix: this.prefix,
+          totalHits: 1,
+          resetTimeMs,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }).catch((err) => {
+        console.warn(`[DistributedRateLimit] Background sync failed for key ${key}:`, err instanceof Error ? err.message : err);
       });
-    }).catch((err) => {
-      console.warn(`[DistributedRateLimit] Background sync failed for key ${key}:`, err instanceof Error ? err.message : err);
-    });
+    } catch (err) {
+      console.warn(`[DistributedRateLimit] Background sync unavailable for key ${key}:`, err instanceof Error ? err.message : err);
+    }
   }
 
   async decrement(key: string): Promise<void> {

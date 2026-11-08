@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { CheckCircle2, AlertTriangle, XCircle, X, Info } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Toast as NativeToast } from '@capacitor/toast';
@@ -86,7 +86,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 interface ToastContainerProps { toasts: ToastMessage[]; dismiss: (id: string) => void; }
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => (
   <div
-    className="fixed bottom-[calc(88px+env(safe-area-inset-bottom,12px))] right-5 z-[9999] flex flex-col gap-3 w-full max-w-sm px-4 sm:px-0 pointer-events-none"
+    className="wawasan-toast-stack fixed bottom-[calc(88px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,12px)))] left-3 right-3 z-[9999] flex flex-col gap-3 pointer-events-none sm:left-auto sm:right-5 sm:w-full sm:max-w-sm"
     aria-live="polite"
   >
     <AnimatePresence>
@@ -98,6 +98,7 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, dismiss }) => (
 interface ToastItemProps { toast: ToastMessage; onDismiss: (id: string) => void; }
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   const { id, title, description, variant = 'info' } = toast;
+  const reduceMotion = useReducedMotion();
   const variants = {
     success: { Icon: CheckCircle2, iconClass: 'text-[var(--color-success)]',  stripe: 'bg-[var(--color-success)]',  surface: 'card-happening border-[color-mix(in_srgb,var(--color-success)_28%,transparent)]' },
     error:   { Icon: XCircle,         iconClass: 'text-[var(--color-error)]',    stripe: 'bg-[var(--color-error)]',    surface: 'card-happening bg-rose-50/90 dark:bg-rose-950/40 border border-[var(--color-error)]/40 text-[var(--color-error)]'   },
@@ -112,9 +113,10 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
       layout
       role="status"
       aria-live="polite"
-      initial={{ opacity: 0, y: 50, scale: 0.95 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 50, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+      exit={reduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+      transition={reduceMotion ? { duration: 0 } : undefined}
       className={cn(
         "pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-xl transition-all duration-300 max-w-full relative overflow-hidden backdrop-blur-md",
         V.surface

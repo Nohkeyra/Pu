@@ -1,8 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import { Capacitor } from '@capacitor/core';
 import './index.css';
 import './wawasan-page-backgrounds.css';
+import './styles/wawasan-editorial-v2.css';
+import './styles/wawasan-four-colour-theme.css';
+import './styles/wawasan-refinement-v5.css';
+import './styles/wawasan-creative-v6.css';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';
@@ -19,11 +24,19 @@ if (import.meta.env.PROD) {
 // Eruda debug console: only in AI Studio preview or when manually enabled via localStorage.
 // Deliberately excludes 'localhost' to avoid loading in Capacitor native WebView
 // (which also resolves to localhost) and in Render production.
-if (typeof window !== 'undefined' && (
-  window.location.hostname.endsWith('.run.app') ||
-  window.location.hostname.includes('aistudio') ||
-  localStorage.getItem('wawasan_eruda_enabled') === 'true'
-)) {
+const previewConsoleAllowed = (() => {
+  if (typeof window === 'undefined') return false;
+  try {
+    // No developer inspector on customer-facing production by default.
+    return localStorage.getItem('wawasan_eruda_enabled') === 'true' || (
+      import.meta.env.DEV && (
+        window.location.hostname.endsWith('.run.app') ||
+        window.location.hostname.includes('aistudio')
+      )
+    );
+  } catch { return false; }
+})();
+if (previewConsoleAllowed) {
   // Check if window.fetch descriptor allows write/configuration before loading eruda in sandboxed iframes
   const fetchDesc = Object.getOwnPropertyDescriptor(window, 'fetch') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
   const isFetchWritable = !fetchDesc || fetchDesc.writable || Boolean(fetchDesc.set);
@@ -41,6 +54,12 @@ if (typeof window !== 'undefined' && (
       // Ignore in restricted sandbox environments
     });
   }
+}
+
+// Presentation-only platform marker. It never changes routing, data, or business rules.
+// Set before React mounts to avoid a flash between web and native layouts.
+if (Capacitor.isNativePlatform()) {
+  document.documentElement.classList.add('wawasan-native');
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

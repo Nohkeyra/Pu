@@ -5,13 +5,16 @@ import { Home, Utensils, Settings, User, Shield, Calendar } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { cn, getAssetUrl } from '@/lib/utils';
 import { auth } from '@/firebaseConfig';
+import { Capacitor } from '@capacitor/core';
+import { getCustomerHomePath } from '@/lib/appEntryRoutes';
 import { triggerLightImpact } from '@/lib/haptics';
+import { useMobileKeyboard } from '@/hooks/native/useMobileKeyboard';
 import { onAuthStateChanged } from 'firebase/auth';
 import './bottom-navigation-polish.css';
 
 // Helper to determine tab ID from pathname
 function getTabIdFromPath(pathname: string, adminFlag: boolean): string | null {
-  if (pathname === '/' || pathname === '/home' || pathname === '/main') return 'home';
+  if (pathname === '/' || pathname === '/home' || pathname === '/main' || pathname === '/app') return 'home';
   if (pathname.startsWith('/order')) return 'order';
   if (pathname.startsWith('/calendar')) return 'calendar';
   if (pathname.startsWith('/admin')) return adminFlag ? 'admin' : null;
@@ -33,6 +36,8 @@ function prefetchTabModule(path: string) {
       import('../../pages/SettingsPage').catch(() => {});
     } else if (path.includes('admin')) {
       import('../../pages/AdminPage').catch(() => {});
+    } else if (path === '/app') {
+      import('../../pages/CustomerDashboard').catch(() => {});
     } else if (path.includes('home') || path.includes('main')) {
       import('../../pages/LandingPage').catch(() => {});
     }
@@ -46,7 +51,9 @@ export default function BottomNavigation() {
   const location = useLocation();
   const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
+  const { isKeyboardVisible } = useMobileKeyboard();
 
+  const [signedIn, setSignedIn] = useState(() => Boolean(auth.currentUser));
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
       return localStorage.getItem('wawasan_admin_token') !== null || auth.currentUser?.uid === 'admin';
@@ -62,7 +69,8 @@ export default function BottomNavigation() {
     };
     checkAdmin();
 
-    const unsubscribe = onAuthStateChanged(auth, () => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setSignedIn(Boolean(user));
       checkAdmin();
     });
 
@@ -81,7 +89,7 @@ export default function BottomNavigation() {
   );
 
   const tabs = useMemo(() => [
-    { id: 'home', icon: Home, label: t('nav_home'), path: '/home' },
+    { id: 'home', icon: Home, label: t('nav_home'), path: getCustomerHomePath(Capacitor.isNativePlatform(), signedIn) },
     { id: 'order', icon: Utensils, label: t('nav_order'), path: '/order' },
     {
       id: isAdmin ? 'admin' : 'profile',
@@ -91,10 +99,13 @@ export default function BottomNavigation() {
     },
     { id: 'calendar', icon: Calendar, label: t('nav_calendar'), path: '/calendar' },
     { id: 'settings', icon: Settings, label: t('nav_settings'), path: '/settings' },
-  ], [isAdmin, t]);
+  ], [isAdmin, signedIn, t]);
+
+  // The keyboard already occupies the lower viewport; do not cover form inputs.
+  if (isKeyboardVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex justify-center">
+    <div className="wawasan-navigation-dock fixed bottom-0 left-0 right-0 z-[100] pointer-events-none flex justify-center">
       <motion.div
         initial={reduceMotion ? false : { y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -132,17 +143,11 @@ export default function BottomNavigation() {
               onClick={() => {
                 if (isActive) return;
                 triggerLightImpact();
-                try {
-                  sessionStorage.setItem('wawasan_session_started', 'true');
-                  sessionStorage.setItem('wawasan_guest_allowed', 'true');
-                } catch (storageErr) {
-                  console.warn('SessionStorage unavailable:', storageErr);
-                }
                 navigate(tab.path);
               }}
               className={cn(
                 'relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[44px] px-1 sm:px-2 select-none cursor-pointer',
-                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-stone-600 dark:text-stone-300 hover:text-deep-forest dark:hover:text-[#ede5d8]'
+                isActive ? 'text-[var(--color-sunshine-cta)]' : 'text-stone-600 dark:text-stone-300 hover:text-deep-forest dark:hover:text-[var(--ui-legacy-white)]'
               )}
             >
               <div className="relative flex h-8 sm:h-9 w-12 sm:w-14 items-center justify-center shrink-0">
@@ -171,7 +176,7 @@ export default function BottomNavigation() {
                   'nav-label relative z-10 transition-colors duration-200 text-[11px] sm:text-xs leading-tight tracking-normal text-center max-w-full px-0.5 break-words',
                   isActive
                     ? 'nav-label-active text-[var(--color-sunshine-cta)] font-bold'
-                    : 'nav-label-inactive text-deep-forest/85 dark:text-[#ede5d8]/80 font-medium'
+                    : 'nav-label-inactive text-deep-forest/85 dark:text-[var(--ui-legacy-white)]/80 font-medium'
                 )}
               >
                 {tab.label}

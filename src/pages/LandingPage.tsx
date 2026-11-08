@@ -11,6 +11,7 @@ import ReviewsSection from '@/sections/ReviewsSection';
 import VisitSection from '@/sections/VisitSection';
 import './landing-page.css';
 import './heritage-hero.css';
+import './living-canvas-v31.css';
 
 export default function LandingPage() {
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function LandingPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="landing-page">
+      <div className={"landing-page living-canvas-v31"}>
         {/* Default variant restores the transparent header over the full-bleed hero,
             then uses the existing scroll-aware header styling further down. */}
         <Header variant="default" />

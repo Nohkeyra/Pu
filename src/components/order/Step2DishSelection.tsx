@@ -149,7 +149,7 @@ export function Step2DishSelection({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-6 text-left"
     >
-      <div className="bg-[#fbf1df] dark:bg-[#242321] p-5 sm:p-6 rounded-3xl border border-[#eadbc7] dark:border-white/10 relative overflow-hidden">
+      <div className="bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] p-5 sm:p-6 rounded-3xl border border-[var(--ui-orange)] dark:border-white/10 relative overflow-hidden">
         <div 
           className="absolute inset-0 opacity-[0.06] dark:opacity-[0.10] pointer-events-none"
           style={{
@@ -182,7 +182,7 @@ export function Step2DishSelection({
           </div>
           {search.trim() && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{matchingAvailable ? tText('Showing matching items. Your selections are kept.', 'Memaparkan padanan. Pilihan anda dikekalkan.') : tText('No matching items in this category. Try another search or category.', 'Tiada padanan dalam kategori ini. Cuba carian atau kategori lain.')}</p>}
           <div role="group" aria-label={tText('Menu categories', 'Kategori menu')} className="flex gap-2 overflow-x-auto py-1 [scrollbar-width:thin]">
-            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${category === option.id ? 'border-orange-600 bg-orange-600 text-white' : 'border-[#e8dac8] bg-[#f7edde] text-stone-700 hover:bg-[#efdfca] dark:border-stone-700 dark:bg-[#272522] dark:text-stone-200 dark:hover:bg-stone-700'}`}>{option.label}</button>)}
+            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${category === option.id ? 'border-orange-600 bg-orange-600 text-white' : 'border-[var(--ui-orange)] bg-[var(--ui-yellow)] text-stone-700 hover:bg-[var(--ui-orange)] dark:border-stone-700 dark:bg-[var(--ui-canvas)] dark:text-stone-200 dark:hover:bg-stone-700'}`}>{option.label}</button>)}
           </div>
           {!search.trim() && !matchingAvailable && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{tText('No items available in this category.', 'Tiada hidangan tersedia dalam kategori ini.')}</p>}
         </div>

@@ -26,7 +26,7 @@ const NAV_LINKS: { label: string; href: string; isButton?: boolean }[] = [
 
 function BrandMark() {
   return (
-    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-[#1c2622] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
+    <div className="h-11 w-11 rounded-2xl bg-white/80 p-1 shadow-sm ring-1 ring-black/5 dark:bg-[var(--ui-canvas)] dark:ring-amber-500/20 flex items-center justify-center overflow-hidden">
       <TransparentLogo
         src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
         alt="Restoran Wawasan Logo"
@@ -91,7 +91,7 @@ export default function Header({ variant = 'default' }: { variant?: 'default' | 
 
   const brandTextClass = isScrolled 
     ? 'brand-title font-artistic' 
-    : 'font-artistic text-white dark:text-[#ede5d8] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]';
+    : 'font-artistic text-white dark:text-[var(--ui-legacy-white)] drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]';
   
   const brandSubClass = isScrolled 
     ? 'brand-subtitle' 
@@ -111,7 +111,7 @@ export default function Header({ variant = 'default' }: { variant?: 'default' | 
       <header data-member={Boolean(currentUser)} id="app-header" className={`fixed left-0 right-0 top-0 z-[1000] transition-all duration-300 ${headerStateClass}`}>
         <div className="content-container flex items-center justify-between gap-1.5 sm:gap-4 px-3.5 sm:px-6">
           <Link 
-            to={currentUser ? '/home' : '/'} 
+            to={currentUser ? '/app' : '/'} 
             className="flex shrink-0 items-center gap-2.5 sm:gap-3 select-none"
             onClick={(e) => {
               const now = Date.now();
@@ -221,7 +221,7 @@ export default function Header({ variant = 'default' }: { variant?: 'default' | 
             >
               {currentUser ? (
                 <>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white shadow-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-sunshine-cta)] text-[12px] font-black text-[var(--ui-on-action)] shadow-sm">
                     {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                   </div>
                   <span className="hidden max-w-[120px] truncate xl:inline">
@@ -264,7 +264,7 @@ export default function Header({ variant = 'default' }: { variant?: 'default' | 
               aria-label={currentUser ? (language === 'bm' ? 'Akaun' : 'Account') : (language === 'bm' ? 'Log masuk' : 'Sign in')}
             >
               {currentUser ? (
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[12px] font-black text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-sunshine-cta)] text-[12px] font-black text-[var(--ui-on-action)]">
                   {(currentUser.displayName?.slice(0, 2) || currentUser.email?.slice(0, 2) || (currentUser.uid === 'admin' ? 'AD' : 'US')).toUpperCase()}
                 </div>
               ) : (

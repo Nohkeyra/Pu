@@ -50,7 +50,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex min-h-[100dvh] flex-col items-center overflow-hidden bg-[#fff6e4] text-[#173b2a] dark:bg-[#191612] dark:text-[#fff6e2]"
+      className="fixed inset-0 z-[9999] flex min-h-[100dvh] flex-col items-center overflow-hidden bg-[var(--ui-yellow)] text-[var(--ui-green)] dark:bg-[var(--ui-canvas)] dark:text-[var(--ui-yellow)]"
       initial={false}
       animate={{ opacity: exiting ? 0 : 1 }}
       transition={{ duration: reduceMotion ? 0 : 0.25 }}
@@ -90,7 +90,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
       <button
         type="button"
         onClick={complete}
-        className="absolute right-4 z-20 flex min-h-11 items-center rounded-full border border-[#a55a1d]/25 bg-[#fffaf0]/80 px-4 text-xs font-semibold text-[#61330f] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-200/25 dark:bg-black/25 dark:text-amber-100 dark:hover:bg-black/40"
+        className="absolute right-4 z-20 flex min-h-11 items-center rounded-full border border-[var(--ui-orange)]/25 bg-[var(--ui-surface)]/80 px-4 text-xs font-semibold text-[var(--ui-orange)] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-200/25 dark:bg-black/25 dark:text-amber-100 dark:hover:bg-black/40"
         style={{ top: 'calc(0.75rem + var(--safe-area-inset-top, 0px))' }}
       >
         {bm ? 'Langkau' : 'Skip'}
@@ -110,7 +110,7 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
         />
 
         <div className="space-y-1">
-          <h1 aria-label={bm ? 'Selamat datang!' : 'Welcome!'} className="text-2xl leading-snug text-[#173b2a] dark:text-[#fff6e2] sm:text-3xl" style={{ fontFamily: "'WawasanWelcome', cursive" }}>
+          <h1 aria-label={bm ? 'Selamat datang!' : 'Welcome!'} className="text-2xl leading-snug text-[var(--ui-green)] dark:text-[var(--ui-yellow)] sm:text-3xl" style={{ fontFamily: "'WawasanWelcome', cursive" }}>
             <motion.span aria-hidden="true" className="inline-block" initial={reduceMotion ? false : { opacity: 0, y: 14, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reduceMotion ? 0 : 0.45, delay: reduceMotion ? 0 : 1.3, ease: [0.22, 1, 0.36, 1] }}>
               {bm ? 'Selamat' : 'Welcome'}
             </motion.span>
@@ -118,19 +118,19 @@ export default function SplashScreen({ isLoading, onComplete }: SplashScreenProp
               {bm ? ' datang!' : '!'}
             </motion.span>
           </h1>
-          <svg aria-hidden="true" viewBox="0 0 180 12" className="mx-auto block h-2 w-36 text-[#df710f] dark:text-[#ffa42c]">
+          <svg aria-hidden="true" viewBox="0 0 180 12" className="mx-auto block h-2 w-36 text-[var(--ui-orange)] dark:text-[var(--ui-orange)]">
             <motion.path d="M 3 9 Q 90 -3 177 7" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: reduceMotion ? 0 : 0.48, delay: reduceMotion ? 0 : 1.68, ease: 'easeOut' }} />
           </svg>
-          <motion.p className="text-sm font-medium text-[#704b30] dark:text-amber-100/80" initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.38, delay: reduceMotion ? 0 : 1.85 }}>
+          <motion.p className="text-sm font-medium text-[var(--ui-orange)] dark:text-amber-100/80" initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.38, delay: reduceMotion ? 0 : 1.85 }}>
             {bm ? 'Dari Wawasan, dengan rasa.' : 'From Wawasan, with flavour.'}
           </motion.p>
         </div>
       </div>
 
-      <div role="status" aria-live="polite" className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-2 pb-5 text-xs font-semibold text-[#704b30] dark:text-amber-100/80" style={{ paddingBottom: 'calc(1.25rem + var(--safe-area-inset-bottom, 0px))' }}>
-        <span className="rounded-full bg-[#fff6e4]/90 px-3 py-1 dark:bg-[#191612]/90">{isLoading ? (bm ? 'Menyediakan aplikasi…' : 'Preparing the app…') : (bm ? 'Sedia' : 'Ready')}</span>
-        <span aria-hidden="true" className="h-1 w-20 overflow-hidden rounded-full bg-[#aa6b36]/20 dark:bg-white/15">
-          <motion.span className="block h-full w-1/2 rounded-full bg-[#d66b0c] dark:bg-amber-300" animate={reduceMotion ? { opacity: 1 } : { x: ['-100%', '200%'] }} transition={reduceMotion ? { duration: 0 } : { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }} />
+      <div role="status" aria-live="polite" className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-2 pb-5 text-xs font-semibold text-[var(--ui-orange)] dark:text-amber-100/80" style={{ paddingBottom: 'calc(1.25rem + var(--safe-area-inset-bottom, 0px))' }}>
+        <span className="rounded-full bg-[var(--ui-yellow)]/90 px-3 py-1 dark:bg-[var(--ui-canvas)]/90">{isLoading ? (bm ? 'Menyediakan aplikasi…' : 'Preparing the app…') : (bm ? 'Sedia' : 'Ready')}</span>
+        <span aria-hidden="true" className="h-1 w-20 overflow-hidden rounded-full bg-[var(--ui-orange)]/20 dark:bg-white/15">
+          <motion.span className="block h-full w-1/2 rounded-full bg-[var(--ui-orange)] dark:bg-amber-300" animate={reduceMotion ? { opacity: 1 } : { x: ['-100%', '200%'] }} transition={reduceMotion ? { duration: 0 } : { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }} />
         </span>
       </div>
     </motion.div>

@@ -21,7 +21,7 @@ if (isDevSandbox) {
     );
   });
 } else {
-  const CACHE_NAME = 'wawasan-admin-v1.3.102';
+  const CACHE_NAME = 'wawasan-admin-v1.3.176';
   const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -50,7 +50,7 @@ if (isDevSandbox) {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cache) => {
-            if (cache !== CACHE_NAME) {
+            if (cache.startsWith('wawasan-') && cache !== CACHE_NAME) {
               console.log('[Service Worker] Clearing old cache:', cache);
               return caches.delete(cache);
             }
@@ -63,7 +63,17 @@ if (isDevSandbox) {
 
   // Fetch Listener (Cache-first with Network fallback and dynamic caching for critical assets)
   self.addEventListener('fetch', (event) => {
+    // Only intercept standard GET requests; unsupported HTTP methods (POST, PUT, DELETE, etc.) must bypass cache
+    if (event.request.method !== 'GET') {
+      return;
+    }
+
     const url = new URL(event.request.url);
+
+    // Only intercept same-origin HTTP/HTTPS requests; ignore cross-origin and extension schemes
+    if (url.origin !== self.location.origin || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
+      return;
+    }
     
     // Skip API calls, Firestore, and Firebase connections
     if (
@@ -73,6 +83,23 @@ if (isDevSandbox) {
       url.pathname.includes('__vite_ping') ||
       url.pathname.includes('hot-reload')
     ) {
+      return;
+    }
+
+    // Network-first for page navigation. Serving an old cached index.html
+    // online can strand the UI on previous JS/CSS after a release.
+    if (event.request.mode === 'navigate') {
+      event.respondWith(
+        fetch(event.request).then((response) => {
+          if (response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)));
+          }
+          return response;
+        }).catch(async () =>
+          (await caches.match(event.request)) || (await caches.match('/')) || Response.error()
+        )
+      );
       return;
     }
 

@@ -12,7 +12,7 @@ import { getAssetUrl } from '@/lib/utils';
  * The header sits above this section as a transparent, fixed overlay.
  */
 const HeroSection = React.memo(() => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const heroRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -85,6 +85,18 @@ const HeroSection = React.memo(() => {
           <Link to="/order" className="heritage-hero-action heritage-hero-action-secondary">
             <span>{t('order_catering_btn')}</span>
           </Link>
+        </div>
+        <div className="wawasan-hero-paper" aria-hidden="true">
+          <div className="wawasan-hero-paper__halo" />
+          <div className="wawasan-hero-paper__sun" />
+          <span className="wawasan-hero-paper__star wawasan-hero-paper__star--top">✳</span>
+          <span className="wawasan-hero-paper__star wawasan-hero-paper__star--bottom">✷</span>
+          <div className="wawasan-hero-paper__sheet wawasan-hero-paper__sheet--back" />
+          <div className="wawasan-hero-paper__sheet wawasan-hero-paper__sheet--front" />
+          {/* @ts-expect-error React 18 types fetchPriority as camelCase or lowercase depending on exact DOM definition */}
+          <img className="wawasan-hero-paper__meal" src={getAssetUrl('/assets/living-canvas/kraft-lunchbox.svg')} alt="" fetchpriority="high" />
+          <span className="wawasan-hero-paper__seal">WAWASAN <strong>PAK USOP · CATERING</strong></span>
+          <span className="wawasan-hero-paper__ribbon">{language === 'bm' ? 'Dibuat dengan kasih' : 'Crafted with care'}</span>
         </div>
         <a href="#menu" className="heritage-hero-scroll-hint">
           <span aria-hidden="true" className="heritage-hero-scroll-line" />

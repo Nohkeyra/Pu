@@ -43,7 +43,7 @@ export default function ReviewCard({ text, name, rating, date, tag, source = 'Go
           )}
         </div>
         
-        <p className="font-body text-[14.5px] sm:text-[15px] text-deep-forest dark:text-[#ede5d8] leading-relaxed font-normal italic">
+        <p className="font-body text-[14.5px] sm:text-[15px] text-deep-forest dark:text-[var(--ui-legacy-white)] leading-relaxed font-normal italic">
           "{text}"
         </p>
 

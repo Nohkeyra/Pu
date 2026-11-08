@@ -223,7 +223,7 @@ export function NotificationBell({ currentUser, onOpenProfileWithOrder, isScroll
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-stone-200 dark:border-white/10 bg-white dark:bg-[#121916] p-0 shadow-2xl z-[2000] overflow-hidden"
+            className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-stone-200 dark:border-white/10 bg-white dark:bg-[var(--ui-canvas)] p-0 shadow-2xl z-[2000] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-white/10 bg-stone-50/80 dark:bg-white/5 px-4 py-3">

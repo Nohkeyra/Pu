@@ -59,7 +59,7 @@ const VisitSection = React.memo(() => {
                 </p>
               </div>
               
-              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-stone-200 dark:border-stone-800 bg-[#fdfbf7] dark:bg-card">
+              <div className="relative rounded-3xl overflow-hidden aspect-[16/10] shadow-xl border border-stone-200 dark:border-stone-800 bg-[var(--ui-surface)] dark:bg-card">
                 <ResponsiveImage 
                   src="/assets/venue/restoran-exterior.jpg" 
                   alt="Restoran Wawasan Exterior" 
@@ -137,7 +137,7 @@ const VisitSection = React.memo(() => {
                 href="https://maps.app.goo.gl/F1aswiA657kzhf298" 
                 target="_blank" 
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg bg-[#287407] text-[#ffc701] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-8 py-4 font-black rounded-2xl shadow-lg bg-[var(--ui-green)] text-[var(--ui-yellow)] hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
               >
                 {isBm ? 'Dapatkan Arah' : 'Get Directions'}
                 <ExternalLink className="w-4 h-4" />

@@ -54,7 +54,7 @@ export function AdminMenuItemRow({
 
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs font-bold text-amber-700 dark:text-amber-400 font-mono">
-              RM {item.price.toFixed(2)}
+              RM {Number.isFinite(Number(item.price)) ? Number(item.price).toFixed(2) : '—'}
             </span>
             <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">
               • {badge.shortName}

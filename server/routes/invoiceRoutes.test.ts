@@ -89,6 +89,12 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       expect(json.error).toMatch(/Authentication required/i);
     });
 
+    it('rejects a valid admin session token passed only in the URL query string', async () => {
+      const token = signAdminJwt({ uid: 'admin_uid' });
+      const res = await fetch(`${baseUrl}/api/invoice/order_123/pdf?token=${encodeURIComponent(token)}`);
+      expect(res.status).toBe(401);
+    });
+
     it('rejects request with invalid token with 401', async () => {
       const res = await fetch(`${baseUrl}/api/invoice/order_123/pdf`, {
         headers: { Authorization: 'Bearer invalid.fake.token' }

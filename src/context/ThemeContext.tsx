@@ -168,6 +168,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (transitionTimerRef.current.fade) clearTimeout(transitionTimerRef.current.fade);
     if (transitionTimerRef.current.end) clearTimeout(transitionTimerRef.current.end);
 
+    // Keep both approved palettes, but do not blur or animate the viewport
+    // when the user has explicitly requested reduced motion.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      themeChangedRef.current = true;
+      setTransitionState({ active: false, fadingOut: false, targetTheme: null });
+      document.documentElement.classList.remove('theme-transitioning');
+      setTheme(nextTheme);
+      return;
+    }
+
     try {
       document.documentElement.classList.add('theme-transitioning');
     } catch {
@@ -262,16 +272,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
               : 'blur(20px) saturate(180%)',
             backgroundColor:
               transitionState.targetTheme === 'dark'
-                ? 'rgba(12, 16, 14, 0.48)'
-                : 'rgba(255, 253, 249, 0.58)',
+                ? 'color-mix(in srgb, var(--ui-canvas) 48%, transparent)'
+                : 'color-mix(in srgb, var(--ui-canvas) 58%, transparent)',
           }}
         >
           {/* Ambient Radial Color Bloom */}
           <div
             className={`absolute inset-0 transition-opacity duration-300 ${
               transitionState.targetTheme === 'dark'
-                ? 'bg-[radial-gradient(circle_at_center,rgba(246,153,19,0.20)_0%,rgba(12,16,14,0.35)_70%)]'
-                : 'bg-[radial-gradient(circle_at_center,rgba(233,98,18,0.16)_0%,rgba(255,253,249,0.45)_70%)]'
+                ? 'bg-[radial-gradient(circle_at_center,var(--ui-orange)_0%,transparent_70%)]'
+                : 'bg-[radial-gradient(circle_at_center,var(--ui-yellow)_0%,transparent_70%)]'
             }`}
           />
 
@@ -283,8 +293,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                 : 'scale-100 opacity-100 translate-y-0'
             } ${
               transitionState.targetTheme === 'dark'
-                ? 'bg-[#1c2622]/95 border-[#f69913]/40 text-[#ede5d8] shadow-[0_0_40px_rgba(246,153,19,0.28)]'
-                : 'bg-[#fffdf9]/95 border-[#0c453c]/25 text-[#0c453c] shadow-[0_0_40px_rgba(12,69,60,0.22)]'
+                ? 'bg-[var(--ui-canvas)]/95 border-[var(--ui-yellow)]/40 text-[var(--ui-legacy-white)] shadow-[0_0_40px_rgba(246,153,19,0.28)]'
+                : 'bg-[var(--ui-surface)]/95 border-[var(--ui-green)]/25 text-[var(--ui-green)] shadow-[0_0_40px_rgba(12,69,60,0.22)]'
             }`}
           >
             <div className="relative w-7 h-7 flex items-center justify-center rounded-full bg-amber-500/10 dark:bg-amber-400/10">

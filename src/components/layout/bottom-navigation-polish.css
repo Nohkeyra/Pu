@@ -1,13 +1,13 @@
 /* Shared customer navigation tokens: same original warm cream/charcoal palette. */
 .wawasan-bottom-nav {
-  --nav-surface: #fffdfa;
-  --nav-line: rgba(223, 113, 15, .25);
+  --nav-surface: var(--ui-surface);
+  --nav-line: color-mix(in srgb, var(--ui-orange) 25.0%, transparent);
   background: color-mix(in srgb, var(--nav-surface) 95%, transparent);
   border-color: var(--nav-line);
 }
 .dark .wawasan-bottom-nav {
-  --nav-surface: #1a1612;
-  --nav-line: rgba(245, 158, 11, .25);
+  --nav-surface: var(--ui-canvas);
+  --nav-line: color-mix(in srgb, var(--ui-yellow) 25.0%, transparent);
 }
 .wawasan-bottom-nav .nav-label {
   overflow-wrap: anywhere;

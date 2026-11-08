@@ -92,10 +92,11 @@ function App() {
         sessionStorage.setItem('wawasan_app_initialized', 'true');
         sessionStorage.setItem('wawasan_guest_allowed', 'true');
 
-        // On cold app restart, reset any WebView-restored route back to home page
-        const currentHash = window.location.hash;
-        if (currentHash && currentHash !== '#/' && currentHash !== '#/home' && !currentHash.includes('?')) {
-          window.location.hash = '#/home';
+        // Every cold APK launch starts at the auth-aware entry gate, rather
+        // than restoring a stale WebView page from the previous session.
+        // The appUrlOpen listener handles an explicitly received deep link.
+        if (Capacitor.isNativePlatform()) {
+          window.location.hash = '#/';
         }
       }
     } catch (err) {

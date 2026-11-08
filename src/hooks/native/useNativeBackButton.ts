@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { App } from '@capacitor/app';
+import { Keyboard } from '@capacitor/keyboard';
+import { useMobileKeyboard } from './useMobileKeyboard';
 import type { BackButtonListenerEvent } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Capacitor } from '@capacitor/core';
@@ -9,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 // Routes that are considered "top level" — pressing hardware back here should
 // exit the app rather than trying to go back further, since there is nowhere
 // meaningful left to return to within the SPA.
-const ROOT_PATHS = ['/', '/main', '/home', '/login'];
+const ROOT_PATHS = ['/', '/main', '/home', '/login', '/app'];
 
 /**
  * Wires the Android hardware/gesture back button to prioritize:
@@ -22,6 +24,12 @@ export function useNativeBackButton() {
   const location = useLocation();
   const { toast } = useToast();
   const lastBackPressRef = useRef<number>(0);
+  const { isKeyboardVisible } = useMobileKeyboard();
+  // Keep the native callback stable while reading the latest IME state.
+  const keyboardVisibleRef = useRef(isKeyboardVisible);
+  useEffect(() => {
+    keyboardVisibleRef.current = isKeyboardVisible;
+  }, [isKeyboardVisible]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
@@ -34,38 +42,45 @@ export function useNativeBackButton() {
     const setupListener = async () => {
       try {
         const handle = await App.addListener('backButton', ({ canGoBack }: BackButtonListenerEvent) => {
-          // Priority 1: Check for active open overlays / modals in DOM
-          const openOverlay = document.querySelector<HTMLElement>(
-            '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-state="open"]'
-          );
+          // The first Back press while typing should dismiss the IME, not leave the order.
+          if (keyboardVisibleRef.current) {
+            void Keyboard.hide().catch(() => { /* Android normally hides the IME itself. */ });
+            (document.activeElement as HTMLElement | null)?.blur?.();
+            return;
+          }
 
-          // Dispatch synthetic Escape key event to document
-          const escapeEvent = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            code: 'Escape',
-            keyCode: 27,
-            which: 27,
-            bubbles: true,
-            cancelable: true,
-          });
-
-          document.dispatchEvent(escapeEvent);
+          // An open modal takes precedence over the form wizard and router.
+          // Exclude unrelated `data-state="open"` controls such as accordions.
+          const openOverlay = Array.from(document.querySelectorAll<HTMLElement>(
+            '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
+          )).find(element => element.getClientRects().length > 0);
 
           if (openOverlay) {
-            // Find and click any close button inside the overlay if Escape didn't unmount it instantly
-            const closeBtn = openOverlay.querySelector<HTMLButtonElement>(
-              'button[aria-label*="Close"], button[aria-label*="Tutup"], button[aria-label*="close"], button.icon-button-soft'
+            const closeButton = openOverlay.querySelector<HTMLButtonElement>(
+              '[data-slot="dialog-close"], button[aria-label*="close" i], button[aria-label*="tutup" i]'
             );
-            if (closeBtn) {
-              closeBtn.click();
+            if (closeButton && !closeButton.disabled) {
+              closeButton.click();
+            } else {
+              // Some custom overlays only register Escape; never navigate
+              // underneath an overlay that is still visible.
+              document.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Escape', code: 'Escape', bubbles: true, cancelable: true,
+              }));
             }
             return;
           }
 
+          // OrderForm can consume the hardware Back for its own step navigation.
+          // There is exactly ONE Capacitor backButton listener in the app.
+          const orderBack = new Event('wawasan:order-step-back', { cancelable: true });
+          document.dispatchEvent(orderBack);
+          if (orderBack.defaultPrevented) return;
+
           // Priority 2 & 3: Check router location and history stack
           const isRootPath = ROOT_PATHS.includes(location.pathname);
 
-          if (isRootPath || !canGoBack) {
+          if (isRootPath) {
             const now = Date.now();
             const timeDiff = now - lastBackPressRef.current;
             
@@ -81,8 +96,11 @@ export function useNativeBackButton() {
                 duration: 2000,
               });
             }
-          } else {
+          } else if (canGoBack) {
             navigate(-1);
+          } else {
+            // Directly launched deep links have no browser history to return to.
+            navigate('/home', { replace: true });
           }
         });
 

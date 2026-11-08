@@ -838,7 +838,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                   setIncludeNotes(true);
                   handleGenerateCombinedInvoice(true);
                 }}
-                className="w-full h-12 bg-[var(--color-sunshine-cta)] text-white rounded-xl text-sm font-bold hover:bg-crisp-carrot transition-colors"
+                className="w-full h-12 bg-[var(--color-sunshine-cta)] text-[var(--ui-on-action)] rounded-xl text-sm font-bold hover:brightness-95 transition-colors"
               >
                 {t('Yes, include Notes', 'Ya, masukkan Nota')}
               </button>

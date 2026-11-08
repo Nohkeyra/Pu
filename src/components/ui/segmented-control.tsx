@@ -73,7 +73,7 @@ export const SegmentedControlItem = React.forwardRef<
         'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
         context.size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-2 text-xs sm:text-sm',
         isSelected
-          ? 'card-happening bg-white dark:bg-[#221c17] text-[var(--color-sunshine-cta)] dark:text-sunshine shadow-xs font-bold'
+          ? 'card-happening bg-white dark:bg-[var(--ui-canvas)] text-[var(--color-sunshine-cta)] dark:text-sunshine shadow-xs font-bold'
           : 'text-[var(--color-text-soft)] hover:text-[var(--color-text)] font-medium',
         className
       )}

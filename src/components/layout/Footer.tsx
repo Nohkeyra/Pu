@@ -35,7 +35,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer ref={footerRef} id="app-footer" className="bg-[#0a1c18] dark:bg-[#0c100e] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
+    <footer ref={footerRef} id="app-footer" className="bg-[var(--ui-canvas)] dark:bg-[var(--ui-canvas)] text-white/90 pt-16 pb-[calc(100px+env(safe-area-inset-bottom,16px))] relative overflow-hidden transition-colors duration-500 border-t border-amber-500/20">
       <motion.div className="landing-footer-batik" aria-hidden="true" style={{ opacity: artworkOpacity, y: artworkY }}>
         <img src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} alt="" draggable={false} />
       </motion.div>
@@ -55,7 +55,7 @@ export default function Footer() {
                 </span>
               </div>
             </Link>
-            <p className="font-body text-white/80 dark:text-[#ede5d8]/85 text-sm max-w-sm leading-relaxed font-normal drop-shadow-sm">
+            <p className="font-body text-white/80 dark:text-[var(--ui-legacy-white)]/85 text-sm max-w-sm leading-relaxed font-normal drop-shadow-sm">
               {bm ? 'Warisan rasa dari Singapura sejak 1986, kini menyajikan hidangan Nusantara di tengah-tengah Putrajaya.' : 'A culinary legacy from Singapore since 1986, now serving authentic Nusantara comfort food in the heart of Putrajaya.'}
             </p>
             <div className="flex gap-4 pt-2">
@@ -64,7 +64,7 @@ export default function Footer() {
                 aria-label="Facebook Restoran Wawasan"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-white/75 hover:bg-[var(--color-sunshine-cta)] hover:text-white transition-all duration-300 border border-white/10 hover:border-[var(--color-sunshine-cta)]"
+                className="w-11 h-11 rounded-full bg-white/5 flex items-center justify-center text-white/75 hover:bg-[var(--color-sunshine-cta)] hover:text-[var(--ui-on-action)] transition-all duration-300 border border-white/10 hover:border-[var(--color-sunshine-cta)]"
               >
                 <Facebook className="w-4 h-4" />
               </a>
@@ -72,13 +72,13 @@ export default function Footer() {
           </div>
 
           <div className="space-y-6">
-            <h4 className="font-display font-semibold text-lg text-white dark:text-[#fbf7ee]">{bm ? 'Terokai' : 'Explore'}</h4>
+            <h4 className="font-display font-semibold text-lg text-white dark:text-[var(--ui-legacy-white)]">{bm ? 'Terokai' : 'Explore'}</h4>
             <ul className="space-y-3">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="inline-flex min-h-[44px] items-center text-white/80 dark:text-[#ede5d8]/80 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] transition-colors text-sm font-medium"
+                    className="inline-flex min-h-[44px] items-center text-white/80 dark:text-[var(--ui-legacy-white)]/80 hover:text-[var(--color-sunshine-cta)] dark:hover:text-[var(--color-sunshine-cta)] transition-colors text-sm font-medium"
                   >
                     {link.label}
                   </a>
@@ -89,7 +89,7 @@ export default function Footer() {
 
         </div>
 
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-normal text-white/60 dark:text-[#ede5d8]/60">
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-normal text-white/60 dark:text-[var(--ui-legacy-white)]/60">
           <p>© {new Date().getFullYear()} Restoran Wawasan Pak Usop. {bm ? 'Hak cipta terpelihara.' : 'All rights reserved.'}</p>
           <div className="flex items-center gap-6">
             <button

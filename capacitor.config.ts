@@ -23,13 +23,13 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       launchAutoHide: false,
       launchFadeOutDuration: 200,
-      backgroundColor: '#0c453c',
+      backgroundColor: '#211A19',
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: true,
       splashImmersive: true,
       androidSpinnerStyle: 'large',
       showSpinner: false,
-      spinnerColor: '#f69913'
+      spinnerColor: '#FFB02E'
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]

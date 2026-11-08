@@ -1,60 +1,72 @@
+/* Wawasan approved four-colour palettes. UI hues must be derived from these tokens.
+   Artwork, photography, PDF content and maps are deliberately independent media. */
 :root {
-  /* Brand */
-  --rw-gold: #C2932D;
-  --rw-gold-deep: #725014;
-  --rw-gold-text: #A67C1E;
-  --rw-charcoal: #1A1816;
-  --rw-cream: #FAF7F1;
-
-  /* Semantic */
-  --color-bg: hsl(var(--background));
-  --wawasan-source-color-surface: hsl(var(--card));
-  --color-surface: var(--wawasan-source-color-surface);
-  --wawasan-source-color-surface-muted: hsl(var(--muted));
-  --color-surface-muted: var(--wawasan-source-color-surface-muted);
-  --wawasan-source-color-text: hsl(var(--foreground));
-  --color-text: var(--wawasan-source-color-text);
-  --wawasan-source-color-text-soft: hsl(var(--muted-foreground));
-  --color-text-soft: var(--wawasan-source-color-text-soft);
-  --wawasan-source-color-text-muted: hsl(var(--muted-foreground));
-  --color-text-muted: var(--wawasan-source-color-text-muted);
-  --wawasan-source-color-accent: var(--color-sunshine-cta);
-  --color-accent: var(--wawasan-source-color-accent);
-  --wawasan-source-color-accent-deep: #725014;
-  --color-accent-deep: var(--wawasan-source-color-accent-deep);
-  --color-border: hsl(var(--border));
-  --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
-
-  /* Status */
-  --color-success: #2E7D4F;
-  --color-success-soft: #E6F2EB;
-  --color-warning: #C2932D;
-  --color-warning-soft: #FBF3E0;
-  --color-danger: #B33A3A;
-  --color-danger-soft: #FBEAEA;
-  --color-error: #B33A3A;
-  --color-error-soft: #FBEAEA;
+  --ui-orange: #FF6B00;
+  --ui-yellow: #FFC247;
+  --ui-green: #268A38;
+  --ui-canvas: #FFF8EC;
+  --ui-ink: rgb(from var(--ui-green) calc(r * .67) calc(g * .67) calc(b * .67));
+  --ui-muted: color-mix(in srgb, var(--ui-ink) 87%, var(--ui-canvas));
+  --ui-surface: color-mix(in srgb, var(--ui-canvas) 94%, var(--ui-yellow));
+  --ui-raised: color-mix(in srgb, var(--ui-canvas) 84%, var(--ui-yellow));
+  --ui-border: color-mix(in srgb, var(--ui-green) 29%, var(--ui-canvas));
+  --ui-action: rgb(from var(--ui-orange) calc(r * .70) calc(g * .70) calc(b * .70));
+  --ui-on-action: var(--ui-canvas);
+  --ui-on-accent: var(--ui-canvas);
+  --ui-on-yellow: var(--ui-ink);
+  --ui-danger: var(--ui-action);
+  --ui-success: var(--ui-green);
+  --ui-shadow-ink: var(--ui-ink);
+  --rw-gold: var(--ui-yellow);
+  --rw-gold-deep: var(--ui-action);
+  --rw-gold-text: var(--ui-ink);
+  --rw-charcoal: var(--ui-ink);
+  --rw-cream: var(--ui-canvas);
+  --color-bg: var(--ui-canvas);
+  --wawasan-source-color-surface: var(--ui-surface);
+  --color-surface: var(--ui-surface);
+  --wawasan-source-color-surface-muted: var(--ui-raised);
+  --color-surface-muted: var(--ui-raised);
+  --wawasan-source-color-text: var(--ui-ink);
+  --color-text: var(--ui-ink);
+  --wawasan-source-color-text-soft: var(--ui-muted);
+  --color-text-soft: var(--ui-muted);
+  --wawasan-source-color-text-muted: var(--ui-muted);
+  --color-text-muted: var(--ui-muted);
+  --wawasan-source-color-accent: var(--ui-action);
+  --color-accent: var(--ui-action);
+  --wawasan-source-color-accent-deep: var(--ui-action);
+  --color-accent-deep: var(--ui-action);
+  --color-border: var(--ui-border);
+  --color-border-strong: var(--ui-green);
+  --color-success: var(--ui-success);
+  --color-success-soft: color-mix(in srgb, var(--ui-green) 12%, var(--ui-canvas));
+  --color-warning: var(--ui-action);
+  --color-warning-soft: color-mix(in srgb, var(--ui-yellow) 22%, var(--ui-canvas));
+  --color-danger: var(--ui-danger);
+  --color-danger-soft: color-mix(in srgb, var(--ui-orange) 13%, var(--ui-canvas));
+  --color-error: var(--ui-danger);
+  --color-error-soft: var(--color-danger-soft);
 }
-
-/* Dark mode */
 .dark {
-  --dark-bg: hsl(var(--background));
-  --dark-surface: hsl(var(--card));
-  --dark-text: hsl(var(--foreground));
-  --dark-border: hsl(var(--border));
-
-  /* Semantic overrides in dark mode */
-  --color-bg: var(--dark-bg);
-  --wawasan-source-color-surface: var(--dark-surface);
-  --color-surface: var(--wawasan-source-color-surface);
-  --wawasan-source-color-surface-muted: hsl(var(--muted));
-  --color-surface-muted: var(--wawasan-source-color-surface-muted);
-  --wawasan-source-color-text: var(--dark-text);
-  --color-text: var(--wawasan-source-color-text);
-  --wawasan-source-color-text-soft: hsl(var(--muted-foreground));
-  --color-text-soft: var(--wawasan-source-color-text-soft);
-  --wawasan-source-color-text-muted: hsl(var(--muted-foreground));
-  --color-text-muted: var(--wawasan-source-color-text-muted);
-  --color-border: var(--dark-border);
-  --color-border-strong: color-mix(in srgb, hsl(var(--foreground)) 22%, hsl(var(--card)));
+  --ui-orange: #E83D20;
+  --ui-yellow: #FFB02E;
+  --ui-green: #186B45;
+  --ui-canvas: #211A19;
+  --ui-ink: var(--ui-yellow);
+  --ui-muted: color-mix(in srgb, var(--ui-ink) 79%, var(--ui-canvas));
+  --ui-surface: color-mix(in srgb, var(--ui-canvas) 91%, var(--ui-yellow));
+  --ui-raised: color-mix(in srgb, var(--ui-canvas) 83%, var(--ui-yellow));
+  --ui-border: color-mix(in srgb, var(--ui-yellow) 30%, var(--ui-canvas));
+  --ui-action: var(--ui-yellow);
+  --ui-on-action: var(--ui-canvas);
+  --ui-on-accent: var(--ui-canvas);
+  --ui-on-yellow: var(--ui-canvas);
+  --ui-danger: color-mix(in srgb, var(--ui-orange) 68%, var(--ui-yellow));
+  --ui-success: var(--ui-green);
+  --ui-shadow-ink: var(--ui-canvas);
+  --color-success-soft: color-mix(in srgb, var(--ui-green) 30%, var(--ui-canvas));
+  --color-warning-soft: color-mix(in srgb, var(--ui-yellow) 16%, var(--ui-canvas));
+  --color-danger-soft: color-mix(in srgb, var(--ui-orange) 26%, var(--ui-canvas));
+  --color-error-soft: var(--color-danger-soft);
 }

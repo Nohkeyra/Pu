@@ -182,10 +182,10 @@ export function CustomerInvoicePreviewModal({
           style={{ transformStyle: 'preserve-3d' }}
         >
           {/* Main Paper Sheet with authentic tactile parchment tone & grain shadow */}
-          <div className="w-full bg-[#fcfaf7] dark:bg-[#181d1a] text-stone-900 dark:text-stone-100 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_0_1px_rgba(212,168,83,0.18)] border border-amber-900/10 dark:border-amber-500/20 overflow-hidden flex flex-col relative">
+          <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] text-stone-900 dark:text-stone-100 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_0_1px_rgba(212,168,83,0.18)] border border-amber-900/10 dark:border-amber-500/20 overflow-hidden flex flex-col relative">
 
             {/* Perforated Top Receipt Edge */}
-            <div className="w-full h-3 bg-[#f3ede4] dark:bg-[#121614] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-b border-stone-300/40 dark:border-stone-700/40">
+            <div className="w-full h-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-b border-stone-300/40 dark:border-stone-700/40">
               <div className="w-full flex justify-between gap-1 overflow-hidden">
                 {Array.from({ length: 40 }).map((_, i) => (
                   <div key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400/30 dark:bg-stone-600/40 shrink-0" />
@@ -205,7 +205,7 @@ export function CustomerInvoicePreviewModal({
               }}
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 border-b border-dashed border-stone-300 dark:border-stone-700/80 relative bg-gradient-to-b from-[#faf6ef] to-[#fcfaf7] dark:from-[#1b221e] dark:to-[#181d1a]"
+              className="p-5 sm:p-7 border-b border-dashed border-stone-300 dark:border-stone-700/80 relative bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)]"
             >
               {/* Subtle Fold Shadow Overlay */}
               <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
@@ -280,7 +280,7 @@ export function CustomerInvoicePreviewModal({
             </motion.div>
 
             {/* Origami Crease Line 1 with subtle 3D ridge */}
-            <div className="relative h-2 w-full bg-[#f5ede0] dark:bg-[#141a17] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
+            <div className="relative h-2 w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
               <div className="w-24 h-0.5 bg-amber-500/20 rounded-full" />
             </div>
 
@@ -296,7 +296,7 @@ export function CustomerInvoicePreviewModal({
               }}
               transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 space-y-5 bg-[#fcfaf7] dark:bg-[#181d1a] relative"
+              className="p-5 sm:p-7 space-y-5 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative"
             >
               {/* Fold Crease Shadow */}
               <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/5 to-transparent pointer-events-none" />
@@ -403,7 +403,7 @@ export function CustomerInvoicePreviewModal({
             </motion.div>
 
             {/* Origami Crease Line 2 with subtle 3D ridge */}
-            <div className="relative h-2 w-full bg-[#f5ede0] dark:bg-[#141a17] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
+            <div className="relative h-2 w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
               <div className="w-24 h-0.5 bg-amber-500/20 rounded-full" />
             </div>
 
@@ -419,7 +419,7 @@ export function CustomerInvoicePreviewModal({
               }}
               transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 bg-gradient-to-b from-[#fcfaf7] to-[#faf6ef] dark:from-[#181d1a] dark:to-[#1b221e] space-y-5 relative"
+              className="p-5 sm:p-7 bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)] space-y-5 relative"
             >
               {/* Grand Total & Bank Payment Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -515,7 +515,7 @@ export function CustomerInvoicePreviewModal({
             </motion.div>
 
             {/* Perforated Bottom Tear Line with Sawtooth */}
-            <div className="w-full h-3 bg-[#f3ede4] dark:bg-[#121614] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-t border-stone-300/40 dark:border-stone-700/40">
+            <div className="w-full h-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-t border-stone-300/40 dark:border-stone-700/40">
               <div className="w-full flex justify-between gap-1 overflow-hidden">
                 {Array.from({ length: 40 }).map((_, i) => (
                   <div key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400/30 dark:bg-stone-600/40 shrink-0" />

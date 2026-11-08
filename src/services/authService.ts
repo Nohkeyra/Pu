@@ -674,18 +674,58 @@ export async function syncRefreshedAdminToken(uid: string, freshToken: string): 
  */
 export async function clearAdminSession(options: { forgetBiometrics?: boolean } = {}): Promise<void> {
   try {
-    const { stopRiderSharing } = await import('./riderTrackingService');
-    await stopRiderSharing();
+    // A native GPS stop failure must not prevent clearing a signed-in session.
+    try {
+      const { stopRiderSharing } = await import('./riderTrackingService');
+      await stopRiderSharing();
+    } catch (stopErr) {
+      console.warn('[AuthService] Rider sharing could not be stopped (continuing logout):', stopErr);
+    }
     const token = await getStoredAdminToken();
     if (token) {
+      // FCM topic memberships survive app sign-out unless explicitly removed.
+      // Unsubscribe while the admin JWT is still valid; revocation happens below.
+      let currentDeviceFcmToken: string | null = null;
       try {
-        await fetch(getApiUrl('/api/admin/logout'), {
+        currentDeviceFcmToken = localStorage.getItem('wawasan_fcm_token');
+      } catch {
+        // Storage may be unavailable; session clearing must still proceed.
+      }
+      if (currentDeviceFcmToken) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        try {
+          const response = await fetch(getApiUrl('/api/admin/unsubscribe-from-topic'), {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: currentDeviceFcmToken, topic: 'new_orders' }),
+            signal: controller.signal,
+          });
+          if (!response.ok) {
+            console.warn('[AuthService] FCM topic unsubscribe rejected:', response.status);
+          }
+        } catch (err) {
+          console.warn('[AuthService] FCM topic unsubscribe failed (non-fatal):', err);
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+      try {
+        const logoutResponse = await fetch(getApiUrl('/api/admin/logout'), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+        if (!logoutResponse.ok) {
+          // Still remove local credentials, but do not silently interpret an
+          // unsuccessful server-side revocation as a successful one.
+          console.warn('[AuthService] Server session revocation rejected:', logoutResponse.status);
+        }
       } catch (logoutErr) {
         console.warn('[AuthService] Server logout endpoint call failed (non-fatal):', logoutErr);
       }

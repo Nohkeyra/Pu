@@ -176,11 +176,11 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md transition-opacity duration-300">
       <div 
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-gold/20 bg-[#0C100E] text-white flex flex-col shadow-2xl"
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-gold/20 bg-[var(--ui-canvas)] text-white flex flex-col shadow-2xl"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gold/10 p-4 bg-[#051F1B]">
+        <div className="flex items-center justify-between border-b border-gold/10 p-4 bg-[var(--ui-green)]">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold border border-gold/20">
               <Terminal className="h-5 w-5 animate-pulse" />
@@ -488,7 +488,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center border-t border-gold/10 p-4 bg-[#051F1B] text-xs text-white/40 font-mono">
+        <div className="flex justify-between items-center border-t border-gold/10 p-4 bg-[var(--ui-green)] text-xs text-white/40 font-mono">
           <span>Engine version: 2.14.0 (Stabilised)</span>
           <span>Malaysian Heritage Food Tech Suite</span>
         </div>

@@ -94,7 +94,7 @@ export function OrderDetailModal({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-5xl max-h-[92vh] bg-[#faf8f5] dark:bg-[#121614] border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-stone-900 dark:text-stone-100"
+        className="w-full max-w-5xl max-h-[92vh] bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-stone-900 dark:text-stone-100"
         onClick={(e) => e.stopPropagation()}
         id="order-detail-dialog-container"
       >
@@ -157,7 +157,7 @@ export function OrderDetailModal({
               
               {/* Main section: All submission fields strictly aligned */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white dark:bg-[#181d1a] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
+                <div className="bg-white dark:bg-[var(--ui-canvas)] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
                   {[
                     { 
                       label: "EVENT DATE :", 
@@ -244,7 +244,7 @@ export function OrderDetailModal({
               <div className="lg:col-span-1 space-y-6">
                 
                 {/* Status Banner */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#181d1a] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[var(--ui-canvas)] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-4">
                   <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Status</span>
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
@@ -285,7 +285,7 @@ export function OrderDetailModal({
                 </div>
 
                 {/* Pricing and Grand Total */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#181d1a] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-5">
+                <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[var(--ui-canvas)] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-5">
                   <h4 className="font-bold text-stone-900 dark:text-white border-b border-stone-100 dark:border-stone-800/80 pb-3 uppercase tracking-wider text-xs">
                     {t('price_pax')}
                   </h4>

@@ -3,6 +3,8 @@ import express from 'express';
 import type { Server } from 'http';
 import authRoutes, { secureCompare } from './authRoutes.js';
 import { signAdminJwt, verifyAdminJwt, verifyAdminToken } from '../adminAuth.js';
+import { getFirestore } from '../firebaseAdmin.js';
+import { FirestoreDistributedStore } from '../distributedRateLimit.js';
 
 describe('Admin Authentication & Security', () => {
   const originalEnv = { ...process.env };
@@ -211,6 +213,58 @@ describe('Admin Authentication & Security', () => {
       const data = await res.json();
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
+    });
+
+    it('POST /api/admin/logout writes a JTI revocation before returning success', async () => {
+      const token = signAdminJwt({ uid: 'revocation_success_admin' });
+      const payload = verifyAdminJwt(token)!;
+      const res = await fetch(`${baseUrl}/api/admin/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(200);
+      expect((await res.json()).success).toBe(true);
+      const record = await getFirestore().collection('admin_revocations').doc(`jti_${payload.jti}`).get();
+      expect(record.exists).toBe(true);
+      expect(record.data()?.uid).toBe('revocation_success_admin');
+    });
+
+    it('POST /api/admin/logout reports failure if Firestore cannot record revocation', async () => {
+      const token = signAdminJwt({ uid: 'revocation_failed_admin' });
+      const db = getFirestore();
+      const originalCollection = db.collection.bind(db);
+      vi.spyOn(db, 'collection').mockImplementation(((path: string) => {
+        if (path === 'admin_revocations') throw new Error('simulated Firestore outage');
+        return originalCollection(path);
+      }) as typeof db.collection);
+
+      const res = await fetch(`${baseUrl}/api/admin/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(503);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).not.toContain('simulated Firestore outage');
+    });
+
+  });
+
+  describe('Distributed rate limit fallback', () => {
+    it('keeps serving local counters when a cached-hit background Firestore lookup throws', async () => {
+      const db = getFirestore();
+      const originalCollection = db.collection.bind(db);
+      vi.spyOn(db, 'collection').mockImplementation(((path: string) => {
+        if (path === 'rate_limits') throw new Error('simulated Firestore outage');
+        return originalCollection(path);
+      }) as typeof db.collection);
+
+      const store = new FirestoreDistributedStore('auth_test_fallback');
+      const first = await store.increment('test-client');
+      const second = await store.increment('test-client');
+      expect(first.totalHits).toBe(1);
+      expect(second.totalHits).toBe(2);
+      expect(second.resetTime.getTime()).toBe(first.resetTime.getTime());
     });
   });
 });

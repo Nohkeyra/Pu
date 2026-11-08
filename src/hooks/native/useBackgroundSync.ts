@@ -6,6 +6,8 @@ import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 
 export function useBackgroundSync() {
   useEffect(() => {
+    let isActive = true;
+
     // 1. Initial warm up of IndexedDB menu cache
     cacheMenuItemsInIndexedDb(DEFAULT_MENU_ITEMS).catch(() => {});
 
@@ -23,7 +25,9 @@ export function useBackgroundSync() {
             });
             return res.ok;
           }
-          return true;
+          // Unsupported or non-handled queue items must NOT be treated as successful or deleted
+          // Offline catering orders must never be auto-submitted without explicit customer confirmation
+          return 'unsupported';
         } catch {
           return false;
         }
@@ -36,17 +40,23 @@ export function useBackgroundSync() {
     // Listen for Capacitor Native network changes
     let networkListenerHandle: { remove: () => void } | null = null;
     Network.addListener('networkStatusChange', (status) => {
+      if (!isActive) return;
       if (status.connected) {
         runSync();
       }
     }).then((handle) => {
-      networkListenerHandle = handle;
+      if (!isActive) {
+        handle.remove();
+      } else {
+        networkListenerHandle = handle;
+      }
     }).catch(() => {});
 
     // Run once on mount if already connected
     runSync();
 
     return () => {
+      isActive = false;
       window.removeEventListener('online', runSync);
       networkListenerHandle?.remove();
     };

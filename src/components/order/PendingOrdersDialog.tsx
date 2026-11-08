@@ -93,12 +93,14 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
       triggerNotification(NotificationType.Error);
       toast({
         title: tText('Still Couldn\'t Send', 'Masih Gagal Dihantar'),
-        description: err instanceof Error && err.message.includes('original account')
-          ? tText('Sign in to the account used for this order, then try again.', 'Log masuk ke akaun asal tempahan ini, kemudian cuba lagi.')
-          : tText(
-              'Connection may still be unstable. It will stay saved — try again shortly.',
-              'Sambungan mungkin masih tidak stabil. Ia akan kekal disimpan — cuba lagi sebentar lagi.'
-            ),
+        description: err instanceof Error && err.message.includes('Verify your email')
+          ? tText('Verify your email address before sending. The order stays saved.', 'Sahkan e-mel sebelum menghantar. Tempahan kekal disimpan.')
+          : err instanceof Error && /Sign in|original account/.test(err.message)
+            ? tText('Sign in to the original account before sending this saved order.', 'Log masuk ke akaun asal sebelum menghantar tempahan tersimpan.')
+            : tText(
+                'Connection may still be unstable. It will stay saved — try again shortly.',
+                'Sambungan mungkin masih tidak stabil. Ia akan kekal disimpan — cuba lagi sebentar lagi.'
+              ),
         variant: 'error',
       });
     }
@@ -167,7 +169,7 @@ export function PendingOrdersDialog({ open, onOpenChange }: PendingOrdersDialogP
                     disabled={status === 'sending' || status === 'sent'}
                     className={cn(
                       'flex-1 min-h-[44px] h-11 rounded-xl text-xs font-bold',
-                      stale ? 'bg-stone/40 hover:bg-stone/50 text-white' : 'bg-crisp-carrot hover:bg-crisp-carrot/90 text-white'
+                      stale ? 'bg-stone/40 hover:bg-stone/50 text-white' : 'bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)]'
                     )}
                   >
                     {status === 'sending' ? (

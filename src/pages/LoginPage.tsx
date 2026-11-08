@@ -10,6 +10,7 @@ import { Batik3DMotion } from '../components/brand/Batik3DMotion';
 import { getAssetUrl } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { checkBiometricAvailability, isCustomerBiometricsEnabledOnDevice } from '../services/authService';
+import { Capacitor } from '@capacitor/core';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cream px-6 py-10 dark:bg-background">
+    <div className="wawasan-login-shell relative flex min-h-screen items-center justify-center overflow-hidden bg-cream px-6 py-10 dark:bg-background">
       <header className="absolute left-0 right-0 top-0 z-50 pt-[var(--sat)]">
         <div className="content-container flex h-[76px] items-center justify-between">
           <Button
@@ -92,7 +93,7 @@ export default function LoginPage() {
 
       <div className="absolute inset-0">
         <Batik3DMotion mode="img" src={getAssetUrl('/assets/heritage/batik_vector_pattern.jpg')} imgClassName="opacity-35 contrast-[1.12] saturate-[1.18] dark:opacity-28 dark:brightness-105" maxRotation={10} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.70),rgba(255,255,255,0.40))] dark:bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(12,69,60,0.95),rgba(12,69,60,0.80),rgba(12,69,60,0.55))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(255,255,255,0.95),rgba(255,255,255,0.70),rgba(255,255,255,0.40))] dark:bg-[radial-gradient(circle_at_top,rgba(246,153,19,0.12),transparent_35%),linear-gradient(to_top,rgba(25,19,16,0.95),rgba(25,19,16,0.80),rgba(25,19,16,0.62))]" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -136,7 +137,7 @@ export default function LoginPage() {
                     variant="primary"
                     size="lg"
                     onClick={handleQuickBiometricLogin}
-                    className="w-full rounded-2xl min-h-[56px] shadow-lg gap-3 text-base font-bold bg-emerald-700 hover:bg-emerald-800 border-emerald-600/30"
+                    className="w-full rounded-2xl min-h-[56px] shadow-lg gap-3 text-base font-bold bg-[var(--color-sunshine-cta)] hover:brightness-95 border-[var(--color-sunshine-cta)]/30"
                   >
                     <Fingerprint className="h-6 w-6 text-amber-300 animate-pulse" />
                     {tLocal('Sign In with Biometrics', 'Log Masuk dengan Biometrik')}
@@ -149,7 +150,7 @@ export default function LoginPage() {
                   onClick={() => {
                     if (auth.currentUser) {
                       sessionStorage.setItem('wawasan_session_started', 'true');
-                      navigate('/home');
+                      navigate('/app');
                     } else {
                       setAuthOpen(true);
                     }
@@ -165,26 +166,24 @@ export default function LoginPage() {
                   size="lg"
                   onClick={() => {
                     sessionStorage.setItem('wawasan_session_started', 'true');
-                    sessionStorage.setItem('wawasan_guest_allowed', 'true');
                     navigate('/order');
                   }}
                   className="w-full rounded-2xl min-h-[52px] gap-3 text-base font-semibold"
                 >
                   <ShoppingBag className="h-5 w-5 text-[var(--color-sunshine-cta)]" />
-                  {tLocal('Order as Guest', 'Pesan Sebagai Tetamu')}
+                  {tLocal('Prepare a Draft', 'Sediakan Draf')}
                 </Button>
 
                 <Button
                   variant="ghost"
                   onClick={() => {
                     sessionStorage.setItem('wawasan_session_started', 'true');
-                    sessionStorage.setItem('wawasan_guest_allowed', 'true');
-                    navigate('/home', { replace: true });
+                    navigate(Capacitor.isNativePlatform() ? '/order' : '/', { replace: true });
                   }}
                   className="w-full rounded-2xl min-h-[44px] gap-2 text-sm"
                 >
                   <Compass className="h-4.5 w-4.5 text-[var(--color-sunshine-cta)]" />
-                  {tLocal('Explore menu & story', 'Teroka menu & cerita')}
+                  {tLocal('Explore dishes & prepare a draft', 'Teroka hidangan & sediakan draf')}
                 </Button>
               </div>
             </div>
@@ -197,7 +196,7 @@ export default function LoginPage() {
         onClose={() => setAuthOpen(false)}
         onSuccess={() => {
           sessionStorage.setItem('wawasan_session_started', 'true');
-          navigate('/home', { replace: true });
+          navigate('/app', { replace: true });
         }}
       />
     </div>

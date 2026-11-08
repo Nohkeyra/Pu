@@ -185,7 +185,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
   }
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[220px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
+    <div className="wawasan-admin-shell min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[220px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
       <motion.div 
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
         animate={{ 
@@ -211,7 +211,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         getApiUrl={getApiUrl}
       />
  
-      <nav className="[grid-area:nav] p-3 sm:p-4 lg:p-5 bg-stone-50/90 dark:bg-stone-900/40 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
+      <nav aria-label={language === 'bm' ? 'Navigasi pentadbiran' : 'Admin navigation'} className="wawasan-admin-sidebar [grid-area:nav] p-3 sm:p-4 lg:p-5 bg-stone-50/90 dark:bg-stone-900/40 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <Batik3DMotion maxRotation={10} imgClassName="opacity-[0.06] dark:opacity-[0.1]" mode="background" />
         </div>
@@ -235,7 +235,7 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
                   onClick={tab.onClick}
                   className={`px-3.5 py-2.5 font-bold text-xs flex items-center gap-2.5 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 cursor-pointer select-none ${
                     isActive 
-                      ? 'bg-[var(--color-sunshine-cta)] text-white shadow-md scale-[1.01]' 
+                      ? 'bg-[var(--color-sunshine-cta)] text-[var(--ui-on-action)] shadow-md scale-[1.01]' 
                       : 'text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5'
                   }`}
                 >
@@ -249,8 +249,8 @@ export default function AdminPanel({ adminToken, onLogout }: { adminToken?: stri
         </div>
       </nav>
 
-      <motion.main className="[grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
-        <div className="mb-6">
+      <motion.main className="wawasan-admin-content [grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
+        <div className="wawasan-admin-heading mb-6">
           <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-1 tracking-tight">
             {activeTab === 'orders' ? t('orders') : activeTab === 'menu' ? (language === 'en' ? 'Menu Manager' : 'Pengurus Menu') : (language === 'en' ? 'Submissions' : 'Senarai Permohonan')}
           </h1>

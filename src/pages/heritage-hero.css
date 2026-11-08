@@ -6,28 +6,28 @@
   --heritage-hero-ink: var(--landing-ink);
   --heritage-hero-muted: var(--landing-muted);
   --heritage-art-opacity: 0.40;
-  --heritage-overlay: rgba(255, 246, 228, 0.18);
-  --heritage-description-bg: rgba(255, 253, 250, 0.88);
-  --heritage-description-border: rgba(112, 75, 48, 0.24);
+  --heritage-overlay: color-mix(in srgb, var(--ui-legacy-white) 18.0%, transparent);
+  --heritage-description-bg: color-mix(in srgb, var(--ui-legacy-white) 88.0%, transparent);
+  --heritage-description-border: color-mix(in srgb, var(--ui-orange) 24.0%, transparent);
   --heritage-secondary-bg: var(--landing-surface);
   --heritage-secondary-border: var(--landing-line);
   --heritage-secondary-ink: var(--landing-ink);
-  --heritage-header-control-bg: rgba(255, 253, 250, 0.74);
-  --heritage-header-control-border: rgba(112, 75, 48, 0.4);
+  --heritage-header-control-bg: color-mix(in srgb, var(--ui-legacy-white) 74.0%, transparent);
+  --heritage-header-control-border: color-mix(in srgb, var(--ui-orange) 40.0%, transparent);
 }
 .dark .landing-page {
   --heritage-hero-bg: var(--landing-canvas);
   --heritage-hero-ink: var(--landing-ink);
-  --heritage-hero-muted: #e8dfcf;
+  --heritage-hero-muted: var(--ui-legacy-white);
   --heritage-art-opacity: 0.30;
-  --heritage-overlay: rgba(25, 22, 18, 0.15);
-  --heritage-description-bg: rgba(36, 31, 25, 0.88);
-  --heritage-description-border: rgba(255, 246, 228, 0.16);
+  --heritage-overlay: color-mix(in srgb, var(--ui-ink) 15.0%, transparent);
+  --heritage-description-bg: color-mix(in srgb, var(--ui-ink) 88.0%, transparent);
+  --heritage-description-border: color-mix(in srgb, var(--ui-border) 16.0%, transparent);
   --heritage-secondary-bg: var(--landing-surface);
-  --heritage-secondary-border: rgba(255, 246, 228, 0.35);
+  --heritage-secondary-border: color-mix(in srgb, var(--ui-border) 35.0%, transparent);
   --heritage-secondary-ink: var(--landing-ink);
-  --heritage-header-control-bg: rgba(36, 31, 25, 0.76);
-  --heritage-header-control-border: rgba(255, 246, 228, 0.64);
+  --heritage-header-control-bg: color-mix(in srgb, var(--ui-ink) 76.0%, transparent);
+  --heritage-header-control-border: color-mix(in srgb, var(--ui-border) 64.0%, transparent);
 }
 .landing-page .landing-hero.heritage-hero {
   position: relative;
@@ -166,7 +166,7 @@
 }
 
 .landing-page .heritage-hero-action-primary {
-  color: #191612;
+  color: var(--ui-on-action);
   background: var(--landing-accent);
   border: 1px solid var(--landing-accent);
 }

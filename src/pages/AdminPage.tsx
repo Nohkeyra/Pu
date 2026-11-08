@@ -86,7 +86,7 @@ export default function AdminPage() {
 
   if (!isAuthenticated || !adminToken) {
     return (
-      <div className="min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col items-center justify-center relative p-4">
+      <div className="wawasan-login-shell min-h-screen bg-cream dark:bg-background pattern-dots flex flex-col items-center justify-center relative p-4">
         <Card className="panel-surface p-8 max-w-md w-full text-center space-y-6 z-10 shadow-xl rounded-2xl border border-amber-500/20">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-[var(--color-sunshine-cta)] mx-auto flex items-center justify-center border border-amber-500/20 shadow-inner">
             <Lock className="w-8 h-8" />
@@ -111,7 +111,7 @@ export default function AdminPage() {
                 type="button"
                 onClick={handleBiometricUnlock}
                 disabled={isBiometricLoading}
-                className="w-full h-12 bg-emerald-700 hover:bg-emerald-800 text-white font-medium flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
+                className="w-full h-12 bg-[var(--color-sunshine-cta)] hover:brightness-95 text-[var(--ui-on-action)] font-medium flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
               >
                 {isBiometricLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -126,7 +126,7 @@ export default function AdminPage() {
 
             <Button 
               onClick={() => setAuthOpen(true)} 
-              className="w-full bg-[var(--color-sunshine-cta)] text-white hover:opacity-90 font-medium h-11"
+              className="w-full bg-[var(--color-sunshine-cta)] text-[var(--ui-on-action)] hover:opacity-90 font-medium h-11"
             >
               {t('Log In with Password', 'Log Masuk dengan Kata Laluan')}
             </Button>

@@ -32,7 +32,7 @@ export function ErrorState({
       role="alert"
     >
       <AlertTriangle className="w-9 h-9 text-rose-500 mb-3" aria-hidden />
-      <h3 className="text-base font-display font-bold text-deep-forest dark:text-[#ede5d8]">
+      <h3 className="text-base font-display font-bold text-deep-forest dark:text-[var(--ui-legacy-white)]">
         {title}
       </h3>
       {description && (

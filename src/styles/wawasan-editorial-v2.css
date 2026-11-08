@@ -1,0 +1,449 @@
+/* Wawasan Pop-Out Editorial 2.0 | shared visual layer
+   Source: v4 React components, tokens and heritage assets; business logic unchanged.
+   Living Paper retains its own original animation stylesheet. */
+:root {
+  --wx-ink: var(--ui-ink);
+  --wx-muted: var(--ui-ink);
+  --wx-canvas: var(--ui-surface);
+  --wx-paper: var(--ui-surface);
+  --wx-paper-2: var(--ui-orange);
+  --wx-hot: var(--ui-action);
+  --wx-gold: var(--ui-yellow);
+  --wx-line: var(--ui-orange);
+  --wx-outline: color-mix(in srgb, var(--ui-orange) 18.0%, transparent);
+  --wx-shadow: 0 20px 40px -24px color-mix(in srgb, var(--ui-shadow-ink) 38.0%, transparent), 0 4px 14px color-mix(in srgb, var(--ui-shadow-ink) 8.0%, transparent);
+  --wx-shadow-raised: 8px 10px 0 -2px color-mix(in srgb, var(--ui-shadow-ink) 11.0%, transparent), 0 25px 46px -26px color-mix(in srgb, var(--ui-shadow-ink) 40.0%, transparent);
+  --wx-radius: 26px;
+  /* Legacy utility aliases remain functional while inheriting the new art direction. */
+  --wawasan-source-color-cream: var(--ui-legacy-white);
+  --wawasan-source-color-deep-forest: var(--ui-ink);
+  --wawasan-source-color-deep-forest-accent: var(--ui-action);
+  --wawasan-source-color-sunshine-cta: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-bg: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-hover: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-press: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-fg: var(--ui-legacy-white);
+  --wawasan-source-color-sunshine: var(--ui-yellow);
+  --wawasan-source-color-honey: var(--ui-yellow);
+  --wawasan-source-color-on-sunshine: var(--ui-ink);
+  --rw-gold: var(--ui-yellow);
+  --rw-gold-deep: var(--ui-orange);
+  --rw-charcoal: var(--ui-ink);
+  --rw-cream: var(--ui-legacy-white);
+  --background: 38 100% 96%;
+  --foreground: 16 30% 17%;
+  --card: 40 100% 99%;
+  --card-foreground: 16 30% 17%;
+  --popover: 40 100% 99%;
+  --popover-foreground: 16 30% 17%;
+  --secondary: 35 62% 92%;
+  --secondary-foreground: 16 30% 17%;
+  --muted: 37 48% 93%;
+  --muted-foreground: 18 20% 34%;
+  --border: 31 42% 79%;
+  --input: 31 42% 79%;
+  --ring: 17 68% 39%;
+  --color-header-bg: color-mix(in srgb, var(--ui-surface) 95.0%, transparent);
+  --color-header-border: color-mix(in srgb, var(--ui-orange) 12.0%, transparent);
+  --color-card-bg: var(--ui-surface);
+  --color-card-border: color-mix(in srgb, var(--ui-orange) 14.0%, transparent);
+  --color-input-bg: var(--ui-surface);
+  --color-input-text: var(--ui-ink);
+  --color-input-border: var(--ui-orange);
+}
+.dark {
+  --wx-ink: var(--ui-yellow);
+  --wx-muted: var(--ui-orange);
+  --wx-canvas: var(--ui-canvas);
+  --wx-paper: var(--ui-canvas);
+  --wx-paper-2: var(--ui-canvas);
+  --wx-hot: var(--ui-action);
+  --wx-gold: var(--ui-orange);
+  --wx-line: var(--ui-orange);
+  --wx-outline: color-mix(in srgb, var(--ui-orange) 16.0%, transparent);
+  --wx-shadow: 0 24px 42px -22px color-mix(in srgb, var(--ui-shadow-ink) 60.0%, transparent), 0 5px 16px color-mix(in srgb, var(--ui-shadow-ink) 22.0%, transparent);
+  --wx-shadow-raised: 8px 10px 0 -2px color-mix(in srgb, var(--ui-shadow-ink) 7.0%, transparent), 0 26px 50px -26px color-mix(in srgb, var(--ui-shadow-ink) 65.0%, transparent);
+  --wawasan-source-color-cream: var(--ui-ink);
+  --wawasan-source-color-deep-forest: var(--ui-yellow);
+  --wawasan-source-color-deep-forest-accent: var(--ui-action);
+  --wawasan-source-color-sunshine-cta: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-bg: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-hover: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-press: var(--ui-orange);
+  --wawasan-source-color-sunshine-cta-fg: var(--ui-legacy-white);
+  --wawasan-source-color-sunshine: var(--ui-orange);
+  --wawasan-source-color-honey: var(--ui-orange);
+  --wawasan-source-color-on-sunshine: var(--ui-ink);
+  --rw-charcoal: var(--ui-ink);
+  --rw-cream: var(--ui-ink);
+  --background: 17 21% 8%;
+  --foreground: 37 80% 93%;
+  --card: 21 19% 15%;
+  --card-foreground: 37 80% 93%;
+  --popover: 21 19% 15%;
+  --popover-foreground: 37 80% 93%;
+  --secondary: 20 20% 20%;
+  --secondary-foreground: 37 80% 93%;
+  --muted: 21 17% 20%;
+  --muted-foreground: 33 26% 78%;
+  --border: 25 22% 31%;
+  --input: 25 22% 31%;
+  --ring: 35 100% 67%;
+  --color-header-bg: color-mix(in srgb, var(--ui-canvas) 94.0%, transparent);
+  --color-header-border: color-mix(in srgb, var(--ui-orange) 12.0%, transparent);
+  --color-card-bg: var(--ui-canvas);
+  --color-card-border: color-mix(in srgb, var(--ui-orange) 12.0%, transparent);
+  --color-input-bg: var(--ui-canvas);
+  --color-input-text: var(--ui-yellow);
+  --color-input-border: var(--ui-orange);
+}
+
+/* Shared typography, depth and interactive language */
+body { background: var(--wx-canvas); color: var(--wx-ink); }
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) { color: var(--wx-ink); }
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) :is(h1,h2,h3) { text-wrap: balance; }
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) :is(button,a,input,select,textarea,[role='tab']):focus-visible {
+  outline: 3px solid var(--wx-hot);
+  outline-offset: 3px;
+}
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) button:not(:disabled):active { transform: translateY(1px); }
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) input,
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) select,
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) textarea { accent-color: var(--ui-orange); }
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) [data-slot='card'],
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) .panel-surface {
+  border-color: var(--wx-outline);
+  box-shadow: var(--wx-shadow);
+}
+:where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) [data-slot='dialog-content'] { border: 1px solid var(--wx-line); border-radius: var(--wx-radius); }
+
+/* One navigation dock in all five screens, including Admin. */
+.wawasan-navigation-dock { padding: 0 12px 7px; }
+.wawasan-navigation-dock .wawasan-bottom-nav,
+body:has(.living-canvas-v31) .wawasan-navigation-dock .wawasan-bottom-nav {
+  --nav-surface: var(--wx-paper);
+  --nav-line: var(--wx-line);
+  width: min(100%, 610px);
+  border: 1px solid var(--wx-line);
+  border-radius: 27px;
+  box-shadow: 0 14px 42px color-mix(in srgb, var(--ui-shadow-ink) 19.0%, transparent), 0 -4px 16px color-mix(in srgb, var(--ui-shadow-ink) 6.0%, transparent);
+  overflow: hidden;
+}
+.dark .wawasan-navigation-dock .wawasan-bottom-nav { --nav-surface: var(--wx-paper); --nav-line: var(--wx-line); box-shadow: 0 12px 42px color-mix(in srgb, var(--ui-shadow-ink) 45.0%, transparent); }
+.wawasan-navigation-dock .wawasan-bottom-nav nav { height: 66px; }
+.wawasan-navigation-dock .wawasan-bottom-nav nav button { border-radius: 17px; }
+.wawasan-navigation-dock .wawasan-bottom-nav nav button[aria-current='page'] { color: var(--wx-hot); }
+.wawasan-navigation-dock .wawasan-bottom-nav .nav-label { letter-spacing: -.01em; font-weight: 750; }
+.wawasan-navigation-dock .wawasan-bottom-nav nav button[aria-current='page'] .nav-label { color: var(--wx-hot); }
+.wawasan-navigation-dock .wawasan-bottom-nav nav button[aria-current='page'] > div > div:first-child { border-color: var(--wx-line); }
+
+/* Customer pages share one header geometry and family of paper surfaces. */
+.customer-page.customer-page {
+  --customer-canvas: var(--wx-canvas);
+  --customer-surface: var(--wx-paper);
+  --customer-soft: var(--wx-paper-2);
+  --customer-line: var(--wx-line);
+  --customer-ink: var(--wx-ink);
+  --customer-muted: var(--wx-muted);
+  --customer-accent: var(--wx-hot);
+  --customer-selected: color-mix(in srgb, var(--wx-paper-2) 78%, var(--wx-gold));
+  background: var(--customer-canvas);
+}
+.customer-page::before { opacity: .07; background-position: 50% 0; }
+.dark .customer-page::before { opacity: .10; }
+.customer-page-header {
+  background: color-mix(in srgb, var(--wx-canvas) 94%, transparent);
+  border-bottom: 1px solid var(--wx-line);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ui-shadow-ink) 5.5%, transparent);
+}
+.customer-page .customer-header-frame { max-width: 1152px; }
+.customer-page .customer-brand-name { font-family: var(--font-artistic); font-weight: 400; letter-spacing: -.02em; }
+.customer-page .customer-brand-caption { color: var(--wx-hot); letter-spacing: .22em; }
+.customer-page .customer-theme-toggle { background: var(--wx-paper); border-color: var(--wx-line); box-shadow: 0 3px 0 var(--wx-outline); }
+.customer-page .customer-header-icon { border-radius: 15px; }
+.customer-page .customer-content { max-width: 1152px; }
+.customer-page .customer-form-panel,
+.customer-page .customer-calendar-panel,
+.customer-page .customer-profile-access,
+.customer-page .settings-section-card {
+  background: var(--wx-paper);
+  border: 1px solid var(--wx-line);
+  border-radius: clamp(22px, 3vw, 30px);
+  box-shadow: var(--wx-shadow);
+}
+.customer-page .customer-order-progress {
+  border: 1px solid var(--wx-line);
+  border-radius: 22px;
+  padding: 18px clamp(16px, 3vw, 25px);
+  background: var(--wx-paper);
+  box-shadow: var(--wx-shadow);
+}
+.customer-page .customer-progress-track { gap: 6px; margin-top: 13px; }
+.customer-page .customer-progress-track span { height: 7px; background: var(--wx-paper-2); }
+.customer-page .customer-progress-track span[data-complete='true'] { background: linear-gradient(95deg, var(--ui-orange), var(--ui-yellow)); box-shadow: 0 3px 8px color-mix(in srgb, var(--ui-shadow-ink) 20.0%, transparent); }
+.customer-page .customer-step-heading h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 850; letter-spacing: -.04em; }
+.customer-page .customer-step-one .customer-choice {
+  border-radius: 19px;
+  border-color: var(--wx-line);
+  background: var(--wx-paper);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--ui-shadow-ink) 5.0%, transparent);
+}
+.customer-page .customer-step-one .customer-choice[aria-checked='true'],
+.customer-page .customer-step-one .customer-choice[aria-pressed='true'] {
+  border-color: var(--wx-hot);
+  background: var(--customer-selected);
+  box-shadow: inset 0 0 0 1px var(--wx-hot), 0 5px 0 color-mix(in srgb, var(--ui-shadow-ink) 13.0%, transparent);
+}
+.customer-page .customer-choice-title { color: var(--wx-ink); }
+.customer-page .customer-next-button { background: var(--ui-action); color: var(--ui-on-action); border-radius: 16px; box-shadow: 0 5px 0 var(--ui-shadow-ink), 0 12px 24px color-mix(in srgb, var(--ui-shadow-ink) 16.0%, transparent); }
+.customer-page .customer-next-button:hover { background: var(--ui-action); box-shadow: 0 4px 0 var(--ui-shadow-ink), 0 12px 24px color-mix(in srgb, var(--ui-shadow-ink) 24.0%, transparent); }
+.customer-page .settings-row-copy>div:first-child { border-radius: 15px; background: var(--wx-paper-2); }
+.customer-page .settings-row-title { font-weight: 750; }
+.customer-page .settings-section>h2 { color: var(--wx-hot); font-weight: 850; letter-spacing: .1em; }
+.customer-page .customer-settings-tabs { background: var(--wx-paper-2); border: 1px solid var(--wx-line); padding: 6px; border-radius: 19px; }
+.customer-page .customer-settings-tabs button[aria-current='true'] { background: var(--wx-paper); color: var(--wx-hot); border-radius: 15px; }
+.customer-page .customer-calendar-month-title { font-weight: 850; letter-spacing: -.04em; }
+.customer-page .customer-calendar-day[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--wx-hot), 0 4px 12px color-mix(in srgb, var(--ui-shadow-ink) 13.0%, transparent); }
+.customer-page .customer-profile-symbol { background: var(--wx-paper-2); border-color: var(--wx-line); border-radius: 18px; }
+.customer-page .customer-profile-access-title { font-weight: 850; }
+
+/* Landing: expressive full-screen paper composition without covering CTA. */
+.landing-page.living-canvas-v31.living-canvas-v31 {
+  --landing-canvas: var(--wx-canvas);
+  --landing-surface: var(--wx-paper);
+  --landing-soft: var(--wx-paper-2);
+  --landing-ink: var(--wx-ink);
+  --landing-muted: var(--wx-muted);
+  --landing-line: var(--wx-line);
+  --landing-accent: var(--wx-hot);
+  background: var(--wx-canvas);
+}
+.landing-page #app-header { color: var(--wx-ink); }
+.landing-page #app-header .brand-title,
+.landing-page #app-header .font-artistic { font-family: var(--font-artistic); }
+.landing-page #app-header .icon-button-soft { border-radius: 15px; border-color: var(--wx-line); background: var(--wx-paper); }
+.landing-page #app-header:not(.topbar-shell) > .content-container > a .font-artistic { color:var(--wx-ink); text-shadow:none; filter:none; }
+.landing-page #app-header:not(.topbar-shell) > .content-container > a .font-accent { color:var(--wx-hot); text-shadow:none; }
+.landing-page #app-header:not(.topbar-shell) button { color:var(--wx-ink); background:color-mix(in srgb,var(--wx-paper) 88%,transparent); border-color:var(--wx-line); text-shadow:none; }
+
+.landing-page .landing-hero.heritage-hero,
+.landing-page.living-canvas-v31 .landing-hero.heritage-hero {
+  min-height: min(910px, 100dvh);
+  padding: calc(112px + var(--sat,0px)) 0 clamp(52px, 7vw, 92px);
+  background: radial-gradient(ellipse at 83% 45%, color-mix(in srgb, var(--wx-gold) 23%, transparent), transparent 49%), var(--wx-canvas);
+}
+.landing-page.living-canvas-v31 .heritage-hero-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 48%);
+  align-content: center;
+  align-items: center;
+  column-gap: clamp(10px, 2vw, 42px);
+  max-width: 1280px;
+  padding: clamp(25px, 3vw, 48px);
+  text-align: left;
+}
+.landing-page.living-canvas-v31 .heritage-hero-content::before { grid-column: 1; align-self: end; justify-self: start; margin: 0 0 18px; font-size: .65rem; color: var(--ui-action); }
+.landing-page.living-canvas-v31 .heritage-hero-title {
+  grid-column: 1;
+  max-width: 10ch;
+  font-family: var(--font-artistic);
+  font-weight: 400;
+  text-transform: none;
+  font-size: clamp(3.2rem, 6.1vw, 6.9rem);
+  letter-spacing: -.048em;
+  line-height: 1.08;
+  text-shadow: 3px 4px 0 color-mix(in srgb, var(--ui-shadow-ink) 22.0%, transparent);
+  margin-bottom: 19px;
+}
+.landing-page.living-canvas-v31 .heritage-hero-description { grid-column: 1; max-width: 48ch; color: var(--wx-muted); line-height: 1.75; margin-bottom: 23px; }
+.landing-page.living-canvas-v31 .heritage-hero-actions { grid-column: 1; justify-content: flex-start; gap: 12px; }
+.landing-page.living-canvas-v31 .heritage-hero-action { min-width: 0; border-radius: 18px; box-shadow: 4px 5px 0 color-mix(in srgb, var(--ui-shadow-ink) 17.0%, transparent); }
+.landing-page.living-canvas-v31 .heritage-hero-action-primary { background: var(--ui-action); color: var(--ui-on-action); border-color: var(--ui-action); }
+.landing-page.living-canvas-v31 .heritage-hero-action-secondary { background: var(--wx-paper); color: var(--wx-ink); border-color: var(--wx-line); }
+.landing-page.living-canvas-v31 .heritage-hero-scroll-hint { grid-column: 1; justify-self: start; align-self: start; margin-top: 28px; }
+.landing-page .heritage-hero-batik-image { opacity: .2; }
+.landing-page .heritage-hero-vignette { opacity: .35; }
+.landing-page .heritage-hero-shading { opacity: .12; }
+.wawasan-hero-paper {
+  position: relative;
+  grid-column: 2; grid-row: 1 / span 5;
+  width: 100%;
+  aspect-ratio: 1 / 1.07;
+  align-self: center;
+  isolation: isolate;
+  pointer-events: none;
+  overflow: visible;
+}
+.wawasan-hero-paper__halo { position:absolute; inset:8% 4% 8% 4%; border-radius:44% 56% 54% 46%; transform:rotate(-16deg); background:linear-gradient(140deg,var(--ui-yellow),var(--ui-orange)); box-shadow:inset 9px 12px 0 color-mix(in srgb, var(--ui-shadow-ink) 32.0%, transparent), 13px 18px 0 color-mix(in srgb, var(--ui-shadow-ink) 14.0%, transparent),0 30px 45px color-mix(in srgb, var(--ui-shadow-ink) 12.0%, transparent); }
+.dark .wawasan-hero-paper__halo { background:linear-gradient(140deg,var(--ui-orange),var(--ui-yellow)); box-shadow:inset 9px 12px 0 color-mix(in srgb, var(--ui-shadow-ink) 15.0%, transparent),13px 18px 0 color-mix(in srgb, var(--ui-shadow-ink) 8.0%, transparent),0 35px 65px color-mix(in srgb, var(--ui-shadow-ink) 35.0%, transparent); }
+.wawasan-hero-paper__sun { position:absolute; width:23%; aspect-ratio:1; border-radius:50%; background:var(--ui-yellow); top:2%; left:0; box-shadow:5px 7px 0 var(--ui-shadow-ink); }
+.wawasan-hero-paper__sheet { position:absolute; border-radius:22px 22px 13px 22px; box-shadow:7px 8px 0 color-mix(in srgb, var(--ui-shadow-ink) 16.0%, transparent); }
+.wawasan-hero-paper__sheet--back { width:28%; height:24%; right:6%; top:8%; background:var(--ui-yellow); transform:rotate(15deg); }
+.wawasan-hero-paper__sheet--front { width:20%; height:20%; left:0; bottom:11%; background:var(--ui-orange); transform:rotate(-17deg); }
+.wawasan-hero-paper__meal { position:absolute; z-index:2; top:2%; left:-5%; width:110%; height:98%; object-fit:contain; filter:drop-shadow(0 26px 21px color-mix(in srgb, var(--ui-shadow-ink) 27.0%, transparent)); animation:wx-meal-bob 5.8s ease-in-out infinite; }
+.wawasan-hero-paper__seal { position:absolute; z-index:3; top:9%; right:-2%; display:flex; flex-direction:column; border:1px solid var(--ui-orange); background:var(--ui-yellow); color:var(--ui-action); padding:12px 15px; font-size:clamp(11px,1.2vw,15px); font-weight:950; line-height:1.1; letter-spacing:.09em; border-radius:50%; width:clamp(82px,10vw,122px); aspect-ratio:1; justify-content:center; text-align:center; transform:rotate(13deg); box-shadow:4px 5px 0 var(--ui-shadow-ink); }
+.wawasan-hero-paper__seal strong { font-size:.55em; margin-top:5px; }
+.wawasan-hero-paper__ribbon { position:absolute; z-index:3; left:-2%; bottom:5%; background:var(--ui-action); color:var(--ui-on-action); padding:12px 19px; transform:rotate(-8deg); border-radius:9px 9px 4px 9px; font-size:clamp(11px,1.15vw,14px); font-weight:850; letter-spacing:.02em; box-shadow:5px 5px 0 var(--ui-shadow-ink); }
+.wawasan-hero-paper__star { position:absolute; z-index:3; color:var(--ui-orange); font-size:clamp(30px,5vw,70px); text-shadow:2px 3px 0 var(--ui-shadow-ink); }
+.wawasan-hero-paper__star--top { right:9%; top:-2%; }
+.wawasan-hero-paper__star--bottom { left:12%; bottom:-2%; }
+@keyframes wx-meal-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform:translateY(-13px) rotate(1deg); } }
+/* Rich, consistent marketing sections; do not change internal menu behavior. */
+.landing-page .landing-section-title, .landing-page .section-title-artistic { font-weight:850; letter-spacing:-.04em; color:var(--wx-ink); }
+.landing-page .landing-highlights-grid { gap:clamp(12px,2vw,22px); }
+.landing-page .landing-highlight { background:var(--wx-paper); border:1px solid var(--wx-line); border-radius:24px 24px 12px 24px; box-shadow:var(--wx-shadow-raised); }
+.landing-page .landing-menu-card { border-radius:24px; background:var(--wx-paper); border:1px solid var(--wx-line); box-shadow:var(--wx-shadow); overflow:hidden; }
+.landing-page .landing-menu-card:hover { transform: translateY(-4px); box-shadow:var(--wx-shadow-raised); }
+.landing-page .landing-menu-categories button[aria-pressed='true'] { background:var(--ui-action); color:var(--ui-on-action); border-color:var(--ui-action); }
+.landing-page .landing-menu-search { background:var(--wx-paper); border-color:var(--wx-line); }
+.landing-page #experience .principle-card, .landing-page #reviews .review-card { border:1px solid var(--wx-line); border-radius:24px; background:var(--wx-paper); box-shadow:var(--wx-shadow); }
+.landing-page #visit a[href^='https://maps'] { border-radius:16px; }
+
+/* The Order scene keeps its own state-driven V3 animation rules.
+   These visual tokens harmonize it with the remaining customer screens. */
+.lc-order-experience .lc-paper-wrap { max-width: 1100px; }
+.lc-order-experience .lc-paper-scene { border-radius: 29px 29px 12px 29px; box-shadow: var(--wx-shadow-raised); }
+.lc-order-experience .lc-paper-action { border-radius: 15px; }
+.lc-order-experience .lc-paper-copy h2 { font-weight: 900; letter-spacing: -.055em; }
+.lc-order-experience .lc-paper-journey { font-weight: 850; }
+
+/* Admin: operator-first, stronger visual hierarchy but no loss of table density. */
+.wawasan-admin-shell { background:var(--wx-canvas); color:var(--wx-ink); }
+.wawasan-admin-shell > nav { background:color-mix(in srgb,var(--wx-paper) 94%,transparent); border-color:var(--wx-line); }
+.wawasan-admin-shell .app-admin-tabs { background:var(--wx-paper-2); border-color:var(--wx-line); border-radius:21px; padding:6px; }
+.wawasan-admin-shell .app-admin-tabs>button { border-radius:15px; color:var(--wx-muted); }
+.wawasan-admin-shell .app-admin-tabs>button[aria-pressed='true'] { background:var(--wx-paper); border-color:var(--wx-line); color:var(--wx-hot); box-shadow:var(--wx-shadow); }
+.wawasan-admin-shell > main { max-width:1600px; width:100%; margin:0 auto; }
+.wawasan-admin-shell > main > div:first-child h1 { font-size:clamp(1.7rem,3vw,2.5rem); letter-spacing:-.045em; font-weight:850; }
+.wawasan-admin-shell :is(input,select,textarea) { border-radius:12px; }
+.wawasan-admin-shell :is([data-slot='card'],.panel-surface) { background:var(--wx-paper); border-color:var(--wx-line); }
+.wawasan-login-shell .panel-surface { background:var(--wx-paper); border:1px solid var(--wx-line); border-radius:32px; box-shadow:var(--wx-shadow-raised); }
+.wawasan-login-shell .panel-surface h1 { font-family:var(--font-artistic); }
+
+@media(max-width:850px) {
+  .landing-page.living-canvas-v31 .heritage-hero-content { grid-template-columns:minmax(0,1fr) minmax(170px,38%); }
+  .landing-page.living-canvas-v31 .heritage-hero-title { font-size:clamp(2.7rem,7.3vw,5rem); }
+}
+/* Mobile-first editorial composition: short, wide artwork instead of a second full-screen panel. */
+@media (max-width: 640px) {
+  .wawasan-navigation-dock { padding: 0 9px 6px; }
+  .wawasan-navigation-dock .wawasan-bottom-nav nav { height: 62px; }
+  .wawasan-navigation-dock .wawasan-bottom-nav { border-radius: 22px; }
+
+  .landing-page.living-canvas-v31 .landing-hero.heritage-hero {
+    min-height: 0;
+    padding: calc(96px + var(--sat, 0px)) 0 calc(32px + var(--sab, 0px));
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-content {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    padding: 7px clamp(16px, 4.5vw, 22px) 8px;
+    gap: 0;
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-content::before {
+    grid-column: 1;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    font-size: .58rem;
+    letter-spacing: .12em;
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-title {
+    grid-column: 1;
+    max-width: 100%;
+    font-size: clamp(2.35rem, 9.8vw, 3.65rem);
+    line-height: 1;
+    margin-bottom: 10px;
+    letter-spacing: -.045em;
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-description {
+    grid-column: 1;
+    max-width: 43ch;
+    font-size: clamp(.81rem, 3.4vw, .95rem);
+    line-height: 1.46;
+    margin-bottom: 14px;
+    color: var(--wx-ink);
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-actions {
+    grid-column: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 9px;
+    max-width: 100%;
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 9px 8px;
+    font-size: clamp(.7rem, 2.85vw, .84rem);
+    line-height: 1.16;
+    gap: 6px;
+    text-align: center;
+    box-shadow: 3px 4px 0 color-mix(in srgb, var(--ui-shadow-ink) 18.0%, transparent);
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-action svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+  }
+  .landing-page.living-canvas-v31 .heritage-hero-action-primary svg:last-child { display: none; }
+  .landing-page.living-canvas-v31 .heritage-hero-scroll-hint { display: none; }
+
+  .landing-page.living-canvas-v31 .wawasan-hero-paper {
+    grid-column: 1;
+    grid-row: auto;
+    width: min(100%, 390px);
+    aspect-ratio: 1 / .58;
+    margin: 15px auto 0;
+  }
+  .landing-page .wawasan-hero-paper__halo { inset: 8% 7% 7%; }
+  .landing-page .wawasan-hero-paper__sun { width: 19%; top: 0; left: 1%; }
+  .landing-page .wawasan-hero-paper__meal {
+    top: -11%;
+    left: -2%;
+    width: 104%;
+    height: 121%;
+    object-fit: contain;
+  }
+  .landing-page .wawasan-hero-paper__seal {
+    top: 0;
+    right: 0;
+    width: clamp(62px, 18vw, 80px);
+    padding: 6px;
+    font-size: clamp(9px, 2.4vw, 11px);
+  }
+  .landing-page .wawasan-hero-paper__ribbon {
+    left: 2%;
+    bottom: 6%;
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+  .landing-page .wawasan-hero-paper__star { font-size: 27px; }
+  .landing-page.living-canvas-v31 .heritage-hero-artwork .heritage-hero-batik-image { opacity: .19; }
+  .dark .landing-page.living-canvas-v31 .heritage-hero-artwork .heritage-hero-batik-image { opacity: .18; }
+  .landing-page .heritage-hero-scene::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--ui-surface) 25.0%, transparent), color-mix(in srgb, var(--ui-surface) 13.0%, transparent) 65%, color-mix(in srgb, var(--ui-surface) 38.0%, transparent));
+  }
+  .dark .landing-page .heritage-hero-scene::after {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--ui-canvas) 43.0%, transparent), color-mix(in srgb, var(--ui-canvas) 24.0%, transparent) 60%, color-mix(in srgb, var(--ui-canvas) 51.0%, transparent));
+  }
+  /* Keep the actual wizard progress compact now that the illustrated header is shorter. */
+  .customer-page.customer-order-page .customer-order-progress { padding: 12px 14px; border-radius: 18px; }
+  .customer-page.customer-order-page .customer-progress-track { margin-top: 8px; }
+  .customer-page .customer-step-content { padding: clamp(14px, 4vw, 20px); }
+}
+@media (max-width: 360px) {
+  .landing-page.living-canvas-v31 .heritage-hero-title { font-size: 2.25rem; }
+  .landing-page.living-canvas-v31 .heritage-hero-actions { gap: 7px; }
+  .landing-page.living-canvas-v31 .heritage-hero-action { font-size: .7rem; padding-inline: 5px; }
+  .landing-page.living-canvas-v31 .wawasan-hero-paper { margin-top: 12px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  :where(.landing-page,.customer-page,.wawasan-admin-shell,.wawasan-login-shell) :is(a,button,[data-slot='card']) { transition-duration:.01ms !important; }
+}

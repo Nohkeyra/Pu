@@ -24,6 +24,19 @@ router.get('/diagnostics/:type', verifyAdminToken, async (req, res) => {
       return res.json({ status: 'healthy', service: 'SMTP' });
     }
 
+    if (type === 'pdf') {
+      // Non-destructive smoke test of the same jsPDF engine used for invoices.
+      // It does not claim an actual order invoice has been generated or sent.
+      const { jsPDF } = await import('jspdf');
+      const document = new jsPDF();
+      document.text('Wawasan PDF engine diagnostic', 12, 16);
+      const pdfBytes = document.output('arraybuffer');
+      if (pdfBytes.byteLength < 100) {
+        return res.status(500).json({ status: 'fail', message: 'PDF engine returned an empty document.' });
+      }
+      return res.json({ status: 'healthy', service: 'Server PDF engine', message: 'Sample PDF generated in memory successfully.' });
+    }
+
     if (type === 'fcm') {
       const { getMessaging } = await import('firebase-admin/messaging');
       const { getAdminApp } = await import('../firebaseAdmin.js');

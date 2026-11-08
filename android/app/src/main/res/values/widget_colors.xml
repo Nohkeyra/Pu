@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Obsidian & Forest Base Surfaces -->
-    <color name="widget_bg_base">#0F1411</color>
-    <color name="widget_surface">#161D19</color>
-    <color name="widget_card_background">#1C2420</color>
-    <color name="widget_card_background_alt">#232D28</color>
+    <color name="widget_bg_base">@color/wawasan_canvas</color>
+    <color name="widget_surface">@color/wawasan_surface</color>
+    <color name="widget_card_background">@color/wawasan_surface</color>
+    <color name="widget_card_background_alt">@color/wawasan_surface</color>
 
     <!-- Brand Accent Colors (Forest Green & Warm Amber) -->
-    <color name="widget_stroke">#2A3730</color>
-    <color name="widget_card_stroke">#33433B</color>
-    <color name="widget_title_text">#F59E0B</color>
-    <color name="widget_title_accent">#10B981</color>
-    <color name="widget_divider">#26332C</color>
+    <color name="widget_stroke">@color/wawasan_border</color>
+    <color name="widget_card_stroke">@color/wawasan_border</color>
+    <color name="widget_title_text">@color/wawasan_text</color>
+    <color name="widget_title_accent">@color/wawasan_text</color>
+    <color name="widget_divider">@color/wawasan_border</color>
 
     <!-- Clean High-Contrast Text -->
-    <color name="widget_primary_text">#FFFFFF</color>
-    <color name="widget_secondary_text">#CBD5E1</color>
-    <color name="widget_tertiary_text">#94A3B8</color>
-    <color name="widget_muted_text">#64748B</color>
+    <color name="widget_primary_text">@color/wawasan_text</color>
+    <color name="widget_secondary_text">@color/wawasan_text</color>
+    <color name="widget_tertiary_text">@color/wawasan_text</color>
+    <color name="widget_muted_text">@color/wawasan_text</color>
 
     <!-- Clean Status Badges -->
-    <color name="widget_badge_bg">#132B20</color>
-    <color name="widget_badge_text">#34D399</color>
-    <color name="widget_status_approved">#10B981</color>
-    <color name="widget_status_pending">#F59E0B</color>
-    <color name="widget_status_billed">#38BDF8</color>
+    <color name="widget_badge_bg">@color/wawasan_surface</color>
+    <color name="widget_badge_text">@color/wawasan_text</color>
+    <color name="widget_status_approved">@color/wawasan_green</color>
+    <color name="widget_status_pending">@color/wawasan_yellow</color>
+    <color name="widget_status_billed">@color/wawasan_green</color>
 </resources>

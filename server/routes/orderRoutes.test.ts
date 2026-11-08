@@ -28,6 +28,11 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
 
     adminToken = signAdminJwt({ uid: 'admin_1', email: 'admin@wawasan.test', admin: true });
 
+    // Authenticated and email-verified customer is the default for valid create tests.
+    vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
+      uid: 'actual_user', email: 'customer@example.com', email_verified: true, admin: false,
+    });
+
     app = express();
     app.use(express.json());
     app.use('/api', orderRoutes);
@@ -140,7 +145,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     it('creates only one order when the same request arrives concurrently', async () => {
       const key = `concurrent_${Date.now()}`;
       const requests = Array.from({ length: 4 }, () => fetch(`${baseUrl}/api/orders`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
         body: JSON.stringify({ ...orderPayload, idempotencyKey: key }),
       }));
       const responses = await Promise.all(requests);
@@ -148,6 +153,44 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       const bodies = await Promise.all(responses.map(response => response.json()));
       expect(new Set(bodies.map(body => body.id)).size).toBe(1);
       expect(bodies.filter(body => body.duplicate === false)).toHaveLength(1);
+    });
+
+    it('rejects guest orders with or without a claimed user', async () => {
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+      expect(res.status).toBe(401);
+      expect((await res.json()).code).toBe('SIGN_IN_REQUIRED');
+    });
+
+    it('rejects unverified email accounts even with a valid Firebase session', async () => {
+      vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({ uid: 'actual_user', email_verified: false });
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer signed-in' },
+        body: JSON.stringify(orderPayload),
+      });
+      expect(res.status).toBe(403);
+      expect((await res.json()).code).toBe('EMAIL_VERIFICATION_REQUIRED');
+    });
+
+    it('requires a verified order-owner session for preliminary invoice delivery', async () => {
+      const res = await fetch(`${baseUrl}/api/orders/order_123/send-preliminary-invoice`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'customer@example.com' }),
+      });
+      expect(res.status).toBe(401);
+    });
+
+    it('rejects verified accounts that do not own the requested invoice', async () => {
+      await getFirestore().collection('orders').doc('not_my_invoice').set({
+        userId: 'someone_else', email: 'customer@example.com', status: 'pending',
+      });
+      const res = await fetch(`${baseUrl}/api/orders/not_my_invoice/send-preliminary-invoice`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
+        body: JSON.stringify({ email: 'customer@example.com' }),
+      });
+      expect(res.status).toBe(403);
     });
 
     it('rejects a claimed user without an authenticated session', async () => {
@@ -159,7 +202,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     });
 
     it('rejects an owner different from the verified user', async () => {
-      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('actual_user');
+      vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({ uid: 'actual_user', email_verified: true });
       const res = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test' },
         body: JSON.stringify({ ...orderPayload, userId: 'victim' }),
@@ -168,7 +211,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     });
 
     it('stores the verified UID as the owner', async () => {
-      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('actual_user');
+      vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({ uid: 'actual_user', email_verified: true });
       const res = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test' },
         body: JSON.stringify({ ...orderPayload, userId: 'actual_user' }),
@@ -198,7 +241,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
 
       const res = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
         body: JSON.stringify(maliciousPayload),
       });
 
@@ -386,6 +429,84 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       expect((await request()).status).toBe(403);
       vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('owner_1');
       expect((await request()).status).toBe(200);
+    });
+  });
+
+  describe('Calendar note reads', () => {
+    it('keeps customer notes private while allowing an authorized administrator to view the month', async () => {
+      const db = getFirestore();
+      const month = '2027-08';
+      const date = `${month}-14`;
+      await db.collection('calendar_notes').doc('notes_private_a').set({ date, note: 'Owned note', userId: 'member_a', userName: 'Member' });
+      await db.collection('calendar_notes').doc('notes_private_b').set({ date, note: 'Other note', userId: 'member_b', userName: 'Member' });
+      await db.collection('calendar_notes').doc('notes_previous_month').set({ date: '2027-07-14', note: 'Old note', userId: 'member_a' });
+
+      const path = `${baseUrl}/api/calendar-notes?month=${month}`;
+      const anonymous = await fetch(path);
+      expect(anonymous.status).toBe(401);
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('member_a');
+      const member = await fetch(path, { headers: { Authorization: 'Bearer test-member-id-token' } });
+      expect(member.status).toBe(200);
+      const memberIds = (await member.json()).notes.map((note: { id: string }) => note.id);
+      expect(memberIds).toContain('notes_private_a');
+      expect(memberIds).not.toContain('notes_private_b');
+      expect(memberIds).not.toContain('notes_previous_month');
+
+      const admin = await fetch(path, { headers: { Authorization: `Bearer ${adminToken}` } });
+      expect(admin.status).toBe(200);
+      const adminIds = (await admin.json()).notes.map((note: { id: string }) => note.id);
+      expect(adminIds).toEqual(expect.arrayContaining(['notes_private_a', 'notes_private_b']));
+      expect(adminIds).not.toContain('notes_previous_month');
+    });
+
+    it('rejects invalid note months before querying Firestore', async () => {
+      const invalid = await fetch(`${baseUrl}/api/calendar-notes?month=2027-13`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(invalid.status).toBe(400);
+    });
+  });
+
+  describe('Calendar note ownership', () => {
+    it('requires authentication and prevents customers deleting other customers notes', async () => {
+      const db = getFirestore();
+      const date = '2026-11-25';
+      const url = `${baseUrl}/api/calendar-notes`;
+      const unauthorized = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date, note: 'Kitchen alert' }) });
+      expect(unauthorized.status).toBe(401);
+
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('customer_a');
+      const saved = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer customer-test-token' },
+        body: JSON.stringify({ date, note: 'Kitchen alert' }),
+      });
+      expect(saved.status).toBe(200);
+      const savedNote = await db.collection('calendar_notes').doc(`customer_a_${date}`).get();
+      expect(savedNote.data()?.userId).toBe('customer_a');
+
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('customer_b');
+      const blocked = await fetch(`${url}/customer_a_${date}`, {
+        method: 'DELETE', headers: { Authorization: 'Bearer another-customer-token' },
+      });
+      expect(blocked.status).toBe(403);
+      expect((await db.collection('calendar_notes').doc(`customer_a_${date}`).get()).exists).toBe(true);
+
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('customer_a');
+      const removed = await fetch(`${url}/customer_a_${date}`, {
+        method: 'DELETE', headers: { Authorization: 'Bearer customer-test-token' },
+      });
+      expect(removed.status).toBe(200);
+    });
+
+    it('rejects invalid calendar dates and excessive notes', async () => {
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('customer_a');
+      for (const payload of [{ date: '2026-02-31', note: 'Invalid date' }, { date: '2026-11-25', note: 'a'.repeat(501) }]) {
+        const result = await fetch(`${baseUrl}/api/calendar-notes`, {
+          method: 'POST', headers: { Authorization: 'Bearer customer-test-token', 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        expect(result.status).toBe(400);
+      }
     });
   });
 

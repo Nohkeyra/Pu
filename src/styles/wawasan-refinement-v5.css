@@ -1,0 +1,325 @@
+/* Restoran Wawasan — V5 cohesive layout/art-direction layer.
+ * Protected: original Tropical Energy / Bold Heritage palette, Uncial brand,
+ * approved batik imagery, workflows and data contracts. Tokens below govern
+ * interaction layers and proportions only. This file loads after the theme.
+ */
+:root {
+  --rw-z-dialog-backdrop: 1200;
+  --rw-z-dialog: 1210;
+  --rw-z-popover: 1240;
+  --rw-z-tooltip: 1250;
+  --rw-content-max: 1152px;
+  --rw-content-gutter: clamp(16px, 3.2vw, 32px);
+  --rw-paper-line: color-mix(in srgb, var(--ui-border) 74%, transparent);
+  --rw-paper-shadow: 0 18px 42px color-mix(in srgb, var(--ui-shadow-ink) 9%, transparent),
+                     0 3px 10px color-mix(in srgb, var(--ui-shadow-ink) 3%, transparent);
+  --rw-paper-shadow-hover: 0 21px 48px color-mix(in srgb, var(--ui-shadow-ink) 13%, transparent);
+}
+
+/* Customer header, fixed bottom dock and dialogs establish a stable geometry.
+   Decorations never intercept taps or screen-reader input. */
+.customer-page .customer-header-frame,
+.customer-page .customer-content { max-width: var(--rw-content-max); }
+.customer-page .customer-content {
+  padding-inline: var(--rw-content-gutter);
+  min-width: 0;
+}
+.customer-page .customer-header-icon { flex-shrink: 0; }
+.customer-page .customer-page-header { isolation: isolate; }
+.customer-page .customer-page-header::after { pointer-events: none; }
+
+/* Form and information hierarchy — intentional, not uniform card spam. */
+.customer-page .customer-form-panel,
+.customer-page .customer-calendar-panel,
+.customer-page .customer-profile-access,
+.customer-page .settings-section-card {
+  border-color: var(--rw-paper-line);
+  box-shadow: var(--rw-paper-shadow);
+}
+.customer-page .customer-step-heading h2,
+.customer-page .customer-profile-access-title {
+  text-wrap: balance;
+  line-height: 1.18;
+}
+.customer-page .customer-step-heading p,
+.customer-page .customer-profile-access-description,
+.customer-page .settings-row-description { max-width: 67ch; }
+.customer-page .customer-step-one .customer-choice,
+.customer-page .customer-calendar-day {
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .customer-page .customer-step-one .customer-choice:hover,
+  .customer-page .customer-calendar-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 21px color-mix(in srgb, var(--ui-shadow-ink) 10%, transparent);
+  }
+}
+.customer-page .settings-section-card { overflow: clip; }
+.customer-page .settings-section>h2 {
+  text-transform: uppercase;
+  letter-spacing: .105em;
+  line-height: 1.45;
+}
+.customer-page .customer-settings-tabs button { text-wrap: balance; }
+.customer-page .customer-calendar-month-title { text-wrap: balance; }
+.customer-page .customer-calendar-panel { min-width: 0; }
+
+/* A genuine, purpose-built member welcome instead of a generic panel. */
+.customer-dashboard-content { max-width: 1040px !important; }
+.customer-dashboard-page .customer-dashboard-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: clamp(22px, 3.6vw, 32px);
+  background: linear-gradient(115deg, var(--ui-raised) 0%, var(--ui-surface) 57%,
+                            color-mix(in srgb, var(--ui-yellow) 16%, var(--ui-surface)) 100%);
+  box-shadow: var(--rw-paper-shadow);
+  padding: clamp(22px, 4.7vw, 48px);
+}
+.customer-dashboard-page .customer-dashboard-welcome::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+  width: clamp(145px, 30vw, 325px);
+  aspect-ratio: 1;
+  right: clamp(-80px, -6vw, -25px);
+  top: -35%;
+  border-radius: 45% 55% 43% 57%;
+  border: 1px solid color-mix(in srgb, var(--ui-action) 30%, transparent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--ui-yellow) 17%, transparent), transparent),
+              url('/assets/heritage/batik_vector_pattern.jpg') center / 165px repeat;
+  opacity: .21;
+  transform: rotate(-16deg);
+  filter: saturate(.8);
+}
+.customer-dashboard-page .customer-dashboard-welcome h2 {
+  max-width: 15ch;
+  font: 800 clamp(1.8rem, 4.5vw, 2.85rem)/1.12 var(--font-display);
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+.customer-dashboard-page .customer-dashboard-welcome > p {
+  position: relative;
+  max-width: min(100%, 54ch);
+  overflow-wrap: anywhere;
+}
+.customer-dashboard-page .customer-dashboard-welcome > button {
+  position: relative;
+  margin-top: clamp(16px, 2.8vw, 28px);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--ui-shadow-ink) 22%, transparent);
+}
+.customer-dashboard-shortcuts { padding-block: clamp(8px, 2.5vw, 16px) 8px; }
+.customer-dashboard-shortcuts-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-bottom: clamp(12px, 2vw, 22px);
+}
+.customer-dashboard-shortcuts-heading h2 {
+  font: 800 clamp(1.15rem, 2.4vw, 1.5rem)/1.25 var(--font-display);
+  letter-spacing: -.025em;
+  color: var(--ui-ink);
+}
+.customer-dashboard-shortcuts-heading p { font-size: .8rem; color: var(--ui-muted); }
+.customer-dashboard-actions { gap: clamp(12px, 2vw, 20px); }
+.customer-dashboard-page .customer-dashboard-action {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-height: 152px;
+  padding: clamp(18px, 2.8vw, 26px);
+  border: 1px solid var(--ui-border);
+  border-radius: 22px;
+  background: var(--ui-surface);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--ui-shadow-ink) 9%, transparent),
+              0 12px 22px color-mix(in srgb, var(--ui-shadow-ink) 5%, transparent);
+  color: var(--ui-ink);
+  text-align: left;
+  transition: transform .17s ease, box-shadow .17s ease, border-color .17s ease;
+}
+.customer-dashboard-page .customer-dashboard-action > svg:first-child {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ui-yellow) 22%, var(--ui-surface));
+  color: var(--ui-action);
+}
+.customer-dashboard-page .customer-dashboard-action span { max-width: 34ch; }
+.customer-dashboard-page .customer-dashboard-action span:nth-of-type(1) { font-size: 1rem; line-height: 1.3; }
+.customer-dashboard-page .customer-dashboard-action-arrow {
+  position: absolute;
+  right: 20px;
+  top: 25px;
+  color: var(--ui-action);
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .customer-dashboard-page .customer-dashboard-action:hover {
+    transform: translateY(-3px);
+    border-color: var(--ui-action);
+    box-shadow: var(--rw-paper-shadow-hover);
+  }
+}
+.customer-dashboard-page .customer-dashboard-action:focus-visible {
+  outline: 3px solid var(--ui-action);
+  outline-offset: 3px;
+}
+
+/* Public landing: maintain the heritage hero, original artwork and batik,
+   but give section transitions one editorial rhythm and avoid cramped CTAs. */
+.landing-page :is(#menu,#story,#experience,#reviews,#visit) {
+  scroll-margin-top: clamp(84px, 10vw, 118px);
+}
+.landing-page .landing-section-heading,
+.landing-page .landing-menu-toolbar { min-width: 0; }
+.landing-page .landing-section-title { text-wrap: balance; }
+.landing-page .landing-highlights { position: relative; }
+.landing-page .landing-highlights-grid {
+  gap: clamp(12px, 1.8vw, 20px);
+  align-items: stretch;
+}
+.landing-page .landing-highlight {
+  min-width: 0;
+  height: 100%;
+  border-color: var(--rw-paper-line);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.landing-page .landing-highlight-copy { min-width: 0; }
+.landing-page .landing-highlight-copy strong { overflow-wrap: anywhere; }
+.landing-page .landing-menu-card {
+  min-width: 0;
+  border-color: var(--rw-paper-line);
+  box-shadow: var(--rw-paper-shadow);
+}
+.landing-page .landing-menu-card:focus-within {
+  outline: 2px solid var(--ui-action);
+  outline-offset: 2px;
+}
+.landing-page .landing-menu-body h3 { text-wrap: balance; }
+.landing-page .landing-menu-footer { gap: 12px; }
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .landing-page .landing-highlight:hover {
+    transform: translateY(-3px);
+    border-color: var(--ui-action);
+    box-shadow: var(--rw-paper-shadow-hover);
+  }
+}
+@media (max-width: 639px) {
+  .landing-page .landing-menu-toolbar { gap: 12px; }
+  .landing-page .landing-menu-categories { min-width: 0; }
+  .landing-page .landing-menu-card { border-radius: 20px; }
+  .landing-page .landing-highlights { padding-block: clamp(20px, 6vw, 32px); }
+}
+
+/* A restrained operational dashboard: sidebar, section header and dense tables
+   remain usable without converting business screens into marketing layouts. */
+.wawasan-admin-shell { min-width: 0; }
+.wawasan-admin-shell .wawasan-admin-sidebar {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+}
+.wawasan-admin-shell .app-admin-tabs { border-color: var(--ui-border); }
+.wawasan-admin-shell .app-admin-tabs > button {
+  min-height: 46px;
+  text-align: left;
+  transition: background-color .16s ease, border-color .16s ease, transform .16s ease;
+}
+.wawasan-admin-shell .app-admin-tabs > button[aria-pressed='true'] {
+  background: var(--ui-action);
+  color: var(--ui-on-action);
+}
+.wawasan-admin-shell .app-admin-tabs > button[aria-pressed='true'] > svg {
+  color: currentColor;
+}
+.wawasan-admin-shell .wawasan-admin-content { min-width: 0; }
+.wawasan-admin-shell .wawasan-admin-heading {
+  border-bottom: 1px solid var(--ui-border);
+  padding: 0 0 clamp(14px, 2vw, 22px);
+  margin-bottom: clamp(18px, 3vw, 28px);
+  position: relative;
+}
+.wawasan-admin-shell .wawasan-admin-heading::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: clamp(50px, 8vw, 100px);
+  height: 3px;
+  border-radius: 99px;
+  background: var(--ui-action);
+}
+.wawasan-admin-shell .wawasan-admin-heading h1 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  color: var(--ui-ink);
+}
+.wawasan-admin-shell .wawasan-admin-heading p { max-width: 70ch; color: var(--ui-muted); line-height: 1.5; }
+
+/* Login, profile and global portal polish. Keep the original wordmark. */
+.wawasan-login-shell .panel-surface {
+  border: 1px solid var(--ui-border);
+  border-radius: clamp(22px, 4vw, 32px);
+  box-shadow: var(--rw-paper-shadow);
+}
+.wawasan-login-shell { min-height: 100dvh; }
+.customer-profile-page .customer-profile-access {
+  max-width: 900px;
+  margin-inline: auto;
+  padding: clamp(22px, 4vw, 40px);
+}
+.customer-profile-page .customer-profile-benefits { max-width: 64ch; }
+[data-slot='dialog-content'] {
+  max-height: min(88dvh, calc(100dvh - max(24px, var(--sat, 0px)) - max(24px, var(--sab, 0px))));
+  scrollbar-gutter: stable;
+  color: var(--ui-ink);
+}
+[data-slot='dialog-overlay'] { pointer-events: auto; }
+[data-slot='dialog-content'] [data-slot='dialog-title'] { color: var(--ui-ink); }
+[data-slot='dialog-content'] [data-slot='dialog-description'] { color: var(--ui-muted); }
+[data-slot='dialog-content'] :is(input,select,textarea,button) { min-width: 0; }
+[data-slot='select-content'] { color: var(--ui-ink); }
+[data-slot='tooltip-content'] { max-width: min(320px, calc(100vw - 24px)); overflow-wrap: anywhere; }
+
+/* Portal elements are rendered outside page-specific stacking contexts. */
+[data-slot='dialog-overlay'] { z-index: var(--rw-z-dialog-backdrop); }
+[data-slot='dialog-content'] { z-index: var(--rw-z-dialog); }
+[data-slot='select-content'] { z-index: var(--rw-z-popover); }
+[data-slot='tooltip-content'] { z-index: var(--rw-z-tooltip); }
+
+/* Mobile: keep dense controls tappable and labels visible at narrow widths. */
+@media (max-width: 639px) {
+  .customer-page .customer-content { padding-inline: 16px; }
+  .customer-page .customer-header-frame { padding-inline: 16px; }
+  .customer-page .customer-calendar-month { gap: 6px; }
+  .customer-page .customer-calendar-month-title { font-size: clamp(1.05rem, 5vw, 1.35rem); }
+  .customer-page .customer-calendar-toolbar { padding: 14px 12px; }
+  .customer-page .customer-step-content { padding: clamp(14px, 4vw, 20px); }
+  .wawasan-admin-shell .wawasan-admin-sidebar { min-width: 0; }
+  .wawasan-admin-shell .wawasan-admin-content { padding-inline: 14px; }
+  .wawasan-admin-shell .app-admin-tabs > button { white-space: normal; min-width: 0; flex: 1 1 0; justify-content: center; }
+}
+@media (max-width: 359px) {
+  .customer-page .customer-header-frame { padding-inline: 12px; }
+  .customer-page .customer-content { padding-inline: 12px; }
+  .customer-dashboard-page .customer-dashboard-welcome { padding: 19px; }
+  .customer-dashboard-page .customer-dashboard-action { min-height: 134px; }
+  .wawasan-admin-shell .app-admin-tabs > button { padding-inline: 5px; }
+}
+@media (min-width: 1024px) {
+  .wawasan-admin-shell .wawasan-admin-sidebar { position: relative; }
+  .wawasan-admin-shell .wawasan-admin-content { padding-inline: clamp(24px, 4vw, 48px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-page .customer-step-one .customer-choice,
+  .customer-page .customer-calendar-day,
+  .customer-dashboard-page .customer-dashboard-action,
+  .wawasan-admin-shell .app-admin-tabs > button { transition: none; transform: none; }
+}

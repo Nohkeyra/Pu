@@ -180,7 +180,7 @@ export function AdminPdfShareModal({
           <Button
             id="btn-pdf-download"
             onClick={handleDownloadOrShare}
-            className="bg-[var(--color-sunshine-cta)] text-white hover:brightness-110 rounded-2xl px-10 py-7 h-auto font-black shadow-xl shadow-[var(--color-sunshine-cta)]/20 transition-all active:scale-95 flex-1 md:flex-none uppercase tracking-widest"
+            className="bg-[var(--color-sunshine-cta)] text-[var(--ui-on-action)] hover:brightness-110 rounded-2xl px-10 py-7 h-auto font-black shadow-xl shadow-[var(--color-sunshine-cta)]/20 transition-all active:scale-95 flex-1 md:flex-none uppercase tracking-widest"
           >
             <FileDown className="w-6 h-6 mr-3" />
             {t('download')}

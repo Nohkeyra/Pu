@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
+import { normalizeStatusBarColor } from '@/lib/statusBarColors';
 import { useTheme } from '@/context/ThemeContext';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/brand/TransparentLogo';
 import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
+import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
 import {
   Globe,
   Bell,
@@ -48,6 +50,7 @@ import { BiometricEnrollDialog } from '@/components/auth/BiometricEnrollDialog';
 import { clearAdminSession } from '@/services/authService';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
+import { getCustomerHomePath } from '@/lib/appEntryRoutes';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Device } from '@capacitor/device';
@@ -62,15 +65,16 @@ import { isUserAdmin } from '@/constants/auth';
 
 import { RESTORAN_CONTACT } from '@/constants/contact';
 
-import { getApiUrl } from '@/lib/api';
+import { getApiUrl, invalidateFetchCache } from '@/lib/api';
 import { removeSecureItem } from '@/lib/preferences';
 import { DiagnosticConsole } from '@/components/system/DiagnosticConsole';
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import {
   getPendingOrdersCount,
-  autoSyncPendingOrders,
+  rehydrateQueueFromNative,
 } from '@/lib/pendingOrdersQueue';
+import { PendingOrdersDialog } from '@/components/order/PendingOrdersDialog';
 import {
   Dialog,
   DialogContent,
@@ -188,6 +192,7 @@ export default function SettingsPage() {
   const [clearingCache, setClearingCache] = useState(false);
   const [offlinePendingCount, setOfflinePendingCount] = useState<number>(() => getPendingOrdersCount());
   const [syncingOffline, setSyncingOffline] = useState(false);
+  const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
 
   // Modals state
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
@@ -210,32 +215,18 @@ export default function SettingsPage() {
     document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
 
-  // Measure cache size
+  // Browser storage estimates are approximate and include IndexedDB / CacheStorage.
+  // Do not misreport the length of a CacheStorage key as a fixed number of bytes.
   const calculateCacheSize = useCallback(async () => {
     try {
-      let totalBytes = 0;
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          totalBytes += (key.length + (localStorage.getItem(key)?.length || 0)) * 2;
-        }
-      }
-      if ('caches' in window) {
-        try {
-          const cacheKeys = await caches.keys();
-          totalBytes += cacheKeys.length * 150000;
-        } catch {
-          /* ignore */
-        }
-      }
-      const mb = totalBytes / (1024 * 1024);
-      if (mb < 0.1) {
-        setCacheSizeStr(language === 'bm' ? '< 0.1 MB (Minimum)' : '< 0.1 MB (Clean)');
+      const estimate = await navigator.storage?.estimate?.();
+      if (typeof estimate?.usage === 'number') {
+        setCacheSizeStr(`~ ${(estimate.usage / (1024 * 1024)).toFixed(1)} MB`);
       } else {
-        setCacheSizeStr(`${mb.toFixed(1)} MB`);
+        setCacheSizeStr(language === 'bm' ? 'Tidak tersedia' : 'Unavailable');
       }
     } catch {
-      setCacheSizeStr('~ 0.5 MB');
+      setCacheSizeStr(language === 'bm' ? 'Tidak tersedia' : 'Unavailable');
     }
   }, [language]);
 
@@ -253,47 +244,33 @@ export default function SettingsPage() {
     return () => unsub();
   }, [calculateCacheSize]);
 
-  // Handle Clear Cache
+  // Clear disposable cached responses only. Do NOT erase localStorage or
+  // sessionStorage: they contain drafts, queued offline orders and credentials.
   const handleClearCache = async () => {
     await triggerMediumImpact();
     setClearingCache(true);
     try {
-      if ('caches' in window) {
+      invalidateFetchCache();
+      // Never remove Service Worker offline assets while the user is offline.
+      // Restrict deletions to this app's cache namespace on shared origins.
+      if (navigator.onLine && 'caches' in window) {
         const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+        await Promise.all(cacheKeys.filter(key => key.startsWith('wawasan-')).map(key => caches.delete(key)));
       }
-      sessionStorage.clear();
-      
-      const keepKeys = [
-        'wawasan_theme',
-        'wawasan_language',
-        'wawasan_admin_token',
-        'wawasan_notifications_enabled',
-        'wawasan_font_size',
-      ];
-      const preserved: Record<string, string> = {};
-      keepKeys.forEach((k) => {
-        const val = localStorage.getItem(k);
-        if (val) preserved[k] = val;
-      });
-
-      localStorage.clear();
-      Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
-
       await calculateCacheSize();
       setOfflinePendingCount(getPendingOrdersCount());
 
       toast({
-        title: language === 'bm' ? 'Cache Berjaya Dikosongkan' : 'Cache Cleared Successfully',
+        title: language === 'bm' ? 'Cache Sementara Dibersihkan' : 'Temporary Cache Cleared',
         description: language === 'bm'
-          ? 'Memori sementara dan pratonton telah dibersihkan.'
-          : 'Temporary app cache and media buffers have been purged.',
+          ? 'Draf, pesanan luar talian dan sesi akaun anda dikekalkan.'
+          : 'Drafts, offline orders and account sessions were preserved.',
         variant: 'success',
       });
     } catch {
       toast({
-        title: language === 'bm' ? 'Gagal Membersihkan' : 'Clean Error',
-        description: language === 'bm' ? 'Sila cuba sebentar lagi.' : 'Could not purge all cache items.',
+        title: language === 'bm' ? 'Gagal Membersihkan Cache' : 'Cache Clear Failed',
+        description: language === 'bm' ? 'Sila cuba sebentar lagi.' : 'Please try again.',
         variant: 'error',
       });
     } finally {
@@ -306,17 +283,12 @@ export default function SettingsPage() {
     await triggerLightImpact();
     setSyncingOffline(true);
     try {
-      const result = await autoSyncPendingOrders();
-      setOfflinePendingCount(result.remainingCount);
-      if (result.syncedCount > 0) {
-        toast({
-          title: language === 'bm' ? 'Penyegerakan Berjaya' : 'Sync Complete',
-          description: language === 'bm'
-            ? `${result.syncedCount} pesanan luar talian telah dihantar ke pelayan.`
-            : `${result.syncedCount} offline orders synced to the cloud.`,
-          variant: 'success',
-        });
-      } else if (result.remainingCount === 0) {
+      const refreshedQueue = await rehydrateQueueFromNative();
+      const count = refreshedQueue.length;
+      setOfflinePendingCount(count);
+      if (count > 0) {
+        setPendingOrdersDialogOpen(true);
+      } else {
         toast({
           title: language === 'bm' ? 'Semua Data Terkini' : 'Already Up to Date',
           description: language === 'bm'
@@ -324,19 +296,13 @@ export default function SettingsPage() {
             : 'No pending offline orders found in queue.',
           variant: 'success',
         });
-      } else {
-        toast({
-          title: language === 'bm' ? 'Penyegerakan Ditunda' : 'Sync Deferred',
-          description: language === 'bm'
-            ? 'Periksa sambungan internet anda.'
-            : 'Please check your internet connection.',
-          variant: 'error',
-        });
       }
     } catch {
       toast({
-        title: language === 'bm' ? 'Ralat Penyegerakan' : 'Sync Error',
-        description: language === 'bm' ? 'Gagal menyegerak pesanan.' : 'Failed to synchronize offline orders.',
+        title: language === 'bm' ? 'Ralat' : 'Error',
+        description: language === 'bm'
+          ? 'Gagal menyemak pesanan luar talian.'
+          : 'Failed to check offline orders.',
         variant: 'error',
       });
     } finally {
@@ -374,6 +340,7 @@ export default function SettingsPage() {
   const [diagCalendar, setDiagCalendar] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string; calendarsReturned?: number }>({ status: 'idle' });
   const [diagEmail, setDiagEmail] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
   const [diagPdf, setDiagPdf] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
+  const [diagImage, setDiagImage] = useState<{ status: 'idle' | 'running' | 'pass' | 'fail'; message?: string }>({ status: 'idle' });
   const [diagNative, setDiagNative] = useState<{
     status: 'idle' | 'running' | 'pass' | 'fail';
     details?: {
@@ -635,10 +602,33 @@ export default function SettingsPage() {
   const runPdfDiag = async () => {
     setDiagPdf({ status: 'running' });
     try {
-      // Skip client side PDF test as it's been moved to server
-      setDiagPdf({ status: 'pass', message: `PDF generated (Server-side rendering)` });
+      const response = await fetch(getApiUrl('/api/diagnostics/pdf'), { headers: authHeaders() });
+      if (await handleUnauthorized(response)) {
+        setDiagPdf({ status: 'fail', message: language === 'bm' ? 'Sesi pentadbir telah tamat' : 'Admin session expired' });
+        return;
+      }
+      const result = await response.json();
+      setDiagPdf(response.ok && result.status === 'healthy'
+        ? { status: 'pass', message: result.message || 'Server PDF engine available' }
+        : { status: 'fail', message: result.message || result.error || 'Server PDF diagnostic failed' });
     } catch (err: unknown) {
-      setDiagPdf({ status: 'fail', message: err instanceof Error ? err.message : 'PDF generation failed' });
+      setDiagPdf({ status: 'fail', message: err instanceof Error ? err.message : 'PDF diagnostic unavailable' });
+    }
+  };
+
+  const runImageDiag = async () => {
+    setDiagImage({ status: 'running' });
+    try {
+      // Check a real same-origin image asset. Do not claim that proxy repair
+      // or third-party anti-hotlink services were tested by this check.
+      const response = await fetch(getAssetUrl('/assets/brand/wawasan_logo.png'), { cache: 'no-store' });
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok || !contentType.startsWith('image/')) {
+        throw new Error(`Image asset returned HTTP ${response.status} (${contentType || 'no content type'})`);
+      }
+      setDiagImage({ status: 'pass', message: 'Local brand image loaded successfully.' });
+    } catch (err: unknown) {
+      setDiagImage({ status: 'fail', message: err instanceof Error ? err.message : 'Image asset unavailable' });
     }
   };
 
@@ -750,13 +740,7 @@ export default function SettingsPage() {
     runCalendarDiag();
     runNativeDiag();
     runPdfDiag();
-  };
-
-  const runFeatureTest = (feature: string) => {
-    toast({
-      title: 'Testing Feature',
-      description: `Testing ${feature}...`,
-    });
+    runImageDiag();
   };
 
   const handleCheckForUpdates = async () => {
@@ -823,19 +807,19 @@ export default function SettingsPage() {
 
   return (
     <ErrorBoundary>
-      <div className="customer-page customer-settings-page relative">
+      <CustomerPageLayout className="customer-settings-page relative">
         <CustomerPageHeader
           backDestination={window.history.state?.idx > 0 ? 'history' : 'home'}
           title={language === 'bm' ? 'Tetapan' : 'Settings'}
           subtitle={language === 'bm' ? 'Pilihan aplikasi anda' : 'Make the app yours'}
           onBack={() => {
             if (window.history.state?.idx > 0) navigate(-1);
-            else navigate('/home', { replace: true });
+            else navigate(getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(currentUser)), { replace: true });
           }}
           actions={[
             { label: language === 'bm' ? 'Akaun anda' : 'Your account', onSelect: () => jumpToSettings('settings-account') },
             { label: language === 'bm' ? 'Soalan lazim' : 'Frequently asked questions', onSelect: () => setFaqModalOpen(true) },
-            { label: language === 'bm' ? 'Halaman utama' : 'Home', onSelect: () => navigate('/home') },
+            { label: language === 'bm' ? 'Halaman utama' : 'Home', onSelect: () => navigate(getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(currentUser))) },
           ]}
         />
 
@@ -1327,18 +1311,23 @@ export default function SettingsPage() {
                 isLast={true}
                 action={
                   <div className="flex items-center gap-1.5">
-                    {[
-                      { name: 'Terracotta', hex: '#a3310e' },
-                      { name: 'Dark Slate', hex: '#121212' },
-                      { name: 'Deep Forest', hex: '#0c453c' },
-                      { name: 'Gold', hex: '#f69913' },
-                    ].map((preset) => (
+                    {(theme === 'dark' ? [
+                      { name: 'Vermilion', hex: '#E83D20' },
+                      { name: 'Amber', hex: '#FFB02E' },
+                      { name: 'Emerald', hex: '#186B45' },
+                      { name: 'Espresso', hex: '#211A19' },
+                    ] : [
+                      { name: 'Tangerine', hex: '#FF6B00' },
+                      { name: 'Sunshine', hex: '#FFC247' },
+                      { name: 'Pandan', hex: '#268A38' },
+                      { name: 'Ivory', hex: '#FFF8EC' },
+                    ]).map((preset) => (
                       <ColorSwatch
                         key={preset.hex}
                         value={preset.hex}
                         title={preset.name}
                         size="sm"
-                        selected={statusBarColor.toLowerCase() === preset.hex.toLowerCase()}
+                        selected={normalizeStatusBarColor(statusBarColor, theme).toLowerCase() === preset.hex.toLowerCase()}
                         onSelect={async (hex) => {
                           await triggerLightImpact();
                           setStatusBarColor(hex);
@@ -1357,7 +1346,7 @@ export default function SettingsPage() {
               icon={Database}
               iconBg="bg-cyan-500/10"
               iconColor="text-cyan-600 dark:text-cyan-400"
-              title={language === 'bm' ? 'Saiz Cache Aplikasi' : 'App Cache & Data'}
+              title={language === 'bm' ? 'Anggaran Storan Aplikasi' : 'Estimated App Storage'}
               action={
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-stone-500 dark:text-stone-400">
@@ -1574,34 +1563,22 @@ export default function SettingsPage() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       {[
-                        { name: 'Terracotta', hex: '#a3310e' },
-                        { name: 'Gold', hex: '#f69913' },
-                        { name: 'Forest', hex: '#0c453c' },
-                        { name: 'Carrot', hex: '#e96212' },
-                        { name: 'Tomato', hex: '#e03f14' },
+                        { name: 'Tangerine / Vermilion', role: 'orange', hex: theme === 'dark' ? '#E83D20' : '#FF6B00' },
+                        { name: 'Sunshine / Amber', role: 'yellow', hex: theme === 'dark' ? '#FFB02E' : '#FFC247' },
+                        { name: 'Pandan / Emerald', role: 'green', hex: theme === 'dark' ? '#186B45' : '#268A38' },
                       ].map((preset) => (
                         <ColorSwatch
                           key={preset.hex}
                           value={preset.hex}
                           title={preset.name}
-                          selected={customMainColor.toLowerCase() === preset.hex.toLowerCase()}
-                          onSelect={async (hex) => {
+                          selected={customMainColor === preset.role}
+                          onSelect={async () => {
                             await triggerLightImpact();
-                            setCustomMainColor(hex);
+                            setCustomMainColor(preset.role);
                           }}
                         />
                       ))}
-                      <div className="relative ml-1">
-                        <input
-                          type="color"
-                          value={/^#[0-9A-Fa-f]{6}$/.test(customMainColor) ? customMainColor.toLowerCase() : '#000000'}
-                          onChange={(e) => {
-                            setCustomMainColor(e.target.value.toUpperCase());
-                          }}
-                          className="w-6 h-6 rounded-full cursor-pointer border border-border p-0 bg-transparent overflow-hidden"
-                          aria-label="Custom color"
-                        />
-                      </div>
+
                     </div>
                   </div>
 
@@ -1646,6 +1623,7 @@ export default function SettingsPage() {
                     diagFcm={diagFcm}
                     diagCalendar={diagCalendar}
                     diagPdf={diagPdf}
+                    diagImage={diagImage}
                     diagNative={diagNative}
                     diagEmail={diagEmail}
                     diagTests={diagTests}
@@ -1660,10 +1638,10 @@ export default function SettingsPage() {
                     runFcmDiag={runFcmDiag}
                     runCalendarDiag={runCalendarDiag}
                     runPdfDiag={runPdfDiag}
+                    runImageDiag={runImageDiag}
                     runNativeDiag={runNativeDiag}
                     runSendTestEmail={runSendTestEmail}
                     runSendTestPush={runSendTestPush}
-                    runFeatureTest={runFeatureTest}
                     toggleEruda={toggleEruda}
                     setTestEmailAddress={setTestEmailAddress}
                     setTestPushTitle={setTestPushTitle}
@@ -2178,7 +2156,16 @@ export default function SettingsPage() {
           isOpen={diagnosticOpen}
           onClose={() => setDiagnosticOpen(false)}
         />
-      </div>
+
+        {/* Pending Offline Orders Review & Confirmation Modal */}
+        <PendingOrdersDialog
+          open={pendingOrdersDialogOpen}
+          onOpenChange={(open) => {
+            setPendingOrdersDialogOpen(open);
+            setOfflinePendingCount(getPendingOrdersCount());
+          }}
+        />
+      </CustomerPageLayout>
     </ErrorBoundary>
   );
 }

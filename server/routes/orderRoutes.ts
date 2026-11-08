@@ -2,8 +2,8 @@ import riderRoutes from './riderRoutes.js';
 import { generateServerInvoicePdf } from "../services/serverPdfService.js";
 import { Router } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
-import { verifyAdminToken } from '../adminAuth.js';
+import { getFirestore, type OrderData, generateSequentialInvoiceNo, verifyCustomerIdToken, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
+import { verifyAdminToken, verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { notifyCustomerOfStatusChange, sendOrderStatusPush, createBrevoTransporter } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
@@ -11,6 +11,7 @@ import { isValidStatusTransition, validateOrderPayload } from '../services/order
 import { toISODateString } from '../../src/lib/dateUtils.js';
 import { getOrderCalendarDate, getOrderEventDate, paginateSortedOrders, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
 import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
+import { evaluateVerifiedOrderAccess } from '../../src/lib/verifiedOrdering.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 const router = Router();
@@ -90,18 +91,32 @@ export function validateOrderSubmission(req: any, res: any, next: any) {
   next();
 }
 
-// Public Order Submission
-router.post('/orders', createOrderLimiter, validateOrderSubmission, async (req, res) => {
+// Guests may build local drafts, but only email-verified Firebase customers can
+// create a real order. Never trust the client-side userId / guest flag for access.
+export async function requireVerifiedCustomerOrder(req: any, res: any, next: any) {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim() : '';
+    const verified = token ? await verifyFirebaseIdToken(token) : null;
+    const access = evaluateVerifiedOrderAccess(
+      verified ? { uid: verified.uid, emailVerified: verified.email_verified === true } : null,
+      req.body?.userId,
+    );
+    if (!access.allowed) return res.status(access.status).json({ error: access.error, code: access.code });
+    res.locals.verifiedCustomerUid = access.uid;
+    return next();
+  } catch (error) {
+    console.error('[orderRoutes] Customer verification failed:', error);
+    return res.status(401).json({ error: 'Customer verification failed.', code: 'SIGN_IN_REQUIRED' });
+  }
+}
+
+// Customer order submission. The authorization gate runs BEFORE payload validation.
+router.post('/orders', createOrderLimiter, requireVerifiedCustomerOrder, validateOrderSubmission, async (req, res) => {
   try {
     const rawBody = req.body || {};
-    const hasAuthorization = Boolean(req.headers.authorization);
-    const callerUid = hasAuthorization ? await verifyCustomerIdToken(req) : null;
-    if ((hasAuthorization && !callerUid) || (rawBody.userId && !callerUid)) {
-      return res.status(401).json({ error: 'A valid customer session is required for this order.' });
-    }
-    if (rawBody.userId && rawBody.userId !== callerUid) {
-      return res.status(403).json({ error: 'Order owner does not match the customer session.' });
-    }
+    const callerUid: string = res.locals.verifiedCustomerUid;
     const db = getFirestore();
 
     const derivedDate = deriveEventDate(rawBody) || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
@@ -659,9 +674,9 @@ const preliminaryInvoiceLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, async (req, res) => {
+router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, requireVerifiedCustomerOrder, async (req, res) => {
   const { id } = req.params;
-  const { email, name, lang } = req.body;
+  const { email, name, lang } = req.body || {};
 
   if (!id || !email) {
     return res.status(400).json({ error: 'id and email are required' });
@@ -675,6 +690,9 @@ router.post('/orders/:id/send-preliminary-invoice', preliminaryInvoiceLimiter, a
     }
 
     const orderData = orderSnap.data() as OrderData;
+    if (!orderData.userId || orderData.userId !== res.locals.verifiedCustomerUid) {
+      return res.status(403).json({ error: 'Only the verified order owner may request this invoice.' });
+    }
     if (!orderData.email || orderData.email.toLowerCase() !== String(email).toLowerCase()) {
       return res.status(403).json({ error: 'Email does not match order record' });
     }
@@ -783,44 +801,106 @@ export function invalidateCalendarSessionsCache(): void {
   calendarOrdersCacheMap.clear();
 }
 
-// Calendar Notes Endpoints
-router.post('/calendar-notes', verifyAdminToken, async (req, res) => {
-  try {
-    const { date, note } = req.body;
-    if (!date) return res.status(400).json({ success: false, error: 'Date is required' });
+// Calendar notes are available to signed-in members and administrators.
+// Authenticate using verified tokens; never trust a userId supplied by the UI.
+const calendarNoteLimiter = customerOrderActionLimiter;
 
-    // Use admin's UID from token, or fallback to 'admin'
-    const uid = (req as any).user?.uid || 'admin';
-    const docId = `${uid}_${date}`;
-    const db = getFirestore();
-    
-    await db.collection('calendar_notes').doc(docId).set({
-      date,
-      userId: uid,
-      userName: 'Admin',
-      note: note ? note.trim() : '',
-      updatedAt: new Date().toISOString()
+async function getCalendarNoteActor(req: import('express').Request): Promise<{ userId: string; isAdmin: boolean } | null> {
+  const token = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7).trim() : '';
+  if (!token) return null;
+  const admin = await verifyAdminJwtWithRevocation(token);
+  if (admin?.admin) return { userId: 'admin', isAdmin: true };
+  const uid = await verifyCustomerIdToken(req);
+  return uid ? { userId: uid, isAdmin: false } : null;
+}
+
+// Admin sessions may use a server JWT without a Firebase client session.
+// This authenticated read endpoint keeps their calendar notes available when
+// a Firestore browser subscription is unavailable. Never return other members'
+// notes to a regular customer.
+router.get('/calendar-notes', calendarNoteLimiter, async (req, res) => {
+  try {
+    const actor = await getCalendarNoteActor(req);
+    if (!actor) return res.status(401).json({ success: false, error: 'Sign in to view calendar notes.' });
+    const month = req.query.month;
+    if (typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+      return res.status(400).json({ success: false, error: 'A valid YYYY-MM month is required.' });
+    }
+
+    const notesCollection = getFirestore().collection('calendar_notes');
+    // Avoid requiring a composite index for member + date. The API checks the
+    // month again after fetching the authenticated member's notes.
+    const snapshot = actor.isAdmin
+      ? await notesCollection.where('date', '>=', `${month}-01`).where('date', '<=', `${month}-31`).get()
+      : await notesCollection.where('userId', '==', actor.userId).get();
+    const notes = snapshot.docs.flatMap(doc => {
+      const data = doc.data();
+      if (typeof data.date !== 'string' || !data.date.startsWith(`${month}-`)) return [];
+      if (!actor.isAdmin && data.userId !== actor.userId) return [];
+      return [{
+        id: doc.id,
+        date: data.date,
+        userId: data.userId,
+        userName: data.userName || (actor.isAdmin ? 'Admin' : 'Customer'),
+        note: typeof data.note === 'string' ? data.note : '',
+        updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+      }];
     });
-    
-    return res.json({ success: true, docId });
+    return res.json({ success: true, notes });
   } catch (err) {
-    console.error('[Calendar Notes] POST Error:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    console.error('[Calendar Notes] GET Error:', err);
+    return res.status(500).json({ success: false, error: 'Could not load calendar notes.' });
   }
 });
 
-router.delete('/calendar-notes/:docId', verifyAdminToken, async (req, res) => {
+router.post('/calendar-notes', calendarNoteLimiter, async (req, res) => {
   try {
-    const { docId } = req.params;
-    if (!docId) return res.status(400).json({ success: false, error: 'docId is required' });
-
+    const actor = await getCalendarNoteActor(req);
+    if (!actor) return res.status(401).json({ success: false, error: 'Sign in to save calendar notes.' });
+    const { date, note } = req.body || {};
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || toISODateString(date) !== date) {
+      return res.status(400).json({ success: false, error: 'A valid calendar date is required.' });
+    }
+    if (typeof note !== 'string' || !note.trim() || note.trim().length > 500) {
+      return res.status(400).json({ success: false, error: 'Note must contain 1–500 characters.' });
+    }
+    const docId = `${actor.userId}_${date}`;
     const db = getFirestore();
-    await db.collection('calendar_notes').doc(docId).delete();
-    
+    await db.collection('calendar_notes').doc(docId).set({
+      date,
+      userId: actor.userId,
+      userName: actor.isAdmin ? 'Admin' : 'Customer',
+      note: note.trim(),
+      updatedAt: new Date().toISOString(),
+    });
+    return res.json({ success: true, docId });
+  } catch (err) {
+    console.error('[Calendar Notes] POST Error:', err);
+    return res.status(500).json({ success: false, error: 'Could not save calendar note.' });
+  }
+});
+
+router.delete('/calendar-notes/:docId', calendarNoteLimiter, async (req, res) => {
+  try {
+    const actor = await getCalendarNoteActor(req);
+    if (!actor) return res.status(401).json({ success: false, error: 'Sign in to delete calendar notes.' });
+    const { docId } = req.params;
+    if (typeof docId !== 'string' || !docId || docId.length > 200 || docId.includes('/')) {
+      return res.status(400).json({ success: false, error: 'Invalid note ID.' });
+    }
+    const db = getFirestore();
+    const ref = db.collection('calendar_notes').doc(docId);
+    const note = await ref.get();
+    if (!note.exists) return res.status(404).json({ success: false, error: 'Note not found.' });
+    if (!actor.isAdmin && note.data()?.userId !== actor.userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized to delete this note.' });
+    }
+    await ref.delete();
     return res.json({ success: true });
   } catch (err) {
     console.error('[Calendar Notes] DELETE Error:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Could not delete calendar note.' });
   }
 });
 

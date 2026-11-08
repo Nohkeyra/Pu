@@ -6,7 +6,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#99000000">
+    android:background="@color/wawasan_scrim">
 
     <!-- Bottom sheet card -->
     <LinearLayout
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
-        android:background="#1B221E"
+        android:background="@color/wawasan_surface"
         android:padding="20dp"
         android:paddingBottom="28dp">
 
@@ -24,7 +24,7 @@
             android:layout_height="4dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"
-            android:background="#37473F" />
+            android:background="@color/wawasan_surface" />
 
         <!-- Header bar with title and status badge -->
         <LinearLayout
@@ -39,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="BUTIRAN TEMPAHAN"
-                android:textColor="#F59E0B"
+                android:textColor="@color/wawasan_yellow"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.1" />
@@ -49,10 +49,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="PENDING"
-                android:textColor="#000000"
+                android:textColor="@color/wawasan_text"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                android:background="#F59E0B"
+                android:background="@color/wawasan_yellow"
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
                 android:paddingTop="3dp"
@@ -65,7 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Tempahan Katering"
-            android:textColor="#E2E8F0"
+            android:textColor="@color/wawasan_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp" />
@@ -74,7 +74,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#2D3A33"
+            android:background="@color/wawasan_surface"
             android:layout_marginBottom="16dp" />
 
         <!-- Detail Item 1: Date & Time -->
@@ -99,7 +99,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="TARIKH &amp; MASA"
-                    android:textColor="#64748B"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="9sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.08" />
@@ -109,7 +109,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Memuatkan..."
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:layout_marginTop="2dp" />
@@ -138,7 +138,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="JENIS HIDANGAN"
-                    android:textColor="#64748B"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="9sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.08" />
@@ -148,7 +148,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Memuatkan..."
-                    android:textColor="#10B981"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:layout_marginTop="2dp" />
@@ -177,7 +177,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MENU"
-                    android:textColor="#64748B"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="9sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.08" />
@@ -187,7 +187,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Memuatkan..."
-                    android:textColor="#E2E8F0"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
@@ -215,7 +215,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="LOKASI KATERING"
-                    android:textColor="#64748B"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="9sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.08" />
@@ -225,7 +225,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Memuatkan..."
-                    android:textColor="#38BDF8"
+                    android:textColor="@color/wawasan_text"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:layout_marginTop="2dp" />
@@ -246,9 +246,9 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:text="Tutup"
-                android:textColor="#94A3B8"
+                android:textColor="@color/wawasan_text"
                 android:textSize="13sp"
-                android:backgroundTint="#222A26" />
+                android:backgroundTint="@color/wawasan_surface" />
 
             <Button
                 android:id="@+id/detail_open_app_btn"
@@ -256,10 +256,10 @@
                 android:layout_height="48dp"
                 android:layout_weight="2"
                 android:text="Buka Aplikasi →"
-                android:textColor="#000000"
+                android:textColor="@color/wawasan_text"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:backgroundTint="#F59E0B" />
+                android:backgroundTint="@color/wawasan_yellow" />
 
         </LinearLayout>
 

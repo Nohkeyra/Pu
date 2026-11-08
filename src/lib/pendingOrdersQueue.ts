@@ -1,19 +1,22 @@
 import { Preferences } from '@capacitor/preferences';
 import { safeJsonStringify } from '@/lib/utils';
-import { getApiUrl } from '@/lib/api';
 import { auth } from '@/firebaseConfig';
 
-/** Authenticate only as the account that originally queued the order. */
+/** Offline sends require an email-verified session; preserve original ownership when present. */
 export async function getOrderSubmissionHeaders(payload: Record<string, unknown>): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  await auth.authStateReady();
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sign in to send your saved order.');
   const owner = payload.userId;
-  if (typeof owner === 'string' && owner) {
-    await auth.authStateReady();
-    const user = auth.currentUser;
-    if (!user || user.uid !== owner) throw new Error('Sign in to the original account to send this order.');
-    headers.Authorization = `Bearer ${await user.getIdToken()}`;
+  if (typeof owner === 'string' && owner && user.uid !== owner) {
+    throw new Error('Sign in to the original account to send this order.');
   }
-  return headers;
+  await user.reload();
+  if (!user.emailVerified) throw new Error('Verify your email address before sending this order.');
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${await user.getIdToken(true)}`,
+  };
 }
 
 const PENDING_ORDERS_STORAGE_KEY = 'wawasan_pending_orders';
@@ -130,60 +133,5 @@ export function clearPendingOrders(): void {
   }
 }
 
-let isSyncing = false;
-
-/**
- * Automatically synchronizes cached local order data to the Firestore database backend
- * when network connection is restored on mobile device / browser.
- */
-export async function autoSyncPendingOrders(
-  onSuccess?: (syncedCount: number) => void
-): Promise<{ syncedCount: number; remainingCount: number }> {
-  if (isSyncing) return { syncedCount: 0, remainingCount: getPendingOrdersCount() };
-  isSyncing = true;
-
-  try {
-    await rehydrateQueueFromNative();
-    const queue = getPendingOrders();
-    if (queue.length === 0) {
-      return { syncedCount: 0, remainingCount: 0 };
-    }
-
-    let syncedCount = 0;
-
-    for (const item of queue) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(getApiUrl('/api/orders'), {
-          method: 'POST',
-          headers: await getOrderSubmissionHeaders(item.orderPayload),
-          body: safeJsonStringify(item.orderPayload),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          syncedCount++;
-          removePendingOrder(item.idempotencyKey);
-        }
-      } catch (err) {
-        console.warn('[AutoSync] Order submit failed during sync retry:', err);
-      }
-    }
-
-    if (syncedCount > 0 && onSuccess) {
-      onSuccess(syncedCount);
-    }
-
-    return {
-      syncedCount,
-      remainingCount: getPendingOrdersCount(),
-    };
-  } finally {
-    isSyncing = false;
-  }
-}
-
+// Offline catering requests must be reviewed individually by the customer.
+// Sending is intentionally only available through PendingOrdersDialog's button.

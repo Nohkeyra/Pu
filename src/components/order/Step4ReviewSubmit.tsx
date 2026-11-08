@@ -83,7 +83,7 @@ export function Step4ReviewSubmit({
         {/* Event & Serve Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
               {tText('Event Summary', 'Maklumat Majlis')}
             </h3>
             <button type="button" disabled={isSubmitting} onClick={() => setCurrentStep(1)}
@@ -129,7 +129,7 @@ export function Step4ReviewSubmit({
         {/* Customer Billing Summary */}
         <div className="bg-muted border border-stone/10 p-4 rounded-2xl space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider">
+            <h3 className="microcopy-12-upper font-black text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider">
               {tText('Customer & Billing Info', 'Maklumat Pembayar')}
             </h3>
             <button type="button" disabled={isSubmitting} onClick={() => setCurrentStep(3)}

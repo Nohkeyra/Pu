@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ChevronUp } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 export default function ScrollToTopButton() {
   const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -26,31 +27,27 @@ export default function ScrollToTopButton() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth',
+      behavior: reduceMotion ? 'auto' : 'smooth',
     });
   };
 
-  // Don't show on the login page
-  if (location.pathname === '/' || location.pathname === '/login') {
+  // The order wizard already has a persistent Next/Submit bar. A floating
+  // scroll control overlaps that critical action on narrow screens.
+  if (location.pathname === '/' || location.pathname === '/login' || location.pathname.startsWith('/order')) {
     return null;
   }
-
-  const isOrderPage = location.pathname.startsWith('/order');
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.button
           type="button"
-          initial={{ opacity: 0, y: 20, scale: 0.8 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.8 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.8 }}
+          exit={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.8 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.2 }}
           onClick={scrollToTop}
-          className={`fixed right-3 md:right-6 z-[110] min-h-[40px] min-w-[40px] p-2.5 md:p-3 bg-gradient-to-tr from-sunshine to-crisp-carrot text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center ${
-            isOrderPage
-              ? 'bottom-[calc(136px+env(safe-area-inset-bottom,8px))] lg:bottom-[calc(88px+env(safe-area-inset-bottom,12px))]'
-              : 'bottom-[calc(80px+env(safe-area-inset-bottom,12px))]'
-          }`}
+          className="fixed right-3 md:right-6 z-[110] min-h-[48px] min-w-[48px] p-2.5 md:p-3 bg-gradient-to-tr from-sunshine to-crisp-carrot text-[color:color-mix(in_srgb,var(--ui-on-yellow)_80%,black)] rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-action)] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100 flex items-center justify-center bottom-[calc(80px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,12px)))]"
           aria-label="Scroll to top"
         >
           <ChevronUp className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="wawasan_orange">#E83D20</color>
+    <color name="wawasan_yellow">#FFB02E</color>
+    <color name="wawasan_green">#186B45</color>
+    <color name="wawasan_canvas">#211A19</color>
+    <color name="wawasan_text">#FFB02E</color>
+    <color name="wawasan_surface">#352A21</color>
+    <color name="wawasan_border">#FFB02E</color>
+    <color name="wawasan_scrim">#99211A19</color>
+    <color name="wawasan_on_yellow">#211A19</color>
+    <color name="colorPrimary">@color/wawasan_canvas</color>
+    <color name="colorPrimaryDark">@color/wawasan_canvas</color>
+    <color name="colorAccent">@color/wawasan_yellow</color>
+</resources>

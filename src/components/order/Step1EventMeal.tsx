@@ -76,7 +76,7 @@ export function Step1EventMeal({
 
       {/* Event Type option cards */}
       <div className="space-y-1.5">
-        <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
+        <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
         <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
@@ -94,19 +94,19 @@ export function Step1EventMeal({
             )}
           >
             {orderState.eventType === 'pejabat' && (
-              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-[var(--ui-action)] text-[var(--ui-on-action)] rounded-full p-0.5 shadow-sm">
                 <Check className="w-3 h-3" />
               </div>
             )}
             <div className={cn(
               "customer-choice-icon w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
-              orderState.eventType === 'pejabat' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+              orderState.eventType === 'pejabat' ? "bg-[var(--ui-action)] text-[var(--ui-on-action)] scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Briefcase className="w-4.5 h-4.5" />
             </div>
             <div className="w-full">
               <span className="customer-choice-title text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Office Feast', 'Jamuan Pejabat')}</span>
-              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
+              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[var(--ui-legacy-white)]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Meetings & corporate', 'Urusan rasmi & mesyuarat')}</span>
             </div>
           </Button>
 
@@ -124,19 +124,19 @@ export function Step1EventMeal({
             )}
           >
             {orderState.eventType === 'lain' && (
-              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-[var(--ui-action)] text-[var(--ui-on-action)] rounded-full p-0.5 shadow-sm">
                 <Check className="w-3 h-3" />
               </div>
             )}
             <div className={cn(
               "customer-choice-icon w-9 h-9 rounded-md flex items-center justify-center transition-all shadow-sm shrink-0",
-              orderState.eventType === 'lain' ? "bg-crisp-carrot text-white scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+              orderState.eventType === 'lain' ? "bg-[var(--ui-action)] text-[var(--ui-on-action)] scale-105" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Smile className="w-4.5 h-4.5" />
             </div>
             <div className="w-full">
               <span className="customer-choice-title text-xs sm:text-sm font-bold block text-deep-forest dark:text-white leading-tight">{tText('Private Events', 'Majlis Katering')}</span>
-              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[#ede5d8]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
+              <span className="customer-choice-description text-xs text-deep-forest/70 dark:text-[var(--ui-legacy-white)]/75 leading-tight font-normal block mt-0.5 line-clamp-2">{tText('Birthday & gatherings', 'Sambutan & kenduri')}</span>
             </div>
           </Button>
         </div>
@@ -146,7 +146,7 @@ export function Step1EventMeal({
       {/* Meal Type selection */}
       <div className="space-y-1.5 pt-1">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
+          <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
             {tText('Meals / Sajian', 'Pilihan Sajian *')}
           </Label>
           <span className="text-xs text-stone font-normal">
@@ -178,13 +178,13 @@ export function Step1EventMeal({
                 )}
               >
                 {isSelected && (
-                  <div className="customer-choice-check absolute top-1.5 right-1.5 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+                  <div className="customer-choice-check absolute top-1.5 right-1.5 bg-[var(--ui-action)] text-[var(--ui-on-action)] rounded-full p-0.5 shadow-sm">
                     <Check className="w-2.5 h-2.5" />
                   </div>
                 )}
                 <div className={cn(
                   "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0",
-                  isSelected ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+                  isSelected ? "bg-[var(--ui-action)] text-[var(--ui-on-action)]" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
                 )}>
                   <Icon className="w-4 h-4" />
                 </div>
@@ -263,7 +263,7 @@ export function Step1EventMeal({
 
       {/* Serving Style / Preparation Type */}
       <div className="customer-serving space-y-1.5">
-        <Label className="text-xs font-bold text-deep-forest dark:text-[#ede5d8] uppercase tracking-wider block">
+        <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
           {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
         </Label>
         <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
@@ -281,13 +281,13 @@ export function Step1EventMeal({
             )}
           >
             {orderState.preparationType === 'buffet' && (
-              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-[var(--ui-action)] text-[var(--ui-on-action)] rounded-full p-0.5 shadow-sm">
                 <Check className="w-2.5 h-2.5" />
               </div>
             )}
             <div className={cn(
               "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-              orderState.preparationType === 'buffet' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+              orderState.preparationType === 'buffet' ? "bg-[var(--ui-action)] text-[var(--ui-on-action)]" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <UtensilsCrossed className="w-4 h-4" />
             </div>
@@ -311,13 +311,13 @@ export function Step1EventMeal({
             )}
           >
             {orderState.preparationType === 'meal_box' && (
-              <div className="customer-choice-check absolute top-2 right-2 bg-crisp-carrot text-white rounded-full p-0.5 shadow-sm">
+              <div className="customer-choice-check absolute top-2 right-2 bg-[var(--ui-action)] text-[var(--ui-on-action)] rounded-full p-0.5 shadow-sm">
                 <Check className="w-2.5 h-2.5" />
               </div>
             )}
             <div className={cn(
               "customer-choice-icon w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
-              orderState.preparationType === 'meal_box' ? "bg-crisp-carrot text-white" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
+              orderState.preparationType === 'meal_box' ? "bg-[var(--ui-action)] text-[var(--ui-on-action)]" : "bg-card border border-stone/10 text-stone dark:bg-stone-800"
             )}>
               <Package className="w-4 h-4" />
             </div>
@@ -333,7 +333,7 @@ export function Step1EventMeal({
       <Button
         onClick={validateAndNext}
         data-tour="step1-next"
-        className="customer-step-next w-full bg-crisp-carrot hover:bg-crisp-carrot/95 text-white h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
+        className="customer-step-next w-full bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
       >
         {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
         <ArrowRight className="w-4 h-4 ml-1.5" />

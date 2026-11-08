@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
+import { Capacitor } from '@capacitor/core';
+import { getCustomerHomePath } from '@/lib/appEntryRoutes';
 import UserProfileDashboard from '@/components/profile/UserProfileDashboard';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,8 @@ export default function ProfilePage() {
     return () => unsubscribe();
   }, [navigate]);
 
+  const homePath = getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(currentUser));
+
   if (loading) {
     return (
       <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
@@ -50,7 +54,7 @@ export default function ProfilePage() {
         subtitle={language === 'bm' ? 'Ruang anda bersama Wawasan' : 'Your space with Wawasan'}
         onBack={() => {
           if (window.history.state?.idx > 0) navigate(-1);
-          else navigate('/home');
+          else navigate(homePath);
         }}
         actions={[
           ...(!currentUser ? [{ label: language === 'bm' ? 'Log masuk' : 'Sign in', onSelect: () => { setAuthMode('signin'); setAuthModalOpen(true); } }] : []),
@@ -117,8 +121,8 @@ export default function ProfilePage() {
                 >
                   <span>
                     {language === 'bm'
-                      ? 'Tempah sebagai tetamu'
-                      : 'Order as a guest'}
+                      ? 'Sediakan draf tanpa akaun'
+                      : 'Prepare a draft without an account'}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[var(--color-sunshine-cta)] shrink-0 transition-transform group-hover:translate-x-1" />
                 </Button>
@@ -131,7 +135,7 @@ export default function ProfilePage() {
               <UserProfileDashboard
                 isOpen={true}
                 isEmbedded={true}
-                onClose={() => navigate('/home')}
+                onClose={() => navigate(homePath)}
                 onReorder={(data) => navigate('/order', { state: { reorderData: data } })}
               />
             </div>

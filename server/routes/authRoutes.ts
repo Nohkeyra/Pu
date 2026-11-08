@@ -87,30 +87,31 @@ router.get('/admin/verify', verifyAdminToken, async (req, res) => {
   });
 });
 
-// Admin Logout Endpoint — C-1 fix: revoke the session JWT by writing its JTI to admin_revocations
+// Admin logout is idempotent for missing/expired tokens. For a valid server JWT,
+// report success ONLY after its revocation is durably recorded. Otherwise the
+// token would remain usable even though the API claimed the session was ended.
 router.post('/admin/logout', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  const payload = token ? verifyAdminJwt(token) : null;
 
-  if (token) {
-    const payload = verifyAdminJwt(token);
-    if (payload?.jti) {
-      try {
-        const db = getFirestore();
-        // Write a TTL document so the JTI is checked during verifyAdminJwtWithRevocation.
-        // expireAt is set 25 hours out (token lifetime is 24 h) so the revocation record
-        // outlives the token, preventing a race between expiry and the Firestore TTL sweep.
-        const expireAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
-        await db.collection('admin_revocations').doc(`jti_${payload.jti}`).set({
-          jti: payload.jti,
-          uid: payload.uid,
-          revokedAt: FieldValue.serverTimestamp(),
-          expireAt,
-        });
-      } catch (err) {
-        // Log but don't block the client response — the token will expire naturally.
-        console.error('[Admin Logout] Failed to write JTI revocation:', err);
-      }
+  if (payload?.jti) {
+    try {
+      const db = getFirestore();
+      // Keep the revocation record longer than the 24h token lifetime.
+      const expireAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
+      await db.collection('admin_revocations').doc(`jti_${payload.jti}`).set({
+        jti: payload.jti,
+        uid: payload.uid,
+        revokedAt: FieldValue.serverTimestamp(),
+        expireAt,
+      });
+    } catch (err) {
+      console.error('[Admin Logout] Failed to write JTI revocation:', err);
+      return res.status(503).json({
+        success: false,
+        error: 'Could not revoke this admin session. Please retry logout.',
+      });
     }
   }
 

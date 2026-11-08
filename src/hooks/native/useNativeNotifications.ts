@@ -11,6 +11,54 @@ import { getSecureItem } from '@/lib/preferences';
 
 const ADMIN_TOKEN_STORAGE_KEY = 'wawasan_admin_token';
 
+/** Customer token registration requires a Firebase ID token on the server. */
+async function syncCustomerFcmToken(fcmToken: string, deviceToken?: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) return; // Guests cannot use the authenticated customer endpoint.
+
+  try {
+    const idToken = await user.getIdToken();
+    // An auth change during getIdToken must not associate the token with the old account.
+    if (auth.currentUser?.uid !== user.uid) return;
+
+    const response = await fetch(getApiUrl('/api/user/fcm-token'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ fcmToken, ...(deviceToken ? { deviceToken } : {}) }),
+    });
+    if (!response.ok) {
+      console.warn('[FCM] Server token sync rejected:', response.status);
+    }
+  } catch (err) {
+    console.warn('[FCM] Server token sync failed:', err);
+  }
+}
+
+/** Subscribe only after admin sign-in, and report HTTP failures accurately. */
+async function subscribeAdminToPushTopic(fcmToken: string): Promise<void> {
+  try {
+    const adminToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
+    if (!adminToken) return;
+
+    const response = await fetch(getApiUrl('/api/admin/subscribe-to-topic'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ token: fcmToken, topic: 'new_orders' }),
+    });
+    if (!response.ok) {
+      console.warn('[FCM] Admin topic subscription rejected:', response.status);
+    }
+  } catch (err) {
+    console.warn('[FCM] Admin topic subscription failed:', err);
+  }
+}
+
 export function useNativeNotifications() {
   const { notificationsEnabled } = useSettings();
   const tokenRef = useRef<string | null>(null);
@@ -61,32 +109,12 @@ export function useNativeNotifications() {
         }
 
         await PushNotifications.addListener('registration', async (token) => {
-          console.log('Push registration successful, native token:', token.value);
+          // Never log device push tokens; they can be used to address this device.
           
           try {
             localStorage.setItem('wawasan_device_token', token.value);
           } catch {
             // Ignore localStorage errors
-          }
-
-          // Subscribe to the "new_orders" topic ONLY for an active admin session.
-          try {
-            const adminToken = await getSecureItem(ADMIN_TOKEN_STORAGE_KEY);
-            if (adminToken) {
-              await fetch(getApiUrl('/api/admin/subscribe-to-topic'), {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${adminToken}`,
-                },
-                body: JSON.stringify({ token: token.value, topic: 'new_orders' })
-              });
-              console.log('Successfully subscribed to new_orders topic (admin session)');
-            } else {
-              console.log('No active admin session; skipping new_orders topic subscription.');
-            }
-          } catch (subscribeErr) {
-            console.error('Error subscribing to topic:', subscribeErr);
           }
 
           // Fetch FCM token with native token fallback
@@ -101,18 +129,19 @@ export function useNativeNotifications() {
           }
 
           tokenRef.current = activePushToken;
+
+          // Both cold-start sessions and fresh sign-ins must subscribe.
+          await subscribeAdminToPushTopic(activePushToken);
+
           try {
             localStorage.setItem('wawasan_fcm_token', activePushToken);
           } catch {
             // Ignore localStorage errors
           }
 
-          // Sync with backend API
-          fetch(getApiUrl('/api/user/fcm-token'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fcmToken: activePushToken, deviceToken: token.value })
-          }).catch(err => console.warn('[FCM] Server token sync failed:', err));
+          // The server requires a verified Firebase session; guest devices
+          // must not send an unauthenticated request that will always be rejected.
+          await syncCustomerFcmToken(activePushToken, token.value);
 
           const currentUser = auth.currentUser;
           if (currentUser) {
@@ -170,6 +199,8 @@ export function useNativeNotifications() {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && tokenRef.current) {
+        // A user may sign in after the native registration callback already ran.
+        await syncCustomerFcmToken(tokenRef.current);
         try {
           const userDocRef = doc(db, 'users', user.uid);
           await setDoc(userDocRef, { fcmToken: tokenRef.current }, { merge: true });
@@ -180,6 +211,16 @@ export function useNativeNotifications() {
       }
     });
 
-    return () => unsubscribe();
+    // Firebase auth can finish before the app saves its server-verified admin
+    // session. authService emits this event once saveAdminToken finishes.
+    const onAdminSessionChange = () => {
+      if (tokenRef.current) void subscribeAdminToPushTopic(tokenRef.current);
+    };
+    window.addEventListener('admin:login-state-change', onAdminSessionChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('admin:login-state-change', onAdminSessionChange);
+    };
   }, [notificationsEnabled]);
 }

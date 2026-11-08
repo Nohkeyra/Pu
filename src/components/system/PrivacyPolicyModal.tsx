@@ -54,10 +54,10 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-          className="relative z-10 w-full max-w-lg bg-cream dark:bg-[#121a17] border border-amber-500/30 dark:border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]"
+          className="relative z-10 w-full max-w-lg bg-cream dark:bg-[var(--ui-canvas)] border border-amber-500/30 dark:border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#0c453c] via-[#0e5449] to-[#0c453c] text-white p-5 sm:p-6 shrink-0 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[var(--ui-green)] via-[var(--ui-green)] to-[var(--ui-green)] text-white p-5 sm:p-6 shrink-0 relative overflow-hidden">
             {/* Ambient pattern overlay */}
             <div className="absolute inset-0 opacity-10 pattern-dots pointer-events-none" />
             
@@ -118,7 +118,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 1 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[var(--ui-green)] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   1
                 </span>
                 {language === 'bm' ? 'Maklumat Yang Dikumpul' : 'Information We Collect'}
@@ -133,7 +133,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 2 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[var(--ui-green)] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   2
                 </span>
                 {language === 'bm' ? 'Penggunaan & Keselamatan Data' : 'Data Usage & Protection'}
@@ -148,7 +148,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 3 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[var(--ui-green)] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   3
                 </span>
                 {language === 'bm' ? 'Jaminan Tiada Penjualan Data' : 'No Data Selling Guarantee'}
@@ -163,7 +163,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
             {/* Section 4 */}
             <div className="space-y-1.5">
               <h3 className="font-bold text-sm text-deep-forest dark:text-white flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#0c453c] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[var(--ui-green)] text-white text-xs font-bold flex items-center justify-center shrink-0">
                   4
                 </span>
                 {language === 'bm' ? 'Hak & Akses Pengguna' : 'Your Control & Rights'}
@@ -186,7 +186,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
           </div>
 
           {/* Footer CTA */}
-          <div className="p-4 sm:p-5 bg-stone-100/80 dark:bg-[#0c100e] border-t border-stone-200 dark:border-white/10 shrink-0">
+          <div className="p-4 sm:p-5 bg-stone-100/80 dark:bg-[var(--ui-canvas)] border-t border-stone-200 dark:border-white/10 shrink-0">
             <Button
               id="privacy-policy-understood-btn"
               type="button"

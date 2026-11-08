@@ -1,5 +1,5 @@
 /* Shared presentation: aligned with .panel-surface and .card-happening visual hierarchy */
-.app-dialog-panel {border-radius:28px;box-shadow:0 24px 60px -10px rgba(223,113,15,0.18),0 8px 24px -4px rgba(23,59,42,0.08)}
+.app-dialog-panel {max-height:calc(100dvh - 2rem - var(--sat, 0px) - var(--sab, 0px));border-radius:28px;box-shadow:0 24px 60px -10px color-mix(in srgb, var(--ui-shadow-ink) 18.0%, transparent),0 8px 24px -4px color-mix(in srgb, var(--ui-shadow-ink) 8.0%, transparent)}
 .app-dialog-panel [data-slot=dialog-header] {min-width:0}
 .app-dialog-panel [data-slot=dialog-title] {overflow-wrap:anywhere}
 .app-dialog-panel [data-slot=dialog-description] {color:var(--color-text-soft)}
@@ -11,13 +11,13 @@
 .app-auth-heading {min-width:0}
 .app-auth-heading h2 {overflow-wrap:anywhere}
 .app-auth-panel form input:focus-visible,.app-auth-panel form select:focus-visible {outline:2px solid var(--color-sunshine-cta);outline-offset:2px}
-.app-admin-tabs {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border-radius:20px;background:rgba(255,246,228,0.7);border:1px solid rgba(223,113,15,0.18);overflow:visible;box-shadow:0 4px 14px rgba(223,113,15,0.06)}
-.dark .app-admin-tabs {background:rgba(25,22,18,0.7);border-color:rgba(255,164,44,0.14);box-shadow:0 4px 14px rgba(0,0,0,0.3)}
+.app-admin-tabs {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border-radius:20px;background:color-mix(in srgb, var(--ui-surface) 70.0%, transparent);border:1px solid color-mix(in srgb, var(--ui-orange) 18.0%, transparent);overflow:visible;box-shadow:0 4px 14px color-mix(in srgb, var(--ui-shadow-ink) 6.0%, transparent)}
+.dark .app-admin-tabs {background:color-mix(in srgb, var(--ui-canvas) 70.0%, transparent);border-color:color-mix(in srgb, var(--ui-orange) 14.0%, transparent);box-shadow:0 4px 14px color-mix(in srgb, var(--ui-shadow-ink) 30.0%, transparent)}
 .app-admin-tabs>button {min-width:0;min-height:48px;height:auto;white-space:normal;justify-content:center;gap:6px;padding:10px 7px;border-radius:14px;color:var(--color-text-soft);font-size:.75rem;font-weight:500;scale:1;transform:none;box-shadow:none;transition:all 0.2s ease}
-.app-admin-tabs>button[aria-pressed=true] {background:#ffffff;color:var(--color-sunshine-cta);font-weight:700;border:1px solid rgba(223,113,15,0.22);box-shadow:0 4px 12px rgba(223,113,15,0.12)}
-.dark .app-admin-tabs>button[aria-pressed=true] {background:#221c17;color:var(--color-sunshine);border-color:rgba(255,164,44,0.25);box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.app-admin-tabs>button[aria-pressed=true] {background:var(--ui-surface);color:var(--color-sunshine-cta);font-weight:700;border:1px solid color-mix(in srgb, var(--ui-orange) 22.0%, transparent);box-shadow:0 4px 12px color-mix(in srgb, var(--ui-shadow-ink) 12.0%, transparent)}
+.dark .app-admin-tabs>button[aria-pressed=true] {background:var(--ui-canvas);color:var(--color-sunshine);border-color:color-mix(in srgb, var(--ui-orange) 25.0%, transparent);box-shadow:0 4px 12px color-mix(in srgb, var(--ui-shadow-ink) 40.0%, transparent)}
 .app-admin-tabs>button svg {color:inherit;width:16px;height:16px}
 .app-admin-tab-label {min-width:0;overflow-wrap:anywhere;text-align:left;line-height:1.4}
-@media(min-width:1024px) {.app-admin-tabs{display:flex;flex-direction:column;padding:6px;border:1px solid rgba(223,113,15,0.18);border-radius:20px}.app-admin-tabs>button{justify-content:flex-start}}
+@media(min-width:1024px) {.app-admin-tabs{display:flex;flex-direction:column;padding:6px;border:1px solid color-mix(in srgb, var(--ui-orange) 18.0%, transparent);border-radius:20px}.app-admin-tabs>button{justify-content:flex-start}}
 @media(max-width:350px) {.app-admin-tabs>button{flex-direction:column;gap:5px;padding-inline:3px}.app-admin-tab-label{text-align:center}}
 @media(prefers-reduced-motion:reduce) {.app-segmented [role=tab],.app-admin-tabs>button{transition:none}}

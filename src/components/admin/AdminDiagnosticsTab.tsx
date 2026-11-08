@@ -23,7 +23,7 @@ interface AdminDiagnosticsTabProps {
   diagPdf: DiagState;
   diagNative: DiagState;
   diagEmail: DiagState;
-  diagImage?: DiagState;
+  diagImage: DiagState;
   diagTests: { id: string; status: 'idle' | 'running' | 'pass' | 'fail'; name: string }[];
   testEmailAddress: string;
   isSendingTestEmail: boolean;
@@ -37,10 +37,9 @@ interface AdminDiagnosticsTabProps {
   runCalendarDiag: () => void;
   runPdfDiag: () => void;
   runNativeDiag: () => void;
-  runImageDiag?: () => void;
+  runImageDiag: () => void;
   runSendTestEmail: (e: React.FormEvent) => void;
   runSendTestPush?: (e: React.FormEvent) => void;
-  runFeatureTest: (feature: string) => void;
   toggleEruda: () => void;
   setTestEmailAddress: (val: string) => void;
   setTestPushTitle?: (val: string) => void;
@@ -129,7 +128,7 @@ export function AdminDiagnosticsTab({
   diagPdf,
   diagNative,
   diagEmail,
-  diagImage = { status: 'pass', message: 'Anti-Hotlink Guard Active • Server Proxy & Image Repair Ready' },
+  diagImage,
   testEmailAddress,
   isSendingTestEmail,
   testPushTitle = '🔔 Ujian Notifikasi FCM / FCM Test Push',
@@ -142,7 +141,7 @@ export function AdminDiagnosticsTab({
   runCalendarDiag,
   runPdfDiag,
   runNativeDiag,
-  runImageDiag = () => {},
+  runImageDiag,
   runSendTestEmail,
   runSendTestPush,
   toggleEruda,
@@ -209,8 +208,8 @@ export function AdminDiagnosticsTab({
         />
         <DiagCard 
           icon={Image}
-          title="Image Repair & Anti-Hotlink"
-          description="Monitors anti-hotlink guard, image proxy, and vector repair pipeline."
+          title="Brand Image Delivery"
+          description="Checks the local brand image is served as an image. External proxy repair is not covered."
           state={diagImage}
           onRun={runImageDiag}
         />

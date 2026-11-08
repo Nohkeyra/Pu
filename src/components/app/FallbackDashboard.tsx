@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Card } from '@/components/ui/card';
+import { invalidateFetchCache } from '@/lib/api';
 import { AlertTriangle, User, Shield, Trash2, Home } from 'lucide-react';
 
 interface FallbackDashboardProps {
@@ -26,12 +27,15 @@ export default function FallbackDashboard({ onExit }: FallbackDashboardProps) {
 
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
-  const handleClearCache = () => {
+  // Disposable cache only; offline orders, drafts and account sessions are data.
+  const handleClearCache = async () => {
     try {
-      localStorage.clear();
-      sessionStorage.clear();
-      setStatusMsg('Semua cache, preferences, dan session storage telah dikosongkan!');
-      setTimeout(() => window.location.reload(), 600);
+      invalidateFetchCache();
+      if (navigator.onLine && 'caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.filter(name => name.startsWith('wawasan-')).map(name => caches.delete(name)));
+      }
+      setStatusMsg('Cache sementara dibersihkan. Draf, pesanan luar talian dan sesi dikekalkan.');
     } catch (err) {
       setStatusMsg('Gagal membersihkan cache: ' + String(err));
     }
@@ -49,11 +53,13 @@ export default function FallbackDashboard({ onExit }: FallbackDashboardProps) {
 
   const handleBypassSession = (role: 'guest' | 'admin') => {
     try {
-      sessionStorage.setItem('wawasan_session_started', 'true');
       if (role === 'guest') {
+        sessionStorage.setItem('wawasan_session_started', 'true');
         sessionStorage.setItem('wawasan_guest_allowed', 'true');
         window.location.hash = '#/home';
       } else {
+        // Never manufacture a privileged session for the diagnostic shortcut.
+        // The Admin route must still request and verify valid credentials.
         window.location.hash = '#/admin';
       }
       window.location.reload();
@@ -116,7 +122,7 @@ export default function FallbackDashboard({ onExit }: FallbackDashboardProps) {
           >
             <div>
               <span className="block text-sm text-deep-forest dark:text-stone-50">Log Masuk Pelanggan (Guest)</span>
-              <span className="microcopy-14 text-stone font-medium">Bypass session guard dan buat tempahan catering</span>
+              <span className="microcopy-14 text-stone font-medium">Teruskan sebagai tetamu untuk tempahan katering</span>
             </div>
             <User className="w-5 h-5 text-[var(--color-sunshine-cta)]" />
           </button>
@@ -140,7 +146,7 @@ export default function FallbackDashboard({ onExit }: FallbackDashboardProps) {
               className="touch-target-row min-h-[44px] py-3.5 px-4 bg-tomato-burst/10 hover:bg-tomato-burst/15 border border-tomato-burst/20 text-tomato-burst font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200"
             >
               <Trash2 className="w-4 h-4" />
-              Reset App Cache
+              Clear Temporary Cache
             </button>
 
             <button

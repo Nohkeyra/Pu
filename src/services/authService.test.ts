@@ -324,6 +324,17 @@ describe('authService', () => {
       expect(preferences.removeSecureItem).not.toHaveBeenCalledWith(ADMIN_BIOMETRIC_PREF_KEY);
     });
 
+    it('does not silently ignore a failed server revocation while clearing the local token', async () => {
+      vi.mocked(preferences.getSecureItem).mockResolvedValue('token_to_clear');
+      vi.mocked(platform.isAndroidApk).mockReturnValue(false);
+      vi.mocked(fetch).mockResolvedValue({ ok: false, status: 503 } as Response);
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await clearAdminSession();
+      expect(preferences.removeSecureItem).toHaveBeenCalledWith(ADMIN_TOKEN_KEY);
+      expect(warning).toHaveBeenCalledWith('[AuthService] Server session revocation rejected:', 503);
+    });
+
     it('forgets biometric enrolment only when explicitly asked', async () => {
       vi.mocked(preferences.getSecureItem).mockResolvedValue('token_to_clear');
       vi.mocked(platform.isAndroidApk).mockReturnValue(true);

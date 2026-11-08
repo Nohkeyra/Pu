@@ -1,0 +1,96 @@
+/* Living Canvas: visible by default on Home. Visual-only; business logic unchanged. */
+.landing-page.living-canvas-v31 {
+  --landing-canvas: var(--ui-surface);
+  --landing-surface: var(--ui-surface);
+  --landing-soft: var(--ui-raised);
+  --landing-ink: var(--ui-ink);
+  --landing-muted: var(--ui-muted);
+  --landing-line: var(--ui-border);
+  --landing-accent: var(--ui-action);
+  background: var(--landing-canvas);
+}
+.dark .landing-page.living-canvas-v31 {
+  --landing-canvas: var(--ui-canvas);
+  --landing-surface: var(--ui-canvas);
+  --landing-soft: var(--ui-raised);
+  --landing-ink: var(--ui-ink);
+  --landing-muted: var(--ui-muted);
+  --landing-line: var(--ui-border);
+  --landing-accent: var(--ui-yellow);
+}
+.living-canvas-v31 .landing-hero.heritage-hero {
+  --heritage-hero-bg: var(--landing-canvas);
+  --heritage-hero-ink: var(--landing-ink);
+  min-height: min(830px, 100dvh);
+  background: radial-gradient(circle at 80% 32%, color-mix(in srgb, var(--ui-yellow) 43.9%, transparent) 0%, transparent 39%), var(--landing-canvas);
+}
+.living-canvas-v31 .heritage-hero-content {
+  align-items: flex-start;
+  text-align: left;
+  max-width: 1180px;
+}
+.living-canvas-v31 .heritage-hero-title {
+  max-width: 900px;
+  font-size: clamp(3.3rem, 9vw, 8.5rem);
+  line-height: .96;
+  letter-spacing: -.055em;
+  text-wrap: balance;
+}
+.living-canvas-v31 .heritage-hero-description {
+  max-width: 590px;
+  font-size: clamp(1rem, 1.6vw, 1.22rem);
+}
+.living-canvas-v31 .heritage-hero-actions { justify-content: flex-start; }
+.living-canvas-v31 .heritage-hero-action {
+  border-radius: 20px 20px 8px 20px;
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--ui-shadow-ink) 18.0%, transparent);
+  min-height: 54px;
+}
+.living-canvas-v31 .heritage-hero-action-primary {
+  background: var(--ui-action);
+  color: var(--ui-on-action);
+  border-color: var(--ui-action);
+}
+.living-canvas-v31 .heritage-hero-scroll-hint { align-self: flex-start; }
+.living-canvas-v31 .landing-highlights-grid { gap: 16px; }
+.living-canvas-v31 .landing-highlight {
+  border-radius: 22px 22px 10px 22px;
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--ui-shadow-ink) 10.0%, transparent);
+}
+@media (max-width: 640px) {
+  .living-canvas-v31 .landing-hero.heritage-hero { min-height: 86dvh; }
+  .living-canvas-v31 .heritage-hero-content { padding-inline: 24px; }
+  .living-canvas-v31 .heritage-hero-title { font-size: clamp(3rem, 12vw, 5rem); }
+  .living-canvas-v31 .heritage-hero-actions { flex-direction: column; align-items: stretch; }
+  .living-canvas-v31 .heritage-hero-action { width: 100%; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .living-canvas-v31 .heritage-hero-action { transition: none; }
+}
+
+/* Distinctive editorial hero, intentionally visible without a query parameter. */
+.living-canvas-v31 .heritage-hero-content::before {
+  content: "WAWASAN  /  LIVING CANVAS";
+  display: inline-flex;
+  align-self: flex-start;
+  margin-bottom: 1.1rem;
+  padding: .65rem 1rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: var(--ui-yellow);
+  color: var(--ui-action);
+  font: 900 .72rem/1.2 system-ui, sans-serif;
+  letter-spacing: .16em;
+  box-shadow: 4px 4px 0 var(--ui-shadow-ink);
+}
+.living-canvas-v31 .heritage-hero-title {
+  color: var(--landing-ink);
+  text-shadow: 5px 5px 0 color-mix(in srgb, var(--ui-shadow-ink) 45.0%, transparent);
+}
+.living-canvas-v31 .heritage-hero-description { color: var(--landing-muted); }
+.living-canvas-v31 .heritage-hero-action-secondary { background: var(--landing-surface); color: var(--landing-ink); border: 2px solid var(--landing-ink); }
+.living-canvas-v31 .heritage-hero-shading { opacity: .18; }
+@media (max-width: 640px) {
+  .living-canvas-v31 .heritage-hero-content::before { font-size: .61rem; }
+  .living-canvas-v31 .heritage-hero-title { text-shadow: 3px 3px 0 color-mix(in srgb, var(--ui-shadow-ink) 50.0%, transparent); }
+}

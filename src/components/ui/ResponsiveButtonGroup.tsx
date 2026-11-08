@@ -57,7 +57,7 @@ export const ResponsiveToggleRow: React.FC<ResponsiveToggleRowProps> = ({
   return (
     <div
       className={cn(
-        'w-full flex items-center justify-between gap-4 py-3 px-4 rounded-2xl border border-[rgba(223,113,15,0.18)] dark:border-white/10 bg-card/70 dark:bg-[#221c17]/70 transition-all hover:border-[rgba(223,113,15,0.38)] hover:shadow-sm min-h-[56px]',
+        'w-full flex items-center justify-between gap-4 py-3 px-4 rounded-2xl border border-[rgba(223,113,15,0.18)] dark:border-white/10 bg-card/70 dark:bg-[var(--ui-canvas)]/70 transition-all hover:border-[rgba(223,113,15,0.38)] hover:shadow-sm min-h-[56px]',
         className
       )}
       {...props}

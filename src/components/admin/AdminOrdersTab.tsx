@@ -182,7 +182,7 @@ export function AdminOrdersTab({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
               aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
-              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-lg border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[#0c453c] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[#f69913]/40 transition-all"
+              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-lg border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[var(--ui-ink)] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-yellow)]/40 transition-all"
             />
           </div>
 
@@ -196,10 +196,10 @@ export function AdminOrdersTab({
             aria-label={language === 'bm' ? 'Buka atau tutup penapis' : 'Toggle filters dropdown'}
             className={`h-11 min-h-[44px] px-3 sm:px-4 flex items-center justify-center gap-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all cursor-pointer shrink-0 select-none ${
               isFilterDropdownOpen
-                ? 'bg-[#0c453c] text-white border-[#0c453c] shadow-xs dark:bg-emerald-600 dark:border-emerald-600'
+                ? 'bg-[var(--ui-ink)] text-[var(--ui-canvas)] border-[var(--ui-ink)] shadow-xs'
                 : activeFilterCount > 0
-                  ? 'bg-[#0c453c]/10 text-[#0c453c] border-[#0c453c]/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                  : 'bg-[var(--color-cream-dark)] hover:bg-[var(--color-cream)] dark:bg-background/60 dark:hover:bg-background border-[var(--color-light-forest)] dark:border-stone-800 text-[#0c453c] dark:text-stone-200'
+                  ? 'bg-[var(--ui-raised)] text-[var(--ui-ink)] border-[var(--ui-border)]'
+                  : 'bg-[var(--color-cream-dark)] hover:bg-[var(--color-cream)] dark:bg-background/60 dark:hover:bg-background border-[var(--color-light-forest)] dark:border-stone-800 text-[var(--ui-green)] dark:text-stone-200'
             }`}
           >
             <SlidersHorizontal className="w-4 h-4 shrink-0" />
@@ -209,8 +209,8 @@ export function AdminOrdersTab({
             {activeFilterCount > 0 && (
               <span className={`w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
                 isFilterDropdownOpen
-                  ? 'bg-[#f69913] text-white'
-                  : 'bg-[#0c453c] text-white dark:bg-emerald-400 dark:text-stone-900'
+                  ? 'bg-[var(--ui-yellow)] text-[var(--ui-on-yellow)]'
+                  : 'bg-[var(--ui-ink)] text-[var(--ui-canvas)]'
               }`}>
                 {activeFilterCount}
               </span>
@@ -226,7 +226,7 @@ export function AdminOrdersTab({
               {language === 'bm' ? 'Penapis aktif:' : 'Active:'}
             </span>
             {hasActiveStatus && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#f69913]/15 text-[#b06300] dark:text-amber-300 font-semibold text-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--ui-yellow)]/15 text-[var(--ui-orange)] dark:text-amber-300 font-semibold text-xs">
                 {statusFilter === 'pending' ? (language === 'bm' ? 'Menunggu' : 'Pending')
                   : statusFilter === 'approved' ? (language === 'bm' ? 'Diluluskan' : 'Approved')
                   : statusFilter === 'billed' ? (language === 'bm' ? 'Dibilkan' : 'Billed')
@@ -245,7 +245,7 @@ export function AdminOrdersTab({
               </span>
             )}
             {hasActiveDate && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0c453c]/10 text-[#0c453c] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-xs">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--ui-green)]/10 text-[var(--ui-green)] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-xs">
                 {dateFromFilter || '...'} – {dateToFilter || '...'}
                 <button
                   type="button"
@@ -270,7 +270,7 @@ export function AdminOrdersTab({
                 setDateFromFilter('');
                 setDateToFilter('');
               }}
-              className="text-xs text-[#e03f14] hover:underline font-semibold ml-1 cursor-pointer"
+              className="text-xs text-[var(--ui-orange)] hover:underline font-semibold ml-1 cursor-pointer"
             >
               {language === 'bm' ? 'Set Semula' : 'Reset All'}
             </button>
@@ -297,7 +297,7 @@ export function AdminOrdersTab({
                     aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
                     value={dateFromFilter}
                     onChange={(e) => setDateFromFilter(e.target.value)}
-                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[var(--ui-green)] dark:text-emerald-400 focus:outline-none"
                   />
                   <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
                   <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
@@ -309,14 +309,14 @@ export function AdminOrdersTab({
                     aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
                     value={dateToFilter}
                     onChange={(e) => setDateToFilter(e.target.value)}
-                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[#0c453c] dark:text-emerald-400 focus:outline-none"
+                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[var(--ui-green)] dark:text-emerald-400 focus:outline-none"
                   />
                 </div>
                 {(dateFromFilter || dateToFilter) && (
                   <button
                     id="admin-clear-date-filter"
                     onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
-                    className="h-11 w-11 flex items-center justify-center text-[#e03f14] dark:text-rose-400 hover:bg-[#e03f14]/10 rounded-lg border border-[#e03f14]/20 dark:border-rose-500/30 shrink-0 transition-colors"
+                    className="h-11 w-11 flex items-center justify-center text-[var(--ui-orange)] dark:text-rose-400 hover:bg-[var(--ui-orange)]/10 rounded-lg border border-[var(--ui-orange)]/20 dark:border-rose-500/30 shrink-0 transition-colors"
                     title={language === 'bm' ? 'Reset' : 'Reset'}
                   >
                     <X className="w-4 h-4" />
@@ -335,7 +335,7 @@ export function AdminOrdersTab({
                       if (!checked) setSelectedOrderIds(new Set());
                     }}
                   />
-                  <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+                  <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
                     {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
                   </label>
                 </div>
@@ -348,7 +348,7 @@ export function AdminOrdersTab({
                     triggerLightImpact();
                     setIsExportOpen(true);
                   }}
-                  className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[#e96212] hover:bg-[#e96212]/90 text-white border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
+                  className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
@@ -402,7 +402,7 @@ export function AdminOrdersTab({
                       className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer select-none ${
                         active
                           ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
-                          : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[#0c453c]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[#f69913]/50 hover:bg-[#F7F2EA]'
+                          : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[var(--ui-green)]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[var(--ui-yellow)]/50 hover:bg-[var(--ui-surface)]'
                       }`}
                     >
                       <span>{chip.label}</span>
@@ -430,7 +430,7 @@ export function AdminOrdersTab({
                 checked={filterBySameEmail}
                 onCheckedChange={(checked) => setFilterBySameEmail?.(checked)}
               />
-              <label htmlFor="email-filter-toggle" className="text-xs sm:text-sm font-semibold text-[#0c453c]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+              <label htmlFor="email-filter-toggle" className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
                 {language === 'bm' ? 'Emel Sama' : 'Same Email'}
               </label>
             </div>
@@ -470,10 +470,10 @@ export function AdminOrdersTab({
                     }
                     setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
                   }}
-                  className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[#0c453c] dark:text-stone-200 hover:bg-[#f69913]/10 dark:hover:bg-stone-800"
+                  className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[var(--ui-green)] dark:text-stone-200 hover:bg-[var(--ui-yellow)]/10 dark:hover:bg-stone-800"
                 >
                   {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
-                    <><Check className="w-4 h-4 mr-1.5 text-[#f69913]" />{t('deselect_all') || 'Deselect'}</>
+                    <><Check className="w-4 h-4 mr-1.5 text-[var(--ui-yellow)]" />{t('deselect_all') || 'Deselect'}</>
                   ) : (
                     <><Check className="w-4 h-4 mr-1.5 opacity-40" />{t('select_all_orders') || 'Select All'}</>
                   )}
@@ -561,12 +561,12 @@ export function AdminOrdersTab({
 
               const stripColor =
                 order.status === 'approved' || order.status === 'billed'
-                  ? 'bg-[#0c453c]'
+                  ? 'bg-[var(--ui-green)]'
                   : order.status === 'cancel_requested'
                   ? 'bg-amber-500'
                   : order.status === 'cancelled'
-                  ? 'bg-[#e03f14]'
-                  : 'bg-[#f69913]';
+                  ? 'bg-[var(--ui-orange)]'
+                  : 'bg-[var(--ui-yellow)]';
 
               return (
                 <AdminOrderRow
@@ -624,7 +624,7 @@ export function AdminOrdersTab({
             {longPressedOrder?.status !== 'approved' && longPressedOrder?.status !== 'billed' && longPressedOrder?.status !== 'cancelled' && (
               <Button 
                 variant="outline" 
-                className="w-full justify-start py-6 text-[#0c453c] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900"
+                className="w-full justify-start py-6 text-[var(--ui-green)] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900"
                 onClick={() => {
                   if (longPressedOrder?.id && handleUpdateStatus) {
                     handleUpdateStatus(longPressedOrder.id, 'approved');
@@ -655,7 +655,7 @@ export function AdminOrdersTab({
 
             <Button 
               variant="outline" 
-              className="w-full justify-start py-6 text-[#f69913] hover:bg-sunshine/10 dark:text-amber-500 dark:hover:bg-amber-950 border-sunshine/30 dark:border-amber-900/50"
+              className="w-full justify-start py-6 text-[var(--ui-yellow)] hover:bg-sunshine/10 dark:text-amber-500 dark:hover:bg-amber-950 border-sunshine/30 dark:border-amber-900/50"
               onClick={() => {
                 if (longPressedOrder) {
                   openSendDialog(longPressedOrder);

@@ -7,7 +7,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#99000000">
+    android:background="@color/wawasan_scrim">
 
     <!-- Bottom card -->
     <LinearLayout
@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
-        android:background="#1B221E"
+        android:background="@color/wawasan_surface"
         android:padding="20dp"
         android:paddingBottom="28dp">
 
@@ -25,14 +25,14 @@
             android:layout_height="4dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"
-            android:background="#37473F" />
+            android:background="@color/wawasan_surface" />
 
         <!-- Title -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TETAPKAN HARGA"
-            android:textColor="#F59E0B"
+            android:textColor="@color/wawasan_yellow"
             android:textSize="13sp"
             android:textStyle="bold"
             android:letterSpacing="0.1"
@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Memuatkan..."
-            android:textColor="#94A3B8"
+            android:textColor="@color/wawasan_text"
             android:textSize="11sp"
             android:layout_marginBottom="16dp" />
 
@@ -54,7 +54,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:textColor="#64748B"
+            android:textColor="@color/wawasan_text"
             android:textSize="10sp"
             android:singleLine="true"
             android:ellipsize="end"
@@ -64,7 +64,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#2D3A33"
+            android:background="@color/wawasan_surface"
             android:layout_marginBottom="16dp" />
 
         <!-- Price header row -->
@@ -79,7 +79,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="HIDANGAN"
-                android:textColor="#64748B"
+                android:textColor="@color/wawasan_text"
                 android:textSize="9sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -89,7 +89,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="end"
                 android:text="HARGA / PAX"
-                android:textColor="#64748B"
+                android:textColor="@color/wawasan_text"
                 android:textSize="9sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08" />
@@ -110,7 +110,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="☕  Sarapan"
-                android:textColor="#E2E8F0"
+                android:textColor="@color/wawasan_text"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -118,7 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RM"
-                android:textColor="#F59E0B"
+                android:textColor="@color/wawasan_yellow"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:layout_marginEnd="6dp" />
@@ -129,12 +129,12 @@
                 android:layout_height="match_parent"
                 android:inputType="numberDecimal"
                 android:hint="0.00"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#64748B"
+                android:textColor="@color/wawasan_text"
+                android:textColorHint="@color/wawasan_text"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:gravity="end|center_vertical"
-                android:background="#222A26"
+                android:background="@color/wawasan_surface"
                 android:padding="8dp"
                 android:imeOptions="actionNext" />
         </LinearLayout>
@@ -154,7 +154,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="🍛  Tengahari"
-                android:textColor="#E2E8F0"
+                android:textColor="@color/wawasan_text"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -162,7 +162,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RM"
-                android:textColor="#F59E0B"
+                android:textColor="@color/wawasan_yellow"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:layout_marginEnd="6dp" />
@@ -173,12 +173,12 @@
                 android:layout_height="match_parent"
                 android:inputType="numberDecimal"
                 android:hint="0.00"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#64748B"
+                android:textColor="@color/wawasan_text"
+                android:textColorHint="@color/wawasan_text"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:gravity="end|center_vertical"
-                android:background="#222A26"
+                android:background="@color/wawasan_surface"
                 android:padding="8dp"
                 android:imeOptions="actionNext" />
         </LinearLayout>
@@ -198,7 +198,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="🍰  Hi-Tea"
-                android:textColor="#E2E8F0"
+                android:textColor="@color/wawasan_text"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -206,7 +206,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RM"
-                android:textColor="#F59E0B"
+                android:textColor="@color/wawasan_yellow"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:layout_marginEnd="6dp" />
@@ -217,12 +217,12 @@
                 android:layout_height="match_parent"
                 android:inputType="numberDecimal"
                 android:hint="0.00"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#64748B"
+                android:textColor="@color/wawasan_text"
+                android:textColorHint="@color/wawasan_text"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:gravity="end|center_vertical"
-                android:background="#222A26"
+                android:background="@color/wawasan_surface"
                 android:padding="8dp"
                 android:imeOptions="actionDone" />
         </LinearLayout>
@@ -233,7 +233,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="#121614"
+            android:background="@color/wawasan_surface"
             android:padding="12dp"
             android:layout_marginBottom="16dp">
 
@@ -242,7 +242,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="JUMLAH KESELURUHAN"
-                android:textColor="#64748B"
+                android:textColor="@color/wawasan_text"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.06" />
@@ -252,7 +252,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RM 0.00"
-                android:textColor="#10B981"
+                android:textColor="@color/wawasan_text"
                 android:textSize="18sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -263,7 +263,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="* Jumlah dikira: harga/pax × kuantiti pax"
-            android:textColor="#64748B"
+            android:textColor="@color/wawasan_text"
             android:textSize="9.5sp"
             android:fontStyle="italic"
             android:layout_marginBottom="16dp" />
@@ -282,9 +282,9 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:text="Batal"
-                android:textColor="#94A3B8"
+                android:textColor="@color/wawasan_text"
                 android:textSize="13sp"
-                android:backgroundTint="#222A26" />
+                android:backgroundTint="@color/wawasan_surface" />
 
             <Button
                 android:id="@+id/price_input_submit_btn"
@@ -292,10 +292,10 @@
                 android:layout_height="48dp"
                 android:layout_weight="2"
                 android:text="Simpan Harga →"
-                android:textColor="#000000"
+                android:textColor="@color/wawasan_text"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:backgroundTint="#F59E0B" />
+                android:backgroundTint="@color/wawasan_yellow" />
 
         </LinearLayout>
 

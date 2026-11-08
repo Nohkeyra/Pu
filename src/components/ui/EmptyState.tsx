@@ -27,7 +27,7 @@ export function EmptyState({ title, description, icon, action, className }: Empt
       <div className="mb-4 w-14 h-14 rounded-2xl bg-[rgba(223,113,15,0.12)] border border-[rgba(223,113,15,0.22)] flex items-center justify-center text-[var(--color-sunshine-cta)] shadow-sm">
         {icon ?? <Inbox className="w-7 h-7 opacity-85" aria-hidden />}
       </div>
-      <h3 className="text-base sm:text-lg font-display font-bold text-deep-forest dark:text-[#ede5d8] tracking-tight">
+      <h3 className="text-base sm:text-lg font-display font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] tracking-tight">
         {title}
       </h3>
       {description && (
