@@ -1,0 +1,47 @@
+/* Member workspace: one primary booking action, then four quiet shortcuts. */
+.customer-dashboard-page .customer-dashboard-content { max-width: 1040px; display: flex; flex-direction: column; gap: 28px; }
+.customer-dashboard-page .customer-dashboard-welcome { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(180px, .8fr); align-items: center; gap: 24px; padding: 32px; border: 1px solid var(--ui-border); border-radius: 24px 24px 8px 24px; background: var(--ui-raised); box-shadow: var(--rw-paper-shadow); position: relative; isolation: isolate; }
+.customer-dashboard-welcome-copy { min-width: 0; }
+.customer-dashboard-eyebrow { color: var(--ui-action); font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
+.customer-dashboard-welcome-copy h2 { margin: 10px 0 6px; font: 750 clamp(1.75rem, 3.5vw, 2.75rem)/1.1 var(--font-display); letter-spacing: -.03em; color: var(--ui-ink); }
+.customer-dashboard-identity { font-size: .875rem; color: var(--ui-muted); overflow-wrap: anywhere; }
+.customer-dashboard-verify { display: flex; align-items: flex-start; gap: 8px; font-size: .8125rem; line-height: 1.5; margin-top: 12px; }
+.customer-dashboard-verify svg { width: 18px; height: 18px; flex: none; color: var(--ui-action); }
+.customer-dashboard-page .customer-dashboard-booking-button { margin-top: 20px; min-height: 48px; border-radius: 12px; background: var(--ui-action); color: var(--ui-on-action); white-space: normal; height: auto; }
+.customer-dashboard-welcome-art { position: relative; isolation: isolate; }
+.customer-dashboard-welcome-art::before { content: ''; position: absolute; z-index: -1; inset: 12% 7%; border-radius: 50% 50% 16px 16px; background: var(--ui-yellow); transform: rotate(8deg); }
+.customer-dashboard-welcome-art > svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 10px color-mix(in srgb, var(--ui-shadow-ink) 14%, transparent)); }
+.customer-dashboard-shortcuts-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 16px; }
+.customer-dashboard-shortcuts-heading h2 { font: 700 1.25rem/1.3 var(--font-display); color: var(--ui-ink); }
+.customer-dashboard-shortcuts-heading p { font-size: .8125rem; color: var(--ui-muted); }
+.customer-dashboard-page .customer-dashboard-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.customer-dashboard-action { display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; grid-template-rows: auto auto; column-gap: 14px; row-gap: 4px; min-height: 108px; padding: 20px; background: var(--ui-surface); color: var(--ui-ink); border: 1px solid var(--ui-border); border-radius: 18px; text-align: left; cursor: pointer; }
+.customer-dashboard-action-top { grid-row: 1 / 3; align-self: center; }
+.customer-dashboard-action-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--ui-raised); color: var(--ui-action); }
+.customer-dashboard-action-icon svg { width: 22px; height: 22px; }
+.customer-dashboard-action-number { display: none; }
+.customer-dashboard-action-title { grid-column: 2; align-self: end; font: 700 1rem/1.3 var(--font-display); }
+.customer-dashboard-action-description { grid-column: 2; font-size: .8125rem; line-height: 1.4; color: var(--ui-muted); }
+.customer-dashboard-action-arrow { grid-column: 3; grid-row: 1 / 3; align-self: center; width: 18px; height: 18px; color: var(--ui-action); }
+.customer-dashboard-action:focus-visible { outline: 3px solid var(--ui-action); outline-offset: 3px; }
+@media (hover: hover) { .customer-dashboard-action:hover { background: var(--ui-raised); border-color: var(--ui-action); } }
+@media (max-width: 639px) {
+  .customer-dashboard-page .customer-dashboard-welcome { padding: 24px; grid-template-columns: minmax(0, 1fr) 100px; gap: 8px; }
+  .customer-dashboard-page .customer-dashboard-actions { grid-template-columns: minmax(0, 1fr); }
+  .customer-dashboard-action { min-height: 88px; padding: 16px; }
+}
+html.wawasan-native .customer-dashboard-page .customer-dashboard-content { gap: 18px; }
+html.wawasan-native .customer-dashboard-page .customer-dashboard-welcome { padding: 18px; }
+html.wawasan-native .customer-dashboard-welcome-copy h2 { font-size: 1.6rem; margin-top: 6px; }
+html.wawasan-native .customer-dashboard-page .customer-dashboard-booking-button { margin-top: 12px; padding-inline: 14px; font-size: .875rem; }
+html.wawasan-native .customer-dashboard-action { min-height: 76px; padding: 12px 16px; }
+html.wawasan-native .customer-dashboard-shortcuts-heading { margin-bottom: 10px; }
+html.wawasan-native .customer-dashboard-shortcuts-heading p { display: none; }
+@media (max-height: 680px) { html.wawasan-native .customer-dashboard-welcome-art { display: none; } html.wawasan-native .customer-dashboard-page .customer-dashboard-welcome { grid-template-columns: 1fr; } }
+
+.dark .customer-dashboard-page .customer-dashboard-welcome { background: var(--ui-feature); color: var(--ui-on-feature); border-color: color-mix(in srgb, var(--ui-orange) 70%, var(--ui-canvas)); }
+.dark .customer-dashboard-welcome-copy :is(h2, .customer-dashboard-identity, .customer-dashboard-verify) { color: var(--ui-on-feature); }
+.dark .customer-dashboard-eyebrow { color: var(--ui-on-feature); }
+.dark .customer-dashboard-verify svg { color: var(--ui-yellow); }
+.dark .customer-dashboard-action-icon { background: color-mix(in srgb, var(--ui-green) 38%, var(--ui-canvas)); color: var(--ui-paper); }
+@media (min-width: 960px) { .customer-dashboard-page .customer-dashboard-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

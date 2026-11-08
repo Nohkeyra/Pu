@@ -272,7 +272,7 @@ export function Step4ReviewSubmit({
           onClick={handleOrderSubmission} 
           disabled={isSubmitting}
           data-tour="step4-submit"
-          className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-xl font-bold text-sm shadow-md"
+          className="customer-next-button flex-[2] bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-xl font-bold text-sm shadow-md"
         >
           {isSubmitting ? (
             <span className="flex items-center gap-2">

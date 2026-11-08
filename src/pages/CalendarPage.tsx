@@ -23,7 +23,6 @@ import {
   FileText, 
   User as UserIcon, 
   Shield, 
-  LogIn, 
   MapPin, 
   UtensilsCrossed, 
   Coffee,
@@ -860,7 +859,7 @@ export default function CalendarPage() {
                   const isCurrentDay = isToday(day);
                   const isDaySelected = selectedDay ? isSameDay(day, selectedDay) : false;
                   const dayOrders = getOrdersForDay(day);
-                  const dayNotes = getNotesForDay(day);
+                  const dayNotes = isAdmin ? getNotesForDay(day) : [];
                   const sessions = getDailySessions(day);
                   const totalPax = sessions.breakfast.pax + sessions.lunch.pax + sessions.hi_tea.pax;
                   const hasOrders = dayOrders.length > 0;
@@ -953,7 +952,7 @@ export default function CalendarPage() {
                                 </span>
                               )}
                               {sessions.hi_tea.count > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-accent)] text-white shadow-2xs leading-none">
+                                <span className="px-1.5 py-0.5 rounded text-xs font-extrabold bg-[var(--color-accent)] text-[var(--ui-on-action)] shadow-2xs leading-none">
                                   T
                                 </span>
                               )}
@@ -1002,10 +1001,12 @@ export default function CalendarPage() {
                   <span className="h-3 w-3 rounded-sm border-2 border-crisp-carrot" aria-hidden="true" />
                   {tl('Selected', 'Dipilih')}
                 </span>
+                {isAdmin && (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
                   {tl('Has note', 'Ada nota')}
                 </span>
+                )}
               </div>
             </div>
           )}
@@ -1059,7 +1060,7 @@ export default function CalendarPage() {
                         </span>
                       )}
                       {selectedDaySessions.hi_tea.pax > 0 && (
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-white flex items-center gap-1.5 shadow-xs">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-accent)] text-[var(--ui-on-action)] flex items-center gap-1.5 shadow-xs">
                           <UtensilsCrossed className="w-3.5 h-3.5" />
                           <span>Hi-Tea: {selectedDaySessions.hi_tea.pax}p</span>
                         </span>
@@ -1072,7 +1073,7 @@ export default function CalendarPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-5">
                   
                   {/* Left: Orders (7 cols) */}
-                  <div className="lg:col-span-7 space-y-3">
+                  <div className={cn("space-y-3", isAdmin ? "lg:col-span-7" : "lg:col-span-12")}>
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                         {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({calendarDataError ? '—' : getOrdersForDay(selectedDay).length})
@@ -1118,33 +1119,15 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Right: Notes (5 cols) */}
-                  <div className="lg:col-span-5 space-y-3">
+                  {/* Internal notes stay in the admin calendar. */}
+                  {isAdmin && (
+                  <div className="customer-calendar-internal-notes lg:col-span-5 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                         {tl('Operational Notes', 'Nota Operasi')}
                       </span>
                     </div>
 
-                    {!currentUser && !isAdmin ? (
-                      <div className="p-5 rounded-xl bg-stone-50 dark:bg-stone-900/40 border border-stone-200/80 dark:border-stone-800 text-center space-y-2.5">
-                        <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
-                          {tl('Sign in to leave kitchen instructions or notes for this date.', 'Log masuk untuk menyimpan nota atau arahan dapur.')}
-                        </p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={async () => {
-                            await triggerLightImpact();
-                            setAuthModalOpen(true);
-                          }}
-                          className="gap-1.5 text-xs font-semibold rounded-lg"
-                        >
-                          <LogIn className="w-3.5 h-3.5" />
-                          {tl('Sign In', 'Log Masuk')}
-                        </Button>
-                      </div>
-                    ) : (
                       <div className="space-y-3">
                         {/* Notes list */}
                         <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
@@ -1237,8 +1220,8 @@ export default function CalendarPage() {
                           </div>
                         </div>
                       </div>
-                    )}
                   </div>
+                  )}
                 </div>
               </div>
           )}

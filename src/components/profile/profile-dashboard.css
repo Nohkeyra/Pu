@@ -23,7 +23,7 @@
 .profile-welcome h2 { font-family: var(--font-display); font-size: 28px; line-height: 1.2; margin: 3px 0 0; overflow-wrap: anywhere; }
 .profile-summary {
   position: relative; isolation: isolate; overflow: hidden;
-  padding: 16px 18px; border-radius: 20px;
+  padding: 20px; border-radius: 16px;
   background: var(--ui-green); color: var(--ui-legacy-white); border: 1px solid color-mix(in srgb, var(--ui-border) 7.1%, transparent);
 }
 .profile-summary::before {
@@ -54,7 +54,7 @@
 .dark .profile-tabs [aria-selected='true'] { color: var(--color-sunshine); }
 .profile-dashboard .profile-tab-content { padding: 20px; min-width: 0; }
 .profile-dashboard .profile-section {
-  padding: 18px; border-radius: 20px; background: hsl(var(--card));
+  padding: 18px; border-radius: 16px; background: hsl(var(--card));
   border: 1px solid var(--profile-border); box-shadow: none; overflow: visible;
 }
 .profile-dashboard .profile-section-header {
@@ -83,10 +83,10 @@
 .profile-order-tools > div { flex-wrap: wrap; }
 .profile-dashboard .profile-orders-section { padding: 0; background: transparent; border: 0; }
 .profile-orders-section > .profile-section-header { border: 0; padding-bottom: 0; }
-.profile-order { border-radius: 20px; min-width: 0; }
+.profile-order { border-radius: 16px; min-width: 0; }
 .profile-order-card {
   display: flex; flex-direction: column; gap: 14px; padding: 16px;
-  border-radius: 20px; background: hsl(var(--card)); border: 1px solid var(--profile-border);
+  border-radius: 16px; background: hsl(var(--card)); border: 1px solid var(--profile-border);
 }
 .profile-order-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
 .profile-order-ref { font-size: 12px; color: var(--profile-muted); overflow-wrap: anywhere; }
@@ -137,7 +137,7 @@ body:has(.profile-order-action-sheet, .profile-order-edit-sheet, .profile-custom
   color: var(--customer-ink);
 }
 .customer-profile-page .profile-summary {
-  background: var(--customer-surface);
+  background: var(--customer-soft);
   color: var(--customer-ink);
   border-color: var(--customer-line);
 }
@@ -155,3 +155,11 @@ body:has(.profile-order-action-sheet, .profile-order-edit-sheet, .profile-custom
 .customer-profile-page .profile-dashboard .profile-section [data-slot="card-title"] {
   color: var(--customer-ink);
 }
+
+/* Embedded APK account panels share the page gutter, with no nested frame. */
+html.wawasan-native .profile-overview { padding: 12px 16px 0; }
+html.wawasan-native .profile-welcome h2 { font-size: 1.5rem; }
+html.wawasan-native .profile-summary { padding: 16px; }
+html.wawasan-native .profile-summary h3 { font-size: 1.25rem; }
+html.wawasan-native .profile-tabs { margin: 14px 16px 0; }
+html.wawasan-native .profile-dashboard .profile-tab-content { padding: 16px; }

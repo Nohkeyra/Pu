@@ -108,7 +108,10 @@ jobs:
               git fetch --no-tags origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
               git reset --hard "origin/$BRANCH"
 
-              node scripts/bump-version.cjs "$BUMP" --ci
+              # A source import can roll version.properties back. Published
+              # tags remain the floor for both the version name and code.
+              git fetch origin --tags
+              node scripts/bump-version.cjs "$BUMP" --ci --release
 
               for f in "${VERSION_FILES[@]}"; do
                 if [ -f "$f" ]; then git add -- "$f"; fi
@@ -140,6 +143,10 @@ jobs:
 
           VERSION_NAME=$(sed -n 's/^versionName=//p' android/version.properties)
           VERSION_CODE=$(sed -n 's/^versionCode=//p' android/version.properties)
+          if [ "$IS_RELEASE" = "true" ] && git show-ref --verify --quiet "refs/tags/v$VERSION_NAME"; then
+            echo "::error::Release tag v$VERSION_NAME already exists. Choose patch/minor/major to create a new release instead of replacing its assets."
+            exit 1
+          fi
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
@@ -170,8 +177,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci || npm install
-          npm install -g @capacitor/cli
+          npm ci
 
       - name: Patch capacitor-updater enum switch cases (Java 21 fix)
         run: |
@@ -273,13 +279,13 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
-            echo "⚠️ gradle-wrapper.jar corrupted or invalid. Restoring official Gradle 8.11.1 wrapper jar..."
-            curl -sSL -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.11.1/gradle/wrapper/gradle-wrapper.jar
-            unzip -t gradle/wrapper/gradle-wrapper.jar
-          else
-            echo "✅ Gradle wrapper jar verified."
+          WRAPPER_SHA=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172
+          if ! echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check --status; then
+            echo "Restoring official Gradle 8.14.3 wrapper..."
+            curl --fail --location --retry 3 -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
           fi
+          echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check
+          unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null
 
       - name: Build debug APK
         working-directory: ./android
@@ -364,6 +370,7 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
           tag_name: v${{ env.VERSION_NAME }}
+          target_commitish: ${{ env.RELEASE_SHA }}
           name: Release v${{ env.VERSION_NAME }}
           draft: false
           prerelease: false

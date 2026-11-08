@@ -971,7 +971,7 @@ export default function SettingsPage() {
                   icon={Fingerprint}
                   iconBg="bg-emerald-500/10"
                   iconColor="text-emerald-600 dark:text-emerald-400"
-                  title={language === 'bm' ? 'Log Masuk Biometrik' : 'Biometric Login'}
+                  title={language === 'bm' ? 'Log masuk biometrik pada peranti ini' : 'Biometric sign-in on this device'}
                   action={
                     <div className="flex items-center gap-2">
                       <Switch
@@ -1138,7 +1138,7 @@ export default function SettingsPage() {
                 icon={Bell}
                 iconBg="bg-rose-500/10"
                 iconColor="text-rose-600 dark:text-rose-400"
-                title={language === 'bm' ? 'Notifikasi Push' : 'Push Notifications'}
+                title={language === 'bm' ? 'Notifikasi pada peranti ini' : 'Notifications on this device'}
                 isLast={true}
                 action={
                   <Switch
@@ -1212,6 +1212,10 @@ export default function SettingsPage() {
             />
           </SettingsSection>
 
+          <details className="settings-advanced">
+            <summary>{language === 'bm' ? 'Tetapan lanjutan' : 'Advanced settings'}</summary>
+            <p className="settings-advanced-description">{language === 'bm' ? 'Sentuhan, bunyi, paparan peranti dan storan.' : 'Touch feedback, audio, device display and storage.'}</p>
+            <div className="settings-advanced-content">
           {/* SECTION 6: HAPTICS & AUDIO */}
           <SettingsSection title={language === 'bm' ? 'Maklum Balas Sentuhan & Bunyi' : 'Haptics & Audio'}>
             <SettingsRow
@@ -1395,6 +1399,9 @@ export default function SettingsPage() {
               }
             />
           </SettingsSection>
+
+            </div>
+          </details>
 
           {/* SECTION 9: LEGAL & PRIVACY */}
           <SettingsSection title={language === 'bm' ? 'Perundangan & Privasi' : 'Legal & Privacy'}>
@@ -1655,8 +1662,8 @@ export default function SettingsPage() {
 
 
           {/* SECTION 9: APP INFO & VERSION */}
-          <div className="pt-2 pb-6 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 shadow-2xs flex items-center justify-center p-2.5">
+          <div className="settings-app-info pt-2 pb-6 flex flex-col items-center justify-center text-center space-y-3">
+            <div className="settings-app-info-brand w-12 h-12 rounded-2xl bg-white dark:bg-card border border-stone-200/80 dark:border-white/10 shadow-2xs flex items-center justify-center p-2.5">
               <TransparentLogo
                 src={getAssetUrl('/assets/brand/wawasan_logo.svg')}
                 alt="Wawasan Logo"
@@ -1665,7 +1672,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <p className="text-sm font-bold text-deep-forest dark:text-white">
+              <p className="settings-app-info-name text-sm font-bold text-deep-forest dark:text-white">
                 Restoran Wawasan Pak Usop
               </p>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 font-mono">
@@ -1687,7 +1694,7 @@ export default function SettingsPage() {
                 : (language === 'bm' ? 'Semak Kemaskini' : 'Check for Updates')}
             </Button>
 
-            <p className="text-xs text-stone-400 dark:text-stone-500">
+            <p className="settings-app-info-copyright text-xs text-stone-400 dark:text-stone-500">
               &copy; {new Date().getFullYear()} Restoran Wawasan. All rights reserved.
             </p>
           </div>

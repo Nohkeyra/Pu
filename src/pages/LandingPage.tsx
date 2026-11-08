@@ -11,7 +11,6 @@ import ReviewsSection from '@/sections/ReviewsSection';
 import VisitSection from '@/sections/VisitSection';
 import './landing-page.css';
 import './heritage-hero.css';
-import './living-canvas-v31.css';
 
 export default function LandingPage() {
   useEffect(() => {

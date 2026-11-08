@@ -38,14 +38,14 @@ test('selected light yellow accent has >= 4.5:1 token-level normal-text contrast
 
 test('marketing/customer surface text and CTAs inherit semantic ink instead of bright decorative hues', () => {
   const customer = src('src/components/customer-pages.css');
-  const landing = src('src/pages/living-canvas-v31.css');
-  const editorial = src('src/styles/wawasan-editorial-v2.css');
+  const landing = src('src/pages/landing-page.css');
+  const hero = src('src/pages/heritage-hero.css');
   assert.match(customer, /--customer-muted: var\(--ui-muted\)/);
   assert.match(customer, /--customer-ink: var\(--ui-ink\)/);
   assert.match(customer, /\.customer-next-button\s*\{[^}]*background: var\(--ui-action\);[^}]*color: var\(--ui-on-action\)/s);
   assert.match(landing, /--landing-muted: var\(--ui-muted\)/);
-  assert.match(editorial, /\.landing-menu-categories button\[aria-pressed='true'\] \{ background:var\(--ui-action\); color:var\(--ui-on-action\)/);
-  assert.match(editorial, /\.customer-page \.customer-next-button \{ background: var\(--ui-action\); color: var\(--ui-on-action\)/);
+  assert.match(hero, /\.heritage-hero-action-primary\s*\{[^}]*background: var\(--ui-action\); color: var\(--ui-on-action\)/);
+
 });
 
 test('order and operator actions are semantically legible in both themes', () => {

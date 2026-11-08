@@ -9,11 +9,13 @@
  *   node scripts/bump-version.cjs major        # 1.2.5 → 2.0.0, code +1
  *   node scripts/bump-version.cjs set 1.4.0    # set name, code +1
  *   node scripts/bump-version.cjs patch --ci   # bump + write GITHUB_ENV / GITHUB_OUTPUT
+ *   node scripts/bump-version.cjs patch --ci --release # exceed all existing release tags
  *
  * Source of truth: android/version.properties (mirrored to android/app/version.properties)
  */
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const propsPaths = [
@@ -70,9 +72,36 @@ function bump(name, type) {
   return formatSemver(v);
 }
 
+function compareVersions(a, b) {
+  const x = a.split('.').map(Number), y = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (x[i] !== y[i]) return x[i] - y[i];
+  }
+  return 0;
+}
+
+// AI Studio/source imports may restore an older version.properties. Existing
+// immutable release tags still record what was published. Read both the tag
+// name and its Android code so neither can be reused after a source rollback.
+function releaseFloor(current) {
+  const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const tags = git(['tag', '--list', 'v*']).split('\n').filter(tag => /^v\d+\.\d+\.\d+$/.test(tag));
+  const floor = { ...current };
+  for (const tag of tags) {
+    const name = tag.slice(1);
+    if (compareVersions(name, floor.versionName) > 0) floor.versionName = name;
+    const properties = git(['show', `${tag}:android/version.properties`]);
+    const code = properties.match(/^versionCode\s*=\s*(\d+)\s*$/m);
+    if (!code || !Number.isSafeInteger(Number(code[1]))) throw new Error(`Missing or invalid Android versionCode in release tag ${tag}`);
+    floor.versionCode = Math.max(floor.versionCode, Number(code[1]));
+  }
+  return floor;
+}
+
 function main() {
-  const args = process.argv.slice(2).filter((a) => a !== '--ci');
+  const args = process.argv.slice(2).filter((a) => !['--ci', '--release'].includes(a));
   const ci = process.argv.includes('--ci');
+  const release = process.argv.includes('--release');
   const cmd = args[0] || 'show';
 
   const current = readProps(propsPaths[0]);
@@ -87,6 +116,8 @@ function main() {
     return;
   }
 
+  const base = release ? releaseFloor(current) : current;
+
   if (cmd === 'set') {
     const forced = args[1];
     if (!forced || !/^\d+\.\d+\.\d+/.test(forced)) {
@@ -94,10 +125,13 @@ function main() {
       process.exit(1);
     }
     nextName = forced.match(/^\d+\.\d+\.\d+/)[0];
-    nextCode = current.versionCode + 1;
+    if (release && compareVersions(nextName, base.versionName) <= 0) {
+      throw new Error(`Release version must exceed ${base.versionName}`);
+    }
+    nextCode = base.versionCode + 1;
   } else if (['patch', 'minor', 'major'].includes(cmd)) {
-    nextName = bump(current.versionName, cmd);
-    nextCode = current.versionCode + 1;
+    nextName = bump(base.versionName, cmd);
+    nextCode = base.versionCode + 1;
   } else {
     console.error('Unknown command. Use: show | patch | minor | major | set x.y.z');
     process.exit(1);

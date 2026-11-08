@@ -14,14 +14,14 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, var(--ui-ink) 12%, var(--ui-ink) 74%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, var(--ui-ink) 12%, var(--ui-ink) 74%, transparent 100%);
 }
-.dark .customer-page::before { opacity: .105; }
+.dark .customer-page::before { opacity: .035; }
 @media (max-width: 639px) {
   .customer-page::before {
     background-size: 440px auto;
     background-position: 50% 10%;
     opacity: .065;
   }
-  .dark .customer-page::before { opacity: .095; }
+  .dark .customer-page::before { opacity: .03; }
 }
 @media (prefers-reduced-motion: reduce) {
   .customer-page::before { animation: none; transition: none; }

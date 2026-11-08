@@ -1,6 +1,6 @@
 /* Landing presentation: aligned with splashscreen warmth, authentic batik & protected brand typography. */
 .landing-page {
-  --landing-canvas: var(--ui-surface);
+  --landing-canvas: var(--ui-canvas);
   --landing-surface: var(--ui-surface);
   --landing-soft: var(--ui-raised);
   --landing-ink: var(--ui-ink);
@@ -12,7 +12,7 @@
 }
 .dark .landing-page {
   --landing-canvas: var(--ui-canvas);
-  --landing-surface: var(--ui-canvas);
+  --landing-surface: var(--ui-surface);
   --landing-soft: var(--ui-raised);
   --landing-ink: var(--ui-ink);
   --landing-muted: var(--ui-muted);
@@ -264,8 +264,9 @@
   position: relative;
   padding: 22px 18px;
   border: 1px solid var(--landing-line);
-  border-radius: 18px;
+  border-radius: 18px 18px 8px 18px;
   background: var(--landing-surface);
+  box-shadow: var(--rw-paper-shadow);
   min-width: 0;
   transition:
     border-color 0.2s,
@@ -483,12 +484,15 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Menu captions remain white in both themes. Fade into the approved
+     Bold Heritage espresso ink, never into the light cream canvas: otherwise
+     the menu title, price and Order button disappear over pale photography. */
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--ui-canvas) 2.0%, transparent) 0%,
-    color-mix(in srgb, var(--ui-canvas) 6.0%, transparent) 26%,
-    color-mix(in srgb, var(--ui-canvas) 48.0%, transparent) 48%,
-    color-mix(in srgb, var(--ui-canvas) 89.0%, transparent) 69%,
-    color-mix(in srgb, var(--ui-canvas) 98.0%, transparent) 100%);
+    transparent 0%,
+    color-mix(in srgb, #211A19 6%, transparent) 28%,
+    color-mix(in srgb, #211A19 54%, transparent) 48%,
+    color-mix(in srgb, #211A19 84%, transparent) 68%,
+    color-mix(in srgb, #211A19 96%, transparent) 100%);
 }
 .landing-menu-photo img {
   width: 100%;

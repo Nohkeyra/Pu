@@ -36,12 +36,39 @@ test('redesign preserves original branding and business boundaries', () => {
   assert.match(read('src/pages/CustomerDashboard.tsx'), /customer-dashboard-welcome/);
   assert.match(read('src/components/admin/AdminPanel.tsx'), /wawasan-admin-heading/);
   assert.match(read('src/main.tsx'), /wawasan-refinement-v5.css/);
-  assert.match(css, /batik_vector_pattern\.jpg/);
+  assert.match(read('src/wawasan-page-backgrounds.css'), /batik_vector_pattern\.jpg/);
 });
 
 test('responsive and reduced motion controls remain explicit', () => {
-  assert.match(css, /max-width: 359px/);
-  assert.match(css, /min-width: 1024px/);
+  assert.match(read('src/components/customer-pages.css'), /max-width:359px/);
+  assert.match(read('src/components/admin/admin-panel.css'), /min-width: 1024px/);
   assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(css, /customer-dashboard-action:focus-visible/);
+  assert.match(read('src/pages/customer-dashboard.css'), /customer-dashboard-action:focus-visible/);
+});
+
+
+test('superseded style layers cannot return to the runtime imports', () => {
+  const main = read('src/main.tsx');
+  for (const legacy of ['wawasan-editorial-v2.css', 'wawasan-creative-v6.css']) {
+    assert.ok(!main.includes(legacy));
+    assert.ok(!fs.existsSync(path.join(root, 'src/styles', legacy)));
+  }
+  assert.doesNotMatch(read('src/pages/LandingPage.tsx'), /living-canvas-v31\.css/);
+});
+
+test('removed lunchbox asset has no remaining runtime source references', () => {
+  const removedAsset = 'kraft-lunchbox.svg';
+  assert.ok(!fs.existsSync(path.join(root, 'public/assets/living-canvas', removedAsset)));
+  const references = [];
+  function inspect(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) inspect(file);
+      else if (/\.(?:[cm]?[jt]sx?|css|html)$/.test(entry.name) && fs.readFileSync(file, 'utf8').includes(removedAsset)) {
+        references.push(path.relative(root, file));
+      }
+    }
+  }
+  inspect(path.join(root, 'src'));
+  assert.deepEqual(references, [], `Deleted lunchbox asset is still referenced: ${references.join(', ')}`);
 });

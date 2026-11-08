@@ -11,6 +11,7 @@ import { triggerNotification, NotificationType } from '@/lib/haptics';
 import { useToast } from '@/components/ui/Toast';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAdminBiometric } from '@/hooks/admin/useAdminBiometric';
+import './login-page.css';
 
 export default function AdminPage() {
   const navigate = useNavigate();

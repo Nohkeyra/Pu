@@ -24,6 +24,7 @@ import AdminMenuTab from './AdminMenuTab';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 import { getDisplayInvoiceNo } from '@/lib/utils';
 import '../ui/presentation.css';
+import './admin-panel.css';
 
 // Hooks
 import { useAdminOrders } from '@/hooks/admin/useAdminOrders';

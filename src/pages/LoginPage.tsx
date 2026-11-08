@@ -7,10 +7,12 @@ import { useTheme } from '../context/ThemeContext';
 import { LogIn, Compass, ShoppingBag, Shield, Sun, Moon, ArrowDown, Sparkles, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Batik3DMotion } from '../components/brand/Batik3DMotion';
+import { KraftLunchboxArtwork } from '../components/brand/KraftLunchboxArtwork';
 import { getAssetUrl } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { checkBiometricAvailability, isCustomerBiometricsEnabledOnDevice } from '../services/authService';
 import { Capacitor } from '@capacitor/core';
+import './login-page.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -102,9 +104,12 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.97, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-md"
+          className="login-stage relative z-10 w-full"
         >
-          <div className="panel-surface overflow-hidden px-6 py-8 sm:px-8 sm:py-10">
+          <div className="login-art" aria-hidden="true">
+            <KraftLunchboxArtwork />
+          </div>
+          <div className="login-card panel-surface overflow-hidden px-6 py-8 sm:px-8 sm:py-10">
             <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center text-center">

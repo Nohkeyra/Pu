@@ -272,7 +272,7 @@ export default function AppContent() {
   });
 
   return (
-    <div className="min-h-screen bg-cream dark:bg-background flex flex-col relative overflow-x-hidden">
+    <div className={cn('min-h-screen bg-cream dark:bg-background flex flex-col relative', location.pathname === '/order' ? 'overflow-x-clip' : 'overflow-x-hidden')}>
       {/* Accessible Skip Link for Screen Readers and Keyboard Navigation */}
       <a
         href="#main-content"

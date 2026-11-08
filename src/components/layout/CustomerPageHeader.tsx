@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, Home, Moon, MoreHorizontal, Sun } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Moon, MoreHorizontal, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
@@ -55,18 +55,33 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
 
 
   const bm = language === 'bm';
+  const backLabel = backDestination === 'home'
+    ? (bm ? 'Kembali ke halaman utama' : 'Back to home')
+    : (bm ? 'Kembali' : 'Back');
 
   return (
     <>
       <header ref={headerRef} className="customer-page-header">
         <div className="customer-header-frame customer-brand-bar">
+          <div className="customer-header-start">
+            {showBack && (
+              <Button
+                type="button" variant="ghost" size="icon"
+                className="customer-header-icon customer-back-button"
+                aria-label={backLabel} title={backLabel}
+                onClick={() => { void triggerLightImpact(); onBack(); }}
+              >
+                <ArrowLeft aria-hidden="true" />
+              </Button>
+            )}
+            <TransparentLogo src={getAssetUrl('/assets/brand/wawasan_logo.svg')} alt="" className="customer-brand-logo" />
+          </div>
           <button
             type="button"
             onClick={() => navigate(getCustomerHomePath(Capacitor.isNativePlatform(), Boolean(auth.currentUser)), { replace: true })}
             className="customer-brand"
             aria-label={bm ? 'Restoran Wawasan — halaman utama' : 'Restoran Wawasan — home'}
           >
-            <TransparentLogo src={getAssetUrl('/assets/brand/wawasan_logo.svg')} alt="" className="customer-brand-logo" />
             <span className="customer-brand-copy">
               <span className="font-artistic customer-brand-name">Restoran Wawasan</span>
               <span className="customer-brand-caption">Pak Usop</span>
@@ -92,12 +107,6 @@ export function CustomerPageHeader({ title, subtitle, onBack, backDestination = 
                   <DialogDescription>{bm ? 'Pilih tindakan untuk halaman ini.' : 'Choose an action for this page.'}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-1">
-                  {showBack && (
-                    <Button type="button" variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal rounded-xl px-3 py-3 text-left" onClick={() => { setActionsOpen(false); void triggerLightImpact(); onBack(); }}>
-                      <span>{backDestination === 'home' ? (bm ? 'Halaman utama' : 'Home') : (bm ? 'Kembali' : 'Back')}</span>
-                      {backDestination === 'home' ? <Home className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" /> : <ArrowLeft className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" />}
-                    </Button>
-                  )}
                   {actions.map(({ label, onSelect }) => (
                     <Button key={label} type="button" variant="ghost" className="h-auto min-h-12 w-full justify-between whitespace-normal rounded-xl px-3 py-3 text-left" onClick={() => { setActionsOpen(false); onSelect(); }}>
                       <span>{label}</span><ChevronRight className="ml-3 h-4 w-4 shrink-0" aria-hidden="true" />

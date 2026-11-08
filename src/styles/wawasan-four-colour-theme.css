@@ -319,8 +319,8 @@
   --ui-tw-orange-50: color-mix(in srgb, var(--ui-orange) 6%, var(--ui-canvas));
   --ui-tw-orange-100: color-mix(in srgb, var(--ui-orange) 13%, var(--ui-canvas));
   --ui-tw-orange-200: color-mix(in srgb, var(--ui-orange) 24%, var(--ui-canvas));
-  --ui-tw-orange-300: color-mix(in srgb, var(--ui-orange) 42%, var(--ui-canvas));
-  --ui-tw-orange-400: color-mix(in srgb, var(--ui-orange) 72%, var(--ui-canvas));
+  --ui-tw-orange-300: color-mix(in srgb, var(--ui-orange) 35%, var(--ui-paper));
+  --ui-tw-orange-400: color-mix(in srgb, var(--ui-orange) 55%, var(--ui-paper));
   --ui-tw-orange-500: var(--ui-orange);
   --ui-tw-orange-600: color-mix(in srgb, var(--ui-orange) 84%, var(--ui-yellow));
   --ui-tw-orange-700: color-mix(in srgb, var(--ui-orange) 64%, var(--ui-yellow));
@@ -341,8 +341,8 @@
   --ui-tw-green-50: color-mix(in srgb, var(--ui-green) 6%, var(--ui-canvas));
   --ui-tw-green-100: color-mix(in srgb, var(--ui-green) 13%, var(--ui-canvas));
   --ui-tw-green-200: color-mix(in srgb, var(--ui-green) 24%, var(--ui-canvas));
-  --ui-tw-green-300: color-mix(in srgb, var(--ui-green) 42%, var(--ui-canvas));
-  --ui-tw-green-400: color-mix(in srgb, var(--ui-green) 72%, var(--ui-canvas));
+  --ui-tw-green-300: color-mix(in srgb, var(--ui-green) 35%, var(--ui-paper));
+  --ui-tw-green-400: color-mix(in srgb, var(--ui-green) 55%, var(--ui-paper));
   --ui-tw-green-500: var(--ui-green);
   --ui-tw-green-600: color-mix(in srgb, var(--ui-green) 84%, var(--ui-yellow));
   --ui-tw-green-700: color-mix(in srgb, var(--ui-green) 64%, var(--ui-yellow));
@@ -399,15 +399,6 @@
   --color-scrollbar-track: var(--ui-surface);
   --color-scrollbar-thumb: var(--ui-border);
   --color-scrollbar-hover: var(--ui-action);
-  --wx-ink: var(--ui-ink);
-  --wx-muted: var(--ui-muted);
-  --wx-canvas: var(--ui-canvas);
-  --wx-paper: var(--ui-surface);
-  --wx-paper-2: var(--ui-raised);
-  --wx-hot: var(--ui-action);
-  --wx-gold: var(--ui-yellow);
-  --wx-line: var(--ui-border);
-  --wx-outline: var(--ui-border);
   --rw-gold: var(--ui-yellow);
   --rw-gold-deep: var(--ui-action);
   --rw-gold-text: var(--ui-ink);
@@ -419,10 +410,6 @@
   --color-warning: var(--ui-action);
   --color-danger: var(--ui-danger);
   --color-error: var(--ui-danger);
-  --lc-orange: var(--ui-action);
-  --lc-green: var(--ui-green);
-  --lc-sun: var(--ui-yellow);
-  --lc-copy: var(--ui-on-action);
   /* HSL numeric triples are reserved for Radix/shadcn hsl(var(...)) consumers. */
   --background: 38 100% 96%;
   --foreground: 138 56% 21%;
@@ -446,23 +433,23 @@
 }
 .dark {
   --background: 5 14% 11%;
-  --foreground: 39 100% 59%;
-  --card: 5 14% 11%;
-  --card-foreground: 39 100% 59%;
-  --popover: 5 14% 11%;
-  --popover-foreground: 39 100% 59%;
+  --foreground: 38 100% 96%;
+  --card: 8 10% 17%;
+  --card-foreground: 38 100% 96%;
+  --popover: 8 10% 17%;
+  --popover-foreground: 38 100% 96%;
   --secondary: 5 14% 17%;
-  --secondary-foreground: 39 100% 59%;
+  --secondary-foreground: 38 100% 96%;
   --muted: 5 14% 17%;
-  --muted-foreground: 39 100% 59%;
+  --muted-foreground: 33 17% 72%;
   --primary: 39 100% 59%;
   --primary-foreground: 5 14% 11%;
   --accent: 11 81% 52%;
   --accent-foreground: 5 14% 11%;
   --destructive: 11 81% 52%;
   --destructive-foreground: 5 14% 11%;
-  --border: 39 25% 27%;
-  --input: 39 25% 27%;
+  --border: 12 9% 29%;
+  --input: 12 9% 29%;
   --ring: 39 100% 59%;
 }
 /* Site-wide typographic base, keyboard focus and mobile touch surfaces. */
@@ -474,9 +461,6 @@ body { background-color: var(--ui-canvas); color: var(--ui-ink); }
   color: var(--ui-ink); background-color: var(--ui-surface); border-color: var(--ui-border);
 }
 :where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) :is(button,a)[aria-disabled='true'] { opacity: .55; cursor: not-allowed; }
-.landing-page.living-canvas-v31,
-.landing-page { --landing-canvas: var(--ui-canvas); --landing-surface: var(--ui-surface); --landing-soft: var(--ui-raised); --landing-ink: var(--ui-ink); --landing-muted: var(--ui-muted); --landing-line: var(--ui-border); --landing-accent: var(--ui-action); }
-.customer-page { --customer-canvas: var(--ui-canvas); --customer-surface: var(--ui-surface); --customer-soft: var(--ui-raised); --customer-line: var(--ui-border); --customer-ink: var(--ui-ink); --customer-muted: var(--ui-muted); --customer-accent: var(--ui-action); }
 @media (prefers-reduced-motion: reduce) {
   :where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) *,
   :where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) *::before,
@@ -488,18 +472,8 @@ body { background-color: var(--ui-canvas); color: var(--ui-ink); }
 :root[data-wawasan-accent='green'] { --ui-action: rgb(from var(--ui-green) calc(r * .78) calc(g * .78) calc(b * .78)); }
 .dark[data-wawasan-accent='yellow'] { --ui-action: var(--ui-yellow); }
 .dark[data-wawasan-accent='green'] { --ui-action: color-mix(in srgb, var(--ui-green) 45%, var(--ui-yellow)); }
-/* High-contrast text on action or yellow, regardless of page or interaction state. */
-.landing-page .heritage-hero-action-primary,
-.landing-page.living-canvas-v31 .heritage-hero-action-primary { background: var(--ui-action); border-color: var(--ui-action); color: var(--ui-on-action); }
-.wawasan-hero-paper__ribbon { background: var(--ui-action); color: var(--ui-on-action); }
-.wawasan-hero-paper__seal { background: var(--ui-yellow); color: var(--ui-on-yellow); border-color: var(--ui-orange); }
-.lc-order-experience .lc-paper-wrap { --lc-orange: var(--ui-action); --lc-green: rgb(from var(--ui-green) calc(r * .78) calc(g * .78) calc(b * .78)); }
-.lc-order-experience .lc-paper-action,
-.lc-order-experience .lc-paper-slip { background: var(--ui-yellow); color: var(--ui-on-yellow); }
-.dark .lc-order-experience .lc-paper-wrap { --lc-orange: var(--ui-surface); --lc-green: var(--ui-surface); }
-.dark .lc-order-experience .lc-paper-scene { border-color: var(--ui-border); }
-.dark .lc-order-experience :is(.lc-paper-tag,.lc-paper-copy h2,.lc-paper-copy p,.lc-paper-footer) { color: var(--ui-ink); }
-
-.dark .landing-page.living-canvas-v31 { --landing-canvas: var(--ui-canvas); --landing-surface: var(--ui-surface); --landing-soft: var(--ui-raised); --landing-ink: var(--ui-ink); --landing-muted: var(--ui-muted); --landing-line: var(--ui-border); --landing-accent: var(--ui-action); }
-.lc-order-experience .lc-paper-copy p { line-height: 1.45; }
 :where(.customer-page,.landing-page,.wawasan-admin-shell,.wawasan-login-shell) :is([aria-invalid='true']) { border-color: var(--ui-danger); }
+/* Text-only accent treatments. Filled controls continue to use their semantic
+   on-action/on-feature ink, so a bright label cannot erase a filled button. */
+.dark :is(.text-emerald-600, .text-emerald-400, .text-green-600, .text-green-400) { color: color-mix(in srgb, var(--ui-green) 45%, var(--ui-paper)); }
+.dark .text-crisp-carrot { color: color-mix(in srgb, var(--ui-orange) 65%, var(--ui-paper)); }

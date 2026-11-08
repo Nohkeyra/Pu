@@ -355,7 +355,7 @@ export function Step2DishSelection({
         <Button
           onClick={validateAndNext}
           data-tour="step2-next"
-          className="flex-1 bg-amber-600 hover:bg-amber-700 text-white min-h-[48px] rounded-2xl font-bold text-sm shadow-md"
+          className="customer-next-button flex-1 bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] min-h-[48px] rounded-2xl font-bold text-sm shadow-md"
         >
           {tText('Next: Details', 'Seterusnya: Butiran')}
           <ArrowRight className="w-4 h-4 ml-1.5" />

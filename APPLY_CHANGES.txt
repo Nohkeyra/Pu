@@ -1,0 +1,82 @@
+WAWASAN — WEB & APK UI RESTYLE
+Base: wawasan-hub (13).zip
+Kemas kini: pratonton mini order + penyelarasan toolchain Android Capacitor 8.
+ZIP ini merangkumi pembetulan terdahulu dan menggantikan versi sebelumnya.
+Jika versi sebelumnya sudah disalin, salin semula fail sumber terkini.
+Git patch di bawah hanya untuk projek asas asal.
+
+Pilih SATU cara pemasangan:
+
+A. Salin fail sumber
+Salin folder src/, e2e/, scripts/, android/, .github/workflows/ dan fail
+docs/visual-architecture.md ke root projek, mengekalkan laluan folder.
+Selepas SEMUA fail sumber disalin, PADAM empat fail lama yang disenaraikan dalam DELETE_FILES.txt.
+
+B. Git patch (mengendalikan penggantian dan pemadaman sekali)
+Dari root projek asal, sebelum menyalin fail sumber:
+  git apply --check /laluan/Wawasan_UI_Restyle.patch
+  git apply /laluan/Wawasan_UI_Restyle.patch
+
+Fail ini, DELETE_FILES.txt dan patch ialah arahan pemasangan sahaja.
+Tidak perlu disalin ke src/ atau docs/.
+
+Pengesahan: lint, TypeScript frontend/server, 354 ujian Vitest, 41 ujian
+migrasi/struktur (termasuk 4 regresi versi dan 4 semakan toolchain Android),
+build web serta 33 ujian browser. Semakan Login/Dashboard terdahulu turut lulus.
+Pratonton buka/tutup turut disemak dengan data ilustrasi setempat.
+Browser menggunakan respons servis simulasi; tiada tempahan dihantar.
+APK disemak melalui marker persembahan native dan simulasi inset.
+Build Android debug dan release unsigned selepas Capacitor sync lulus
+dengan JDK 21 / Gradle 8.14.3. Fail web dalam kedua-dua APK disemak sama
+dengan build web akhir (220 fail runtime). Kunci produksi dan muat naik
+metadata Crashlytics tidak digunakan dalam ujian build setempat.
+APK tidak dijalankan pada peranti; fungsi plugin/rekod sebenar tidak diuji.
+Pembetulan workflow belum dipush/dijalankan di GitHub. Semakan terdahulu
+menemui build yang mengemas kini aset tag v1.3.177 yang telah wujud.
+Selepas menyalin fail ini ke AI Studio, pastikan .github/workflows/build-apk.yml
+dan scripts/bump-version.cjs turut masuk ke push GitHub seterusnya.
+
+Identiti, font jenama, aset jenama, kedua-dua tema dan pengendali aliran
+sedia ada dikekalkan. Tiada dependencies npm baharu. Versi toolchain/pustaka Android diselaraskan.
+Node 22+ dan JDK 21+ diperlukan untuk build APK. Fail wrapper JAR rasmi
+8.14.3 disertakan; git patch juga mengandungi perubahan binarinya.
+
+PERUBAHAN TERKINI
+Semua pembetulan sebelumnya turut disertakan.
+Dark mode Bold Heritage: warna jenama asal dikekalkan; teks neutral cerah,
+permukaan Espresso, kad ilustrasi Vermilion, tindakan Amber dan sokongan Emerald.
+Demo berada dalam Bantuan; ringkasan APK boleh dibuka dan terbuka semasa semakan.
+Tetapan teknikal dikelompokkan dalam Tetapan Lanjutan. Nota Operasi dipaparkan
+pada kalendar admin. Biometrik peranti dikawal melalui Tetapan; pilihan notifikasi
+akaun kekal di Profil. Footer APK diringkaskan tanpa membuang semakan versi.
+Tiada rekod atau keutamaan tersimpan dipadam/dipindahkan.
+
+Header pelanggan: Restoran Wawasan / Pak Usop ditengahkan; butang Kembali
+dipaparkan di kiri bersama logo. Font asal dan destinasi navigasi dikekalkan.
+Dua ujian browser tambahan menyemak kedua-dua tema, web/native pada lebar
+320, 360, 390, 768 dan 1280px serta navigasi pulang/riwayat.
+
+Ilustrasi lunch box dibetulkan dan dikongsi antara hero landing dan order
+melalui KraftLunchboxArtwork.tsx. Kotak mempunyai engsel, rim dan perspektif
+yang sama; makanan berada di dalam bekas. Dua lukisan lama digantikan satu
+komponen. Pratonton buka/tutup masih menggunakan state pesanan sedia ada.
+Versi release automatik kini melebihi tag semver dan build code terdahulu.
+Workflow menolak tag yang sudah wujud sebelum membina dan mencipta release.
+Jangan buang tag/release lama; gunakan push dengan workflow yang dibetulkan.
+
+Pembetulan rujukan aset: LoginPage.tsx dan CustomerDashboard.tsx kini juga
+menggunakan KraftLunchboxArtwork. Selector CSS kedua-dua halaman dikemas
+kini daripada img kepada SVG. Tiada rujukan kraft-lunchbox.svg tinggal
+dalam src/. Salin SEMUA fail sumber ZIP ini sebelum memadam aset SVG lama.
+Regresi ditambah untuk mengesan kemunculan semula rujukan aset yang dipadam.
+
+Pratonton mini order digabungkan dengan bar kemajuan yang melekat di bawah
+header apabila ilustrasi utama keluar skrin. Pax, pilihan menu dan gaya sajian
+mengikut state sedia ada. Panel pratonton boleh dibuka dari bar; keadaan
+buka/tutup kotak dikongsi. Buffet menggunakan dulang, Pre-Pack menggunakan
+kotak kraft. Keyboard meringkaskan bar dan medan fokus dijaga. Animasi pendek
+dilumpuhkan apabila reduced motion aktif. Tiada permission baharu diperlukan.
+Android: AGP 8.13.0, Gradle/wrapper 8.14.3, Google Services 4.4.4, AndroidX
+mengikut baseline Capacitor 8; configChanges termasuk density. Checksum
+wrapper/distribution dipinkan dan CLI Capacitor CI menggunakan dependency
+projek. Skrip build tempatan menolak Node <22 atau JDK <21.

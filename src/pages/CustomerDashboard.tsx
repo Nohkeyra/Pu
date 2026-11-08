@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { ClipboardList, CalendarDays, MapPin, UserRound, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CalendarDays, MapPin, UserRound, ArrowRight, ShieldCheck } from 'lucide-react';
 import { auth } from '@/firebaseConfig';
 import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
+import './customer-dashboard.css';
 import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import WawasanLoader from '@/components/brand/WawasanLoader';
+import { KraftLunchboxArtwork } from '@/components/brand/KraftLunchboxArtwork';
 import { useLanguage } from '@/context/LanguageContext';
-import { getAssetUrl } from '@/lib/utils';
 import './customer-calendar-profile.css';
 
 /** Authenticated entry for APK and web members, distinct from public marketing. */
@@ -30,7 +31,6 @@ export default function CustomerDashboard() {
   try { adminActive ||= Boolean(localStorage.getItem('wawasan_admin_token')); } catch { /* no storage */ }
   if (adminActive) return <Navigate to="/admin" replace />;
   const actions = [
-    { icon: ClipboardList, title: bm ? 'Tempahan baharu' : 'New catering request', description: bm ? 'Pilih menu dan butiran majlis' : 'Choose dishes and event details', path: '/order' },
     { icon: UserRound, title: bm ? 'Tempahan & profil' : 'My orders & profile', description: bm ? 'Semak status dan sejarah' : 'Track status and history', path: '/profile' },
     { icon: CalendarDays, title: bm ? 'Kalendar' : 'Calendar', description: bm ? 'Rancang tarikh majlis' : 'Plan your event date', path: '/calendar' },
     { icon: MapPin, title: bm ? 'Maklumat & tetapan' : 'Details & settings', description: bm ? 'Urus maklumat akaun' : 'Manage account preferences', path: '/settings' },
@@ -50,7 +50,7 @@ export default function CustomerDashboard() {
             </Button>
           </div>
           <div className="customer-dashboard-welcome-art" aria-hidden="true">
-            <img src={getAssetUrl('/assets/living-canvas/kraft-lunchbox.svg')} alt="" loading="lazy" />
+            <KraftLunchboxArtwork />
           </div>
         </Card>
         <section className="customer-dashboard-shortcuts" aria-label={bm ? 'Pintasan halaman' : 'Page shortcuts'}>

@@ -540,7 +540,7 @@ export function Step3ContactDetails({
         <Button
           onClick={validateAndNext}
           data-tour="step3-next"
-          className="flex-1 bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm shadow-crisp"
+          className="customer-next-button flex-1 bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm shadow-crisp"
         >
           {tText('Next: Review', 'Seterusnya: Semak')}
           <ArrowRight className="w-4 h-4 ml-1.5" />

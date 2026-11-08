@@ -5,13 +5,13 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'com.android.tools.build:gradle:8.13.0'
         // Must be >= the Kotlin that Firebase BoM 34.x / play-services-measurement 23.x
         // were compiled with (metadata 2.2.0). KGP 2.0.x cannot read those jars and
         // the K2 compiler crashes with "source must not be null" while reporting it.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion"
-        classpath 'com.google.gms:google-services:4.4.2'
+        classpath 'com.google.gms:google-services:4.4.4'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.3'
 
         // NOTE: Do not place your application dependencies here; they belong

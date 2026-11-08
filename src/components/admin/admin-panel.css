@@ -1,0 +1,22 @@
+/* Operational workspace: sidebar on web; concise tab bar on compact screens. */
+.wawasan-admin-shell { background: var(--ui-canvas); color: var(--ui-ink); }
+.wawasan-admin-shell > header { background: var(--ui-surface); border-color: var(--ui-border); backdrop-filter: none; }
+.wawasan-admin-shell .wawasan-admin-sidebar { background: var(--ui-surface); border-color: var(--ui-border); }
+.wawasan-admin-shell .wawasan-admin-sidebar > div:first-child { opacity: .4; }
+.wawasan-admin-shell .app-admin-tabs { gap: 6px; padding: 4px; background: var(--ui-raised); border: 1px solid var(--ui-border); border-radius: 16px; box-shadow: none; }
+.wawasan-admin-shell .app-admin-tabs > button { min-height: 48px; border-radius: 12px; white-space: normal; flex: 1 1 0; min-width: 0; color: var(--ui-muted); justify-content: center; box-shadow: none; }
+.wawasan-admin-shell .app-admin-tabs > button[aria-pressed='true'] { background: var(--ui-action); color: var(--ui-on-action); border-color: transparent; box-shadow: none; }
+.wawasan-admin-shell .app-admin-tabs > button svg { color: inherit; }
+.wawasan-admin-shell .wawasan-admin-heading { padding-bottom: 16px; border-bottom: 1px solid var(--ui-border); margin-bottom: 24px; }
+.wawasan-admin-heading h1 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 750; letter-spacing: -.025em; }
+.wawasan-admin-heading p { color: var(--ui-muted); max-width: 65ch; line-height: 1.6; }
+.wawasan-admin-shell :is(input, select, textarea) { border-radius: 10px; }
+.wawasan-admin-shell :is([data-slot='card'], .panel-surface) { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
+.wawasan-admin-shell > main { max-width: 1600px; width: 100%; margin-inline: auto; }
+@media (min-width: 1024px) {
+  .wawasan-admin-shell .app-admin-tabs > button { justify-content: flex-start; flex: none; }
+  .wawasan-admin-shell .wawasan-admin-sidebar { padding: 20px 16px; }
+}
+html.wawasan-native .wawasan-admin-shell .wawasan-admin-content { padding: 16px max(16px, var(--sal, 0px)) calc(24px + var(--sab, 0px)); }
+html.wawasan-native .wawasan-admin-shell .wawasan-admin-sidebar { padding: 8px 12px; }
+html.wawasan-native .wawasan-admin-shell .wawasan-admin-heading { margin-bottom: 16px; padding-bottom: 12px; }

@@ -3,14 +3,20 @@
 # Quick APK Build Script
 # This script automates the local APK build process
 
-set -e
+set -euo pipefail
 
 echo "🚀 Starting APK build process..."
 echo ""
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 20+"
+    echo "❌ Node.js is not installed. Please install Node.js 22+"
+    exit 1
+fi
+
+NODE_MAJOR=$(node -p 'Number(process.versions.node.split(".")[0])')
+if [ "$NODE_MAJOR" -lt 22 ]; then
+    echo "❌ Capacitor 8 requires Node.js 22+"
     exit 1
 fi
 
@@ -21,6 +27,11 @@ if ! command -v java &> /dev/null; then
 fi
 
 JAVA_VERSION=$(java -version 2>&1 | grep -oP '(?<=version ")[^"]*' | head -1)
+JAVA_MAJOR=${JAVA_VERSION%%.*}
+if [ "$JAVA_MAJOR" -lt 21 ]; then
+    echo "❌ Capacitor 8 requires JDK 21+ (found $JAVA_VERSION)"
+    exit 1
+fi
 echo "✅ Java version: $JAVA_VERSION"
 
 echo ""

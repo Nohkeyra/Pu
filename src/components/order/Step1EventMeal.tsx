@@ -333,7 +333,7 @@ export function Step1EventMeal({
       <Button
         onClick={validateAndNext}
         data-tour="step1-next"
-        className="customer-step-next w-full bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
+        className="customer-next-button customer-step-next w-full bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] h-12 rounded-2xl font-bold text-sm tracking-wide shadow-crisp cursor-pointer transition-all active:scale-[0.99]"
       >
         {tText('Next: Choose Menu', 'Seterusnya: Pilih Menu')}
         <ArrowRight className="w-4 h-4 ml-1.5" />

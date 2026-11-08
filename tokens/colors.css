@@ -1,6 +1,7 @@
 /* Wawasan approved four-colour palettes. UI hues must be derived from these tokens.
    Artwork, photography, PDF content and maps are deliberately independent media. */
 :root {
+  --ui-paper: #FFF8EC;
   --ui-orange: #FF6B00;
   --ui-yellow: #FFC247;
   --ui-green: #268A38;
@@ -17,6 +18,8 @@
   --ui-danger: var(--ui-action);
   --ui-success: var(--ui-green);
   --ui-shadow-ink: var(--ui-ink);
+  --ui-feature: var(--ui-action);
+  --ui-on-feature: var(--ui-on-action);
   --rw-gold: var(--ui-yellow);
   --rw-gold-deep: var(--ui-action);
   --rw-gold-text: var(--ui-ink);
@@ -53,11 +56,14 @@
   --ui-yellow: #FFB02E;
   --ui-green: #186B45;
   --ui-canvas: #211A19;
-  --ui-ink: var(--ui-yellow);
-  --ui-muted: color-mix(in srgb, var(--ui-ink) 79%, var(--ui-canvas));
-  --ui-surface: color-mix(in srgb, var(--ui-canvas) 91%, var(--ui-yellow));
-  --ui-raised: color-mix(in srgb, var(--ui-canvas) 83%, var(--ui-yellow));
-  --ui-border: color-mix(in srgb, var(--ui-yellow) 30%, var(--ui-canvas));
+  /* Warm neutral text and Espresso layers keep Amber for emphasis. */
+  --ui-ink: var(--ui-paper);
+  --ui-muted: color-mix(in srgb, var(--ui-paper) 72%, var(--ui-canvas));
+  --ui-surface: color-mix(in srgb, var(--ui-canvas) 94%, var(--ui-paper));
+  --ui-raised: color-mix(in srgb, var(--ui-canvas) 89%, var(--ui-paper));
+  --ui-border: color-mix(in srgb, var(--ui-paper) 20%, var(--ui-canvas));
+  --ui-feature: color-mix(in srgb, var(--ui-orange) 86%, var(--ui-canvas));
+  --ui-on-feature: var(--ui-paper);
   --ui-action: var(--ui-yellow);
   --ui-on-action: var(--ui-canvas);
   --ui-on-accent: var(--ui-canvas);

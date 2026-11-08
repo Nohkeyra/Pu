@@ -2,12 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { 
-  Loader2, 
-  Check, 
   Phone, 
-  ArrowRight, 
   User as UserIcon,
-  Ghost
+  Ghost,
+  CircleHelp,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
@@ -25,7 +24,7 @@ import { Step2DishSelection } from './Step2DishSelection';
 import { Step3ContactDetails } from './Step3ContactDetails';
 import { Step4ReviewSubmit } from './Step4ReviewSubmit';
 import { Step5OrderSuccess } from './Step5OrderSuccess';
-import { LivingPaperOrderScene } from './LivingPaperOrderScene';
+import { OrderPreviewProgress } from './OrderPreviewProgress';
 import { DemoOverlay } from '@/ghost/DemoOverlay';
 import { DEFAULT_MENU_ITEMS, type MenuItem } from '@/constants/menu';
 import { SAVED_COMPANIES } from '@/constants/companies';
@@ -133,6 +132,7 @@ function parseStoredOrderDraft(value: string): Partial<OrderState> | null {
 }
 
 export default function OrderForm({ initialData }: OrderFormProps) {
+  const isNativePresentation = typeof document !== 'undefined' && document.documentElement.classList.contains('wawasan-native');
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { isKeyboardVisible } = useMobileKeyboard();
@@ -150,7 +150,9 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
         const rect = target.getBoundingClientRect();
         const lowerLimit = visibleBottom - 24;
-        const upperLimit = 90;
+        const header = document.querySelector('.customer-page-header');
+        const progress = document.querySelector('.customer-order-progress');
+        const upperLimit = (header?.getBoundingClientRect().bottom || 0) + (progress?.getBoundingClientRect().height || 0) + 20;
         if (rect.bottom > lowerLimit) {
           window.scrollBy({ top: rect.bottom - lowerLimit, behavior: 'smooth' });
         } else if (rect.top < upperLimit) {
@@ -1124,17 +1126,17 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         data-keyboard-visible={isKeyboardVisible}
       >
         
-        <LivingPaperOrderScene
+        <OrderPreviewProgress
           step={effectiveStep}
           language={language}
           dishes={effectiveState.dishes}
           veggies={effectiveState.veggies}
           customMenu={effectiveState.customMenu}
           isDemo={demoActive}
-        />
-
-        {effectiveStep <= 4 && (
-          <nav id="wawasan-order-wizard" className="customer-order-progress" aria-label={tText('Order progress', 'Kemajuan tempahan')}>
+          guests={effectiveState.guests}
+          preparationType={effectiveState.preparationType}
+          isKeyboardVisible={isKeyboardVisible}
+        >
             <div className="customer-progress-copy" role="status">
               <span>{tText('STEP', 'LANGKAH')} <strong>{effectiveStep} / 4</strong></span>
               <span>{tText('Event → Menu → Details → Review', 'Majlis → Menu → Butiran → Semak')}</span>
@@ -1150,13 +1152,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     <Button variant="ghost" type="button" onClick={handleDiscardDraft}>{tText('Clear draft', 'Padam draf')}</Button>
                   </div>
                 ) : <span />}
-                <Button variant="ghost" type="button" onClick={handleStartDemo} aria-label={tText('Watch demo', 'Tonton demo')}>
-                  <Ghost className="h-4 w-4" aria-hidden="true" />{tText('Demo', 'Demo')}
-                </Button>
+                <details className="customer-order-help">
+                  <summary><CircleHelp className="h-4 w-4" aria-hidden="true" /><span>{tText('Help', 'Bantuan')}</span></summary>
+                  <div className="customer-order-help-content">
+                    <OrderFormTip language={language} />
+                    <Button variant="ghost" type="button" onClick={handleStartDemo} aria-label={tText('Watch demo', 'Tonton demo')}>
+                      <Ghost className="h-4 w-4" aria-hidden="true" />{tText('Watch demo', 'Tonton demo')}
+                    </Button>
+                  </div>
+                </details>
               </div>
             )}
-          </nav>
-        )}
+        </OrderPreviewProgress>
 
         {!currentUser && (
           <div className="customer-guest-banner">
@@ -1174,8 +1181,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             <Button type="button" variant="outline" size="sm" disabled={verificationBusy} onClick={resendVerificationEmail}>{verificationBusy ? tText('Sending…', 'Menghantar…') : tText('Resend verification', 'Hantar semula pengesahan')}</Button>
           </div>
         )}
-
-        <OrderFormTip language={language} />
 
         {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1270,21 +1275,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         </div>
 
         {/* Right Column: Interactive Sticky Live Summary Card */}
-        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-28 space-y-4">
-          <div className="customer-live-summary rounded-2xl border shadow-xl p-5 sm:p-6 overflow-hidden relative">
-            {/* Card Title Header */}
-            <div className="flex justify-between items-center pb-3 mb-4 border-b border-stone/10">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-crisp-carrot animate-pulse" />
-                <h3 className="text-xs font-extrabold text-deep-forest dark:text-white uppercase tracking-wider font-display">
-                  {tText('Live Order Summary', 'Ringkasan Tempahan')}
-                </h3>
-              </div>
-              <span className="microcopy-12-upper font-extrabold text-crisp-carrot bg-crisp-carrot/10 px-2.5 py-0.5 rounded-full uppercase border border-crisp-carrot/20">
-                {effectiveStep >= 5 ? tText('Completed', 'Selesai') : `Step ${effectiveStep} / 4`}
-              </span>
-            </div>
-
+        <div className="customer-order-aside lg:col-span-5 xl:col-span-4 lg:sticky space-y-4">
+          <details className="customer-live-summary customer-order-summary rounded-2xl border p-5 sm:p-6 relative" open={!isNativePresentation || effectiveStep >= 4}>
+            <summary className="customer-order-summary-heading">
+              <span className="customer-order-summary-title">{tText('Order summary', 'Ringkasan tempahan')}</span>
+              <span className="customer-order-summary-count">{effectiveState.guests} {tText('pax', 'orang')}</span>
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            </summary>
+            <div className="customer-order-summary-content">
             {/* Event Type & Pax Badge */}
             <div className="space-y-3 text-xs">
               <div className="flex justify-between items-center">
@@ -1357,7 +1355,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     backgroundPosition: 'center',
                   }}
                 />
-                <div className="relative z-10 flex justify-between items-center">
+                <div className="customer-quote-basis relative z-10 flex justify-between items-center">
                   <span className="text-stone-300 microcopy-12 font-medium uppercase tracking-wider">
                     {tText('Pricing Basis:', 'Asas Harga:')}
                   </span>
@@ -1375,40 +1373,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                       {tText('Quotation Pending', 'Menunggu Sebut Harga')}
                     </span>
                   </div>
-
-                  {/* Mobile progression action belongs to the quote panel, not a floating footer. */}
-                  {effectiveStep <= 4 && (
-                    <div className="shrink-0 lg:hidden">
-                      {effectiveStep < 4 ? (
-                        <Button
-                          type="button"
-                          onClick={() => handleStepNext(effectiveStep)}
-                          disabled={stepTransitionBusy}
-                          className="customer-next-button flex items-center gap-2"
-                        >
-                          <span>{tText('Next', 'Seterusnya')}</span>
-                          <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          onClick={handleOrderSubmission}
-                          disabled={isSubmitting || stepTransitionBusy}
-                          aria-busy={isSubmitting}
-                          className="customer-next-button flex items-center gap-2"
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                          ) : (
-                            <>
-                              <span>{tText('Submit', 'Hantar')}</span>
-                              <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1426,7 +1390,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               </div>
 
             </div>
-          </div>
+            </div>
+          </details>
         </div>
 
       </div> {/* End of Responsive Grid */}

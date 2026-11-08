@@ -1,13 +1,9 @@
-import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Bell, Mail, Ban, Settings as SettingsIcon, Fingerprint } from 'lucide-react';
+import { Bell, Mail, Ban, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/Toast';
-import { useCustomerBiometricEnrollment } from '@/hooks/native/useBiometricEnrollment';
-import { BiometricEnrollDialog } from '@/components/auth/BiometricEnrollDialog';
 
 interface ProfilePreferencesTabProps {
   notifyOrderStatus: boolean;
@@ -33,17 +29,14 @@ export function ProfilePreferencesTab({
   t,
 }: ProfilePreferencesTabProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const biometric = useCustomerBiometricEnrollment();
-  const [enrollOpen, setEnrollOpen] = useState(false);
   return (
     <Card className="profile-section profile-preferences-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
       <CardHeader className="profile-section-header pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
-          {t('Notification preferences', 'Pilihan notifikasi')}
+          {t('Account notification preferences', 'Pilihan notifikasi akaun')}
         </CardTitle>
         <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
-          {t('Manage how you receive order status alerts, invoice emails, and cancellation updates.', 'Urus saluran notifikasi pesanan dan invois anda.')}
+          {t('Saved with your account. Device notification permission is managed in Settings.', 'Disimpan pada akaun anda. Kebenaran notifikasi peranti diurus melalui Tetapan.')}
         </CardDescription>
       </CardHeader>
 
@@ -108,52 +101,6 @@ export function ProfilePreferencesTab({
           />
         </Card>
 
-        {/* Biometric Security: only offered on devices that actually have enrolled biometrics */}
-        {biometric.available && (
-          <Card variant="outlined" className="profile-preference flex items-center justify-between p-4 rounded-xl bg-stone-50/50 dark:bg-stone-900/30 border border-stone-200/80 dark:border-white/10 shadow-none">
-            <div className="space-y-0.5 pr-4">
-              <Label className="text-sm font-bold text-deep-forest dark:text-white flex items-center gap-2 cursor-pointer">
-                <Fingerprint className="w-4 h-4 text-primary shrink-0" />
-                <span>{t('Biometric Login Access', 'Log Masuk Biometrik')}</span>
-              </Label>
-              <p className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5 leading-relaxed">
-                {t('Use Fingerprint or Face ID for faster and secure access to your profile.', 'Gunakan Cap Jari atau Face ID untuk akses profil yang lebih pantas dan selamat.')}
-              </p>
-            </div>
-            <Switch
-              aria-label={t('Biometric login', 'Log masuk biometrik')}
-              checked={biometric.enabled}
-              onCheckedChange={async (checked) => {
-                if (checked) {
-                  setEnrollOpen(true);
-                  return;
-                }
-                const removed = await biometric.disable();
-                toast({
-                  title: removed ? t('Biometrics Disabled', 'Biometrik Dinyahaktifkan') : t('Could not disable', 'Tidak dapat dinyahaktifkan'),
-                  description: removed
-                    ? t('Biometric credentials removed from this device.', 'Kredensial biometrik dipadam daripada peranti ini.')
-                    : t('Please try again.', 'Sila cuba lagi.'),
-                  variant: removed ? 'success' : 'error',
-                });
-              }}
-            />
-          </Card>
-        )}
-        <BiometricEnrollDialog
-          open={enrollOpen}
-          onOpenChange={setEnrollOpen}
-          role="customer"
-          onEnabled={() => {
-            void biometric.refresh();
-            toast({
-              title: t('Biometrics Enabled', 'Biometrik Diaktifkan'),
-              description: t('Next time, sign in with your fingerprint / Face ID.', 'Lain kali, log masuk dengan cap jari / Face ID.'),
-              variant: 'success',
-            });
-          }}
-        />
-
         <Button type="button" onClick={handleSavePreferences} isLoading={isSaving} className="w-full">
           {t('Save preferences', 'Simpan pilihan')}
         </Button>
@@ -170,7 +117,7 @@ export function ProfilePreferencesTab({
             className="w-full flex items-center justify-center gap-2 rounded-xl border-stone-300 dark:border-white/15 py-3 font-semibold text-deep-forest dark:text-white hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <SettingsIcon className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-            <span>{t('Open Full Application Settings', 'Buka Tetapan Penuh Aplikasi')}</span>
+            <span>{t('Device & sign-in settings', 'Tetapan peranti & log masuk')}</span>
           </Button>
         </div>
       </CardContent>

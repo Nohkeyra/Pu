@@ -1,25 +1,12 @@
-/* Shared customer navigation tokens: same original warm cream/charcoal palette. */
-.wawasan-bottom-nav {
-  --nav-surface: var(--ui-surface);
-  --nav-line: color-mix(in srgb, var(--ui-orange) 25.0%, transparent);
-  background: color-mix(in srgb, var(--nav-surface) 95%, transparent);
-  border-color: var(--nav-line);
-}
-.dark .wawasan-bottom-nav {
-  --nav-surface: var(--ui-canvas);
-  --nav-line: color-mix(in srgb, var(--ui-yellow) 25.0%, transparent);
-}
-.wawasan-bottom-nav .nav-label {
-  overflow-wrap: anywhere;
-  white-space: normal;
-  max-height: 2.6em;
-  line-height: 1.3;
-}
-@media (max-width: 359px) {
-  .wawasan-bottom-nav .nav-label { font-size: 10px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .wawasan-bottom-nav :is(button, .nav-label) {
-    transition-duration: 0.01ms !important;
-  }
-}
+/* Single navigation owner: floating web dock, attached APK navigation bar. */
+.wawasan-navigation-dock { padding: 0 12px 10px; }
+.wawasan-navigation-dock .wawasan-bottom-nav { --nav-surface: var(--ui-surface); --nav-line: var(--ui-border); background: var(--nav-surface); border: 1px solid var(--nav-line); border-radius: 22px; box-shadow: 0 8px 28px color-mix(in srgb, var(--ui-shadow-ink) 14%, transparent); backdrop-filter: none; }
+.wawasan-navigation-dock .wawasan-bottom-nav nav { height: 64px; }
+.wawasan-bottom-nav .nav-label { font-size: .75rem; line-height: 1.3; overflow-wrap: anywhere; white-space: normal; max-width: 100%; }
+.wawasan-bottom-nav nav button { border-radius: 14px; }
+.wawasan-bottom-nav nav button[aria-current='page'] { color: var(--ui-action); }
+.wawasan-bottom-nav nav button[aria-current='page'] .nav-label { color: var(--ui-action); }
+html.wawasan-native .wawasan-navigation-dock { padding: 0; }
+html.wawasan-native .wawasan-navigation-dock .wawasan-bottom-nav { width: 100%; max-width: 720px; border-radius: 0; border-width: 1px 0 0; box-shadow: none; }
+html.wawasan-native .wawasan-navigation-dock .wawasan-bottom-nav nav { height: 60px; }
+@media (prefers-reduced-motion: reduce) { .wawasan-bottom-nav :is(button, .nav-label) { transition: none; } }

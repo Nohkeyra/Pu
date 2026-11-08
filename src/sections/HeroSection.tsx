@@ -3,6 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Link } from 'react-router-dom';
 import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { KraftLunchboxArtwork } from '@/components/brand/KraftLunchboxArtwork';
 import { Batik3DMotion } from '@/components/brand/Batik3DMotion';
 import { getAssetUrl } from '@/lib/utils';
 
@@ -56,8 +57,6 @@ const HeroSection = React.memo(() => {
             imgClassName="heritage-hero-batik-image"
           />
         </motion.div>
-        <div className="heritage-hero-shading" />
-        <div className="heritage-hero-vignette" />
         <div className="heritage-hero-dissolve" />
       </div>
 
@@ -67,6 +66,7 @@ const HeroSection = React.memo(() => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
       >
+        <p className="heritage-hero-eyebrow">{language === 'bm' ? 'KATERING · PAK USOP' : 'CATERING · PAK USOP'}</p>
         <h1
           id="landing-brand-title"
           className="font-artistic heritage-hero-title"
@@ -88,13 +88,8 @@ const HeroSection = React.memo(() => {
         </div>
         <div className="wawasan-hero-paper" aria-hidden="true">
           <div className="wawasan-hero-paper__halo" />
-          <div className="wawasan-hero-paper__sun" />
-          <span className="wawasan-hero-paper__star wawasan-hero-paper__star--top">✳</span>
-          <span className="wawasan-hero-paper__star wawasan-hero-paper__star--bottom">✷</span>
           <div className="wawasan-hero-paper__sheet wawasan-hero-paper__sheet--back" />
-          <div className="wawasan-hero-paper__sheet wawasan-hero-paper__sheet--front" />
-          {/* @ts-expect-error React 18 types fetchPriority as camelCase or lowercase depending on exact DOM definition */}
-          <img className="wawasan-hero-paper__meal" src={getAssetUrl('/assets/living-canvas/kraft-lunchbox.svg')} alt="" fetchpriority="high" />
+          <KraftLunchboxArtwork className="wawasan-hero-paper__meal" />
           <span className="wawasan-hero-paper__seal">WAWASAN <strong>PAK USOP · CATERING</strong></span>
           <span className="wawasan-hero-paper__ribbon">{language === 'bm' ? 'Dibuat dengan kasih' : 'Crafted with care'}</span>
         </div>
