@@ -50,6 +50,9 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Set up npm 11.9.0
+        run: npm install --global npm@11.9.0
+
       # =============================================
       # 🔢 VERSION: resolve, bump, commit and push - BEFORE building anything
       # =============================================
