@@ -112,16 +112,13 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
   const prepareConsolidateModal = async () => {
     try {
       const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), { headers: authHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setConsolidatedInvoiceNo(data.nextInvoiceNo || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
-      } else {
-        setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
-      }
-    } catch {
-      setConsolidatedInvoiceNo(`RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`);
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.nextInvoiceNo) throw new Error(data.error || 'Unable to reserve invoice number.');
+      setConsolidatedInvoiceNo(data.nextInvoiceNo);
+      setShowConsolidateModal(true);
+    } catch (error) {
+      toast({ title: t('error'), description: String(error), variant: 'error' });
     }
-    setShowConsolidateModal(true);
   };
 
   const handleGenerateConsolidatedInvoice = async (orders: Order[], withNotes: boolean, customInvoiceNo?: string) => {
@@ -131,27 +128,15 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       const desiredInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim();
       const orderIds = orders.map((o) => o.id).filter(Boolean);
       
-      let finalInvoiceNo = desiredInvoiceNo || `RW ${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
-
-      // 1. Commit the consolidated invoice number to Firestore
-      try {
-        const res = await fetch(getApiUrl('/api/admin/commit-consolidated-invoice'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeaders()
-          },
-          body: JSON.stringify({ orderIds, invoiceNo: desiredInvoiceNo })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.invoiceNo) {
-            finalInvoiceNo = data.invoiceNo;
-          }
-        }
-      } catch (err) {
-        console.warn('[Consolidated Invoice] Firestore commit fallback to local number:', err);
-      }
+      if (!desiredInvoiceNo) throw new Error('Reserve an invoice number before confirming.');
+      const res = await fetch(getApiUrl('/api/admin/commit-consolidated-invoice'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ orderIds, invoiceNo: desiredInvoiceNo }),
+      });
+      const saved = await res.json();
+      if (!res.ok || !saved.success || !saved.invoiceNo) throw new Error(saved.error || 'Unable to save consolidated invoice.');
+      const finalInvoiceNo = saved.invoiceNo;
 
       // 2. Fetch the PDF from the server
       const pdfRes = await fetch(getApiUrl('/api/admin/consolidated-invoice/pdf'), {
@@ -198,6 +183,8 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
         variant: 'success'
       });
     } catch (error) {
+      // Keep the same reserved number available after a failed PDF/download retry.
+      setShowConsolidateModal(true);
       toast({ title: t('error'), description: String(error), variant: 'error' });
     } finally {
       setIsGeneratingConsolidated(false);

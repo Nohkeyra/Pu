@@ -56,6 +56,19 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     }
   });
 
+  it('preserves the explicit delivery/pickup mode on customer submissions', async () => {
+    for (const delivery of ['delivery', 'pickup']) {
+      const response = await fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer verified_customer' },
+        body: JSON.stringify({ name: 'Audit Customer', contact: '0100000000', email: 'audit@example.invalid',
+          eventDate: '2026-12-15', time: '08:30', quantity: 10, meals: ['breakfast'], delivery }),
+      });
+      expect(response.status).toBe(200);
+      const { id } = await response.json();
+      expect((await getFirestore().collection('orders').doc(id).get()).data()?.delivery).toBe(delivery);
+    }
+  });
+
   describe('Admin update field constraints', () => {
     it('rejects mutations to server-owned order identity and deletion flags', () => {
       expect(validateAdminOrderUpdate({ userId: 'different-user' })).toContain('Unsupported');

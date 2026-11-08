@@ -6,6 +6,8 @@ import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
 import { generateServerInvoicePdf, generateServerConsolidatedInvoicePdf } from '../services/serverPdfService.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
+import { commitConsolidatedInvoice, reserveConsolidatedNumber, ConsolidatedInvoiceError } from '../services/consolidatedInvoices.js';
+
 const router = Router();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -241,48 +243,46 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
 });
 
 // POST Endpoint for Server-Generated Consolidated Invoice PDF (Admin Only)
-router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req: Request, res: Response) => {
+router.get('/admin/next-invoice-number', verifyAdminToken, async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
   try {
-    const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
-    }
-
-    const db = getFirestore();
-    const validIds = orderIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
-      .map((id: string) => id.trim());
-
-    // Batch all order lookups into a single Firestore round-trip (db.getAll)
-    // instead of awaiting one .get() per id in sequence — with N orderIds
-    // that was N sequential network round-trips before PDF generation
-    // could even start.
-    const refs = validIds.map((id: string) => db.collection('orders').doc(id));
-    const snaps = refs.length > 0 ? await db.getAll(...refs) : [];
-    const orderDocs: Record<string, any>[] = snaps
-      .filter((snap) => snap.exists)
-      .map((snap) => ({ id: snap.id, ...snap.data() }));
-
-    if (orderDocs.length === 0) {
-      return res.status(404).json({ success: false, error: 'No matching order documents found for provided orderIds' });
-    }
-
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
-      orderDocs,
-      invoiceNo,
-      Boolean(includeNotes),
-      lang === 'en' ? 'en' : 'bm'
-    );
-
-    const filename = `Invois_Konsolidasi_${invoiceNo || 'COMBINED'}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    return res.send(pdfBuffer);
-  } catch (err) {
-    console.error('[Invoice API] Failed to render consolidated PDF:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    const nextInvoiceNo = await reserveConsolidatedNumber((req as any).user?.uid || 'admin');
+    return res.json({ success: true, nextInvoiceNo });
+  } catch (error) {
+    console.error('[Consolidated invoice] Reserve failed:', error);
+    return res.status(503).json({ success: false, error: 'Unable to reserve invoice number. Please retry.' });
   }
 });
 
+router.post('/admin/commit-consolidated-invoice', verifyAdminToken, async (req, res) => {
+  try {
+    const saved = await commitConsolidatedInvoice(req.body?.orderIds, req.body?.invoiceNo, (req as any).user?.uid || 'admin');
+    return res.json({ success: true, invoiceNo: saved.invoiceNo });
+  } catch (error) {
+    console.error('[Consolidated invoice] Commit failed:', error);
+    return res.status(error instanceof ConsolidatedInvoiceError ? error.status : 503).json({
+      success: false, error: error instanceof ConsolidatedInvoiceError ? error.message : 'Unable to save consolidated invoice.',
+    });
+  }
+});
+
+router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res) => {
+  try {
+    const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
+    // Also protects older clients that call the PDF endpoint directly.
+    const saved = await commitConsolidatedInvoice(orderIds, invoiceNo, (req as any).user?.uid || 'admin');
+    const pdfBuffer = await generateServerConsolidatedInvoicePdf(saved.orders, saved.invoiceNo, Boolean(includeNotes), lang === 'en' ? 'en' : 'bm');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Content-Disposition', `inline; filename="Invois_Konsolidasi_${saved.invoiceNo}.pdf"`);
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('[Consolidated invoice] PDF failed:', error);
+    return res.status(error instanceof ConsolidatedInvoiceError ? error.status : 503).json({
+      success: false, error: error instanceof ConsolidatedInvoiceError ? error.message : 'Unable to generate consolidated PDF.',
+    });
+  }
+});
 
 router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
   try {

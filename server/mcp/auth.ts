@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getAuth } from 'firebase-admin/auth';
 import { getAdminApp, getFirestore } from '../firebaseAdmin.js';
+import { fetchPublicJson } from '../services/remoteResource.js';
 
 // One vendor-neutral scope for this private admin connector. The OAuth login
 // itself is restricted to Firebase admin accounts, so a token represents an
@@ -11,7 +12,6 @@ export const MCP_ACCESS_TOKEN_TTL_SECONDS = 3600;
 export const MCP_REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
 const OAUTH_TRANSACTION_TTL_MS = 10 * 60_000;
 const OAUTH_CODE_TTL_MS = 5 * 60_000;
-const CIMD_TIMEOUT_MS = 5_000;
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -23,30 +23,6 @@ function randomToken(): string {
 
 function normalizeIssuer(value: string): string {
   return value.replace(/\/$/, '');
-}
-
-function isPrivateIpv4(host: string): boolean {
-  const parts = host.split('.').map(Number);
-  if (parts.length !== 4 || parts.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return false;
-  const [a, b] = parts;
-  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
-}
-
-function isPrivateIpv6(host: string): boolean {
-  const value = host.toLowerCase();
-  return value === '::1' || value === '::' || value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:');
-}
-
-function isSafeClientMetadataUrl(value: string): URL {
-  const url = new URL(value);
-  if (url.protocol !== 'https:') throw new Error('OAuth client_id metadata URL must use HTTPS.');
-  if (url.username || url.password || url.port) throw new Error('OAuth client_id metadata URL must not contain credentials or a port.');
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || isPrivateIpv4(host) || isPrivateIpv6(host)) {
-    throw new Error('OAuth client metadata host is not allowed.');
-  }
-  return url;
 }
 
 function safeRedirectUri(value: string): boolean {
@@ -184,26 +160,12 @@ function parseClientMetadata(value: unknown): ClientMetadata {
 }
 
 async function fetchClientMetadata(clientId: string): Promise<ClientMetadata> {
-  const url = isSafeClientMetadataUrl(clientId);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CIMD_TIMEOUT_MS);
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { accept: 'application/json' },
-      redirect: 'error',
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`OAuth client metadata returned HTTP ${response.status}.`);
-    const metadata = parseClientMetadata(await response.json());
-    if (metadata.client_id !== clientId) throw new Error('OAuth client metadata client_id does not match the requested client_id.');
-    if (metadata.grant_types && !metadata.grant_types.includes('authorization_code')) throw new Error('OAuth client does not support authorization_code.');
-    if (metadata.response_types && !metadata.response_types.includes('code')) throw new Error('OAuth client does not support response_type=code.');
-    if (metadata.token_endpoint_auth_method && metadata.token_endpoint_auth_method !== 'none') throw new Error('OAuth client must use public-client token authentication.');
-    return metadata;
-  } finally {
-    clearTimeout(timer);
-  }
+  const metadata = parseClientMetadata(await fetchPublicJson(clientId));
+  if (metadata.client_id !== clientId) throw new Error('OAuth client metadata client_id does not match the requested client_id.');
+  if (metadata.grant_types && !metadata.grant_types.includes('authorization_code')) throw new Error('OAuth client does not support authorization_code.');
+  if (metadata.response_types && !metadata.response_types.includes('code')) throw new Error('OAuth client does not support response_type=code.');
+  if (metadata.token_endpoint_auth_method && metadata.token_endpoint_auth_method !== 'none') throw new Error('OAuth client must use public-client token authentication.');
+  return metadata;
 }
 
 function htmlEscape(value: string): string {
@@ -257,7 +219,7 @@ export function createMcpOAuthHelpers() {
   }) {
     const scope = params.scope?.trim() || MCP_SCOPE;
     const expectedResource = `${normalizeIssuer(params.issuer)}/mcp`;
-    if (!params.codeChallenge) throw new Error('Missing PKCE code_challenge.');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(params.codeChallenge)) throw new Error('A valid PKCE S256 code_challenge is required.');
     if (!isAllowedScope(scope)) throw new Error('Unsupported scope.');
     if (params.resource && normalizeIssuer(params.resource) !== expectedResource) throw new Error('Invalid resource.');
     const client = await validateClient(params.clientId, params.redirectUri);
@@ -279,88 +241,74 @@ export function createMcpOAuthHelpers() {
 
   async function completeAuthorization(id: string, email: string, uid: string) {
     const ref = db.collection('mcp_oauth_transactions').doc(sha256(id));
-    const snap = await ref.get();
-    if (!snap.exists) throw new Error('Authorization session expired.');
-
-    const data = snap.data() as Record<string, any>;
-    const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
-    if (!Number.isFinite(expiresAt) || expiresAt < now()) {
-      await ref.delete();
-      throw new Error('Authorization session expired.');
-    }
-
-    await ref.delete();
     const code = randomToken();
-    await db.collection('mcp_oauth_codes').doc(sha256(code)).set({
-      clientId: data.clientId,
-      redirectUri: data.redirectUri,
-      codeChallenge: data.codeChallenge,
-      scope: data.scope || MCP_SCOPE,
-      resource: data.resource,
-      uid,
-      email,
-      createdAt: new Date(),
-      expiresAt: new Date(now() + OAUTH_CODE_TTL_MS),
+    return db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Authorization session expired.');
+      const data = snap.data()!;
+      const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
+      if (!Number.isFinite(expiresAt) || expiresAt <= now()) throw new Error('Authorization session expired.');
+      tx.delete(ref);
+      tx.set(db.collection('mcp_oauth_codes').doc(sha256(code)), {
+        clientId: data.clientId, redirectUri: data.redirectUri, codeChallenge: data.codeChallenge,
+        scope: data.scope || MCP_SCOPE, resource: data.resource, uid, email,
+        createdAt: new Date(), expiresAt: new Date(now() + OAUTH_CODE_TTL_MS),
+      });
+      return { code, redirectUri: String(data.redirectUri), state: String(data.state || '') };
     });
-
-    return { code, redirectUri: data.redirectUri, state: data.state || '' };
   }
 
-  async function issueTokens(uid: string, email: string, clientId: string, scope: string, resource: string) {
-    const accessToken = randomToken();
-    const refreshToken = randomToken();
-    const base = { uid, email, clientId, scope, resource, createdAt: new Date() };
-
-    await db.collection('mcp_oauth_access_tokens').doc(sha256(accessToken)).set({
-      ...base,
-      expiresAt: new Date(now() + MCP_ACCESS_TOKEN_TTL_SECONDS * 1000),
+  // These writes participate in consumption of the original code/refresh token.
+  // A failed commit leaves the original usable and publishes no partial token pair.
+  function issueTokens(tx: FirebaseFirestore.Transaction, data: Record<string, any>) {
+    const accessToken = randomToken(), refreshToken = randomToken();
+    const base = { uid: data.uid, email: data.email, clientId: data.clientId,
+      scope: data.scope || MCP_SCOPE, resource: data.resource, createdAt: new Date() };
+    tx.set(db.collection('mcp_oauth_access_tokens').doc(sha256(accessToken)), {
+      ...base, expiresAt: new Date(now() + MCP_ACCESS_TOKEN_TTL_SECONDS * 1000),
     });
-    await db.collection('mcp_oauth_refresh_tokens').doc(sha256(refreshToken)).set({
-      ...base,
-      expiresAt: new Date(now() + MCP_REFRESH_TOKEN_TTL_SECONDS * 1000),
+    tx.set(db.collection('mcp_oauth_refresh_tokens').doc(sha256(refreshToken)), {
+      ...base, expiresAt: new Date(now() + MCP_REFRESH_TOKEN_TTL_SECONDS * 1000),
     });
-
-    return { access_token: accessToken, token_type: 'Bearer', expires_in: MCP_ACCESS_TOKEN_TTL_SECONDS, refresh_token: refreshToken, scope };
+    return { access_token: accessToken, token_type: 'Bearer', expires_in: MCP_ACCESS_TOKEN_TTL_SECONDS,
+      refresh_token: refreshToken, scope: base.scope };
   }
 
   async function exchangeCode(code: string, clientId: string, redirectUri: string, verifier: string, resource: string, issuer: string) {
-    const ref = db.collection('mcp_oauth_codes').doc(sha256(code));
-    const snap = await ref.get();
-    if (!snap.exists) throw new Error('Invalid authorization code.');
-
-    const data = snap.data() as Record<string, any>;
-    await ref.delete();
-
-    const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
-    if (!Number.isFinite(expiresAt) || expiresAt < now()) throw new Error('Authorization code expired.');
-    if (data.clientId !== clientId || data.redirectUri !== redirectUri) throw new Error('OAuth client or redirect_uri mismatch.');
-
-    const expected = createHash('sha256').update(verifier).digest('base64url');
-    if (!constantTimeEqual(expected, data.codeChallenge)) throw new Error('PKCE verification failed.');
-
-    const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
-    if (normalizeIssuer(resource) !== expectedResource || data.resource !== expectedResource) throw new Error('Invalid resource.');
-
     await validateClient(clientId, redirectUri);
-    return issueTokens(data.uid, data.email, clientId, data.scope || MCP_SCOPE, expectedResource);
+    const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
+    if (normalizeIssuer(resource) !== expectedResource) throw new Error('Invalid resource.');
+    const ref = db.collection('mcp_oauth_codes').doc(sha256(code));
+    return db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Invalid authorization code.');
+      const data = snap.data()!;
+      const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
+      if (!Number.isFinite(expiresAt) || expiresAt <= now()) throw new Error('Authorization code expired.');
+      if (data.clientId !== clientId || data.redirectUri !== redirectUri) throw new Error('OAuth client or redirect_uri mismatch.');
+      const expected = createHash('sha256').update(verifier).digest('base64url');
+      if (!constantTimeEqual(expected, data.codeChallenge)) throw new Error('PKCE verification failed.');
+      if (data.resource !== expectedResource) throw new Error('Invalid resource.');
+      tx.delete(ref);
+      return issueTokens(tx, data);
+    });
   }
 
   async function refresh(refreshToken: string, clientId: string, resource: string, issuer: string) {
-    const ref = db.collection('mcp_oauth_refresh_tokens').doc(sha256(refreshToken));
-    const snap = await ref.get();
-    if (!snap.exists) throw new Error('Invalid refresh token.');
-
-    const data = snap.data() as Record<string, any>;
-    const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
     const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
-    if (!Number.isFinite(expiresAt) || expiresAt < now() || data.clientId !== clientId || data.resource !== expectedResource) {
-      throw new Error('Invalid refresh token.');
-    }
     if (normalizeIssuer(resource) !== expectedResource) throw new Error('Invalid resource.');
-
-    const token = await issueTokens(data.uid, data.email, clientId, data.scope || MCP_SCOPE, expectedResource);
-    await ref.delete();
-    return token;
+    const ref = db.collection('mcp_oauth_refresh_tokens').doc(sha256(refreshToken));
+    return db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Invalid refresh token.');
+      const data = snap.data()!;
+      const expiresAt = data.expiresAt?.toMillis?.() ?? new Date(data.expiresAt).getTime();
+      if (!Number.isFinite(expiresAt) || expiresAt <= now() || data.clientId !== clientId || data.resource !== expectedResource) {
+        throw new Error('Invalid refresh token.');
+      }
+      tx.delete(ref);
+      return issueTokens(tx, data);
+    });
   }
 
   async function verifyAccessToken(token: string, issuer: string) {

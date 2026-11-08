@@ -19,6 +19,9 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
+  const requestSequence = useRef(0);
+  const fallbackActive = useRef(false);
+  const invalidateRequests = useCallback(() => ++requestSequence.current, []);
 
   // Use refs for callbacks to prevent infinite re-renders
   const onLogoutRef = useRef(onLogout);
@@ -38,30 +41,34 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
 
   const fetchOrders = useCallback(async (silent?: boolean) => {
     if (!adminToken) return;
+    const requestId = invalidateRequests();
     if (!silent) setLoading(true);
     try {
       const response = await fetch(getApiUrl('/api/admin/orders'), {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ action: 'fetch', pageSize: 100 })
+        body: JSON.stringify({ action: 'fetch', includeAll: true })
       });
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.orders)) {
-          setOrders(sortOrdersByCreatedAt(data.orders as Order[], 'desc').slice(0, 100));
+          if (requestId === requestSequence.current) setOrders(sortOrdersByCreatedAt(data.orders as Order[], 'desc'));
         }
       } else if (response.status === 401 || response.status === 403) {
-        onLogoutRef.current?.();
+        if (requestId === requestSequence.current) onLogoutRef.current?.();
       }
     } catch (err) {
       console.error('Error fetching admin orders via API:', err);
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && requestId === requestSequence.current) setLoading(false);
     }
-  }, [adminToken, authHeaders]);
+  }, [adminToken, authHeaders, invalidateRequests]);
 
   useEffect(() => {
+    invalidateRequests();
+    fallbackActive.current = false;
     if (!adminToken) {
+      setLoading(false);
       setOrders([]);
       return;
     }
@@ -69,9 +76,12 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     // The listener is primary and reads all orders before local sorting so legacy
     // records remain eligible. Use the REST fallback only if the listener fails.
     // Do not orderBy/limit in Firestore: legacy records may lack createdAt or use mixed types.
+    let disposed = false;
     const q = query(collection(db, 'orders'));
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
+        if (disposed) return;
+        invalidateRequests();
         const fetchedOrders: Order[] = [];
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
@@ -84,9 +94,11 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
             ...data,
           } as Order);
         });
-      setOrders(sortOrdersByCreatedAt(fetchedOrders, 'desc').slice(0, 100));
+      setOrders(sortOrdersByCreatedAt(fetchedOrders, 'desc'));
       setLoading(false);
     }, (error) => {
+      if (disposed) return;
+      fallbackActive.current = true;
       console.warn('[Admin Orders] Real-time Firestore snapshot inactive, falling back to Admin API:', error.message);
       // Only hit the REST endpoint when the live listener can't run at all
       // (e.g. Firestore rules reject it) — the single fallback path instead
@@ -95,9 +107,11 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     });
 
     return () => {
+      disposed = true;
+      invalidateRequests();
       unsubscribeSnapshot();
     };
-  }, [adminToken, fetchOrders]);
+  }, [adminToken, fetchOrders, invalidateRequests]);
 
   const handleUpdateOrderStatus = async (orderId: string, data: Partial<Order>, successMsg?: string) => {
     setIsApproving(true);
@@ -113,6 +127,10 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
       });
 
       if (response.ok) {
+        const saved = await response.json();
+        setOrders(current => current.map(order => order.id === orderId
+          ? { ...order, ...data, ...(saved.invoiceNo ? { invoiceNo: saved.invoiceNo } : {}) } : order));
+        if (fallbackActive.current) await fetchOrders(true);
         if (successMsg) {
           toastRef.current({
             title: tRef.current('success'),
@@ -153,6 +171,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
         })
       });
       if (response.ok) {
+        setOrders(current => current.filter(order => order.id !== orderId));
+        if (fallbackActive.current) await fetchOrders(true);
         toastRef.current({
           title: tRef.current('success'),
           description: tRef.current('order_deleted'),
@@ -189,8 +209,12 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
           headers: authHeaders(),
           body: JSON.stringify({ action: 'delete', orderId })
         });
-        if (response.ok) successCount++;
+        if (response.ok) {
+          successCount++;
+          setOrders(current => current.filter(order => order.id !== orderId));
+        }
       }
+      if (fallbackActive.current) await fetchOrders(true);
       toastRef.current({
         title: tRef.current('success'),
         description: language === 'bm'

@@ -348,7 +348,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     // Make the eligibility check and billing transition one Firestore transaction.
     // A concurrent request will re-read the order and fail once another request bills it.
     const invoiceGeneratedAt = new Date().toISOString();
-    const committedOrder = await db.runTransaction(async (tx: any) => {
+    const deliveryStatus = await db.runTransaction(async (tx: any) => {
       const freshSnap = await tx.get(orderRef);
       if (!freshSnap.exists) {
         const error: any = new Error('ORDER_NOT_FOUND');
@@ -364,46 +364,26 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       }
       const freshQuantity = Number(freshOrder.quantity || freshOrder.guests || freshOrder.pax || 0);
       const freshMeals: string[] = Array.isArray(freshOrder.meals) ? freshOrder.meals : (freshOrder.meals ? [String(freshOrder.meals)] : []);
-      if (freshQuantity !== quantity || JSON.stringify(freshMeals) !== JSON.stringify(orderMeals)) {
+      if (freshQuantity !== quantity || JSON.stringify(freshMeals) !== JSON.stringify(orderMeals)
+        || freshOrder.invoiceNo !== order.invoiceNo) {
         const error: any = new Error('ORDER_CHANGED');
         error.code = 'ORDER_CHANGED';
         throw error;
       }
-      tx.update(orderRef, {
-        status: 'billed',
-        prices: finalPrices,
-        totalAmount,
-        invoiceNo,
-        invoiceGeneratedAt,
-        invoiceDeliveryStatus: (typeof freshOrder.email === 'string' && freshOrder.email.trim().includes('@')) ? 'queued' : 'skipped_no_email',
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      return freshOrder;
+      const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
+      const deliveryStatus = recipientEmail.includes('@') ? 'queued' : 'skipped_no_email';
+      const updates = { status: 'billed', prices: finalPrices, totalAmount, invoiceNo,
+        invoiceGeneratedAt, invoiceDeliveryStatus: deliveryStatus, updatedAt: FieldValue.serverTimestamp() };
+      if (deliveryStatus === 'queued') {
+        await invoiceQueue.service.enqueueInTransaction(tx, {
+          orderId, orderForPdf: { ...freshOrder, ...updates, id: orderId }, invoiceNo,
+          recipientEmail, totalAmount, companyName: freshOrder.to || freshOrder.company || 'Pelanggan',
+          lang: freshOrder.lang === 'en' ? 'en' : 'bm',
+        });
+      }
+      tx.update(orderRef, updates);
+      return deliveryStatus;
     });
-
-    // Use the fresh transactional snapshot for the invoice pipeline.
-    const recipientEmail = typeof committedOrder.email === 'string' ? committedOrder.email.trim() : '';
-    const orderForPdf = {
-      ...committedOrder,
-      id: orderId,
-      prices: finalPrices,
-      totalAmount,
-      invoiceNo,
-      invoiceGeneratedAt,
-    };
-
-    // Asynchronously dispatch PDF generation & email delivery in background queue
-    if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.includes('@')) {
-      invoiceQueue.enqueue({
-        orderId,
-        orderForPdf,
-        invoiceNo,
-        recipientEmail,
-        totalAmount,
-        companyName: committedOrder.to || committedOrder.company || 'Pelanggan',
-        lang: (committedOrder.lang === 'en') ? 'en' : 'bm',
-      });
-    }
 
     telemetry.captureBreadcrumb('Pricing confirmed and invoice delivery queued', {
       orderId,
@@ -416,8 +396,10 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       orderId,
       invoiceNo,
       totalAmount,
-      status: 'queued',
-      message: `Invois ${invoiceNo} disahkan. Penghantaran invois sedang diproses di latar belakang.`
+      status: deliveryStatus,
+      message: deliveryStatus === 'queued'
+        ? `Invois ${invoiceNo} disahkan. Penghantaran invois sedang diproses di latar belakang.`
+        : `Invois ${invoiceNo} disahkan. Tiada alamat e-mel untuk penghantaran.`
     });
 
   } catch (err) {

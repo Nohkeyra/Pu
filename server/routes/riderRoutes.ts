@@ -7,6 +7,8 @@ import { createBrevoTransporter, notifyCustomerOfStatusChange } from '../emailSe
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { canStartRiderTracking, distanceMetres, isFreshRiderLocation, RESTORAN_COORDS, RIDER_FRESH_MS, RIDER_MAX_ACCURACY_M, RIDER_SESSION_MS, validCoordinates, type GpsTelemetry, type RiderSession } from '../../src/lib/riderTracking.js';
 
+import { OtwError, startOtwOrders } from '../services/otwOrders.js';
+
 const router = Router();
 const validId = (id: unknown): id is string => typeof id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(id);
 class TrackingError extends Error {
@@ -15,6 +17,18 @@ class TrackingError extends Error {
   constructor(status: number, code: string) { super(code); this.status = status; this.code = code; }
 }
 const ended = (session: RiderSession, now: string, reason: string): RiderSession => ({ ...session, active: false, updatedAt: now, endedAt: now, reason });
+
+router.post('/admin/orders/:id/otw', verifyAdminToken, async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ success: false, code: 'INVALID_ORDER' });
+  try {
+    const batch = await startOtwOrders(req.params.id);
+    return res.json({ success: true, ...batch });
+  } catch (error) {
+    if (error instanceof OtwError) return res.status(error.status).json({ success: false, code: error.message });
+    console.error('[OTW] Start failed:', error);
+    return res.status(503).json({ success: false, code: 'OTW_UNAVAILABLE' });
+  }
+});
 
 // One explicitly started session for the sole rider. All writes remain admin-only.
 router.post('/orders/:id/rider-session', verifyAdminToken, async (req, res) => {
@@ -124,7 +138,7 @@ router.get('/orders/:id/rider-location', async (req, res) => {
     const data = order.data() || {};
     if (!isOrderOwnedByCaller(data, caller)) return res.status(403).json({ success: false, code: 'FORBIDDEN' });
     res.setHeader('Cache-Control', 'private, no-store');
-    return res.json({ success: true, riderLocation: data.riderLocation || null, session: data.riderTrackingSession || null, status: data.status, live: canStartRiderTracking(data.status) && isFreshRiderLocation(data.riderLocation, data.riderTrackingSession) });
+    return res.json({ success: true, riderLocation: data.riderLocation || null, session: data.riderTrackingSession || null, status: data.status, otwBatchId: data.otwBatchId || null, otwAutoCloseAt: data.otwAutoCloseAt || null, live: canStartRiderTracking(data.status) && isFreshRiderLocation(data.riderLocation, data.riderTrackingSession) });
   } catch (error) {
     console.error('[Read rider location]', error);
     return res.status(500).json({ success: false, code: 'TRACKING_UNAVAILABLE' });

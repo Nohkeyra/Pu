@@ -1,9 +1,8 @@
 import { z } from 'zod';
-import { FieldValue } from 'firebase-admin/firestore';
-import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin.js';
+import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { generateServerInvoicePdf } from '../services/serverPdfService.js';
-import { isValidStatusTransition } from '../services/orderValidator.js';
+import { commitAdminOrderMutation } from '../services/orderMutations.js';
 import { toJSDate } from '../../src/lib/dateUtils.js';
 import { getOrderEventDate, isOrderDateInRange, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
 
@@ -103,7 +102,7 @@ export const MCP_TOOLS = [
   { name: 'get_sales_summary', title: 'Get sales summary', description: 'Calculate order count and MYR totals for an optional event-date range.', inputSchema: salesSchema, readOnly: true },
   { name: 'get_calendar_events', title: 'Get calendar events', description: 'List orders/events scheduled for a specific date in Asia/Kuala_Lumpur.', inputSchema: calendarSchema, readOnly: true },
   { name: 'update_order_status', title: 'Update order status', description: 'Admin action: change an order status using the same validated status-transition rules as the Wawasan admin panel.', inputSchema: statusSchema, readOnly: false },
-  { name: 'bill_order', title: 'Bill order', description: 'Admin action: set meal pricing, calculate the total, generate the official invoice number, mark the order billed, and optionally email the final invoice PDF to the customer. Only call after the user explicitly asks to bill the order.', inputSchema: billSchema, readOnly: false },
+  { name: 'bill_order', title: 'Bill order', description: 'Admin action: set meal pricing, calculate the total, generate the official invoice number, mark the order billed, and optionally queue the final invoice PDF email durably to the customer. Only call after the user explicitly asks to bill the order.', inputSchema: billSchema, readOnly: false },
   { name: 'send_invoice_email', title: 'Send invoice email', description: 'Admin action: generate the final invoice PDF for an order and email it to the order email address or the supplied address.', inputSchema: sendInvoiceSchema, readOnly: false },
 ] as const;
 
@@ -251,58 +250,27 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
       }
       case 'update_order_status': {
         const args = statusSchema.parse(rawArgs);
-        const orderRef = db.collection('orders').doc(args.orderId);
-        const snap = await orderRef.get();
-        if (!snap.exists) return errorResult(`Order not found: ${args.orderId}`);
-        const oldData = snap.data() as Record<string, any>;
-        const oldStatus = String(oldData.status || 'pending');
-        if (!isValidStatusTransition(oldStatus, args.status)) return errorResult(`Invalid status transition from '${oldStatus}' to '${args.status}'.`);
-
-        const updates: Record<string, unknown> = { status: args.status, updatedAt: FieldValue.serverTimestamp() };
-        if (args.status === 'approved' || args.status === 'billed') {
-          if (!oldData.invoiceNo) updates.invoiceNo = await generateSequentialInvoiceNo(false, oldData.eventDate || oldData.date);
-          else if (String(oldData.invoiceNo).startsWith('QT')) updates.invoiceNo = String(oldData.invoiceNo).replace(/^QT\s*/i, 'RW ');
-        }
-        if (args.status === 'approved') updates.approvedAt = oldData.approvedAt || new Date().toISOString();
-        if (args.status === 'billed') updates.billedAt = oldData.billedAt || new Date().toISOString();
-        await orderRef.update(updates);
-        return result({ success: true, orderId: args.orderId, previousStatus: oldStatus, status: args.status, invoiceNo: updates.invoiceNo || oldData.invoiceNo || null });
+        const outcome = await commitAdminOrderMutation(db.collection('orders').doc(args.orderId), { status: args.status });
+        if ('error' in outcome) return errorResult(outcome.error || 'Order mutation failed.');
+        return result({ success: true, orderId: args.orderId, previousStatus: outcome.oldData.status || 'pending',
+          status: outcome.updates.status, invoiceNo: outcome.updates.invoiceNo || outcome.oldData.invoiceNo || null });
       }
       case 'bill_order': {
         const args = billSchema.parse(rawArgs);
         const orderRef = db.collection('orders').doc(args.orderId);
         const snap = await orderRef.get();
         if (!snap.exists) return errorResult(`Order not found: ${args.orderId}`);
-        const order = { id: snap.id, ...snap.data() } as Record<string, any>;
-        const currentStatus = String(order.status || 'pending').toLowerCase();
-        if (['billed', 'cancelled', 'rejected'].includes(currentStatus)) return errorResult(`Order is already '${currentStatus}' and cannot be billed again.`);
-        if (!['pending', 'approved'].includes(currentStatus)) return errorResult(`Order is '${currentStatus}'. Only pending or approved orders can be billed.`);
-
+        const order = snap.data()!;
         const pricing = calculatePrices(order, args.prices);
-        const invoiceNo = String(order.invoiceNo || '').startsWith('QT')
-          ? String(order.invoiceNo).replace(/^QT\s*/i, 'RW ')
-          : (order.invoiceNo || await generateSequentialInvoiceNo(false, order.eventDate || order.date));
-        const orderForPdf = { ...order, prices: pricing.finalPrices, totalAmount: pricing.totalAmount, invoiceNo, status: 'billed' };
-        const pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
-
-        let emailedTo: string | null = null;
-        if (args.sendInvoiceEmail) {
-          emailedTo = await sendFinalInvoiceEmail(orderForPdf, invoiceNo, pricing.totalAmount, pdfBuffer);
-        }
-
-        await orderRef.update({
-          status: 'billed',
-          prices: pricing.finalPrices,
-          totalAmount: pricing.totalAmount,
-          invoiceNo,
-          officialInvoiceNo: invoiceNo,
-          approvedAt: order.approvedAt || new Date().toISOString(),
-          billedAt: new Date().toISOString(),
-          invoiceGeneratedAt: new Date().toISOString(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        return result({ success: true, orderId: args.orderId, invoiceNo, status: 'billed', quantity: pricing.quantity, prices: pricing.finalPrices, totalAmount: pricing.totalAmount, invoiceEmailSent: Boolean(emailedTo), emailedTo });
+        const outcome = await commitAdminOrderMutation(orderRef, {
+          status: 'billed', prices: pricing.finalPrices, totalAmount: pricing.totalAmount,
+        }, { requiredStatuses: ['pending', 'approved'], expectedQuantity: pricing.quantity,
+          expectedMeals: order.meals || [], queueInvoice: args.sendInvoiceEmail });
+        if ('error' in outcome) return errorResult(outcome.error || 'Order mutation failed.');
+        return result({ success: true, orderId: args.orderId,
+          invoiceNo: outcome.updates.invoiceNo || outcome.oldData.invoiceNo,
+          status: 'billed', quantity: pricing.quantity, prices: pricing.finalPrices,
+          totalAmount: pricing.totalAmount, invoiceEmailSent: false, invoiceEmailQueued: args.sendInvoiceEmail });
       }
       case 'send_invoice_email': {
         const args = sendInvoiceSchema.parse(rawArgs);

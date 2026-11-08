@@ -2,7 +2,6 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import fs from 'fs';
 import path from 'path';
 import URL from 'url';
-import dns from 'dns';
 import net from 'net';
 import http from 'http';
 import https from 'https';
@@ -10,6 +9,8 @@ import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.ts';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
+import { isSafeUrl } from '../services/remoteResource.js';
+export { isSafeUrl } from '../services/remoteResource.js';
 
 const router = Router();
 
@@ -28,7 +29,6 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/png',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
   'image/avif',
 ]);
 
@@ -107,88 +107,6 @@ export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction
 /**
  * Checks whether an IPv4 or IPv6 address is private, loopback, link-local, or reserved.
  */
-function isPrivateOrReservedIp(ip: string): boolean {
-  let cleanIp = ip;
-  if (cleanIp.startsWith('::ffff:')) {
-    cleanIp = cleanIp.substring(7);
-  }
-
-  if (net.isIPv4(cleanIp)) {
-    const parts = cleanIp.split('.').map(Number);
-    if (parts.length !== 4 || parts.some(isNaN)) return true;
-    const [a, b] = parts;
-
-    if (a === 0) return true; // 0.0.0.0/8
-    if (a === 10) return true; // 10.0.0.0/8
-    if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
-    if (a === 192 && b === 0) return true; // 192.0.0.0/24 protocol assignments
-    if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15 benchmarking
-    if (a === 198 && b === 51 && parts[2] === 100) return true; // TEST-NET-2
-    if (a === 203 && b === 0 && parts[2] === 113) return true; // TEST-NET-3
-    if (a === 192 && b === 88 && parts[2] === 99) return true; // IPv6 relay anycast
-    if (a === 255) return true; // broadcast
-    if (a === 127) return true; // 127.0.0.0/8
-    if (a === 169 && b === 254) return true; // 169.254.0.0/16 Link-local
-    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a === 192 && b === 168) return true; // 192.168.0.0/16
-    if (a >= 224) return true; // 224.0.0.0/4 Multicast & 240.0.0.0/4 Reserved / Broadcast
-
-    return false;
-  }
-
-  if (net.isIPv6(cleanIp)) {
-    const lower = cleanIp.toLowerCase();
-    if (lower === '::1' || lower === '::' || lower === '0:0:0:0:0:0:0:0' || lower === '0:0:0:0:0:0:0:1') return true;
-    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // fc00::/7 Unique Local
-    if (lower.startsWith('2001:db8:') || lower === '2001:db8::') return true; // documentation range
-    if (lower.startsWith('2001:') && /^2001:(?:0|0000):/i.test(lower)) return true; // Teredo/special use
-    if (lower.startsWith('64:ff9b:1:')) return true; // local-use IPv4 translation prefix
-    if (lower.startsWith('::ffff:')) return true; // reject mapped form unless canonical IPv4 parser handles it
-    if (/^fe[89ab]/i.test(lower)) return true; // fe80::/10 Link Local
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * SSRF Security Checker:
- * Validates protocol, hostname, and resolves DNS to ensure target does not map to private/internal IPs.
- */
-export async function isSafeUrl(urlStr: string): Promise<{ safe: boolean; parsedUrl?: URL.URL; resolvedAddress?: string }> {
-  try {
-    const parsed = new URL.URL(urlStr);
-    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.username || parsed.password) {
-      return { safe: false };
-    }
-
-    const hostname = parsed.hostname.toLowerCase();
-    if (
-      hostname === 'localhost' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.internal') ||
-      hostname.endsWith('.lan')
-    ) {
-      return { safe: false };
-    }
-
-    let resolvedAddress = hostname;
-    if (net.isIP(hostname)) {
-      if (isPrivateOrReservedIp(hostname)) return { safe: false };
-    } else {
-      const lookups = await dns.promises.lookup(hostname, { all: true });
-      if (!lookups || lookups.length === 0 || lookups.some(addr => isPrivateOrReservedIp(addr.address))) {
-        return { safe: false };
-      }
-      resolvedAddress = lookups[0].address;
-    }
-
-    return { safe: true, parsedUrl: parsed, resolvedAddress };
-  } catch {
-    return { safe: false };
-  }
-}
-
 /**
  * Finds the best local fallback vector/photo image file for dish repair.
  */
@@ -285,7 +203,7 @@ function fetchPinnedImage(parsedUrl: URL.URL, address: string): Promise<{
       },
       headers: {
         'User-Agent': 'RestoranWawasanImageProxy/1.0',
-        'Accept': 'image/avif,image/webp,image/png,image/jpeg,image/gif,image/svg+xml',
+        'Accept': 'image/avif,image/webp,image/png,image/jpeg,image/gif',
       },
       timeout: 3500,
     }, response => {
@@ -384,6 +302,8 @@ router.get('/images/proxy', imageProxyLimiter, async (req: Request, res: Respons
     if (!image || image.buffer.length === 0) return serveRepairedFallback();
     const { buffer, mimeType } = image;
 
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('X-Image-Repaired', 'false');

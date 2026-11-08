@@ -13,6 +13,7 @@ export interface OtwCandidate {
   time?: unknown;
   status?: string;
   deletedByAdmin?: boolean;
+  otwBatchId?: string;
 }
 
 /** Date of an instant in Malaysia, independent of the server/device timezone. */
@@ -81,12 +82,14 @@ export function otwSessionForMinute(minute: number): OtwMealSession | null {
 export function selectOtwOrders<T extends OtwCandidate>(
   orders: readonly T[], date: string, session: OtwMealSession,
   isDeliveryOrder: (order: T) => boolean,
+  includeUnbatchedTransit = false,
 ): T[] {
   if (!validISODate(date)) return [];
   const seen = new Set<string>();
   return orders.filter(order => {
     if (!order.id || seen.has(order.id) || order.deletedByAdmin) return false;
-    if (!['approved', 'billed'].includes((order.status || '').trim().toLowerCase())) return false;
+    const status = (order.status || '').trim().toLowerCase();
+    if (!['approved', 'billed'].includes(status) && !(includeUnbatchedTransit && status === 'in_transit' && !order.otwBatchId)) return false;
     if (!isDeliveryOrder(order) || otwEventDate(order) !== date) return false;
     const minute = otwEventMinute(order.time);
     if (minute === null || otwSessionForMinute(minute) !== session) return false;

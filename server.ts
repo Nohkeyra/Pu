@@ -21,6 +21,8 @@ import imageRoutes, { antiHotlinkGuard } from './server/routes/imageRoutes.js';
 import { mountWawasanMcp } from './server/mcp/index.js';
 import { telemetry } from './server/telemetry.js';
 
+import { startOtwWorker } from './server/services/otwOrders.js';
+
 dotenv.config();
 
 // Centralized telemetry initialization for unhandled rejections and exceptions
@@ -319,7 +321,8 @@ async function startServer() {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
 
-  process.on('SIGTERM', () => server.close(() => process.exit(0)));
+  const stopOtwWorker = startOtwWorker();
+  process.on('SIGTERM', () => { stopOtwWorker(); server.close(() => process.exit(0)); });
 }
 
 startServer();

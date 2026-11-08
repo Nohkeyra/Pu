@@ -14,13 +14,17 @@ import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { evaluateVerifiedOrderAccess } from '../../src/lib/verifiedOrdering.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
+import { commitAdminOrderMutation, validateAdminOrderUpdate } from '../services/orderMutations.js';
+export { validateAdminOrderUpdate } from '../services/orderMutations.js';
+
 const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
 
 // C-3 fix: validate and whitelist the delivery field shape so arbitrary nested
 // objects cannot be written to Firestore unchecked.
-function sanitizeDelivery(raw: unknown): Record<string, string | number | boolean | null> | null {
+function sanitizeDelivery(raw: unknown): 'delivery' | 'pickup' | Record<string, string | number | boolean | null> | null {
+  if (raw === 'delivery' || raw === 'pickup') return raw;
   if (raw === null || raw === undefined) return null;
   if (typeof raw !== 'object' || Array.isArray(raw)) return null;
   const src = raw as Record<string, unknown>;
@@ -273,84 +277,6 @@ router.post('/orders', createOrderLimiter, requireVerifiedCustomerOrder, validat
   }
 });
 
-// The admin UI updates status and billing fields only. Never spread arbitrary
-// request keys into Firestore: that permits changes to ownership, deletion flags,
-// creation timestamps, and other server-owned invariants.
-const ADMIN_ORDER_MUTABLE_FIELDS = new Set([
-  'status', 'prices', 'totalAmount', 'approvedAt', 'billedAt', 'invoiceNo',
-]);
-
-export function validateAdminOrderUpdate(data: unknown): string | null {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return 'Order update data must be an object';
-  const entries = Object.entries(data);
-  if (entries.length === 0) return 'Order update data cannot be empty';
-  for (const [key, value] of entries) {
-    if (!ADMIN_ORDER_MUTABLE_FIELDS.has(key) || key.includes('.')) return `Unsupported order update field: ${key}`;
-    if (key === 'status' && (typeof value !== 'string' || !value.trim())) return 'Invalid order status';
-    if (key === 'prices' && (value === null || typeof value !== 'object' || Array.isArray(value) ||
-      Object.entries(value).some(([meal, price]) => !meal || typeof price !== 'number' || !Number.isFinite(price) || price < 0))) {
-      return 'Invalid meal prices';
-    }
-    if (key === 'totalAmount' && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
-      return 'Invalid total amount';
-    }
-    if ((key === 'approvedAt' || key === 'billedAt') &&
-      (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) return `Invalid ${key}`;
-    if (key === 'invoiceNo' && (typeof value !== 'string' || !/^((QT|RW)\s+[\w-]+)$/.test(value))) {
-      return 'Invalid invoice number';
-    }
-  }
-  return null;
-}
-
-// Re-read and validate status inside the same Firestore transaction as the write.
-// Reserve a new invoice number before entering the transaction because the
-// invoice generator uses its own Firestore transaction. Unused reservations can
-// produce harmless sequence gaps but cannot overwrite a concurrent status.
-async function commitAdminOrderMutation(orderRef: any, data: Record<string, any>) {
-  const db = getFirestore();
-  const initial = await orderRef.get();
-  if (!initial.exists) return { error: 'Order not found', httpStatus: 404 } as const;
-
-  const initialOrder = initial.data() as OrderData;
-  let reservedInvoiceNo: string | undefined;
-  if ((data.status === 'approved' || data.status === 'billed') && !initialOrder.invoiceNo) {
-    reservedInvoiceNo = await generateSequentialInvoiceNo(false, initialOrder.eventDate || initialOrder.date);
-  }
-
-  return db.runTransaction(async (tx: any) => {
-    const fresh = await tx.get(orderRef);
-    if (!fresh.exists) return { error: 'Order not found', httpStatus: 404 } as const;
-    const oldData = fresh.data() as OrderData;
-    if (data.status !== undefined &&
-        (typeof data.status !== 'string' ||
-          !isValidStatusTransition(oldData.status || 'pending', data.status))) {
-      return {
-        error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
-        httpStatus: 400,
-      } as const;
-    }
-
-    const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
-    if (data.status === 'approved' || data.status === 'billed') {
-      if (!oldData.invoiceNo) {
-        if (!reservedInvoiceNo) {
-          // Another writer cleared the invoice after the first read.
-          return { error: 'Invoice changed concurrently; retry the request', httpStatus: 409 } as const;
-        }
-        updates.invoiceNo = reservedInvoiceNo;
-        (updates as any).officialInvoiceNo = reservedInvoiceNo;
-      } else if (oldData.invoiceNo.startsWith('QT')) {
-        updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
-        (updates as any).officialInvoiceNo = updates.invoiceNo;
-      }
-    }
-
-    tx.update(orderRef, updates);
-    return { oldData, updates };
-  });
-}
-
 // Admin Fetch/Update/Delete Orders
 router.post('/admin/orders', verifyAdminToken, async (req, res) => {
   const { action, orderId, data } = req.body;
@@ -365,6 +291,9 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
       const allOrders = sortOrdersByCreatedAt(snapshot.docs
         .map(doc => ({ ...doc.data(), id: doc.id }))
         .filter((order: any) => order.deletedByAdmin !== true), 'desc');
+      // The virtualized admin UI filters across its full dataset. Keep the paged
+      // contract for other callers while avoiding repeated full scans per page.
+      if (req.body.includeAll === true) return res.json({ success: true, orders: allOrders, hasMore: false });
       let page: { orders: typeof allOrders; hasMore: boolean; cursorFound: boolean };
       if (typeof req.body.lastId === 'string' && req.body.lastId) {
         page = paginateSortedOrders(allOrders, pageSize, req.body.lastId);

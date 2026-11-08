@@ -6,7 +6,7 @@ import { getRiderDeviceState, isNativeRider, stopRiderSharing, type RiderDeviceS
 import type { GpsTelemetry, RiderSession } from '@/lib/riderTracking';
 
 export function useRiderTracking(orderId: string | undefined, isAdmin: boolean) {
-  const [snapshot, setSnapshot] = useState<{ riderLocation: GpsTelemetry | null; session: RiderSession | null; status: string } | null>(null);
+  const [snapshot, setSnapshot] = useState<{ riderLocation: GpsTelemetry | null; session: RiderSession | null; status: string; otwBatchId?: string | null; otwAutoCloseAt?: string | null } | null>(null);
   const [connection, setConnection] = useState<'loading' | 'connected' | 'offline' | 'forbidden'>('loading');
   const [device, setDevice] = useState<RiderDeviceState>({ active: false, phase: 'idle' });
   const [now, setNow] = useState(Date.now);

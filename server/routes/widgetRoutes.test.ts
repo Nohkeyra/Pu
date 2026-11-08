@@ -294,7 +294,7 @@ describe('Widget Routes Authorization & Pricing Security', () => {
 
     it('calculates authoritative totalAmount server-side and marks order as billed', async () => {
       const db = getFirestore();
-      const enqueueSpy = vi.spyOn(invoiceQueue, 'enqueue').mockImplementation(() => {});
+      const enqueueSpy = vi.spyOn(invoiceQueue.service, 'enqueueInTransaction');
 
       await db.collection('orders').doc('ord_valid_pricing').set({
         to: 'Valid Client',
@@ -331,6 +331,7 @@ describe('Widget Routes Authorization & Pricing Security', () => {
 
       // Verify background invoice delivery was queued
       expect(enqueueSpy).toHaveBeenCalledWith(
+        expect.anything(),
         expect.objectContaining({
           orderId: 'ord_valid_pricing',
           recipientEmail: 'client@example.com',

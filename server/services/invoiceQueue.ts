@@ -203,6 +203,16 @@ export class DurableInvoiceOutboxService {
     return e?.code === 6 || e?.code === 'already-exists' || /ALREADY_EXISTS/.test(String(e?.message ?? ''));
   }
 
+  /** Call before other transaction writes: order and outbox commit together. */
+  public async enqueueInTransaction(tx: FirebaseFirestore.Transaction, job: InvoiceDeliveryJob): Promise<string> {
+    const key = job.idempotencyKey || this.defaultKey(job);
+    const id = this.jobIdForKey(key);
+    const ref = getFirestore().collection('invoice_outbox').doc(id);
+    const existing = await tx.get(ref);
+    if (!existing.exists) tx.set(ref, this.buildDoc(job, key));
+    return id;
+  }
+
   /**
    * Enqueue an invoice delivery job. Idempotent: the job id is derived from the idempotency
    * key and the document is created only if absent, so a duplicate enqueue never modifies an
@@ -615,11 +625,7 @@ export class DurableInvoiceOutboxService {
 const sharedService = new DurableInvoiceOutboxService();
 
 export const invoiceQueue = {
-  enqueue: (job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>) => {
-    sharedService.enqueue(job as InvoiceDeliveryJob).catch(err => {
-      console.error('[InvoiceOutbox] Enqueue error:', err);
-    });
-  },
+  enqueue: (job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>) => sharedService.enqueue(job),
   /** Intentional, audited re-send as a separate job. Not wired to any route. */
   enqueueResend: (job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>, resend: InvoiceResendRequest) =>
     sharedService.enqueueResend(job as InvoiceDeliveryJob, resend),

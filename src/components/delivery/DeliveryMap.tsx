@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRiderTracking } from '@/hooks/delivery/useRiderTracking';
 import { canStartRiderTracking, distanceMetres, formatRiderDistance, isFreshRiderLocation, validCoordinates } from '@/lib/riderTracking';
 import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
-import { isNativeRider, RiderTrackingError, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';
+import { isNativeRider, RiderTrackingError, startOtwGroup, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';
 import type { Order } from '@/types';
 import { RiderRouteMap, type MapPoint } from './RiderRouteMap';
 import './rider-tracking.css';
@@ -48,6 +48,10 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
     catch (failure) {
       const code = failure instanceof RiderTrackingError ? failure.code : (failure as { code?: string })?.code;
       const messages: Record<string, string> = {
+        OTW_TODAY_ONLY: text('OTW hanya untuk pesanan hari ini.', 'OTW is only available for today’s orders.'),
+        OTW_DELIVERY_ONLY: text('Mod penghantaran pesanan perlu disahkan sebelum OTW.', 'Confirm the order’s delivery mode before using OTW.'),
+        OTW_INVALID_EVENT_TIME: text('Waktu majlis tidak sah untuk OTW.', 'This order has no valid event time for OTW.'),
+        ORDER_CHANGED: text('Pesanan berubah. Muat semula dan cuba lagi.', 'The order changed. Refresh and retry.'),
         AUTH_REQUIRED: text('Sesi tamat. Log masuk admin semula.', 'Session expired. Sign in to admin again.'),
         APK_UPDATE_REQUIRED: text('Pasang APK baharu yang menyertakan servis lokasi rider.', 'Install the updated APK with the rider location service.'),
         PERMISSION_DENIED: text('Benarkan lokasi tepat dalam tetapan aplikasi.', 'Allow precise location in app settings.'),
@@ -92,7 +96,11 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
             {device.phase === 'auth_required' && <p className="rider-warning">{text('Perkongsian dihentikan. Log masuk semula.', 'Sharing stopped. Sign in again.')}</p>}
             {device.phase === 'permission_denied' && <p className="rider-warning">{text('GPS tidak dibenarkan. Benarkan lokasi tepat dalam tetapan aplikasi atau pelayar, kemudian cuba lagi.', 'GPS permission denied. Allow precise location in app or browser settings, then retry.')}</p>}
             {uploadOffline && <p className="rider-warning">{text('Kemas kini GPS belum dapat dihantar. Semak sambungan dan waktu telefon. Percubaan diteruskan dengan bacaan baharu.', 'GPS updates could not be sent. Check your connection and device clock. Retrying with fresh fixes.')}</p>}
-            {sharingThisOrder ? <button disabled={busy} className="rider-button rider-button-stop" onClick={() => void action(stopRiderSharing)}><CircleStop size={19} />{text('Henti perkongsian lokasi', 'Stop location sharing')}</button> : <button disabled={busy || !canStart} className="rider-button rider-button-primary" onClick={() => void action(() => startRiderSharing(order.id!))}><Navigation size={19} />{busy ? text('Menyambung…', 'Connecting…') : text('Mula kongsi lokasi', 'Start sharing location')}</button>}
+            {!finished && !snapshot?.otwBatchId && <button disabled={busy || !canStart} className="rider-button rider-button-primary" onClick={() => void action(() => startOtwGroup(order.id!))}><Truck size={19} />OTW</button>}
+            {!finished && <p className="rider-privacy">{snapshot?.otwBatchId
+              ? text('OTW aktif. Status sesi ditutup secara automatik sejam selepas dimulakan.', 'OTW is active. The session closes automatically one hour after it starts.')
+              : text('OTW meliputi penghantaran dalam sesi sama, dari waktu pesanan ini hingga 60 minit berikutnya, untuk hari ini sahaja.', 'OTW covers deliveries in this session from this order’s event time through the next 60 minutes, for today only.')}</p>}
+            {sharingThisOrder ? <button disabled={busy} className="rider-button rider-button-stop" onClick={() => void action(stopRiderSharing)}><CircleStop size={19} />{text('Henti perkongsian lokasi', 'Stop location sharing')}</button> : <button disabled={busy || !canStart} className="rider-button rider-button-stop" onClick={() => void action(() => startRiderSharing(order.id!))}><Navigation size={19} />{busy ? text('Menyambung…', 'Connecting…') : text('Mula kongsi lokasi', 'Start sharing location')}</button>}
             {!finished && <p className="rider-privacy"><ShieldCheck size={15} />{isNativeRider() ? text('Selepas anda mula, lokasi dikongsi di latar belakang dengan notifikasi. Hentikan di sini atau melalui notifikasi.', 'Once started, sharing continues in the background with a notification. Stop here or from the notification.') : text('Versi web berkongsi ketika peta ini dibuka. Menutup peta menghentikan GPS.', 'Web sharing works while this map is open. Closing the map stops GPS.')}</p>}
             <div className="rider-actions"><button disabled={busy} onClick={() => void openNavigation()}><Navigation size={18} />{text('Navigasi', 'Navigate')}<ArrowUpRight size={14} /></button>{order.contact && <a href={`tel:${order.contact.replace(/[^+\d]/g, '')}`}><Phone size={18} />{text('Telefon', 'Call')}</a>}</div>
             {onUpdateStatus && !finished && canStartRiderTracking(status) && <button disabled={busy} className="rider-complete" onClick={() => setConfirmFinish(true)}><Check size={17} />{text('Tandakan telah dihantar', 'Mark as delivered')}</button>}

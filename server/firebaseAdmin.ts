@@ -31,6 +31,7 @@ class MemoryFirestore {
           return {
             exists: data !== undefined,
             id: docId,
+            ref: createDocRef(docId),
             data: () => (data ? { ...data } : undefined),
           };
         },
@@ -321,6 +322,8 @@ export interface OrderData {
   dateTime?: string;
   quantity?: number;
   pax?: number;
+  guests?: number;
+  invoiceDeliveryStatus?: string;
   meals?: string | string[];
   location?: string;
   menu?: string;
@@ -470,8 +473,15 @@ export async function generateSequentialInvoiceNo(
       }
     }
 
-    const serial = String(next).padStart(5, "0");
-    const invoiceNo = `${prefix} ${yearStr}-${serial}`;
+    // Both QT and its later RW conversion own the same serial. Custom consolidated
+    // numbers are registered too, so a future counter allocation cannot collide.
+    let registryRef = db.collection('invoice_numbers').doc(`RW ${yearStr}-${String(next).padStart(5, '0')}`);
+    while ((await tx.get(registryRef)).exists) {
+      next++;
+      registryRef = db.collection('invoice_numbers').doc(`RW ${yearStr}-${String(next).padStart(5, '0')}`);
+    }
+    const invoiceNo = `${prefix} ${yearStr}-${String(next).padStart(5, '0')}`;
+    tx.set(registryRef, { purpose: isQuote ? 'quote' : 'invoice', createdAt: FieldValue.serverTimestamp() });
 
     tx.set(
       counterRef,

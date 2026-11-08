@@ -41,6 +41,9 @@ export async function riderRequest(path: string, body?: unknown, token?: string)
   if (!response.ok) throw new RiderTrackingError(response.status === 401 || response.status === 403 ? 'AUTH_REQUIRED' : result.code || 'TRACKING_UNAVAILABLE');
   return result;
 }
+export async function startOtwGroup(orderId: string) {
+  return riderRequest(`/api/admin/orders/${orderId}/otw`, {});
+}
 export async function getRiderDeviceState(): Promise<RiderDeviceState> {
   return isNativeRider() && Capacitor.isPluginAvailable('RiderTracking') ? NativeRider.getState() : { ...device };
 }
