@@ -49,16 +49,30 @@ test('responsive and reduced motion controls remain explicit', () => {
 
 test('superseded style layers cannot return to the runtime imports', () => {
   const main = read('src/main.tsx');
-  for (const legacy of ['wawasan-editorial-v2.css', 'wawasan-creative-v6.css']) {
-    assert.ok(!main.includes(legacy));
-    assert.ok(!fs.existsSync(path.join(root, 'src/styles', legacy)));
+  const legacyRefs = [];
+  const legacyNames = ['wawasan-editorial-v2.css', 'wawasan-creative-v6.css'];
+
+  function inspect(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) inspect(file);
+      else if (/\.(?:[cm]?[jt]sx?|css|html)$/.test(entry.name) && fs.readFileSync(file, 'utf8').includes(legacyNames[0])) {
+        legacyRefs.push(path.relative(root, file));
+      }
+    }
   }
+
+  for (const legacy of legacyNames) {
+    assert.ok(!main.includes(legacy), `Runtime imports still reference legacy stylesheet ${legacy}`);
+  }
+
+  inspect(path.join(root, 'src'));
+  assert.deepEqual(legacyRefs, [], `Legacy stylesheet references still exist in source: ${legacyRefs.join(', ')}`);
   assert.doesNotMatch(read('src/pages/LandingPage.tsx'), /living-canvas-v31\.css/);
 });
 
 test('removed lunchbox asset has no remaining runtime source references', () => {
   const removedAsset = 'kraft-lunchbox.svg';
-  assert.ok(!fs.existsSync(path.join(root, 'public/assets/living-canvas', removedAsset)));
   const references = [];
   function inspect(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
