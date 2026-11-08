@@ -1,0 +1,12 @@
+Release: v1.3.178
+Build Code: 310
+Timestamp: 2026-11-08T04:21:00-08:00
+
+Synchronized files for v1.3.178 release:
+- android/app/version.properties (versionCode=310, versionName=1.3.178)
+- android/version.properties (versionCode=310, versionName=1.3.178)
+- package.json ("version": "1.3.178")
+- server/routes/updateRoutes.ts (latestVersion: '1.3.178', buildNumber: 310)
+- src/services/updateService.ts (CURRENT_APP_VERSION = '1.3.178', CURRENT_BUILD_NUMBER = 310)
+
+This marker file confirms the version bump and provides a commit-ready change for GitHub synchronization.
