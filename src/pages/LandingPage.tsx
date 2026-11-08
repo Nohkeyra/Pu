@@ -27,7 +27,7 @@ export default function LandingPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={"landing-page living-canvas-v31"}>
+      <div className="landing-page">
         {/* Default variant restores the transparent header over the full-bleed hero,
             then uses the existing scroll-aware header styling further down. */}
         <Header variant="default" />
