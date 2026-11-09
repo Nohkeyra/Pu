@@ -3,7 +3,6 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Link } from 'react-router-dom';
 import { ArrowRight, UtensilsCrossed } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
-import { KraftLunchboxArtwork } from '@/components/brand/KraftLunchboxArtwork';
 import { Batik3DMotion } from '@/components/brand/Batik3DMotion';
 import { getAssetUrl } from '@/lib/utils';
 
@@ -85,13 +84,6 @@ const HeroSection = React.memo(() => {
           <Link to="/order" className="heritage-hero-action heritage-hero-action-secondary">
             <span>{t('order_catering_btn')}</span>
           </Link>
-        </div>
-        <div className="wawasan-hero-paper" aria-hidden="true">
-          <div className="wawasan-hero-paper__halo" />
-          <div className="wawasan-hero-paper__sheet wawasan-hero-paper__sheet--back" />
-          <KraftLunchboxArtwork className="wawasan-hero-paper__meal" />
-          <span className="wawasan-hero-paper__seal">WAWASAN <strong>PAK USOP · CATERING</strong></span>
-          <span className="wawasan-hero-paper__ribbon">{language === 'bm' ? 'Dibuat dengan kasih' : 'Crafted with care'}</span>
         </div>
         <a href="#menu" className="heritage-hero-scroll-hint">
           <span aria-hidden="true" className="heritage-hero-scroll-line" />

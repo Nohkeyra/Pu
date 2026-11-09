@@ -1,3 +1,4 @@
+import { correctDefaultMenuImage, getMenuCutoutImage } from '../constants/menuImages';
 import { toJSDate } from './dateUtils';
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -148,12 +149,16 @@ export function safeJsonStringify(value: unknown, space?: number | string): stri
 
 
 export function resolveDishImage(item: any): string {
+  item = item ? correctDefaultMenuImage(item) : item;
   if (item?.image && typeof item.image === 'string' && item.image.trim()) {
     const imgStr = item.image.trim();
     if (!imgStr.includes('/photos/')) {
       return imgStr;
     }
   }
+
+  const cutout = getMenuCutoutImage(item);
+  if (cutout) return cutout;
 
   const id = (item?.id || '').toLowerCase();
   const name = `${item?.nameEn || ''} ${item?.nameBm || ''}`.toLowerCase();

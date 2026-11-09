@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
+import { isMenuCutoutImage } from '@/constants/menuImages';
 
 function ReviewMenuImage({ item }: { item: any }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -17,7 +18,7 @@ function ReviewMenuImage({ item }: { item: any }) {
     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/10">
       {url && failedImage !== url ? (
         <img src={url} alt="" width={40} height={40} loading="lazy" decoding="async"
-          className="h-full w-full object-cover" onError={() => setFailedImage(url)} />
+          className={`h-full w-full ${isMenuCutoutImage(image) ? 'object-contain' : 'object-cover'}`} onError={() => setFailedImage(url)} />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-stone-300" aria-hidden="true">
           {isDrink ? <Coffee className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}

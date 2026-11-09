@@ -1,3 +1,4 @@
+import { correctDefaultMenuImage } from '../constants/menuImages';
 import { getAssetUrl, resolveDishImage } from './utils';
 
 export interface ImageRepairOptions {
@@ -65,7 +66,8 @@ export function repairDishImage(item: any, options: ImageRepairOptions = {}): st
 
   // 1. If explicit valid image exists and isn't a broken photo path
   if (item.image && typeof item.image === 'string' && item.image.trim()) {
-    const cleanImg = item.image.trim();
+    const corrected = correctDefaultMenuImage(item);
+    const cleanImg = String(corrected.image).trim();
     if (options.noFallback || !cleanImg.includes('/photos/')) {
       return getProxiedOrRepairedImageUrl(cleanImg, { ...options, dishId: item.id, category: item.category });
     }

@@ -21,4 +21,14 @@ describe('menu image handling', () => {
     const params = new URLSearchParams(result.split('?')[1]);
     expect(params.get('noFallback')).toBe('1');
   });
+
+  it('upgrades a known tea placeholder without confusing milk tea with black tea', () => {
+    expect(repairDishImage({ id: 'teh_o', nameBm: 'Teh O', image: '/assets/drinks/teh_tarik.jpg' }, { noFallback: true }))
+      .toBe('/assets/drinks/cutouts/teh_o.webp');
+  });
+
+  it('preserves a custom image for a known menu item', () => {
+    expect(repairDishImage({ id: 'teh_o', nameBm: 'Teh O', image: 'https://example.test/my-tea.jpg' }, { noFallback: true }))
+      .toBe('https://example.test/my-tea.jpg');
+  });
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Coffee, UtensilsCrossed } from 'lucide-react';
 import { cn, getAssetUrl } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
+import { isMenuCutoutImage } from '@/constants/menuImages';
 
 interface MenuItemCardProps {
   item: any;
@@ -18,6 +19,7 @@ export const MenuItemCard = React.memo(
       ? repairDishImage(item, { useProxyForExternal: true, noFallback: true })
       : '';
     const imageUrl = dishImg ? getAssetUrl(dishImg) : '';
+    const isCutout = isMenuCutoutImage(dishImg);
     const isDrink = String(item.category || '').toLowerCase() === 'drinks';
 
     return (
@@ -43,7 +45,7 @@ export const MenuItemCard = React.memo(
               height={480}
               className={cn(
                 "h-full w-full transition-transform duration-500",
-                item.id === 'nasi_campur' ? "bg-stone-950 object-contain" : "object-cover group-hover:scale-105"
+                isCutout ? "object-contain p-2" : item.id === 'nasi_campur' ? "bg-stone-950 object-contain" : "object-cover group-hover:scale-105"
               )}
               loading="lazy"
               decoding="async"

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
 import { useLongPress } from '@/hooks/ui/useLongPress';
 import { getAssetUrl } from '@/lib/utils';
+import { isMenuCutoutImage } from '@/constants/menuImages';
 
 export function AdminMenuItemRow({
   item, tText, badge, displayName, altName, showAltName, isVisible,
@@ -31,7 +32,7 @@ export function AdminMenuItemRow({
         {imagePath && failedImage !== imagePath ? (
           <img src={getAssetUrl(imagePath)} alt="" loading="lazy"
             onError={() => setFailedImage(imagePath)}
-            className="h-10 w-10 shrink-0 rounded-lg border border-stone-200 object-cover dark:border-white/10" />
+            className={`h-10 w-10 shrink-0 rounded-lg border border-stone-200 dark:border-white/10 ${isMenuCutoutImage(imagePath) ? 'object-contain' : 'object-cover'}`} />
         ) : (
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-xs font-bold ${badge.colorClass}`}
             title={`${badge.num} - ${badge.name}`}>
