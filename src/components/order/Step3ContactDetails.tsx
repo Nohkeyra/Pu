@@ -704,8 +704,8 @@ export function Step3ContactDetails({
       {/* Buttons Navigation */}
       <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button
-          onClick={async () => {
-            await triggerLightImpact();
+          onClick={() => {
+            void triggerLightImpact();
             setCurrentStep(2);
           }}
           variant="outline"

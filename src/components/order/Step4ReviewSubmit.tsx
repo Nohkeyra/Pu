@@ -262,7 +262,7 @@ export function Step4ReviewSubmit({
       <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button 
           variant="outline" 
-          onClick={async () => { await triggerLightImpact(); setCurrentStep(3); }}
+          onClick={() => { void triggerLightImpact(); setCurrentStep(3); }}
           className="flex-1 h-12 rounded-xl font-bold border-stone/20 text-stone hover:bg-stone/5 dark:hover:bg-white/5"
           disabled={isSubmitting}
         >

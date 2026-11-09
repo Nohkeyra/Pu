@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 async function openCalendar(page: Page, theme: 'light' | 'dark', scenario = { unavailable: false }) {
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
-    if (url.pathname === '/api/calendar-sessions' || url.pathname === '/api/calendar-orders') {
+    if (['/api/calendar-data', '/api/calendar-sessions', '/api/calendar-orders'].includes(url.pathname)) {
       return route.fulfill({
         status: scenario.unavailable ? 503 : 200,
         contentType: 'application/json',
@@ -53,14 +53,15 @@ for (const theme of ['light', 'dark'] as const) {
 
   test(`${theme}: Home and Back labels match their destinations`, async ({ page }) => {
     await openCalendar(page, theme);
-    await expect(page.locator('.customer-page-header').getByRole('button', { name: 'Utama', exact: true })).toBeVisible();
+    const home = () => page.locator('.customer-page-header').getByRole('button', { name: 'Restoran Wawasan — halaman utama', exact: true });
+    await expect(home()).toBeVisible();
     await page.locator('#bottom-navigation').getByRole('button', { name: 'Profil', exact: true }).click();
     const back = page.locator('.customer-page-header').getByRole('button', { name: 'Kembali', exact: true });
     await expect(back).toBeVisible();
     await back.click();
     await expect(page).toHaveURL(/#\/calendar$/);
-    await page.locator('.customer-page-header').getByRole('button', { name: 'Utama', exact: true }).click();
-    await expect(page).toHaveURL(/#\/home$/);
+    await home().click();
+    await expect(page).toHaveURL(/#\/$/);
   });
 
   test(`${theme}: booking from a selected day carries that date into the order form`, async ({ page }) => {

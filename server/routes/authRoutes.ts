@@ -3,7 +3,7 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getFirestore, getAdminApp, verifyCustomerIdToken, hasAdminCredentials } from '../firebaseAdmin.js';
+import { getFirestore, getAdminApp, verifyFirebaseIdToken, hasAdminCredentials, isFirebaseAdminIdentity, firebaseTokenRevocationId, firebaseSessionRevocationId } from '../firebaseAdmin.js';
 import { verifyAdminToken, adminLoginLimiter, signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
@@ -87,27 +87,33 @@ router.get('/admin/verify', verifyAdminToken, async (req, res) => {
   });
 });
 
-// Admin logout is idempotent for missing/expired tokens. For a valid server JWT,
-// report success ONLY after its revocation is durably recorded. Otherwise the
-// token would remain usable even though the API claimed the session was ended.
+// Revoke the presented admin credential, including the Firebase ID tokens used
+// by normal admin sign-in. Store only its hash; other devices remain signed in.
+// Missing/expired/already-revoked credentials remain idempotent.
 router.post('/admin/logout', async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
   const payload = token ? verifyAdminJwt(token) : null;
 
-  if (payload?.jti) {
+  // Logout may safely overwrite an existing hash record. Avoid a preliminary
+  // Firestore lookup so a read failure cannot be mistaken for an expired token.
+  const identity = !payload && token ? await verifyFirebaseIdToken(token, { checkSessionRevocation: false }) : null;
+  if (payload?.jti || (identity && isFirebaseAdminIdentity(identity))) {
     try {
       const db = getFirestore();
-      // Keep the revocation record longer than the 24h token lifetime.
-      const expireAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
-      await db.collection('admin_revocations').doc(`jti_${payload.jti}`).set({
-        jti: payload.jti,
-        uid: payload.uid,
+      // Session records have no TTL: Firebase refresh credentials can outlive an
+      // individual ID token. New sign-ins and other auth_time values remain valid.
+      const expireAt = new Date(Date.now() + (payload ? 25 * 60 * 60 : 65 * 60) * 1000);
+      const sessionKey = identity ? firebaseSessionRevocationId(identity) : null;
+      const key = payload ? `jti_${payload.jti}` : sessionKey || firebaseTokenRevocationId(token!);
+      await db.collection('admin_revocations').doc(key).set({
+        ...(payload ? { jti: payload.jti } : {}),
+        uid: payload?.uid || identity!.uid,
         revokedAt: FieldValue.serverTimestamp(),
-        expireAt,
+        ...(!sessionKey ? { expireAt } : { tokenHash: createHash('sha256').update(token!).digest('hex') }),
       });
     } catch (err) {
-      console.error('[Admin Logout] Failed to write JTI revocation:', err);
+      console.error('[Admin Logout] Failed to record session revocation:', err);
       return res.status(503).json({
         success: false,
         error: 'Could not revoke this admin session. Please retry logout.',
@@ -220,76 +226,42 @@ router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
 // User / Customer FCM Token Sync Endpoint
 router.post('/user/fcm-token', fcmTokenLimiter, async (req, res) => {
   try {
-    const { fcmToken, orderId, invoiceNo, email } = req.body;
-    if (!fcmToken || typeof fcmToken !== 'string') {
+    const { fcmToken, orderId, invoiceNo } = req.body || {};
+    if (typeof fcmToken !== 'string' || !fcmToken.trim() || fcmToken.length > 4096) {
       return res.status(400).json({ success: false, error: 'fcmToken string is required' });
     }
     const cleanToken = fcmToken.trim();
-    const uid = await verifyCustomerIdToken(req);
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const identity = token ? await verifyFirebaseIdToken(token) : null;
+    if (!identity) return res.status(401).json({ success: false, error: 'Authentication is required' });
+    const uid = identity.uid;
+    if ((orderId !== undefined && (typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId))) ||
+        (invoiceNo !== undefined && (typeof invoiceNo !== 'string' || !invoiceNo.trim() || invoiceNo.length > 100))) {
+      return res.status(400).json({ success: false, error: 'Invalid order reference' });
+    }
     const db = getFirestore();
-    
-    // Case 1: Authenticated Firebase customer
-    if (uid) {
-      await db.collection('users').doc(uid).set({
-        fcmToken: cleanToken,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-
-      if (orderId && typeof orderId === 'string') {
-        const orderRef = db.collection('orders').doc(orderId);
-        const snap = await orderRef.get();
-        if (snap.exists) {
-          const data = snap.data();
-          if (data && (data.userId === uid || data.uid === uid)) {
-            await orderRef.update({
-              fcmToken: cleanToken,
-              updatedAt: FieldValue.serverTimestamp(),
-            });
-          }
-        }
+    // Check ownership and write against one snapshot. Legacy orders without a UID
+    // require the verified email from Firebase, never an address in the body.
+    const result = await db.runTransaction(async tx => {
+      const order = orderId
+        ? await tx.get(db.collection('orders').doc(orderId))
+        : invoiceNo
+          ? (await tx.get(db.collection('orders').where('invoiceNo', '==', invoiceNo.trim()).limit(1))).docs[0]
+          : null;
+      if ((orderId || invoiceNo) && !order?.exists) return 404;
+      if (order) {
+        const data = order.data() || {};
+        const owner = data.userId || data.uid;
+        const email = typeof (data.email || data.customerEmail) === 'string' ? (data.email || data.customerEmail).trim().toLowerCase() : '';
+        const ownsOrder = owner ? owner === uid : Boolean(identity.email_verified && identity.email && email && identity.email.trim().toLowerCase() === email);
+        if (!ownsOrder || data.deletedByAdmin) return 403;
+        tx.update(order.ref, { fcmToken: cleanToken, updatedAt: FieldValue.serverTimestamp() });
       }
-      return res.json({ success: true });
-    }
-    
-    // Case 2: Guest order with proof of ownership (orderId/invoiceNo + matching email)
-    if (email && typeof email === 'string' && (orderId || invoiceNo)) {
-      const cleanEmail = email.toLowerCase().trim();
-      let targetOrderDoc = null;
-
-      if (orderId && typeof orderId === 'string') {
-        const snap = await db.collection('orders').doc(orderId).get();
-        if (snap.exists) {
-          targetOrderDoc = snap;
-        }
-      } else if (invoiceNo && typeof invoiceNo === 'string') {
-        const snap = await db.collection('orders').where('invoiceNo', '==', invoiceNo.trim()).limit(1).get();
-        if (!snap.empty) {
-          targetOrderDoc = snap.docs[0];
-        }
-      }
-
-      if (!targetOrderDoc) {
-        return res.status(404).json({ success: false, error: 'Order not found' });
-      }
-
-      const data = targetOrderDoc.data();
-      const orderEmail = (data?.email || data?.customerEmail || '').toLowerCase().trim();
-      
-      if (!orderEmail || orderEmail !== cleanEmail) {
-        return res.status(403).json({ success: false, error: 'Unauthorized: Email does not match order record' });
-      }
-
-      await targetOrderDoc.ref.update({
-        fcmToken: cleanToken,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      return res.json({ success: true });
-    }
-
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication or order ownership proof (orderId/invoiceNo + email) is required',
+      tx.set(db.collection('users').doc(uid), { fcmToken: cleanToken, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return 200;
     });
+    return res.status(result).json(result === 200 ? { success: true } : { success: false, error: result === 404 ? 'Order not found' : 'Not authorized for this order' });
   } catch (err) {
     console.error('[FCM] Save user token failed:', err);
     console.error('[authRoutes] /user/fcm-token:', err);

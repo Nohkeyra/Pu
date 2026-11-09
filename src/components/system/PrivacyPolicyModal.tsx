@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, CheckCircle2, Lock, FileText, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,23 +6,18 @@ import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { getAssetUrl } from '@/lib/utils';
 import { TransparentLogo } from '@/components/brand/TransparentLogo';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 
 interface PrivacyPolicyModalProps {
   isOpen: boolean;
   onUnderstood: () => void;
+  onDismiss: () => void;
 }
 
-export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPolicyModalProps) {
+export default function PrivacyPolicyModal({ isOpen, onUnderstood, onDismiss }: PrivacyPolicyModalProps) {
   const { language, setLanguage } = useLanguage();
-  const [hasScrolledBottom, setHasScrolledBottom] = useState(false);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 40;
-    if (isAtBottom && !hasScrolledBottom) {
-      setHasScrolledBottom(true);
-    }
-  };
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useOverlayAccessibility({ isOpen, onClose: onDismiss, containerRef: dialogRef });
 
   const handleUnderstoodClick = async () => {
     await triggerMediumImpact();
@@ -50,6 +45,11 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
 
         {/* Modal Window */}
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="privacy-policy-title"
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.92, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -73,7 +73,7 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
                 <div>
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-[var(--color-sunshine-cta)]" />
-                    <h2 className="font-display font-bold text-lg text-white leading-tight">
+                    <h2 id="privacy-policy-title" className="font-display font-bold text-lg text-white leading-tight">
                       {language === 'bm' ? 'Dasar Privasi & Terma' : 'Privacy Policy & Terms'}
                     </h2>
                   </div>
@@ -102,7 +102,8 @@ export default function PrivacyPolicyModal({ isOpen, onUnderstood }: PrivacyPoli
 
           {/* Policy Scrollable Body */}
           <div
-            onScroll={handleScroll}
+            tabIndex={0}
+            aria-label={language === 'bm' ? 'Kandungan dasar privasi' : 'Privacy policy content'}
             className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-deep-forest dark:text-stone-200 leading-relaxed flex-grow"
           >
             {/* Intro Notice */}

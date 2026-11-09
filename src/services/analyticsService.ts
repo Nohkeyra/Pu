@@ -88,7 +88,7 @@ export async function setAnalyticsUserId(userId: string | null): Promise<void> {
   try {
     if (isNative) {
       await FirebaseAnalytics.setUserId({ userId }).catch(() => {});
-    } else if (webAnalyticsInstance && userId) {
+    } else if (webAnalyticsInstance) {
       setWebUserId(webAnalyticsInstance, userId);
     }
   } catch (err) {

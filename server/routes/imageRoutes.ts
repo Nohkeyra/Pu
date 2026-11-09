@@ -14,6 +14,12 @@ export { isSafeUrl } from '../services/remoteResource.js';
 
 const router = Router();
 
+// Vite copies public assets into dist; the production container ships dist only.
+function getPublicDir(): string {
+  const publicDir = path.join(process.cwd(), 'public');
+  return fs.existsSync(publicDir) ? publicDir : path.join(process.cwd(), 'dist');
+}
+
 // List of trusted/allowed referer domains for anti-hotlinking
 const TRUSTED_REFERER_DOMAINS = new Set([
   'aistudio.google.com',
@@ -111,7 +117,7 @@ export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction
  * Finds the best local fallback vector/photo image file for dish repair.
  */
 export function getLocalFallbackImagePath(dishHint?: string, categoryHint?: string): string {
-  const publicDir = path.join(process.cwd(), 'public');
+  const publicDir = getPublicDir();
   const dish = (dishHint || '').toLowerCase();
   const category = (categoryHint || '').toLowerCase();
 
@@ -169,7 +175,7 @@ export async function getSafeLocalImagePath(assetPath: string): Promise<string |
   };
 
   try {
-    const publicDir = await fs.promises.realpath(path.join(process.cwd(), 'public'));
+    const publicDir = await fs.promises.realpath(getPublicDir());
     const assetDir = await fs.promises.realpath(path.join(publicDir, assetPath.split('/')[1]));
     if (!isWithin(publicDir, assetDir)) return null;
 
@@ -347,7 +353,7 @@ router.get('/images/health', verifyAdminToken, async (_req: Request, res: Respon
     let healthyCount = 0;
     let repairedCount = 0;
 
-    const publicDir = path.join(process.cwd(), 'public');
+    const publicDir = getPublicDir();
 
     for (const item of menuItems) {
       const imgPath = item.image || '';
@@ -423,7 +429,7 @@ router.post('/admin/menu/repair-images', verifyAdminToken, async (_req: Request,
       return res.json({ success: true, repairedCount: 0, message: 'No menu items in Firestore to repair.' });
     }
 
-    const publicDir = path.join(process.cwd(), 'public');
+    const publicDir = getPublicDir();
     const BATCH_LIMIT = 400;
     let currentBatch = db.batch();
     let currentBatchOps = 0;

@@ -302,7 +302,7 @@ async function startServer() {
       maxAge: '1y',
       immutable: true,
       setHeaders: (res: any, filePath: string) => {
-        if (filePath.endsWith('.html')) {
+        if (filePath.endsWith('.html') || ['sw.js', 'manifest.webmanifest'].includes(path.basename(filePath))) {
           res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
         }
       }

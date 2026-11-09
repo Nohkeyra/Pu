@@ -46,7 +46,7 @@ const HeroSection = React.memo(() => {
       <div className="heritage-hero-scene" aria-hidden="true">
         <motion.div
           className="heritage-hero-artwork"
-          style={{ y: batikY, opacity: batikOpacity, scale: batikScale }}
+          style={reduceMotion ? { opacity: 1, transform: 'none' } : { y: batikY, opacity: batikOpacity, scale: batikScale }}
         >
           <Batik3DMotion
             mode="img"
@@ -63,7 +63,7 @@ const HeroSection = React.memo(() => {
         className="content-container heritage-hero-content"
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
       >
         <p className="heritage-hero-eyebrow">{language === 'bm' ? 'KATERING · PAK USOP' : 'CATERING · PAK USOP'}</p>
         <h1

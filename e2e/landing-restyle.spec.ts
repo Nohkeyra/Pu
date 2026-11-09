@@ -39,7 +39,7 @@ for (const theme of ['light', 'dark'] as const) {
     page,
   }) => {
     await openLanding(page, theme);
-    await page.locator('.landing-hero-actions').getByRole('link', { name: 'Lihat Menu' }).click();
+    await page.locator('.heritage-hero-actions').getByRole('link', { name: 'Lihat Menu' }).click();
     const categories = page.getByRole('group', { name: 'Kategori menu' });
     await categories.getByRole('button', { name: 'Minuman', exact: true }).click();
     await expect(categories.getByRole('button', { name: 'Minuman', exact: true })).toHaveAttribute(
@@ -106,7 +106,7 @@ for (const theme of ['light', 'dark'] as const) {
         )
     ).toBe(0);
     await page
-      .locator('.landing-hero-actions')
+      .locator('.heritage-hero-actions')
       .getByRole('link', { name: 'Tempah Katering' })
       .click();
     await expect(page).toHaveURL(/#\/order$/);

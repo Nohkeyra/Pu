@@ -21,6 +21,9 @@ function sanitizeString(val: unknown, maxLen = 500): string {
 }
 
 function validateMenuItem(body: any): { valid: false; error: string } | { valid: true; data: any } {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { valid: false, error: 'Menu item must be an object.' };
+  }
   const nameEn = sanitizeString(body.nameEn, 100);
   const nameBm = sanitizeString(body.nameBm, 100);
 
@@ -58,7 +61,7 @@ function validateMenuItem(body: any): { valid: false; error: string } | { valid:
       descBm,
       price,
       category,
-      suitability,
+      ...(suitability !== undefined ? { suitability } : {}),
       available: body.available !== undefined ? Boolean(body.available) : true,
     }
   };

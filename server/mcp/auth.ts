@@ -1,7 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { getAuth } from 'firebase-admin/auth';
-import { getAdminApp, getFirestore } from '../firebaseAdmin.js';
+import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
 import { fetchPublicJson } from '../services/remoteResource.js';
 
 // One vendor-neutral scope for this private admin connector. The OAuth login
@@ -92,7 +91,8 @@ export function authorizationServerMetadata(issuer: string) {
 }
 
 async function verifyAdminIdToken(idToken: string) {
-  const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken);
+  const decoded = await verifyFirebaseIdToken(idToken);
+  if (!decoded) throw new Error('Invalid or revoked Firebase session.');
   const email = decoded.email?.toLowerCase();
   const allowed = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
     .split(',')

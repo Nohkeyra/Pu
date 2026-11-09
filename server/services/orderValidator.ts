@@ -1,4 +1,4 @@
-import { toISODateString } from '../../src/lib/dateUtils.js';
+import { toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 
 export interface ValidationError {
   field: string;
@@ -38,6 +38,10 @@ export function validateOrderPayload(body: any): { valid: boolean; errors: Valid
   const dateVal = body.eventDate ?? body.date ?? body.dateTime;
   if ((typeof dateVal !== 'string' && !(dateVal instanceof Date)) || !toISODateString(dateVal)) {
     errors.push({ field: 'date', message: 'Valid date is required' });
+  }
+  const eventTime = body.time ?? body.eventTime;
+  if (eventTime !== undefined && !toMalaysiaDateTime(dateVal, eventTime)) {
+    errors.push({ field: 'time', message: 'Valid event time (HH:mm) is required' });
   }
 
   // Pax represent people: reject fractions, non-finite values and object coercion.

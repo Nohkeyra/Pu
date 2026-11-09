@@ -11,7 +11,7 @@ services:
       - key: PORT
         value: 3000
       - key: NODE_VERSION
-        value: "20"
+        value: "22"
 
       # SMTP Configuration for sending emails via Brevo SMTP relay (port 2525)
       - key: SMTP_HOST

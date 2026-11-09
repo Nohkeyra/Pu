@@ -146,6 +146,14 @@ export function toISODateString(val: unknown): string | null {
   return `${year}-${month}-${day}`;
 }
 
+/** Event form values are Malaysian wall-clock time, independent of device/server TZ. */
+export function toMalaysiaDateTime(date: unknown, time: unknown): string | null {
+  const day = toISODateString(date);
+  const match = typeof time === 'string' ? /^(\d{1,2}):([0-5]\d)(?::00)?$/.exec(time.trim()) : null;
+  if (!day || !match || Number(match[1]) > 23) return null;
+  return `${day}T${match[1].padStart(2, '0')}:${match[2]}:00+08:00`;
+}
+
 /**
  * Compares timestamp values without letting invalid/missing dates distort order.
  * Invalid values sort last in either direction; valid timestamps remain chronological.

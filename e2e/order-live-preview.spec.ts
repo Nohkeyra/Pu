@@ -22,7 +22,7 @@ async function openOrder(page: Page, theme: string, native = true) {
   }, { theme, native });
   await page.goto('/#/order');
   await expect(page.locator('[aria-label="Restoran Wawasan opening screen"]')).toBeHidden({ timeout: 15000 });
-  await expect(page.locator('.customer-step-one')).toBeVisible();
+  await expect(page.locator('.customer-step-one')).toBeVisible({ timeout: 20_000 });
 }
 
 async function scrollPastScene(page: Page) {

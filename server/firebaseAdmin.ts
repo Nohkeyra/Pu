@@ -1,4 +1,5 @@
 import type express from 'express';
+import { createHash } from 'node:crypto';
 import { initializeApp, cert, getApps, type App } from 'firebase-admin/app';
 import {
   getFirestore as getFirestoreModular,
@@ -131,6 +132,14 @@ class MemoryFirestore {
               }
               return a.id.localeCompare(b.id);
             });
+          } else {
+            // Firestore's implicit order for equality/in queries is document ID.
+            rows.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+          }
+          if (cursor !== undefined && !ordering.length) {
+            const cursorId = typeof cursor === 'string' ? cursor : cursor?.id;
+            if (typeof cursorId !== 'string') throw new Error('Invalid document cursor');
+            rows = rows.filter(row => row.id > cursorId);
           }
           if (cursor !== undefined && ordering.length) {
             const values =
@@ -312,9 +321,25 @@ export function getAdminApp(): App {
   return adminApp;
 }
 
+export function isFirebaseAdminIdentity(identity: { admin?: boolean; email?: string; email_verified?: boolean }): boolean {
+  const allowed = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
+  return identity.admin === true || Boolean(identity.email_verified && identity.email && allowed.includes(identity.email.trim().toLowerCase()));
+}
+
+export function firebaseTokenRevocationId(token: string): string {
+  return `firebase_${createHash('sha256').update(token).digest('hex')}`;
+}
+
+/** Firebase refreshes preserve auth_time; a fresh sign-in starts a new session. */
+export function firebaseSessionRevocationId(identity: { uid: string; auth_time?: number }): string | null {
+  return Number.isSafeInteger(identity.auth_time) && identity.auth_time! > 0 && !identity.uid.includes('/')
+    ? `firebase_session_${identity.uid}_${identity.auth_time}` : null;
+}
+
 export async function verifyFirebaseIdToken(
-  idToken: string
-): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean } | null> {
+  idToken: string,
+  { checkSessionRevocation = true }: { checkSessionRevocation?: boolean } = {},
+): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean; auth_time?: number } | null> {
   if (!idToken || typeof idToken !== 'string') return null;
 
   if (!hasAdminCredentials()) {
@@ -322,12 +347,17 @@ export async function verifyFirebaseIdToken(
   }
 
   try {
-    const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken);
+    const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken, true);
+    if (checkSessionRevocation && isFirebaseAdminIdentity(decoded) &&
+        (await getFirestore().collection('admin_revocations').doc(firebaseSessionRevocationId(decoded) || firebaseTokenRevocationId(idToken)).get()).exists) {
+      return null;
+    }
     return {
       uid: decoded.uid,
       email: decoded.email,
       email_verified: decoded.email_verified === true,
       admin: decoded.admin === true,
+      auth_time: decoded.auth_time,
     };
   } catch (err) {
     console.warn(

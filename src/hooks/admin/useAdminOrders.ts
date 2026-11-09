@@ -18,6 +18,7 @@ interface UseAdminOrdersProps {
 export function useAdminOrders({ adminToken, onLogout, toast, t, language }: UseAdminOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const requestSequence = useRef(0);
   const fallbackActive = useRef(false);
@@ -47,18 +48,27 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
       const response = await fetch(getApiUrl('/api/admin/orders'), {
         method: 'POST',
         headers: authHeaders(),
+        signal: AbortSignal.timeout(15_000),
         body: JSON.stringify({ action: 'fetch', includeAll: true })
       });
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.orders)) {
-          if (requestId === requestSequence.current) setOrders(sortOrdersByCreatedAt(data.orders as Order[], 'desc'));
+          if (requestId === requestSequence.current) {
+            setOrders(sortOrdersByCreatedAt(data.orders as Order[], 'desc'));
+            setOrdersError(false);
+          }
+        } else {
+          throw new Error('Invalid orders response');
         }
       } else if (response.status === 401 || response.status === 403) {
         if (requestId === requestSequence.current) onLogoutRef.current?.();
+      } else {
+        throw new Error(`Orders unavailable (${response.status})`);
       }
     } catch (err) {
       console.error('Error fetching admin orders via API:', err);
+      if (requestId === requestSequence.current) setOrdersError(true);
     } finally {
       if (!silent && requestId === requestSequence.current) setLoading(false);
     }
@@ -70,6 +80,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     if (!adminToken) {
       setLoading(false);
       setOrders([]);
+      setOrdersError(false);
       return;
     }
 
@@ -95,6 +106,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
           } as Order);
         });
       setOrders(sortOrdersByCreatedAt(fetchedOrders, 'desc'));
+      setOrdersError(false);
       setLoading(false);
     }, (error) => {
       if (disposed) return;
@@ -235,6 +247,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
   return {
     orders,
     loading,
+    ordersError,
     isApproving,
     setIsApproving,
     fetchOrders,

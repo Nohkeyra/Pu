@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toISODateString, toJSDate } from './dateUtils';
+import { compareTimestampValues, formatDateDisplay, formatDateTimeDisplay, normalizeTimestamp, toISODateString, toJSDate, toMalaysiaDateTime } from './dateUtils';
+
+it('interprets event wall-clock values in Malaysia and rejects invalid dates/times', () => {
+  expect(new Date(toMalaysiaDateTime('2026-12-15', '08:30')!).toISOString()).toBe('2026-12-15T00:30:00.000Z');
+  expect(toMalaysiaDateTime('2026-12-15', '8:30')).toBe('2026-12-15T08:30:00+08:00');
+  for (const time of ['25:00', '12:60', '', null, {}, '12:30:45']) expect(toMalaysiaDateTime('2026-12-15', time)).toBeNull();
+  expect(toMalaysiaDateTime('2026-02-31', '12:30')).toBeNull();
+});
 
 describe('Date Formatting Utilities (DD/MM/YYYY Slashes Format)', () => {
   it('formats standard YYYY-MM-DD ISO string correctly', () => {

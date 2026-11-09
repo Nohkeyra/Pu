@@ -1,7 +1,7 @@
 import type express from "express";
 import { createHmac, timingSafeEqual, randomBytes } from "crypto";
 import { getAuth } from "firebase-admin/auth";
-import { getAdminApp, hasAdminCredentials, getFirestore } from "./firebaseAdmin.js";
+import { getAdminApp, hasAdminCredentials, getFirestore, verifyFirebaseIdToken } from "./firebaseAdmin.js";
 import { createDistributedRateLimiter } from "./distributedRateLimit.js";
 
 export interface AdminJwtPayload {
@@ -168,7 +168,8 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
   // 2. Verify via Firebase ID token if Firebase Admin credentials are configured
   if (hasAdminCredentials()) {
     try {
-      const decodedToken = await getAuth(getAdminApp()).verifyIdToken(token);
+      const decodedToken = await verifyFirebaseIdToken(token);
+      if (!decodedToken) return res.status(401).json({ error: 'Unauthorized: Invalid or revoked Firebase session' });
       
       const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
       const userEmail = decodedToken.email?.toLowerCase();

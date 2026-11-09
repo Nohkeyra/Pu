@@ -30,6 +30,7 @@ import './admin-panel.css';
 
 // Hooks
 import { useAdminOrders } from '@/hooks/admin/useAdminOrders';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { useAdminPdf } from '@/hooks/admin/useAdminPdf';
 import { useAdminMessaging } from '@/hooks/admin/useAdminMessaging';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
@@ -72,6 +73,7 @@ export default function AdminPanel({
   const {
     orders,
     loading,
+    ordersError,
     isApproving,
     fetchOrders,
     handleUpdateOrderStatus,
@@ -394,7 +396,16 @@ export default function AdminPanel({
           </p>
         </div>
 
-        {activeTab === 'orders' && (
+        {ordersError && (
+          <ErrorState
+            title={language === 'bm' ? 'Tempahan belum dapat dimuatkan' : 'Orders could not be loaded'}
+            description={language === 'bm' ? 'Rekod yang sudah dimuatkan dikekalkan. Cuba muat semula.' : 'Previously loaded records are retained. Please retry.'}
+            onRetry={() => { void fetchOrders(); }}
+            retryLabel={language === 'bm' ? 'Cuba lagi' : 'Retry'}
+            className="mb-6"
+          />
+        )}
+        {activeTab === 'orders' && (!ordersError || orders.length > 0) && (
           <AdminOrdersTab
             viewScope={viewScope}
             onReadOrder={setReadingOrder}

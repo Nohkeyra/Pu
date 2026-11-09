@@ -17,7 +17,7 @@ async function openMenuStep(page: Page, rejectPlayback = false) {
   }, rejectPlayback);
   await page.goto('/#/order');
   const splash = page.locator('[aria-label="Restoran Wawasan opening screen"]');
-  if (await splash.isVisible().catch(() => false)) await splash.getByRole('button', { name: 'Skip' }).click();
+  await expect(splash).toBeHidden({ timeout: 15_000 });
   await expect(page.getByLabel('Find a dish or drink')).toBeVisible({ timeout: 20_000 });
   await page.waitForFunction(() => ((document.querySelector('video[src*="daun_penarik"]') as HTMLVideoElement | null)?.readyState ?? 0) >= 2);
 }
@@ -32,10 +32,11 @@ test.use({ viewport: { width: 375, height: 812 } });
 
 test('maskot and page move together and selection step completes', async ({ page }) => {
   await openMenuStep(page);
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.locator('[data-tour="step2-next"]').click();
   const video = page.locator('video[src*="daun_penarik"]');
   await expect(video).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
+  await expect(page.locator('.customer-step-content')).toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('.customer-step-content > div')).toHaveCSS('pointer-events', 'none');
   await page.waitForFunction(() => {
     const v = document.querySelector('video[src*="daun_penarik"]');
     return v && new DOMMatrix(getComputedStyle(v).transform).m41 > 10;
@@ -54,13 +55,13 @@ test('maskot and page move together and selection step completes', async ({ page
 test('reduced motion proceeds without waiting for animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openMenuStep(page);
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.locator('[data-tour="step2-next"]').click();
   await expectStepThree(page);
   await expect(page.locator('video[src*="daun_penarik"]')).toBeHidden();
 });
 
 test('playback failure never blocks the form', async ({ page }) => {
   await openMenuStep(page, true);
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await page.locator('[data-tour="step2-next"]').click();
   await expectStepThree(page);
 });

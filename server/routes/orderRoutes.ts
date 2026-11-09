@@ -19,7 +19,7 @@ import {
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { toISODateString } from '../../src/lib/dateUtils.js';
+import { toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
   paginateSortedOrders,
   sortOrdersByCreatedAt,
@@ -172,6 +172,11 @@ router.post(
         deriveEventDate(rawBody) ||
         new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
       const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
+      const dateTime = toMalaysiaDateTime(derivedDate, rawBody.time ?? rawBody.eventTime ?? '12:00')!;
+      const department = typeof (rawBody.department ?? rawBody.division) === 'string'
+        ? (rawBody.department ?? rawBody.division).trim().slice(0, 200) : '';
+      const initials = typeof (rawBody.initials ?? rawBody.initialIdentifier) === 'string'
+        ? (rawBody.initials ?? rawBody.initialIdentifier).trim().slice(0, 50) : '';
       const mappedMeals = Array.isArray(rawBody.meals)
         ? rawBody.meals
         : rawBody.mealType
@@ -204,6 +209,10 @@ router.post(
             : '',
         to: typeof rawBody.to === 'string' ? rawBody.to.slice(0, 200) : 'Majlis Persendirian',
         attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
+        department,
+        division: department,
+        initials,
+        initialIdentifier: initials,
         name:
           typeof rawBody.name === 'string'
             ? rawBody.name.slice(0, 200)
@@ -226,12 +235,7 @@ router.post(
               : '',
         date: derivedDate,
         eventDate: derivedDate,
-        time:
-          typeof rawBody.time === 'string'
-            ? rawBody.time.slice(0, 20)
-            : typeof rawBody.eventTime === 'string'
-              ? rawBody.eventTime.slice(0, 20)
-              : '12:00',
+        time: dateTime.slice(11, 16),
         location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
         quantity: qty,
         guests: qty,
@@ -240,9 +244,7 @@ router.post(
         menu: typeof rawBody.menu === 'string' ? rawBody.menu.slice(0, 500) : SET_BOX_MENU_TITLE,
         preparationType: rawBody.preparationType === 'meal_box' ? 'meal_box' : 'buffet',
         notes: typeof rawBody.notes === 'string' ? rawBody.notes.slice(0, 5000) : '',
-        dateTime: rawBody.dateTime
-          ? String(rawBody.dateTime)
-          : `${derivedDate}T${rawBody.time || '12:00'}:00+08:00`,
+        dateTime,
         lang: rawBody.lang === 'en' ? 'en' : 'bm',
         status: 'pending',
         prices,
@@ -376,10 +378,13 @@ router.post(
 
 // Admin Fetch/Update/Delete Orders
 router.post('/admin/orders', verifyAdminToken, async (req, res) => {
-  const { action, orderId, data } = req.body;
-  const db = getFirestore();
-
   try {
+    const { action, orderId, data } = req.body || {};
+    if ((action === 'update' || action === 'delete') &&
+        (typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId))) {
+      return res.status(400).json({ error: 'A valid orderId is required' });
+    }
+    const db = getFirestore();
     if (action === 'fetch') {
       const pageSize = Math.max(1, Math.min(100, Number(req.body.pageSize) || 50));
       // Firestore orderBy('createdAt') excludes missing fields and sorts mixed types by type.
@@ -426,13 +431,13 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
         return res.status(result.httpStatus || 400).json({ error: result.error });
       const { oldData, updates } = result;
 
-      if (data.status && data.status !== oldData.status) {
+      if (updates.status && updates.status !== oldData.status) {
         const transporter = createBrevoTransporter();
         const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
         await notifyCustomerOfStatusChange(
           transporter,
           { ...oldData, ...updates, id: orderId },
-          data.status,
+          updates.status,
           senderEmail,
           process.env.SMTP_USER,
           process.env.SMTP_PASS
@@ -481,7 +486,8 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
     return res.status(400).json({ error: 'Invalid action' });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /admin/orders:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -492,29 +498,28 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
   if (typeof status !== 'string' || !status.trim()) {
     return res.status(400).json({ error: 'A valid status is required' });
   }
-  const db = getFirestore();
-
   try {
+    const db = getFirestore();
     const orderRef = db.collection('orders').doc(orderId);
     const result = await commitAdminOrderMutation(orderRef, { status });
     if ('error' in result)
       return res.status(result.httpStatus || 400).json({ error: result.error });
     const { oldData, updates } = result;
 
-    if (status && status !== oldData.status) {
+    if (updates.status && updates.status !== oldData.status) {
       const transporter = createBrevoTransporter();
       const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER || '';
       await notifyCustomerOfStatusChange(
         transporter,
         { ...oldData, ...updates, id: orderId },
-        status,
+        updates.status,
         senderEmail,
         process.env.SMTP_USER,
         process.env.SMTP_PASS
       ).catch((err) => console.error('[Email] Failed to notify status change:', err));
     }
 
-    const mergedOrderData = { ...oldData, ...updates, id: orderId, status };
+    const mergedOrderData = { ...oldData, ...updates, id: orderId };
     invalidateCalendarSessionsCache();
     syncGoogleCalendarEvent(orderId, mergedOrderData).catch((err) => {
       console.error('[Calendar] Failed to auto-sync calendar event on PATCH status:', err);
@@ -522,7 +527,8 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 
     return res.json({ success: true, invoiceNo: updates.invoiceNo });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[orderRoutes] /admin/orders/:orderId/status:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -555,10 +561,11 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
       const updates: Partial<OrderData> = { updatedAt: FieldValue.serverTimestamp() };
       if (typeof notes === 'string') updates.notes = notes.slice(0, 5000);
       if (typeof time === 'string') {
-        updates.time = time.slice(0, 20);
         const dateVal = (oldData as any).eventDate || oldData.date;
-        if (dateVal && typeof dateVal === 'string')
-          updates.dateTime = `${dateVal}T${updates.time}:00+08:00`;
+        const dateTime = toMalaysiaDateTime(dateVal, time);
+        if (!dateTime) return { error: 'Valid event time (HH:mm) is required', httpStatus: 400 } as const;
+        updates.time = dateTime.slice(11, 16);
+        updates.dateTime = dateTime;
       }
       tx.update(orderRef, updates);
       return { oldData, updates };

@@ -116,6 +116,7 @@ export function isPermanentEmailError(err: unknown, recipientEmail?: string): bo
 export class DurableInvoiceOutboxService {
   private workerId = `worker_${randomUUID().slice(0, 8)}`;
   private isPolling = false;
+  private queryCursors: Partial<Record<PollKind, FirebaseFirestore.QueryDocumentSnapshot>> = {};
   private pollIntervalMs = 5000;
   private leaseDurationMs = 60_000; // 1 minute lease lock
   private maxRetries = 3;
@@ -358,12 +359,14 @@ export class DurableInvoiceOutboxService {
 
   private buildQuery(kind: PollKind) {
     const col = getFirestore().collection('invoice_outbox');
-    if (kind === 'ready') {
-      // Single-field index on status (supported out-of-the-box by Firestore without composite indexes)
-      return col.where('status', 'in', ['pending', 'failed']).limit(10);
-    }
-    // Crash recovery: single-field index on status == 'processing'
-    return col.where('status', '==', 'processing').limit(10);
+    // Keep single-field status queries and bounded pages. A cursor must advance
+    // past permanent failures, future retries and live leases as well as work
+    // that was claimed, otherwise the first ten records can starve every later job.
+    const query = kind === 'ready'
+      ? col.where('status', 'in', ['pending', 'failed']).limit(10)
+      : col.where('status', '==', 'processing').limit(10);
+    const cursor = this.queryCursors[kind];
+    return cursor ? query.startAfter(cursor) : query;
   }
 
   private async drain(kind: PollKind, force: boolean): Promise<void> {
@@ -409,10 +412,12 @@ export class DurableInvoiceOutboxService {
           await this.executeJob(docSnap.id, claimed);
         }
       }
+      const hasMore = snapshot.docs.length === 10;
+      this.queryCursors[kind] = hasMore ? snapshot.docs[snapshot.docs.length - 1] : undefined;
       if (revision === idle.revision) {
-        const delay = hasRunnableJob ? this.pollIntervalMs : idle.delayMs;
+        const delay = hasRunnableJob || hasMore ? this.pollIntervalMs : idle.delayMs;
         idle.nextPollAt = Math.min(Date.now() + delay, nextDueAt);
-        idle.delayMs = hasRunnableJob ? this.pollIntervalMs : Math.min(60_000, delay * 2);
+        idle.delayMs = hasRunnableJob || hasMore ? this.pollIntervalMs : Math.min(60_000, delay * 2);
       }
     } catch (err) {
       if (this.isPermanentFirestoreError(err)) {

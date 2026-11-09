@@ -254,10 +254,8 @@ export default function AppContent() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAnalyticsUserId(user.uid);
-        setCrashlyticsUserId(user.uid);
-      }
+      void setAnalyticsUserId(user?.uid ?? null);
+      void setCrashlyticsUserId(user?.uid ?? '');
     });
     return () => {
       unsubscribe();

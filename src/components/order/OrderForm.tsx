@@ -40,6 +40,7 @@ import {
   type OrderContactErrors,
 } from '@/lib/orderContactValidation';
 import { evaluateVerifiedOrderAccess } from '@/lib/verifiedOrdering';
+import { toMalaysiaDateTime } from '@/lib/dateUtils';
 
 // TYPES
 export interface OrderState {
@@ -654,7 +655,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   // HANDLERS FOR FIELD UPDATES
   const handleToggleDish = async (dish: any) => {
     if (demoActive) return;
-    await triggerLightImpact();
+    void triggerLightImpact();
     setOrderState((prev) => {
       const exists = prev.dishes.some((d) => d.id === dish.id);
       if (exists) {
@@ -666,7 +667,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
   const adjustGuests = async (delta: number) => {
     if (demoActive) return;
-    await triggerLightImpact();
+    void triggerLightImpact();
     setOrderState((prev) => {
       let g = prev.guests + delta;
       if (g < 1) g = 1; // Min 1 pax as requested
@@ -677,7 +678,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   const handleToggleMeal = async (id: 'sarapan' | 'tengahari' | 'hitea') => {
     if (demoActive) return;
-    await triggerLightImpact();
+    void triggerLightImpact();
     setOrderState((prev) => {
       const exists = prev.mealTypes.includes(id);
       if (exists) {
@@ -690,7 +691,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
   const handleDiscardDraft = async () => {
     if (demoActive) return;
-    await triggerLightImpact();
+    void triggerLightImpact();
     clearOrderDraft();
     setContactFieldErrors({});
     setDraftSavedAt(null);
@@ -722,7 +723,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   };
 
   const handleStepNext = async (step: number) => {
-    await triggerLightImpact();
+    void triggerLightImpact();
     const triggerWarning = () => triggerNotification(NotificationType.Warning);
 
     if (step === 1) {
@@ -947,6 +948,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       }
 
       const formattedDateStr = orderState.date; // YYYY-MM-DD
+      const dateTime = toMalaysiaDateTime(formattedDateStr, orderState.time || '12:00');
+      if (!dateTime) throw new Error(tText('Please check the event date and time.', 'Sila semak tarikh dan masa majlis.'));
       const pricesRecord: Record<string, number> = {};
 
       const orderData = {
@@ -969,7 +972,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         menu: combinedMenuStr,
         preparationType: orderState.preparationType || 'buffet',
         notes: orderState.notes,
-        dateTime: new Date(`${formattedDateStr}T${orderState.time || '12:00'}`).toISOString(),
+        dateTime,
         lang: language,
         status: 'pending', // Pending status inside database
         prices: pricesRecord,

@@ -54,6 +54,15 @@ describe('generateSequentialInvoiceNo - Architectural Scheme', () => {
 
 
 describe('MemoryFirestore query semantics', () => {
+  it('advances implicit document-ID cursors even after the cursor document disappears', async () => {
+    const col = getFirestore().collection('query_cursor_semantics');
+    for (const id of ['c', 'a', 'b']) await col.doc(id).set({ status: 'pending' });
+    const first = await col.where('status', '==', 'pending').limit(2).get();
+    expect(first.docs.map(doc => doc.id)).toEqual(['a', 'b']);
+    await col.doc('b').delete();
+    const next = await col.where('status', '==', 'pending').startAfter(first.docs[1]).limit(2).get();
+    expect(next.docs.map(doc => doc.id)).toEqual(['c']);
+  });
   it('filters == and in, applies limit, and exposes document references', async () => {
     const db = getFirestore();
     const col = db.collection('query_semantics_orders');

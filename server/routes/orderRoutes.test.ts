@@ -75,7 +75,41 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     }
   });
 
+  it('stores the selected Malaysian event time and corporate details, ignoring a conflicting client timestamp', async () => {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer verified_customer' },
+      body: JSON.stringify({ name: 'Audit Customer', email: 'audit@example.invalid',
+        eventDate: '2026-12-15', time: '08:30', dateTime: '2026-12-15T08:30:00Z', quantity: 10,
+        meals: ['breakfast'], department: 'Unit Audit', initials: 'AU' }),
+    });
+    expect(response.status).toBe(200);
+    const { id } = await response.json();
+    const saved = (await getFirestore().collection('orders').doc(id).get()).data();
+    expect(new Date(saved?.dateTime).toISOString()).toBe('2026-12-15T00:30:00.000Z');
+    expect(saved?.department).toBe('Unit Audit');
+    expect(saved?.initials).toBe('AU');
+  });
+
+  it('rejects invalid event times before persisting an order', async () => {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer verified_customer' },
+      body: JSON.stringify({ name: 'Audit Customer', email: 'audit@example.invalid',
+        eventDate: '2026-12-15', time: '25:99', quantity: 10, meals: ['breakfast'] }),
+    });
+    expect(response.status).toBe(400);
+  });
+
   describe('Admin update field constraints', () => {
+    it('returns a bounded generic error when database initialization fails', async () => {
+      vi.spyOn(firebaseAdminModule, 'getFirestore').mockImplementation(() => { throw new Error('private database configuration'); });
+      const response = await fetch(`${baseUrl}/api/admin/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ action: 'fetch' }), signal: AbortSignal.timeout(2000),
+      });
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ error: 'Internal server error' });
+    });
+
     it('rejects mutations to server-owned order identity and deletion flags', () => {
       expect(validateAdminOrderUpdate({ userId: 'different-user' })).toContain('Unsupported');
       expect(validateAdminOrderUpdate({ deletedByAdmin: false })).toContain('Unsupported');

@@ -26,12 +26,27 @@ service cloud.firestore {
     // email-based Firebase user, so there is no email to verify. Adding it
     // back would make isAdmin() permanently false again.
     function isAdmin() {
-      return request.auth != null
+      return isAuthenticated()
+          && 'admin' in request.auth.token
           && request.auth.token.admin == true;
     }
 
+    function isAuthenticated() {
+      return request.auth != null
+          && (!('admin' in request.auth.token)
+              || request.auth.token.admin != true
+              || (request.auth.token.auth_time is int && isAdminSessionActive()));
+    }
+
+    // The API writes this record on logout. Refreshing the same Firebase login
+    // must not restore access through a direct client Firestore read/write.
+    function isAdminSessionActive() {
+      let sessionId = 'firebase_session_' + request.auth.uid + '_' + string(request.auth.token.auth_time);
+      return !exists(/databases/$(database)/documents/admin_revocations/$(sessionId));
+    }
+
     function isSelf(uid) {
-      return request.auth != null && request.auth.uid == uid;
+      return isAuthenticated() && request.auth.uid == uid;
     }
 
     match /orders/{orderId} {
@@ -41,7 +56,7 @@ service cloud.firestore {
       allow create: if false;
 
       // Customers can read their own orders; admins can read all orders.
-      allow read: if request.auth != null
+      allow read: if isAuthenticated()
                     && (isAdmin()
                         || resource.data.uid == request.auth.uid
                         || resource.data.userId == request.auth.uid);
@@ -86,14 +101,14 @@ service cloud.firestore {
     }
 
     match /orders_archive/{archiveId} {
-      allow read:  if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read:  if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow write: if false; // Admin SDK only
     }
 
     match /company_presets/{presetId} {
-      allow read: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
 
     match /audit_logs/{logId} {
@@ -106,10 +121,10 @@ service cloud.firestore {
     }
     
     match /calendar_notes/{noteId} {
-      allow read: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if request.auth != null && (isAdmin() || request.resource.data.userId == request.auth.uid);
-      allow update: if request.auth != null && (isAdmin() || (resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid));
-      allow delete: if request.auth != null && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update: if isAuthenticated() && (isAdmin() || (resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid));
+      allow delete: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
 
     // S-8 review: app_config is intentionally public-readable.

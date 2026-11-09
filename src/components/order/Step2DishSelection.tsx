@@ -345,7 +345,7 @@ export function Step2DishSelection({
 
       <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">
         <Button
-          onClick={async () => { await triggerLightImpact(); setCurrentStep(1); }}
+          onClick={() => { void triggerLightImpact(); setCurrentStep(1); }}
           variant="outline"
           className="flex-1 border-stone-300 dark:border-stone-700 min-h-[48px] rounded-2xl font-bold text-sm text-stone-700 dark:text-stone-200 cursor-pointer"
         >

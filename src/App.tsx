@@ -235,6 +235,7 @@ function App() {
                 <PrivacyPolicyModal
                   isOpen={showPrivacyPolicy && isSplashFinished}
                   onUnderstood={handlePrivacyUnderstood}
+                  onDismiss={() => setShowPrivacyPolicy(false)}
                 />
               </Suspense>
             )}

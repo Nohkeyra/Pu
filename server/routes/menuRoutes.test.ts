@@ -1,5 +1,40 @@
-import { describe, expect, it } from 'vitest';
-import { correctDefaultMenuImage } from './menuRoutes.js';
+import { describe, expect, it, vi } from 'vitest';
+import express from 'express';
+import { Firestore } from '@google-cloud/firestore';
+import menuRoutes, { correctDefaultMenuImage } from './menuRoutes.js';
+import { getFirestore } from '../firebaseAdmin.js';
+import { signAdminJwt } from '../adminAuth.js';
+
+it('bulk-saves omitted suitability using the real Firestore write validator', async () => {
+  const db = getFirestore();
+  // Real SDK validation, local memory commits only: no connection is made.
+  const validator = new Firestore({ projectId: 'demo-local-audit' });
+  const originalBatch = db.batch.bind(db);
+  vi.spyOn(db, 'batch').mockImplementation(() => {
+    const batch = originalBatch();
+    const originalSet = batch.set.bind(batch);
+    batch.set = ((ref, data) => {
+      validator.batch().set(validator.collection('menu').doc(ref.id), data);
+      return originalSet(ref, data);
+    }) as typeof batch.set;
+    return batch;
+  });
+  const app = express(); app.use(express.json()); app.use('/api', menuRoutes);
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${(server.address() as { port: number }).port}/api/admin/menu`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signAdminJwt({ uid: 'menu-audit' })}` },
+      body: JSON.stringify({ items: [{ id: 'audit-menu', nameEn: 'Audit Item', nameBm: 'Item Audit', price: 5, category: 'lunch' }] }),
+    });
+    expect(response.status).toBe(200);
+    expect((await db.collection('menu').doc('audit-menu').get()).data()?.nameBm).toBe('Item Audit');
+  } finally {
+    vi.restoreAllMocks();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await validator.terminate();
+  }
+});
 
 describe('correctDefaultMenuImage', () => {
   it('upgrades original and phase 1 placeholders without mutating the source', () => {

@@ -55,9 +55,11 @@ class FakeQuery {
     protected col: string,
     protected filters: Array<[string, string, any]> = [],
     protected lim?: number,
+    protected cursor?: string,
   ) {}
-  where(f: string, op: string, v: any) { return new FakeQuery(this.db, this.col, [...this.filters, [f, op, v]], this.lim); }
-  limit(n: number) { return new FakeQuery(this.db, this.col, this.filters, n); }
+  where(f: string, op: string, v: any) { return new FakeQuery(this.db, this.col, [...this.filters, [f, op, v]], this.lim, this.cursor); }
+  limit(n: number) { return new FakeQuery(this.db, this.col, this.filters, n, this.cursor); }
+  startAfter(snapshot: FakeSnap) { return new FakeQuery(this.db, this.col, this.filters, this.lim, snapshot.id); }
   async get() {
     this.db.queryLog.push({ collection: this.col, filters: this.filters });
     const err = this.db.queryError?.(this.filters);
@@ -70,7 +72,9 @@ class FakeQuery {
         docs.push(new FakeSnap(new FakeRef(this.db, this.col, path.slice(this.col.length + 1)), e.data));
       }
     }
-    return { docs: this.lim ? docs.slice(0, this.lim) : docs };
+    docs.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    const remaining = this.cursor ? docs.filter(doc => doc.id > this.cursor!) : docs;
+    return { docs: this.lim ? remaining.slice(0, this.lim) : remaining };
   }
 }
 
@@ -267,6 +271,23 @@ describe('DurableInvoiceOutboxService', () => {
   });
 
   describe('idle polling and shared quota pause', () => {
+    it('reaches pending jobs beyond a full page of permanent failures', async () => {
+      for (let i = 0; i < 10; i++) seed(`a-dead-${i}`, { status: 'failed', isPermanent: true });
+      seed('z-ready');
+      await a.processQueue();
+      await a.processQueue();
+      expect(doc('z-ready')!.status).toBe('delivered');
+      expect(h.sendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it('recovers expired leases beyond a full page of live leases', async () => {
+      for (let i = 0; i < 10; i++) seed(`a-live-${i}`, { status: 'processing', lockedUntil: Timestamp.fromMillis(T0 + 60_000) });
+      seed('z-expired', { status: 'processing', lockedUntil: Timestamp.fromMillis(T0 - 1) });
+      await a.processQueue();
+      await a.processQueue();
+      expect(doc('z-expired')!.status).toBe('delivered');
+    });
+
     it('performs only 16 empty queries over five idle minutes', async () => {
       for (let seconds = 0; seconds < 300; seconds += 5) {
         vi.setSystemTime(T0 + seconds * 1000); await a.processQueue(false);
