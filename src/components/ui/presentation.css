@@ -1,4 +1,22 @@
 /* Shared presentation: aligned with .panel-surface and .card-happening visual hierarchy */
+/* Decorative header motif. Luminance masking keeps the original floral artwork,
+   removes its dark cloth backing and blends it with each surface's palette.
+   Keep overflow visible so keyboard focus rings are not clipped. */
+:where(.batik-header) { position: relative; isolation: isolate; }
+.batik-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--ui-action) 25%, transparent) 55%, color-mix(in srgb, var(--ui-action) 95%, transparent));
+  mask: url('/assets/heritage/batik_pattern.jpg') right center / clamp(480px, 72vw, 760px) auto no-repeat;
+  mask-mode: luminance;
+  pointer-events: none;
+}
+.dark .batik-header::before {
+  background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--ui-yellow) 20%, transparent) 55%, color-mix(in srgb, var(--ui-yellow) 85%, transparent));
+}
 .app-dialog-panel {max-height:calc(100dvh - 2rem - var(--sat, 0px) - var(--sab, 0px));border-radius:28px;box-shadow:0 24px 60px -10px color-mix(in srgb, var(--ui-shadow-ink) 18.0%, transparent),0 8px 24px -4px color-mix(in srgb, var(--ui-shadow-ink) 8.0%, transparent)}
 .app-dialog-panel [data-slot=dialog-header] {min-width:0}
 .app-dialog-panel [data-slot=dialog-title] {overflow-wrap:anywhere}

@@ -53,12 +53,12 @@ export function ProfileInfoTab({
 }: ProfileInfoTabProps) {
   return (
     <Card className="profile-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="profile-section-header flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
+      <CardHeader className="profile-section-header batik-header flex flex-row items-center justify-between pb-4 border-b border-stone-200/80 dark:border-white/10 p-0 space-y-0">
         <div>
           <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
             {t('Your details', 'Maklumat anda')}
           </CardTitle>
-          <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+          <CardDescription className="microcopy-12 font-normal mt-0.5">
             {t('Default contact details used for quick catering invoice generation.', 'Maklumat perhubungan utama untuk penjanaan invois katering.')}
           </CardDescription>
         </div>

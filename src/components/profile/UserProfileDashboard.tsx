@@ -5,7 +5,6 @@ import {
   useRef,
   useCallback,
   Suspense,
-  type CSSProperties,
 } from 'react';
 import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -20,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import type { Order, UserProfile, SavedLocation } from '@/types';
-import { cn, compareTimestampValues, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
+import { cn, compareTimestampValues, getDisplayInvoiceNo } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -762,13 +761,8 @@ export default function UserProfileDashboard({
           </div>
         </div>
         <section
-          className="profile-summary"
+          className="profile-summary batik-header"
           aria-label={t('Your account summary', 'Ringkasan akaun anda')}
-          style={
-            {
-              '--profile-batik': `url("${getAssetUrl('/assets/heritage/batik_pattern.jpg')}")`,
-            } as CSSProperties
-          }
         >
           <p>{t('YOUR SPACE WITH WAWASAN', 'RUANG ANDA BERSAMA WAWASAN')}</p>
           <h3>

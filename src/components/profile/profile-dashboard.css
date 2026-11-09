@@ -26,10 +26,6 @@
   padding: 20px; border-radius: 16px;
   background: var(--ui-green); color: var(--ui-legacy-white); border: 1px solid color-mix(in srgb, var(--ui-border) 7.1%, transparent);
 }
-.profile-summary::before {
-  content: ''; position: absolute; inset: 0; z-index: -1; opacity: .08;
-  background: var(--profile-batik) center/cover; pointer-events: none;
-}
 .dark .profile-summary { background: var(--ui-canvas); border-color: var(--ui-border); }
 .profile-summary > p { color: var(--ui-legacy-white); font-size: 10px; letter-spacing: .8px; margin: 0 0 7px; }
 .profile-summary h3 { font-family: var(--font-display); font-size: 24px; line-height: 1.2; margin: 0; color: inherit; }
@@ -59,7 +55,8 @@
 }
 .profile-dashboard .profile-section-header {
   display: flex; flex-flow: row wrap; align-items: flex-start; justify-content: space-between;
-  gap: 12px; padding-bottom: 16px; border-color: var(--profile-border);
+  gap: 12px; padding: 14px; border: 1px solid var(--profile-border); border-radius: 12px;
+  background: var(--profile-soft);
 }
 .profile-section-header > :first-child { flex: 1 1 160px; min-width: 0; }
 .profile-dashboard .profile-section [data-slot='card-title'] {
@@ -82,7 +79,6 @@
 .profile-order-tools { max-width: 100%; }
 .profile-order-tools > div { flex-wrap: wrap; }
 .profile-dashboard .profile-orders-section { padding: 0; background: transparent; border: 0; }
-.profile-orders-section > .profile-section-header { border: 0; padding-bottom: 0; }
 .profile-order { border-radius: 16px; min-width: 0; }
 .profile-order-card {
   display: flex; flex-direction: column; gap: 14px; padding: 16px;
@@ -142,7 +138,7 @@ body:has(.profile-order-action-sheet, .profile-order-edit-sheet, .profile-custom
   border-color: var(--customer-line);
 }
 .customer-profile-page .profile-summary > p,
-.customer-profile-page .profile-summary-counts dd { color: var(--customer-muted); }
+.customer-profile-page .profile-summary-counts dd { color: var(--customer-ink); }
 .customer-profile-page .profile-summary-counts { border-top-color: var(--customer-line); }
 .customer-profile-page .profile-tabs [aria-selected="true"],
 .customer-profile-page .profile-dashboard .profile-section,
@@ -153,6 +149,9 @@ body:has(.profile-order-action-sheet, .profile-order-edit-sheet, .profile-custom
 }
 .customer-profile-page .profile-tabs [aria-selected="true"] { color: var(--customer-accent); }
 .customer-profile-page .profile-dashboard .profile-section [data-slot="card-title"] {
+  color: var(--customer-ink);
+}
+.customer-profile-page .profile-dashboard .profile-section [data-slot="card-description"] {
   color: var(--customer-ink);
 }
 

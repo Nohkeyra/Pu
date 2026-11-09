@@ -31,11 +31,11 @@ export function ProfilePreferencesTab({
   const navigate = useNavigate();
   return (
     <Card className="profile-section profile-preferences-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="profile-section-header pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
+      <CardHeader className="profile-section-header batik-header pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white">
           {t('Account notification preferences', 'Pilihan notifikasi akaun')}
         </CardTitle>
-        <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+        <CardDescription className="microcopy-12 font-normal mt-0.5">
           {t('Saved with your account. Device notification permission is managed in Settings.', 'Disimpan pada akaun anda. Kebenaran notifikasi peranti diurus melalui Tetapan.')}
         </CardDescription>
       </CardHeader>

@@ -7,9 +7,9 @@
 .wawasan-admin-shell .app-admin-tabs > button { min-height: 48px; border-radius: 12px; white-space: normal; flex: 1 1 0; min-width: 0; color: var(--ui-muted); justify-content: center; box-shadow: none; }
 .wawasan-admin-shell .app-admin-tabs > button[aria-pressed='true'] { background: var(--ui-action); color: var(--ui-on-action); border-color: transparent; box-shadow: none; }
 .wawasan-admin-shell .app-admin-tabs > button svg { color: inherit; }
-.wawasan-admin-shell .wawasan-admin-heading { padding-bottom: 16px; border-bottom: 1px solid var(--ui-border); margin-bottom: 24px; }
+.wawasan-admin-shell .wawasan-admin-heading { padding: 16px; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-surface); margin-bottom: 24px; }
 .wawasan-admin-heading h1 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 750; letter-spacing: -.025em; }
-.wawasan-admin-heading p { color: var(--ui-muted); max-width: 65ch; line-height: 1.6; }
+.wawasan-admin-heading p { color: var(--ui-ink); max-width: 65ch; line-height: 1.6; }
 .wawasan-admin-shell :is(input, select, textarea) { border-radius: 10px; }
 .wawasan-admin-shell :is([data-slot='card'], .panel-surface) { background: var(--ui-surface); border-color: var(--ui-border); box-shadow: none; }
 .wawasan-admin-shell > main { max-width: 1600px; width: 100%; margin-inline: auto; }

@@ -753,7 +753,7 @@ export default function CalendarPage() {
         <div className="customer-content customer-calendar-content space-y-5">
 
           {/* 1. CALENDAR CONTROLS & HEADER */}
-          <div className="customer-calendar-panel customer-calendar-toolbar">
+          <div className="customer-calendar-panel customer-calendar-toolbar batik-header">
             <div className="customer-calendar-month">
               <Button
                 variant="secondary"
@@ -1013,7 +1013,7 @@ export default function CalendarPage() {
             <div className="customer-calendar-panel overflow-hidden">
               
               {/* Day Header */}
-              <div className="customer-calendar-agenda-heading p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
+              <div className="customer-calendar-agenda-heading batik-header p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 shrink-0">
                     <CalendarIcon className="w-4 h-4 text-crisp-carrot" />
@@ -1029,7 +1029,7 @@ export default function CalendarPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                    <p className="text-xs mt-0.5">
                       {calendarDataError
                         ? tl('Booking information could not be confirmed', 'Maklumat tempahan belum dapat dipastikan')
                         : selectedDayTotalPax > 0

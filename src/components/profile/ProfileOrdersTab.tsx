@@ -435,13 +435,13 @@ export function ProfileOrdersTab({
 
   return (
     <Card className="profile-section profile-orders-section bg-card dark:bg-card/40 border border-stone-200/80 dark:border-white/10 p-5 sm:p-6 shadow-sm space-y-5">
-      <CardHeader className="profile-section-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
+      <CardHeader className="profile-section-header batik-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200/80 dark:border-white/10 font-sans p-0 space-y-0">
         <div>
           <CardTitle className="text-base sm:text-lg font-bold text-deep-forest dark:text-white flex items-center gap-2">
             <History className="w-5 h-5 text-primary" />
             <span>{t('Your orders', 'Tempahan anda')}</span>
           </CardTitle>
-          <CardDescription className="microcopy-12 text-stone-500 dark:text-stone-400 font-normal mt-0.5">
+          <CardDescription className="microcopy-12 font-normal mt-0.5">
             {t('View past catering orders, request invoice PDFs, or reorder favorite menus.', 'Semak tempahan lalu, muat turun invois, atau hantar semula tempahan.')}
           </CardDescription>
         </div>

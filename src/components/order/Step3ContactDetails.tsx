@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { OrderState } from '@/components/order/OrderForm';
 import type { OrderContactField, OrderContactErrors } from '@/lib/orderContactValidation';
 
@@ -85,22 +85,12 @@ export function Step3ContactDetails({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-5 text-left"
     >
-      <div className="bg-charcoal text-white p-5 rounded-2xl border border-charcoal/80 relative overflow-hidden shadow-md">
-        {/* Background Batik Pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.22] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none" />
+      <div className="customer-step-banner batik-header p-5 rounded-2xl border relative overflow-hidden shadow-md">
         <div className="relative z-10">
-          <h2 className="text-base sm:text-lg font-bold tracking-wide font-display text-white">
+          <h2 className="text-base sm:text-lg font-bold tracking-wide font-display">
             {tText('Enter Booking Details', 'Butiran Tempahan')}
           </h2>
-          <p className="text-xs text-stone-300 font-light mt-1">
+          <p className="text-xs font-light mt-1">
             {tText(
               'Fill in event details, billing and delivery method.',
               'Isi maklumat majlis, pembayar, dan kaedah penghantaran.'

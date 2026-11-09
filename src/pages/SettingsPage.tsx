@@ -137,7 +137,7 @@ function SettingsSection({
   return (
     <section id={id} className="settings-section space-y-2">
       {title && (
-        <h2 className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+        <h2 className="batik-header text-xs font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
           {title}
         </h2>
       )}

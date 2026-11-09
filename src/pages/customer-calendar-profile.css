@@ -25,6 +25,7 @@
 .customer-calendar-outside {background:var(--customer-soft);background-image:none;color:var(--customer-muted)}
 .customer-calendar-outside>span {color:var(--customer-muted);opacity:.7}
 .customer-calendar-agenda-heading {background:var(--customer-soft);border-color:var(--customer-line)}
+.customer-calendar-agenda-heading p {color:var(--customer-ink)}
 .customer-calendar-agenda-heading>div:first-child {min-width:0;align-items:flex-start}
 .customer-calendar-agenda-heading>div:first-child>div:last-child {min-width:0}
 .customer-calendar-agenda-heading>div:first-child>div:last-child>div {flex-wrap:wrap}
@@ -48,21 +49,13 @@
   overflow: hidden;
 }
 .customer-profile-access::before {
-  content: '';
-  position: absolute;
   inset: 0 0 auto 0;
-  height: 90px;
-  background-image: url('/assets/heritage/batik_vector_pattern.jpg');
-  background-size: clamp(120px, 25vw, 180px) auto;
-  opacity: 0.05;
-  mask-image: linear-gradient(180deg, black, transparent);
-  -webkit-mask-image: linear-gradient(180deg, black, transparent);
-  pointer-events: none;
+  height: 180px;
 }
 .customer-profile-symbol {display:grid;place-items:center;width:48px;height:48px;border:1px solid color-mix(in srgb, var(--ui-orange) 25.0%, transparent);background:var(--customer-selected);color:var(--customer-accent);border-radius:16px;margin-bottom:14px;box-shadow:none}
 .customer-profile-symbol>svg {width:24px;height:24px;color:inherit}
 .customer-profile-access-title {font-family:var(--font-display);font-size:1.5rem;font-weight:700;line-height:1.2;letter-spacing:-.5px;margin:0 0 10px;color:var(--customer-ink)}
-.customer-profile-access-description {font-size:.875rem;line-height:1.7;color:var(--customer-muted);margin:0}
+.customer-profile-access-description {font-size:.875rem;line-height:1.7;color:var(--customer-ink);margin:0}
 .customer-profile-benefits {list-style:none;padding:12px 0;margin:16px 0;border-block:1px solid var(--customer-line);display:grid;gap:10px}
 .customer-profile-benefits li {display:flex;align-items:center;gap:10px;font-size:.8125rem;line-height:1.5;color:var(--customer-ink)}
 .customer-profile-benefits svg {width:18px;height:18px;flex:none;color:var(--customer-muted)}

@@ -89,7 +89,7 @@ export function OrderPreviewProgress({ children, isKeyboardVisible, ...props }: 
       </div>
       {step <= 4 && (
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <nav ref={progress} id="wawasan-order-wizard" className="customer-order-progress" aria-label={bm ? 'Kemajuan tempahan' : 'Order progress'} data-preview-docked={mini} data-actions-open={actionsOpen} data-keyboard-visible={isKeyboardVisible}>
+          <nav ref={progress} id="wawasan-order-wizard" className="customer-order-progress batik-header" aria-label={bm ? 'Kemajuan tempahan' : 'Order progress'} data-preview-docked={mini} data-actions-open={actionsOpen} data-keyboard-visible={isKeyboardVisible}>
             <div className="lc-preview-mini-row">
               <DialogTrigger asChild>
                 <button type="button" className="lc-preview-trigger" aria-label={bm ? 'Buka pratonton tempahan' : 'Open order preview'}>

@@ -371,7 +371,7 @@ export default function AdminPanel({
       </nav>
 
       <motion.main className="wawasan-admin-content [grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
-        <div className="wawasan-admin-heading mb-6">
+        <div className="wawasan-admin-heading batik-header mb-6">
           <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-1 tracking-tight">
             {activeTab === 'orders'
               ? t('orders')
@@ -383,7 +383,7 @@ export default function AdminPanel({
                   ? 'Submissions'
                   : 'Senarai Permohonan'}
           </h1>
-          <p className="text-deep-forest/60 dark:text-stone-400 text-xs sm:text-sm">
+          <p className="text-xs sm:text-sm">
             {activeTab === 'orders'
               ? t('orders_subtitle')
               : activeTab === 'menu'

@@ -65,7 +65,7 @@ export default function ProfilePage() {
 
       <div className="customer-content customer-profile-content">
         {!currentUser ? (
-          <Card className="customer-profile-access">
+          <Card className="customer-profile-access batik-header">
             <div className="customer-profile-symbol">
               <UserIcon className="w-8 h-8 text-[var(--color-sunshine-cta)]" />
             </div>

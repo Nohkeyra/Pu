@@ -1,4 +1,4 @@
-import React, { useState, type CSSProperties } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
-import { cn, getAssetUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
 
 interface OrderState {
@@ -68,7 +68,7 @@ export function Step1EventMeal({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="customer-step-one text-left"
     >
-      <div className="customer-step-heading" style={{ '--customer-batik': `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})` } as CSSProperties}>
+      <div className="customer-step-heading batik-header">
         <span>{tText('START WITH YOUR EVENT', 'MULAKAN DENGAN MAJLIS ANDA')}</span>
         <h2>{tText('What are you planning?', 'Untuk acara yang mana?')}</h2>
         <p>{tText('Choose your event type and the meals you need.', 'Pilih jenis majlis dan sajian yang diperlukan.')}</p>

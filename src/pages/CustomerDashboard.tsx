@@ -39,7 +39,7 @@ export default function CustomerDashboard() {
     <CustomerPageLayout className="customer-dashboard-page relative">
       <CustomerPageHeader title={bm ? 'Ruang pelanggan' : 'Customer dashboard'} subtitle={bm ? 'Tempahan katering anda' : 'Your catering workspace'} showBack={false} onBack={() => navigate('/app')} actions={[{ label: bm ? 'Tempahan baharu' : 'New order', onSelect: () => navigate('/order') }, { label: bm ? 'Profil' : 'Profile', onSelect: () => navigate('/profile') }]} />
       <div className="customer-content customer-dashboard-content mx-auto w-full max-w-5xl px-4 pb-8">
-        <Card variant="panel" padding="md" className="customer-dashboard-welcome">
+        <Card variant="panel" padding="md" className="customer-dashboard-welcome batik-header">
           <div className="customer-dashboard-welcome-copy">
             <p className="customer-dashboard-eyebrow">WAWASAN <span aria-hidden="true">·</span> PAK USOP</p>
             <h2>{bm ? 'Selamat kembali!' : 'Welcome back!'}</h2>

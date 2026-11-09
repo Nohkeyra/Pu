@@ -71,7 +71,7 @@
 .customer-settings-content {max-width:1000px;padding-bottom:calc(100px + var(--sab,0px));display:flex;flex-direction:column;gap:24px}
 .customer-page :is(button,a,input):focus-visible {outline:3px solid var(--customer-accent);outline-offset:3px}
 .customer-page .settings-section {scroll-margin-top:calc(var(--customer-header-height) + 20px)}
-.customer-page .settings-section>h2 {font-size:.75rem;letter-spacing:1px;color:var(--customer-ink);font-weight:700}
+.customer-page .settings-section>h2 {font-size:.75rem;letter-spacing:1px;color:var(--customer-ink);font-weight:700;padding:12px 14px;border:1px solid var(--customer-line);border-radius:12px;background:var(--customer-surface)}
 .customer-page .settings-section-card {
   background: var(--customer-surface);
   border: 1px solid var(--customer-line);
@@ -132,15 +132,6 @@
   z-index: 40;
   overflow: visible;
 }
-.customer-order-progress::before {
-  content: none;
-  position: absolute;
-  inset: 0;
-  background-image: url('/assets/heritage/batik_vector_pattern.jpg');
-  background-size: clamp(120px, 30vw, 180px) auto;
-  opacity: 0.04;
-  pointer-events: none;
-}
 .customer-progress-copy {display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;color:var(--customer-muted);font-size:0.6875rem;position:relative;z-index:1}
 .customer-progress-copy strong {color:var(--customer-accent)}
 .customer-progress-track {display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;position:relative;z-index:1}
@@ -156,25 +147,11 @@
 }
 .customer-step-content {padding:18px}
 .customer-step-one {display:flex;flex-direction:column;gap:20px}
-.customer-step-heading {position:relative;isolation:isolate;border-bottom:1px solid var(--customer-line);padding-bottom:16px;overflow:hidden}
-.customer-step-heading::before {
-  content: none;
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: clamp(130px, 38%, 240px);
-  background-image: var(--customer-batik);
-  background-size: clamp(100px, 22vw, 150px) auto;
-  background-repeat: repeat;
-  background-position: center right;
-  opacity: 0.12;
-  mask-image: linear-gradient(90deg, transparent 0%, black 80%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 80%);
-  z-index: -1;
-  pointer-events: none;
-}
-.customer-step-heading>span {font-size:0.6875rem;font-weight:700;letter-spacing:1px;color:var(--customer-accent)}
+.customer-step-heading {border:1px solid var(--customer-line);padding:14px;border-radius:14px;background:var(--customer-soft)}
+.customer-step-heading>span {font-size:0.6875rem;font-weight:700;letter-spacing:1px;color:color-mix(in srgb, var(--customer-accent) 60%, var(--customer-ink))}
 .customer-step-heading h2 {margin:6px 0;font-family:var(--font-display);font-size:clamp(1.375rem, 2.5vw, 1.875rem);font-weight:700;line-height:1.2;letter-spacing:-.025em;color:var(--customer-ink)}
-.customer-step-heading p {font-size:0.75rem;line-height:1.5;color:var(--customer-muted)}
+.customer-step-heading p {font-size:0.75rem;line-height:1.5;color:var(--customer-ink)}
+.customer-step-banner {background:var(--customer-soft);color:var(--customer-ink);border-color:var(--customer-line)}
 .customer-step-one .customer-choice {
   display: flex;
   flex-direction: column;

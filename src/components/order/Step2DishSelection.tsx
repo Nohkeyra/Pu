@@ -149,15 +149,7 @@ export function Step2DishSelection({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-6 text-left"
     >
-      <div className="bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] p-5 sm:p-6 rounded-3xl border border-[var(--ui-orange)] dark:border-white/10 relative overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-[0.06] dark:opacity-[0.10] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+      <div className="batik-header bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] p-5 sm:p-6 rounded-3xl border border-[var(--ui-orange)] dark:border-white/10 relative overflow-hidden">
         <div className="relative z-10 flex items-center gap-4">
           <img src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')} alt="Restoran Wawasan" className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20" width={80} height={80} />
           <div>
