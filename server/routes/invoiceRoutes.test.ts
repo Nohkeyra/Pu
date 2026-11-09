@@ -4,6 +4,7 @@ import type { Server } from 'http';
 import invoiceRoutes, { isOrderOwnedByCaller } from './invoiceRoutes.js';
 import { signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
+import { commitConsolidatedInvoice } from '../services/consolidatedInvoices';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
 
 describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
@@ -61,7 +62,12 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
     });
 
     it('allows a guest order to be matched by verified email', () => {
-      expect(isOrderOwnedByCaller({ email: 'user@example.com' }, { isAdmin: false, uid: 'user_123', email: 'user@example.com' })).toBe(true);
+      expect(
+        isOrderOwnedByCaller(
+          { email: 'user@example.com' },
+          { isAdmin: false, uid: 'user_123', email: 'user@example.com' }
+        )
+      ).toBe(true);
     });
 
     it('rejects foreign customer with different userId and email', () => {
@@ -75,7 +81,10 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
     it('rejects an admin JWT after it has been revoked', async () => {
       const token = signAdminJwt({ uid: 'revoked_admin' });
       const payload = verifyAdminJwt(token)!;
-      await getFirestore().collection('admin_revocations').doc(`jti_${payload.jti}`).set({ revoked: true });
+      await getFirestore()
+        .collection('admin_revocations')
+        .doc(`jti_${payload.jti}`)
+        .set({ revoked: true });
       const res = await fetch(`${baseUrl}/api/invoice/any_order/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -91,13 +100,15 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
 
     it('rejects a valid admin session token passed only in the URL query string', async () => {
       const token = signAdminJwt({ uid: 'admin_uid' });
-      const res = await fetch(`${baseUrl}/api/invoice/order_123/pdf?token=${encodeURIComponent(token)}`);
+      const res = await fetch(
+        `${baseUrl}/api/invoice/order_123/pdf?token=${encodeURIComponent(token)}`
+      );
       expect(res.status).toBe(401);
     });
 
     it('rejects request with invalid token with 401', async () => {
       const res = await fetch(`${baseUrl}/api/invoice/order_123/pdf`, {
-        headers: { Authorization: 'Bearer invalid.fake.token' }
+        headers: { Authorization: 'Bearer invalid.fake.token' },
       });
       expect(res.status).toBe(401);
     });
@@ -110,18 +121,18 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
         email: 'victim@example.com',
         status: 'billed',
         totalAmount: 250,
-        invoiceNo: 'RW_VICTIM_01'
+        invoiceNo: 'RW_VICTIM_01',
       });
 
       // Mock verifyFirebaseIdToken to simulate authenticated attacker
       vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
         uid: 'attacker_user_uid',
         email: 'attacker@example.com',
-        admin: false
+        admin: false,
       });
 
       const res = await fetch(`${baseUrl}/api/invoice/victim_order_1/pdf`, {
-        headers: { Authorization: 'Bearer fake_customer_id_token' }
+        headers: { Authorization: 'Bearer fake_customer_id_token' },
       });
 
       expect(res.status).toBe(403);
@@ -138,17 +149,17 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
         email: 'customer1@example.com',
         status: 'billed',
         totalAmount: 180,
-        invoiceNo: 'RW_CUST_01'
+        invoiceNo: 'RW_CUST_01',
       });
 
       vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
         uid: 'customer_1_uid',
         email: 'customer1@example.com',
-        admin: false
+        admin: false,
       });
 
       const res = await fetch(`${baseUrl}/api/invoice/customer_order_1/pdf`, {
-        headers: { Authorization: 'Bearer valid_customer_token' }
+        headers: { Authorization: 'Bearer valid_customer_token' },
       });
 
       expect(res.status).toBe(200);
@@ -163,13 +174,13 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
         email: 'target@example.com',
         status: 'billed',
         totalAmount: 400,
-        invoiceNo: 'RW_TARGET_99'
+        invoiceNo: 'RW_TARGET_99',
       });
 
       const adminToken = signAdminJwt({ uid: 'admin_root', email: 'admin@wawasan.test' });
 
       const res = await fetch(`${baseUrl}/api/invoice/target_order_99/pdf`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+        headers: { Authorization: `Bearer ${adminToken}` },
       });
 
       expect(res.status).toBe(200);
@@ -182,7 +193,7 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       const res = await fetch(`${baseUrl}/api/invoice/combined/pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderIds: ['order_1', 'order_2'] })
+        body: JSON.stringify({ orderIds: ['order_1', 'order_2'] }),
       });
       expect(res.status).toBe(401);
     });
@@ -193,28 +204,28 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
         customerName: 'Customer Me',
         userId: 'my_uid',
         status: 'billed',
-        date: '2026-09-01'
+        date: '2026-09-01',
       });
       await db.collection('orders').doc('foreign_order').set({
         customerName: 'Foreign User',
         userId: 'other_uid',
         status: 'billed',
-        date: '2026-09-02'
+        date: '2026-09-02',
       });
 
       vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
         uid: 'my_uid',
         email: 'me@example.com',
-        admin: false
+        admin: false,
       });
 
       const res = await fetch(`${baseUrl}/api/invoice/combined/pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer valid_my_token'
+          Authorization: 'Bearer valid_my_token',
         },
-        body: JSON.stringify({ orderIds: ['cust_own_order', 'foreign_order'] })
+        body: JSON.stringify({ orderIds: ['cust_own_order', 'foreign_order'] }),
       });
 
       expect(res.status).toBe(403);
@@ -227,34 +238,45 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       const db = getFirestore();
       await db.collection('orders').doc('my_order_1').set({
         customerName: 'My Corporate Group',
+        to: 'My Corporate Group',
+        billingAddress: 'Test address',
+        email: 'me@example.com',
         userId: 'my_uid',
         status: 'billed',
         date: '2026-09-10',
         pax: 50,
-        totalAmount: 500
+        totalAmount: 500,
       });
       await db.collection('orders').doc('my_order_2').set({
         customerName: 'My Corporate Group',
+        to: 'My Corporate Group',
+        billingAddress: 'Test address',
+        email: 'me@example.com',
         userId: 'my_uid',
         status: 'billed',
         date: '2026-09-11',
         pax: 50,
-        totalAmount: 500
+        totalAmount: 500,
       });
 
       vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
         uid: 'my_uid',
         email: 'me@example.com',
-        admin: false
+        admin: false,
       });
 
+      await commitConsolidatedInvoice(
+        ['my_order_1', 'my_order_2'],
+        'RW TEST-CUSTOMER-BATCH',
+        'admin_root'
+      );
       const res = await fetch(`${baseUrl}/api/invoice/combined/pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer valid_my_token'
+          Authorization: 'Bearer valid_my_token',
         },
-        body: JSON.stringify({ orderIds: ['my_order_1', 'my_order_2'] })
+        body: JSON.stringify({ orderIds: ['my_order_1', 'my_order_2'] }),
       });
 
       expect(res.status).toBe(200);
@@ -265,30 +287,41 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       const db = getFirestore();
       await db.collection('orders').doc('corp_order_a').set({
         customerName: 'Ministry A',
+        to: 'Ministry A',
+        billingAddress: 'Test address',
+        email: 'agency@example.com',
         userId: 'user_a',
         status: 'billed',
         date: '2026-09-15',
         pax: 30,
-        totalAmount: 450
+        totalAmount: 450,
       });
       await db.collection('orders').doc('corp_order_b').set({
         customerName: 'Ministry A',
+        to: 'Ministry A',
+        billingAddress: 'Test address',
+        email: 'agency@example.com',
         userId: 'user_b',
         status: 'billed',
         date: '2026-09-16',
         pax: 30,
-        totalAmount: 450
+        totalAmount: 450,
       });
 
+      await commitConsolidatedInvoice(
+        ['corp_order_a', 'corp_order_b'],
+        'RW TEST-ADMIN-BATCH',
+        'admin_root'
+      );
       const adminToken = signAdminJwt({ uid: 'admin_root', email: 'admin@wawasan.test' });
 
       const res = await fetch(`${baseUrl}/api/invoice/combined/pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
         },
-        body: JSON.stringify({ orderIds: ['corp_order_a', 'corp_order_b'] })
+        body: JSON.stringify({ orderIds: ['corp_order_a', 'corp_order_b'] }),
       });
 
       expect(res.status).toBe(200);
@@ -296,4 +329,3 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
     });
   });
 });
-

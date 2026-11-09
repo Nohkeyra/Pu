@@ -4,6 +4,8 @@ import type { Server } from 'http';
 import orderRoutes, { deriveEventDate, validateAdminOrderUpdate } from './orderRoutes.js';
 import { signAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
+import { firestoreQuota } from '../services/firestoreQuota';
+import { publicCalendar } from '../services/publicCalendar';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
 
 describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', () => {
@@ -22,6 +24,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
   const originalEnv = { ...process.env };
 
   beforeEach(async () => {
+    publicCalendar.invalidate();
+    firestoreQuota.reset();
     process.env = { ...originalEnv };
     process.env.ADMIN_JWT_SECRET = 'test-orders-jwt-secret';
     process.env.ADMIN_EMAILS = 'admin@wawasan.test';
@@ -51,6 +55,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
   afterEach(async () => {
     process.env = { ...originalEnv };
     vi.restoreAllMocks();
+    firestoreQuota.reset();
+    vi.useRealTimers();
     if (server) {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
@@ -519,6 +525,40 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
           body: JSON.stringify(payload),
         });
         expect(result.status).toBe(400);
+      }
+    });
+  });
+
+  describe('Calendar API quota behavior', () => {
+    it('shares one collection read across combined and legacy routes', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('combined_calendar').set({eventDate:'2030-11-10',status:'approved',meals:['lunch'],quantity:15,email:'private@example.com'});
+      const original = db.collection.bind(db);
+      const getOrders = vi.fn(() => original('orders').get());
+      vi.spyOn(db,'collection').mockImplementation(((name: string) => name === 'orders' ? {...original(name),get:getOrders} : original(name)) as typeof db.collection);
+      const responses = await Promise.all(['calendar-data','calendar-orders','calendar-sessions'].map(path => fetch(baseUrl+'/api/'+path+'?from=2030-11-01&to=2030-11-30')));
+      for (const response of responses) expect(response.status).toBe(200);
+      const [combined,orders,sessions] = await Promise.all(responses.map(r=>r.json()));
+      expect(combined.orders).toEqual(orders.orders);expect(combined.sessions).toEqual(sessions.sessions);
+      expect(orders.sessions).toBeUndefined();expect(sessions.orders).toBeUndefined();
+      expect(JSON.stringify(combined)).not.toContain('private@example.com');expect(getOrders).toHaveBeenCalledTimes(1);
+    });
+    it('returns 503 with Retry-After and avoids repeated quota requests', async () => {
+      const db=getFirestore(),original=db.collection.bind(db);
+      const getOrders=vi.fn().mockRejectedValue(Object.assign(new Error('Quota exceeded'),{code:8}));
+      vi.spyOn(db,'collection').mockImplementation(((name:string)=>name==='orders'?{...original(name),get:getOrders}:original(name)) as typeof db.collection);
+      const transaction=vi.spyOn(db,'runTransaction');vi.spyOn(console,'warn').mockImplementation(()=>{});
+      for(let i=0;i<3;i++){
+        const response=await fetch(baseUrl+'/api/calendar-data');
+        expect(response.status).toBe(503);expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0);
+        const body=await response.json();expect(body.success).toBe(false);expect(body.code).toBe('FIRESTORE_QUOTA');
+        expect(body.orders).toBeUndefined();expect(body.sessions).toBeUndefined();
+      }
+      expect(getOrders).toHaveBeenCalledTimes(1);expect(transaction).toHaveBeenCalledTimes(1);
+    });
+    it('rejects malformed and inverted date ranges',async()=>{
+      for(const range of ['from=2030-02-31','from=2030-11-20&to=2030-11-10']){
+        expect((await fetch(baseUrl+'/api/calendar-data?'+range)).status).toBe(400);
       }
     });
   });

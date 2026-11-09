@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { firestoreQuota } from './firestoreQuota.js';
 import { Timestamp } from 'firebase-admin/firestore';
 
 // ---------------------------------------------------------------------------
@@ -175,6 +176,7 @@ describe('DurableInvoiceOutboxService', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(T0);
+    firestoreQuota.reset();
     h.db = new FakeDb();
     h.sendMail = vi.fn().mockResolvedValue({});
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -246,14 +248,14 @@ describe('DurableInvoiceOutboxService', () => {
     it('pauses queries and logs warning when RESOURCE_EXHAUSTED (Quota exceeded) error occurs', async () => {
       h.db.queryError = () => Object.assign(new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.'), { code: 8 });
       await a.processQueue();
-      expect(h.db.queryLog).toHaveLength(2);
+      expect(h.db.queryLog).toHaveLength(1);
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('RESOURCE_EXHAUSTED'));
 
       for (let i = 0; i < 5; i++) {
         vi.setSystemTime(Date.now() + 5_000);
         await a.processQueue();
       }
-      expect(h.db.queryLog).toHaveLength(2); // paused during 60s window
+      expect(h.db.queryLog).toHaveLength(1); // paused during 60s window
     });
 
     it('does not pause on ordinary transient errors', async () => {
@@ -261,6 +263,34 @@ describe('DurableInvoiceOutboxService', () => {
       await a.processQueue();
       await a.processQueue();
       expect(h.db.queryLog).toHaveLength(4);
+    });
+  });
+
+  describe('idle polling and shared quota pause', () => {
+    it('performs only 16 empty queries over five idle minutes', async () => {
+      for (let seconds = 0; seconds < 300; seconds += 5) {
+        vi.setSystemTime(T0 + seconds * 1000); await a.processQueue(false);
+      }
+      expect(h.db.queryLog).toHaveLength(16);
+    });
+    it('wakes the ready query after a new enqueue during an idle pause', async () => {
+      await a.processQueue(false); vi.setSystemTime(T0 + 5000); await a.processQueue(false);
+      vi.setSystemTime(T0 + 6000);
+      const id = await a.enqueue(baseJob({idempotencyKey:'idle-wake'})); await a.processQueue(false);
+      expect(doc(id)!.status).toBe('delivered'); expect(h.sendMail).toHaveBeenCalledTimes(1);
+    });
+    it('does not delay a known retry deadline while idling', async () => {
+      seed('future', {status:'failed',nextRetryAt:Timestamp.fromMillis(T0+12000)});
+      await a.processQueue(false); vi.setSystemTime(T0+5000); await a.processQueue(false);
+      expect(h.sendMail).not.toHaveBeenCalled();
+      vi.setSystemTime(T0+12000); await a.processQueue(false); expect(doc('future')!.status).toBe('delivered');
+    });
+    it('shares an outage pause and preserves jobs until recovery', async () => {
+      seed('paused'); h.db.queryError=()=>Object.assign(new Error('Quota exceeded'),{code:8});
+      await a.processQueue(); await b.processQueue(); expect(h.db.queryLog).toHaveLength(1);
+      expect(doc('paused')!.status).toBe('pending');
+      vi.setSystemTime(T0+60000); h.db.queryError=null; await b.processQueue();
+      expect(doc('paused')!.status).toBe('delivered'); expect(h.sendMail).toHaveBeenCalledTimes(1);
     });
   });
 

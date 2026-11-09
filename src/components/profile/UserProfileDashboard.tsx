@@ -1,4 +1,12 @@
-import { useState, useEffect, useId, useRef, useCallback, Suspense, type CSSProperties } from 'react';
+import {
+  useState,
+  useEffect,
+  useId,
+  useRef,
+  useCallback,
+  Suspense,
+  type CSSProperties,
+} from 'react';
 import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -7,17 +15,20 @@ import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import WawasanLoader from '@/components/brand/WawasanLoader';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
-import { 
-  User as UserIcon, 
-  X, 
-  LogOut,
-} from 'lucide-react';
+import { User as UserIcon, X, LogOut } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import type { Order, UserProfile, SavedLocation } from '@/types';
 import { cn, compareTimestampValues, getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -32,8 +43,17 @@ import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTa
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const CustomerInvoicePreviewModal = lazyWithRetry(() => import('@/components/order/CustomerInvoicePreviewModal').then(m => ({ default: m.CustomerInvoicePreviewModal })), 'CustomerInvoicePreviewModal');
-const DeliveryMap = lazyWithRetry(() => import('@/components/delivery/DeliveryMap').then(m => ({ default: m.DeliveryMap })), 'DeliveryMapCustomer');
+const CustomerInvoicePreviewModal = lazyWithRetry(
+  () =>
+    import('@/components/order/CustomerInvoicePreviewModal').then((m) => ({
+      default: m.CustomerInvoicePreviewModal,
+    })),
+  'CustomerInvoicePreviewModal'
+);
+const DeliveryMap = lazyWithRetry(
+  () => import('@/components/delivery/DeliveryMap').then((m) => ({ default: m.DeliveryMap })),
+  'DeliveryMapCustomer'
+);
 
 interface UserProfileDashboardProps {
   isOpen: boolean;
@@ -42,7 +62,12 @@ interface UserProfileDashboardProps {
   isEmbedded?: boolean;
 }
 
-export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmbedded = false }: UserProfileDashboardProps) {
+export default function UserProfileDashboard({
+  isOpen,
+  onClose,
+  onReorder,
+  isEmbedded = false,
+}: UserProfileDashboardProps) {
   const { language, t: tGlobal } = useLanguage();
   const profileId = useId();
   const { toast } = useToast();
@@ -55,7 +80,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [ordersRetryKey, setOrdersRetryKey] = useState(0);
   const ordersOwnerRef = useRef<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'locations' | 'preferences'>('orders');
+  const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'locations' | 'preferences'>(
+    'orders'
+  );
 
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
@@ -87,7 +114,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const [, setIncludeNotes] = useState(true);
 
   const [previewOrder, setPreviewOrder] = useState<Order | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{ type: 'cancel' | 'delete'; orderId: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: 'cancel' | 'delete';
+    orderId: string;
+  } | null>(null);
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
@@ -146,23 +176,27 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         if (disposed || requestRevision !== revision) return;
 
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-        unsubscribeOrders = onSnapshot(q, (querySnapshot) => {
-          if (disposed || requestRevision !== revision) return;
-          const fetchedOrders: Order[] = [];
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data() as Order;
-            if (!data.deletedByUser) fetchedOrders.push({ ...data, id: docSnap.id });
-          });
-          fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
-          setOrders(fetchedOrders);
-          setOrdersError(false);
-          setIsLoadingOrders(false);
-        }, (err) => {
-          if (disposed || requestRevision !== revision) return;
-          console.error('Error fetching orders in realtime:', err);
-          setOrdersError(true);
-          setIsLoadingOrders(false);
-        });
+        unsubscribeOrders = onSnapshot(
+          q,
+          (querySnapshot) => {
+            if (disposed || requestRevision !== revision) return;
+            const fetchedOrders: Order[] = [];
+            querySnapshot.forEach((docSnap) => {
+              const data = docSnap.data() as Order;
+              if (!data.deletedByUser) fetchedOrders.push({ ...data, id: docSnap.id });
+            });
+            fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
+            setOrders(fetchedOrders);
+            setOrdersError(false);
+            setIsLoadingOrders(false);
+          },
+          (err) => {
+            if (disposed || requestRevision !== revision) return;
+            console.error('Error fetching orders in realtime:', err);
+            setOrdersError(true);
+            setIsLoadingOrders(false);
+          }
+        );
       } else {
         ordersOwnerRef.current = null;
         setProfile(null);
@@ -185,7 +219,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       if (currentUser) {
         await fetchUserProfile(currentUser);
       }
-    }
+    },
   });
 
   const handleSaveProfile = async (e?: React.FormEvent) => {
@@ -205,23 +239,26 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         notifyOrderStatus,
         notifyBilledUpdates,
         notifyCancelApproval,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
       const docRef = doc(db, 'users', currentUser.uid);
       await updateDoc(docRef, updatedProfile);
-      setProfile((prev) => ({ ...(prev || {}), ...updatedProfile } as UserProfile));
+      setProfile((prev) => ({ ...(prev || {}), ...updatedProfile }) as UserProfile);
       setIsEditingProfile(false);
       toast({
         title: t('Profile Updated', 'Profil Dikemas Kini'),
-        description: t('Your profile details have been saved.', 'Butiran profil anda telah disimpan.'),
-        variant: 'success'
+        description: t(
+          'Your profile details have been saved.',
+          'Butiran profil anda telah disimpan.'
+        ),
+        variant: 'success',
       });
     } catch (err) {
       console.error('Error saving profile:', err);
       toast({
         title: t('Update Failed', 'Gagal Dikemas Kini'),
         description: t('Could not update profile details.', 'Gagal mengemas kini profil.'),
-        variant: 'error'
+        variant: 'error',
       });
     } finally {
       setIsSaving(false);
@@ -234,8 +271,8 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
     let updatedList: SavedLocation[];
     if (editingLocationId) {
-      updatedList = savedLocations.map(loc => 
-        loc.id === editingLocationId 
+      updatedList = savedLocations.map((loc) =>
+        loc.id === editingLocationId
           ? { ...loc, label: newLocationLabel.trim(), address: newLocationAddress.trim() }
           : loc
       );
@@ -243,7 +280,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       const newLoc: SavedLocation = {
         id: `loc_${Date.now()}`,
         label: newLocationLabel.trim(),
-        address: newLocationAddress.trim()
+        address: newLocationAddress.trim(),
       };
       updatedList = [...savedLocations, newLoc];
     }
@@ -257,23 +294,28 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       setNewLocationLabel('');
       setNewLocationAddress('');
       toast({
-        title: editingLocationId ? t('Location Updated', 'Lokasi Dikemas Kini') : t('Location Added', 'Lokasi Ditambah'),
-        description: t('Your saved delivery locations have been updated.', 'Senarai lokasi penghantaran anda telah dikemas kini.'),
-        variant: 'success'
+        title: editingLocationId
+          ? t('Location Updated', 'Lokasi Dikemas Kini')
+          : t('Location Added', 'Lokasi Ditambah'),
+        description: t(
+          'Your saved delivery locations have been updated.',
+          'Senarai lokasi penghantaran anda telah dikemas kini.'
+        ),
+        variant: 'success',
       });
     } catch (err) {
       console.error('Error saving location:', err);
       toast({
         title: t('Save Failed', 'Gagal Disimpan'),
         description: t('Could not save location.', 'Gagal menyimpan lokasi.'),
-        variant: 'error'
+        variant: 'error',
       });
     }
   };
 
   const handleDeleteLocation = async (id: string) => {
     if (!currentUser) return;
-    const updatedList = savedLocations.filter(loc => loc.id !== id);
+    const updatedList = savedLocations.filter((loc) => loc.id !== id);
     try {
       const docRef = doc(db, 'users', currentUser.uid);
       await updateDoc(docRef, { savedLocations: updatedList });
@@ -281,7 +323,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Location Removed', 'Lokasi Dipadam'),
         description: t('The location has been deleted.', 'Lokasi telah dipadamkan.'),
-        variant: 'success'
+        variant: 'success',
       });
     } catch (err) {
       console.error('Error deleting location:', err);
@@ -308,7 +350,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Signed Out', 'Telah Log Keluar'),
         description: t('You have been signed out successfully.', 'Anda telah berjaya log keluar.'),
-        variant: 'info'
+        variant: 'info',
       });
     } catch (err) {
       console.error('Sign out error:', err);
@@ -332,9 +374,9 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
-        body: JSON.stringify({ orderId: order.id })
+        body: JSON.stringify({ orderId: order.id }),
       });
 
       const data = await response.json();
@@ -344,8 +386,11 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       toast({
         title: t('Admin Nudged!', 'Admin Telah Diberitahu!'),
-        description: t('We notified restaurant management to send your official invoice email.', 'Pengurusan restoran telah diminta menghantar e-mel invois rasmi anda.'),
-        variant: 'success'
+        description: t(
+          'We notified restaurant management to send your official invoice email.',
+          'Pengurusan restoran telah diminta menghantar e-mel invois rasmi anda.'
+        ),
+        variant: 'success',
       });
 
       if (currentUser) {
@@ -356,7 +401,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Request Failed', 'Permintaan Gagal'),
         description: t('Could not notify admin right now.', 'Gagal memberitahu admin.'),
-        variant: 'error'
+        variant: 'error',
       });
     } finally {
       setPokingOrderId(null);
@@ -368,12 +413,14 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Generating PDF...', 'Menjana PDF...'),
         description: t('Preparing invoice document.', 'Menyediakan dokumen invois.'),
-        variant: 'info'
+        variant: 'info',
       });
 
       const fileName = `Invois_Wawasan_${getDisplayInvoiceNo(order)}.pdf`;
-      
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken().catch(() => null) : null;
+
+      const idToken = auth.currentUser
+        ? await auth.currentUser.getIdToken().catch(() => null)
+        : null;
       const headers: Record<string, string> = idToken ? { Authorization: `Bearer ${idToken}` } : {};
 
       const res = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=true`), { headers });
@@ -398,7 +445,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           const savedFile = await Filesystem.writeFile({
             path: fileName,
             data: base64Data,
-            directory: Directory.Cache
+            directory: Directory.Cache,
           });
           await Share.share({
             title: fileName,
@@ -420,7 +467,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Download Failed', 'Muat Turun Gagal'),
         description: t('Could not generate PDF document.', 'Gagal menjana dokumen PDF.'),
-        variant: 'error'
+        variant: 'error',
       });
     }
   };
@@ -436,7 +483,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
     if (selectedOrders.size === orders.length) {
       setSelectedOrders(new Set());
     } else {
-      setSelectedOrders(new Set(orders.map(o => o.id!).filter(Boolean)));
+      setSelectedOrders(new Set(orders.map((o) => o.id!).filter(Boolean)));
     }
   };
 
@@ -462,16 +509,20 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       toast({
         title: t('Cancellation Requested', 'Pembatalan Diminta'),
-        description: t('Your cancellation request has been submitted to the admin for review.', 'Permintaan pembatalan anda telah dihantar kepada admin untuk disemak.'),
+        description: t(
+          'Your cancellation request has been submitted to the admin for review.',
+          'Permintaan pembatalan anda telah dihantar kepada admin untuk disemak.'
+        ),
         variant: 'success',
       });
-
-      
     } catch (err) {
       console.error('Error cancelling order:', err);
       toast({
         title: t('Cancellation Failed', 'Permintaan Batal Gagal'),
-        description: err instanceof Error ? err.message : t('Failed to request cancellation.', 'Gagal meminta pembatalan.'),
+        description:
+          err instanceof Error
+            ? err.message
+            : t('Failed to request cancellation.', 'Gagal meminta pembatalan.'),
         variant: 'error',
       });
     } finally {
@@ -501,16 +552,20 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
 
       toast({
         title: t('Order Deleted', 'Tempahan Dipadam'),
-        description: t('The order has been removed from your history.', 'Tempahan telah dipadam daripada sejarah anda.'),
+        description: t(
+          'The order has been removed from your history.',
+          'Tempahan telah dipadam daripada sejarah anda.'
+        ),
         variant: 'success',
       });
-
-      
     } catch (err) {
       console.error('Error deleting order:', err);
       toast({
         title: t('Deletion Failed', 'Padam Gagal'),
-        description: err instanceof Error ? err.message : t('Failed to delete order.', 'Gagal memadamkan tempahan.'),
+        description:
+          err instanceof Error
+            ? err.message
+            : t('Failed to delete order.', 'Gagal memadamkan tempahan.'),
         variant: 'error',
       });
     } finally {
@@ -524,26 +579,31 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       toast({
         title: t('Generating PDF...', 'Menjana PDF...'),
         description: t('Creating consolidated invoice.', 'Sedang mencipta invois gabungan.'),
-        variant: 'info'
+        variant: 'info',
       });
 
-      const selectedOrderData = orders.filter(o => selectedOrders.has(o.id!));
-      const orderIds = selectedOrderData.map(o => o.id);
-      
-      const idToken = auth.currentUser ? await auth.currentUser.getIdToken().catch(() => null) : null;
+      const selectedOrderData = orders.filter((o) => selectedOrders.has(o.id!));
+      const orderIds = selectedOrderData.map((o) => o.id);
+
+      const idToken = auth.currentUser
+        ? await auth.currentUser.getIdToken().catch(() => null)
+        : null;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       };
 
       const res = await fetch(getApiUrl('/api/invoice/combined/pdf'), {
         method: 'POST',
         headers,
-        body: JSON.stringify({ orderIds, includeNotes: withNotes, lang: language })
+        body: JSON.stringify({ orderIds, includeNotes: withNotes, lang: language }),
       });
-      if (!res.ok) throw new Error('Failed to fetch combined PDF');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to fetch combined PDF');
+      }
       const blob = await res.blob();
-      
+
       const fileName = `Invois_Gabungan_Wawasan_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
@@ -564,7 +624,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           const savedFile = await Filesystem.writeFile({
             path: fileName,
             data: base64Data,
-            directory: Directory.Cache
+            directory: Directory.Cache,
           });
           await Share.share({
             title: fileName,
@@ -581,19 +641,22 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
         a.click();
         URL.revokeObjectURL(url);
       }
-      
+
       setSelectedOrders(new Set());
       toast({
         title: t('Success', 'Berjaya'),
         description: t('Consolidated invoice generated.', 'Invois gabungan telah dijana.'),
-        variant: 'success'
+        variant: 'success',
       });
     } catch (err) {
       console.error('Failed to generate combined PDF:', err);
       toast({
         title: t('Error', 'Ralat'),
-        description: t('Failed to generate combined invoice.', 'Gagal menjana invois gabungan.'),
-        variant: 'error'
+        description:
+          err instanceof Error
+            ? err.message
+            : t('Failed to generate combined invoice.', 'Gagal menjana invois gabungan.'),
+        variant: 'error',
       });
     }
   };
@@ -601,21 +664,27 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   if (!isEmbedded && !isOpen) return null;
 
   const content = (
-    <div className={cn(
-      "profile-dashboard relative w-full bg-cream dark:bg-background flex flex-col z-10",
-      isEmbedded ? "h-auto" : "h-full max-w-xl border-l border-border shadow-2xl"
-    )}>
+    <div
+      className={cn(
+        'profile-dashboard relative w-full bg-cream dark:bg-background flex flex-col z-10',
+        isEmbedded ? 'h-auto' : 'h-full max-w-xl border-l border-border shadow-2xl'
+      )}
+    >
       {/* Pull to Refresh Pak Usop Indicator */}
-      <motion.div 
+      <motion.div
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none"
-        animate={{ 
+        animate={{
           y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 100, 20)),
           opacity: pullDistance > 20 || isRefreshing ? 1 : 0,
         }}
       >
         <div className="relative overflow-hidden w-20 h-20 sm:w-24 sm:h-24 rounded-b-[2rem] bg-amber-500/10 shadow-lg border-b border-l border-r border-[var(--color-sunshine-cta)]/30 flex items-end justify-center backdrop-blur-md pb-2">
           <WawasanLoader size={64} />
-          <span className="sr-only">{isRefreshing ? t('Refreshing', 'Memuat semula') : t('Pull to refresh', 'Tarik untuk muat semula')}</span>
+          <span className="sr-only">
+            {isRefreshing
+              ? t('Refreshing', 'Memuat semula')
+              : t('Pull to refresh', 'Tarik untuk muat semula')}
+          </span>
         </div>
       </motion.div>
 
@@ -636,7 +705,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 relative z-10">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -679,33 +748,53 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
       <div className="profile-overview">
         <div className="profile-welcome">
           <div className="profile-avatar" aria-hidden="true">
-            {Array.from((profile?.name || currentUser?.displayName || 'W').trim())[0]?.toLocaleUpperCase() || 'W'}
+            {Array.from(
+              (profile?.name || currentUser?.displayName || 'W').trim()
+            )[0]?.toLocaleUpperCase() || 'W'}
           </div>
           <div className="min-w-0">
             <p>{t('Welcome back,', 'Selamat kembali,')}</p>
-            <h2>{profile?.name || currentUser?.displayName || t('Welcome to Wawasan', 'Selamat datang ke Wawasan')}</h2>
+            <h2>
+              {profile?.name ||
+                currentUser?.displayName ||
+                t('Welcome to Wawasan', 'Selamat datang ke Wawasan')}
+            </h2>
           </div>
         </div>
         <section
           className="profile-summary"
           aria-label={t('Your account summary', 'Ringkasan akaun anda')}
-          style={{ '--profile-batik': `url("${getAssetUrl('/assets/heritage/batik_pattern.jpg')}")` } as CSSProperties}
+          style={
+            {
+              '--profile-batik': `url("${getAssetUrl('/assets/heritage/batik_pattern.jpg')}")`,
+            } as CSSProperties
+          }
         >
           <p>{t('YOUR SPACE WITH WAWASAN', 'RUANG ANDA BERSAMA WAWASAN')}</p>
-          <h3>{t('Orders in order.', 'Tempahan teratur.')}<br />{t('The same Wawasan flavour.', 'Rasa tetap Wawasan.')}</h3>
+          <h3>
+            {t('Orders in order.', 'Tempahan teratur.')}
+            <br />
+            {t('The same Wawasan flavour.', 'Rasa tetap Wawasan.')}
+          </h3>
           <dl className="profile-summary-counts">
-            <div><dt>{isLoadingOrders || ordersError ? '—' : orders.length}</dt><dd>{t('orders', 'tempahan')}</dd></div>
-            <div><dt>{isLoadingProfile ? '—' : savedLocations.length}</dt><dd>{t('saved locations', 'lokasi disimpan')}</dd></div>
+            <div>
+              <dt>{isLoadingOrders || ordersError ? '—' : orders.length}</dt>
+              <dd>{t('orders', 'tempahan')}</dd>
+            </div>
+            <div>
+              <dt>{isLoadingProfile ? '—' : savedLocations.length}</dt>
+              <dd>{t('saved locations', 'lokasi disimpan')}</dd>
+            </div>
           </dl>
         </section>
       </div>
       <ProfileNavigation idPrefix={profileId} value={activeTab} onChange={setActiveTab} t={t} />
 
       {/* Content Scrollable Area */}
-      <motion.div 
+      <motion.div
         className={cn(
-          "profile-tab-content flex-1 space-y-6 font-sans",
-          isEmbedded ? "overflow-y-visible" : "overflow-y-auto pb-24"
+          'profile-tab-content flex-1 space-y-6 font-sans',
+          isEmbedded ? 'overflow-y-visible' : 'overflow-y-auto pb-24'
         )}
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
@@ -718,89 +807,89 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           className="profile-tab-panel"
           tabIndex={0}
         >
-        {activeTab === 'orders' && (
-          <ProfileOrdersTab
-            orders={orders}
-            isLoadingOrders={isLoadingOrders}
-            ordersError={ordersError}
-            onRetryOrders={() => setOrdersRetryKey(value => value + 1)}
-            language={language}
-            selectedOrders={selectedOrders}
-            isSelectMode={isSelectMode}
-            setIsSelectMode={setIsSelectMode}
-            setShowCombineModal={setShowCombineModal}
-            handleToggleOrderSelect={handleToggleOrderSelect}
-            handleSelectAllForCombine={handleSelectAllForCombine}
-            onReorder={onReorder}
-            handleRequestInvoiceEmail={handleRequestInvoiceEmail}
-            pokingOrderId={pokingOrderId}
-            setPreviewOrder={setPreviewOrder}
-            setConfirmDialog={setConfirmDialog}
-            cancellingOrderId={cancellingOrderId}
-            deletingOrderId={deletingOrderId}
-            setTrackingOrder={setTrackingOrder}
-            t={t}
-          />
-        )}
+          {activeTab === 'orders' && (
+            <ProfileOrdersTab
+              orders={orders}
+              isLoadingOrders={isLoadingOrders}
+              ordersError={ordersError}
+              onRetryOrders={() => setOrdersRetryKey((value) => value + 1)}
+              language={language}
+              selectedOrders={selectedOrders}
+              isSelectMode={isSelectMode}
+              setIsSelectMode={setIsSelectMode}
+              setShowCombineModal={setShowCombineModal}
+              handleToggleOrderSelect={handleToggleOrderSelect}
+              handleSelectAllForCombine={handleSelectAllForCombine}
+              onReorder={onReorder}
+              handleRequestInvoiceEmail={handleRequestInvoiceEmail}
+              pokingOrderId={pokingOrderId}
+              setPreviewOrder={setPreviewOrder}
+              setConfirmDialog={setConfirmDialog}
+              cancellingOrderId={cancellingOrderId}
+              deletingOrderId={deletingOrderId}
+              setTrackingOrder={setTrackingOrder}
+              t={t}
+            />
+          )}
 
-        {activeTab === 'profile' && (
-          <ProfileInfoTab
-            profile={profile}
-            isLoadingProfile={isLoadingProfile}
-            isEditing={isEditingProfile}
-            setIsEditing={setIsEditingProfile}
-            editName={editName}
-            setEditName={setEditName}
-            editContact={editContact}
-            setEditContact={setEditContact}
-            editTo={editTo}
-            setEditTo={setEditTo}
-            editAttn={editAttn}
-            setEditAttn={setEditAttn}
-            editDepartment={editDepartment}
-            setEditDepartment={setEditDepartment}
-            editInitials={editInitials}
-            setEditInitials={setEditInitials}
-            selectedCompany={selectedCompany}
-            setSelectedCompany={setSelectedCompany}
-            handleSaveProfile={handleSaveProfile}
-            isSaving={isSaving}
-            t={t}
-          />
-        )}
+          {activeTab === 'profile' && (
+            <ProfileInfoTab
+              profile={profile}
+              isLoadingProfile={isLoadingProfile}
+              isEditing={isEditingProfile}
+              setIsEditing={setIsEditingProfile}
+              editName={editName}
+              setEditName={setEditName}
+              editContact={editContact}
+              setEditContact={setEditContact}
+              editTo={editTo}
+              setEditTo={setEditTo}
+              editAttn={editAttn}
+              setEditAttn={setEditAttn}
+              editDepartment={editDepartment}
+              setEditDepartment={setEditDepartment}
+              editInitials={editInitials}
+              setEditInitials={setEditInitials}
+              selectedCompany={selectedCompany}
+              setSelectedCompany={setSelectedCompany}
+              handleSaveProfile={handleSaveProfile}
+              isSaving={isSaving}
+              t={t}
+            />
+          )}
 
-        {activeTab === 'locations' && (
-          <ProfileLocationsTab
-            savedLocations={savedLocations}
-            isAddingLocation={isAddingLocation}
-            setIsAddingLocation={setIsAddingLocation}
-            editingLocationId={editingLocationId}
-            setEditingLocationId={setEditingLocationId}
-            newLocationLabel={newLocationLabel}
-            setNewLocationLabel={setNewLocationLabel}
-            newLocationAddress={newLocationAddress}
-            setNewLocationAddress={setNewLocationAddress}
-            handleAddLocation={handleAddLocation}
-            handleEditLocationClick={handleEditLocationClick}
-            handleDeleteLocation={handleDeleteLocation}
-            t={t}
-            tGlobal={tGlobal}
-          />
-        )}
+          {activeTab === 'locations' && (
+            <ProfileLocationsTab
+              savedLocations={savedLocations}
+              isAddingLocation={isAddingLocation}
+              setIsAddingLocation={setIsAddingLocation}
+              editingLocationId={editingLocationId}
+              setEditingLocationId={setEditingLocationId}
+              newLocationLabel={newLocationLabel}
+              setNewLocationLabel={setNewLocationLabel}
+              newLocationAddress={newLocationAddress}
+              setNewLocationAddress={setNewLocationAddress}
+              handleAddLocation={handleAddLocation}
+              handleEditLocationClick={handleEditLocationClick}
+              handleDeleteLocation={handleDeleteLocation}
+              t={t}
+              tGlobal={tGlobal}
+            />
+          )}
 
-        {activeTab === 'preferences' && (
-          <ProfilePreferencesTab
-            notifyOrderStatus={notifyOrderStatus}
-            setNotifyOrderStatus={setNotifyOrderStatus}
-            notifyBilledUpdates={notifyBilledUpdates}
-            setNotifyBilledUpdates={setNotifyBilledUpdates}
-            notifyCancelApproval={notifyCancelApproval}
-            setNotifyCancelApproval={setNotifyCancelApproval}
-            handleSavePreferences={() => handleSaveProfile()}
-            isSaving={isSaving}
-            t={t}
-          />
-        )}
+          {activeTab === 'preferences' && (
+            <ProfilePreferencesTab
+              notifyOrderStatus={notifyOrderStatus}
+              setNotifyOrderStatus={setNotifyOrderStatus}
+              notifyBilledUpdates={notifyBilledUpdates}
+              setNotifyBilledUpdates={setNotifyBilledUpdates}
+              notifyCancelApproval={notifyCancelApproval}
+              setNotifyCancelApproval={setNotifyCancelApproval}
+              handleSavePreferences={() => handleSaveProfile()}
+              isSaving={isSaving}
+              t={t}
+            />
+          )}
         </div>
       </motion.div>
     </div>
@@ -809,7 +898,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
   const combineModal = (
     <AnimatePresence>
       {showCombineModal && (
-        <div key="combine-modal" className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+        <div
+          key="combine-modal"
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-4"
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -828,7 +920,10 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 {t('Invoice Layout', 'Susun Atur Invois')}
               </h3>
               <p className="text-xs text-stone dark:text-stone/75 leading-relaxed">
-                {t('Would you like to include the "Notes" section in this consolidated invoice?', 'Adakah anda ingin memasukkan bahagian "Nota" dalam invois gabungan ini?')}
+                {t(
+                  'Would you like to include the "Notes" section in this consolidated invoice?',
+                  'Adakah anda ingin memasukkan bahagian "Nota" dalam invois gabungan ini?'
+                )}
               </p>
             </div>
 
@@ -852,7 +947,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
                 {t('No, hide Notes', 'Tidak, sembunyikan Nota')}
               </button>
             </div>
-            
+
             <button
               onClick={() => setShowCombineModal(false)}
               className="absolute top-4 right-4 p-2 text-stone hover:text-deep-forest hover:bg-black/5 rounded-xl transition-colors"
@@ -887,10 +982,7 @@ export default function UserProfileDashboard({ isOpen, onClose, onReorder, isEmb
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setConfirmDialog(null)}
-          >
+          <Button variant="outline" onClick={() => setConfirmDialog(null)}>
             {t('Cancel', 'Batal')}
           </Button>
           <Button

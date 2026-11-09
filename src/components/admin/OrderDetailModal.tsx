@@ -2,17 +2,7 @@ import { canViewRiderTracking } from '@/lib/riderTracking';
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { 
-  X, 
-  Loader2, 
-  CheckCircle, 
-  XCircle, 
-  Send,
-  Copy,
-  Trash2,
-  Truck,
-  MapPin
-} from 'lucide-react';
+import { X, Loader2, CheckCircle, XCircle, Send, Copy, Trash2, Truck, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +14,7 @@ import type { Order } from '@/types';
 import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 
 interface OrderDetailModalProps {
+  onReadOrder?: (order: Order) => void;
   isOpen: boolean;
   onClose: () => void;
   selectedOrder: Order | null;
@@ -52,6 +43,7 @@ const MEAL_LABELS: Record<string, { en: string; bm: string }> = {
 };
 
 export function OrderDetailModal({
+  onReadOrder,
   isOpen,
   onClose,
   selectedOrder,
@@ -88,7 +80,7 @@ export function OrderDetailModal({
     >
       {/* Backdrop with blur - separate from content to avoid layout issues */}
       <div className="absolute inset-0 bg-deep-forest/80 backdrop-blur-md" />
-      
+
       <motion.div
         ref={modalRef}
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -99,31 +91,55 @@ export function OrderDetailModal({
         id="order-detail-dialog-container"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-white/60 dark:bg-stone-900/60 backdrop-blur-md shrink-0" id="order-detail-header">
+        <div
+          className="px-6 py-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-white/60 dark:bg-stone-900/60 backdrop-blur-md shrink-0"
+          id="order-detail-header"
+        >
           <div className="flex-1 min-w-0 pr-4">
-            <h2 id="order-detail-title" className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
+            <h2
+              id="order-detail-title"
+              className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate"
+            >
               {t('order_details')}
             </h2>
+            {selectedOrder && onReadOrder && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  onClose();
+                  onReadOrder(selectedOrder);
+                }}
+              >
+                {language === 'bm' ? 'Kad Bacaan Besar' : 'Large Reading Card'}
+              </Button>
+            )}
             {selectedOrder && (
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 font-sans font-medium">
-                  {selectedOrder.invoiceNo || selectedOrder.id ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}` : ''}
+                  {selectedOrder.invoiceNo || selectedOrder.id
+                    ? `Ref: ${selectedOrder.invoiceNo || selectedOrder.id}`
+                    : ''}
                 </p>
                 {(selectedOrder.invoiceNo || selectedOrder.id) && (
-                  <button 
+                  <button
                     onClick={async (e) => {
                       e.stopPropagation();
                       const text = selectedOrder.invoiceNo || selectedOrder.id;
                       if (!text) return;
-                      
+
                       try {
                         const { Clipboard } = await import('@capacitor/clipboard');
                         await Clipboard.write({ string: text });
                         toast({
-                          title: language === 'bm' ? "Disalin!" : "Copied!",
-                          description: language === 'bm' ? "ID pesanan disalin ke papan keratan" : "Order ID copied to clipboard",
-                          variant: "success",
-                          duration: 2000
+                          title: language === 'bm' ? 'Disalin!' : 'Copied!',
+                          description:
+                            language === 'bm'
+                              ? 'ID pesanan disalin ke papan keratan'
+                              : 'Order ID copied to clipboard',
+                          variant: 'success',
+                          duration: 2000,
                         });
                       } catch (err) {
                         console.error('Clipboard failed', err);
@@ -151,137 +167,190 @@ export function OrderDetailModal({
         </div>
 
         {/* Body - Scrollable Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 sm:p-8" id="order-detail-body">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 sm:p-8"
+          id="order-detail-body"
+        >
           {selectedOrder ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-              
               {/* Main section: All submission fields strictly aligned */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white dark:bg-[var(--ui-canvas)] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
                   {[
-                    { 
-                      label: "EVENT DATE :", 
-                      value: selectedOrder.dateTime 
-                        ? formatDateTimeDisplay(selectedOrder.dateTime) 
-                        : (selectedOrder.eventDate 
-                            ? (selectedOrder.time ? `${formatDateDisplay(selectedOrder.eventDate)} @ ${selectedOrder.time}` : formatDateDisplay(selectedOrder.eventDate)) 
-                            : (selectedOrder.date ? (selectedOrder.time ? `${formatDateDisplay(selectedOrder.date)} @ ${selectedOrder.time}` : formatDateDisplay(selectedOrder.date)) : '-')) 
+                    {
+                      label: 'EVENT DATE :',
+                      value: selectedOrder.dateTime
+                        ? formatDateTimeDisplay(selectedOrder.dateTime)
+                        : selectedOrder.eventDate
+                          ? selectedOrder.time
+                            ? `${formatDateDisplay(selectedOrder.eventDate)} @ ${selectedOrder.time}`
+                            : formatDateDisplay(selectedOrder.eventDate)
+                          : selectedOrder.date
+                            ? selectedOrder.time
+                              ? `${formatDateDisplay(selectedOrder.date)} @ ${selectedOrder.time}`
+                              : formatDateDisplay(selectedOrder.date)
+                            : '-',
                     },
-                    { 
-                      label: "QUANTITY :", 
-                      value: selectedOrder.quantity != null 
-                        ? `${selectedOrder.quantity} pax` 
-                        : (selectedOrder.guests != null ? `${selectedOrder.guests} pax` : '-') 
+                    {
+                      label: 'QUANTITY :',
+                      value:
+                        selectedOrder.quantity != null
+                          ? `${selectedOrder.quantity} pax`
+                          : selectedOrder.guests != null
+                            ? `${selectedOrder.guests} pax`
+                            : '-',
                     },
-                    { 
-                      label: "MEALS :", 
-                      value: selectedOrder.meals && selectedOrder.meals.length > 0 
-                        ? selectedOrder.meals.map(m => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m).join(', ') 
-                        : '-' 
+                    {
+                      label: 'MEALS :',
+                      value:
+                        selectedOrder.meals && selectedOrder.meals.length > 0
+                          ? selectedOrder.meals
+                              .map((m) => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m)
+                              .join(', ')
+                          : '-',
                     },
-                    { 
-                      label: "MENU DETAILS :", 
-                      value: selectedOrder.menu || (selectedOrder.dishes && selectedOrder.dishes.length > 0 ? selectedOrder.dishes.join(', ') : '-') 
+                    {
+                      label: 'MENU DETAILS :',
+                      value:
+                        selectedOrder.menu ||
+                        (selectedOrder.dishes && selectedOrder.dishes.length > 0
+                          ? selectedOrder.dishes.join(', ')
+                          : '-'),
                     },
-                    { 
-                      label: "PREPARATION TYPE :", 
-                      value: selectedOrder.preparationType === 'meal_box' 
-                        ? 'Meal Box' 
-                        : selectedOrder.preparationType === 'buffet' 
-                          ? 'Buffet' 
-                          : '-' 
+                    {
+                      label: 'PREPARATION TYPE :',
+                      value:
+                        selectedOrder.preparationType === 'meal_box'
+                          ? 'Meal Box'
+                          : selectedOrder.preparationType === 'buffet'
+                            ? 'Buffet'
+                            : '-',
                     },
-                    { 
-                      label: "EVENT LOCATION :", 
-                      value: selectedOrder.location || '-' 
+                    {
+                      label: 'EVENT LOCATION :',
+                      value: selectedOrder.location || '-',
                     },
-                    { 
-                      label: "SUBMITTED DATE :", 
-                      value: formatDateTimeDisplay(selectedOrder.createdAt) 
+                    {
+                      label: 'SUBMITTED DATE :',
+                      value: formatDateTimeDisplay(selectedOrder.createdAt),
                     },
-                    { 
-                      label: "CLIENT / ORGANIZATION :", 
-                      value: selectedOrder.to || selectedOrder.company || '-' 
+                    {
+                      label: 'CLIENT / ORGANIZATION :',
+                      value: selectedOrder.to || selectedOrder.company || '-',
                     },
-                    selectedOrder.department ? { 
-                      label: language === 'bm' ? "DEPARTMENT :" : "DEPARTMENT :", 
-                      value: selectedOrder.department 
-                    } : null,
-                    { 
-                      label: language === 'bm' ? "ATTN :" : "ATTN :", 
-                      value: selectedOrder.attn || '-' 
+                    selectedOrder.department
+                      ? {
+                          label: language === 'bm' ? 'DEPARTMENT :' : 'DEPARTMENT :',
+                          value: selectedOrder.department,
+                        }
+                      : null,
+                    {
+                      label: language === 'bm' ? 'ATTN :' : 'ATTN :',
+                      value: selectedOrder.attn || '-',
                     },
-                    { 
-                      label: language === 'bm' ? "CONTACT PERSON :" : "CONTACT PERSON :", 
-                      value: selectedOrder.name || '-' 
+                    {
+                      label: language === 'bm' ? 'CONTACT PERSON :' : 'CONTACT PERSON :',
+                      value: selectedOrder.name || '-',
                     },
-                    { 
-                      label: language === 'bm' ? "CONTACT NUMBER :" : "CONTACT NUMBER :", 
-                      value: selectedOrder.contact || '-' 
+                    {
+                      label: language === 'bm' ? 'CONTACT NUMBER :' : 'CONTACT NUMBER :',
+                      value: selectedOrder.contact || '-',
                     },
-                    selectedOrder.email ? { 
-                      label: language === 'bm' ? "EMAIL ADDRESS :" : "EMAIL ADDRESS :", 
-                      value: selectedOrder.email 
-                    } : null,
-                    selectedOrder.notes ? { 
-                      label: language === 'bm' ? "NOTES :" : "NOTES :", 
-                      value: selectedOrder.notes 
-                    } : null,
-                  ].filter(Boolean).map((field, idx) => (
-                    <div key={idx} className="pb-5 border-b border-stone-100 dark:border-stone-800/80 last:border-0 last:pb-0">
-                      <span className="text-xs sm:text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1.5">
-                        {field!.label}
-                      </span>
-                      <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug break-words max-w-[70ch] whitespace-pre-line">
-                        {field!.value}
-                      </p>
-                    </div>
-                  ))}
+                    selectedOrder.email
+                      ? {
+                          label: language === 'bm' ? 'EMAIL ADDRESS :' : 'EMAIL ADDRESS :',
+                          value: selectedOrder.email,
+                        }
+                      : null,
+                    selectedOrder.notes
+                      ? {
+                          label: language === 'bm' ? 'NOTES :' : 'NOTES :',
+                          value: selectedOrder.notes,
+                        }
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .map((field, idx) => (
+                      <div
+                        key={idx}
+                        className="pb-5 border-b border-stone-100 dark:border-stone-800/80 last:border-0 last:pb-0"
+                      >
+                        <span className="text-xs sm:text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1.5">
+                          {field!.label}
+                        </span>
+                        <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug break-words max-w-[70ch] whitespace-pre-line">
+                          {field!.value}
+                        </p>
+                      </div>
+                    ))}
                 </div>
               </div>
 
               {/* Sidebar section: Status & Pricing */}
               <div className="lg:col-span-1 space-y-6">
-                
                 {/* Status Banner */}
                 <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[var(--ui-canvas)] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-4">
-                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">Status</span>
+                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">
+                    Status
+                  </span>
                   <div className="flex items-center justify-between">
                     {getStatusBadge(selectedOrder.status)}
                   </div>
-                  {handleUpdateStatus && selectedOrder.id && ['approved', 'billed', 'in_transit', 'delivered'].includes(selectedOrder.status?.toLowerCase() || '') && (
-                    <div className="pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-2">
-                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">
-                        {language === 'bm' ? 'Kemaskini Penghantaran :' : 'Update Delivery :'}
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          size="sm"
-                          disabled={isApproving || !['approved', 'billed'].includes(selectedOrder.status?.toLowerCase() || '')}
-                          onClick={() => handleUpdateStatus(selectedOrder.id!, 'in_transit')}
-                          className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
-                        >
-                          <Truck className="w-3.5 h-3.5" />
-                          <span>{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={isApproving || selectedOrder.status?.toLowerCase() === 'delivered'}
-                          onClick={() => handleUpdateStatus(selectedOrder.id!, 'delivered')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>{language === 'bm' ? 'Dihantar / Selesai' : 'Mark Delivered'}</span>
-                        </Button>
+                  {handleUpdateStatus &&
+                    selectedOrder.id &&
+                    ['approved', 'billed', 'in_transit', 'delivered'].includes(
+                      selectedOrder.status?.toLowerCase() || ''
+                    ) && (
+                      <div className="pt-3 border-t border-stone-100 dark:border-stone-800/80 space-y-2">
+                        <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest block">
+                          {language === 'bm' ? 'Kemaskini Penghantaran :' : 'Update Delivery :'}
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            size="sm"
+                            disabled={
+                              isApproving ||
+                              !['approved', 'billed'].includes(
+                                selectedOrder.status?.toLowerCase() || ''
+                              )
+                            }
+                            onClick={() => handleUpdateStatus(selectedOrder.id!, 'in_transit')}
+                            className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            <span>{language === 'bm' ? 'Dalam Perjalanan' : 'In Transit'}</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={
+                              isApproving || selectedOrder.status?.toLowerCase() === 'delivered'
+                            }
+                            onClick={() => handleUpdateStatus(selectedOrder.id!, 'delivered')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-9 flex items-center justify-center gap-1.5"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>
+                              {language === 'bm' ? 'Dihantar / Selesai' : 'Mark Delivered'}
+                            </span>
+                          </Button>
+                        </div>
                       </div>
-
-                    </div>
-                  )}
-                  {handleTrack && selectedOrder.id && canViewRiderTracking(selectedOrder.status) && (
-                    <Button size="sm" onClick={() => { onClose(); handleTrack(selectedOrder); }} className="w-full min-h-11 rounded-xl bg-orange-600 hover:bg-orange-700 text-white gap-2">
-                      <MapPin className="w-4 h-4" />{language === 'bm' ? 'Jejak penghantaran' : 'Track delivery'}
-                    </Button>
-                  )}
+                    )}
+                  {handleTrack &&
+                    selectedOrder.id &&
+                    canViewRiderTracking(selectedOrder.status) && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          onClose();
+                          handleTrack(selectedOrder);
+                        }}
+                        className="w-full min-h-11 rounded-xl bg-orange-600 hover:bg-orange-700 text-white gap-2"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        {language === 'bm' ? 'Jejak penghantaran' : 'Track delivery'}
+                      </Button>
+                    )}
                 </div>
 
                 {/* Pricing and Grand Total */}
@@ -296,17 +365,21 @@ export function OrderDetailModal({
                           {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
                         </Label>
                         <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">RM</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                            RM
+                          </span>
                           <Input
                             id={`meal-price-${meal}`}
                             type="number"
                             min="0"
                             step="0.01"
                             value={prices[meal] || ''}
-                            onChange={(e) => setPrices(prev => ({ 
-                              ...prev, 
-                              [meal]: e.target.value 
-                            }))}
+                            onChange={(e) =>
+                              setPrices((prev) => ({
+                                ...prev,
+                                [meal]: e.target.value,
+                              }))
+                            }
                             className="pl-11 h-11 bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white text-base font-bold rounded-xl focus:ring-orange-500/20"
                             placeholder="0.00"
                           />
@@ -318,36 +391,47 @@ export function OrderDetailModal({
                   {/* Total Preview */}
                   <div className="p-4 bg-orange-500/5 dark:bg-orange-500/10 rounded-xl border border-orange-500/20">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">{t('grand_total')}:</span>
+                      <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
+                        {t('grand_total')}:
+                      </span>
                       <span className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400">
-                        RM {selectedOrder.meals.reduce((total, meal) => {
-                          const price = parseFloat(prices[meal] || '0');
-                          return total + (price * selectedOrder.quantity);
-                        }, 0).toFixed(2)}
+                        RM{' '}
+                        {selectedOrder.meals
+                          .reduce((total, meal) => {
+                            const price = parseFloat(prices[meal] || '0');
+                            return total + price * selectedOrder.quantity;
+                          }, 0)
+                          .toFixed(2)}
                       </span>
                     </div>
                     <p className="text-xs text-stone-500 dark:text-stone-400 italic leading-relaxed font-medium">
-                      {numberToWords(selectedOrder.meals.reduce((total, meal) => {
-                        const price = parseFloat(prices[meal] || '0');
-                        return total + (price * selectedOrder.quantity);
-                      }, 0), selectedOrder.lang)}
+                      {numberToWords(
+                        selectedOrder.meals.reduce((total, meal) => {
+                          const price = parseFloat(prices[meal] || '0');
+                          return total + price * selectedOrder.quantity;
+                        }, 0),
+                        selectedOrder.lang
+                      )}
                     </p>
                   </div>
                 </div>
-
               </div>
-
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center space-y-4 text-stone-400">
               <WawasanLoader size={64} />
-              <p className="font-semibold text-xs tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">Loading order details...</p>
+              <p className="font-semibold text-xs tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">
+                Loading order details...
+              </p>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-stone-200 dark:border-stone-800 bg-white/60 dark:bg-stone-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0" id="order-detail-footer">
+        <div
+          className="px-6 py-4 border-t border-stone-200 dark:border-stone-800 bg-white/60 dark:bg-stone-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0"
+          id="order-detail-footer"
+        >
           {selectedOrder && (
             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
               {selectedOrder?.status === 'cancel_requested' ? (
@@ -358,7 +442,11 @@ export function OrderDetailModal({
                     disabled={isApproving}
                     className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {isApproving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
                     {t('approve_cancellation') || 'Approve Cancellation'}
                   </Button>
                   <Button
@@ -377,10 +465,24 @@ export function OrderDetailModal({
                   <Button
                     id="btn-approve-pending"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
-                    disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                    disabled={
+                      isApproving ||
+                      !selectedOrder ||
+                      selectedOrder.meals.some(
+                        (m) =>
+                          prices[m] === undefined ||
+                          prices[m] === '' ||
+                          isNaN(parseFloat(prices[m])) ||
+                          parseFloat(prices[m]) < 0
+                      )
+                    }
                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {isApproving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
                     {language === 'bm' ? 'Tetapkan Harga & Dibilkan' : 'Set Pricing & Bill Order'}
                   </Button>
                   <Button
@@ -394,15 +496,29 @@ export function OrderDetailModal({
                     {t('reject_order') || 'Reject Order'}
                   </Button>
                 </>
-              ) : (selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed') ? (
+              ) : selectedOrder?.status === 'approved' || selectedOrder?.status === 'billed' ? (
                 <>
                   <Button
                     id="btn-update-invoice"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
-                    disabled={isApproving || !selectedOrder || selectedOrder.meals.some(m => prices[m] === undefined || prices[m] === '' || isNaN(parseFloat(prices[m])) || parseFloat(prices[m]) < 0)}
+                    disabled={
+                      isApproving ||
+                      !selectedOrder ||
+                      selectedOrder.meals.some(
+                        (m) =>
+                          prices[m] === undefined ||
+                          prices[m] === '' ||
+                          isNaN(parseFloat(prices[m])) ||
+                          parseFloat(prices[m]) < 0
+                      )
+                    }
                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
-                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {isApproving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
                     {t('update_invoice') || 'Update Invoice'}
                   </Button>
                   <Button

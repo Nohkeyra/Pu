@@ -1,9 +1,13 @@
-import type express from "express";
-import { initializeApp, cert, getApps, type App } from "firebase-admin/app";
-import { getFirestore as getFirestoreModular, Timestamp, FieldValue } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
-import { getMessaging } from "firebase-admin/messaging";
-import { firebaseConfig, STRICT_FIREBASE_ADMIN } from "./config.js";
+import type express from 'express';
+import { initializeApp, cert, getApps, type App } from 'firebase-admin/app';
+import {
+  getFirestore as getFirestoreModular,
+  Timestamp,
+  FieldValue,
+} from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { getMessaging } from 'firebase-admin/messaging';
+import { firebaseConfig, STRICT_FIREBASE_ADMIN } from './config.js';
 
 let adminApp: App | undefined;
 let memoryFirestoreInstance: any = null;
@@ -43,7 +47,8 @@ class MemoryFirestore {
           }
         },
         update: async (data: any) => {
-          if (!col.has(docId)) throw new Error(`NOT_FOUND: Document ${name}/${docId} does not exist`);
+          if (!col.has(docId))
+            throw new Error(`NOT_FOUND: Document ${name}/${docId} does not exist`);
           const existing = col.get(docId);
           col.set(docId, { ...existing, ...data });
         },
@@ -56,8 +61,14 @@ class MemoryFirestore {
     // Immutable query descriptors mimic Firestore chaining. Previously these were
     // no-ops, so tests could pass with records a real Firestore query excludes.
     type Filter = { field: string; operator: string; expected: any };
-    const makeQuery = (filters: Filter[] = [], ordering: Array<{ field: string; direction: string }> = [], maxResults?: number, cursor?: any): any => {
-      const readField = (record: any, field: string) => field.split('.').reduce((value, key) => value?.[key], record);
+    const makeQuery = (
+      filters: Filter[] = [],
+      ordering: Array<{ field: string; direction: string }> = [],
+      maxResults?: number,
+      cursor?: any
+    ): any => {
+      const readField = (record: any, field: string) =>
+        field.split('.').reduce((value, key) => value?.[key], record);
       const compare = (a: any, b: any): number => {
         if (a === b) return 0;
         if (a === undefined || a === null) return -1;
@@ -76,16 +87,26 @@ class MemoryFirestore {
           if (!['==', '<', '<=', '>', '>=', 'in'].includes(operator)) {
             throw new Error(`Unsupported MemoryFirestore where operator: ${operator}`);
           }
-          return makeQuery([...filters, { field, operator, expected }], ordering, maxResults, cursor);
+          return makeQuery(
+            [...filters, { field, operator, expected }],
+            ordering,
+            maxResults,
+            cursor
+          );
         },
-        orderBy: (field: string, direction = 'asc') => makeQuery(filters, [...ordering, { field, direction }], maxResults, cursor),
+        orderBy: (field: string, direction = 'asc') =>
+          makeQuery(filters, [...ordering, { field, direction }], maxResults, cursor),
         limit: (count: number) => {
           if (!Number.isSafeInteger(count) || count < 0) throw new Error('Invalid query limit');
           return makeQuery(filters, ordering, count, cursor);
         },
         startAfter: (value: any) => makeQuery(filters, ordering, maxResults, value),
         get: async () => {
-          let rows = Array.from(col.entries()).map(([id, data]) => ({ id, data, ref: createDocRef(id) }));
+          let rows = Array.from(col.entries()).map(([id, data]) => ({
+            id,
+            data,
+            ref: createDocRef(id),
+          }));
           for (const { field, operator, expected } of filters) {
             rows = rows.filter(({ data }) => {
               const actual = readField(data, field);
@@ -100,7 +121,9 @@ class MemoryFirestore {
             });
           }
           if (ordering.length) {
-            rows = rows.filter(({ data }) => ordering.every(({ field }) => readField(data, field) !== undefined));
+            rows = rows.filter(({ data }) =>
+              ordering.every(({ field }) => readField(data, field) !== undefined)
+            );
             rows.sort((a, b) => {
               for (const { field, direction } of ordering) {
                 const diff = compare(readField(a.data, field), readField(b.data, field));
@@ -110,16 +133,24 @@ class MemoryFirestore {
             });
           }
           if (cursor !== undefined && ordering.length) {
-            const values = cursor && typeof cursor.data === 'function'
-              ? ordering.map(({ field }) => readField(cursor.data(), field))
-              : [cursor];
-            rows = rows.filter(({ data }) => ordering.some(({ field, direction }, i) => {
-              const diff = compare(readField(data, field), values[i]);
-              return (direction === 'desc' ? -diff : diff) > 0;
-            }));
+            const values =
+              cursor && typeof cursor.data === 'function'
+                ? ordering.map(({ field }) => readField(cursor.data(), field))
+                : [cursor];
+            rows = rows.filter(({ data }) =>
+              ordering.some(({ field, direction }, i) => {
+                const diff = compare(readField(data, field), values[i]);
+                return (direction === 'desc' ? -diff : diff) > 0;
+              })
+            );
           }
           if (maxResults !== undefined) rows = rows.slice(0, maxResults);
-          const docs = rows.map(({ id, data, ref }) => ({ id, ref, data: () => ({ ...data }), exists: true }));
+          const docs = rows.map(({ id, data, ref }) => ({
+            id,
+            ref,
+            data: () => ({ ...data }),
+            exists: true,
+          }));
           return { docs, empty: docs.length === 0, size: docs.length };
         },
       };
@@ -144,7 +175,10 @@ class MemoryFirestore {
       update: (ref: any, data: any) => {
         operations.push(() => {
           const col = this.getCol(ref._colName || 'orders');
-          if (!col.has(ref.id)) throw new Error(`NOT_FOUND: Document ${ref._colName || 'orders'}/${ref.id} does not exist`);
+          if (!col.has(ref.id))
+            throw new Error(
+              `NOT_FOUND: Document ${ref._colName || 'orders'}/${ref.id} does not exist`
+            );
           const existing = col.get(ref.id);
           col.set(ref.id, { ...existing, ...data });
         });
@@ -164,15 +198,23 @@ class MemoryFirestore {
   async runTransaction<T>(updateFunction: (tx: any) => Promise<T>): Promise<T> {
     const previous = this.transactionTail;
     let release!: () => void;
-    this.transactionTail = new Promise<void>(resolve => { release = resolve; });
+    this.transactionTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     await previous;
     try {
       const writes: Array<() => Promise<unknown>> = [];
       const tx = {
         get: async (ref: any) => ref.get(),
-        set: (ref: any, data: any, options?: any) => { writes.push(() => ref.set(data, options)); },
-        update: (ref: any, data: any) => { writes.push(() => ref.update(data)); },
-        delete: (ref: any) => { writes.push(() => ref.delete()); },
+        set: (ref: any, data: any, options?: any) => {
+          writes.push(() => ref.set(data, options));
+        },
+        update: (ref: any, data: any) => {
+          writes.push(() => ref.update(data));
+        },
+        delete: (ref: any) => {
+          writes.push(() => ref.delete());
+        },
       };
       const result = await updateFunction(tx);
       for (const write of writes) await write();
@@ -183,7 +225,7 @@ class MemoryFirestore {
   }
 
   async getAll(...refs: any[]) {
-    return Promise.all(refs.map(ref => (typeof ref.get === 'function' ? ref.get() : ref)));
+    return Promise.all(refs.map((ref) => (typeof ref.get === 'function' ? ref.get() : ref)));
   }
 }
 
@@ -191,7 +233,11 @@ export function hasAdminCredentials(): boolean {
   let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
     ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
     : undefined;
-  if (email && ((email.startsWith('"') && email.endsWith('"')) || (email.startsWith("'") && email.endsWith("'")))) {
+  if (
+    email &&
+    ((email.startsWith('"') && email.endsWith('"')) ||
+      (email.startsWith("'") && email.endsWith("'")))
+  ) {
     email = email.slice(1, -1).trim();
   }
 
@@ -199,7 +245,10 @@ export function hasAdminCredentials(): boolean {
     ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
     : undefined;
   if (privateKey) {
-    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+    if (
+      (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+      (privateKey.startsWith("'") && privateKey.endsWith("'"))
+    ) {
       privateKey = privateKey.slice(1, -1).trim();
     }
   }
@@ -214,7 +263,11 @@ export function getAdminApp(): App {
       let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
         ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
         : undefined;
-      if (email && ((email.startsWith('"') && email.endsWith('"')) || (email.startsWith("'") && email.endsWith("'")))) {
+      if (
+        email &&
+        ((email.startsWith('"') && email.endsWith('"')) ||
+          (email.startsWith("'") && email.endsWith("'")))
+      ) {
         email = email.slice(1, -1).trim();
       }
 
@@ -222,10 +275,13 @@ export function getAdminApp(): App {
         ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
         : undefined;
       if (privateKey) {
-        if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+        if (
+          (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+          (privateKey.startsWith("'") && privateKey.endsWith("'"))
+        ) {
           privateKey = privateKey.slice(1, -1).trim();
         }
-        privateKey = privateKey.replace(/\\n/g, "\n");
+        privateKey = privateKey.replace(/\\n/g, '\n');
       }
 
       if (email && privateKey) {
@@ -239,12 +295,14 @@ export function getAdminApp(): App {
         });
       } else {
         const msg =
-          "Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY. " +
-          "On Render this usually means Firebase Admin cannot authenticate to Firestore, so orders/invoice counters/widgets will fail.";
+          'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY. ' +
+          'On Render this usually means Firebase Admin cannot authenticate to Firestore, so orders/invoice counters/widgets will fail.';
         if (STRICT_FIREBASE_ADMIN) {
           throw new Error(msg);
         }
-        console.warn(msg + " Continuing with Application Default Credentials (not recommended on Render).");
+        console.warn(
+          msg + ' Continuing with Application Default Credentials (not recommended on Render).'
+        );
         adminApp = initializeApp({ projectId: firebaseConfig.projectId });
       }
     } else {
@@ -254,8 +312,10 @@ export function getAdminApp(): App {
   return adminApp;
 }
 
-export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean } | null> {
-  if (!idToken || typeof idToken !== "string") return null;
+export async function verifyFirebaseIdToken(
+  idToken: string
+): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean } | null> {
+  if (!idToken || typeof idToken !== 'string') return null;
 
   if (!hasAdminCredentials()) {
     return null;
@@ -270,14 +330,17 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: str
       admin: decoded.admin === true,
     };
   } catch (err) {
-    console.warn("[Auth] Failed to verify Firebase ID token:", err instanceof Error ? err.message : err);
+    console.warn(
+      '[Auth] Failed to verify Firebase ID token:',
+      err instanceof Error ? err.message : err
+    );
     return null;
   }
 }
 
 export async function verifyCustomerIdToken(req: express.Request): Promise<string | null> {
   const authHeader = req.headers.authorization;
-  const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
   if (!idToken) return null;
 
   const verified = await verifyFirebaseIdToken(idToken);
@@ -285,7 +348,12 @@ export async function verifyCustomerIdToken(req: express.Request): Promise<strin
 }
 
 export function getFirestore(): FirebaseFirestore.Firestore {
-  if (process.env.CI || process.env.NODE_ENV === 'test' || process.env.VITEST === 'true' || process.env.USE_MEMORY_FIRESTORE === 'true') {
+  if (
+    process.env.CI ||
+    process.env.NODE_ENV === 'test' ||
+    process.env.VITEST === 'true' ||
+    process.env.USE_MEMORY_FIRESTORE === 'true'
+  ) {
     if (process.env.NODE_ENV === 'production') {
       // NEVER use memory Firestore in production
       throw new Error('Memory Firestore disabled in production');
@@ -299,11 +367,14 @@ export function getFirestore(): FirebaseFirestore.Firestore {
   const app = getAdminApp();
   const dbId = firebaseConfig.firestoreDatabaseId;
 
-  if (dbId && dbId !== "(default)") {
+  if (dbId && dbId !== '(default)') {
     try {
       return getFirestoreModular(app, dbId);
     } catch (err) {
-      console.warn(`Failed to initialize Firestore with database ID ${dbId}, falling back to default:`, err);
+      console.warn(
+        `Failed to initialize Firestore with database ID ${dbId}, falling back to default:`,
+        err
+      );
       return getFirestoreModular(app);
     }
   }
@@ -331,6 +402,8 @@ export interface OrderData {
   userId?: string | null;
   uid?: string;
   items?: unknown[];
+  billingAddress?: string;
+  invoiceBatchNo?: string;
   to?: string;
   attn?: string;
   contact?: string;
@@ -365,7 +438,9 @@ export async function sendNotificationToTopic(
   data?: Record<string, string>
 ) {
   if (!hasAdminCredentials()) {
-    console.log(`[FCM] Service account credentials not configured; skipping topic notification (${topic}).`);
+    console.log(
+      `[FCM] Service account credentials not configured; skipping topic notification (${topic}).`
+    );
     return null;
   }
   try {
@@ -399,14 +474,21 @@ export async function sendNotificationToTopic(
   }
 }
 
-export async function runWithRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
+export async function runWithRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delayMs = 1000
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      console.warn(`[Firestore Retry] Attempt ${attempt} failed. Retrying in ${delayMs}ms... Error:`, error);
+      console.warn(
+        `[Firestore Retry] Attempt ${attempt} failed. Retrying in ${delayMs}ms... Error:`,
+        error
+      );
       if (attempt < retries) {
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         delayMs *= 2;
@@ -421,7 +503,7 @@ export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | nul
     const raw = orderData.dateTime
       ? new Date(orderData.dateTime)
       : orderData.date
-        ? new Date(`${orderData.date}T${orderData.time || "12:00"}:00+08:00`)
+        ? new Date(`${orderData.date}T${orderData.time || '12:00'}:00+08:00`)
         : null;
     if (!raw || isNaN(raw.getTime())) return null;
     return Timestamp.fromDate(raw);
@@ -430,85 +512,73 @@ export function toEventTimestamp(orderData: Partial<OrderData>): Timestamp | nul
   }
 }
 
+/** Allocate multiple serials in one transaction. Call after the caller's other reads. */
+export async function allocateInvoiceNumbers(
+  tx: FirebaseFirestore.Transaction,
+  count: number,
+  isQuote = false,
+  targetDate?: string | Date,
+  excluded: string[] = []
+): Promise<string[]> {
+  if (!Number.isInteger(count) || count < 1 || count > 100)
+    throw new Error('Invalid invoice count');
+  const db = getFirestore(),
+    date = targetDate ? new Date(targetDate) : new Date();
+  const year = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    year: 'numeric',
+  }).format(isNaN(date.getTime()) ? new Date() : date);
+  const counterRef = db.collection('meta').doc(`invoiceCounter_${year}`),
+    legacyRef = db.collection('meta').doc('invoiceCounter');
+  const [counter, legacy] = await Promise.all([tx.get(counterRef), tx.get(legacyRef)]);
+  let next = Number(counter.data()?.count ?? legacy.data()?.count ?? 0);
+  if (!Number.isSafeInteger(next) || next < 0) throw new Error('Invalid invoice counter');
+  const numbers: string[] = [];
+  while (numbers.length < count) {
+    next++;
+    const number = `RW ${year}-${String(next).padStart(5, '0')}`;
+    if (
+      !(await tx.get(db.collection('invoice_numbers').doc(number))).exists &&
+      !excluded.includes(number)
+    )
+      numbers.push(number);
+  }
+  for (const number of numbers)
+    tx.set(db.collection('invoice_numbers').doc(number), {
+      purpose: isQuote ? 'quote' : 'invoice',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  tx.set(
+    counterRef,
+    { year: Number(year), count: next, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+  tx.set(
+    legacyRef,
+    { count: next, lastYear: Number(year), updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+  return isQuote ? numbers.map((number) => number.replace(/^RW /, 'QT ')) : numbers;
+}
 export async function generateSequentialInvoiceNo(
   isQuote = false,
   targetDate?: string | Date
 ): Promise<string> {
-  const db = getFirestore();
-
-  let yearStr: string;
-  try {
-    if (targetDate) {
-      const d = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
-      yearStr = isNaN(d.getTime())
-        ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(new Date())
-        : new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(d);
-    } else {
-      yearStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric' }).format(new Date());
-    }
-  } catch {
-    yearStr = String(new Date().getFullYear());
-  }
-
-  const prefix = isQuote ? "QT" : "RW";
-  const counterRef = db.collection("meta").doc(`invoiceCounter_${yearStr}`);
-
-  return await db.runTransaction(async (tx) => {
-    const counterSnap = await tx.get(counterRef);
-    let next = 1;
-    if (counterSnap.exists) {
-      const data = counterSnap.data();
-      if (data && typeof data.count === "number") {
-        next = data.count + 1;
-      }
-    } else {
-      // Check legacy counter doc for continuity if migrating
-      const legacyCounterRef = db.collection("meta").doc("invoiceCounter");
-      const legacySnap = await tx.get(legacyCounterRef);
-      if (legacySnap.exists) {
-        const legData = legacySnap.data();
-        if (legData && typeof legData.count === "number") {
-          next = legData.count + 1;
-        }
-      }
-    }
-
-    // Both QT and its later RW conversion own the same serial. Custom consolidated
-    // numbers are registered too, so a future counter allocation cannot collide.
-    let registryRef = db.collection('invoice_numbers').doc(`RW ${yearStr}-${String(next).padStart(5, '0')}`);
-    while ((await tx.get(registryRef)).exists) {
-      next++;
-      registryRef = db.collection('invoice_numbers').doc(`RW ${yearStr}-${String(next).padStart(5, '0')}`);
-    }
-    const invoiceNo = `${prefix} ${yearStr}-${String(next).padStart(5, '0')}`;
-    tx.set(registryRef, { purpose: isQuote ? 'quote' : 'invoice', createdAt: FieldValue.serverTimestamp() });
-
-    tx.set(
-      counterRef,
-      { year: Number(yearStr), count: next, updatedAt: FieldValue.serverTimestamp() },
-      { merge: true }
-    );
-
-    // Keep legacy meta/invoiceCounter in sync for compatibility
-    const legacyCounterRef = db.collection("meta").doc("invoiceCounter");
-    tx.set(
-      legacyCounterRef,
-      { count: next, lastYear: Number(yearStr), updatedAt: FieldValue.serverTimestamp() },
-      { merge: true }
-    );
-
-    return invoiceNo;
-  });
+  return getFirestore().runTransaction(
+    async (tx) => (await allocateInvoiceNumbers(tx, 1, isQuote, targetDate))[0]
+  );
 }
 
-export async function createOrder(orderData: OrderData): Promise<{ orderId: string; invoiceNo?: string }> {
+export async function createOrder(
+  orderData: OrderData
+): Promise<{ orderId: string; invoiceNo?: string }> {
   const db = getFirestore();
-  const orderRef = db.collection("orders").doc();
+  const orderRef = db.collection('orders').doc();
   const eventTimestamp = toEventTimestamp(orderData);
 
   const newOrderDoc = {
     ...orderData,
-    status: (orderData.status || "pending").toLowerCase(),
+    status: (orderData.status || 'pending').toLowerCase(),
     eventTimestamp,
     createdAt: FieldValue.serverTimestamp(),
   };
@@ -517,5 +587,3 @@ export async function createOrder(orderData: OrderData): Promise<{ orderId: stri
 
   return { orderId: orderRef.id, invoiceNo: orderData.invoiceNo };
 }
-
-

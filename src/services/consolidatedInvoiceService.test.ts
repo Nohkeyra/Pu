@@ -1,92 +1,100 @@
 import { describe, it, expect } from 'vitest';
 import { generateConsolidatedInvoicePDF } from './consolidatedInvoiceService';
+import { planInvoicePages } from './invoiceBatchPdf';
+import { validateInvoiceGroup, invoiceAmountCents } from '../lib/invoiceBatch';
 import type { Order } from '@/types';
-
-describe('consolidatedInvoiceService - Invoice Numbering & Integrity', () => {
-  const sampleOrder1: Order = {
-    id: 'ord-1',
-    name: 'Ahmad',
-    to: 'Gas District Cooling Putrajaya Sdn Bhd',
-    attn: 'En. Razak',
-    contact: '0123456789',
-    email: 'razak@gdc.com.my',
-    date: '2026-09-15',
-    time: '12:30 PM',
-    pax: 50,
-    meal: 'lunch',
-    meals: ['lunch'],
-    dishes: ['Nasi Beriani', 'Ayam Masak Merah', 'Dalcha'],
-    status: 'approved',
-    createdAt: new Date().toISOString(),
-    items: [
-      { name: 'Nasi Beriani Set', quantity: 50, price: 15.00, subtotal: 750.00 }
-    ],
-    pricing: {
-      subtotal: 750.00,
-      total: 750.00,
-      perPax: 15.00,
-      deliveryFee: 0,
-      sst: 0,
-      discount: 0
-    }
-  };
-
-  const sampleOrder2: Order = {
-    ...sampleOrder1,
-    id: 'ord-2',
-    date: '2026-09-16',
-    items: [
-      { name: 'Nasi Hujan Panas Set', quantity: 40, price: 15.00, subtotal: 600.00 }
-    ],
-    pricing: {
-      subtotal: 600.00,
-      total: 600.00,
-      perPax: 15.00,
-      deliveryFee: 0,
-      sst: 0,
-      discount: 0
-    }
-  };
-
-  it('generates consolidated PDF with provided custom invoice number', () => {
-    const customNo = 'RW 00088';
-    const doc = generateConsolidatedInvoicePDF({
-      orders: [sampleOrder1, sampleOrder2],
+const order: Order = {
+  id: 'one',
+  name: 'Contoh',
+  to: 'Agensi Contoh',
+  billingAddress: 'Aras 1, Putrajaya',
+  email: 'contoh@example.com',
+  contact: '0173157721',
+  dateTime: '2026-11-01T08:00',
+  location: 'Dewan',
+  quantity: 25,
+  meals: ['lunch'],
+  prices: { lunch: 10.1 },
+  totalAmount: 252.5,
+  menu: 'Nasi, ayam dan sayur',
+  notes: 'Nota contoh',
+};
+const issuedAt = '2026-11-09T04:00:00Z';
+describe('Saved invoice pagination', () => {
+  it('keeps every order and exact cents on individually numbered pages', () => {
+    const orders = Array.from({ length: 35 }, (_, i) => ({
+      ...order,
+      id: `order_${i}`,
+      notes:
+        'Catatan panjang untuk memastikan pembahagian halaman dibuat sebelum ruang jumlah dan footer.',
+    }));
+    const recipient = validateInvoiceGroup(orders),
+      options = { recipient, includeNotes: true, lang: 'bm' as const, issuedAt };
+    const plan = planInvoicePages(orders, options),
+      pages = plan.map((page, i) => ({ ...page, invoiceNo: `RW 2026-${i + 1}` }));
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.flatMap((p) => p.orderIds)).toEqual(orders.map((o) => o.id));
+    expect(pages.reduce((sum, p) => sum + p.totalCents, 0)).toBe(35 * 25250);
+    const doc = generateConsolidatedInvoicePDF({ orders, ...options, pages });
+    expect(doc.getNumberOfPages()).toBe(pages.length);
+    expect(planInvoicePages(orders, options)).toEqual(plan);
+  });
+  it('requires saved serials rather than inventing a random official number', () => {
+    expect(() => generateConsolidatedInvoicePDF({ orders: [order], includeNotes: false })).toThrow(
+      /Saved invoice/
+    );
+  });
+  it('rejects duplicate numbers or changed totals', () => {
+    const options = {
+      orders: [order],
       includeNotes: false,
-      invoiceNo: customNo,
-      lang: 'bm'
-    });
-
-    expect(doc).toBeDefined();
-    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2); // content + summary page
-  });
-
-  it('generates valid PDF when no invoice number is provided (auto-fallback)', () => {
-    const doc = generateConsolidatedInvoicePDF({
-      orders: [sampleOrder1],
-      includeNotes: true,
-      lang: 'en'
-    });
-
-    expect(doc).toBeDefined();
-    expect(doc.getNumberOfPages()).toBe(2); // 1 content page + 1 summary page
-  });
-
-  it('generates valid PDF when orders belong to multiple distinct clients', () => {
-    const multiClientOrder: Order = {
-      ...sampleOrder2,
-      id: 'ord-3',
-      to: 'Jabatan Perdana Menteri'
+      recipient: validateInvoiceGroup([order]),
+      issuedAt,
+      pages: [{ invoiceNo: 'RW 1', orderIds: ['one'], totalCents: 1 }],
     };
-
-    const doc = generateConsolidatedInvoicePDF({
-      orders: [sampleOrder1, multiClientOrder],
-      includeNotes: false,
-      invoiceNo: 'RW 00099',
-      lang: 'bm'
-    });
-
-    expect(doc).toBeDefined();
-    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(2);
+    expect(() => generateConsolidatedInvoicePDF(options)).toThrow(/total mismatch/);
+    expect(() =>
+      generateConsolidatedInvoicePDF({
+        ...options,
+        orders: [order, { ...order, id: 'two' }],
+        pages: [
+          { invoiceNo: 'RW 1', orderIds: ['one'], totalCents: 25250 },
+          { invoiceNo: 'RW 1', orderIds: ['two'], totalCents: 25250 },
+        ],
+      })
+    ).toThrow(/distinct/);
+  });
+  it('matches case and whitespace but rejects different customers, addresses or emails', () => {
+    expect(
+      validateInvoiceGroup([
+        order,
+        {
+          ...order,
+          to: '  AGENSI  CONTOH ',
+          email: 'CONTOH@EXAMPLE.COM',
+          billingAddress: ' ARAS 1, PUTRAJAYA ',
+        },
+      ]).email
+    ).toBe('contoh@example.com');
+    for (const changed of [
+      { to: 'Agensi lain' },
+      { billingAddress: 'Alamat lain' },
+      { email: 'lain@example.com' },
+    ])
+      expect(() => validateInvoiceGroup([order, { ...order, ...changed }])).toThrow(/must match/);
+    expect(() => validateInvoiceGroup([{ ...order, billingAddress: '' }])).toThrow(
+      /billing address/
+    );
+  });
+  it('rejects oversize content rather than clipping a row or issuing an extra summary invoice', () => {
+    expect(() =>
+      planInvoicePages([{ ...order, notes: 'Very long '.repeat(1000) }], {
+        recipient: validateInvoiceGroup([order]),
+        includeNotes: true,
+        lang: 'en',
+        issuedAt,
+      })
+    ).toThrow(/exceed one page/);
+    expect(invoiceAmountCents({ ...order, totalAmount: 0.1 + 0.2 })).toBe(30);
   });
 });

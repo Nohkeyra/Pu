@@ -1,43 +1,40 @@
-import { createPortal } from 'react-dom';
-import { motion } from 'motion/react';
-import { 
-  Send, 
-  X, 
-  Mail, 
-  Loader2, 
-  MessageSquare 
-} from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Mail, Loader2, MessageSquare, FileText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Order } from '@/types';
-
+import type { InvoiceEmailPreview } from '@/hooks/admin/useAdminMessaging';
 interface SendInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   sendOrder: Order | null;
   t: (key: string) => string;
   recipientEmail: string;
-  setRecipientEmail: (val: string) => void;
+  setRecipientEmail: (v: string) => void;
   recipientPhone: string;
-  setRecipientPhone: (val: string) => void;
+  setRecipientPhone: (v: string) => void;
   sendingEmail: boolean;
   handleSendEmail: () => Promise<void> | void;
   handleSendWhatsApp: () => void;
   language?: string;
+  emailPreview?: InvoiceEmailPreview | null;
+  emailPdfUrl?: string;
+  preparingEmail?: boolean;
+  prepareEmailPreview: () => Promise<void>;
+  openEmailAttachment?: () => Promise<void>;
 }
-
-const getDisplayInvoiceNo = (order: Order): string => {
-  if (order.invoiceNo) return order.invoiceNo;
-  if (order.id) return `RW ${order.id.substring(0, 5).toUpperCase()}`;
-  return 'RW -----';
-};
-
 export function SendInvoiceModal({
   isOpen,
   onClose,
   sendOrder,
-  t,
   recipientEmail,
   setRecipientEmail,
   recipientPhone,
@@ -45,191 +42,162 @@ export function SendInvoiceModal({
   sendingEmail,
   handleSendEmail,
   handleSendWhatsApp,
+  language,
+  emailPreview,
+  emailPdfUrl,
+  preparingEmail,
+  prepareEmailPreview,
+  openEmailAttachment,
 }: SendInvoiceModalProps) {
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="send-invoice-title"
-      className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6"
-      id="send-invoice-dialog-overlay"
+  const bm = language !== 'en';
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !sendingEmail) onClose();
+      }}
     >
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-deep-forest/80 backdrop-blur-md" 
-        onClick={onClose}
-      />
-      
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="w-full h-auto max-h-[95vh] max-w-xl bg-cream dark:bg-card border border-[var(--color-sunshine-cta)]/30 rounded-2xl sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
-        onClick={(e) => e.stopPropagation()}
-        id="send-invoice-dialog-container"
-      >
-        {/* Header */}
-        <div className="px-5 py-4 sm:px-8 sm:py-6 border-b border-[var(--color-sunshine-cta)]/10 flex items-center justify-between bg-white/40 dark:bg-background/40 backdrop-blur-md flex-shrink-0" id="send-invoice-header">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 sm:p-3 bg-[var(--color-sunshine-cta)]/10 rounded-2xl">
-              <Send className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-sunshine-cta)]" />
-            </div>
-            <div>
-              <h2 id="send-invoice-title" className="text-lg sm:text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white">
-                {t('send_invoice_pdf')}
-              </h2>
-              <p className="text-xs text-deep-forest/50 font-medium">
-                {t('send_invoice_desc')}
-              </p>
+      <DialogContent className="sm:max-w-4xl max-h-[94dvh] overflow-y-auto bg-background text-foreground">
+        <DialogHeader>
+          <DialogTitle>{bm ? 'Semak & hantar invois' : 'Review & send invoice'}</DialogTitle>
+          <DialogDescription>
+            {sendOrder?.to || sendOrder?.name}
+            {sendOrder?.invoiceBatchNo
+              ? ` · ${bm ? 'Semua invois dalam PDF tersimpan' : 'All saved invoices in one PDF'}`
+              : ''}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="send-email-input">{bm ? 'Emel penerima' : 'Recipient email'}</Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                id="send-email-input"
+                type="email"
+                maxLength={254}
+                value={recipientEmail}
+                disabled={sendingEmail}
+                onChange={(event) => setRecipientEmail(event.target.value)}
+              />
+              <Button
+                id="prepare-invoice-email"
+                onClick={prepareEmailPreview}
+                disabled={preparingEmail || sendingEmail || !recipientEmail}
+                className="shrink-0"
+              >
+                {preparingEmail ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="w-4 h-4 mr-2" />
+                )}
+                {bm ? 'Sediakan pratonton' : 'Prepare preview'}
+              </Button>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full hover:bg-stone/10 hover:rotate-90 transition-transform"
-            aria-label="Close"
-            id="send-invoice-close-btn"
-          >
-            <X className="w-5 h-5 sm:w-6 sm:h-6 text-deep-forest/40" />
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8" id="send-invoice-body">
-          {sendOrder && (
-            <div className="space-y-6 sm:space-y-8">
-              {/* Summary Box */}
-              <div className="p-4 sm:p-6 bg-white/60 dark:bg-background/20 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
-                  <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('invoice_no_label')}</span>
-                  <span className="font-sans font-bold text-deep-forest dark:text-white">
-                    {getDisplayInvoiceNo(sendOrder)}
-                  </span>
+          {emailPreview && emailPdfUrl ? (
+            <div className="space-y-4" aria-live="polite">
+              <dl className="rounded-xl border border-border p-4 text-sm space-y-2 break-words">
+                <div>
+                  <dt className="font-semibold">{bm ? 'Kepada' : 'To'}</dt>
+                  <dd>{emailPreview.email}</dd>
                 </div>
-                <div className="flex justify-between items-center border-b border-[var(--color-sunshine-cta)]/5 pb-3">
-                  <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('customer_label')}</span>
-                  <span className="font-bold text-deep-forest dark:text-white">{sendOrder.to}</span>
+                <div>
+                  <dt className="font-semibold">{bm ? 'Subjek' : 'Subject'}</dt>
+                  <dd>{emailPreview.subject}</dd>
                 </div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-xs font-black text-deep-forest/40 uppercase tracking-widest">{t('grand_total_label')}</span>
-                  <span className="text-xl font-black text-[var(--color-sunshine-cta)]">
-                    RM {(sendOrder.totalAmount || sendOrder.meals.reduce((sum, meal) => {
-                      const price = sendOrder.prices?.[meal] || 0;
-                      return sum + (price * sendOrder.quantity);
-                    }, 0)).toFixed(2)}
-                  </span>
+                <div>
+                  <dt className="font-semibold">{bm ? 'Lampiran' : 'Attachment'}</dt>
+                  <dd>
+                    {emailPreview.filename} · {emailPreview.invoiceNumbers.length}{' '}
+                    {bm ? 'invois' : 'invoices'}
+                  </dd>
                 </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-4 sm:space-y-6">
-                {/* Email Option */}
-                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-4 sm:space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl">
-                      <Mail className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <span className="font-bold text-deep-forest dark:text-white">{t('option_email')}</span>
-                  </div>
-                  <p className="text-xs text-deep-forest/60 leading-relaxed italic">
-                    {t('email_desc')}
+              </dl>
+              <iframe
+                title={bm ? 'Pratonton emel' : 'Email preview'}
+                sandbox=""
+                srcDoc={emailPreview.html}
+                className="w-full h-[32rem] rounded-xl border border-border bg-white"
+              />
+              <details className="rounded-xl border border-border p-3">
+                <summary>{bm ? 'Versi teks emel' : 'Plain text email'}</summary>
+                <p className="whitespace-pre-wrap text-sm pt-3">{emailPreview.text}</p>
+              </details>
+              <div className="space-y-2">
+                <a
+                  href={emailPdfUrl}
+                  download={emailPreview.filename}
+                  onClick={(event) => {
+                    if (Capacitor.isNativePlatform() && openEmailAttachment) {
+                      event.preventDefault();
+                      void openEmailAttachment();
+                    }
+                  }}
+                  className="underline text-sm font-semibold"
+                >
+                  {bm ? 'Buka / muat turun lampiran PDF' : 'Open / download PDF attachment'}
+                </a>
+                <object
+                  data={emailPdfUrl}
+                  type="application/pdf"
+                  title="Invoice PDF"
+                  className="w-full h-[55dvh] border border-border rounded-xl"
+                >
+                  <p className="p-4 text-sm">
+                    {bm
+                      ? 'Gunakan pautan di atas untuk menyemak lampiran PDF pada peranti ini.'
+                      : 'Use the link above to review the PDF attachment on this device.'}
                   </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="send-email-input" className="text-xs font-black text-deep-forest/40 uppercase tracking-widest ml-1">
-                      {t('recipient_email')}
-                    </Label>
-                    <Input
-                      id="send-email-input"
-                      type="email"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="bg-white/40 dark:bg-background/40 border-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white focus:ring-[var(--color-sunshine-cta)]/30 h-14 rounded-2xl text-base px-5 font-medium"
-                      placeholder="customer@email.com"
-                    />
-                  </div>
-                  {sendingEmail && (
-                    <p className="text-xs font-semibold text-[var(--color-sunshine-cta)]" role="status" aria-live="polite">
-                      {t('sending_invoice') || 'Sending invoice email…'}
-                    </p>
-                  )}
-                  <Button
-                    id="btn-send-email-confirm"
-                    onClick={handleSendEmail}
-                    disabled={sendingEmail || !recipientEmail}
-                    aria-busy={sendingEmail}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl h-14 text-sm shadow-lg shadow-indigo-600/20 transition-all active:scale-95 uppercase tracking-widest"
-                  >
-                    {sendingEmail ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        {t('sending')}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-3 justify-center">
-                        <Mail className="w-5 h-5" />
-                        {t('send_invoice_email')}
-                      </span>
-                    )}
-                  </Button>
-                </div>
-
-                {/* WhatsApp Option */}
-                <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/20 shadow-sm space-y-4 sm:space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl">
-                      <MessageSquare className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <span className="font-bold text-deep-forest dark:text-white">{t('option_whatsapp')}</span>
-                  </div>
-                  <p className="text-xs text-deep-forest/60 leading-relaxed italic">
-                    {t('whatsapp_desc')}
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="send-phone-input" className="text-xs font-black text-deep-forest/40 uppercase tracking-widest ml-1">
-                      {t('recipient_phone')}
-                    </Label>
-                    <Input
-                      id="send-phone-input"
-                      type="text"
-                      value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
-                      className="bg-white/40 dark:bg-background/40 border-[var(--color-sunshine-cta)]/10 text-deep-forest dark:text-white focus:ring-emerald-500/30 h-14 rounded-2xl text-base px-5 font-medium"
-                      placeholder="e.g. 0123456789"
-                    />
-                  </div>
-                  <Button
-                    id="btn-send-whatsapp-confirm"
-                    onClick={handleSendWhatsApp}
-                    disabled={!recipientPhone}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl h-14 text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95 uppercase tracking-widest"
-                  >
-                    <span className="flex items-center gap-3 justify-center">
-                      <MessageSquare className="w-5 h-5" />
-                      {t('open_whatsapp')}
-                    </span>
-                  </Button>
-                </div>
+                </object>
               </div>
+              <Button
+                id="btn-send-email-confirm"
+                onClick={handleSendEmail}
+                disabled={sendingEmail || preparingEmail}
+                aria-busy={sendingEmail}
+                className="w-full"
+              >
+                {sendingEmail ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                {bm ? 'Sahkan & hantar emel ini' : 'Confirm & send this email'}
+              </Button>
             </div>
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">
+              {bm
+                ? 'Semak penerima, kandungan emel dan PDF sebelum mengesahkan penghantaran.'
+                : 'Review the recipient, email and PDF before confirming delivery.'}
+            </p>
+          )}
+          {!sendOrder?.invoiceBatchNo && (
+            <details className="border-t border-border pt-4">
+              <summary className="text-sm font-semibold">WhatsApp</summary>
+              <div className="pt-3 flex flex-col sm:flex-row gap-2">
+                <Label htmlFor="send-phone-input" className="sr-only">
+                  {bm ? 'Telefon penerima' : 'Recipient phone'}
+                </Label>
+                <Input
+                  id="send-phone-input"
+                  type="tel"
+                  value={recipientPhone}
+                  onChange={(event) => setRecipientPhone(event.target.value)}
+                />
+                <Button
+                  onClick={handleSendWhatsApp}
+                  disabled={!recipientPhone || sendingEmail}
+                  variant="outline"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </Button>
+              </div>
+            </details>
           )}
         </div>
-
-        <div className="px-5 py-4 sm:px-8 sm:py-6 border-t border-[var(--color-sunshine-cta)]/10 bg-white/40 dark:bg-background/40 backdrop-blur-md flex justify-end flex-shrink-0" id="send-invoice-footer">
-          <Button
-            id="btn-send-invoice-cancel"
-            variant="ghost"
-            onClick={onClose}
-            className="text-deep-forest/40 hover:text-deep-forest hover:bg-stone/10 rounded-2xl px-10 py-7 h-auto font-black uppercase tracking-widest transition-all"
-          >
-            {t('cancel')}
-          </Button>
-        </div>
-      </motion.div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }

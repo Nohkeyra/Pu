@@ -1,3 +1,4 @@
+import { firestoreQuota, isFirestoreQuotaError } from './services/firestoreQuota.js';
 import crypto from 'crypto';
 import type { Store, Options, ClientRateLimitInfo } from 'express-rate-limit';
 import rateLimit from 'express-rate-limit';
@@ -13,21 +14,13 @@ export interface DistributedRateLimitDoc {
   updatedAt?: FirebaseFirestore.Timestamp;
 }
 
-// How long a locally-cached count is trusted as "close enough" to
-// authoritative before we go back to Firestore. Every previous request hit
-// Firestore with a full read-modify-write transaction; bursty traffic from
-// the same key (a single IP hammering an endpoint) paid that round-trip
-// every single time. A short cache window collapses those bursts into one
-// Firestore round-trip per window while keeping cross-instance drift bounded
-// to ~1s, which is more than acceptable for rate limiting (it only ever
-// makes the limit marginally more permissive during the drift window, never
-// less — so it can't be used to fully bypass the limit).
-const LOCAL_CACHE_TTL_MS = 1000;
-
 export class FirestoreDistributedStore implements Store {
   prefix: string;
   windowMs: number = 15 * 60 * 1000;
-  private localFallback = new Map<string, { totalHits: number; resetTimeMs: number; syncedAt: number }>();
+  private localFallback = new Map<
+    string,
+    { totalHits: number; resetTimeMs: number; syncedAt: number }
+  >();
   private static cleanupRegistered = false;
 
   constructor(prefix = 'rl') {
@@ -77,43 +70,43 @@ export class FirestoreDistributedStore implements Store {
   async increment(key: string): Promise<ClientRateLimitInfo> {
     const now = Date.now();
 
-    // Fast path: a recently-synced local entry stands in for Firestore for
-    // LOCAL_CACHE_TTL_MS. This is what actually cuts the per-request cost —
-    // repeated hits from the same key within that window are answered from
-    // memory instead of each paying a full Firestore transaction round-trip.
-    const cached = this.localFallback.get(key);
-    if (cached && cached.resetTimeMs > now && now - cached.syncedAt < LOCAL_CACHE_TTL_MS) {
-      cached.totalHits += 1;
-      this.syncIncrementInBackground(key, cached.resetTimeMs);
-      return { totalHits: cached.totalHits, resetTime: new Date(cached.resetTimeMs) };
-    }
-
     const docId = this.getDocId(key);
 
     try {
-      const db = getFirestore();
-      const docRef = db.collection('rate_limits').doc(docId);
+      const result = await firestoreQuota.run(async () => {
+        const db = getFirestore();
+        const docRef = db.collection('rate_limits').doc(docId);
 
-      const result = await db.runTransaction(async (transaction) => {
-        const snap = await transaction.get(docRef);
-        let totalHits = 1;
-        let resetTimeMs = now + this.windowMs;
+        return db.runTransaction(async (transaction) => {
+          const snap = await transaction.get(docRef);
+          let totalHits = 1;
+          let resetTimeMs = now + this.windowMs;
 
-        if (snap.exists) {
-          const data = snap.data() as Partial<DistributedRateLimitDoc>;
-          const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
+          if (snap.exists) {
+            const data = snap.data() as Partial<DistributedRateLimitDoc>;
+            const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
 
-          if (storedResetTime > now) {
-            totalHits = (data?.totalHits || 0) + 1;
-            resetTimeMs = storedResetTime;
-            transaction.update(docRef, {
-              totalHits,
-              updatedAt: Timestamp.now(),
-            });
+            if (storedResetTime > now) {
+              totalHits = (data?.totalHits || 0) + 1;
+              resetTimeMs = storedResetTime;
+              transaction.update(docRef, {
+                totalHits,
+                updatedAt: Timestamp.now(),
+              });
+            } else {
+              // Window expired, reset counter
+              totalHits = 1;
+              resetTimeMs = now + this.windowMs;
+              transaction.set(docRef, {
+                key,
+                prefix: this.prefix,
+                totalHits: 1,
+                resetTimeMs,
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+              });
+            }
           } else {
-            // Window expired, reset counter
-            totalHits = 1;
-            resetTimeMs = now + this.windowMs;
             transaction.set(docRef, {
               key,
               prefix: this.prefix,
@@ -123,23 +116,12 @@ export class FirestoreDistributedStore implements Store {
               updatedAt: Timestamp.now(),
             });
           }
-        } else {
-          transaction.set(docRef, {
-            key,
-            prefix: this.prefix,
-            totalHits: 1,
-            resetTimeMs,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-          });
-        }
 
-        return { totalHits, resetTime: new Date(resetTimeMs) };
+          return { totalHits, resetTime: new Date(resetTimeMs) };
+        });
       });
 
-      // Seed the local cache with the authoritative count so the next
-      // request(s) within LOCAL_CACHE_TTL_MS take the fast path above
-      // instead of another Firestore round-trip.
+      // Keep the last authoritative count for the existing outage fallback.
       this.localFallback.set(key, {
         totalHits: result.totalHits,
         resetTimeMs: result.resetTime.getTime(),
@@ -148,72 +130,43 @@ export class FirestoreDistributedStore implements Store {
 
       return result;
     } catch (err) {
-      console.warn(`[DistributedRateLimit] Firestore increment failed for key ${key}, using memory fallback:`, err instanceof Error ? err.message : err);
+      if (!isFirestoreQuotaError(err))
+        console.warn(
+          `[DistributedRateLimit] Firestore increment failed for key ${key}, using memory fallback:`,
+          err instanceof Error ? err.message : err
+        );
       return this.fallbackIncrement(key);
-    }
-  }
-
-  // Best-effort, non-blocking sync of a locally-fast-pathed increment back to
-  // Firestore, so other instances eventually see it. Deliberately not
-  // awaited by callers — that would defeat the point of the fast path.
-  private syncIncrementInBackground(key: string, resetTimeMs: number): void {
-    // This path is best-effort. The local fallback must remain usable even if
-    // acquiring Firestore throws synchronously (e.g. missing credentials).
-    try {
-      const docId = this.getDocId(key);
-      const db = getFirestore();
-      const docRef = db.collection('rate_limits').doc(docId);
-
-      void db.runTransaction(async (transaction) => {
-        const snap = await transaction.get(docRef);
-        if (snap.exists) {
-          const data = snap.data() as Partial<DistributedRateLimitDoc>;
-          const storedResetTime = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
-          if (storedResetTime > 0 && storedResetTime === resetTimeMs) {
-            transaction.update(docRef, {
-              totalHits: (data?.totalHits || 0) + 1,
-              updatedAt: Timestamp.now(),
-            });
-            return;
-          }
-        }
-        transaction.set(docRef, {
-          key,
-          prefix: this.prefix,
-          totalHits: 1,
-          resetTimeMs,
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now(),
-        });
-      }).catch((err) => {
-        console.warn(`[DistributedRateLimit] Background sync failed for key ${key}:`, err instanceof Error ? err.message : err);
-      });
-    } catch (err) {
-      console.warn(`[DistributedRateLimit] Background sync unavailable for key ${key}:`, err instanceof Error ? err.message : err);
     }
   }
 
   async decrement(key: string): Promise<void> {
     const docId = this.getDocId(key);
     try {
-      const db = getFirestore();
-      const docRef = db.collection('rate_limits').doc(docId);
+      await firestoreQuota.run(async () => {
+        const db = getFirestore();
+        const docRef = db.collection('rate_limits').doc(docId);
 
-      await db.runTransaction(async (transaction) => {
-        const snap = await transaction.get(docRef);
-        if (snap.exists) {
-          const data = snap.data() as Partial<DistributedRateLimitDoc>;
-          const currentHits = data?.totalHits || 0;
-          if (currentHits > 0) {
-            transaction.update(docRef, {
-              totalHits: currentHits - 1,
-              updatedAt: Timestamp.now(),
-            });
+        await db.runTransaction(async (transaction) => {
+          const snap = await transaction.get(docRef);
+          if (snap.exists) {
+            const data = snap.data() as Partial<DistributedRateLimitDoc>;
+            const currentHits = data?.totalHits || 0;
+            if (currentHits > 0) {
+              transaction.update(docRef, {
+                totalHits: currentHits - 1,
+                updatedAt: Timestamp.now(),
+              });
+            }
           }
-        }
+        });
       });
+      this.fallbackDecrement(key);
     } catch (err) {
-      console.warn(`[DistributedRateLimit] Firestore decrement failed for key ${key}, using memory fallback:`, err instanceof Error ? err.message : err);
+      if (!isFirestoreQuotaError(err))
+        console.warn(
+          `[DistributedRateLimit] Firestore decrement failed for key ${key}, using memory fallback:`,
+          err instanceof Error ? err.message : err
+        );
       this.fallbackDecrement(key);
     }
   }
@@ -221,10 +174,16 @@ export class FirestoreDistributedStore implements Store {
   async resetKey(key: string): Promise<void> {
     const docId = this.getDocId(key);
     try {
-      const db = getFirestore();
-      await db.collection('rate_limits').doc(docId).delete();
+      await firestoreQuota.run(async () => {
+        const db = getFirestore();
+        await db.collection('rate_limits').doc(docId).delete();
+      });
     } catch (err) {
-      console.warn(`[DistributedRateLimit] Firestore resetKey failed for key ${key}:`, err instanceof Error ? err.message : err);
+      if (!isFirestoreQuotaError(err))
+        console.warn(
+          `[DistributedRateLimit] Firestore resetKey failed for key ${key}:`,
+          err instanceof Error ? err.message : err
+        );
     } finally {
       this.fallbackResetKey(key);
     }
@@ -233,13 +192,19 @@ export class FirestoreDistributedStore implements Store {
   async resetAll(): Promise<void> {
     this.localFallback.clear();
     try {
-      const db = getFirestore();
-      const snap = await db.collection('rate_limits').where('prefix', '==', this.prefix).get();
-      const batch = db.batch();
-      snap.docs.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
+      await firestoreQuota.run(async () => {
+        const db = getFirestore();
+        const snap = await db.collection('rate_limits').where('prefix', '==', this.prefix).get();
+        const batch = db.batch();
+        snap.docs.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+      });
     } catch (err) {
-      console.warn('[DistributedRateLimit] Firestore resetAll failed:', err instanceof Error ? err.message : err);
+      if (!isFirestoreQuotaError(err))
+        console.warn(
+          '[DistributedRateLimit] Firestore resetAll failed:',
+          err instanceof Error ? err.message : err
+        );
     }
   }
 
@@ -248,8 +213,9 @@ export class FirestoreDistributedStore implements Store {
     const docId = this.getDocId(key);
 
     try {
-      const db = getFirestore();
-      const snap = await db.collection('rate_limits').doc(docId).get();
+      const snap = await firestoreQuota.run(() =>
+        getFirestore().collection('rate_limits').doc(docId).get()
+      );
       if (snap.exists) {
         const data = snap.data() as Partial<DistributedRateLimitDoc>;
         const resetTimeMs = typeof data?.resetTimeMs === 'number' ? data.resetTimeMs : 0;
@@ -261,7 +227,11 @@ export class FirestoreDistributedStore implements Store {
         }
       }
     } catch (err) {
-      console.warn(`[DistributedRateLimit] Firestore get failed for key ${key}:`, err instanceof Error ? err.message : err);
+      if (!isFirestoreQuotaError(err))
+        console.warn(
+          `[DistributedRateLimit] Firestore get failed for key ${key}:`,
+          err instanceof Error ? err.message : err
+        );
     }
 
     const local = this.localFallback.get(key);
@@ -277,27 +247,35 @@ export class FirestoreDistributedStore implements Store {
     this.cleanupRegistered = true;
 
     // Run cleanup every 30 minutes in background
-    setInterval(async () => {
-      try {
-        const now = Date.now();
-        const db = getFirestore();
-        // Delete records expired more than 1 hour ago
-        const cutoff = now - (60 * 60 * 1000);
-        const expiredSnap = await db.collection('rate_limits')
-          .where('resetTimeMs', '<', cutoff)
-          .limit(100)
-          .get();
+    setInterval(
+      async () => {
+        try {
+          await firestoreQuota.run(async () => {
+            const now = Date.now();
+            const db = getFirestore();
+            // Delete records expired more than 1 hour ago
+            const cutoff = now - 60 * 60 * 1000;
+            const expiredSnap = await db
+              .collection('rate_limits')
+              .where('resetTimeMs', '<', cutoff)
+              .limit(100)
+              .get();
 
-        if (!expiredSnap.empty) {
-          const batch = db.batch();
-          expiredSnap.docs.forEach(d => batch.delete(d.ref));
-          await batch.commit();
-          console.log(`[DistributedRateLimit] Cleaned up ${expiredSnap.size} expired rate limit entries.`);
+            if (!expiredSnap.empty) {
+              const batch = db.batch();
+              expiredSnap.docs.forEach((d) => batch.delete(d.ref));
+              await batch.commit();
+              console.log(
+                `[DistributedRateLimit] Cleaned up ${expiredSnap.size} expired rate limit entries.`
+              );
+            }
+          });
+        } catch {
+          // Silent cleanup error
         }
-      } catch {
-        // Silent cleanup error
-      }
-    }, 30 * 60 * 1000).unref();
+      },
+      30 * 60 * 1000
+    ).unref();
   }
 }
 

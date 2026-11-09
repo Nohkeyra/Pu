@@ -93,6 +93,9 @@ export interface Order {
   id?: string;
   userId?: string;
   presetId?: string | null;
+  billingAddress?: string;
+  invoiceBatchNo?: string;
+  consolidatedInvoiceNo?: string;
   to: string;
   department?: string;
   division?: string;
@@ -121,7 +124,16 @@ export interface Order {
   orderId?: string;
   officialInvoiceNo?: string;
   lang?: 'en' | 'bm';
-  status?: 'pending' | 'approved' | 'billed' | 'in_transit' | 'cancel_requested' | 'cancelled' | 'rejected' | 'delivered' | 'completed';
+  status?:
+    | 'pending'
+    | 'approved'
+    | 'billed'
+    | 'in_transit'
+    | 'cancel_requested'
+    | 'cancelled'
+    | 'rejected'
+    | 'delivered'
+    | 'completed';
   rejectionReason?: string;
   riderLocation?: RiderLocation;
   riderTrackingSession?: RiderSession;
@@ -149,6 +161,11 @@ export interface CombinedInvoicePayload {
 }
 
 export interface ConsolidatedInvoicePayload {
+  pages?: import('./lib/invoiceBatch').InvoicePage[];
+  recipient?: import('./lib/invoiceBatch').InvoiceRecipient;
+  issuedAt?: string;
+  calligraphy?: string;
+  logo?: string;
   orders: Order[];
   includeNotes: boolean;
   invoiceNo?: string;

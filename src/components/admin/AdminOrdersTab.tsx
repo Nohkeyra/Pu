@@ -1,7 +1,16 @@
+import { useRememberedState, useRememberedListScroll } from '@/hooks/ui/useRememberedView';
 import { useState, useEffect, useMemo } from 'react';
 import {
-  AlertTriangle, Check, Send, FileSpreadsheet, X, Search, Inbox, Trash2,
-  SlidersHorizontal, ChevronDown
+  AlertTriangle,
+  Check,
+  Send,
+  FileSpreadsheet,
+  X,
+  Search,
+  Inbox,
+  Trash2,
+  SlidersHorizontal,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ToastVariant } from '@/components/ui/Toast';
@@ -11,7 +20,13 @@ import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { AdminOrderRow } from './AdminOrderRow';
 import { triggerLightImpact } from '@/lib/haptics';
 
@@ -27,6 +42,8 @@ import { List } from 'react-window';
 // they were kept in the parent rather than moved here).
 
 export function AdminOrdersTab({
+  viewScope = 'admin',
+  onReadOrder,
   t,
   language,
   orders = [],
@@ -54,6 +71,8 @@ export function AdminOrdersTab({
   handleUpdateStatus,
   toast,
 }: {
+  viewScope?: string;
+  onReadOrder?: (order: Order) => void;
   t: (key: string) => string;
   language: string;
   orders?: Order[];
@@ -87,8 +106,14 @@ export function AdminOrdersTab({
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [windowWidth, setWindowWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1024));
+  const [searchQuery, setSearchQuery] = useRememberedState<string>(
+    viewScope + ':orders:search',
+    ''
+  );
+  const rememberedListRef = useRememberedListScroll(viewScope + ':orders:listScroll');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
   const [longPressedOrder, setLongPressedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -102,21 +127,18 @@ export function AdminOrdersTab({
   const hasActiveDate = Boolean(dateFromFilter || dateToFilter);
   const hasActiveStatus = Boolean(statusFilter && statusFilter !== 'all');
   const hasSearch = Boolean(searchQuery.trim());
-  const activeFilterCount = (hasActiveDate ? 1 : 0) + (hasActiveStatus ? 1 : 0) + (isSelectMode ? 1 : 0) + (hasSearch ? 1 : 0);
+  const activeFilterCount =
+    (hasActiveDate ? 1 : 0) +
+    (hasActiveStatus ? 1 : 0) +
+    (isSelectMode ? 1 : 0) +
+    (hasSearch ? 1 : 0);
 
   // Local search over already-filtered orders (name, email, phone, invoice, client)
   const searchedOrders = useMemo(() => {
     if (!searchQuery.trim()) return filteredOrders;
     const q = searchQuery.trim().toLowerCase();
     return filteredOrders.filter((o) => {
-      const hay = [
-        o.name,
-        o.email,
-        o.contact || o.phone,
-        o.invoiceNo,
-        o.to,
-        o.id,
-      ]
+      const hay = [o.name, o.email, o.contact || o.phone, o.invoiceNo, o.to, o.id]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -135,10 +157,19 @@ export function AdminOrdersTab({
           </h2>
           <div className="space-y-2.5">
             {cancelRequests.map((order, idx) => (
-              <Card key={order.id || `cancel-${idx}`} variant="default" padding="sm" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-amber-500/20">
+              <Card
+                key={order.id || `cancel-${idx}`}
+                variant="default"
+                padding="sm"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-amber-500/20"
+              >
                 <div>
-                  <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{order.name} ({order.quantity} pax)</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">{formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}</p>
+                  <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">
+                    {order.name} ({order.quantity} pax)
+                  </p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    {formatDateTimeDisplay(order.dateTime || order.eventDate || order.date)}
+                  </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button
@@ -174,13 +205,18 @@ export function AdminOrdersTab({
         <div className="flex items-center gap-2">
           {/* Search Input */}
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none" aria-hidden />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none"
+              aria-hidden
+            />
             <input
               id="admin-order-search"
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'}
+              placeholder={
+                language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'
+              }
               aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
               className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-lg border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[var(--ui-ink)] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-yellow)]/40 transition-all"
             />
@@ -203,19 +239,21 @@ export function AdminOrdersTab({
             }`}
           >
             <SlidersHorizontal className="w-4 h-4 shrink-0" />
-            <span className="inline">
-              {language === 'bm' ? 'Penapis' : 'Filter'}
-            </span>
+            <span className="inline">{language === 'bm' ? 'Penapis' : 'Filter'}</span>
             {activeFilterCount > 0 && (
-              <span className={`w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                isFilterDropdownOpen
-                  ? 'bg-[var(--ui-yellow)] text-[var(--ui-on-yellow)]'
-                  : 'bg-[var(--ui-ink)] text-[var(--ui-canvas)]'
-              }`}>
+              <span
+                className={`w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                  isFilterDropdownOpen
+                    ? 'bg-[var(--ui-yellow)] text-[var(--ui-on-yellow)]'
+                    : 'bg-[var(--ui-ink)] text-[var(--ui-canvas)]'
+                }`}
+              >
                 {activeFilterCount}
               </span>
             )}
-            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`}
+            />
           </button>
         </div>
 
@@ -227,12 +265,27 @@ export function AdminOrdersTab({
             </span>
             {hasActiveStatus && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--ui-yellow)]/15 text-[var(--ui-orange)] dark:text-amber-300 font-semibold text-xs">
-                {statusFilter === 'pending' ? (language === 'bm' ? 'Menunggu' : 'Pending')
-                  : statusFilter === 'approved' ? (language === 'bm' ? 'Diluluskan' : 'Approved')
-                  : statusFilter === 'billed' ? (language === 'bm' ? 'Dibilkan' : 'Billed')
-                  : statusFilter === 'cancel_requested' ? (language === 'bm' ? 'Minta Batal' : 'Cancel req.')
-                  : statusFilter === 'cancelled' ? (language === 'bm' ? 'Dibatalkan' : 'Cancelled')
-                  : statusFilter}
+                {statusFilter === 'pending'
+                  ? language === 'bm'
+                    ? 'Menunggu'
+                    : 'Pending'
+                  : statusFilter === 'approved'
+                    ? language === 'bm'
+                      ? 'Diluluskan'
+                      : 'Approved'
+                    : statusFilter === 'billed'
+                      ? language === 'bm'
+                        ? 'Dibilkan'
+                        : 'Billed'
+                      : statusFilter === 'cancel_requested'
+                        ? language === 'bm'
+                          ? 'Minta Batal'
+                          : 'Cancel req.'
+                        : statusFilter === 'cancelled'
+                          ? language === 'bm'
+                            ? 'Dibatalkan'
+                            : 'Cancelled'
+                          : statusFilter}
                 <button
                   type="button"
                   onClick={() => setStatusFilter?.('all')}
@@ -249,7 +302,10 @@ export function AdminOrdersTab({
                 {dateFromFilter || '...'} – {dateToFilter || '...'}
                 <button
                   type="button"
-                  onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
+                  onClick={() => {
+                    setDateFromFilter('');
+                    setDateToFilter('');
+                  }}
                   className="hover:opacity-75 cursor-pointer ml-0.5"
                   title={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
                   aria-label={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
@@ -299,7 +355,9 @@ export function AdminOrdersTab({
                     onChange={(e) => setDateFromFilter(e.target.value)}
                     className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[var(--ui-green)] dark:text-emerald-400 focus:outline-none"
                   />
-                  <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">–</span>
+                  <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">
+                    –
+                  </span>
                   <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
                     {language === 'bm' ? 'Hingga' : 'To'}
                   </span>
@@ -315,7 +373,10 @@ export function AdminOrdersTab({
                 {(dateFromFilter || dateToFilter) && (
                   <button
                     id="admin-clear-date-filter"
-                    onClick={() => { setDateFromFilter(''); setDateToFilter(''); }}
+                    onClick={() => {
+                      setDateFromFilter('');
+                      setDateToFilter('');
+                    }}
                     className="h-11 w-11 flex items-center justify-center text-[var(--ui-orange)] dark:text-rose-400 hover:bg-[var(--ui-orange)]/10 rounded-lg border border-[var(--ui-orange)]/20 dark:border-rose-500/30 shrink-0 transition-colors"
                     title={language === 'bm' ? 'Reset' : 'Reset'}
                   >
@@ -335,7 +396,10 @@ export function AdminOrdersTab({
                       if (!checked) setSelectedOrderIds(new Set());
                     }}
                   />
-                  <label htmlFor="select-mode-toggle" className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+                  <label
+                    htmlFor="select-mode-toggle"
+                    className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap"
+                  >
                     {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
                   </label>
                 </div>
@@ -360,35 +424,35 @@ export function AdminOrdersTab({
             {setStatusFilter && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-2 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
                 {[
-                  { 
-                    id: 'all', 
+                  {
+                    id: 'all',
                     label: language === 'bm' ? 'Semua' : 'All',
-                    count: orders.length 
+                    count: orders.length,
                   },
-                  { 
-                    id: 'pending', 
+                  {
+                    id: 'pending',
                     label: language === 'bm' ? 'Menunggu' : 'Pending',
-                    count: orders.filter(o => o.status === 'pending').length 
+                    count: orders.filter((o) => o.status === 'pending').length,
                   },
-                  { 
-                    id: 'approved', 
+                  {
+                    id: 'approved',
                     label: language === 'bm' ? 'Diluluskan' : 'Approved',
-                    count: orders.filter((o: Order) => o.status === 'approved').length 
+                    count: orders.filter((o: Order) => o.status === 'approved').length,
                   },
-                  { 
-                    id: 'billed', 
+                  {
+                    id: 'billed',
                     label: language === 'bm' ? 'Dibilkan' : 'Billed',
-                    count: orders.filter(o => o.status === 'billed').length 
+                    count: orders.filter((o) => o.status === 'billed').length,
                   },
-                  { 
-                    id: 'cancel_requested', 
+                  {
+                    id: 'cancel_requested',
                     label: language === 'bm' ? 'Minta Batal' : 'Cancel req.',
-                    count: cancelRequests.length 
+                    count: cancelRequests.length,
                   },
-                  { 
-                    id: 'cancelled', 
+                  {
+                    id: 'cancelled',
                     label: language === 'bm' ? 'Dibatalkan' : 'Cancelled',
-                    count: orders.filter(o => o.status === 'cancelled').length 
+                    count: orders.filter((o) => o.status === 'cancelled').length,
                   },
                 ].map((chip) => {
                   const active = statusFilter === chip.id;
@@ -406,11 +470,13 @@ export function AdminOrdersTab({
                       }`}
                     >
                       <span>{chip.label}</span>
-                      <span className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
-                        active 
-                          ? 'bg-white/25 text-white' 
-                          : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
-                      }`}>
+                      <span
+                        className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
+                          active
+                            ? 'bg-white/25 text-white'
+                            : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
+                        }`}
+                      >
                         {chip.count}
                       </span>
                     </button>
@@ -430,7 +496,10 @@ export function AdminOrdersTab({
                 checked={filterBySameEmail}
                 onCheckedChange={(checked) => setFilterBySameEmail?.(checked)}
               />
-              <label htmlFor="email-filter-toggle" className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap">
+              <label
+                htmlFor="email-filter-toggle"
+                className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap"
+              >
                 {language === 'bm' ? 'Emel Sama' : 'Same Email'}
               </label>
             </div>
@@ -448,34 +517,51 @@ export function AdminOrdersTab({
                     className="h-10 min-h-[40px] bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm px-4 rounded-xl shadow-xs flex items-center gap-2 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
-                    <span>{language === 'bm' ? `Padam (${selectedOrderIds.size})` : `Delete (${selectedOrderIds.size})`}</span>
+                    <span>
+                      {language === 'bm'
+                        ? `Padam (${selectedOrderIds.size})`
+                        : `Delete (${selectedOrderIds.size})`}
+                    </span>
                   </Button>
                 )}
                 <Button
                   variant="outline"
                   size="default"
                   onClick={() => {
-                    const allSelected = searchedOrders.every(o => o.id && selectedOrderIds.has(o.id));
+                    const allSelected = searchedOrders.every(
+                      (o) => o.id && selectedOrderIds.has(o.id)
+                    );
                     if (allSelected) {
                       setSelectedOrderIds(new Set());
                       return;
                     }
-                    let toSelect = searchedOrders.filter(o => Boolean(o.id));
+                    let toSelect = searchedOrders.filter((o) => Boolean(o.id));
                     if (filterBySameEmail) {
-                      const first = toSelect.find(o => o.email);
+                      const first = toSelect.find((o) => o.email);
                       if (first?.email) {
                         const target = String(first.email).trim().toLowerCase();
-                        toSelect = toSelect.filter(o => String(o.email || '').trim().toLowerCase() === target);
+                        toSelect = toSelect.filter(
+                          (o) =>
+                            String(o.email || '')
+                              .trim()
+                              .toLowerCase() === target
+                        );
                       }
                     }
-                    setSelectedOrderIds(new Set(toSelect.map(o => o.id!)));
+                    setSelectedOrderIds(new Set(toSelect.map((o) => o.id!)));
                   }}
                   className="h-10 min-h-[40px] border-[var(--color-light-forest)] dark:border-stone-800 font-semibold rounded-xl text-xs sm:text-sm text-[var(--ui-green)] dark:text-stone-200 hover:bg-[var(--ui-yellow)]/10 dark:hover:bg-stone-800"
                 >
-                  {searchedOrders.every(o => o.id && selectedOrderIds.has(o.id)) ? (
-                    <><Check className="w-4 h-4 mr-1.5 text-[var(--ui-yellow)]" />{t('deselect_all') || 'Deselect'}</>
+                  {searchedOrders.every((o) => o.id && selectedOrderIds.has(o.id)) ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1.5 text-[var(--ui-yellow)]" />
+                      {t('deselect_all') || 'Deselect'}
+                    </>
                   ) : (
-                    <><Check className="w-4 h-4 mr-1.5 opacity-40" />{t('select_all_orders') || 'Select All'}</>
+                    <>
+                      <Check className="w-4 h-4 mr-1.5 opacity-40" />
+                      {t('select_all_orders') || 'Select All'}
+                    </>
                   )}
                 </Button>
               </div>
@@ -485,17 +571,28 @@ export function AdminOrdersTab({
       </div>
 
       {setStatusFilter && (
-        <div role="group" aria-label={language === 'bm' ? 'Penapis status pantas' : 'Quick status filters'} className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        <div
+          role="group"
+          aria-label={language === 'bm' ? 'Penapis status pantas' : 'Quick status filters'}
+          className="mb-3 flex gap-2 overflow-x-auto pb-1"
+        >
           {[
             { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
             { id: 'pending', label: language === 'bm' ? 'Menunggu semakan' : 'Pending review' },
             { id: 'approved', label: language === 'bm' ? 'Diluluskan' : 'Approved' },
             { id: 'billed', label: language === 'bm' ? 'Dibilkan' : 'Billed' },
-          ].map(chip => (
-            <button key={chip.id} type="button" aria-pressed={statusFilter === chip.id} onClick={() => setStatusFilter(chip.id)}
-              className={`min-h-[44px] shrink-0 rounded-xl border px-4 text-xs font-semibold transition-colors ${statusFilter === chip.id
-                ? 'border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-300'
-                : 'border-stone-200 bg-white text-stone-700 hover:border-amber-400 dark:border-white/10 dark:bg-card dark:text-stone-300'}`}>
+          ].map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              aria-pressed={statusFilter === chip.id}
+              onClick={() => setStatusFilter(chip.id)}
+              className={`min-h-[44px] shrink-0 rounded-xl border px-4 text-xs font-semibold transition-colors ${
+                statusFilter === chip.id
+                  ? 'border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-300'
+                  : 'border-stone-200 bg-white text-stone-700 hover:border-amber-400 dark:border-white/10 dark:bg-card dark:text-stone-300'
+              }`}
+            >
               {chip.label}
             </button>
           ))}
@@ -508,93 +605,109 @@ export function AdminOrdersTab({
           <EmptyState
             className="m-4"
             icon={<Inbox className="w-10 h-10 opacity-70" aria-hidden />}
-            title={searchQuery.trim()
-              ? (language === 'bm' ? 'Tiada hasil carian' : 'No matching orders')
-              : (t('no_orders') || 'No orders')}
-            description={searchQuery.trim()
-              ? (language === 'bm'
+            title={
+              searchQuery.trim()
+                ? language === 'bm'
+                  ? 'Tiada hasil carian'
+                  : 'No matching orders'
+                : t('no_orders') || 'No orders'
+            }
+            description={
+              searchQuery.trim()
+                ? language === 'bm'
                   ? 'Cuba tukar kata kunci atau kosongkan carian.'
-                  : 'Try a different keyword or clear the search.')
-              : (language === 'bm'
+                  : 'Try a different keyword or clear the search.'
+                : language === 'bm'
                   ? 'Laraskan penapis tarikh atau tunggu pesanan baharu.'
-                  : 'Adjust date filters or wait for new orders.')}
+                  : 'Adjust date filters or wait for new orders.'
+            }
           />
         ) : (
           (() => {
             const rowHeight = windowWidth < 420 ? 204 : windowWidth < 768 ? 190 : 180;
-            const dynamicListHeight = Math.min(Math.max(searchedOrders.length * rowHeight, 140), 900);
+            const dynamicListHeight = Math.min(
+              Math.max(searchedOrders.length * rowHeight, 140),
+              900
+            );
 
             return (
               <List
+                listRef={rememberedListRef}
                 style={{ height: dynamicListHeight, width: '100%' }}
                 rowCount={searchedOrders.length}
                 rowHeight={rowHeight}
                 rowProps={{}}
-                rowComponent={(({ index, style }: any) => {
-              const order = searchedOrders[index];
-              const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
-              const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
+                rowComponent={({ index, style }: any) => {
+                  const order = searchedOrders[index];
+                  const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
+                  const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
 
-              let formattedHeaderDate = '-';
-              const rawDate = order.dateTime || order.eventDate || order.createdAt;
-              if (rawDate) {
-                formattedHeaderDate = formatDateTimeDisplay(rawDate);
-              }
-              if (formattedHeaderDate === '-') {
-                formattedHeaderDate = order.orderId ? `#${order.orderId}` : (language === 'bm' ? 'Pesanan Katering' : 'Catering Order');
-              }
+                  let formattedHeaderDate = '-';
+                  const rawDate = order.dateTime || order.eventDate || order.createdAt;
+                  if (rawDate) {
+                    formattedHeaderDate = formatDateTimeDisplay(rawDate);
+                  }
+                  if (formattedHeaderDate === '-') {
+                    formattedHeaderDate = order.orderId
+                      ? `#${order.orderId}`
+                      : language === 'bm'
+                        ? 'Pesanan Katering'
+                        : 'Catering Order';
+                  }
 
-              const getRelativeTime = (o: Order) => {
-                const ts = normalizeTimestamp(o.createdAt || o.dateTime);
-                const diffMs = ts > 0 ? Date.now() - (ts * 1000) : 0;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHrs = Math.floor(diffMins / 60);
-                const diffDays = Math.floor(diffHrs / 24);
-                if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
-                if (diffHrs < 24) return `${diffHrs}h`;
-                return `${diffDays}d`;
-              };
+                  const getRelativeTime = (o: Order) => {
+                    const ts = normalizeTimestamp(o.createdAt || o.dateTime);
+                    const diffMs = ts > 0 ? Date.now() - ts * 1000 : 0;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHrs = Math.floor(diffMins / 60);
+                    const diffDays = Math.floor(diffHrs / 24);
+                    if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
+                    if (diffHrs < 24) return `${diffHrs}h`;
+                    return `${diffDays}d`;
+                  };
 
-              const relativeTime = getRelativeTime(order);
-              const clientName = order.to || order.name || (order as any).company || '-';
-              const totalAmount = order.totalAmount != null ? `RM ${Number(order.totalAmount).toFixed(2)}` : '—';
+                  const relativeTime = getRelativeTime(order);
+                  const clientName = order.to || order.name || (order as any).company || '-';
+                  const totalAmount =
+                    order.totalAmount != null ? `RM ${Number(order.totalAmount).toFixed(2)}` : '—';
 
-              const stripColor =
-                order.status === 'approved' || order.status === 'billed'
-                  ? 'bg-[var(--ui-green)]'
-                  : order.status === 'cancel_requested'
-                  ? 'bg-amber-500'
-                  : order.status === 'cancelled'
-                  ? 'bg-[var(--ui-orange)]'
-                  : 'bg-[var(--ui-yellow)]';
+                  const stripColor =
+                    order.status === 'approved' || order.status === 'billed'
+                      ? 'bg-[var(--ui-green)]'
+                      : order.status === 'cancel_requested'
+                        ? 'bg-amber-500'
+                        : order.status === 'cancelled'
+                          ? 'bg-[var(--ui-orange)]'
+                          : 'bg-[var(--ui-yellow)]';
 
-              return (
-                <AdminOrderRow
-                  style={style}
-                  order={order}
-                  language={language}
-                  isSelected={isSelected}
-                  isStarred={isStarred}
-                  formattedHeaderDate={formattedHeaderDate}
-                  relativeTime={relativeTime}
-                  clientName={clientName}
-                  totalAmount={totalAmount}
-                  stripColor={stripColor}
-                  isSelectMode={isSelectMode}
-                  getStatusBadge={getStatusBadge}
-                  handleToggleOrderSelect={handleToggleOrderSelect}
-                  setStarredOrderIds={setStarredOrderIds}
-                  openOrderDetail={openOrderDetail}
-                  openSendDialog={openSendDialog}
-                  handleDelete={handleDelete}
-                  setLongPressedOrder={setLongPressedOrder}
-                />
-              );
-            })}
-          />
-        );
-      })()
-    )}
+                  return (
+                    <AdminOrderRow
+                      style={style}
+                      order={order}
+                      language={language}
+                      isSelected={isSelected}
+                      isStarred={isStarred}
+                      formattedHeaderDate={formattedHeaderDate}
+                      relativeTime={relativeTime}
+                      clientName={clientName}
+                      totalAmount={totalAmount}
+                      stripColor={stripColor}
+                      isSelectMode={isSelectMode}
+                      getStatusBadge={getStatusBadge}
+                      handleToggleOrderSelect={handleToggleOrderSelect}
+                      setStarredOrderIds={setStarredOrderIds}
+                      onReadOrder={onReadOrder}
+                      openOrderDetail={openOrderDetail}
+                      openSendDialog={openSendDialog}
+                      handleDelete={handleDelete}
+                      setLongPressedOrder={setLongPressedOrder}
+                    />
+                  );
+                }}
+              />
+            );
+          })()
+        )}
       </div>
 
       <AdminOrdersExportSheet
@@ -612,34 +725,37 @@ export function AdminOrdersTab({
           <div className="p-4 sm:p-6 bg-white dark:bg-card border-b border-stone-100 dark:border-stone-800">
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-deep-forest dark:text-stone-100">
-                {language === 'bm' ? 'Tindakan Pantas' : 'Quick Actions'}: #{longPressedOrder?.orderId || longPressedOrder?.id?.slice(-4).toUpperCase()}
+                {language === 'bm' ? 'Tindakan Pantas' : 'Quick Actions'}: #
+                {longPressedOrder?.orderId || longPressedOrder?.id?.slice(-4).toUpperCase()}
               </DialogTitle>
               <DialogDescription className="text-stone-500">
                 {longPressedOrder?.name || longPressedOrder?.to || 'Customer'}
               </DialogDescription>
             </DialogHeader>
           </div>
-          
+
           <div className="p-2 sm:p-4 grid gap-2">
-            {longPressedOrder?.status !== 'approved' && longPressedOrder?.status !== 'billed' && longPressedOrder?.status !== 'cancelled' && (
-              <Button 
-                variant="outline" 
-                className="w-full justify-start py-6 text-[var(--ui-green)] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900"
-                onClick={() => {
-                  if (longPressedOrder?.id && handleUpdateStatus) {
-                    handleUpdateStatus(longPressedOrder.id, 'approved');
-                    setLongPressedOrder(null);
-                  }
-                }}
-              >
-                <Check className="w-5 h-5 mr-3" />
-                {language === 'bm' ? 'Luluskan Tempahan' : 'Approve Order'}
-              </Button>
-            )}
+            {longPressedOrder?.status !== 'approved' &&
+              longPressedOrder?.status !== 'billed' &&
+              longPressedOrder?.status !== 'cancelled' && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start py-6 text-[var(--ui-green)] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 border-emerald-200 dark:border-emerald-900"
+                  onClick={() => {
+                    if (longPressedOrder?.id && handleUpdateStatus) {
+                      handleUpdateStatus(longPressedOrder.id, 'approved');
+                      setLongPressedOrder(null);
+                    }
+                  }}
+                >
+                  <Check className="w-5 h-5 mr-3" />
+                  {language === 'bm' ? 'Luluskan Tempahan' : 'Approve Order'}
+                </Button>
+              )}
 
             {longPressedOrder?.status === 'approved' && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start py-6 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900"
                 onClick={() => {
                   if (longPressedOrder?.id && handleUpdateStatus) {
@@ -653,8 +769,8 @@ export function AdminOrdersTab({
               </Button>
             )}
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start py-6 text-[var(--ui-yellow)] hover:bg-sunshine/10 dark:text-amber-500 dark:hover:bg-amber-950 border-sunshine/30 dark:border-amber-900/50"
               onClick={() => {
                 if (longPressedOrder) {
@@ -669,8 +785,8 @@ export function AdminOrdersTab({
 
             <div className="h-px bg-stone-200 dark:bg-stone-800 my-1" />
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start py-6 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 border-rose-200 dark:border-rose-900"
               onClick={() => {
                 if (longPressedOrder?.id) {
@@ -689,4 +805,3 @@ export function AdminOrdersTab({
   );
 }
 export default AdminOrdersTab;
-

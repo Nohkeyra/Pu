@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer as createHttpServer } from 'node:http';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
@@ -277,12 +278,16 @@ async function startServer() {
     });
   });
 
+  const server = createHttpServer(app);
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
         hmr: false,
+        // Share the HTTP port so preview proxies do not need a second WS port.
+        ws: { server },
       },
       appType: 'spa',
     });
@@ -317,7 +322,7 @@ async function startServer() {
   // Centralized telemetry error handler
   app.use(telemetry.expressErrorHandler());
 
-  const server = app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
 

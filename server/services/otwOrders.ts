@@ -1,3 +1,4 @@
+import { firestoreQuota, isFirestoreQuotaError } from './firestoreQuota.js';
 import { randomUUID } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore } from '../firebaseAdmin.js';
@@ -42,7 +43,7 @@ export async function startOtwOrders(orderId: string, clock = new Date()) {
     throw new OtwError('OTW_ORDER_CLOSED');
   }
   if (!['approved', 'billed', 'in_transit'].includes(source.status)) throw new OtwError('ORDER_NOT_ELIGIBLE');
-  const all = await db.collection('orders').get();
+  const all = await db.collection('orders').where('status', 'in', ['approved', 'billed', 'in_transit']).get();
   const selected = selectOtwOrders(all.docs.map<Record<string, any> & { id: string }>(doc => ({ ...doc.data(), id: doc.id })), today, session, deliveryOrder, true)
     .filter(order => {
       const time = otwEventMinute(order.time);
@@ -117,11 +118,17 @@ export async function completeDueOtwOrders(clock = new Date()) {
 
 export function startOtwWorker(): () => void {
   let running = false;
+
   const poll = async () => {
     if (running) return;
+
     running = true;
-    try { await completeDueOtwOrders(); }
-    catch (error) { console.error('[OTW] Completion check failed; persisted deadlines will be retried:', error); }
+    try {
+      await firestoreQuota.run(() => completeDueOtwOrders());
+    }
+    catch (error: unknown) {
+      if (!isFirestoreQuotaError(error)) console.error('[OTW] Completion check failed; persisted deadlines will be retried:', error);
+    }
     finally { running = false; }
   };
   void poll();

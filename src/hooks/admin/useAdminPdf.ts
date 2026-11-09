@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { format } from 'date-fns';
 import type { Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { getDisplayInvoiceNo } from '@/lib/utils';
@@ -33,10 +32,10 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
       const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (!serverRes.ok) throw new Error('Failed to generate PDF from server');
-      
+
       const blob = await serverRes.blob();
       const pdfDataUri = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -54,7 +53,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
         await Filesystem.writeFile({
           path: fileName,
           data: base64Data,
-          directory: Directory.Cache
+          directory: Directory.Cache,
         });
       }
     } catch (error) {
@@ -67,13 +66,13 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
   const handleDownloadPDF = async (order: Order, isFinal: boolean) => {
     if (!order.id) return;
     setGeneratingInvoice(order.id);
-    
+
     try {
       const invoiceNo = getDisplayInvoiceNo(order);
       const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
-        headers: authHeaders()
+        headers: authHeaders(),
       });
       if (!serverRes.ok) throw new Error('Failed to download PDF from server');
       const pdfBlob = await serverRes.blob();
@@ -86,11 +85,11 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
           reader.readAsDataURL(pdfBlob);
         });
         const base64Data = pdfDataUri.split(',')[1];
-        
+
         const savedFile = await Filesystem.writeFile({
           path: fileName,
           data: base64Data,
-          directory: Directory.Cache
+          directory: Directory.Cache,
         });
         await Share.share({ title: fileName, url: savedFile.uri });
       } else {
@@ -109,11 +108,31 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     }
   };
 
-  const prepareConsolidateModal = async () => {
+  const prepareConsolidateModal = async (orders: Order[] = []) => {
+    const batchNo = orders[0]?.invoiceBatchNo || orders[0]?.consolidatedInvoiceNo;
+    if (batchNo) {
+      if (
+        orders.some((order) => (order.invoiceBatchNo || order.consolidatedInvoiceNo) !== batchNo)
+      ) {
+        toast({
+          title: t('error'),
+          description:
+            'Pilih pesanan daripada invois tersimpan yang sama / Select orders from the same saved invoice.',
+          variant: 'error',
+        });
+        return;
+      }
+      setConsolidatedInvoiceNo(batchNo);
+      setShowConsolidateModal(true);
+      return;
+    }
     try {
-      const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), { headers: authHeaders() });
+      const res = await fetch(getApiUrl('/api/admin/next-invoice-number'), {
+        headers: authHeaders(),
+      });
       const data = await res.json();
-      if (!res.ok || !data.success || !data.nextInvoiceNo) throw new Error(data.error || 'Unable to reserve invoice number.');
+      if (!res.ok || !data.success || !data.nextInvoiceNo)
+        throw new Error(data.error || 'Unable to reserve invoice number.');
       setConsolidatedInvoiceNo(data.nextInvoiceNo);
       setShowConsolidateModal(true);
     } catch (error) {
@@ -121,37 +140,52 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     }
   };
 
-  const handleGenerateConsolidatedInvoice = async (orders: Order[], withNotes: boolean, customInvoiceNo?: string) => {
-    setShowConsolidateModal(false);
+  const handleGenerateConsolidatedInvoice = async (
+    orders: Order[],
+    withNotes: boolean,
+    customInvoiceNo?: string,
+    billingAddress?: string
+  ) => {
     setIsGeneratingConsolidated(true);
     try {
       const desiredInvoiceNo = customInvoiceNo?.trim() || consolidatedInvoiceNo?.trim();
       const orderIds = orders.map((o) => o.id).filter(Boolean);
-      
+
       if (!desiredInvoiceNo) throw new Error('Reserve an invoice number before confirming.');
-      const res = await fetch(getApiUrl('/api/admin/commit-consolidated-invoice'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ orderIds, invoiceNo: desiredInvoiceNo }),
-      });
-      const saved = await res.json();
-      if (!res.ok || !saved.success || !saved.invoiceNo) throw new Error(saved.error || 'Unable to save consolidated invoice.');
-      const finalInvoiceNo = saved.invoiceNo;
+      const existingBatch = orders[0]?.invoiceBatchNo || orders[0]?.consolidatedInvoiceNo;
+      let finalInvoiceNo = existingBatch || desiredInvoiceNo;
+      if (!existingBatch) {
+        const res = await fetch(getApiUrl('/api/admin/commit-consolidated-invoice'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            orderIds,
+            invoiceNo: desiredInvoiceNo,
+            includeNotes: withNotes,
+            billingAddress,
+            lang: language,
+          }),
+        });
+        const saved = await res.json();
+        if (!res.ok || !saved.success || !saved.invoiceNo)
+          throw new Error(saved.error || 'Unable to save invoice.');
+        finalInvoiceNo = saved.invoiceNo;
+      }
 
       // 2. Fetch the PDF from the server
       const pdfRes = await fetch(getApiUrl('/api/admin/consolidated-invoice/pdf'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders()
+          ...authHeaders(),
         },
-        body: JSON.stringify({ orderIds, invoiceNo: finalInvoiceNo, includeNotes: withNotes, lang: language })
+        body: JSON.stringify({ invoiceNo: finalInvoiceNo }),
       });
 
       if (!pdfRes.ok) throw new Error('Failed to generate consolidated PDF from server');
       const pdfBlob = await pdfRes.blob();
 
-      const fileName = `Invois_Konsolidasi_${finalInvoiceNo}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
+      const fileName = `Invoice_${finalInvoiceNo}.pdf`;
 
       if (Capacitor.isNativePlatform()) {
         const pdfDataUri = await new Promise<string>((resolve, reject) => {
@@ -161,11 +195,11 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
           reader.readAsDataURL(pdfBlob);
         });
         const base64Data = pdfDataUri.split(',')[1];
-        
+
         const savedFile = await Filesystem.writeFile({
           path: fileName,
           data: base64Data,
-          directory: Directory.Cache
+          directory: Directory.Cache,
         });
         await Share.share({ title: fileName, url: savedFile.uri });
       } else {
@@ -176,16 +210,19 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
         a.click();
         URL.revokeObjectURL(url);
       }
-      
+
+      setShowConsolidateModal(false);
       toast({
         title: t('success'),
-        description: `Consolidated invoice ${finalInvoiceNo} generated.`,
-        variant: 'success'
+        description: `${language === 'bm' ? 'Invois disimpan' : 'Invoice saved'}: ${finalInvoiceNo}`,
+        variant: 'success',
       });
+      return finalInvoiceNo;
     } catch (error) {
       // Keep the same reserved number available after a failed PDF/download retry.
       setShowConsolidateModal(true);
       toast({ title: t('error'), description: String(error), variant: 'error' });
+      return null;
     } finally {
       setIsGeneratingConsolidated(false);
     }
@@ -205,6 +242,6 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     handlePreviewPDF,
     handleDownloadPDF,
     prepareConsolidateModal,
-    handleGenerateConsolidatedInvoice
+    handleGenerateConsolidatedInvoice,
   };
 }

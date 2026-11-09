@@ -1,3 +1,4 @@
+import { fetchCalendarEndpoint } from '@/lib/calendarApi';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -159,21 +160,17 @@ export default function CalendarPage() {
     setCalendarDataError(false);
     const fetchCalendarData = async () => {
       try {
-        const [sessionsRes, ordersRes] = await Promise.all([
-          fetch(getApiUrl('/api/calendar-sessions'), { signal: controller.signal }),
-          fetch(getApiUrl('/api/calendar-orders'), { signal: controller.signal })
-        ]);
-        if (!sessionsRes.ok || !ordersRes.ok) throw new Error('Calendar request failed');
-        const [sessionsData, ordersData] = await Promise.all([sessionsRes.json(), ordersRes.json()]);
-        if (!sessionsData.success || !sessionsData.sessions || !ordersData.success || !Array.isArray(ordersData.orders)) {
-          throw new Error('Calendar response is incomplete');
-        }
+        const data = await fetchCalendarEndpoint<{
+          success: boolean; sessions: typeof aggregatedSessions; orders: Order[];
+        }>(getApiUrl('/api/calendar-data'), controller.signal);
+        if (!data.success || !data.sessions || !Array.isArray(data.orders)) throw new Error('Calendar response is incomplete');
         if (controller.signal.aborted) return;
-        setAggregatedSessions(sessionsData.sessions);
-        setPublicOrders(ordersData.orders);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        console.error('Failed to fetch server-side calendar data:', err);
+        setAggregatedSessions(data.sessions);
+        setPublicOrders(data.orders);
+        setCalendarDataError(false);
+      } catch (err: any) {
+        if (controller.signal.aborted || err?.name === 'AbortError') return;
+        console.warn('Public calendar data unavailable; available records retained:', err);
         setCalendarDataError(true);
       } finally {
         if (!controller.signal.aborted) setLoading(false);

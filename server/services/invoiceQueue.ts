@@ -1,12 +1,16 @@
+import { firestoreQuota, isFirestoreQuotaError } from './firestoreQuota.js';
 import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { generateServerInvoicePdf } from './serverPdfService.js';
+import { invoiceEmailTemplate } from './invoiceEmailTemplate.js';
+import { readInvoiceEmailPreview, readInvoicePreviewPdf } from './invoiceEmailPreviews.js';
 import { telemetry } from '../telemetry.js';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { randomUUID, createHash } from 'crypto';
 
 export interface InvoiceDeliveryJob {
   orderId: string;
+  emailPreviewId?: string;
   orderForPdf: Record<string, any>;
   invoiceNo: string;
   recipientEmail: string;
@@ -74,9 +78,9 @@ export function isPermanentEmailError(err: unknown, recipientEmail?: string): bo
     /5\.1\.1/,
     /5\.1\.2/,
     /5\.1\.3/,
-    /5\.2\.1/
+    /5\.2\.1/,
   ];
-  return permanentPatterns.some(pattern => pattern.test(msg));
+  return permanentPatterns.some((pattern) => pattern.test(msg));
 }
 
 /**
@@ -115,9 +119,19 @@ export class DurableInvoiceOutboxService {
   private pollIntervalMs = 5000;
   private leaseDurationMs = 60_000; // 1 minute lease lock
   private maxRetries = 3;
-  private baseRetryDelayMs = 5_000;  // 5 seconds base retry delay
+  private baseRetryDelayMs = 5_000; // 5 seconds base retry delay
   private maxRetryDelayMs = 300_000; // 5 minutes max retry delay
   private timer: NodeJS.Timeout | null = null;
+  private idleState: Record<PollKind, { nextPollAt: number; delayMs: number; revision: number }> = {
+    ready: { nextPollAt: 0, delayMs: 5000, revision: 0 },
+    recovery: { nextPollAt: 0, delayMs: 5000, revision: 0 },
+  };
+  private wakeReady(): void {
+    const state = this.idleState.ready;
+    state.nextPollAt = 0;
+    state.delayMs = this.pollIntervalMs;
+    state.revision++;
+  }
 
   // Permanent Firestore errors (e.g. 9 FAILED_PRECONDITION: missing composite index)
   // cannot be fixed by retrying every poll. Each query pauses independently with
@@ -166,7 +180,9 @@ export class DurableInvoiceOutboxService {
 
   private defaultKey(job: InvoiceDeliveryJob): string {
     if (!job.orderId || !job.invoiceNo) {
-      throw new Error('Invoice outbox job requires orderId and invoiceNo (or an explicit idempotencyKey).');
+      throw new Error(
+        'Invoice outbox job requires orderId and invoiceNo (or an explicit idempotencyKey).'
+      );
     }
     return `invoice:${job.orderId}:${job.invoiceNo}`;
   }
@@ -175,6 +191,7 @@ export class DurableInvoiceOutboxService {
     const now = Timestamp.now();
     return {
       orderId: job.orderId,
+      ...(job.emailPreviewId ? { emailPreviewId: job.emailPreviewId } : {}),
       orderForPdf: job.orderForPdf,
       invoiceNo: job.invoiceNo,
       recipientEmail: job.recipientEmail,
@@ -200,16 +217,24 @@ export class DurableInvoiceOutboxService {
 
   private isAlreadyExists(err: unknown): boolean {
     const e = err as { code?: unknown; message?: unknown } | null;
-    return e?.code === 6 || e?.code === 'already-exists' || /ALREADY_EXISTS/.test(String(e?.message ?? ''));
+    return (
+      e?.code === 6 ||
+      e?.code === 'already-exists' ||
+      /ALREADY_EXISTS/.test(String(e?.message ?? ''))
+    );
   }
 
   /** Call before other transaction writes: order and outbox commit together. */
-  public async enqueueInTransaction(tx: FirebaseFirestore.Transaction, job: InvoiceDeliveryJob): Promise<string> {
+  public async enqueueInTransaction(
+    tx: FirebaseFirestore.Transaction,
+    job: InvoiceDeliveryJob
+  ): Promise<string> {
     const key = job.idempotencyKey || this.defaultKey(job);
     const id = this.jobIdForKey(key);
     const ref = getFirestore().collection('invoice_outbox').doc(id);
     const existing = await tx.get(ref);
     if (!existing.exists) tx.set(ref, this.buildDoc(job, key));
+    this.wakeReady();
     return id;
   }
 
@@ -223,6 +248,7 @@ export class DurableInvoiceOutboxService {
     const db = getFirestore();
     const key = job.idempotencyKey || this.defaultKey(job);
     const jobId = this.jobIdForKey(key);
+    this.wakeReady();
 
     try {
       await db.collection('invoice_outbox').doc(jobId).create(this.buildDoc(job, key));
@@ -232,6 +258,7 @@ export class DurableInvoiceOutboxService {
         invoiceNo: job.invoiceNo,
         recipient: job.recipientEmail,
       });
+      this.wakeReady();
       return jobId;
     } catch (err) {
       if (this.isAlreadyExists(err)) {
@@ -243,7 +270,11 @@ export class DurableInvoiceOutboxService {
         return jobId;
       }
       telemetry.captureException(err, {
-        metadata: { component: 'DurableInvoiceOutboxService', action: 'enqueue', orderId: job.orderId }
+        metadata: {
+          component: 'DurableInvoiceOutboxService',
+          action: 'enqueue',
+          orderId: job.orderId,
+        },
       });
       throw err;
     }
@@ -255,7 +286,10 @@ export class DurableInvoiceOutboxService {
    * Pass `requestId` to make a retried resend request idempotent; without it every call is a
    * new job (an explicit, repeated human action).
    */
-  public async enqueueResend(job: InvoiceDeliveryJob, resend: InvoiceResendRequest): Promise<string> {
+  public async enqueueResend(
+    job: InvoiceDeliveryJob,
+    resend: InvoiceResendRequest
+  ): Promise<string> {
     const requestedBy = resend?.requestedBy?.trim();
     const reason = resend?.reason?.trim();
     if (!requestedBy || !reason) {
@@ -291,13 +325,14 @@ export class DurableInvoiceOutboxService {
     } catch (err) {
       if (!this.isAlreadyExists(err)) throw err;
     }
+    this.wakeReady();
     return docRef.id;
   }
 
   public startBackgroundWorker(): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      this.processQueue().catch(err => {
+      this.processQueue(false).catch((err) => {
         console.error('[InvoiceOutbox] Background worker cycle error:', err);
       });
     }, this.pollIntervalMs);
@@ -310,12 +345,12 @@ export class DurableInvoiceOutboxService {
     }
   }
 
-  public async processQueue(): Promise<void> {
+  public async processQueue(force = true): Promise<void> {
     if (this.isPolling) return;
     this.isPolling = true;
     try {
-      await this.drain('ready');
-      await this.drain('recovery');
+      await this.drain('ready', force);
+      await this.drain('recovery', force);
     } finally {
       this.isPolling = false;
     }
@@ -331,13 +366,16 @@ export class DurableInvoiceOutboxService {
     return col.where('status', '==', 'processing').limit(10);
   }
 
-  private async drain(kind: PollKind): Promise<void> {
+  private async drain(kind: PollKind, force: boolean): Promise<void> {
     const state = this.queryState[kind];
     const nowMs = Date.now();
-    if (nowMs < state.blockedUntilMs) return;
-
+    const idle = this.idleState[kind];
+    if (nowMs < state.blockedUntilMs || (!force && nowMs < idle.nextPollAt)) return;
+    const revision = idle.revision;
     try {
-      const snapshot = await this.buildQuery(kind).get();
+      const snapshot = await firestoreQuota.run(() => this.buildQuery(kind).get());
+      let hasRunnableJob = false;
+      let nextDueAt = Infinity;
 
       // Query is healthy again: clear any backoff.
       state.blockedUntilMs = 0;
@@ -352,16 +390,29 @@ export class DurableInvoiceOutboxService {
           if (d?.isPermanent) continue;
 
           const nextRetryAtMs = toMillis(d?.nextRetryAt);
-          if (nextRetryAtMs && nextRetryAtMs > nowMs) continue;
+          if (nextRetryAtMs && nextRetryAtMs > nowMs) {
+            nextDueAt = Math.min(nextDueAt, nextRetryAtMs);
+            continue;
+          }
         } else if (kind === 'recovery') {
           const lockedUntilMs = toMillis(d?.lockedUntil);
-          if (!lockedUntilMs || lockedUntilMs > nowMs) continue;
+          if (!lockedUntilMs) continue;
+          if (lockedUntilMs > nowMs) {
+            nextDueAt = Math.min(nextDueAt, lockedUntilMs);
+            continue;
+          }
         }
 
-        const claimed = await this.claim(docSnap.ref);
+        hasRunnableJob = true;
+        const claimed = await firestoreQuota.run(() => this.claim(docSnap.ref));
         if (claimed) {
           await this.executeJob(docSnap.id, claimed);
         }
+      }
+      if (revision === idle.revision) {
+        const delay = hasRunnableJob ? this.pollIntervalMs : idle.delayMs;
+        idle.nextPollAt = Math.min(Date.now() + delay, nextDueAt);
+        idle.delayMs = hasRunnableJob ? this.pollIntervalMs : Math.min(60_000, delay * 2);
       }
     } catch (err) {
       if (this.isPermanentFirestoreError(err)) {
@@ -372,20 +423,12 @@ export class DurableInvoiceOutboxService {
         const link = msg.match(/https:\/\/console\.firebase\.google\.com\S+/)?.[0];
         console.error(
           `[InvoiceOutbox] Permanent Firestore error (FAILED_PRECONDITION) on '${kind}' query; pausing it for ${Math.round(waitMs / 1000)}s. ` +
-          `Pending jobs are preserved. Deploy the invoice_outbox indexes from firestore.indexes.json.` +
-          (link ? ` Index link: ${link}` : '')
+            `Pending jobs are preserved. Deploy the invoice_outbox indexes from firestore.indexes.json.` +
+            (link ? ` Index link: ${link}` : '')
         );
-      } else if (this.isQuotaExhaustedError(err)) {
-        const waitMs = state.backoffMs;
-        state.blockedUntilMs = Date.now() + waitMs;
-        state.backoffMs = Math.min(waitMs * 2, DurableInvoiceOutboxService.BLOCK_MAX_MS);
-        const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'restoran-wawasan';
-        const databaseId = process.env.VITE_FIREBASE_DATABASE_ID || '(default)';
-        console.warn(
-          `[InvoiceOutbox] Firestore Quota Exceeded (RESOURCE_EXHAUSTED) on '${kind}' query; pausing worker cycle for ${Math.round(waitMs / 1000)}s. ` +
-          `Quota will reset tomorrow. Detailed pricing: https://firebase.google.com/pricing#cloud-firestore. ` +
-          `Console link: https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/data?openUpgradeDialog=true`
-        );
+      } else if (isFirestoreQuotaError(err)) {
+        // The shared gate already paused participating readers and logged once.
+        return;
       } else {
         console.error(`[InvoiceOutbox] Process queue error (${kind}):`, err);
       }
@@ -394,14 +437,11 @@ export class DurableInvoiceOutboxService {
 
   private isPermanentFirestoreError(err: unknown): boolean {
     const e = err as { code?: unknown; message?: unknown } | null;
-    return e?.code === 9 || e?.code === 'failed-precondition' ||
-      /FAILED_PRECONDITION/.test(String(e?.message ?? ''));
-  }
-
-  private isQuotaExhaustedError(err: unknown): boolean {
-    const e = err as { code?: unknown; message?: unknown } | null;
-    return e?.code === 8 || e?.code === 'resource-exhausted' ||
-      /RESOURCE_EXHAUSTED|Quota exceeded/i.test(String(e?.message ?? ''));
+    return (
+      e?.code === 9 ||
+      e?.code === 'failed-precondition' ||
+      /FAILED_PRECONDITION/.test(String(e?.message ?? ''))
+    );
   }
 
   /**
@@ -421,14 +461,16 @@ export class DurableInvoiceOutboxService {
         const nowMs = Date.now();
         const attempts = d.attempts || 0;
         const maxRetries = d.maxRetries || this.maxRetries;
-        const orderRef = db.collection('orders').doc(d.orderId);
+        const orderRef = db
+          .collection(d.emailPreviewId ? 'invoice_email_previews' : 'orders')
+          .doc(d.emailPreviewId || d.orderId);
 
         if (d.status === 'processing') {
           if (toMillis(d.lockedUntil) > nowMs) return null; // live lease held by another worker
           if (d.isPermanent || attempts >= maxRetries) {
             // Crashed/timed out on every allowed attempt or marked permanent: keep the job visible as failed.
             const lastError = d.isPermanent
-              ? (d.lastError || 'Permanent failure (non-retryable error)')
+              ? d.lastError || 'Permanent failure (non-retryable error)'
               : 'Lease expired after maximum attempts (worker crash or timeout)';
             tx.update(ref, {
               status: 'failed',
@@ -441,11 +483,15 @@ export class DurableInvoiceOutboxService {
               failedPermanentlyAt: d.failedPermanentlyAt || FieldValue.serverTimestamp(),
               updatedAt: FieldValue.serverTimestamp(),
             });
-            tx.set(orderRef, {
-              invoiceDeliveryStatus: 'failed',
-              invoiceDeliveryError: lastError,
-              updatedAt: FieldValue.serverTimestamp(),
-            }, { merge: true });
+            tx.set(
+              orderRef,
+              {
+                invoiceDeliveryStatus: 'failed',
+                invoiceDeliveryError: lastError,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
             return null;
           }
         } else if (d.status === 'pending' || d.status === 'failed') {
@@ -464,15 +510,20 @@ export class DurableInvoiceOutboxService {
           attempts: attempts + 1,
           updatedAt: FieldValue.serverTimestamp(),
         });
-        tx.set(orderRef, {
-          invoiceDeliveryStatus: 'processing',
-          invoiceDeliveryAttempt: attempts + 1,
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
+        tx.set(
+          orderRef,
+          {
+            invoiceDeliveryStatus: 'processing',
+            invoiceDeliveryAttempt: attempts + 1,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
 
         return { data: d, attempts: attempts + 1, maxRetries, leaseToken };
       });
     } catch (err) {
+      if (isFirestoreQuotaError(err)) throw err;
       console.error('[InvoiceOutbox] Claim transaction failed:', err);
       return null;
     }
@@ -482,34 +533,42 @@ export class DurableInvoiceOutboxService {
     const { data } = claimed;
 
     try {
-      // 1. Generate PDF server-side with server-derived values
-      const pdfBuffer = await generateServerInvoicePdf(data.orderForPdf, true);
-
-      // 2. Email PDF via SMTP
-      const transporter = createBrevoTransporter();
-      const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
-
+      const preview = data.emailPreviewId
+        ? await readInvoiceEmailPreview(data.emailPreviewId, undefined, true)
+        : null;
+      const pdfBuffer = preview
+        ? await readInvoicePreviewPdf(data.emailPreviewId, undefined, true)
+        : await generateServerInvoicePdf(data.orderForPdf, true);
+      const envelope =
+        preview ||
+        invoiceEmailTemplate({
+          company: data.companyName,
+          invoiceNumbers: [data.invoiceNo],
+          total: Number(data.totalAmount),
+          lang: data.lang === 'en' ? 'en' : 'bm',
+        });
+      const transporter = createBrevoTransporter(),
+        senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
       await transporter.sendMail({
-        from: `"Restoran Wawasan Pak Usop" <${senderEmail}>`,
-        to: data.recipientEmail.trim(),
-        subject: data.lang === 'bm'
-          ? `[Restoran Wawasan] Invois Rasmi ${data.invoiceNo} - ${data.companyName}`
-          : `[Restoran Wawasan] Official Invoice ${data.invoiceNo} - ${data.companyName}`,
-        text: data.lang === 'bm'
-          ? `Salam hormat,\n\nSila rujuk invois rasmi kami ${data.invoiceNo} yang dilampirkan bersama emel ini.\n\nJumlah: RM ${Number(data.totalAmount).toFixed(2)}\n\nTerima kasih atas kepercayaan anda.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`
-          : `Dear ${data.companyName},\n\nPlease find our official invoice ${data.invoiceNo} attached to this email.\n\nTotal: RM ${Number(data.totalAmount).toFixed(2)}\n\nThank you for your continued trust.\n\nRestoran Wawasan Pak Usop\nUnit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya`,
-        attachments: [{
-          filename: `Invoice_${data.invoiceNo}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf',
-        }],
+        from: `"Restoran Wawasan" <${senderEmail}>`,
+        to: preview ? preview.email : data.recipientEmail.trim(),
+        subject: envelope.subject,
+        text: envelope.text,
+        html: envelope.html,
+        attachments: [
+          {
+            filename: preview?.filename || `Invoice_${data.invoiceNo}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
       });
     } catch (err: any) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error(`[InvoiceOutbox] Job ${jobId} failed (attempt ${claimed.attempts}):`, errorMsg);
 
       telemetry.captureException(err, {
-        metadata: { component: 'DurableInvoiceOutboxService', jobId, orderId: data.orderId }
+        metadata: { component: 'DurableInvoiceOutboxService', jobId, orderId: data.orderId },
       });
 
       await this.acknowledgeFailure(jobId, claimed, err);
@@ -534,42 +593,62 @@ export class DurableInvoiceOutboxService {
   private async acknowledgeDelivered(jobId: string, claimed: ClaimedJob): Promise<void> {
     const db = getFirestore();
     const ref = db.collection('invoice_outbox').doc(jobId);
-    const orderRef = db.collection('orders').doc(claimed.data.orderId);
+    const orderRef = db
+      .collection(claimed.data.emailPreviewId ? 'invoice_email_previews' : 'orders')
+      .doc(claimed.data.emailPreviewId || claimed.data.orderId);
     try {
-      const applied = await db.runTransaction(async (tx) => {
-        const snap = await tx.get(ref);
-        if (!this.ownsLease(snap, claimed.leaseToken)) return false;
-        tx.update(ref, {
-          status: 'delivered',
-          lockedBy: null,
-          lockedUntil: null,
-          leaseToken: null,
-          deliveredAt: FieldValue.serverTimestamp(),
-          deliveredBy: this.workerId,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        tx.set(orderRef, {
-          invoiceDeliveryStatus: 'delivered',
-          invoiceDeliveredAt: new Date().toISOString(),
-          updatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-        return true;
-      });
+      const applied = await firestoreQuota.run(() =>
+        db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          if (!this.ownsLease(snap, claimed.leaseToken)) return false;
+          tx.update(ref, {
+            status: 'delivered',
+            lockedBy: null,
+            lockedUntil: null,
+            leaseToken: null,
+            deliveredAt: FieldValue.serverTimestamp(),
+            deliveredBy: this.workerId,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          tx.set(
+            orderRef,
+            {
+              ...(claimed.data.emailPreviewId ? { status: 'delivered' } : {}),
+              invoiceDeliveryStatus: 'delivered',
+              invoiceDeliveredAt: new Date().toISOString(),
+              updatedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+          return true;
+        })
+      );
       if (!applied) {
-        console.warn(`[InvoiceOutbox] Stale worker ack ignored for job ${jobId}: lease was reclaimed.`);
+        console.warn(
+          `[InvoiceOutbox] Stale worker ack ignored for job ${jobId}: lease was reclaimed.`
+        );
       }
     } catch (err) {
       // Job stays 'processing'; the lease expires and recovery re-claims it (at-least-once).
-      console.error(`[InvoiceOutbox] Failed to acknowledge delivery of job ${jobId}:`, err);
+      if (!isFirestoreQuotaError(err))
+        console.error(`[InvoiceOutbox] Failed to acknowledge delivery of job ${jobId}:`, err);
     }
   }
 
-  private async acknowledgeFailure(jobId: string, claimed: ClaimedJob, rawError: unknown): Promise<void> {
+  private async acknowledgeFailure(
+    jobId: string,
+    claimed: ClaimedJob,
+    rawError: unknown
+  ): Promise<void> {
     const db = getFirestore();
     const ref = db.collection('invoice_outbox').doc(jobId);
-    const orderRef = db.collection('orders').doc(claimed.data.orderId);
+    const orderRef = db
+      .collection(claimed.data.emailPreviewId ? 'invoice_email_previews' : 'orders')
+      .doc(claimed.data.emailPreviewId || claimed.data.orderId);
     const errorMsg = rawError instanceof Error ? rawError.message : String(rawError);
-    const isPermanent = claimed.attempts >= claimed.maxRetries || isPermanentEmailError(rawError, claimed.data?.recipientEmail);
+    const isPermanent =
+      claimed.attempts >= claimed.maxRetries ||
+      isPermanentEmailError(rawError, claimed.data?.recipientEmail);
     const nowMs = Date.now();
 
     let nextRetryAt: Timestamp | null = null;
@@ -579,34 +658,43 @@ export class DurableInvoiceOutboxService {
     }
 
     try {
-      const applied = await db.runTransaction(async (tx) => {
-        const snap = await tx.get(ref);
-        if (!this.ownsLease(snap, claimed.leaseToken)) return false;
-        tx.update(ref, {
-          status: 'failed',
-          isPermanent,
-          lockedBy: null,
-          lockedUntil: null,
-          leaseToken: null,
-          lastError: errorMsg,
-          nextRetryAt,
-          ...(isPermanent ? { failedPermanentlyAt: FieldValue.serverTimestamp() } : {}),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        if (isPermanent) {
-          tx.set(orderRef, {
-            invoiceDeliveryStatus: 'failed',
-            invoiceDeliveryError: errorMsg,
+      const applied = await firestoreQuota.run(() =>
+        db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          if (!this.ownsLease(snap, claimed.leaseToken)) return false;
+          tx.update(ref, {
+            status: 'failed',
+            isPermanent,
+            lockedBy: null,
+            lockedUntil: null,
+            leaseToken: null,
+            lastError: errorMsg,
+            nextRetryAt,
+            ...(isPermanent ? { failedPermanentlyAt: FieldValue.serverTimestamp() } : {}),
             updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
-        }
-        return true;
-      });
+          });
+          if (isPermanent) {
+            tx.set(
+              orderRef,
+              {
+                invoiceDeliveryStatus: 'failed',
+                invoiceDeliveryError: errorMsg,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
+          return true;
+        })
+      );
       if (!applied) {
-        console.warn(`[InvoiceOutbox] Stale worker failure write ignored for job ${jobId}: lease was reclaimed.`);
+        console.warn(
+          `[InvoiceOutbox] Stale worker failure write ignored for job ${jobId}: lease was reclaimed.`
+        );
       }
     } catch (err) {
-      console.error(`[InvoiceOutbox] Failed to record failure of job ${jobId}:`, err);
+      if (!isFirestoreQuotaError(err))
+        console.error(`[InvoiceOutbox] Failed to record failure of job ${jobId}:`, err);
     }
   }
 
@@ -614,7 +702,7 @@ export class DurableInvoiceOutboxService {
    * Public alias to enqueue (backward compatible with previous in-memory queue usage)
    */
   public enqueueLegacy(job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>): void {
-    this.enqueue(job as InvoiceDeliveryJob).catch(err => {
+    this.enqueue(job as InvoiceDeliveryJob).catch((err) => {
       console.error('[InvoiceOutbox] Failed to enqueue legacy job:', err);
     });
   }
@@ -627,9 +715,10 @@ const sharedService = new DurableInvoiceOutboxService();
 export const invoiceQueue = {
   enqueue: (job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>) => sharedService.enqueue(job),
   /** Intentional, audited re-send as a separate job. Not wired to any route. */
-  enqueueResend: (job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>, resend: InvoiceResendRequest) =>
-    sharedService.enqueueResend(job as InvoiceDeliveryJob, resend),
+  enqueueResend: (
+    job: Omit<InvoiceDeliveryJob, 'attempts' | 'maxRetries'>,
+    resend: InvoiceResendRequest
+  ) => sharedService.enqueueResend(job as InvoiceDeliveryJob, resend),
   // Export singleton service instance
   service: sharedService,
 };
-

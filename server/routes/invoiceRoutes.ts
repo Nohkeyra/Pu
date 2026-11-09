@@ -1,16 +1,43 @@
 import { Router, type Request, type Response } from 'express';
 import { verifyAdminToken, verifyAdminJwtWithRevocation } from '../adminAuth.js';
-import { createBrevoTransporter } from '../emailService.js';
+import { invoiceQueue } from '../services/invoiceQueue.js';
+import {
+  createInvoiceEmailPreview,
+  readInvoicePreviewPdf,
+  cleanExpiredInvoicePreviews,
+} from '../services/invoiceEmailPreviews.js';
+import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import { whatsappBusinessService } from '../services/whatsappBusinessService.js';
 import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
-import { generateServerInvoicePdf, generateServerConsolidatedInvoicePdf } from '../services/serverPdfService.js';
+import {
+  generateServerInvoicePdf,
+  generateServerConsolidatedInvoicePdf,
+  generateSavedInvoicePdf,
+} from '../services/serverPdfService.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
-import { commitConsolidatedInvoice, reserveConsolidatedNumber, ConsolidatedInvoiceError } from '../services/consolidatedInvoices.js';
+import {
+  consolidatedOrderIds,
+  commitConsolidatedInvoice,
+  reserveConsolidatedNumber,
+  readInvoiceBatch,
+  ConsolidatedInvoiceError,
+} from '../services/consolidatedInvoices.js';
 
 const router = Router();
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const actorId = (req: Request): string =>
+  (req as Request & { user?: { uid?: string } }).user?.uid || 'admin';
+function invoiceError(res: Response, error: unknown) {
+  console.error('[Invoice]', error instanceof Error ? error.message : error);
+  return res.status(error instanceof ConsolidatedInvoiceError ? error.status : 503).json({
+    success: false,
+    error:
+      error instanceof ConsolidatedInvoiceError
+        ? error.message
+        : 'Unable to prepare invoice. Please retry.',
+  });
+}
 
 export interface InvoiceCallerAuth {
   isAdmin: boolean;
@@ -22,9 +49,7 @@ export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerA
   const authHeader = req.headers.authorization;
   // Tokens must be carried in the Authorization header, not the URL.
   // Query-string credentials can leak through logs, copied links and browser history.
-  const token = authHeader?.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : null;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
   if (!token) {
     return null;
@@ -45,11 +70,12 @@ export async function getInvoiceCallerAuth(req: Request): Promise<InvoiceCallerA
   if (decoded) {
     const adminEmails = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
       .split(',')
-      .map(e => e.trim().toLowerCase())
+      .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     // An email claim is not proof of ownership until Firebase verifies it.
     const userEmail = decoded.email_verified === true ? decoded.email?.toLowerCase() || null : null;
-    const isAdmin = decoded.admin === true || (userEmail !== null && adminEmails.includes(userEmail));
+    const isAdmin =
+      decoded.admin === true || (userEmail !== null && adminEmails.includes(userEmail));
 
     return {
       isAdmin,
@@ -83,12 +109,21 @@ const forwardOrderLimiter = createDistributedRateLimiter({
 
 // WhatsApp API Endpoint for Admin Invoice Sharing
 router.post('/send-invoice-whatsapp', verifyAdminToken, async (req, res) => {
-  const { recipientPhone, customerName, invoiceNo, eventDate, pax, totalAmount, pdfDownloadUrl, lang } = req.body || {};
+  const {
+    recipientPhone,
+    customerName,
+    invoiceNo,
+    eventDate,
+    pax,
+    totalAmount,
+    pdfDownloadUrl,
+    lang,
+  } = req.body || {};
 
   if (!recipientPhone || !customerName || !invoiceNo) {
     return res.status(400).json({
       success: false,
-      error: 'recipientPhone, customerName, and invoiceNo are required fields.'
+      error: 'recipientPhone, customerName, and invoiceNo are required fields.',
     });
   }
 
@@ -101,7 +136,7 @@ router.post('/send-invoice-whatsapp', verifyAdminToken, async (req, res) => {
       pax: pax || '-',
       totalAmount: Number(totalAmount) || 0,
       pdfDownloadUrl,
-      lang: lang === 'en' ? 'en' : 'bm'
+      lang: lang === 'en' ? 'en' : 'bm',
     });
 
     return res.json(result);
@@ -117,7 +152,7 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
   if (!orderPayload.customerName || !orderPayload.contactNumber) {
     return res.status(400).json({
       success: false,
-      error: 'customerName and contactNumber are required to forward order.'
+      error: 'customerName and contactNumber are required to forward order.',
     });
   }
 
@@ -133,7 +168,7 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
       totalAmount: Number(orderPayload.totalAmount) || 0,
       selectedDishes: orderPayload.selectedDishes || orderPayload.dishes || [],
       deliveryAddress: orderPayload.deliveryAddress || orderPayload.address,
-      specialNotes: orderPayload.specialNotes || orderPayload.notes
+      specialNotes: orderPayload.specialNotes || orderPayload.notes,
     });
 
     return res.json(result);
@@ -143,51 +178,71 @@ router.post('/forward-order-whatsapp', forwardOrderLimiter, async (req, res) => 
   }
 });
 
-router.post('/send-invoice', verifyAdminToken, async (req: Request, res: Response) => {
-  const { orderId, email, subject, body } = req.body || {};
-
+router.post('/admin/invoice-email-preview', verifyAdminToken, async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
   try {
-    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
-      return res.status(400).json({ success: false, error: 'Invalid or missing email recipient address.' });
-    }
-
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP not configured (SMTP_USER/SMTP_PASS missing)');
-    }
-
-    let pdfBuffer: Buffer | null = null;
-    if (orderId) {
-      const db = getFirestore();
-      const orderSnap = await db.collection('orders').doc(orderId).get();
-      if (orderSnap.exists) {
-        const { generateServerInvoicePdf } = await import('../services/serverPdfService.js');
-        const orderForPdf: any = { ...orderSnap.data(), id: orderSnap.id };
-        pdfBuffer = await generateServerInvoicePdf(orderForPdf, true);
-      }
-    }
-
-    const transporter = createBrevoTransporter();
-    const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
-
-    const attachments = pdfBuffer ? [
-      {
-        filename: `Invoice_${orderId || 'RW'}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
-      }
-    ] : [];
-
-    await transporter.sendMail({
-      from: `"Restoran Wawasan" <${senderEmail}>`,
-      to: email.trim(),
-      subject: subject || 'Your Invoice from Restoran Wawasan',
-      text: body || 'Please find your invoice attached.',
-      attachments
+    const preview = await createInvoiceEmailPreview(req.body || {}, actorId(req));
+    void cleanExpiredInvoicePreviews().catch((error) =>
+      console.error('[Invoice preview cleanup]', error)
+    );
+    return res.json({
+      success: true,
+      preview: {
+        id: preview.id,
+        email: preview.email,
+        subject: preview.subject,
+        text: preview.text,
+        html: preview.html,
+        filename: preview.filename,
+        invoiceNumbers: preview.invoiceNumbers,
+        expiresAt: preview.expiresAt,
+      },
     });
-
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: String(err) });
+  } catch (error) {
+    return invoiceError(res, error);
+  }
+});
+router.get('/admin/invoice-email-preview/:id/pdf', verifyAdminToken, async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  try {
+    res.type('application/pdf');
+    return res.send(await readInvoicePreviewPdf(req.params.id, actorId(req)));
+  } catch (error) {
+    return invoiceError(res, error);
+  }
+});
+router.post('/send-invoice', verifyAdminToken, async (req, res) => {
+  try {
+    const id = typeof req.body?.previewId === 'string' ? req.body.previewId : '';
+    if (!id)
+      throw new ConsolidatedInvoiceError('Prepare and review the email and PDF before sending.');
+    await readInvoicePreviewPdf(id, actorId(req));
+    const db = getFirestore();
+    const result = await db.runTransaction(async (tx) => {
+      const ref = db.collection('invoice_email_previews').doc(id),
+        preview = (await tx.get(ref)).data();
+      if (!preview || preview.actor !== actorId(req))
+        throw new ConsolidatedInvoiceError('Preview not found.', 404);
+      if (preview.expiresAt < Date.now())
+        throw new ConsolidatedInvoiceError('Preview expired. Prepare a fresh preview.', 410);
+      if (preview.status !== 'draft') return { status: preview.status, jobId: preview.jobId };
+      const jobId = await invoiceQueue.service.enqueueInTransaction(tx, {
+        orderId: preview.orderId || id,
+        emailPreviewId: id,
+        orderForPdf: {},
+        invoiceNo: preview.invoiceNumbers[0],
+        recipientEmail: preview.email,
+        totalAmount: preview.total,
+        companyName: preview.company,
+        lang: preview.lang,
+        idempotencyKey: `preview:${id}`,
+      });
+      tx.update(ref, { status: 'queued', jobId });
+      return { status: 'queued', jobId };
+    });
+    return res.status(202).json({ success: true, ...result });
+  } catch (error) {
+    return invoiceError(res, error);
   }
 });
 
@@ -226,12 +281,30 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     if (req.query.lang && (req.query.lang === 'en' || req.query.lang === 'bm')) {
       orderData.lang = req.query.lang;
     }
-    const isFinal = req.query.final === 'true' || (orderData.status !== 'pending' && orderData.status !== 'rejected' && orderData.status !== 'cancelled');
-    const pdfBuffer = await generateServerInvoicePdf(orderData, isFinal);
+    const isFinal =
+      req.query.final === 'true' ||
+      (orderData.status !== 'pending' &&
+        orderData.status !== 'rejected' &&
+        orderData.status !== 'cancelled');
+    let pdfBuffer: Buffer;
+    if (orderData.invoiceBatchNo && isFinal) {
+      const saved = (await readInvoiceBatch(orderData.invoiceBatchNo)) as InvoiceBatch;
+      // Return the original complete PDF: its column widths and page grouping remain fixed.
+      const snaps = await db.getAll(
+        ...saved.orders.map((order) => db.collection('orders').doc(order.id!))
+      );
+      if (snaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
+        return res.status(403).json({ error: 'Forbidden invoice PDF.' });
+      pdfBuffer = await generateSavedInvoicePdf(saved);
+    } else pdfBuffer = await generateServerInvoicePdf(orderData, isFinal);
 
-    const invoiceNo = orderData.invoiceNo || `RW_${orderId.substring(0, 5).toUpperCase()}`;
+    const invoiceNo =
+      orderData.invoiceBatchNo ||
+      orderData.invoiceNo ||
+      `RW_${orderId.substring(0, 5).toUpperCase()}`;
     const filename = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
 
+    res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     return res.send(pdfBuffer);
@@ -250,18 +323,34 @@ router.get('/admin/next-invoice-number', verifyAdminToken, async (req, res) => {
     return res.json({ success: true, nextInvoiceNo });
   } catch (error) {
     console.error('[Consolidated invoice] Reserve failed:', error);
-    return res.status(503).json({ success: false, error: 'Unable to reserve invoice number. Please retry.' });
+    return res
+      .status(503)
+      .json({ success: false, error: 'Unable to reserve invoice number. Please retry.' });
   }
 });
 
 router.post('/admin/commit-consolidated-invoice', verifyAdminToken, async (req, res) => {
   try {
-    const saved = await commitConsolidatedInvoice(req.body?.orderIds, req.body?.invoiceNo, (req as any).user?.uid || 'admin');
-    return res.json({ success: true, invoiceNo: saved.invoiceNo });
+    const saved = await commitConsolidatedInvoice(
+      req.body?.orderIds,
+      req.body?.invoiceNo,
+      actorId(req),
+      req.body || {}
+    );
+    return res.json({
+      success: true,
+      invoiceNo: saved.invoiceNo,
+      pages: saved.pages,
+      recipient: saved.recipient,
+    });
   } catch (error) {
     console.error('[Consolidated invoice] Commit failed:', error);
     return res.status(error instanceof ConsolidatedInvoiceError ? error.status : 503).json({
-      success: false, error: error instanceof ConsolidatedInvoiceError ? error.message : 'Unable to save consolidated invoice.',
+      success: false,
+      error:
+        error instanceof ConsolidatedInvoiceError
+          ? error.message
+          : 'Unable to save consolidated invoice.',
     });
   }
 });
@@ -270,16 +359,30 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res
   try {
     const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
     // Also protects older clients that call the PDF endpoint directly.
-    const saved = await commitConsolidatedInvoice(orderIds, invoiceNo, (req as any).user?.uid || 'admin');
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(saved.orders, saved.invoiceNo, Boolean(includeNotes), lang === 'en' ? 'en' : 'bm');
-    res.setHeader('Content-Type', 'application/pdf');
+    const saved = orderIds
+      ? await commitConsolidatedInvoice(orderIds, invoiceNo, actorId(req), req.body || {})
+      : await readInvoiceBatch(invoiceNo);
+    const pdfBuffer =
+      saved.layoutVersion === 2
+        ? await generateSavedInvoicePdf(saved as InvoiceBatch)
+        : await generateServerConsolidatedInvoicePdf(
+            saved.orders,
+            saved.invoiceNo,
+            Boolean(includeNotes),
+            lang === 'en' ? 'en' : 'bm'
+          );
     res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('Content-Disposition', `inline; filename="Invois_Konsolidasi_${saved.invoiceNo}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Invoice_${saved.invoiceNo}.pdf"`);
     return res.send(pdfBuffer);
   } catch (error) {
     console.error('[Consolidated invoice] PDF failed:', error);
     return res.status(error instanceof ConsolidatedInvoiceError ? error.status : 503).json({
-      success: false, error: error instanceof ConsolidatedInvoiceError ? error.message : 'Unable to generate consolidated PDF.',
+      success: false,
+      error:
+        error instanceof ConsolidatedInvoiceError
+          ? error.message
+          : 'Unable to generate consolidated PDF.',
     });
   }
 });
@@ -300,24 +403,24 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
     }
 
     const db = getFirestore();
-    const customInvoiceNo = 'RW COMBINED';
 
     // Single batched round-trip via db.getAll() instead of one sequential
     // .get() per orderId.
-    const validIds = orderIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
-      .map((id: string) => id.trim());
+    const validIds = consolidatedOrderIds(orderIds);
     const refs = validIds.map((id: string) => db.collection('orders').doc(id));
     const snaps = refs.length > 0 ? await db.getAll(...refs) : [];
     const orderDocs: Record<string, any>[] = snaps
       .filter((snap) => snap.exists)
       .map((snap) => ({ id: snap.id, ...snap.data() }));
 
-    if (orderDocs.length === 0) {
+    if (orderDocs.length !== validIds.length) {
       return res.status(404).json({ success: false, error: 'No matching order documents found' });
     }
 
     // Ownership check: Caller must be admin or own ALL requested orders
-    const hasUnauthorizedOrder = orderDocs.some(order => !isOrderOwnedByCaller(order, callerAuth));
+    const hasUnauthorizedOrder = orderDocs.some(
+      (order) => !isOrderOwnedByCaller(order, callerAuth)
+    );
     if (hasUnauthorizedOrder) {
       return res.status(403).json({
         success: false,
@@ -325,15 +428,29 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
       });
     }
 
-    const { generateServerConsolidatedInvoicePdf } = await import('../services/serverPdfService.js');
-    
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
-      orderDocs,
-      customInvoiceNo,
-      Boolean(includeNotes),
-      lang === 'en' ? 'en' : 'bm'
+    const batchNo = orderDocs[0].invoiceBatchNo;
+    if (!batchNo || orderDocs.some((order) => order.invoiceBatchNo !== batchNo))
+      return res.status(409).json({
+        error:
+          'Sila hubungi restoran untuk invois gabungan rasmi / Contact the restaurant to issue a combined invoice.',
+      });
+    const saved = await readInvoiceBatch(batchNo);
+    const allSnaps = await db.getAll(
+      ...saved.orderIds.map((id: string) => db.collection('orders').doc(id))
     );
-    
+    if (allSnaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
+      return res.status(403).json({ error: 'Forbidden invoice selection.' });
+    const pdfBuffer =
+      saved.layoutVersion === 2
+        ? await generateSavedInvoicePdf(saved as InvoiceBatch)
+        : await generateServerConsolidatedInvoicePdf(
+            saved.orders,
+            saved.invoiceNo,
+            Boolean(includeNotes),
+            lang === 'en' ? 'en' : 'bm'
+          );
+
+    res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="Combined_Invoice.pdf"`);
     return res.end(pdfBuffer);
@@ -345,5 +462,3 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
 });
 
 export default router;
-
-
