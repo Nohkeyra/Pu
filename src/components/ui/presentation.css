@@ -1,6 +1,7 @@
 /* Shared presentation: aligned with .panel-surface and .card-happening visual hierarchy */
-/* Decorative header motif. Luminance masking keeps the original floral artwork,
-   removes its dark cloth backing and blends it with each surface's palette.
+/* Decorative header motif. Bundle the original artwork inline: sandboxed
+   previews can reject external CSS masks even while normal images load.
+   Luminance removes the cloth backing; each theme supplies its own tint.
    Keep overflow visible so keyboard focus rings are not clipped. */
 :where(.batik-header) { position: relative; isolation: isolate; }
 .batik-header::before {
@@ -10,7 +11,7 @@
   z-index: -1;
   border-radius: inherit;
   background: linear-gradient(100deg, transparent 15%, color-mix(in srgb, var(--ui-action) 25%, transparent) 55%, color-mix(in srgb, var(--ui-action) 95%, transparent));
-  mask: url('/assets/heritage/batik_pattern.jpg') right center / clamp(480px, 72vw, 760px) auto no-repeat;
+  mask: url('../../../public/assets/heritage/batik_pattern.jpg?inline') right center / clamp(480px, 72vw, 760px) auto no-repeat;
   mask-mode: luminance;
   pointer-events: none;
 }

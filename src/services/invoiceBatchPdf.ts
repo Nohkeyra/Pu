@@ -129,7 +129,9 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     if (data.tableY + 14 + rows.reduce((sum, row) => sum + row.height, 0) > rowsBottom + 0.01)
       throw new Error('Saved rows exceed the page.');
     drawInvoiceCalligraphy(doc, options.calligraphy || null, 36, 297);
-    if (options.logo) doc.addImage(options.logo, 'PNG', 15, 8, 20, 20, 'invoice-logo');
+    // A compressed document otherwise selects jsPDF's CPU-heavy SLOW PNG mode.
+    // FAST remains lossless and keeps high-resolution logos practical to render.
+    if (options.logo) doc.addImage(options.logo, 'PNG', 15, 8, 20, 20, 'invoice-logo', 'FAST');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
     doc.setTextColor(114, 80, 20);

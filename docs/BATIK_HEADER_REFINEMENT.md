@@ -20,6 +20,27 @@ flowers blend with the theme. Light mode uses the action color; dark mode uses
 the existing gold token. A faded reading zone protects the text. Header paragraph
 colors are strengthened where needed. No new asset is required.
 
+## V2: sandbox preview correction
+
+The original CSS referenced a separate image URL for its mask. An opaque-origin
+sandbox can reject that mask request and leave a plain header even when ordinary
+background images appear. This failure was reproduced in an isolated browser
+fixture; it was not covered by the original normal-page checks. The user's
+specific AI Studio project has not been directly inspected.
+
+The mask now references the existing artwork with Vite's `?inline` asset query
+through its source file path. Both development and production CSS embed the
+image data, so this decoration needs no separate image fetch or CORS permission.
+There is no new artwork, duplicated asset file, dependency or relaxed security
+policy. The compiled stylesheet carries the existing image bytes.
+
+`e2e/batik-header-preview.spec.ts` uses the actual compiled CSS and compares
+rendered motif pixels between a normal frame and an opaque sandbox, in both
+themes. Apply the entire V2 package to retain its class names and shared CSS.
+Both sandbox cases and the two theme-specific wizard progression cases passed.
+The production build was also checked on four guest screens in both themes with
+the separate mask image URL blocked; the embedded masks remained available.
+
 Rendered contrast checks also exposed an existing dark-mode issue in the details
 and review headings: the legacy charcoal alias resolved to light ink, producing
 a pale header under white text. Both headers now use the customer's semantic
