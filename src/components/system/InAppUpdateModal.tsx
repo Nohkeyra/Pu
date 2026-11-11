@@ -26,6 +26,19 @@ interface InAppUpdateModalProps {
   onDismiss: () => void;
 }
 
+function getSafeApkUrl(url: string | undefined): string {
+  if (!url || typeof url !== 'string') return DEFAULT_APK_URL;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.toString();
+    }
+  } catch {
+    // Malformed URL fallback
+  }
+  return DEFAULT_APK_URL;
+}
+
 export default function InAppUpdateModal({
   isOpen,
   config,
@@ -41,7 +54,7 @@ export default function InAppUpdateModal({
 
   const displayCurrentVersion = currentVersion || CURRENT_APP_VERSION;
   const isBM = language === 'bm';
-  const apkUrl = config.apkUrl || DEFAULT_APK_URL;
+  const apkUrl = getSafeApkUrl(config.apkUrl);
   const hasCapgoBundle = Boolean(config.bundleUrl && config.bundleUrl.trim().length > 0);
 
   const handleStartUpdate = async () => {

@@ -1,5 +1,5 @@
 import type express from 'express';
-import { createHash } from 'node:crypto';
+import { scryptSync } from 'node:crypto';
 import { initializeApp, cert, getApps, type App } from 'firebase-admin/app';
 import {
   getFirestore as getFirestoreModular,
@@ -329,7 +329,7 @@ export function isFirebaseAdminIdentity(identity: { admin?: boolean; email?: str
 }
 
 export function firebaseTokenRevocationId(token: string): string {
-  return `firebase_${createHash('sha256').update(token).digest('hex')}`;
+  return `firebase_${scryptSync(token, 'firebase-token-revocation-id:v1', 32).toString('hex')}`;
 }
 
 /** Firebase refreshes preserve auth_time; a fresh sign-in starts a new session. */

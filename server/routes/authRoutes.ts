@@ -12,9 +12,10 @@ const router = Router();
 // Constant-time string comparison preventing timing attacks
 export function secureCompare(a: string, b: string): boolean {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  const hashA = createHash('sha256').update(a).digest();
-  const hashB = createHash('sha256').update(b).digest();
-  return timingSafeEqual(hashA, hashB);
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
 }
 
 const fcmTokenLimiter = createDistributedRateLimiter({
@@ -138,7 +139,7 @@ router.post('/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.subscribeToTopic([token.trim()], topic.trim());
-    console.log(`[FCM] Subscribed device token to topic '${topic}':`, response);
+    console.log("[FCM] Subscribed device token to topic '%s':", topic, response);
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error subscribing token to topic:', err);
@@ -160,7 +161,7 @@ router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) 
     const app = getAdminApp();
     const messaging = getMessaging(app);
     const response = await messaging.unsubscribeFromTopic([token.trim()], topic.trim());
-    console.log(`[FCM] Unsubscribed device token from topic '${topic}':`, response);
+    console.log("[FCM] Unsubscribed device token from topic '%s':", topic, response);
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error unsubscribing token from topic:', err);

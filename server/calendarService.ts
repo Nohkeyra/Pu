@@ -214,7 +214,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
     return { success: false, error: "No event ID returned from Calendar API" };
   } catch (err: any) {
     const errorMsg = err?.message || String(err);
-    console.error(`[Calendar Error] Sync failed for order ${orderId}:`, errorMsg);
+    console.error('[Calendar Error] Sync failed for order %s:', orderId, errorMsg);
     if (err?.response && err?.response.data) {
       console.error('Calendar API Error Details:', JSON.stringify(err.response.data, null, 2));
     }

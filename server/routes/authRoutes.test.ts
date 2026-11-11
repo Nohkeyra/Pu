@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import type { Server } from 'http';
 import authRoutes, { secureCompare } from './authRoutes.js';
 import { signAdminJwt, verifyAdminJwt, verifyAdminToken } from '../adminAuth.js';
@@ -79,8 +80,9 @@ describe('Admin Authentication & Security', () => {
       app.use(express.json());
       app.use('/api', authRoutes);
 
+      const testLimiter = rateLimit({ windowMs: 60000, max: 100 });
       // Dummy protected route using verifyAdminToken
-      app.post('/api/admin/protected-action', verifyAdminToken, (req, res) => {
+      app.post('/api/admin/protected-action', testLimiter, verifyAdminToken, (req, res) => {
         res.json({
           success: true,
           action: 'executed',

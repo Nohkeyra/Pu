@@ -147,6 +147,16 @@ function parseStoredOrderDraft(value: string): Partial<OrderState> | null {
   return draft;
 }
 
+/**
+ * Omit cleartext sensitive personal fields (contact, email, billingAddress, name, attn)
+ * before persisting draft state to localStorage, preventing CodeQL Alert #56 plain-text storage warnings.
+ */
+function getStorageSafeDraftState(state: OrderState): Partial<OrderState> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- sensitive fields omitted intentionally for storage security
+  const { name, contact, email, confirmEmail, billingAddress, attn, ...safeDraft } = state;
+  return safeDraft;
+}
+
 export default function OrderForm({ initialData }: OrderFormProps) {
   const isNativePresentation =
     typeof document !== 'undefined' &&
@@ -399,13 +409,16 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     };
   }, []);
 
-  // Save draft on every state or step change
+  // Save draft on every state or step change (omitting sensitive personal fields for storage safety)
   useEffect(() => {
     if (demoActive) return;
     if (currentStep < 5 && !initialData) {
       try {
         localStorage.setItem('wawasan_order_draft_step', String(currentStep));
-        localStorage.setItem('wawasan_order_draft_state', JSON.stringify(orderState));
+        localStorage.setItem(
+          'wawasan_order_draft_state',
+          JSON.stringify(getStorageSafeDraftState(orderState))
+        );
         setDraftSavedAt(Date.now());
       } catch (err) {
         console.warn('Failed to save draft state:', err);

@@ -102,7 +102,18 @@ async function startServer() {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://apis.google.com'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+          connectSrc: ["'self'", 'https:', 'wss:', 'ws:'],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
       xFrameOptions: false,
     })
   );
