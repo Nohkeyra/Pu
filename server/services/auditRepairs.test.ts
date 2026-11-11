@@ -48,10 +48,11 @@ afterAll(async () => {
 function mockRemote(body: string, mime: string) {
   vi.spyOn(dns.promises, 'lookup').mockResolvedValue([{ address: '8.8.8.8', family: 4 }] as never);
   return vi.spyOn(https, 'request').mockImplementation(((
-    url: unknown,
-    options: unknown,
-    callback: (response: unknown) => void
+    urlOrOptions: unknown,
+    optionsOrCb: unknown,
+    maybeCb?: (response: unknown) => void
   ) => {
+    const callback = (typeof optionsOrCb === 'function' ? optionsOrCb : maybeCb) as (response: unknown) => void;
     const request: any = new EventEmitter();
     request.destroy = (error?: Error) => {
       if (error) request.emit('error', error);
@@ -64,7 +65,7 @@ function mockRemote(body: string, mime: string) {
         response.headers = { 'content-type': mime };
         response.resume = () => {};
         response.destroy = () => request.emit('close');
-        callback(response);
+        if (typeof callback === 'function') callback(response);
         response.emit('data', Buffer.from(body));
         response.emit('end');
         request.emit('close');
@@ -119,7 +120,8 @@ it('pins a valid JSON metadata connection to its checked address and bounds resp
   expect(await fetchPublicJson('https://example.org/client.json')).toEqual({
     client_id: 'fixture',
   });
-  const lookup = (request.mock.calls[0][1] as any).lookup;
+  const opts = typeof request.mock.calls[0][0] === 'object' && request.mock.calls[0][0] !== null ? request.mock.calls[0][0] : request.mock.calls[0][1];
+  const lookup = (opts as any).lookup;
   const callback = vi.fn();
   lookup('example.org', {}, callback);
   expect(callback).toHaveBeenCalledWith(null, '8.8.8.8', 4);

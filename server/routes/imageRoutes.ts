@@ -222,9 +222,17 @@ function fetchPinnedImage(parsedUrl: URL.URL, address: string): Promise<{
   status: number; location?: string; mimeType?: string; buffer: Buffer;
 } | null> {
   const MAX_BYTES = 10 * 1024 * 1024;
+  const isHttps = parsedUrl.protocol === 'https:';
+  const requestFn = isHttps ? https.request : http.request;
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const requestPath = `${parsedUrl.pathname}${parsedUrl.search}`;
+
   return new Promise(resolve => {
-    const requestFn = parsedUrl.protocol === 'https:' ? https.request : http.request;
-    const req = requestFn(parsedUrl, {
+    const req = requestFn({
+      protocol: isHttps ? 'https:' : 'http:',
+      hostname,
+      port: parsedUrl.port ? Number(parsedUrl.port) : (isHttps ? 443 : 80),
+      path: requestPath,
       method: 'GET',
       lookup: (_hostname, options, callback) => {
         const family = net.isIP(address);

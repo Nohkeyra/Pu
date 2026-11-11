@@ -10,8 +10,15 @@ export async function fetchPublicJson(value: string): Promise<unknown> {
   if (!checked.safe || !parsedUrl || !resolvedAddress || parsedUrl.protocol !== 'https:' || parsedUrl.port) {
     throw new Error('OAuth client metadata must use a public HTTPS destination.');
   }
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const requestPath = `${parsedUrl.pathname}${parsedUrl.search}`;
+
   return new Promise((resolve, reject) => {
-    const request = https.request(parsedUrl, {
+    const request = https.request({
+      protocol: 'https:',
+      hostname,
+      port: 443,
+      path: requestPath,
       method: 'GET',
       headers: { accept: 'application/json' },
       lookup: (_hostname, options, callback) => {
