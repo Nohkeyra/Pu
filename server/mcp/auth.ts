@@ -487,8 +487,11 @@ export function mountMcpOAuth(app: import('express').Express): void {
 }
 
 export async function mcpBearerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const match = /^Bearer\s+(.+)$/i.exec(req.header('authorization') || '');
-  const supplied = match?.[1]?.trim() || '';
+  const authHeader = (req.header('authorization') || '').trim();
+  let supplied = '';
+  if (authHeader.toLowerCase().startsWith('bearer ')) {
+    supplied = authHeader.slice(7).trim();
+  }
   const issuer = getMcpIssuer(req);
   const metadataUrl = `${issuer}/.well-known/oauth-protected-resource/mcp`;
 

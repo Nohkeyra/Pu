@@ -49,7 +49,7 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
     }
 
     const adminEmail = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',')[0].trim();
-    const adminUid = 'admin_' + createHash('sha256').update(expectedPassword.trim()).digest('hex').slice(0, 12);
+    const adminUid = 'admin_' + createHash('sha256').update(adminEmail || 'admin@wawasan.local').digest('hex').slice(0, 12);
 
     let firebaseCustomToken: string | undefined;
     if (hasAdminCredentials()) {
