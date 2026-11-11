@@ -185,10 +185,21 @@ export function getLocalFallbackImagePath(dishHint?: string, categoryHint?: stri
 // Resolve both the requested file and its asset directory so symlinks cannot
 // turn a public image request into a read outside the permitted directory.
 export async function getSafeLocalImagePath(assetPath: string): Promise<string | null> {
-  if (!(assetPath.startsWith('/assets/') || assetPath.startsWith('/photos/'))
-      || assetPath.includes('\\') || assetPath.includes('\0')
-      || assetPath.split('/').includes('..')
-      || !/\.(?:jpe?g|png|webp|gif|svg|avif|ico)$/i.test(assetPath)) {
+  if (assetPath.includes('\\') || assetPath.includes('\0')) {
+    return null;
+  }
+
+  const parts = assetPath.split('/');
+  // Require exact shape: "/assets/<filename>" or "/photos/<filename>"
+  if (parts.length !== 3 || parts[0] !== '') return null;
+  const bucket = parts[1];
+  const fileName = parts[2];
+  if ((bucket !== 'assets' && bucket !== 'photos')
+      || !fileName
+      || fileName === '.' || fileName === '..'
+      || fileName.includes('/')
+      || fileName.includes(path.sep)
+      || !/^[A-Za-z0-9._-]+\.(?:jpe?g|png|webp|gif|svg|avif|ico)$/i.test(fileName)) {
     return null;
   }
 
@@ -201,10 +212,10 @@ export async function getSafeLocalImagePath(assetPath: string): Promise<string |
 
   try {
     const publicDir = await fs.promises.realpath(getPublicDir());
-    const assetDir = await fs.promises.realpath(path.join(publicDir, assetPath.split('/')[1]));
+    const assetDir = await fs.promises.realpath(path.join(publicDir, bucket));
     if (!isUnderOrSame(publicDir, assetDir)) return null;
 
-    const candidate = path.resolve(publicDir, assetPath.slice(1));
+    const candidate = path.resolve(assetDir, fileName);
     if (!isUnderOrSame(assetDir, candidate)) return null;
 
     const localPath = await fs.promises.realpath(candidate);
