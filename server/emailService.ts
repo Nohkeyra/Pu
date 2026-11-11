@@ -236,7 +236,7 @@ export async function sendOrderStatusEmail(
     text: `${copy.heading}\n\n${copy.message}`,
     html: buildStatusEmailHtml(copy, lang),
   });
-  console.log(`[StatusNotify] Status email (${newStatus}) sent to ${to}.`);
+  console.log('[StatusNotify] Status email (%s) sent to %s.', newStatus, to);
   return true;
 }
 
@@ -306,7 +306,7 @@ export async function sendOrderStatusPush(
         timestamp: new Date().toISOString(),
       },
     });
-    console.log(`[StatusNotify] Status push (${newStatus}) sent to customer:`, response);
+    console.log('[StatusNotify] Status push (%s) sent to customer:', newStatus, response);
     return true;
   } catch (error) {
     console.error("[StatusNotify] Error sending status push to customer:", error);

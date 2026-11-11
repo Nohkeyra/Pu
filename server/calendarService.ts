@@ -60,12 +60,12 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
           orderData = docSnap.data() as OrderData;
         }
       } catch (dbErr) {
-        console.warn(`Firestore sync load failed for order ${orderId}:`, dbErr);
+        console.warn('Firestore sync load failed for order %s:', orderId, dbErr);
       }
     }
 
     if (!orderData) {
-      console.warn(`Sync Google Calendar Event: Order ${orderId} not found.`);
+      console.warn('Sync Google Calendar Event: Order %s not found.', orderId);
       return { success: false, error: `Order ${orderId} not found` };
     }
 
@@ -86,7 +86,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
     const endDateTime = new Date(startDateTime.getTime() + 3 * 60 * 60 * 1000);
 
     const calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
-    console.log(`[Calendar] Using calendarId: ${calendarId} for order ${orderId}`);
+    console.log('[Calendar] Using calendarId: %s for order %s', calendarId, orderId);
     
     const currentStatus = (orderData.status || "pending").toLowerCase();
     
@@ -121,7 +121,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
 
     if (existingEventId) {
       try {
-        console.log(`Updating existing Google Calendar event ${existingEventId} for order ${orderId} (${statusLabel})...`);
+        console.log('Updating existing Google Calendar event %s for order %s (%s)...', existingEventId, orderId, statusLabel);
         await calendar.events.update({
           calendarId: calendarId,
           eventId: existingEventId,
@@ -139,19 +139,19 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
             },
           },
         });
-        console.log(`Google Calendar event ${existingEventId} updated successfully for status ${statusLabel}.`);
+        console.log('Google Calendar event %s updated successfully for status %s.', existingEventId, statusLabel);
         return { success: true, eventId: existingEventId };
       } catch (updateErr) {
         const errObj = updateErr as { status?: number; message?: string };
         if (errObj && (errObj.status === 404 || (errObj.message && errObj.message.includes('Not Found')))) {
-          console.warn(`Existing calendar event ${existingEventId} not found or deleted on calendar, recreating...`);
+          console.warn('Existing calendar event %s not found or deleted on calendar, recreating...', existingEventId);
         } else {
           throw updateErr;
         }
       }
     }
 
-    console.log(`Creating new Google Calendar event for order ${orderId} status ${statusLabel}...`);
+    console.log('Creating new Google Calendar event for order %s status %s...', orderId, statusLabel);
     const response = await calendar.events.insert({
       calendarId: calendarId,
       requestBody: {
@@ -171,7 +171,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
 
     const eventId = response.data.id;
     if (eventId) {
-      console.log(`Google Calendar event created successfully for status ${statusLabel}! Link: ${response.data.htmlLink}`);
+      console.log('Google Calendar event created successfully for status %s! Link: %s', statusLabel, response.data.htmlLink);
 
       const updatedCalendarEventIds = {
         ...(orderData.calendarEventIds || {}),
@@ -188,9 +188,9 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
           calendarSyncError: null,
           calendarSyncedAt: new Date().toISOString(),
         });
-        console.log(`Firestore updated with calendarEventIds for order ${orderId}`);
+        console.log('Firestore updated with calendarEventIds for order %s', orderId);
       } catch (dbErr) {
-        console.warn(`Failed to update calendarEventIds in Firestore for order ${orderId}:`, dbErr);
+        console.warn('Failed to update calendarEventIds in Firestore for order %s:', orderId, dbErr);
       }
 
       try {
@@ -202,7 +202,7 @@ export async function syncGoogleCalendarEvent(orderId: string, passedOrderData?:
             calendarEventIds: updatedCalendarEventIds
           };
           saveLocalOrders(localOrders);
-          console.log(`Local JSON updated with calendarEventIds for order ${orderId}`);
+          console.log('Local JSON updated with calendarEventIds for order %s', orderId);
         }
       } catch (localErr) {
         console.error("Failed to update local orders with calendarEventIds:", localErr);

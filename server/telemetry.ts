@@ -44,7 +44,7 @@ class TelemetryService {
     };
 
     // Output structured JSON log for centralized collectors (Render / CloudWatch / Datadog / Stackdriver)
-    console.error(`[TELEMETRY_ERROR] ${JSON.stringify(event)}`);
+    console.error('[TELEMETRY_ERROR] %s', JSON.stringify(event));
   }
 
   public captureBreadcrumb(message: string, metadata?: Record<string, any>): void {
@@ -56,7 +56,7 @@ class TelemetryService {
       environment: this.environment,
       metadata,
     };
-    console.log(`[TELEMETRY_LOG] ${JSON.stringify(event)}`);
+    console.log('[TELEMETRY_LOG] %s', JSON.stringify(event));
   }
 
   public initProcessHandlers(): void {

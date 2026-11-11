@@ -287,7 +287,7 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
         return errorResult(`Unknown MCP tool: ${name}`);
     }
   } catch (err) {
-    console.error(`[MCP] Tool ${name} failed:`, err);
+    console.error('[MCP] Tool %s failed:', name, err);
     return errorResult(err instanceof Error ? err.message : String(err));
   }
 }

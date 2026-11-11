@@ -189,7 +189,7 @@ export async function verifyAdminToken(req: express.Request, res: express.Respon
       (req as any).adminPayload = decodedToken;
       return next();
     } catch (err) {
-      console.warn(`[Admin Auth] Firebase verifyIdToken failed:`, err);
+      console.warn('[Admin Auth] Firebase verifyIdToken failed:', err);
     }
   }
 

@@ -436,7 +436,7 @@ export class DurableInvoiceOutboxService {
         // The shared gate already paused participating readers and logged once.
         return;
       } else {
-        console.error(`[InvoiceOutbox] Process queue error (${kind}):`, err);
+        console.error('[InvoiceOutbox] Process queue error (%s):', kind, err);
       }
     }
   }
@@ -571,7 +571,7 @@ export class DurableInvoiceOutboxService {
       });
     } catch (err: any) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[InvoiceOutbox] Job ${jobId} failed (attempt ${claimed.attempts}):`, errorMsg);
+      console.error('[InvoiceOutbox] Job %s failed (attempt %s):', jobId, claimed.attempts, errorMsg);
 
       telemetry.captureException(err, {
         metadata: { component: 'DurableInvoiceOutboxService', jobId, orderId: data.orderId },
@@ -637,7 +637,7 @@ export class DurableInvoiceOutboxService {
     } catch (err) {
       // Job stays 'processing'; the lease expires and recovery re-claims it (at-least-once).
       if (!isFirestoreQuotaError(err))
-        console.error(`[InvoiceOutbox] Failed to acknowledge delivery of job ${jobId}:`, err);
+        console.error('[InvoiceOutbox] Failed to acknowledge delivery of job %s:', jobId, err);
     }
   }
 
@@ -700,7 +700,7 @@ export class DurableInvoiceOutboxService {
       }
     } catch (err) {
       if (!isFirestoreQuotaError(err))
-        console.error(`[InvoiceOutbox] Failed to record failure of job ${jobId}:`, err);
+        console.error('[InvoiceOutbox] Failed to record failure of job %s:', jobId, err);
     }
   }
 

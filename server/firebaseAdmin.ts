@@ -498,10 +498,10 @@ export async function sendNotificationToTopic(
       topic: cleanTopic,
     };
     const response = await getMessaging(app).send(message);
-    console.log(`[FCM] Successfully sent message to topic ${cleanTopic}:`, response);
+    console.log('[FCM] Successfully sent message to topic %s:', cleanTopic, response);
     return response;
   } catch (error) {
-    console.error(`[FCM] Error sending message to topic ${topic}:`, error);
+    console.error('[FCM] Error sending message to topic %s:', topic, error);
     return null;
   }
 }
