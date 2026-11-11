@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -20,7 +19,6 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -34,7 +32,6 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import com.wawasanpakusop.app.MainActivity
 import com.wawasanpakusop.app.R
 import com.wawasanpakusop.app.widget.OrderDetailActivity
@@ -47,11 +44,9 @@ class RefreshUpcomingOrdersGlanceActionCallback : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        // The service refreshes Glance after the network/cache update completes.
+        // Refreshing immediately here just paints the old cache a second time.
         WidgetUpdateService.fetchAndUpdate(context, IntArray(0), null)
-        try {
-            UpcomingOrdersGlanceWidget().updateAll(context)
-        } catch (ignored: Exception) {
-        }
     }
 }
 
@@ -74,10 +69,12 @@ class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
         } catch (e: Exception) {
             emptyList()
         }
+        val prefs = context.getSharedPreferences(WidgetUpdateService.PREFS_NAME, Context.MODE_PRIVATE)
+        val lastSuccessAt = prefs.getLong(WidgetUpdateService.PREF_LAST_SUCCESS_AT, 0L)
 
         provideContent {
             GlanceTheme {
-                UpcomingOrdersScreen(context, orders)
+                UpcomingOrdersScreen(context, orders, lastSuccessAt)
             }
         }
     }
@@ -106,13 +103,14 @@ class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
 }
 
 @Composable
-fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
+fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>, lastSuccessAt: Long) {
+    val freshness = WidgetFreshness.from(lastSuccessAt)
     Column(
         modifier = GlanceModifier.fillMaxSize()
             .background(ImageProvider(R.drawable.widget_glass_background))
             .padding(10.dp)
     ) {
-        GlassWidgetHeader("TEMPAHAN AKAN DATANG", "TEMPAHAN", orders.size, actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>())
+        GlassWidgetHeader("TEMPAHAN AKAN DATANG", "TEMPAHAN", orders.size, lastSuccessAt, actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>())
         if (orders.isEmpty()) {
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -123,7 +121,12 @@ fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>) {
                     .clickable(actionStartActivity(intent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Tiada tempahan akan datang", style = TextStyle(color = widgetMuted, fontSize = 12.sp))
+                val message = when {
+                    !freshness.hasSuccessfulSync -> "Belum ada data — buka aplikasi"
+                    freshness.isStale -> "Data lama — tekan segar semula"
+                    else -> "Tiada tempahan akan datang"
+                }
+                Text(message, style = TextStyle(color = widgetMuted, fontSize = 12.sp))
             }
         } else {
             LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {

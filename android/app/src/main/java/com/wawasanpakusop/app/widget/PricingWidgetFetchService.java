@@ -1,19 +1,13 @@
 package com.wawasanpakusop.app.widget;
 
-import android.app.PendingIntent;
-import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.RemoteViews;
-import android.view.View;
 
-import com.wawasanpakusop.app.R;
+import com.wawasanpakusop.app.security.SecureStorage;
+import com.wawasanpakusop.app.telemetry.NativeCrashReporter;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -23,14 +17,9 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.wawasanpakusop.app.security.SecureStorage;
-import com.wawasanpakusop.app.telemetry.NativeCrashReporter;
-
 /**
- * Fetches today's pending/approved orders (with menu + pax, no other PII)
- * from the secured /api/widget/today-pricing-orders endpoint, caches the raw
- * JSON securely using EncryptedSharedPreferences,
- * then triggers Glance widget updates.
+ * Fetches today's pricing orders from the secured endpoint, stores the result
+ * in encrypted preferences and triggers the Glance refresh once the request ends.
  */
 public class PricingWidgetFetchService {
 
@@ -39,6 +28,7 @@ public class PricingWidgetFetchService {
     private static final int TIMEOUT_MS = 15000;
 
     public static final String PREF_ORDERS_JSON = "cached_pricing_orders_json";
+    public static final String PREF_LAST_SUCCESS_AT = "cached_pricing_orders_last_success_at";
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -46,17 +36,20 @@ public class PricingWidgetFetchService {
         executor.execute(() -> {
             String ordersJson = null;
             boolean success = false;
+            boolean authRejected = false;
             String errorReason = null;
 
+            HttpURLConnection conn = null;
             try {
                 String adminToken = SecureStorage.INSTANCE.getAdminToken(context);
                 if (adminToken == null || adminToken.isEmpty()) {
+                    authRejected = true;
                     errorReason = "Sila buka aplikasi dan log masuk sebagai admin untuk menyegarkan widget.";
                     throw new SecurityException("Missing admin session token");
                 }
 
                 URL url = new URL(API_BASE_URL + ENDPOINT);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "Bearer " + adminToken);
                 conn.setConnectTimeout(TIMEOUT_MS);
@@ -64,38 +57,53 @@ public class PricingWidgetFetchService {
 
                 int code = conn.getResponseCode();
                 if (code == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
-                    reader.close();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line);
 
-                    JSONObject json = new JSONObject(sb.toString());
-                    if (json.optBoolean("success", false) && json.has("orders")) {
-                        ordersJson = json.getJSONArray("orders").toString();
-                        success = true;
+                        JSONObject json = new JSONObject(sb.toString());
+                        if (json.optBoolean("success", false) && json.has("orders")) {
+                            ordersJson = json.getJSONArray("orders").toString();
+                            success = true;
+                        }
                     }
                 } else if (code == 401 || code == 403) {
+                    authRejected = true;
                     errorReason = "Sesi admin tamat atau akses ditolak. Buka aplikasi dan log masuk semula.";
-                    SecureStorage.INSTANCE.saveString(context, PREF_ORDERS_JSON, null);
                 } else {
                     errorReason = "Server ralat (HTTP " + code + ")";
                 }
-                conn.disconnect();
             } catch (Exception e) {
                 success = false;
-                if (!(e instanceof SecurityException)) {
+                if (errorReason == null) {
                     errorReason = "Tiada sambungan internet.";
                 }
                 if (!(e instanceof SecurityException)) {
                     NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("component", "PricingWidgetFetchService"));
                 }
+            } finally {
+                if (conn != null) conn.disconnect();
             }
 
-            if (success && ordersJson != null) {
-                SecureStorage.INSTANCE.saveString(context, PREF_ORDERS_JSON, ordersJson);
-                // Drain any pending offline price updates when connectivity is confirmed
-                OfflinePricingQueue.INSTANCE.flushQueueAsync(context, null);
+            // Cache content and timestamp in one encrypted preferences transaction.
+            // Never keep previously cached admin order data after logout or denial.
+            try {
+                if (authRejected) {
+                    SecureStorage.INSTANCE.getPrefs(context).edit()
+                        .remove(PREF_ORDERS_JSON)
+                        .remove(PREF_LAST_SUCCESS_AT)
+                        .apply();
+                } else if (success && ordersJson != null) {
+                    SecureStorage.INSTANCE.getPrefs(context).edit()
+                        .putString(PREF_ORDERS_JSON, ordersJson)
+                        .putString(PREF_LAST_SUCCESS_AT, Long.toString(System.currentTimeMillis()))
+                        .apply();
+                    // Drain pending offline price updates only after connectivity is confirmed.
+                    OfflinePricingQueue.INSTANCE.flushQueueAsync(context, null);
+                }
+            } catch (Exception e) {
+                android.util.Log.e("PricingWidgetFetchService", "Could not persist secure widget cache", e);
             }
 
             final boolean finalSuccess = success;

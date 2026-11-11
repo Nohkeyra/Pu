@@ -2,17 +2,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNativeAppState } from '@/hooks/native/useNativeAppState';
 import { useNetworkStatus } from '@/hooks/native/useNetworkStatus';
 import { useDeepLinks } from '@/hooks/native/useDeepLinks';
-import { Motion } from '@capacitor/motion';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
 import { getPendingOrdersCount, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
 import { PendingOrdersDialog } from '@/components/order/PendingOrdersDialog';
 
-/**
- * An invisible component that wraps native listeners 
- * so they have access to React context (like useToast)
- */
+/** Native listeners have access to React context (including toasts). */
 function NativeAppListeners() {
   useNativeAppState();
   useNetworkStatus();
@@ -21,19 +17,11 @@ function NativeAppListeners() {
   const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Confirm Capgo OTA bundle ready to prevent automatic rollback
     notifyCapgoAppReady();
   }, []);
 
-  // F-OFFLINE (audit 2026-08-14): this used to call autoSyncPendingOrders(),
-  // which POSTed every queued order to the server the moment connectivity
-  // returned — no review, no stale-date check. That directly contradicted
-  // the confirm-before-send design documented in PendingOrdersDialog.tsx
-  // ("Deliberately NOT auto-flushed — an order queued while offline may now
-  // be for a date/time that has already passed"). Now this only rehydrates
-  // the queue (in case the app was killed while offline with items already
-  // saved) and opens the dialog if anything is pending — sending or
-  // discarding each order is left entirely to the customer via the dialog.
+  // Never auto-submit a cached offline order. Rehydrate the queue and let
+  // the customer explicitly review each pending action in the dialog.
   const triggerPendingOrdersCheck = useCallback(async () => {
     try {
       await rehydrateQueueFromNative();
@@ -49,117 +37,84 @@ function NativeAppListeners() {
     let isActive = true;
     let wasOnline: boolean | null = null;
     let listenerHandle: { remove: () => void } | null = null;
- 
+
     const setupPendingOrdersListener = async () => {
       try {
         const initial = await Network.getStatus();
+        if (!isActive) return;
         wasOnline = initial.connected;
       } catch {
         wasOnline = null;
       }
- 
-      const handle = await Network.addListener('networkStatusChange', (status) => {
-        if (!isActive) return;
-        const isNowOnline = status.connected;
-        const justCameOnline = wasOnline === false && isNowOnline === true;
-        wasOnline = isNowOnline;
- 
-        if (justCameOnline) {
-          triggerPendingOrdersCheck();
-        }
-      });
 
-      if (!isActive) {
-        handle.remove();
-      } else {
-        listenerHandle = handle;
+      try {
+        const handle = await Network.addListener('networkStatusChange', (status) => {
+          if (!isActive) return;
+          const isNowOnline = status.connected;
+          const justCameOnline = wasOnline === false && isNowOnline === true;
+          wasOnline = isNowOnline;
+          if (justCameOnline) void triggerPendingOrdersCheck();
+        });
+        if (isActive) listenerHandle = handle;
+        else void handle.remove();
+      } catch (err) {
+        console.warn('[NativeAppListeners] Unable to observe network changes:', err);
       }
     };
- 
-    setupPendingOrdersListener();
- 
+
+    void setupPendingOrdersListener();
     return () => {
       isActive = false;
-      if (listenerHandle) {
-        listenerHandle.remove();
-      }
+      if (listenerHandle) void listenerHandle.remove();
     };
   }, [triggerPendingOrdersCheck]);
 
-  // Also check once on mount, in case the app was killed while offline
-  // with items already queued and is now reopened already connected.
   useEffect(() => {
     const checkOnMount = async () => {
       try {
         const status = await Network.getStatus();
-        if (status.connected) {
-          await triggerPendingOrdersCheck();
-        }
+        if (status.connected) await triggerPendingOrdersCheck();
       } catch {
-        /* ignore */
+        // Non-critical: the subsequent reconnect listener still handles it.
       }
     };
-    checkOnMount();
+    void checkOnMount();
   }, [triggerPendingOrdersCheck]);
 
   useEffect(() => {
-    let active = true;
-    let listenerHandle: { remove: () => void } | null = null;
- 
+    // BatikMotionProvider owns the single native accelerometer listener.
+    // A second no-op "warm-up" listener would only consume resources.
+    // Preserve the pre-existing best-effort browser permission flow.
+    if (Capacitor.isNativePlatform()) return;
     const requestMotionPermissions = async () => {
       try {
-        if (Capacitor.isNativePlatform()) {
-          // Warm up Capacitor Motion plugin sensor listener upon app initialization
-          const listener = await Motion.addListener('accel', () => {
-            // Warm-up listener trigger
-          });
-          if (!active && listener) {
-            if (typeof listener.remove === 'function') {
-              listener.remove();
-            }
-          } else {
-            listenerHandle = listener;
+        const win = window as unknown as {
+          DeviceMotionEvent?: { requestPermission?: () => Promise<string> };
+          DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
+        };
+        if (typeof win.DeviceMotionEvent?.requestPermission === 'function') {
+          try {
+            const res = await win.DeviceMotionEvent.requestPermission();
+            console.log('[NativeAppListeners] Device Motion Permission:', res);
+          } catch {
+            console.warn('[NativeAppListeners] Device Motion permission requires user gesture');
           }
-        } else {
-          // Web motion and orientation permission request (iOS Safari & supporting browsers)
-          const win = window as unknown as {
-            DeviceMotionEvent?: { requestPermission?: () => Promise<string> };
-            DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
-          };
- 
-          if (typeof win.DeviceMotionEvent?.requestPermission === 'function') {
-            try {
-              const res = await win.DeviceMotionEvent.requestPermission();
-              console.log('[NativeAppListeners] Device Motion Permission:', res);
-            } catch {
-              console.warn('[NativeAppListeners] Device Motion permission requires user gesture');
-            }
-          }
- 
-          if (typeof win.DeviceOrientationEvent?.requestPermission === 'function') {
-            try {
-              const res = await win.DeviceOrientationEvent.requestPermission();
-              console.log('[NativeAppListeners] Device Orientation Permission:', res);
-            } catch {
-              console.warn('[NativeAppListeners] Device Orientation permission requires user gesture');
-            }
+        }
+        if (typeof win.DeviceOrientationEvent?.requestPermission === 'function') {
+          try {
+            const res = await win.DeviceOrientationEvent.requestPermission();
+            console.log('[NativeAppListeners] Device Orientation Permission:', res);
+          } catch {
+            console.warn('[NativeAppListeners] Device Orientation permission requires user gesture');
           }
         }
       } catch {
-        /* Ignore permissions setup errors on unsupported devices */
+        // Unsupported browser.
       }
     };
- 
-    requestMotionPermissions();
- 
-    return () => {
-      active = false;
-      if (listenerHandle) {
-        listenerHandle.remove();
-      }
-    };
+    void requestMotionPermissions();
   }, []);
-  
+
   return (
     <PendingOrdersDialog open={pendingOrdersDialogOpen} onOpenChange={setPendingOrdersDialogOpen} />
   );

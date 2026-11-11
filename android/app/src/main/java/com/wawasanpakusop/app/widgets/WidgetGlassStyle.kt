@@ -36,8 +36,11 @@ internal val widgetGold = ColorProvider(Color(0xFFFFB02E))
 internal val widgetAmberText = ColorProvider(Color(0xFF211A19))
 
 @Composable
-internal fun GlassWidgetHeader(title: String, compactTitle: String, count: Int, refresh: Action) {
+internal fun GlassWidgetHeader(title: String, compactTitle: String, count: Int, lastSuccessAt: Long, refresh: Action) {
     val compact = LocalSize.current.width < 260.dp
+    // Keep the original header height on short, resized home-screen widgets.
+    val hasRoomForFreshness = LocalSize.current.height >= 145.dp
+    val freshness = WidgetFreshness.from(lastSuccessAt)
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         Box(
             modifier = GlanceModifier.fillMaxWidth()
@@ -66,6 +69,16 @@ internal fun GlassWidgetHeader(title: String, compactTitle: String, count: Int, 
                         maxLines = 1,
                         style = TextStyle(color = widgetText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     )
+                    if (hasRoomForFreshness) {
+                        Text(
+                            text = if (compact) freshness.compactLabel else freshness.label,
+                            maxLines = 1,
+                            style = TextStyle(
+                                color = if (freshness.isStale) widgetGold else widgetMuted,
+                                fontSize = 9.sp
+                            )
+                        )
+                    }
                 }
                 Box(
                     modifier = GlanceModifier.width(44.dp).height(44.dp)

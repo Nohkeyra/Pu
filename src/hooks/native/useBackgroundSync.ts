@@ -7,58 +7,63 @@ import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
 export function useBackgroundSync() {
   useEffect(() => {
     let isActive = true;
+    let syncInFlight = false;
 
-    // 1. Initial warm up of IndexedDB menu cache
-    cacheMenuItemsInIndexedDb(DEFAULT_MENU_ITEMS).catch(() => {});
+    // Warm the local menu cache without blocking the UI.
+    void cacheMenuItemsInIndexedDb(DEFAULT_MENU_ITEMS).catch(() => {});
 
-    // 2. Synchronize queue when online
+    // Capacitor and browser can both emit 'online' for one reconnect.
+    // The single-flight gate prevents concurrent POSTs for the same queue item.
     const runSync = async () => {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-
-      await processBackgroundSyncQueue(async (item) => {
-        try {
-          if (item.type === 'contact_inquiry') {
-            const res = await fetch(getApiUrl('/api/inquiries'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(item.payload),
-            });
-            return res.ok;
+      if (!isActive || syncInFlight || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+      syncInFlight = true;
+      try {
+        await processBackgroundSyncQueue(async (item) => {
+          try {
+            if (item.type === 'contact_inquiry') {
+              const res = await fetch(getApiUrl('/api/inquiries'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item.payload),
+              });
+              return res.ok;
+            }
+            // Offline orders still require explicit customer review and confirmation.
+            return 'unsupported';
+          } catch {
+            return false;
           }
-          // Unsupported or non-handled queue items must NOT be treated as successful or deleted
-          // Offline catering orders must never be auto-submitted without explicit customer confirmation
-          return 'unsupported';
-        } catch {
-          return false;
-        }
-      });
+        });
+      } finally {
+        syncInFlight = false;
+      }
     };
 
-    // Listen for Web network changes
-    window.addEventListener('online', runSync);
+    const onOnline = () => { void runSync(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void runSync();
+    };
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisible);
 
-    // Listen for Capacitor Native network changes
     let networkListenerHandle: { remove: () => void } | null = null;
-    Network.addListener('networkStatusChange', (status) => {
-      if (!isActive) return;
-      if (status.connected) {
-        runSync();
-      }
+    void Network.addListener('networkStatusChange', (status) => {
+      if (status.connected) void runSync();
     }).then((handle) => {
       if (!isActive) {
-        handle.remove();
+        void handle.remove();
       } else {
         networkListenerHandle = handle;
       }
     }).catch(() => {});
 
-    // Run once on mount if already connected
-    runSync();
+    void runSync();
 
     return () => {
       isActive = false;
-      window.removeEventListener('online', runSync);
-      networkListenerHandle?.remove();
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (networkListenerHandle) void networkListenerHandle.remove();
     };
   }, []);
 }

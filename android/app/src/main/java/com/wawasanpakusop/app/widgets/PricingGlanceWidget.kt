@@ -19,8 +19,6 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
-import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -50,12 +48,8 @@ class RefreshGlanceActionCallback : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        // Trigger background fetch from server and refresh Glance widget
+        // The service triggers a single Glance refresh *after* the fetch.
         PricingWidgetFetchService.fetchAndUpdate(context, IntArray(0), null)
-        try {
-            PricingGlanceWidget().updateAll(context)
-        } catch (ignored: Exception) {
-        }
     }
 }
 
@@ -80,10 +74,17 @@ class PricingGlanceWidget : GlanceAppWidget() {
             android.util.Log.e("PricingGlanceWidget", "Error reading order cache", e)
             emptyList()
         }
+        val lastSuccessAt = try {
+            SecureStorage.getString(context, PricingWidgetFetchService.PREF_LAST_SUCCESS_AT, null)
+                ?.toLongOrNull() ?: 0L
+        } catch (e: Exception) {
+            android.util.Log.w("PricingGlanceWidget", "Unable to read cache freshness", e)
+            0L
+        }
 
         provideContent {
             GlanceTheme {
-                PricingGlanceScreen(context, orders)
+                PricingGlanceScreen(context, orders, lastSuccessAt)
             }
         }
     }
@@ -180,14 +181,15 @@ class PricingGlanceWidget : GlanceAppWidget() {
 }
 
 @Composable
-fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
+fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>, lastSuccessAt: Long) {
     val compact = LocalSize.current.width < 260.dp
+    val freshness = WidgetFreshness.from(lastSuccessAt)
     Column(
         modifier = GlanceModifier.fillMaxSize()
             .background(ImageProvider(R.drawable.widget_glass_background))
             .padding(10.dp)
     ) {
-        GlassWidgetHeader("HARGA TERTUNGGAK", "HARGA", orders.size, actionRunCallback<RefreshGlanceActionCallback>())
+        GlassWidgetHeader("HARGA TERTUNGGAK", "HARGA", orders.size, lastSuccessAt, actionRunCallback<RefreshGlanceActionCallback>())
         if (orders.isEmpty()) {
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -198,7 +200,12 @@ fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>) {
                     .clickable(actionStartActivity(intent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✓  Tiada harga tertunggak", style = TextStyle(color = widgetMuted, fontSize = 12.sp))
+                val message = when {
+                    !freshness.hasSuccessfulSync -> "Belum ada data — buka aplikasi"
+                    freshness.isStale -> "Data lama — tekan segar semula"
+                    else -> "✓  Tiada harga tertunggak"
+                }
+                Text(message, style = TextStyle(color = widgetMuted, fontSize = 12.sp))
             }
         } else {
             LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
