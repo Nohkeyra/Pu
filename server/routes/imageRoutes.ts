@@ -192,22 +192,23 @@ export async function getSafeLocalImagePath(assetPath: string): Promise<string |
     return null;
   }
 
-  const isWithin = (directory: string, file: string): boolean => {
-    const relative = path.relative(directory, file);
-    return relative !== '' && relative !== '..'
-      && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+  const isUnderOrSame = (baseDir: string, targetPath: string): boolean => {
+    const base = path.resolve(baseDir);
+    const target = path.resolve(targetPath);
+    const normalizedBase = base.endsWith(path.sep) ? base : `${base}${path.sep}`;
+    return target === base || target.startsWith(normalizedBase);
   };
 
   try {
     const publicDir = await fs.promises.realpath(getPublicDir());
     const assetDir = await fs.promises.realpath(path.join(publicDir, assetPath.split('/')[1]));
-    if (!isWithin(publicDir, assetDir)) return null;
+    if (!isUnderOrSame(publicDir, assetDir)) return null;
 
     const candidate = path.resolve(publicDir, assetPath.slice(1));
-    if (!isWithin(assetDir, candidate)) return null;
+    if (!isUnderOrSame(assetDir, candidate)) return null;
 
     const localPath = await fs.promises.realpath(candidate);
-    if (!isWithin(assetDir, localPath)) return null;
+    if (!isUnderOrSame(assetDir, localPath)) return null;
     const stat = await fs.promises.stat(localPath);
     return stat.isFile() ? localPath : null;
   } catch {
