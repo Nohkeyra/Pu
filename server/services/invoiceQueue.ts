@@ -337,6 +337,7 @@ export class DurableInvoiceOutboxService {
         console.error('[InvoiceOutbox] Background worker cycle error:', err);
       });
     }, this.pollIntervalMs);
+    this.timer.unref?.();
   }
 
   public stopBackgroundWorker(): void {

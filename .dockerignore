@@ -11,6 +11,8 @@ coverage
 .nyc_output
 dist
 client/dist
+server-dist
+bun.lock
 *.md
 !README.md
 Dockerfile*

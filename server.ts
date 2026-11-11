@@ -23,6 +23,7 @@ import { mountWawasanMcp } from './server/mcp/index.js';
 import { telemetry } from './server/telemetry.js';
 
 import { startOtwWorker } from './server/services/otwOrders.js';
+import { invoiceQueue } from './server/services/invoiceQueue.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ telemetry.initProcessHandlers();
 const ALLOWED_ORIGINS = [
   'https://restoran-wawasan-bio.onrender.com',
   'https://restoran-wawasan.pxxl.click',
+  'https://pu-tau.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
   'capacitor://localhost',
@@ -322,12 +324,35 @@ async function startServer() {
   // Centralized telemetry error handler
   app.use(telemetry.expressErrorHandler());
 
+  server.on('error', (err) => {
+    telemetry.captureException(err, {
+      metadata: { source: 'httpServer', port: PORT, fatal: true },
+    });
+    process.exit(1);
+  });
+
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
 
   const stopOtwWorker = startOtwWorker();
-  process.on('SIGTERM', () => { stopOtwWorker(); server.close(() => process.exit(0)); });
+  let shuttingDown = false;
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    stopOtwWorker();
+    invoiceQueue.service.stopBackgroundWorker();
+    const forceExitTimer = setTimeout(() => process.exit(0), 5000);
+    forceExitTimer.unref?.();
+    server.close(() => process.exit(0));
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
-startServer();
+startServer().catch((err) => {
+  telemetry.captureException(err, {
+    metadata: { source: 'startServer', fatal: true },
+  });
+  process.exit(1);
+});

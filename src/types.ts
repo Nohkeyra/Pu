@@ -161,6 +161,7 @@ export interface CombinedInvoicePayload {
 }
 
 export interface ConsolidatedInvoicePayload {
+  layoutVersion?: 2 | 3;
   pages?: import('./lib/invoiceBatch').InvoicePage[];
   recipient?: import('./lib/invoiceBatch').InvoiceRecipient;
   issuedAt?: string;

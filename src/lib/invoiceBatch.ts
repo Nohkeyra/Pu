@@ -35,7 +35,7 @@ export interface InvoiceBatch {
   includeNotes: boolean;
   lang: 'bm' | 'en';
   issuedAt: string;
-  layoutVersion: 2;
+  layoutVersion: 2 | 3;
 }
 export const invoiceText = (v: unknown): string =>
   typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '';

@@ -363,7 +363,7 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res
       ? await commitConsolidatedInvoice(orderIds, invoiceNo, actorId(req), req.body || {})
       : await readInvoiceBatch(invoiceNo);
     const pdfBuffer =
-      saved.layoutVersion === 2
+      [2, 3].includes(saved.layoutVersion)
         ? await generateSavedInvoicePdf(saved as InvoiceBatch)
         : await generateServerConsolidatedInvoicePdf(
             saved.orders,
@@ -441,7 +441,7 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
     if (allSnaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
       return res.status(403).json({ error: 'Forbidden invoice selection.' });
     const pdfBuffer =
-      saved.layoutVersion === 2
+      [2, 3].includes(saved.layoutVersion)
         ? await generateSavedInvoicePdf(saved as InvoiceBatch)
         : await generateServerConsolidatedInvoicePdf(
             saved.orders,

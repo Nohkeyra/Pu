@@ -3,7 +3,13 @@ import dns from 'dns';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { isSafeUrl, getSafeLocalImagePath, getLocalFallbackImagePath } from './imageRoutes.js';
+import {
+  isSafeUrl,
+  getSafeLocalImagePath,
+  getLocalFallbackImagePath,
+  isAllowedReferer,
+  antiHotlinkGuard,
+} from './imageRoutes.js';
 
 describe('Image proxy address pinning preflight', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -55,5 +61,54 @@ describe('Image proxy address pinning preflight', () => {
   it('rejects loopback and URL credentials without DNS access', async () => {
     expect((await isSafeUrl('http://127.0.0.1/private')).safe).toBe(false);
     expect((await isSafeUrl('https://user:password@example.org/photo.jpg')).safe).toBe(false);
+  });
+});
+
+describe('antiHotlinkGuard and same-host Cloud Run validation', () => {
+  it('allows same-host Cloud Run Referer/Origin while rejecting third-party .run.app hosts', () => {
+    const cloudRunHost = 'ais-pre-o564njtvfdbrpiugzt7bjb-52752730077.asia-southeast1.run.app';
+    expect(isAllowedReferer(`https://${cloudRunHost}/order`, undefined, cloudRunHost)).toBe(true);
+    expect(isAllowedReferer(undefined, `https://${cloudRunHost}`, `${cloudRunHost}:8080`)).toBe(true);
+    expect(isAllowedReferer(`https://${cloudRunHost}/order`, undefined)).toBe(false);
+    expect(isAllowedReferer('https://attacker-app.a.run.app/steal.html', undefined, cloudRunHost)).toBe(false);
+    expect(isAllowedReferer('https://evil.example.com/', undefined, cloudRunHost)).toBe(false);
+  });
+
+  it('passes same-host asset requests through middleware and blocks foreign hotlinks with 403', () => {
+    const cloudRunHost = 'ais-pre-o564njtvfdbrpiugzt7bjb-52752730077.asia-southeast1.run.app';
+    const next = vi.fn();
+    const res = {
+      statusCode: 200,
+      headers: {} as Record<string, string>,
+      body: '',
+      setHeader(k: string, v: string) { this.headers[k] = v; },
+      status(code: number) { this.statusCode = code; return this; },
+      send(payload: string) { this.body = payload; return this; },
+    };
+
+    antiHotlinkGuard(
+      {
+        path: '/assets/heritage/batik_vector_pattern.jpg',
+        hostname: cloudRunHost,
+        headers: { referer: `https://${cloudRunHost}/`, host: cloudRunHost },
+      } as never,
+      res as never,
+      next
+    );
+    expect(next).toHaveBeenCalledTimes(1);
+
+    const blockedNext = vi.fn();
+    antiHotlinkGuard(
+      {
+        path: '/assets/heritage/batik_vector_pattern.jpg',
+        hostname: cloudRunHost,
+        headers: { referer: 'https://other-service.a.run.app/', host: cloudRunHost },
+      } as never,
+      res as never,
+      blockedNext
+    );
+    expect(blockedNext).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toContain('PROTECTED ASSET');
   });
 });

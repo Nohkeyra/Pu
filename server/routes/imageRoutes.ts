@@ -26,6 +26,7 @@ const TRUSTED_REFERER_DOMAINS = new Set([
   'ai.studio',
   'restoran-wawasan-bio.onrender.com',
   'restoran-wawasan.pxxl.click',
+  'pu-tau.vercel.app',
   'localhost',
   '127.0.0.1',
 ]);
@@ -51,24 +52,43 @@ const imageProxyLimiter = createDistributedRateLimiter({
  * Validates if a Referer header is authorized or allowed.
  * Direct requests (no Referer) are allowed (e.g. mobile apps, browser address bar, cURL).
  */
-export function isAllowedReferer(refererHeader: string | undefined, originHeader: string | undefined): boolean {
+export function isAllowedReferer(
+  refererHeader: string | undefined,
+  originHeader: string | undefined,
+  requestHostHeader?: string,
+): boolean {
   const referer = refererHeader || originHeader;
   if (!referer) return true; // Allow direct access
 
+  let hostname: string;
   try {
     const parsed = new URL.URL(referer);
-    const hostname = parsed.hostname.toLowerCase();
-
-    if (TRUSTED_REFERER_DOMAINS.has(hostname)) return true;
-    // S-6 fix: wildcard *.onrender.com / *.run.app removed; only the known production host is trusted.
-    if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
-    if (hostname.endsWith('.aistudio.google.com')) return true;
-
-    return false;
+    hostname = parsed.hostname.toLowerCase();
   } catch {
     // An invalid Referer/Origin cannot establish an allowed site.
     return false;
   }
+
+  if (TRUSTED_REFERER_DOMAINS.has(hostname)) return true;
+  // S-6 fix: wildcard *.onrender.com / *.run.app removed; only the known production host is trusted.
+  if (hostname === 'restoran-wawasan-bio.onrender.com') return true;
+  if (hostname.endsWith('.aistudio.google.com')) return true;
+
+  if (requestHostHeader) {
+    try {
+      const firstHost = requestHostHeader.split(',')[0].trim();
+      if (firstHost) {
+        const requestHostname = new URL.URL(`http://${firstHost}`).hostname.toLowerCase();
+        if (requestHostname && hostname === requestHostname) {
+          return true;
+        }
+      }
+    } catch {
+      // Malformed request Host header cannot authorize a cross-site referer.
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -82,8 +102,12 @@ export function antiHotlinkGuard(req: Request, res: Response, next: NextFunction
 
   const referer = req.headers['referer'] as string | undefined;
   const origin = req.headers['origin'] as string | undefined;
+  const requestHost =
+    req.hostname ||
+    (req.headers['x-forwarded-host'] as string | undefined) ||
+    req.headers['host'];
 
-  if (!isAllowedReferer(referer, origin)) {
+  if (!isAllowedReferer(referer, origin, requestHost)) {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('X-Anti-Hotlink-Protected', 'true');

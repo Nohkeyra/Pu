@@ -115,7 +115,7 @@ export async function commitConsolidatedInvoice(
         includeNotes: settings.includeNotes === true,
         lang: settings.lang === 'en' ? 'en' : 'bm',
         issuedAt: new Date().toISOString(),
-        layoutVersion: 2,
+        layoutVersion: 3,
       };
       plan = planInvoicePages(orders, batch);
     } catch (error) {

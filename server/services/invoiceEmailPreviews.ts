@@ -57,7 +57,7 @@ export async function createInvoiceEmailPreview(
   if (batchNo) {
     const batch = await readInvoiceBatch(batchNo);
     pdf =
-      batch.layoutVersion === 2
+      [2, 3].includes(batch.layoutVersion)
         ? await generateSavedInvoicePdf(batch as InvoiceBatch)
         : await generateServerConsolidatedInvoicePdf(batch.orders, batch.invoiceNo, false, lang);
     company = batch.recipient?.company || batch.orders[0]?.to || '';

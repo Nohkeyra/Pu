@@ -301,38 +301,6 @@ export function Step2DishSelection({
         </div>
       </div>
 
-      <div className="bg-charcoal text-white p-5 rounded-2xl shadow-lg border border-charcoal/85 relative overflow-hidden space-y-2.5">
-        <div 
-          className="absolute inset-0 opacity-[0.25] pointer-events-none"
-          style={{
-            backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none" />
-        
-        <div className="relative z-10 flex justify-between items-center text-xs">
-          <span className="text-stone-300 font-medium">{tText('Quantity:', 'Kuantiti:')}</span>
-          <span className="font-bold text-white">{orderState.guests} {tText('pax', 'orang')}</span>
-        </div>
-        <div className="relative z-10 flex justify-between items-center text-xs">
-          <span className="text-stone-300 font-medium">{tText('Dishes Selected:', 'Hidangan Dipilih:')}</span>
-          <span className="font-bold text-white">
-            {orderState.dishes.length + orderState.veggies.length} {tText('items', 'sajian')}
-          </span>
-        </div>
-
-        <div className="relative z-10 border-t border-white/10 pt-2.5 flex justify-between items-center">
-          <span className="text-xs font-bold text-amber-200 uppercase tracking-wider">
-            {tText('Price Estimation:', 'Anggaran Harga:')}
-          </span>
-          <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/15">
-            {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-          </span>
-        </div>
-      </div>
-
       {fieldError && <FormError message={fieldError} />}
 
       <ResponsiveButtonGroup stackOnMobile={false} className="pt-2">

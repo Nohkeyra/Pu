@@ -41,16 +41,17 @@ export function getBankDetails() {
 // in dist/ (not dist/public/). So `public/assets/brand/logo.png` → `dist/assets/brand/logo.png`.
 function loadImageBase64(relativePaths: string[]): string | null {
   const cwd = process.cwd();
+  const moduleDir = typeof __dirname === 'string' ? __dirname : cwd;
   // Try dist/ first (production), then public/ (dev/local), then fall through.
   const bases = [
     path.join(cwd, 'dist'),
     path.join(cwd, 'public'),
     cwd,
-    path.join(__dirname, '..', 'public'),
-    path.join(__dirname, '..', 'dist'),
-    path.join(__dirname, 'public'),
-    path.join(__dirname, 'dist'),
-    __dirname,
+    path.join(moduleDir, '..', 'public'),
+    path.join(moduleDir, '..', 'dist'),
+    path.join(moduleDir, 'public'),
+    path.join(moduleDir, 'dist'),
+    moduleDir,
   ];
   for (const relPath of relativePaths) {
     for (const base of bases) {

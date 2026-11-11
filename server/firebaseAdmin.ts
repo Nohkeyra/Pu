@@ -262,7 +262,7 @@ export function hasAdminCredentials(): boolean {
     }
   }
 
-  return Boolean((email && privateKey) || process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  return Boolean((email && privateKey) || process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim());
 }
 
 export function getAdminApp(): App {
@@ -302,6 +302,8 @@ export function getAdminApp(): App {
           }),
           projectId: firebaseConfig.projectId,
         });
+      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim()) {
+        adminApp = initializeApp({ projectId: firebaseConfig.projectId });
       } else {
         const msg =
           'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY. ' +

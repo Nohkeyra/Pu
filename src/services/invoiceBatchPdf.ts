@@ -1,3 +1,5 @@
+import { createInvoiceTableLayout, drawInvoiceTable } from './invoiceBatchTable';
+import { drawInvoiceSignature } from './invoiceSignature';
 import { INVOICE_BUSINESS } from '../constants/invoiceBusiness';
 import { jsPDF } from 'jspdf';
 import {
@@ -15,6 +17,7 @@ import {
 } from './invoicePdfBrand';
 import { numberToWords } from './numberToWordsBM';
 export interface BatchPdfOptions {
+  layoutVersion?: 2 | 3;
   includeNotes: boolean;
   lang: 'bm' | 'en';
   recipient: InvoiceRecipient;
@@ -34,7 +37,7 @@ const MEALS: Record<string, [string, string]> = {
 };
 const rowsBottom = 157,
   lineHeight = 3.8;
-function layout(doc: jsPDF, orders: InvoiceRecord[], options: BatchPdfOptions) {
+function legacyLayout(doc: jsPDF, orders: InvoiceRecord[], options: BatchPdfOptions) {
   const activeMeals = Object.keys(MEALS).filter((meal) =>
     orders.some((order) => order.meals?.includes(meal))
   );
@@ -83,6 +86,9 @@ function layout(doc: jsPDF, orders: InvoiceRecord[], options: BatchPdfOptions) {
   });
   return { activeMeals, widths, xs, recipientLines, recipientHeight, tableY, rows };
 }
+function layout(doc: jsPDF, orders: InvoiceRecord[], options: BatchPdfOptions) {
+  return options.layoutVersion === 2 ? legacyLayout(doc, orders, options) : createInvoiceTableLayout(doc, orders, options);
+}
 export function planInvoicePages(
   orders: InvoiceRecord[],
   options: BatchPdfOptions
@@ -90,11 +96,12 @@ export function planInvoicePages(
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }),
     data = layout(doc, orders, options),
     pages: Array<Omit<InvoicePage, 'invoiceNo'>> = [];
+  const bottom = options.layoutVersion === 2 ? rowsBottom : 135;
   let page = { orderIds: [] as string[], totalCents: 0 },
     y = data.tableY + 14;
   for (const row of data.rows) {
     if (!row.order.id) throw new Error('Order ID required.');
-    if (page.orderIds.length && y + row.height > rowsBottom) {
+    if (page.orderIds.length && y + row.height > bottom) {
       pages.push(page);
       page = { orderIds: [], totalCents: 0 };
       y = data.tableY + 14;
@@ -126,7 +133,7 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     const rows = page.orderIds.map((id) => data.rows.find((row) => row.order.id === id)!);
     if (rows.reduce((sum, row) => sum + invoiceAmountCents(row.order), 0) !== page.totalCents)
       throw new Error('Saved invoice total mismatch.');
-    if (data.tableY + 14 + rows.reduce((sum, row) => sum + row.height, 0) > rowsBottom + 0.01)
+    if (data.tableY + 14 + rows.reduce((sum, row) => sum + row.height, 0) > (options.layoutVersion === 2 ? rowsBottom : 135) + 0.01)
       throw new Error('Saved rows exceed the page.');
     drawInvoiceCalligraphy(doc, options.calligraphy || null, 36, 297);
     // A compressed document otherwise selects jsPDF's CPU-heavy SLOW PNG mode.
@@ -160,70 +167,75 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.text(data.recipientLines, 19, 50, { lineHeightFactor: 1.27 });
-    let y = data.tableY;
-    doc.setFillColor(166, 124, 30);
-    doc.rect(15, y, 267, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(bm ? 'BUTIRAN PESANAN' : 'ORDER DETAILS', 19, y + 4.8);
-    doc.text(
-      bm ? 'HARGA / PAX (RM)' : 'PRICE / PAX (RM)',
-      data.xs[data.xs.length - 2] - 3,
-      y + 4.8,
-      { align: 'right' }
-    );
-    doc.text(bm ? 'JUMLAH' : 'TOTAL', 269.5, y + 4.8, { align: 'center' });
-    y += 7;
-    doc.setFillColor(114, 80, 20);
-    doc.rect(15, y, 267, 7, 'F');
-    const labels = [
-      bm ? 'Tarikh' : 'Date',
-      bm ? 'Pax' : 'QTY',
-      ...(options.includeNotes ? [bm ? 'Catatan' : 'Notes'] : []),
-      'Menu',
-      ...(data.activeMeals.length
-        ? data.activeMeals.map((meal) => MEALS[meal][bm ? 0 : 1])
-        : ['-']),
-      'RM',
-    ];
-    labels.forEach((v, i) => {
-      doc.setFontSize(7);
-      doc.text(v, data.xs[i] + data.widths[i] / 2, y + 4.8, { align: 'center' });
-    });
-    y += 7;
-    rows.forEach((row, i) => {
-      doc.setFillColor(
-        ...((i % 2 ? [250, 248, 244] : [255, 255, 255]) as [number, number, number])
-      );
-      doc.rect(15, y, 267, row.height, 'F');
-      doc.setDrawColor(208, 189, 151);
-      doc.setLineWidth(0.2);
-      doc.rect(15, y, 267, row.height);
-      data.xs.slice(1, -1).forEach((x) => doc.line(x, y, x, y + row.height));
-      doc.setFont('helvetica', 'normal');
+    if (options.layoutVersion === 2) {
+      let y = data.tableY;
+      doc.setFillColor(166, 124, 30);
+      doc.rect(15, y, 267, 7, 'F');
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.setTextColor(35, 30, 25);
-      row.lines.forEach((v, c) =>
-        doc.text(v, c === data.widths.length - 1 ? data.xs[c + 1] - 2 : data.xs[c] + 2, y + 5, {
-          align: c === data.widths.length - 1 ? 'right' : 'left',
-          lineHeightFactor: 1.35,
-        })
+      doc.setTextColor(255, 255, 255);
+      doc.text(bm ? 'BUTIRAN PESANAN' : 'ORDER DETAILS', 19, y + 4.8);
+      doc.text(
+        bm ? 'HARGA / PAX (RM)' : 'PRICE / PAX (RM)',
+        data.xs[data.xs.length - 2] - 3,
+        y + 4.8,
+        { align: 'right' }
       );
-      y += row.height;
-    });
-    doc.setFillColor(114, 80, 20);
-    doc.rect(15, y, 267, 9, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(bm ? 'JUMLAH INVOIS INI' : 'THIS INVOICE TOTAL', 19, y + 6);
-    doc.text(`RM ${(page.totalCents / 100).toFixed(2)}`, 279, y + 6, { align: 'right' });
-    doc.setTextColor(80, 66, 45);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    const words = numberToWords(page.totalCents / 100, options.lang);
-    doc.text(words, 15, 172);
+      doc.text(bm ? 'JUMLAH' : 'TOTAL', 269.5, y + 4.8, { align: 'center' });
+      y += 7;
+      doc.setFillColor(114, 80, 20);
+      doc.rect(15, y, 267, 7, 'F');
+      const labels = [
+        bm ? 'Tarikh' : 'Date',
+        bm ? 'Pax' : 'QTY',
+        ...(options.includeNotes ? [bm ? 'Catatan' : 'Notes'] : []),
+        'Menu',
+        ...(data.activeMeals.length
+          ? data.activeMeals.map((meal) => MEALS[meal][bm ? 0 : 1])
+          : ['-']),
+        'RM',
+      ];
+      labels.forEach((v, i) => {
+        doc.setFontSize(7);
+        doc.text(v, data.xs[i] + data.widths[i] / 2, y + 4.8, { align: 'center' });
+      });
+      y += 7;
+      rows.forEach((row, i) => {
+        doc.setFillColor(
+          ...((i % 2 ? [250, 248, 244] : [255, 255, 255]) as [number, number, number])
+        );
+        doc.rect(15, y, 267, row.height, 'F');
+        doc.setDrawColor(208, 189, 151);
+        doc.setLineWidth(0.2);
+        doc.rect(15, y, 267, row.height);
+        data.xs.slice(1, -1).forEach((x) => doc.line(x, y, x, y + row.height));
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(35, 30, 25);
+        row.lines.forEach((v, c) =>
+          doc.text(v, c === data.widths.length - 1 ? data.xs[c + 1] - 2 : data.xs[c] + 2, y + 5, {
+            align: c === data.widths.length - 1 ? 'right' : 'left',
+            lineHeightFactor: 1.35,
+          })
+        );
+        y += row.height;
+      });
+      doc.setFillColor(114, 80, 20);
+      doc.rect(15, y, 267, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(bm ? 'JUMLAH INVOIS INI' : 'THIS INVOICE TOTAL', 19, y + 6);
+      doc.text(`RM ${(page.totalCents / 100).toFixed(2)}`, 279, y + 6, { align: 'right' });
+      doc.setTextColor(80, 66, 45);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      const words = numberToWords(page.totalCents / 100, options.lang);
+      doc.text(words, 15, 172);
+    } else {
+      drawInvoiceTable(doc, data, rows, page, options);
+      drawInvoiceSignature(doc);
+    }
     drawInvoiceBankDetails(doc, options.bank || INVOICE_BUSINESS.bank, options.lang);
     drawInvoiceContactLinks(doc, 197, 297);
     doc.setDrawColor(194, 147, 45);

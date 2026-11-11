@@ -179,13 +179,13 @@ function describeScope(scope: string): string {
 }
 
 export function createMcpOAuthHelpers() {
-  const db = getFirestore();
+  const getDb = () => getFirestore();
   const now = () => Date.now();
 
   async function resolveClient(clientId: string): Promise<ClientMetadata> {
     if (clientId.startsWith('https://')) return fetchClientMetadata(clientId);
 
-    const snap = await db.collection('mcp_oauth_clients').doc(sha256(clientId)).get();
+    const snap = await getDb().collection('mcp_oauth_clients').doc(sha256(clientId)).get();
     if (!snap.exists) throw new Error('Unknown OAuth client.');
     const client = snap.data() as Record<string, unknown>;
     const redirectUris = Array.isArray(client.redirectUris)
@@ -225,7 +225,7 @@ export function createMcpOAuthHelpers() {
     const client = await validateClient(params.clientId, params.redirectUri);
 
     const id = randomToken();
-    await db.collection('mcp_oauth_transactions').doc(sha256(id)).set({
+    await getDb().collection('mcp_oauth_transactions').doc(sha256(id)).set({
       clientId: params.clientId,
       clientName: client.client_name || 'MCP client',
       redirectUri: params.redirectUri,
@@ -240,6 +240,7 @@ export function createMcpOAuthHelpers() {
   }
 
   async function completeAuthorization(id: string, email: string, uid: string) {
+    const db = getDb();
     const ref = db.collection('mcp_oauth_transactions').doc(sha256(id));
     const code = randomToken();
     return db.runTransaction(async tx => {
@@ -261,6 +262,7 @@ export function createMcpOAuthHelpers() {
   // These writes participate in consumption of the original code/refresh token.
   // A failed commit leaves the original usable and publishes no partial token pair.
   function issueTokens(tx: FirebaseFirestore.Transaction, data: Record<string, any>) {
+    const db = getDb();
     const accessToken = randomToken(), refreshToken = randomToken();
     const base = { uid: data.uid, email: data.email, clientId: data.clientId,
       scope: data.scope || MCP_SCOPE, resource: data.resource, createdAt: new Date() };
@@ -278,6 +280,7 @@ export function createMcpOAuthHelpers() {
     await validateClient(clientId, redirectUri);
     const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
     if (normalizeIssuer(resource) !== expectedResource) throw new Error('Invalid resource.');
+    const db = getDb();
     const ref = db.collection('mcp_oauth_codes').doc(sha256(code));
     return db.runTransaction(async tx => {
       const snap = await tx.get(ref);
@@ -297,6 +300,7 @@ export function createMcpOAuthHelpers() {
   async function refresh(refreshToken: string, clientId: string, resource: string, issuer: string) {
     const expectedResource = `${normalizeIssuer(issuer)}/mcp`;
     if (normalizeIssuer(resource) !== expectedResource) throw new Error('Invalid resource.');
+    const db = getDb();
     const ref = db.collection('mcp_oauth_refresh_tokens').doc(sha256(refreshToken));
     return db.runTransaction(async tx => {
       const snap = await tx.get(ref);
@@ -312,7 +316,7 @@ export function createMcpOAuthHelpers() {
   }
 
   async function verifyAccessToken(token: string, issuer: string) {
-    const snap = await db.collection('mcp_oauth_access_tokens').doc(sha256(token)).get();
+    const snap = await getDb().collection('mcp_oauth_access_tokens').doc(sha256(token)).get();
     if (!snap.exists) return null;
 
     const data = snap.data() as Record<string, any>;
@@ -325,6 +329,7 @@ export function createMcpOAuthHelpers() {
   }
 
   async function revoke(token: string) {
+    const db = getDb();
     const hash = sha256(token);
     await db.collection('mcp_oauth_access_tokens').doc(hash).delete().catch(() => undefined);
     await db.collection('mcp_oauth_refresh_tokens').doc(hash).delete().catch(() => undefined);
@@ -339,7 +344,7 @@ export function createMcpOAuthHelpers() {
     }
 
     const clientId = `wawasan-${randomToken()}`;
-    await db.collection('mcp_oauth_clients').doc(sha256(clientId)).set({
+    await getDb().collection('mcp_oauth_clients').doc(sha256(clientId)).set({
       clientId,
       clientName: typeof raw.client_name === 'string' ? raw.client_name.slice(0, 200) : 'MCP client',
       redirectUri: redirectUris[0],
