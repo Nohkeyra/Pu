@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native widget equivalents of the fixed Bold Heritage / .dark theme. -->
+    <color name="widget_dark_canvas">#211A19</color>
+    <color name="widget_dark_surface">#2E2726</color>
+    <color name="widget_dark_raised">#393231</color>
+    <color name="widget_dark_border">#4D4743</color>
+    <color name="widget_dark_ink">#FFF8EC</color>
+    <color name="widget_dark_muted">#C1B7B1</color>
+    <color name="widget_dark_gold">#FFB02E</color>
+    <color name="widget_dark_terracotta">#E83D20</color>
+    <color name="widget_dark_header_start">#3B2D26</color>
+    <color name="widget_dark_header_end">#29211F</color>
+</resources>
