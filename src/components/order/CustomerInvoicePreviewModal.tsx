@@ -230,7 +230,7 @@ export function CustomerInvoicePreviewModal({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white font-artistic">
+                      <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white font-display">
                         RESTORAN WAWASAN
                       </h1>
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">

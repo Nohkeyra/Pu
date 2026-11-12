@@ -16,7 +16,6 @@ import {
   INVOICE_CONTACT,
 } from './invoicePdfBrand';
 import { numberToWords } from './numberToWordsBM';
-import { drawInvoiceBrandTitle } from './invoiceBrandTitle';
 export interface BatchPdfOptions {
   layoutVersion?: 2 | 3;
   includeNotes: boolean;
@@ -140,7 +139,10 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     // A compressed document otherwise selects jsPDF's CPU-heavy SLOW PNG mode.
     // FAST remains lossless and keeps high-resolution logos practical to render.
     if (options.logo) doc.addImage(options.logo, 'PNG', 15, 8, 20, 20, 'invoice-logo', 'FAST');
-    drawInvoiceBrandTitle(doc, 39, 16);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(114, 80, 20);
+    doc.text('RESTORAN WAWASAN', 39, 16);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(45, 38, 30);
