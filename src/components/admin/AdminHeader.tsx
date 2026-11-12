@@ -42,7 +42,7 @@ export function AdminHeader({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-sm sm:text-lg font-bold font-display tracking-tight text-deep-forest dark:text-white leading-tight truncate">
+              <h1 className="text-sm sm:text-lg font-bold font-artistic tracking-tight text-deep-forest dark:text-white leading-tight truncate">
                 Restoran Wawasan
               </h1>
               <Badge variant="outline" className="hidden xs:inline-flex text-xs uppercase font-bold tracking-wider border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5 px-1.5 py-0">
