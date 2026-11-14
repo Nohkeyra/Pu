@@ -21,7 +21,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
   const { theme } = useTheme();
   const reduceMotion = Boolean(useReducedMotion());
   const [exiting, setExiting] = useState(false);
-  const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completionTimer = useRef<number | NodeJS.Timeout | null>(null);
   const completeRef = useRef(onComplete);
   useEffect(() => {
     completeRef.current = onComplete;
