@@ -112,7 +112,7 @@ router.get('/diagnostics/:type', verifyAdminToken, async (req, res) => {
 
     return res.status(400).json({ error: 'Unknown diagnostic type' });
   } catch (err) {
-    console.error(`[Diagnostics:${type}] Check failed:`, err);
+    console.error('[Diagnostics:%s] Check failed:', type, err);
     return res.status(500).json({ status: 'error', error: 'Diagnostic check failed' });
   }
 });

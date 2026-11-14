@@ -403,7 +403,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     const { deliveryStatus, mergedOrder } = txResult;
     publicCalendar.invalidate();
     void syncGoogleCalendarEvent(orderId, mergedOrder as any).catch((calErr) => {
-      console.error(`[Widget] Calendar sync failed for ${orderId}:`, calErr);
+      console.error('[Widget] Calendar sync failed for %s:', orderId, calErr);
     });
 
     telemetry.captureBreadcrumb('Pricing confirmed and invoice delivery queued', {
