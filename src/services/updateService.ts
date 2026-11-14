@@ -6,9 +6,9 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import semver from 'semver';
 
-export const CURRENT_APP_VERSION = '1.3.210';
-export const CURRENT_BUILD_NUMBER = 342;
-export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.210/app-release-signed.apk';
+export const CURRENT_APP_VERSION = '1.3.211';
+export const CURRENT_BUILD_NUMBER = 343;
+export const DEFAULT_APK_URL = 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.211/app-release-signed.apk';
 
 export interface AppVersionConfig {
   latestVersion: string;
