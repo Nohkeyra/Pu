@@ -45,14 +45,16 @@ export function OrderPreviewProgress({ children, isKeyboardVisible, ...props }: 
     const header = target.closest('.customer-page')?.querySelector('.customer-page-header');
     let observer: IntersectionObserver | undefined;
     const update = () => {
-      const top = (header?.getBoundingClientRect().bottom || 0) + 6;
+      const rawTop = (header?.getBoundingClientRect().bottom || 0) + 6;
+      const top = Number.isFinite(rawTop) ? Math.max(0, rawTop) : 0;
       setDocked(target.getBoundingClientRect().bottom <= top);
     };
     const observe = () => {
       observer?.disconnect();
       update();
       if (typeof IntersectionObserver !== 'undefined') {
-        const top = (header?.getBoundingClientRect().bottom || 0) + 6;
+        const rawTop = (header?.getBoundingClientRect().bottom || 0) + 6;
+        const top = Number.isFinite(rawTop) ? Math.max(0, rawTop) : 0;
         observer = new IntersectionObserver(update, { rootMargin: `-${top}px 0px 0px 0px`, threshold: 0 });
         observer.observe(target);
       }
