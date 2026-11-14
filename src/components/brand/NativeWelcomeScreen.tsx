@@ -23,7 +23,9 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
   const [exiting, setExiting] = useState(false);
   const completionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completeRef = useRef(onComplete);
-  completeRef.current = onComplete;
+  useEffect(() => {
+    completeRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => () => {
     if (completionTimer.current !== null) window.clearTimeout(completionTimer.current);
