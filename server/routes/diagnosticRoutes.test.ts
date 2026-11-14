@@ -1,17 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import type { Server } from 'http';
 import diagnosticRoutes from './diagnosticRoutes.js';
 import { signAdminJwt } from '../adminAuth.js';
+import * as calendarService from '../calendarService.js';
 
-describe('Non-destructive PDF diagnostics', () => {
+describe('Non-destructive PDF & Calendar diagnostics', () => {
   let server: Server;
   let baseUrl = '';
   let token = '';
-  const originalSecret = process.env.ADMIN_JWT_SECRET;
+  const originalEnv = { ...process.env };
 
   beforeEach(async () => {
-    process.env.ADMIN_JWT_SECRET = 'diagnostic-route-test-secret';
+    process.env = { ...originalEnv, ADMIN_JWT_SECRET: 'diagnostic-route-test-secret' };
     token = signAdminJwt({ uid: 'diagnostic_admin', admin: true });
     const app = express();
     app.use('/api', diagnosticRoutes);
@@ -23,8 +24,8 @@ describe('Non-destructive PDF diagnostics', () => {
   });
 
   afterEach(async () => {
-    if (originalSecret === undefined) delete process.env.ADMIN_JWT_SECRET;
-    else process.env.ADMIN_JWT_SECRET = originalSecret;
+    process.env = { ...originalEnv };
+    vi.restoreAllMocks();
     await new Promise<void>(resolve => server.close(() => resolve()));
   });
 
@@ -41,5 +42,48 @@ describe('Non-destructive PDF diagnostics', () => {
     const data = await res.json();
     expect(data.status).toBe('healthy');
     expect(data.service).toBe('Server PDF engine');
+  });
+
+  it('reports calendar unconfigured when service account credentials are absent', async () => {
+    for (const key of [
+      'GOOGLE_CALENDAR_CLIENT_EMAIL',
+      'FIREBASE_CLIENT_EMAIL',
+      'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+      'GOOGLE_CLIENT_EMAIL',
+      'GOOGLE_CALENDAR_PRIVATE_KEY',
+      'FIREBASE_PRIVATE_KEY',
+      'GOOGLE_PRIVATE_KEY',
+      'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY',
+    ]) {
+      delete process.env[key];
+    }
+
+    const res = await fetch(`${baseUrl}/api/diagnostics/calendar`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(false);
+    expect(data.status).toBe('unconfigured');
+  });
+
+  it('accepts GOOGLE_CALENDAR_* aliases and queries accessible calendars', async () => {
+    process.env.GOOGLE_CALENDAR_CLIENT_EMAIL = 'calendar-bot@wawasan.test.iam.gserviceaccount.com';
+    process.env.GOOGLE_CALENDAR_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\nTEST\\n-----END PRIVATE KEY-----';
+
+    const listMock = vi.fn().mockResolvedValue({ data: { items: [{ id: 'primary' }] } });
+    vi.spyOn(calendarService, 'getGoogleCalendarClient').mockReturnValue({
+      calendarList: { list: listMock },
+    } as never);
+
+    const res = await fetch(`${baseUrl}/api/diagnostics/calendar`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.status).toBe('healthy');
+    expect(data.calendarsReturned).toBe(1);
+    expect(listMock).toHaveBeenCalledTimes(1);
   });
 });

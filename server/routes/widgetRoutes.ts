@@ -6,6 +6,8 @@ import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 import { invoiceQueue } from '../services/invoiceQueue.js';
 import { telemetry } from '../telemetry.js';
 import { getOrderEventDate } from '../../src/lib/orderTimestamp.js';
+import { publicCalendar } from '../services/publicCalendar.js';
+import { syncGoogleCalendarEvent } from '../calendarService.js';
 
 const router = Router();
 
@@ -293,12 +295,16 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     }
 
     const order = orderSnap.data()!;
+    if (order.deletedByAdmin) {
+      return res.status(404).json({ success: false, error: 'Order is no longer available.' });
+    }
 
-    // Guard: only price pending/approved orders; don't re-bill a billed order accidentally
-    if (order.status === 'billed' || order.status === 'cancelled' || order.status === 'rejected') {
+    const currentStatus = String(order.status || 'pending').toLowerCase().trim();
+    // Guard: only price pending/approved orders; don't re-bill a billed or delivered order accidentally
+    if (!['pending', 'approved'].includes(currentStatus)) {
       return res.status(409).json({
         success: false,
-        error: `Order is already '${order.status}'. Cannot re-price.`,
+        error: `Order is already '${currentStatus}'. Cannot re-price.`,
         invoiceNo: order.invoiceNo || null
       });
     }
@@ -348,7 +354,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     // Make the eligibility check and billing transition one Firestore transaction.
     // A concurrent request will re-read the order and fail once another request bills it.
     const invoiceGeneratedAt = new Date().toISOString();
-    const deliveryStatus = await db.runTransaction(async (tx: any) => {
+    const txResult = await db.runTransaction(async (tx: any) => {
       const freshSnap = await tx.get(orderRef);
       if (!freshSnap.exists) {
         const error: any = new Error('ORDER_NOT_FOUND');
@@ -356,7 +362,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         throw error;
       }
       const freshOrder = freshSnap.data()!;
-      if (!['pending', 'approved'].includes(String(freshOrder.status || 'pending'))) {
+      if (freshOrder.deletedByAdmin || !['pending', 'approved'].includes(String(freshOrder.status || 'pending').toLowerCase().trim())) {
         const error: any = new Error('ORDER_NOT_ELIGIBLE');
         error.code = 'ORDER_NOT_ELIGIBLE';
         error.currentStatus = freshOrder.status || 'pending';
@@ -372,8 +378,17 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       }
       const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
       const deliveryStatus = recipientEmail.includes('@') ? 'queued' : 'skipped_no_email';
-      const updates = { status: 'billed', prices: finalPrices, totalAmount, invoiceNo,
-        invoiceGeneratedAt, invoiceDeliveryStatus: deliveryStatus, updatedAt: FieldValue.serverTimestamp() };
+      const updates = {
+        status: 'billed',
+        prices: finalPrices,
+        totalAmount,
+        invoiceNo,
+        officialInvoiceNo: invoiceNo,
+        billedAt: freshOrder.billedAt || invoiceGeneratedAt,
+        invoiceGeneratedAt,
+        invoiceDeliveryStatus: deliveryStatus,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
       if (deliveryStatus === 'queued') {
         await invoiceQueue.service.enqueueInTransaction(tx, {
           orderId, orderForPdf: { ...freshOrder, ...updates, id: orderId }, invoiceNo,
@@ -382,7 +397,13 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         });
       }
       tx.update(orderRef, updates);
-      return deliveryStatus;
+      return { deliveryStatus, mergedOrder: { ...freshOrder, ...updates, id: orderId } };
+    });
+
+    const { deliveryStatus, mergedOrder } = txResult;
+    publicCalendar.invalidate();
+    void syncGoogleCalendarEvent(orderId, mergedOrder as any).catch((calErr) => {
+      console.error(`[Widget] Calendar sync failed for ${orderId}:`, calErr);
     });
 
     telemetry.captureBreadcrumb('Pricing confirmed and invoice delivery queued', {

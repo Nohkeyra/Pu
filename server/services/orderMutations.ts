@@ -30,6 +30,18 @@ export function validateAdminOrderUpdate(data: unknown): string | null {
       return 'Invalid invoice number';
     }
   }
+  if (data && (data as Record<string, unknown>).status === 'billed') {
+    const rec = data as Record<string, unknown>;
+    if (rec.prices !== undefined) {
+      const priceVals = Object.values(rec.prices as Record<string, unknown>);
+      if (priceVals.length === 0 || priceVals.some((p) => typeof p !== 'number' || !Number.isFinite(p) || p <= 0)) {
+        return 'Unit prices must be greater than RM 0.00 before billing an order';
+      }
+    }
+    if (rec.totalAmount !== undefined && (typeof rec.totalAmount !== 'number' || !Number.isFinite(rec.totalAmount) || rec.totalAmount <= 0)) {
+      return 'Total amount must be greater than RM 0.00 before billing an order';
+    }
+  }
   return null;
 }
 
@@ -75,6 +87,21 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
         error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
         httpStatus: 400,
       } as const;
+    }
+
+    if (data.status === 'billed') {
+      const effectivePrices = data.prices ?? oldData.prices;
+      const effectiveTotal = Number(data.totalAmount ?? oldData.totalAmount ?? 0);
+      const priceEntries = effectivePrices && typeof effectivePrices === 'object' ? Object.values(effectivePrices) : [];
+      const hasPositivePrices =
+        priceEntries.length > 0 &&
+        priceEntries.every((p) => typeof p === 'number' && Number.isFinite(p) && p > 0);
+      if (!hasPositivePrices || !Number.isFinite(effectiveTotal) || effectiveTotal <= 0) {
+        return {
+          error: 'Unit prices and a positive total amount are required before billing an order',
+          httpStatus: 400,
+        } as const;
+      }
     }
 
     const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };

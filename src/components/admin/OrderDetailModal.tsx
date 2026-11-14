@@ -69,6 +69,22 @@ export function OrderDetailModal({
 
   if (!isOpen) return null;
 
+  const safeMeals = Array.isArray(selectedOrder?.meals) ? selectedOrder.meals : [];
+  const rawQty = Number(selectedOrder?.quantity ?? selectedOrder?.guests ?? 0);
+  const safeQuantity = Number.isFinite(rawQty) && rawQty > 0 ? rawQty : 0;
+  const computedGrandTotal = safeMeals.reduce((total, meal) => {
+    const price = parseFloat(prices[meal] || '0');
+    return total + (Number.isFinite(price) && price > 0 ? price : 0) * safeQuantity;
+  }, 0);
+  const hasInvalidPricing =
+    !selectedOrder ||
+    safeMeals.length === 0 ||
+    safeQuantity <= 0 ||
+    safeMeals.some((m) => {
+      const parsed = parseFloat(prices[m] || '');
+      return prices[m] === undefined || prices[m] === '' || Number.isNaN(parsed) || parsed <= 0;
+    });
+
   return createPortal(
     <div
       role="dialog"
@@ -359,33 +375,41 @@ export function OrderDetailModal({
                     {t('price_pax')}
                   </h4>
                   <div className="space-y-4">
-                    {selectedOrder.meals.map((meal, idx) => (
-                      <div key={`${meal}-${idx}`} className="flex flex-col gap-1.5">
-                        <Label className="text-xs text-stone-600 dark:text-stone-400 font-bold uppercase tracking-wide">
-                          {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
-                        </Label>
-                        <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
-                            RM
-                          </span>
-                          <Input
-                            id={`meal-price-${meal}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={prices[meal] || ''}
-                            onChange={(e) =>
-                              setPrices((prev) => ({
-                                ...prev,
-                                [meal]: e.target.value,
-                              }))
-                            }
-                            className="pl-11 h-11 bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white text-base font-bold rounded-xl focus:ring-orange-500/20"
-                            placeholder="0.00"
-                          />
+                    {safeMeals.length === 0 ? (
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        {language === 'bm'
+                          ? 'Tiada hidangan disenaraikan untuk pesanan ini.'
+                          : 'No meal blocks listed for this order.'}
+                      </p>
+                    ) : (
+                      safeMeals.map((meal, idx) => (
+                        <div key={`${meal}-${idx}`} className="flex flex-col gap-1.5">
+                          <Label className="text-xs text-stone-600 dark:text-stone-400 font-bold uppercase tracking-wide">
+                            {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
+                          </Label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                              RM
+                            </span>
+                            <Input
+                              id={`meal-price-${meal}`}
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={prices[meal] || ''}
+                              onChange={(e) =>
+                                setPrices((prev) => ({
+                                  ...prev,
+                                  [meal]: e.target.value,
+                                }))
+                              }
+                              className="pl-11 h-11 bg-stone-50 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 text-stone-900 dark:text-white text-base font-bold rounded-xl focus:ring-orange-500/20 tabular-nums"
+                              placeholder="0.00"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
 
                   {/* Total Preview */}
@@ -394,24 +418,12 @@ export function OrderDetailModal({
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
                         {t('grand_total')}:
                       </span>
-                      <span className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400">
-                        RM{' '}
-                        {selectedOrder.meals
-                          .reduce((total, meal) => {
-                            const price = parseFloat(prices[meal] || '0');
-                            return total + price * selectedOrder.quantity;
-                          }, 0)
-                          .toFixed(2)}
+                      <span className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 tabular-nums">
+                        RM {computedGrandTotal.toFixed(2)}
                       </span>
                     </div>
                     <p className="text-xs text-stone-500 dark:text-stone-400 italic leading-relaxed font-medium">
-                      {numberToWords(
-                        selectedOrder.meals.reduce((total, meal) => {
-                          const price = parseFloat(prices[meal] || '0');
-                          return total + price * selectedOrder.quantity;
-                        }, 0),
-                        selectedOrder.lang
-                      )}
+                      {numberToWords(computedGrandTotal, selectedOrder.lang)}
                     </p>
                   </div>
                 </div>
@@ -465,17 +477,7 @@ export function OrderDetailModal({
                   <Button
                     id="btn-approve-pending"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
-                    disabled={
-                      isApproving ||
-                      !selectedOrder ||
-                      selectedOrder.meals.some(
-                        (m) =>
-                          prices[m] === undefined ||
-                          prices[m] === '' ||
-                          isNaN(parseFloat(prices[m])) ||
-                          parseFloat(prices[m]) < 0
-                      )
-                    }
+                    disabled={isApproving || hasInvalidPricing}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
                     {isApproving ? (
@@ -501,17 +503,7 @@ export function OrderDetailModal({
                   <Button
                     id="btn-update-invoice"
                     onClick={() => handleApprove(selectedOrder?.id || '')}
-                    disabled={
-                      isApproving ||
-                      !selectedOrder ||
-                      selectedOrder.meals.some(
-                        (m) =>
-                          prices[m] === undefined ||
-                          prices[m] === '' ||
-                          isNaN(parseFloat(prices[m])) ||
-                          parseFloat(prices[m]) < 0
-                      )
-                    }
+                    disabled={isApproving || hasInvalidPricing}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 h-11 font-bold shadow-sm transition-all active:scale-95 text-sm"
                   >
                     {isApproving ? (

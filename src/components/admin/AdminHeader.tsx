@@ -30,7 +30,8 @@ export function AdminHeader({
   toggleTheme,
   calendarState = { ok: false, loading: false },
   onLogout,
-  getCalendarEnableUrl = () => '/api/auth/google/calendar',
+  getCalendarEnableUrl,
+  navigate,
 }: AdminHeaderProps) {
   return (
     <header className="[grid-area:header] border-b border-stone/15 dark:border-white/10 bg-card/95 dark:bg-card/90 backdrop-blur-md sticky top-0 z-30 transition-colors flex flex-col pt-[var(--sat)]">
@@ -62,23 +63,37 @@ export function AdminHeader({
             {calendarState.loading ? (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/60 text-stone text-xs rounded-xl border border-stone/15">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Syncing Calendar...</span>
+                <span>{language === 'bm' ? 'Menyemak Kalendar...' : 'Syncing Calendar...'}</span>
               </div>
             ) : calendarState.ok ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl border border-emerald-500/20" title="Google Calendar Sync operational">
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs rounded-xl border border-emerald-500/20"
+                title={language === 'bm' ? 'Sinkronisasi Google Calendar aktif' : 'Google Calendar Sync operational'}
+              >
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span>Calendar Synced</span>
+                <span>{language === 'bm' ? 'Kalendar Diselaras' : 'Calendar Synced'}</span>
               </div>
-            ) : (
+            ) : getCalendarEnableUrl ? (
               <a
                 href={getCalendarEnableUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={calendarState.error || (language === 'bm' ? 'Tetapkan Google Calendar' : 'Configure Google Calendar')}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs rounded-xl border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Enable Calendar</span>
+                <span>{language === 'bm' ? 'Tetapkan Kalendar' : 'Setup Calendar'}</span>
               </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate?.('/settings')}
+                title={calendarState.error || (language === 'bm' ? 'Buka Tetapan untuk memeriksa integrasi kalendar' : 'Open Settings to inspect calendar diagnostics')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs rounded-xl border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-pointer"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>{language === 'bm' ? 'Tetapkan Kalendar' : 'Setup Calendar'}</span>
+              </button>
             )}
           </div>
 

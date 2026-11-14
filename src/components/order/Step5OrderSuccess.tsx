@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   Eye, 
@@ -287,13 +288,13 @@ export function Step5OrderSuccess({
           </Button>
         </div>
 
-        <a
-          href="/history"
+        <Link
+          to="/profile"
           className="w-full h-12 rounded-2xl border border-stone/15 dark:border-white/10 flex items-center justify-center gap-2 text-deep-forest dark:text-white font-bold text-sm hover:bg-muted/50 transition-colors"
         >
           <span>{tText('View Transaction Logs', 'Lihat Log Transaksi')}</span>
           <ExternalLink className="w-4 h-4 text-stone" />
-        </a>
+        </Link>
       </div>
     </motion.div>
   );

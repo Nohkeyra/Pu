@@ -18,6 +18,18 @@ const statuses: Record<OrderStatusKey, { en: string; bm: string; className: stri
   unknown: { en: 'Status unavailable', bm: 'Status belum tersedia', className: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-200 dark:border-stone-600' },
 };
 
+export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ['approved', 'billed', 'rejected', 'cancelled', 'cancel_requested'],
+  approved: ['billed', 'in_transit', 'delivered', 'cancelled', 'cancel_requested'],
+  billed: ['approved', 'in_transit', 'delivered', 'completed', 'cancelled', 'cancel_requested'],
+  in_transit: ['delivered', 'completed', 'cancelled'],
+  delivered: ['completed'],
+  cancel_requested: ['cancelled', 'approved', 'billed', 'rejected'],
+  completed: [],
+  rejected: [],
+  cancelled: [],
+};
+
 /** Display metadata only; does not change stored statuses or action eligibility. */
 export function getOrderStatus(status: string | undefined, language: 'en' | 'bm') {
   const normalized = status?.trim().toLowerCase() || 'pending';

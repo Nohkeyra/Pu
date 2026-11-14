@@ -175,6 +175,10 @@ describe('Admin Authentication & Security', () => {
       expect(verifyData.verified).toBe(true);
       expect(verifyData.admin).toBe(true);
       expect(verifyData.user.admin).toBe(true);
+      if (verifyData.firebaseCustomToken !== undefined) {
+        expect(typeof verifyData.firebaseCustomToken).toBe('string');
+        expect(verifyData.firebaseCustomToken.length).toBeGreaterThan(0);
+      }
 
       // 3. Step 3: POST /api/admin/protected-action with bearer token
       const protectedRes = await fetch(`${baseUrl}/api/admin/protected-action`, {

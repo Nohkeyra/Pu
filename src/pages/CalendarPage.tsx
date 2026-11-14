@@ -70,6 +70,7 @@ import { CustomerPageHeader } from '@/components/layout/CustomerPageHeader';
 import CustomerPageLayout from '@/components/layout/CustomerPageLayout';
 import './customer-calendar-profile.css';
 import AuthModal from '@/components/auth/AuthModal';
+import { hasPositiveOrderPricing } from '@/lib/adminKpiStats';
 import type { Order } from '@/types';
 
 const cateringBanner = '/assets/ui/catering_banner.jpg';
@@ -1466,7 +1467,7 @@ export default function CalendarPage() {
                       </Button>
                     )}
 
-                    {quickActionEvent.status === 'approved' && quickActionEvent.id && (
+                    {quickActionEvent.status === 'approved' && quickActionEvent.id && hasPositiveOrderPricing(quickActionEvent) && (
                       <Button
                         variant="outline"
                         className="w-full justify-start py-5 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900 font-bold cursor-pointer"

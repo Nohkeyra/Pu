@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
 import { formatDateTimeDisplay, normalizeTimestamp } from '@/lib/utils';
+import { hasPositiveOrderPricing } from '@/lib/adminKpiStats';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -758,14 +759,25 @@ export function AdminOrdersTab({
                 variant="outline"
                 className="w-full justify-start py-6 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 border-indigo-200 dark:border-indigo-900"
                 onClick={() => {
-                  if (longPressedOrder?.id && handleUpdateStatus) {
-                    handleUpdateStatus(longPressedOrder.id, 'billed');
-                    setLongPressedOrder(null);
+                  if (!longPressedOrder?.id) return;
+                  if (hasPositiveOrderPricing(longPressedOrder)) {
+                    if (handleUpdateStatus) {
+                      handleUpdateStatus(longPressedOrder.id, 'billed');
+                    }
+                  } else {
+                    openOrderDetail(longPressedOrder);
                   }
+                  setLongPressedOrder(null);
                 }}
               >
                 <FileSpreadsheet className="w-5 h-5 mr-3" />
-                {language === 'bm' ? 'Tandakan Sebagai Dibilkan' : 'Mark as Billed'}
+                {hasPositiveOrderPricing(longPressedOrder)
+                  ? language === 'bm'
+                    ? 'Tandakan Sebagai Dibilkan'
+                    : 'Mark as Billed'
+                  : language === 'bm'
+                    ? 'Tetapkan Harga & Bilkan'
+                    : 'Set Pricing & Bill'}
               </Button>
             )}
 

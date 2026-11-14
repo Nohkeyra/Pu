@@ -80,11 +80,33 @@ router.post('/admin/login', adminLoginLimiter, async (req, res) => {
 // Admin Verify Token Endpoint
 router.get('/admin/verify', verifyAdminToken, async (req, res) => {
   const userPayload = (req as any).adminPayload || (req as any).user;
+  const adminEmail =
+    userPayload?.email ||
+    (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',')[0].trim();
+  const adminUid =
+    userPayload?.uid ||
+    'admin_' + createHash('sha256').update(adminEmail || 'admin@wawasan.local').digest('hex').slice(0, 12);
+
+  let firebaseCustomToken: string | undefined;
+  if (hasAdminCredentials()) {
+    try {
+      const app = getAdminApp();
+      const auth = getAuth(app);
+      firebaseCustomToken = await auth.createCustomToken(adminUid, {
+        admin: true,
+        ...(adminEmail ? { email: adminEmail } : {}),
+      });
+    } catch (fbErr) {
+      console.warn('[Admin Auth] Firebase createCustomToken on verify failed:', fbErr);
+    }
+  }
+
   return res.json({
     success: true,
     verified: true,
     admin: true,
     user: userPayload,
+    ...(firebaseCustomToken ? { firebaseCustomToken } : {}),
   });
 });
 
@@ -143,7 +165,7 @@ router.post('/admin/subscribe-to-topic', verifyAdminToken, async (req, res) => {
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error subscribing token to topic:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Failed to subscribe device token to topic.' });
   }
 });
 
@@ -165,7 +187,7 @@ router.post('/admin/unsubscribe-from-topic', verifyAdminToken, async (req, res) 
     return res.json({ success: true, topic, response });
   } catch (err) {
     console.error('[FCM] Error unsubscribing token from topic:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Failed to unsubscribe device token from topic.' });
   }
 });
 
@@ -220,7 +242,7 @@ router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
     }
   } catch (err) {
     console.error('[FCM] Send test push failed:', err);
-    return res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: 'Failed to send test push notification.' });
   }
 });
 

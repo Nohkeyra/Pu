@@ -2,7 +2,8 @@ import { InvoiceBatchDialog } from './InvoiceBatchDialog';
 import { useRememberedState } from '@/hooks/ui/useRememberedView';
 import { invoiceRecipient, invoiceMatchText } from '@/lib/invoiceBatch';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
-import { getOrderStatus } from '@/lib/orderStatus';
+import { getOrderStatus, VALID_STATUS_TRANSITIONS } from '@/lib/orderStatus';
+import { hasPositiveOrderPricing } from '@/lib/adminKpiStats';
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -66,7 +67,7 @@ interface AdminTablesTabProps {
 }
 
 type SortField =
-  'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt' | 'pricePerPax';
+  'date' | 'to' | 'name' | 'quantity' | 'totalAmount' | 'status' | 'createdAt' | 'pricePerPax' | 'invoiceNo';
 type SortOrder = 'asc' | 'desc';
 type TableDensity = 'compact' | 'normal' | 'spacious';
 
@@ -287,8 +288,16 @@ export function AdminTablesTab({
         let valA: string | number = '';
         let valB: string | number = '';
 
-        if (sortField === 'createdAt' || sortField === 'date') {
+        if (sortField === 'createdAt') {
           return compareTimestampValues(a.createdAt, b.createdAt, sortOrder);
+        }
+
+        if (sortField === 'date') {
+          return compareTimestampValues(
+            a.dateTime || a.eventDate || a.date,
+            b.dateTime || b.eventDate || b.date,
+            sortOrder
+          );
         }
 
         if (sortField === 'to') {
@@ -306,6 +315,19 @@ export function AdminTablesTab({
         } else if (sortField === 'status') {
           valA = (a.status || '').toLowerCase();
           valB = (b.status || '').toLowerCase();
+        } else if (sortField === 'invoiceNo') {
+          valA = getDisplayInvoiceNo(a).toLowerCase();
+          valB = getDisplayInvoiceNo(b).toLowerCase();
+        } else if (sortField === 'pricePerPax') {
+          const getPaxPriceSum = (order: Order): number => {
+            if (!order.prices || typeof order.prices !== 'object') return -1;
+            const positives = Object.values(order.prices).filter(
+              (price) => typeof price === 'number' && Number.isFinite(price) && price > 0
+            );
+            return positives.length > 0 ? positives.reduce((sum, p) => sum + p, 0) : -1;
+          };
+          valA = getPaxPriceSum(a);
+          valB = getPaxPriceSum(b);
         }
 
         if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
@@ -364,10 +386,25 @@ export function AdminTablesTab({
   };
 
   // Inline Status Change
-  const handleQuickStatusChange = async (orderId: string, newStatus: string) => {
+  const handleQuickStatusChange = async (order: Order, newStatus: string) => {
+    const orderId = order.id;
+    if (!orderId) return;
+
+    if (newStatus === 'billed' && !hasPositiveOrderPricing(order)) {
+      toast({
+        title: isBm ? 'Harga Diperlukan' : 'Pricing Required',
+        description: isBm
+          ? 'Sila tetapkan harga per pax dan jumlah positif sebelum menandakan pesanan sebagai Dibilkan.'
+          : 'Please set unit prices and a positive total before marking as Billed.',
+        variant: 'warning',
+      });
+      openOrderDetail(order);
+      return;
+    }
+
     setUpdatingId(orderId);
     try {
-      const res = await fetch(getApiUrl(`/api/admin/orders/${orderId}/status`), {
+      const res = await fetch(getApiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/status`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -378,21 +415,27 @@ export function AdminTablesTab({
 
       if (res.ok) {
         toast({
-          title: isBm ? 'Status Diikemaskini' : 'Status Updated',
+          title: isBm ? 'Status Dikemaskini' : 'Status Updated',
           description: isBm
-            ? `Order status changed to ${newStatus}`
-            : `Status order telah bertukar ke ${newStatus}`,
+            ? `Status pesanan telah bertukar ke ${getOrderStatus(newStatus, 'bm').label}`
+            : `Order status changed to ${getOrderStatus(newStatus, 'en').label}`,
           variant: 'success',
         });
         await fetchOrders();
       } else {
-        throw new Error('Failed to update status');
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to update status');
       }
     } catch (err) {
       console.error('Failed to update status:', err);
       toast({
         title: isBm ? 'Ralat' : 'Error',
-        description: isBm ? 'Gagal mengemaskini status' : 'Failed to update order status',
+        description:
+          err instanceof Error && err.message && err.message !== 'Failed to update status'
+            ? err.message
+            : isBm
+              ? 'Gagal mengemaskini status'
+              : 'Failed to update order status',
         variant: 'error',
       });
     } finally {
@@ -872,10 +915,13 @@ export function AdminTablesTab({
                 className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white"
               >
                 <option value="createdAt">{isBm ? 'Tarikh hantar' : 'Submitted date'}</option>
+                <option value="date">{isBm ? 'Tarikh acara' : 'Event date'}</option>
                 <option value="to">{isBm ? 'Organisasi' : 'Organization'}</option>
                 <option value="name">{isBm ? 'Nama' : 'Name'}</option>
                 <option value="quantity">Pax</option>
+                <option value="pricePerPax">{isBm ? 'Harga/Pax' : 'Price/Pax'}</option>
                 <option value="totalAmount">{isBm ? 'Jumlah' : 'Total'}</option>
+                <option value="invoiceNo">{isBm ? 'No. Invois / Ref' : 'Invoice / Ref'}</option>
                 <option value="status">Status</option>
               </select>
             </label>
@@ -1065,37 +1111,31 @@ export function AdminTablesTab({
                             </div>
                           )}
                         </dl>
-                        {visibleColumns.has('status') && order.id && (
-                          <label className="mt-4 block text-xs font-medium text-deep-forest/70 dark:text-stone/70">
-                            {isBm ? 'Tukar status' : 'Change status'}
-                            <select
-                              disabled={updatingId === order.id}
-                              value={order.status || 'pending'}
-                              onChange={(e) => handleQuickStatusChange(order.id!, e.target.value)}
-                              className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white"
-                            >
-                              {!['pending', 'approved', 'billed', 'cancelled'].includes(
-                                order.status || 'pending'
-                              ) && (
-                                <option value={order.status}>
-                                  {getOrderStatus(order.status, language).label}
-                                </option>
-                              )}
-                              <option value="pending">
-                                {getOrderStatus('pending', language).label}
-                              </option>
-                              <option value="approved">
-                                {getOrderStatus('approved', language).label}
-                              </option>
-                              <option value="billed">
-                                {getOrderStatus('billed', language).label}
-                              </option>
-                              <option value="cancelled">
-                                {getOrderStatus('cancelled', language).label}
-                              </option>
-                            </select>
-                          </label>
-                        )}
+                        {visibleColumns.has('status') && order.id && (() => {
+                          const currentKey = getOrderStatus(order.status, language).key;
+                          const allowedNext = VALID_STATUS_TRANSITIONS[currentKey] || [];
+                          const statusOptions = Array.from(
+                            new Set([order.status || currentKey, ...allowedNext])
+                          );
+                          const isTerminal = allowedNext.length === 0;
+                          return (
+                            <label className="mt-4 block text-xs font-medium text-deep-forest/70 dark:text-stone/70">
+                              {isBm ? 'Tukar status' : 'Change status'}
+                              <select
+                                disabled={updatingId === order.id || isTerminal}
+                                value={order.status || currentKey}
+                                onChange={(e) => handleQuickStatusChange(order, e.target.value)}
+                                className="mt-1 block min-h-11 w-full rounded-lg border border-stone/20 bg-white px-3 text-sm text-deep-forest dark:border-white/10 dark:bg-background dark:text-white disabled:opacity-60"
+                              >
+                                {statusOptions.map((st) => (
+                                  <option key={st} value={st}>
+                                    {getOrderStatus(st, language).label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          );
+                        })()}
                         {visibleColumns.has('actions') && (
                           <div className="mt-4 flex flex-wrap gap-2">
                             <button
@@ -1158,8 +1198,14 @@ export function AdminTablesTab({
                 </th>
 
                 {visibleColumns.has('dateTime') && (
-                  <th className="py-3 px-4 min-w-[165px] whitespace-nowrap">
-                    {isBm ? 'Tarikh Acara' : 'Event Date'}
+                  <th
+                    className="py-3 px-4 min-w-[165px] whitespace-nowrap cursor-pointer hover:bg-stone/10"
+                    onClick={() => handleSort('date')}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>{isBm ? 'Tarikh Acara' : 'Event Date'}</span>
+                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
+                    </div>
                   </th>
                 )}
 
@@ -1194,8 +1240,14 @@ export function AdminTablesTab({
                 )}
 
                 {visibleColumns.has('pricePerPax') && (
-                  <th className="py-3 px-4 min-w-[150px] whitespace-nowrap text-right">
-                    {isBm ? 'Harga/Pax' : 'Price/Pax'}
+                  <th
+                    className="py-3 px-4 min-w-[150px] whitespace-nowrap cursor-pointer hover:bg-stone/10 text-right"
+                    onClick={() => handleSort('pricePerPax')}
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>{isBm ? 'Harga/Pax' : 'Price/Pax'}</span>
+                      <ArrowUpDown className="w-3 h-3 text-deep-forest/40" />
+                    </div>
                   </th>
                 )}
 
@@ -1226,7 +1278,7 @@ export function AdminTablesTab({
                 {visibleColumns.has('invoiceNo') && (
                   <th
                     className="py-3 px-4 min-w-[150px] whitespace-nowrap cursor-pointer hover:bg-stone/10"
-                    onClick={() => handleSort('date')}
+                    onClick={() => handleSort('invoiceNo')}
                   >
                     <div className="flex items-center gap-1.5">
                       <span>{isBm ? 'No. Invois / Ref' : 'Invoice / Ref'}</span>
@@ -1462,39 +1514,33 @@ export function AdminTablesTab({
                       )}
 
                       {/* Interactive Status Selector */}
-                      {visibleColumns.has('status') && (
-                        <td className={`${densityCellPadding} whitespace-nowrap`}>
-                          <div className="relative inline-block">
-                            <select
-                              disabled={updatingId === order.id}
-                              value={order.status || 'pending'}
-                              onChange={(e) => handleQuickStatusChange(order.id!, e.target.value)}
-                              aria-label={isBm ? 'Tukar status tempahan' : 'Change order status'}
-                              className={`min-h-11 text-xs font-semibold rounded-lg px-2 py-1 border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer ${getOrderStatus(order.status, language).className}`}
-                            >
-                              {!['pending', 'approved', 'billed', 'cancelled'].includes(
-                                order.status || 'pending'
-                              ) && (
-                                <option value={order.status}>
-                                  {getOrderStatus(order.status, language).label}
-                                </option>
-                              )}
-                              <option value="pending">
-                                {getOrderStatus('pending', language).label}
-                              </option>
-                              <option value="approved">
-                                {getOrderStatus('approved', language).label}
-                              </option>
-                              <option value="billed">
-                                {getOrderStatus('billed', language).label}
-                              </option>
-                              <option value="cancelled">
-                                {getOrderStatus('cancelled', language).label}
-                              </option>
-                            </select>
-                          </div>
-                        </td>
-                      )}
+                      {visibleColumns.has('status') && (() => {
+                        const currentKey = getOrderStatus(order.status, language).key;
+                        const allowedNext = VALID_STATUS_TRANSITIONS[currentKey] || [];
+                        const statusOptions = Array.from(
+                          new Set([order.status || currentKey, ...allowedNext])
+                        );
+                        const isTerminal = allowedNext.length === 0;
+                        return (
+                          <td className={`${densityCellPadding} whitespace-nowrap`}>
+                            <div className="relative inline-block">
+                              <select
+                                disabled={updatingId === order.id || isTerminal}
+                                value={order.status || currentKey}
+                                onChange={(e) => handleQuickStatusChange(order, e.target.value)}
+                                aria-label={isBm ? 'Tukar status tempahan' : 'Change order status'}
+                                className={`min-h-11 text-xs font-semibold rounded-lg px-2 py-1 border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-60 disabled:cursor-default ${getOrderStatus(order.status, language).className}`}
+                              >
+                                {statusOptions.map((st) => (
+                                  <option key={st} value={st}>
+                                    {getOrderStatus(st, language).label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+                        );
+                      })()}
 
                       {/* Invoice / Ref */}
                       {visibleColumns.has('invoiceNo') && (

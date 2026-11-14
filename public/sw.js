@@ -21,7 +21,7 @@ if (isDevSandbox) {
     );
   });
 } else {
-  const CACHE_NAME = 'wawasan-admin-v1.3.176';
+  const CACHE_NAME = 'wawasan-admin-v1.3.203';
   const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -145,12 +145,12 @@ if (isDevSandbox) {
           }
 
           return networkResponse;
-        }).catch((err) => {
+        }).catch(async (err) => {
           console.warn('[Service Worker] Fetch failed, probably offline:', err);
-          // Fallback for document navigation
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return (await caches.match(event.request)) || (await caches.match('/')) || Response.error();
           }
+          return (await caches.match(event.request)) || Response.error();
         });
       })
     );

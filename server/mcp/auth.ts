@@ -371,13 +371,21 @@ export function mountMcpOAuth(app: import('express').Express): void {
   const helpers = createMcpOAuthHelpers();
 
   const protectedResourceHandler = (req: Request, res: Response) => {
-    res.json(protectedResourceMetadata(getMcpIssuer(req)));
+    try {
+      res.json(protectedResourceMetadata(getMcpIssuer(req)));
+    } catch (err) {
+      res.status(400).json({ error: 'invalid_request', error_description: err instanceof Error ? err.message : 'Unable to determine OAuth issuer.' });
+    }
   };
   app.get('/.well-known/oauth-protected-resource', protectedResourceHandler);
   app.get('/.well-known/oauth-protected-resource/mcp', protectedResourceHandler);
 
   app.get('/.well-known/oauth-authorization-server', (req, res) => {
-    res.json(authorizationServerMetadata(getMcpIssuer(req)));
+    try {
+      res.json(authorizationServerMetadata(getMcpIssuer(req)));
+    } catch (err) {
+      res.status(400).json({ error: 'invalid_request', error_description: err instanceof Error ? err.message : 'Unable to determine OAuth issuer.' });
+    }
   });
 
   app.get('/oauth/authorize', async (req, res) => {
@@ -492,7 +500,13 @@ export async function mcpBearerAuth(req: Request, res: Response, next: NextFunct
   if (authHeader.toLowerCase().startsWith('bearer ')) {
     supplied = authHeader.slice(7).trim();
   }
-  const issuer = getMcpIssuer(req);
+  let issuer: string;
+  try {
+    issuer = getMcpIssuer(req);
+  } catch (err) {
+    res.status(400).json({ error: 'invalid_request', error_description: err instanceof Error ? err.message : 'Unable to determine OAuth issuer.' });
+    return;
+  }
   const metadataUrl = `${issuer}/.well-known/oauth-protected-resource/mcp`;
 
   if (!supplied) {

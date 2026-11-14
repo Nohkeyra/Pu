@@ -12,7 +12,7 @@ import widgetRoutes from '../routes/widgetRoutes';
 import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin';
 import { signAdminJwt } from '../adminAuth';
 import { invoiceQueue } from './invoiceQueue';
-import { createMcpOAuthHelpers } from '../mcp/auth';
+import { createMcpOAuthHelpers, mountMcpOAuth, mcpBearerAuth } from '../mcp/auth';
 import { executeMcpTool } from '../mcp/tools';
 import { fetchPublicJson } from './remoteResource';
 import { commitConsolidatedInvoice } from './consolidatedInvoices';
@@ -330,4 +330,60 @@ it('returns orders beyond the first 100 to the virtualized admin dataset', async
   expect(response.status).toBe(200);
   expect(data.orders.filter((order: any) => order.id.startsWith('repair_list_'))).toHaveLength(101);
   expect(data.orders.some((order: any) => order.id === 'repair_list_0')).toBe(true);
+});
+
+it('returns 400 invalid_request on Host-less MCP OAuth metadata and bearer checks', async () => {
+  const prevIssuer = process.env.MCP_OAUTH_ISSUER;
+  delete process.env.MCP_OAUTH_ISSUER;
+  try {
+    const routes: Record<string, (req: any, res: any) => void> = {};
+    const mockApp = {
+      get: (path: string, handler: (req: any, res: any) => void) => {
+        routes[path] = handler;
+      },
+      post: () => {},
+    } as unknown as express.Express;
+
+    mountMcpOAuth(mockApp);
+
+    const makeReq = () => ({
+      protocol: 'http',
+      header: () => undefined,
+    });
+    const makeRes = () => {
+      const state: { statusCode: number; body: any } = { statusCode: 200, body: null };
+      const res: any = {
+        status(code: number) {
+          state.statusCode = code;
+          return res;
+        },
+        json(payload: unknown) {
+          state.body = payload;
+          return res;
+        },
+        setHeader: () => {},
+      };
+      return { res, state };
+    };
+
+    for (const path of [
+      '/.well-known/oauth-protected-resource',
+      '/.well-known/oauth-protected-resource/mcp',
+      '/.well-known/oauth-authorization-server',
+    ]) {
+      const { res, state } = makeRes();
+      routes[path](makeReq(), res);
+      expect(state.statusCode).toBe(400);
+      expect(state.body?.error).toBe('invalid_request');
+    }
+
+    const { res: bearerRes, state: bearerState } = makeRes();
+    const next = vi.fn();
+    await mcpBearerAuth(makeReq() as any, bearerRes, next);
+    expect(bearerState.statusCode).toBe(400);
+    expect(bearerState.body?.error).toBe('invalid_request');
+    expect(next).not.toHaveBeenCalled();
+  } finally {
+    if (prevIssuer !== undefined) process.env.MCP_OAUTH_ISSUER = prevIssuer;
+  }
 });

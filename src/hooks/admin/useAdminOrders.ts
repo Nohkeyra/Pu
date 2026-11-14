@@ -152,12 +152,16 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
         }
         return true;
       }
-      throw new Error('Failed to update order');
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to update order');
     } catch (error) {
       console.error('Error updating order:', error);
       toastRef.current({
         title: tRef.current('error'),
-        description: tRef.current('error_updating') || 'Failed to update order.',
+        description:
+          error instanceof Error && error.message && error.message !== 'Failed to update order'
+            ? error.message
+            : tRef.current('error_updating') || 'Failed to update order.',
         variant: 'error'
       });
       return false;
@@ -191,13 +195,17 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
           variant: 'success'
         });
       } else {
-        throw new Error('Failed to delete order');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to delete order');
       }
     } catch (error) {
       console.error('Error deleting order:', error);
       toastRef.current({
         title: tRef.current('error'),
-        description: 'Failed to delete order.',
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Failed to delete order.',
         variant: 'error'
       });
     }

@@ -3,6 +3,7 @@ import { getFirestore } from '../firebaseAdmin.js';
 import { verifyAdminToken } from '../adminAuth.js';
 import { DEFAULT_MENU_ITEMS } from '../../src/constants/menu.ts';
 import { correctDefaultMenuImage } from '../../src/constants/menuImages.ts';
+import { invalidateMenuHealthCache } from './imageRoutes.js';
 
 const router = Router();
 
@@ -12,6 +13,23 @@ const ALLOWED_CATEGORIES = new Set(['breakfast', 'lunch', 'hi tea', 'drinks']);
 const ALLOWED_SUITABILITY = new Set(['breakfast_hitea', 'lunch', undefined]);
 
 const NAME_REGEX = /^[a-zA-Z0-9\s\-'&/().]{1,100}$/;
+const MENU_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
+const BATCH_CHUNK_SIZE = 450;
+
+function isValidMenuId(id: unknown): id is string {
+  return typeof id === 'string' && MENU_ID_RE.test(id);
+}
+
+async function commitBatchedOps(db: any, ops: Array<(batch: any) => void>) {
+  for (let i = 0; i < ops.length; i += BATCH_CHUNK_SIZE) {
+    const batch = db.batch();
+    const chunk = ops.slice(i, i + BATCH_CHUNK_SIZE);
+    for (const apply of chunk) {
+      apply(batch);
+    }
+    await batch.commit();
+  }
+}
 
 function sanitizeString(val: unknown, maxLen = 500): string {
   if (typeof val !== 'string') return '';
@@ -127,20 +145,38 @@ router.post('/admin/menu', verifyAdminToken, async (req, res) => {
         validatedItems.push(validation.data);
       }
 
-      const batch = db.batch();
+      const ops: Array<(batch: any) => void> = [];
       const oldSnap = await db.collection('menu').get();
-      oldSnap.docs.forEach(doc => batch.delete(doc.ref));
-
-      validatedItems.forEach((item: any, index: number) => {
-        const rawItem = req.body.items[index];
-        const docRef = rawItem.id ? db.collection('menu').doc(String(rawItem.id)) : db.collection('menu').doc();
-        batch.set(docRef, {
-          ...item,
-          updatedAt: new Date().toISOString()
-        });
+      oldSnap.docs.forEach((doc: any) => {
+        ops.push((batch) => batch.delete(doc.ref));
       });
 
-      await batch.commit();
+      const preparedIds: Array<string | undefined> = [];
+      for (let index = 0; index < req.body.items.length; index++) {
+        const rawId = req.body.items[index]?.id;
+        if (rawId !== undefined && rawId !== null && rawId !== '') {
+          const coercedId = String(rawId);
+          if (!isValidMenuId(coercedId)) {
+            return res.status(400).json({ error: 'Invalid menu item ID.' });
+          }
+          preparedIds.push(coercedId);
+        } else {
+          preparedIds.push(undefined);
+        }
+      }
+
+      validatedItems.forEach((item: any, index: number) => {
+        const targetId = preparedIds[index];
+        const docRef = targetId ? db.collection('menu').doc(targetId) : db.collection('menu').doc();
+        const payload = {
+          ...item,
+          updatedAt: new Date().toISOString()
+        };
+        ops.push((batch) => batch.set(docRef, payload));
+      });
+
+      await commitBatchedOps(db, ops);
+      invalidateMenuHealthCache();
       return res.json({ success: true, count: validatedItems.length });
     }
 
@@ -148,6 +184,12 @@ router.post('/admin/menu', verifyAdminToken, async (req, res) => {
     const validation = validateMenuItem(req.body);
     if (!validation.valid) {
       return res.status(400).json({ error: validation.error });
+    }
+
+    if (req.body.id !== undefined && req.body.id !== null && req.body.id !== '') {
+      if (!isValidMenuId(String(req.body.id))) {
+        return res.status(400).json({ error: 'Invalid menu item ID.' });
+      }
     }
 
     const docRef = req.body.id ? db.collection('menu').doc(String(req.body.id)) : db.collection('menu').doc();
@@ -161,9 +203,11 @@ router.post('/admin/menu', verifyAdminToken, async (req, res) => {
     Object.keys(newItem).forEach(key => newItem[key] === undefined && delete newItem[key]);
 
     await docRef.set(newItem, { merge: true });
+    invalidateMenuHealthCache();
     return res.json({ success: true, item: newItem });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[MenuRoutes] Failed to save menu item:', err);
+    return res.status(500).json({ error: 'Failed to save menu items.' });
   }
 });
 
@@ -171,6 +215,9 @@ router.post('/admin/menu', verifyAdminToken, async (req, res) => {
 router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidMenuId(id)) {
+      return res.status(400).json({ error: 'Invalid menu item ID.' });
+    }
     const db = getFirestore();
     await seedMenuIfEmpty(db);
     const docRef = db.collection('menu').doc(id);
@@ -202,9 +249,11 @@ router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
       await docRef.update(updatedData);
     }
 
+    invalidateMenuHealthCache();
     return res.json({ success: true, item: { id, ...updatedData } });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[MenuRoutes] Failed to update menu item:', err);
+    return res.status(500).json({ error: 'Failed to update menu item.' });
   }
 });
 
@@ -212,6 +261,9 @@ router.put('/admin/menu/:id', verifyAdminToken, async (req, res) => {
 router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidMenuId(id)) {
+      return res.status(400).json({ error: 'Invalid menu item ID.' });
+    }
     const { available } = req.body;
 
     const db = getFirestore();
@@ -230,6 +282,7 @@ router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
         available: newAvailable,
         updatedAt: new Date().toISOString()
       });
+      invalidateMenuHealthCache();
       return res.json({ success: true, id, available: newAvailable });
     }
 
@@ -239,9 +292,11 @@ router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
       updatedAt: new Date().toISOString()
     });
 
+    invalidateMenuHealthCache();
     return res.json({ success: true, id, available: newAvailable });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[MenuRoutes] Failed to toggle menu item:', err);
+    return res.status(500).json({ error: 'Failed to toggle menu item.' });
   }
 });
 
@@ -249,32 +304,41 @@ router.patch('/admin/menu/:id/toggle', verifyAdminToken, async (req, res) => {
 router.delete('/admin/menu/:id', verifyAdminToken, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isValidMenuId(id)) {
+      return res.status(400).json({ error: 'Invalid menu item ID.' });
+    }
     const db = getFirestore();
     await seedMenuIfEmpty(db);
     await db.collection('menu').doc(id).delete();
+    invalidateMenuHealthCache();
     return res.json({ success: true, id });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[MenuRoutes] Failed to delete menu item:', err);
+    return res.status(500).json({ error: 'Failed to delete menu item.' });
   }
 });
 
 router.post('/admin/menu/reset', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
-    const batch = db.batch();
+    const ops: Array<(batch: any) => void> = [];
 
     const oldSnap = await db.collection('menu').get();
-    oldSnap.docs.forEach(doc => batch.delete(doc.ref));
+    oldSnap.docs.forEach((doc: any) => {
+      ops.push((batch) => batch.delete(doc.ref));
+    });
 
     DEFAULT_MENU_ITEMS.forEach((item) => {
       const docRef = db.collection('menu').doc(item.id);
-      batch.set(docRef, item);
+      ops.push((batch) => batch.set(docRef, item));
     });
 
-    await batch.commit();
+    await commitBatchedOps(db, ops);
+    invalidateMenuHealthCache();
     return res.json({ success: true, items: DEFAULT_MENU_ITEMS });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[MenuRoutes] Failed to reset menu items:', err);
+    return res.status(500).json({ error: 'Failed to reset menu items.' });
   }
 });
 

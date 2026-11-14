@@ -139,7 +139,7 @@ async function startServer() {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use('/api/auth', authLimiter);
+  app.use(['/api/auth', '/api/admin/login'], authLimiter);
 
   // SECURITY FIX: Reduced from 50mb to 5mb general limit.
   app.use(express.json({ limit: '5mb' }));

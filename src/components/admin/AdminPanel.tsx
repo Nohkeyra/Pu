@@ -5,7 +5,7 @@ import {
   clearRememberedViews,
 } from '@/hooks/ui/useRememberedView';
 import { OrderReadingCard } from './OrderReadingCard';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -23,6 +23,8 @@ import { AdminHeader } from './AdminHeader';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminTablesTab } from './AdminTablesTab';
 import AdminMenuTab from './AdminMenuTab';
+import { AdminStatsKpiStrip } from './AdminStatsKpiStrip';
+import { computeAdminKpiStats } from '@/lib/adminKpiStats';
 import { filterAdminOrders } from '@/lib/adminOrderFilters';
 import { getDisplayInvoiceNo } from '@/lib/utils';
 import '../ui/presentation.css';
@@ -177,18 +179,86 @@ export default function AdminPanel({
     },
   });
 
+  const [calendarState, setCalendarState] = useState<{
+    ok: boolean;
+    error?: string;
+    loading: boolean;
+  }>({
+    ok: false,
+    loading: Boolean(adminToken),
+  });
+
+  useEffect(() => {
+    if (!adminToken) {
+      setCalendarState({ ok: false, loading: false });
+      return;
+    }
+    const controller = new AbortController();
+    setCalendarState((prev) => ({ ...prev, loading: true }));
+    fetch(getApiUrl('/api/diagnostics/calendar'), {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (controller.signal.aborted) return;
+        setCalendarState({
+          ok: Boolean(res.ok && data?.ok),
+          error: data?.message || data?.error,
+          loading: false,
+        });
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        setCalendarState({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Calendar diagnostic failed',
+          loading: false,
+        });
+      });
+
+    return () => controller.abort();
+  }, [adminToken]);
+
   const handleApprove = async (orderId: string) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
+    const safeMeals = Array.isArray(order.meals) ? order.meals : [];
+    const rawQty = Number(order.quantity ?? order.guests ?? 0);
+    const safeQty = Number.isFinite(rawQty) && rawQty > 0 ? rawQty : 0;
+
+    if (safeMeals.length === 0 || safeQty <= 0) {
+      toast({
+        title: language === 'bm' ? 'Data Tidak Lengkap' : 'Incomplete Order Data',
+        description:
+          language === 'bm'
+            ? 'Pesanan mesti mempunyai hidangan dan bilangan pax yang sah.'
+            : 'Order must have at least one meal and a positive guest count.',
+        variant: 'warning',
+      });
+      return;
+    }
+
     let total = 0;
     const mealPrices: Record<string, number> = {};
-    order.meals.forEach((meal) => {
+    for (const meal of safeMeals) {
       const price = parseFloat(prices[meal] || '0');
+      if (!Number.isFinite(price) || price <= 0) {
+        toast({
+          title: language === 'bm' ? 'Harga Tidak Sah' : 'Invalid Unit Price',
+          description:
+            language === 'bm'
+              ? 'Setiap hidangan mesti mempunyai harga positif melebihi RM 0.00.'
+              : 'Each meal must have a positive unit price greater than RM 0.00.',
+          variant: 'warning',
+        });
+        return;
+      }
       const roundedPrice = Math.round(price * 100) / 100;
       mealPrices[meal] = roundedPrice;
-      total += roundedPrice * order.quantity;
-    });
+      total += roundedPrice * safeQty;
+    }
 
     const updatedInvoiceNo = order.invoiceNo
       ? order.invoiceNo.startsWith('QT')
@@ -256,6 +326,8 @@ export default function AdminPanel({
     dateToFilter,
   });
 
+  const kpiStats = useMemo(() => computeAdminKpiStats(orders), [orders]);
+
   const cancelRequests = orders.filter((o) => o.status === 'cancel_requested');
 
   if (loading) {
@@ -295,6 +367,7 @@ export default function AdminPanel({
         language={language}
         theme={theme}
         toggleTheme={toggleTheme}
+        calendarState={calendarState}
         navigate={navigate}
         t={t}
         adminToken={adminToken}
@@ -396,6 +469,9 @@ export default function AdminPanel({
           </p>
         </div>
 
+        {activeTab !== 'menu' && (
+          <AdminStatsKpiStrip stats={kpiStats} language={language} />
+        )}
         {ordersError && (
           <ErrorState
             title={language === 'bm' ? 'Tempahan belum dapat dimuatkan' : 'Orders could not be loaded'}

@@ -57,13 +57,11 @@ router.get('/app-version', async (_req, res) => {
       const remoteVer = String(data.latestVersion || '0.0.0');
       const cleanRemote = semver.clean(remoteVer) || semver.coerce(remoteVer)?.version || '0.0.0';
       if (semver.valid(cleanRemote) && semver.lt(cleanRemote, DEFAULT_VERSION_CONFIG.latestVersion)) {
-        const merged = { ...data, ...DEFAULT_VERSION_CONFIG, updatedAt: new Date().toISOString() };
-        await docRef.set(merged, { merge: true });
+        const merged = { ...data, ...DEFAULT_VERSION_CONFIG };
         return res.json({ success: true, ...merged });
       }
       return res.json({ success: true, ...DEFAULT_VERSION_CONFIG, ...data });
     }
-    await docRef.set(DEFAULT_VERSION_CONFIG, { merge: true });
     return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
   } catch {
     return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
@@ -92,7 +90,7 @@ router.post('/app-version/github-sync', async (req, res) => {
     const payload = {
       latestVersion: String(version).trim(),
       minVersion: '1.2.0',
-      buildNumber: Number(buildNumber || 125),
+      buildNumber: Number(buildNumber || DEFAULT_VERSION_CONFIG.buildNumber),
       apkUrl: String(apkUrl || `https://github.com/Nohkeyra/Pu/releases/download/v${version}/app-release-signed.apk`).trim(),
       bundleUrl: '',
       releaseNotes: Array.isArray(releaseNotes) 
@@ -112,7 +110,8 @@ router.post('/app-version/github-sync', async (req, res) => {
 
     return res.json({ success: true, message: 'App live version updated automatically via GitHub Release!', config: payload });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[UpdateRoutes] GitHub release sync failed:', err);
+    return res.status(500).json({ error: 'Unable to update app version configuration.' });
   }
 });
 
@@ -134,7 +133,7 @@ router.post('/app-version', verifyAdminToken, async (req, res) => {
     const payload = {
       latestVersion: String(latestVersion).trim(),
       minVersion: String(minVersion || '1.2.0').trim(),
-      buildNumber: Number(buildNumber || 125),
+      buildNumber: Number(buildNumber || DEFAULT_VERSION_CONFIG.buildNumber),
       apkUrl: String(apkUrl || DEFAULT_VERSION_CONFIG.apkUrl).trim(),
       bundleUrl: String(bundleUrl || '').trim(),
       releaseNotes: Array.isArray(releaseNotes) ? releaseNotes : [String(releaseNotes)],
@@ -152,7 +151,8 @@ router.post('/app-version', verifyAdminToken, async (req, res) => {
 
     return res.json({ success: true, message: 'App live version updated successfully', config: payload });
   } catch (err) {
-    return res.status(500).json({ error: String(err) });
+    console.error('[UpdateRoutes] Admin app-version update failed:', err);
+    return res.status(500).json({ error: 'Unable to update app version configuration.' });
   }
 });
 

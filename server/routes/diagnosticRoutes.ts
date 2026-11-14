@@ -56,43 +56,64 @@ router.get('/diagnostics/:type', verifyAdminToken, async (req, res) => {
 
     if (type === 'calendar') {
       const { getGoogleCalendarClient } = await import('../calendarService.js');
-      
-      const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-      const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
-      
-      if (!email || !key) {
-        return res.status(200).json({ 
+
+      const hasEmail = Boolean(
+        process.env.GOOGLE_CALENDAR_CLIENT_EMAIL ||
+        process.env.FIREBASE_CLIENT_EMAIL ||
+        process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
+        process.env.GOOGLE_CLIENT_EMAIL
+      );
+      const hasKey = Boolean(
+        process.env.GOOGLE_CALENDAR_PRIVATE_KEY ||
+        process.env.FIREBASE_PRIVATE_KEY ||
+        process.env.GOOGLE_PRIVATE_KEY ||
+        process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+      );
+
+      if (!hasEmail || !hasKey) {
+        return res.status(200).json({
           ok: false,
-          status: 'unconfigured', 
-          service: 'Google Calendar', 
-          message: 'Missing GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in environment variables.' 
+          status: 'unconfigured',
+          service: 'Google Calendar',
+          message: 'Google Calendar service account credentials are not configured.'
         });
       }
 
       const calendar = getGoogleCalendarClient();
       if (!calendar) {
-        return res.status(200).json({ 
+        return res.status(200).json({
           ok: false,
-          status: 'fail', 
-          service: 'Google Calendar', 
-          message: 'Failed to initialize Calendar client. Check private key format.' 
+          status: 'fail',
+          service: 'Google Calendar',
+          message: 'Failed to initialize Calendar client. Check private key format.'
         });
       }
 
-      const listResp = await calendar.calendarList.list();
-      const calendarsReturned = listResp.data.items?.length || 0;
-      return res.json({ 
-        ok: true,
-        status: 'healthy', 
-        service: 'Google Calendar', 
-        calendarsReturned,
-        message: `Connected successfully. Found ${calendarsReturned} accessible calendars.`
-      });
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const listResp = await Promise.race([
+          calendar.calendarList.list(),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Google Calendar API timeout')), 8000);
+          })
+        ]);
+        const calendarsReturned = listResp.data.items?.length || 0;
+        return res.json({
+          ok: true,
+          status: 'healthy',
+          service: 'Google Calendar',
+          calendarsReturned,
+          message: `Connected successfully. Found ${calendarsReturned} accessible calendars.`
+        });
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
     }
 
     return res.status(400).json({ error: 'Unknown diagnostic type' });
   } catch (err) {
-    return res.status(500).json({ status: "error", error: String(err) });
+    console.error(`[Diagnostics:${type}] Check failed:`, err);
+    return res.status(500).json({ status: 'error', error: 'Diagnostic check failed' });
   }
 });
 

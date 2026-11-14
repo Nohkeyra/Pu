@@ -227,7 +227,7 @@ export default function AdminMenuTab({
     setIsSaving(true);
     try {
       const url = editingItem 
-        ? getApiUrl(`/api/admin/menu/${editingItem.id}`)
+        ? getApiUrl(`/api/admin/menu/${encodeURIComponent(editingItem.id)}`)
         : getApiUrl('/api/admin/menu');
       
       const method = editingItem ? 'PUT' : 'POST';
@@ -288,12 +288,15 @@ export default function AdminMenuTab({
     }
 
     try {
-      const response = await fetch(getApiUrl(`/api/admin/menu/${id}`), {
+      const response = await fetch(getApiUrl(`/api/admin/menu/${encodeURIComponent(id)}`), {
         method: 'DELETE',
         headers: authHeaders()
       });
 
-      if (!response.ok) throw new Error('Failed to delete item');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to delete item');
+      }
 
       toast({
         title: tText('Item Deleted', 'Hidangan Dipadam'),

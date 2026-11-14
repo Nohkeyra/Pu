@@ -134,6 +134,56 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       });
       expect(res.status).toBe(400);
     });
+
+    it('rejects transitioning to billed without positive unit prices and totalAmount', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('unpriced_bill_test').set({
+        status: 'approved',
+        quantity: 20,
+        meals: ['lunch'],
+        prices: {},
+        totalAmount: 0,
+      });
+
+      const patchRes = await fetch(`${baseUrl}/api/admin/orders/unpriced_bill_test/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ status: 'billed' }),
+      });
+      expect(patchRes.status).toBe(400);
+
+      const postZeroRes = await fetch(`${baseUrl}/api/admin/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({
+          action: 'update',
+          orderId: 'unpriced_bill_test',
+          data: { status: 'billed', prices: { lunch: 0 }, totalAmount: 0 },
+        }),
+      });
+      expect(postZeroRes.status).toBe(400);
+
+      expect((await db.collection('orders').doc('unpriced_bill_test').get()).data()?.status).toBe('approved');
+    });
+
+    it('allows PATCH /status to billed when positive pricing already exists on the order', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('priced_bill_test').set({
+        status: 'approved',
+        quantity: 20,
+        meals: ['lunch'],
+        prices: { lunch: 15 },
+        totalAmount: 300,
+      });
+
+      const patchRes = await fetch(`${baseUrl}/api/admin/orders/priced_bill_test/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ status: 'billed' }),
+      });
+      expect(patchRes.status).toBe(200);
+      expect((await db.collection('orders').doc('priced_bill_test').get()).data()?.status).toBe('billed');
+    });
   });
 
   describe('Client / Guest Price & Total Manipulation Immunity', () => {

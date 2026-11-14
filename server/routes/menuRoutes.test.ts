@@ -36,6 +36,47 @@ it('bulk-saves omitted suitability using the real Firestore write validator', as
   }
 });
 
+describe('menuRoutes ID validation', () => {
+  it('rejects malformed menu item IDs with 400 on PUT, DELETE, and bulk POST', async () => {
+    const app = express();
+    app.use(express.json());
+    app.use('/api', menuRoutes);
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${signAdminJwt({ uid: 'menu-id-audit' })}`,
+    };
+
+    try {
+      const base = `http://127.0.0.1:${(server.address() as { port: number }).port}/api/admin/menu`;
+      const badId = encodeURIComponent('../bad!id');
+
+      const putRes = await fetch(`${base}/${badId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ nameEn: 'Valid Name', nameBm: 'Nama Sah', price: 10, category: 'lunch' }),
+      });
+      expect(putRes.status).toBe(400);
+
+      const delRes = await fetch(`${base}/${badId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      expect(delRes.status).toBe(400);
+
+      const postRes = await fetch(base, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ items: [{ id: 'bad space!', nameEn: 'Item', nameBm: 'Item', price: 5, category: 'lunch' }] }),
+      });
+      expect(postRes.status).toBe(400);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+});
+
 describe('correctDefaultMenuImage', () => {
   it('upgrades original and phase 1 placeholders without mutating the source', () => {
     for (const image of ['/assets/dishes/vector/pisang_goreng.jpg', '/assets/dishes/vector/popia.png']) {
