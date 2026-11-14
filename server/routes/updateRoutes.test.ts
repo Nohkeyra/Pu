@@ -73,7 +73,7 @@ describe('GET /api/app-version read-only behavior', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    expect(json.latestVersion).toBe('1.3.203');
+    expect(json.latestVersion).toBe('1.3.206');
     expect(setSpy).not.toHaveBeenCalled();
   });
 });
