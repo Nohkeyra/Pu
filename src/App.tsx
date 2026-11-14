@@ -11,6 +11,7 @@ import NativeBackButtonHandler from './components/system/NativeBackButtonHandler
 import NativeAppListeners from './components/system/NativeAppListeners';
 import { useBatikScrollOpacity } from './hooks/ui/useBatikScrollOpacity';
 import CateringSplashScreen from './components/brand/SplashScreen';
+import NativeWelcomeScreen from './components/brand/NativeWelcomeScreen';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/brand/BatikMotionProvider';
@@ -38,6 +39,7 @@ function App() {
 
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isSplashFinished, setIsSplashFinished] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   useEffect(() => {
@@ -57,12 +59,14 @@ function App() {
   });
 
   useEffect(() => {
-    // Failsafe safety watchdog: guarantees main interface mounts within 5.0s
+    // Keep the existing web-only failsafe. APK welcome must never auto-dismiss;
+    // entering the application always requires an explicit Get Started tap.
+    if (isNative) return;
     const watchdog = setTimeout(() => {
       setIsSplashFinished(true);
     }, 5000);
     return () => clearTimeout(watchdog);
-  }, []);
+  }, [isNative]);
 
   useEffect(() => {
     const handleOpenPrivacy = () => setShowPrivacyPolicy(true);
@@ -221,12 +225,17 @@ function App() {
 
   return (
     <>
-      {!isSplashFinished && (
-        <CateringSplashScreen 
-          isLoading={isAppLoading} 
-          onComplete={handleSplashComplete} 
+      {!isSplashFinished && (isNative ? (
+        <NativeWelcomeScreen
+          isLoading={isAppLoading}
+          onComplete={handleSplashComplete}
         />
-      )}
+      ) : (
+        <CateringSplashScreen
+          isLoading={isAppLoading}
+          onComplete={handleSplashComplete}
+        />
+      ))}
       <TooltipProvider delayDuration={500}>
         <ToastProvider>
           <BatikMotionProvider>
@@ -242,7 +251,7 @@ function App() {
             <Router>
               <VercelSpeedInsights />
               <PushNotificationHandler />
-              <NativeBackButtonHandler />
+              {(isSplashFinished || !isNative) && <NativeBackButtonHandler />}
               <NativeAppListeners />
               {isSplashFinished && (
                 <>
