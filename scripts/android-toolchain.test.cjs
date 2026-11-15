@@ -52,3 +52,32 @@ for (const [nodeVersion, javaVersion, expected] of [[20, '21.0.13', /Node.js 22\
     assert.ok(!fs.existsSync(path.join(temp, 'npm-was-called')));
   });
 }
+
+test('Android Gradle configuration avoids Gradle 9.0 deprecated APIs', () => {
+  const appGradle = read('android/app/build.gradle');
+  const rootGradle = read('android/build.gradle');
+  const cordovaGradle = read('android/capacitor-cordova-android-plugins/build.gradle');
+  const gradleProps = read('android/gradle.properties');
+
+  assert.doesNotMatch(appGradle, /^\s*exec\s*\{/m);
+  assert.match(appGradle, /ExecOperations/);
+  assert.doesNotMatch(appGradle, /\baaptOptions\s*\{/);
+  assert.doesNotMatch(appGradle, /proguard-android\.txt/);
+  assert.doesNotMatch(cordovaGradle, /\blintOptions\s*\{/);
+  assert.doesNotMatch(rootGradle, /\bjcenter\s*\(/);
+  assert.doesNotMatch(appGradle, /\bjcenter\s*\(/);
+  assert.doesNotMatch(gradleProps, /android\.enableJetifier\s*=\s*true/);
+});
+
+test('patch-capacitor script removes jcenter() and deprecated AGP DSL from capacitor-native-biometric', () => {
+  const patchResult = spawnSync(process.execPath, [path.join(root, 'scripts/patch-capacitor.js')], { cwd: root, encoding: 'utf8' });
+  assert.equal(patchResult.status, 0, patchResult.stderr);
+  const biometricGradlePath = path.join(root, 'node_modules/capacitor-native-biometric/android/build.gradle');
+  if (fs.existsSync(biometricGradlePath)) {
+    const biometricGradle = fs.readFileSync(biometricGradlePath, 'utf8');
+    assert.doesNotMatch(biometricGradle, /\bjcenter\s*\(/);
+    assert.match(biometricGradle, /\bmavenCentral\s*\(/);
+    assert.doesNotMatch(biometricGradle, /proguard-android\.txt/);
+    assert.doesNotMatch(biometricGradle, /\blintOptions\s*\{/);
+  }
+});

@@ -37,6 +37,7 @@ echo "✅ Java version: $JAVA_VERSION"
 echo ""
 echo "📦 Installing dependencies..."
 npm ci
+node scripts/patch-capacitor.js
 
 echo ""
 echo "🔨 Building web assets..."
