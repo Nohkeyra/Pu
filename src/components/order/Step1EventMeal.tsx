@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -16,6 +16,7 @@ import { FormError } from '@/components/ui/FormError';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { triggerLightImpact } from '@/lib/haptics';
+import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
 
 interface OrderState {
   eventType: 'pejabat' | 'lain' | '';
@@ -42,6 +43,7 @@ export function Step1EventMeal({
   tText,
 }: Step1EventMealProps) {
   const [fieldErrors, setFieldErrors] = useState<{ eventType?: string; mealTypes?: string; guests?: string }>({});
+  const stepRef = useRef<HTMLDivElement>(null);
 
   const validateAndNext = async () => {
     const next: typeof fieldErrors = {};
@@ -55,12 +57,22 @@ export function Step1EventMeal({
       next.guests = tText('Minimum order is 1 guest.', 'Minimum tempahan ialah 1 orang.');
     }
     setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      requestAnimationFrame(() => {
+        const selector = next.eventType ? '[data-tour="step1-event-type"] [tabindex="0"]'
+          : next.mealTypes ? '[data-tour="step1-meal-sarapan"]' : '#guests-input';
+        const target = stepRef.current?.querySelector<HTMLElement>(selector);
+        target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+        target?.focus({ preventScroll: true });
+      });
+      return;
+    }
     await handleStepNext(1);
   };
 
   return (
     <motion.div
+      ref={stepRef}
       key="step1"
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
@@ -79,12 +91,13 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
           {tText('Event Type', 'Jenis Majlis *')}
         </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} data-tour="step1-event-type">
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Event type', 'Jenis Majlis')} aria-required="true" aria-invalid={Boolean(fieldErrors.eventType)} aria-describedby={fieldErrors.eventType ? 'event-type-error' : undefined} onKeyDown={handleRadioGroupKeyDown} data-tour="step1-event-type">
           <Button
             type="button"
             variant="ghost"
             role="radio"
             aria-checked={orderState.eventType === 'pejabat'}
+            tabIndex={orderState.eventType === 'lain' ? -1 : 0}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'pejabat' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
               "customer-choice p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
@@ -115,6 +128,7 @@ export function Step1EventMeal({
             variant="ghost"
             role="radio"
             aria-checked={orderState.eventType === 'lain'}
+            tabIndex={orderState.eventType === 'lain' ? 0 : -1}
             onClick={() => { setOrderState((prev: any) => ({ ...prev, eventType: 'lain' })); setFieldErrors((e) => ({ ...e, eventType: undefined })); }}
             className={cn(
               "customer-choice p-3 h-auto rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[110px] cursor-pointer relative select-none active:scale-[0.99]",
@@ -140,13 +154,13 @@ export function Step1EventMeal({
             </div>
           </Button>
         </div>
-        {fieldErrors.eventType && <FormError message={fieldErrors.eventType} />}
+        {fieldErrors.eventType && <FormError id="event-type-error" message={fieldErrors.eventType} />}
       </div>
 
       {/* Meal Type selection */}
       <div className="space-y-1.5 pt-1">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block shrink-0">
             {tText('Meals / Sajian', 'Pilihan Sajian *')}
           </Label>
           <span className="text-xs text-stone font-normal">
@@ -154,7 +168,7 @@ export function Step1EventMeal({
           </span>
         </div>
         
-        <div className="grid grid-cols-3 gap-2" role="group" aria-label={tText('Meal type', 'Hidangan')}>
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label={tText('Meal type', 'Hidangan')} aria-invalid={Boolean(fieldErrors.mealTypes)} aria-describedby={fieldErrors.mealTypes ? 'meal-types-error' : undefined}>
           {[
             { id: 'sarapan', label: () => tText('Breakfast', 'Sarapan'), time: '7 - 10 AM', icon: Coffee },
             { id: 'tengahari', label: () => tText('Lunch', 'Tengah Hari'), time: '12 - 3 PM', icon: Sun },
@@ -196,7 +210,7 @@ export function Step1EventMeal({
             );
           })}
         </div>
-        {fieldErrors.mealTypes && <FormError message={fieldErrors.mealTypes} />}
+        {fieldErrors.mealTypes && <FormError id="meal-types-error" message={fieldErrors.mealTypes} />}
       </div>
 
       {/* Quantity Counter */}
@@ -266,12 +280,13 @@ export function Step1EventMeal({
         <Label className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider block">
           {tText('Serving Style / Preparation', 'Gaya Hidangan / Penyediaan *')}
         </Label>
-        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')}>
+        <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tText('Serving style', 'Gaya Hidangan')} onKeyDown={handleRadioGroupKeyDown}>
           <button
             type="button"
             data-tour="step1-prep-buffet"
             role="radio"
             aria-checked={orderState.preparationType === 'buffet'}
+            tabIndex={orderState.preparationType === 'buffet' ? 0 : -1}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'buffet' }))}
             className={cn(
               "customer-choice customer-serving-choice p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",
@@ -302,6 +317,7 @@ export function Step1EventMeal({
             data-tour="step1-prep-mealbox"
             role="radio"
             aria-checked={orderState.preparationType === 'meal_box'}
+            tabIndex={orderState.preparationType === 'meal_box' ? 0 : -1}
             onClick={() => setOrderState((prev: any) => ({ ...prev, preparationType: 'meal_box' }))}
             className={cn(
               "customer-choice customer-serving-choice p-3 rounded-2xl border transition-all duration-200 flex items-center gap-2.5 text-left cursor-pointer relative select-none active:scale-[0.99]",

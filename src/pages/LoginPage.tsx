@@ -75,7 +75,7 @@ export default function LoginPage() {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            aria-label={theme === 'light' ? 'Switch to Night Mode' : 'Switch to Day Mode'}
+            aria-label={theme === 'light' ? tLocal('Switch to dark theme', 'Tukar ke tema gelap') : tLocal('Switch to light theme', 'Tukar ke tema cerah')}
           >
             {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-[var(--color-sunshine-cta)]" />}
           </Button>

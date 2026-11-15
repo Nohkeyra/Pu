@@ -1164,6 +1164,7 @@ export default function SettingsPage() {
               action={
                 <Switch
                   checked={!developerMode}
+                  aria-label={language === 'bm' ? 'Analitik Penggunaan' : 'Usage Analytics'}
                   onCheckedChange={async (checked) => {
                     await triggerLightImpact();
                     setDeveloperMode(!checked);

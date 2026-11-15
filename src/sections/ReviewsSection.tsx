@@ -138,7 +138,7 @@ const ReviewsSection = React.memo(() => {
               <Star className="w-5 h-5 text-[var(--color-sunshine-cta)] fill-sunshine animate-pulse" />
               <div className="flex flex-col">
                 <span className="font-bold text-deep-forest dark:text-white leading-none">{REVIEWS.length}</span>
-                <span className="text-deep-forest/50 dark:text-stone-400 microcopy-12-upper uppercase font-bold tracking-widest mt-1">{language === 'bm' ? 'Petikan ulasan' : 'Review excerpts'}</span>
+                <span className="text-[var(--ui-muted)] microcopy-12-upper uppercase font-bold tracking-widest mt-1">{language === 'bm' ? 'Petikan ulasan' : 'Review excerpts'}</span>
               </div>
             </div>
             

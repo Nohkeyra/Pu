@@ -39,9 +39,9 @@ const MenuCard = React.memo(
           <button
             type="button"
             onClick={onOrder}
-            aria-label={`${bm ? 'Tempah' : 'Order'} ${bm ? item.nameBm : item.nameEn}`}
+            aria-label={bm ? 'Mulakan draf katering' : 'Start a catering draft'}
           >
-            <span>{bm ? 'Tempah' : 'Order'}</span>
+            <span>{bm ? 'Draf katering' : 'Catering draft'}</span>
             <ArrowRight size={16} aria-hidden="true" />
           </button>
         </div>

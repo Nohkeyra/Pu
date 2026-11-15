@@ -66,7 +66,7 @@ export default function ReviewCard({ text, name, rating, date, tag, source = 'Go
           <p className="font-display font-semibold text-[15px] text-deep-forest dark:text-white truncate">
             {name}
           </p>
-          <span className="font-sans font-semibold text-xs text-deep-forest/75 dark:text-stone-300 uppercase tracking-wider block">
+          <span className="font-sans font-semibold text-xs text-[var(--ui-muted)] uppercase tracking-wider block">
             {language === 'bm' ? 'Petikan ulasan tersimpan' : 'Saved review excerpt'}
           </span>
         </div>

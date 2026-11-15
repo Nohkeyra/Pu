@@ -49,7 +49,7 @@ function prefetchTabModule(path: string) {
 export default function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const reduceMotion = useReducedMotion();
   const { isKeyboardVisible } = useMobileKeyboard();
 
@@ -126,7 +126,7 @@ export default function BottomNavigation() {
           }}
           aria-hidden="true"
         />
-        <nav id="bottom-navigation" aria-label="Main Navigation" className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
+        <nav id="bottom-navigation" aria-label={language === 'bm' ? 'Navigasi utama' : 'Main navigation'} className="relative z-10 mx-auto flex h-[68px] sm:h-[72px] w-full items-center justify-around px-1.5 sm:px-4">
         {tabs.map((tab) => {
           const isActive = currentTabId === tab.id;
           const Icon = tab.icon;

@@ -1,10 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import { DEFAULT_MENU_ITEMS } from '../src/constants/menu';
 
 async function openOrder(page: Page, theme: string, native = true) {
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (!['127.0.0.1', 'localhost'].includes(url.hostname)) return route.abort();
-    if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { success: true, orders: [], sessions: {}, items: [], menuItems: [], settings: {} } });
+    if (url.pathname === '/api/menu') return route.fulfill({ json: { success: true, menuItems: DEFAULT_MENU_ITEMS } });
+    if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { success: true, orders: [], sessions: {}, items: [], settings: {} } });
     return route.continue();
   });
   await page.addInitScript(({ theme, native }) => {

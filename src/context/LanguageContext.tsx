@@ -381,7 +381,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   // Sync <html lang> attribute for a11y and SEO
   useEffect(() => {
-    document.documentElement.lang = language;
+    document.documentElement.lang = language === 'bm' ? 'ms-MY' : 'en';
     try {
       localStorage.setItem('wawasan_language', language);
     } catch {

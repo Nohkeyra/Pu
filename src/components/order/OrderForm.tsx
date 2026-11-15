@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoicePreviewModal';
 import { motion } from 'motion/react';
-import { getApiUrl, fetchWithCache } from '@/lib/api';
+import { getApiUrl, fetchWithCache, invalidateFetchCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, sendEmailVerification, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
@@ -35,6 +35,7 @@ import { useMascotStepTransition } from '@/hooks/ui/useMascotStepTransition';
 import type { SavedLocation, Order } from '@/types';
 import {
   validateOrderContactDetails,
+  getValidOrderStep,
   ORDER_CONTACT_FOCUS_IDS,
   type OrderContactField,
   type OrderContactErrors,
@@ -198,20 +199,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     };
   }, []);
 
-  const [currentStep, setCurrentStep] = useState<number>(() => {
-    if (initialData) return 1;
-    try {
-      const saved = localStorage.getItem('wawasan_order_draft_step');
-      if (saved) {
-        const parsedStep = parseInt(saved, 10);
-        if (parsedStep > 1 && parsedStep < 5) return parsedStep;
-      }
-    } catch (err) {
-      console.warn('Failed to load draft step:', err);
-    }
-    return 1;
-  });
-
   // Multi-step State with localStorage draft support
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [orderState, setOrderState] = useState<OrderState>((): OrderState => {
@@ -259,8 +246,31 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     return defaultState;
   });
 
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (initialData) return 1;
+    try {
+      const saved = localStorage.getItem('wawasan_order_draft_step');
+      if (saved) return getValidOrderStep(Number.parseInt(saved, 10), orderState);
+    } catch (err) {
+      console.warn('Failed to load draft step:', err);
+    }
+    return 1;
+  });
+
   // Ghost Demo Shadow State
   const [contactFieldErrors, setContactFieldErrors] = useState<OrderContactErrors>({});
+  const pendingContactFocus = useRef<OrderContactField | null>(null);
+  useEffect(() => {
+    if (currentStep !== 3 || !pendingContactFocus.current) return;
+    const targetId = ORDER_CONTACT_FOCUS_IDS[pendingContactFocus.current];
+    pendingContactFocus.current = null;
+    const frame = requestAnimationFrame(() => {
+      const target = targetId ? document.getElementById(targetId) : null;
+      target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
+      target?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [currentStep, contactFieldErrors]);
   const clearContactFieldError = useCallback((field: OrderContactField) => {
     setContactFieldErrors((previous) => {
       if (!previous[field]) return previous;
@@ -308,8 +318,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
-  const [dynamicMenu, setDynamicMenu] = useState<any[]>([]);
+  const [dynamicMenu, setDynamicMenu] = useState<(MenuItem & { name?: string })[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+  const [menuFallback, setMenuFallback] = useState(false);
+  const [menuLoadAttempt, setMenuLoadAttempt] = useState(0);
 
   // Derived Values
   const effectiveState = demoActive ? { ...orderState, ...demoState } : orderState;
@@ -378,25 +390,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   useEffect(() => {
     let isMounted = true;
     const fetchMenu = async () => {
+      setMenuLoading(true);
       try {
-        const data = await fetchWithCache(getApiUrl('/api/menu'), undefined, 120000); // 2 minutes cache
+        const data = await fetchWithCache<{ menuItems?: MenuItem[]; isDefault?: boolean }>(getApiUrl('/api/menu'), undefined, 120000);
         if (!isMounted) return;
-        if (data && data.menuItems && data.menuItems.length > 0) {
-          setDynamicMenu(data.menuItems);
-        } else {
-          setDynamicMenu(DEFAULT_MENU_ITEMS);
-        }
-      } catch (err: any) {
+        if (!Array.isArray(data?.menuItems)) throw new Error('Menu response is unavailable');
+        setDynamicMenu(data.menuItems);
+        setMenuFallback(data.isDefault === true);
+      } catch (err) {
         if (!isMounted) return;
-        if (err?.name === 'AbortError' || err?.message?.includes('aborted')) {
-          setDynamicMenu(DEFAULT_MENU_ITEMS);
-          return;
-        }
-        console.warn(
-          'Could not load menu items from endpoint, using local fallback:',
-          err?.message || err
-        );
+        console.warn('Could not load current menu; using the built-in menu:', err instanceof Error ? err.message : err);
         setDynamicMenu(DEFAULT_MENU_ITEMS);
+        setMenuFallback(true);
       } finally {
         if (isMounted) {
           setMenuLoading(false);
@@ -407,7 +412,12 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [menuLoadAttempt]);
+
+  const retryMenu = () => {
+    invalidateFetchCache(getApiUrl('/api/menu'));
+    setMenuLoadAttempt(attempt => attempt + 1);
+  };
 
   // Save draft on every state or step change (omitting sensitive personal fields for storage safety)
   useEffect(() => {
@@ -550,7 +560,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
 
       // Restore chosen dishes from previous order text or menu field using dynamic/default menu
       const previousMenuText = asString(initialData.menu).toLowerCase();
-      const menuCatalog = dynamicMenu.length > 0 ? dynamicMenu : DEFAULT_MENU_ITEMS;
+      const menuCatalog: (MenuItem & { name?: string })[] = dynamicMenu.length > 0 ? dynamicMenu : DEFAULT_MENU_ITEMS;
       const matchedDishes = menuCatalog.filter(
         (d) =>
           d.category !== 'drinks' &&
@@ -735,6 +745,17 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     });
   };
 
+  const validateContactStep = () => {
+    const errors = validateOrderContactDetails(effectiveState, tText);
+    const firstInvalidField = (Object.keys(errors) as OrderContactField[])[0];
+    pendingContactFocus.current = firstInvalidField ?? null;
+    setContactFieldErrors(errors);
+    if (!firstInvalidField) return true;
+    void triggerNotification(NotificationType.Warning);
+    toast({ title: tText('Check booking details', 'Semak butiran tempahan'), description: errors[firstInvalidField], variant: 'warning' });
+    return false;
+  };
+
   const handleStepNext = async (step: number) => {
     void triggerLightImpact();
     const triggerWarning = () => triggerNotification(NotificationType.Warning);
@@ -794,26 +815,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
 
     if (step === 3) {
-      const errors = validateOrderContactDetails(effectiveState, tText);
-      setContactFieldErrors(errors);
-      const firstInvalidField = (Object.keys(errors) as OrderContactField[])[0];
-      if (firstInvalidField) {
-        triggerWarning();
-        toast({
-          title: tText('Check booking details', 'Semak butiran tempahan'),
-          description: errors[firstInvalidField],
-          variant: 'warning',
-        });
-        const targetId = ORDER_CONTACT_FOCUS_IDS[firstInvalidField];
-        if (targetId) {
-          requestAnimationFrame(() => {
-            const target = document.getElementById(targetId);
-            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target?.focus({ preventScroll: true });
-          });
-        }
-        return;
-      }
+      if (!validateContactStep()) return;
       if (!demoActive) navigateStep(4);
       logOrderStep(4, 'review_submit');
     }
@@ -879,6 +881,15 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
     if (demoActive || isSubmitting) return;
+    if (getValidOrderStep(4, orderState) === 1) {
+      navigateStep(1);
+      toast({ title: tText('Check event details', 'Semak maklumat majlis'), description: tText('Choose an event, a meal and a valid quantity before sending.', 'Pilih jenis majlis, sajian dan kuantiti yang sah sebelum menghantar.'), variant: 'warning' });
+      return;
+    }
+    if (!validateContactStep()) {
+      navigateStep(3);
+      return;
+    }
     const signedInUser = auth.currentUser;
     if (!signedInUser) {
       setAuthMode('signin');
@@ -1270,7 +1281,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
               key={`${isVeggie ? 'vegetable' : 'dish'}-${item.id}`}
               className={isDishStep ? undefined : isVeggie
                 ? 'inline-block bg-deep-forest/20 text-deep-forest dark:text-sunshine font-bold px-2 py-0.5 rounded microcopy-12-upper border border-deep-forest/30'
-                : 'inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20'}
+                : 'inline-block bg-crisp-carrot/10 text-[var(--ui-ink)] font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20'}
             >
               {isDishStep && <Check size={14} aria-hidden="true" />}
               <span>{tText(item.nameEn, item.nameBm)}</span>
@@ -1462,12 +1473,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           {!demoActive && !initialData && (
             <div className="customer-progress-extras">
               {draftSavedAt && !initialData ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>{tText('Draft saved', 'Draf disimpan')}</span>
-                  <Button variant="ghost" type="button" onClick={handleDiscardDraft}>
-                    {tText('Clear draft', 'Padam draf')}
-                  </Button>
-                </div>
+                <span>{tText('Event & menu saved', 'Draf majlis & menu disimpan')}</span>
               ) : (
                 <span />
               )}
@@ -1478,6 +1484,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 </summary>
                 <div className="customer-order-help-content">
                   <OrderFormTip language={language} />
+                  <p className="text-xs text-[var(--ui-muted)]">{tText('Contact details are not saved on this device. Re-enter them when you return.', 'Maklumat hubungan tidak disimpan pada peranti ini. Masukkan semula apabila kembali.')}</p>
+                  {draftSavedAt && <Button variant="ghost" type="button" onClick={handleDiscardDraft}>{tText('Clear draft', 'Padam draf')}</Button>}
                   <Button
                     variant="ghost"
                     type="button"
@@ -1588,6 +1596,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     orderState={effectiveState}
                     setOrderState={setOrderState}
                     menuLoading={menuLoading}
+                    menuFallback={menuFallback}
+                    onRetryMenu={retryMenu}
                     dynamicMenu={dynamicMenu}
                     handleToggleDish={handleToggleDish}
                     handleStepNext={handleStepNext}

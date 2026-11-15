@@ -620,20 +620,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 32px;
-  background: var(--ui-green);
-  color: var(--ui-legacy-white);
+  background: color-mix(in srgb, var(--ui-green) 85%, var(--ui-shadow-ink));
+  color: var(--ui-paper);
   border: 1px solid var(--ui-border);
   border-radius: 22px;
   padding: 32px;
   margin-top: 36px;
 }
 .landing-order-callout .landing-eyebrow {
-  color: var(--ui-orange);
+  color: var(--ui-paper);
   margin-bottom: 10px;
 }
 .landing-order-callout h3 {
   font-family: var(--font-display);
-  color: var(--ui-legacy-white);
+  color: var(--ui-paper);
   font-size: clamp(21px, 2.6vw, 30px);
   font-weight: 500;
   line-height: 1.25;
@@ -643,7 +643,7 @@
 .landing-order-callout p:not(.landing-eyebrow) {
   font-size: 12px;
   line-height: 1.8;
-  color: var(--ui-legacy-white);
+  color: var(--ui-paper);
   max-width: 58ch;
   margin-top: 12px;
 }

@@ -42,8 +42,8 @@ export function OrderFormTip({ language }: { language: string }) {
         </p>
         <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5 leading-relaxed">
           {language === 'bm'
-            ? 'Lengkapkan setiap langkah. Draf disimpan automatik pada peranti ini jika anda keluar sekejap.'
-            : 'Complete each step in order. Your draft is auto-saved on this device if you leave briefly.'}
+            ? 'Majlis dan pilihan menu disimpan pada peranti ini. Maklumat hubungan perlu dimasukkan semula apabila anda kembali.'
+            : 'Your event and menu choices are saved on this device. Contact details must be entered again when you return.'}
         </p>
       </div>
       <Button

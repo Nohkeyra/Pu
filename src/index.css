@@ -892,11 +892,11 @@
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--ui-green) 85.0%, transparent);
+    color: var(--ui-ink);
   }
   .dark .subtle-chip {
     background: color-mix(in srgb, var(--ui-surface) 5.0%, transparent);
-    color: color-mix(in srgb, var(--ui-legacy-white) 85.0%, transparent);
+    color: var(--ui-ink);
     border-color: color-mix(in srgb, var(--ui-yellow) 30.0%, transparent);
   }
 

@@ -63,3 +63,14 @@ export function validateOrderContactDetails(
   if (!state.delivery) errors.delivery = tText('Please choose delivery or pickup.', 'Sila pilih hantar atau ambil sendiri.');
   return errors;
 }
+
+/** Restore only as far as the fields that are still present in the draft allow. */
+export function getValidOrderStep(
+  requestedStep: number,
+  state: OrderContactFields & { mealTypes: readonly string[]; guests: number },
+): number {
+  const step = Number.isFinite(requestedStep) ? Math.min(4, Math.max(1, Math.floor(requestedStep))) : 1;
+  if (step > 1 && (!state.eventType || !state.mealTypes.length || !Number.isFinite(state.guests) || state.guests < 1)) return 1;
+  if (step === 4 && Object.keys(validateOrderContactDetails(state, en => en)).length) return 3;
+  return step;
+}

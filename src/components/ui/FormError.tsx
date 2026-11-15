@@ -17,7 +17,7 @@ export function FormError({ message, className, id }: FormErrorProps) {
       id={id}
       role="alert"
       className={cn(
-        "text-rose-600 dark:text-rose-400 text-xs mt-1.5 flex items-start gap-1.5 animate-in fade-in slide-in-from-top-1 leading-snug",
+        "text-[var(--ui-danger)] text-xs mt-1.5 flex items-start gap-1.5 animate-in fade-in slide-in-from-top-1 leading-snug",
         className
       )}
     >

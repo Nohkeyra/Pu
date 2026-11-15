@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { DEFAULT_MENU_ITEMS } from '../src/constants/menu';
 
 test('slow device feedback never blocks order selection, quantity or step navigation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -9,7 +10,8 @@ test('slow device feedback never blocks order selection, quantity or step naviga
       export const ImpactStyle = { Light: 'LIGHT', Medium: 'MEDIUM', Heavy: 'HEAVY' };
       export const NotificationType = { Success: 'SUCCESS', Warning: 'WARNING', Error: 'ERROR' };
       export const Haptics = { impact: () => new Promise(() => {}), notification: async () => {}, vibrate: async () => {} };` });
-    if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { success: true, menuItems: [], orders: [], sessions: {} } });
+    if (url.pathname === '/api/menu') return route.fulfill({ json: { success: true, menuItems: DEFAULT_MENU_ITEMS } });
+    if (url.pathname.startsWith('/api/')) return route.fulfill({ json: { success: true, orders: [], sessions: {} } });
     return route.continue();
   });
   await page.addInitScript(() => {

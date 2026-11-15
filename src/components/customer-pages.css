@@ -138,7 +138,14 @@
 .customer-progress-track span {height:5px;border-radius:99px;background:var(--customer-line)}
 .customer-progress-track span[data-complete=true] {background:linear-gradient(90deg, var(--ui-orange), var(--ui-yellow));box-shadow:0 1px 6px color-mix(in srgb, var(--ui-shadow-ink) 40.0%, transparent)}
 .customer-progress-extras {display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--customer-muted);font-size:0.6875rem;position:relative;z-index:1}
+.customer-progress-extras > span { flex: 1 1 120px; }
 .customer-page .customer-progress-extras button {min-height:44px;color:var(--customer-accent);font-size:0.6875rem;padding:5px 8px;background:transparent}
+@media (max-width: 600px) {
+  .customer-page .customer-order-form { gap: 10px; }
+  .customer-page .customer-order-progress:not([data-preview-docked="true"]) { padding: 8px 12px; }
+  .customer-page .customer-progress-track { margin-top: 6px; }
+  .customer-page .customer-progress-extras { margin-top: 2px; }
+}
 .customer-page .customer-form-panel {
   background: var(--customer-surface);
   border: 1px solid var(--customer-line);
@@ -410,7 +417,7 @@ html.wawasan-native .customer-page .settings-row { min-height: 64px; padding: 10
 .customer-order-page .customer-quote-box .customer-quote-status,
 .customer-order-page .customer-quote-box > div:not(.customer-quote-batik) > span:last-child { color: var(--customer-accent); }
 .customer-order-page .customer-quote-batik { opacity: .045; }
-.customer-order-page .customer-whatsapp-inquiry { background: var(--ui-green); color: #fff; border-radius: 12px; min-height: 48px; }
+.customer-order-page .customer-whatsapp-inquiry { background: color-mix(in srgb, var(--ui-green) 85%, var(--ui-shadow-ink)); color: var(--ui-paper); border-radius: 12px; min-height: 48px; }
 @media (min-width: 960px) {
   .customer-settings-page .customer-settings-content { display: grid; grid-template-columns: 180px minmax(0, 1fr); column-gap: 32px; align-items: start; }
   .customer-settings-content > :not(.customer-settings-tabs) { grid-column: 2; }

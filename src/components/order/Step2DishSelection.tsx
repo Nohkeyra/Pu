@@ -31,6 +31,8 @@ interface Step2DishSelectionProps {
   orderState: OrderState;
   setOrderState: React.Dispatch<React.SetStateAction<any>>;
   menuLoading: boolean;
+  menuFallback: boolean;
+  onRetryMenu: () => void;
   dynamicMenu: any[];
   handleToggleDish: (dish: any) => Promise<void> | void;
   handleStepNext: (step: number) => Promise<void> | void;
@@ -44,6 +46,8 @@ export function Step2DishSelection({
   orderState,
   setOrderState,
   menuLoading,
+  menuFallback,
+  onRetryMenu,
   dynamicMenu,
   handleToggleDish,
   handleStepNext,
@@ -59,6 +63,9 @@ export function Step2DishSelection({
   const visibleMenu = React.useMemo(() => {
     return dynamicMenu.filter(item => item.available !== false);
   }, [dynamicMenu]);
+  const unavailableChoices = !menuFallback && !menuLoading
+    ? orderState.dishes.filter(selected => !visibleMenu.some(item => item.id === selected.id))
+    : [];
 
   const searchableMenu = React.useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
@@ -103,7 +110,7 @@ export function Step2DishSelection({
       <div className="space-y-4">
         <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2.5">
           <Label className={`text-xs font-black ${colorClass} uppercase tracking-wider block shrink-0`}>
-            <span className="inline-flex items-center gap-1.5">{icon}<span>{title}</span></span>
+            <span className="inline-flex items-center gap-1.5">{icon}<span className="text-[var(--ui-ink)]">{title}</span></span>
           </Label>
           {selectedCount > 0 && (
             <span className="customer-menu-selected-count microcopy-12-upper font-bold px-3 py-1 rounded-full shrink-0 whitespace-nowrap">
@@ -153,6 +160,21 @@ export function Step2DishSelection({
         <p>{tText('Steamed rice, drinking water and utensils are included.', 'Nasi putih, air minuman cawan dan set hidangan disertakan.')}</p>
       </header>
 
+      {menuFallback && (
+        <div className="rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-raised)] p-4 text-sm text-[var(--ui-ink)]">
+          <p role="status">{tText('Showing the built-in menu. Current availability could not be confirmed. Your selections are kept.', 'Memaparkan menu asas aplikasi. Ketersediaan semasa belum dapat disahkan. Pilihan anda dikekalkan.')}</p>
+          <Button type="button" variant="outline" disabled={menuLoading} onClick={onRetryMenu} className="mt-3 min-h-12 whitespace-normal">
+            {menuLoading ? tText('Checking menu…', 'Menyemak menu…') : tText('Retry menu', 'Cuba semula menu')}
+          </Button>
+        </div>
+      )}
+      {unavailableChoices.length > 0 && (
+        <p role="status" className="rounded-2xl border border-[var(--ui-border)] p-4 text-sm text-[var(--ui-ink)]">
+          {tText('These saved choices are not in the current menu. They remain in your request for confirmation:', 'Pilihan tersimpan ini tiada dalam menu semasa. Ia kekal dalam permintaan anda untuk pengesahan:')}{' '}
+          {unavailableChoices.map(item => tText(item.nameEn, item.nameBm) || item.name).join(', ')}
+        </p>
+      )}
+
       {!menuLoading && (
         <div className="space-y-2">
           <label htmlFor="dish-search" className="text-sm font-semibold text-stone-700 dark:text-stone-200">{tText('Find a dish or drink', 'Cari hidangan atau minuman')}</label>
@@ -163,7 +185,7 @@ export function Step2DishSelection({
           </div>
           {search.trim() && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{matchingAvailable ? tText('Showing matching items. Your selections are kept.', 'Memaparkan padanan. Pilihan anda dikekalkan.') : tText('No matching items in this category. Try another search or category.', 'Tiada padanan dalam kategori ini. Cuba carian atau kategori lain.')}</p>}
           <div role="group" aria-label={tText('Menu categories', 'Kategori menu')} className="flex gap-2 overflow-x-auto py-1 [scrollbar-width:thin]">
-            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className="customer-menu-filter min-h-11 shrink-0 px-3 text-sm font-semibold">{option.label}</button>)}
+            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className="customer-menu-filter min-h-12 shrink-0 px-3 text-sm font-semibold">{option.label}</button>)}
           </div>
           {!search.trim() && !matchingAvailable && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{tText('No items available in this category.', 'Tiada hidangan tersedia dalam kategori ini.')}</p>}
         </div>
@@ -193,7 +215,7 @@ export function Step2DishSelection({
             <div className="space-y-4">
               <div className="flex justify-between items-center flex-wrap gap-2 border-b border-stone/10 pb-2">
                 <Label className="text-xs font-black text-blue-500 uppercase tracking-wider block shrink-0">
-                  <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Drinks Selection', 'Pilihan Minuman')}</span>
+                  <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" /><span className="text-[var(--ui-ink)]">{tText('Drinks Selection', 'Pilihan Minuman')}</span></span>
                 </Label>
                 {orderState.dishes.filter(d => d.category === 'drinks').length > 0 && (
                   <span className="customer-menu-selected-count microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
@@ -204,7 +226,7 @@ export function Step2DishSelection({
 
               {showHotDrinks && (
                 <div className="space-y-3">
-                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block opacity-80">
+                  <span className="text-xs font-black text-[var(--ui-ink)] uppercase tracking-widest block">
                     <span className="inline-flex items-center gap-1.5"><Coffee className="w-4 h-4" aria-hidden="true" />{tText('Hot/Warm Drinks', 'Minuman Panas/Suam')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">
@@ -232,7 +254,7 @@ export function Step2DishSelection({
 
               {showColdDrinks && (
                 <div className="space-y-3 pt-2">
-                  <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest block opacity-80">
+                  <span className="text-xs font-black text-[var(--ui-ink)] uppercase tracking-widest block">
                     <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Refreshing Box/Cordial/Mineral Drinks', 'Minuman Kotak/Kordial/Mineral Segar')}</span>
                   </span>
                   <div className="grid grid-cols-2 gap-2.5 pb-2">

@@ -29,6 +29,7 @@ import {
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn } from '@/lib/utils';
+import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
 import type { OrderState } from '@/components/order/OrderForm';
 import type { OrderContactField, OrderContactErrors } from '@/lib/orderContactValidation';
 
@@ -446,7 +447,7 @@ export function Step3ContactDetails({
                     >
                       {tText('Event Date', 'Tarikh Majlis *')}
                     </Label>
-                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    <span className="text-xs font-semibold text-[var(--ui-action)]">
                       {tText('Min. 2 days notice', 'Min. 2 hari awal')}
                     </span>
                   </div>
@@ -530,7 +531,7 @@ export function Step3ContactDetails({
               type="button"
               onClick={handleDetectLocation}
               disabled={isDetectingLocation}
-              className="inline-flex items-center gap-1 microcopy-12 font-bold text-crisp-carrot hover:text-crisp-carrot/80 transition-colors disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-1 microcopy-12 font-bold text-[var(--ui-action)] hover:underline transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isDetectingLocation ? (
                 <>
@@ -600,12 +601,16 @@ export function Step3ContactDetails({
             className="grid grid-cols-2 gap-2.5"
             role="radiogroup"
             aria-label={tText('Delivery method', 'Kaedah Penghantaran')}
+            aria-invalid={Boolean(fieldErrors.delivery)}
+            aria-describedby={fieldErrors.delivery ? 'delivery-method-error' : undefined}
+            onKeyDown={handleRadioGroupKeyDown}
             data-tour="step3-delivery"
           >
             <button
               type="button"
               role="radio"
               aria-checked={orderState.delivery === 'delivery'}
+              tabIndex={orderState.delivery === 'pickup' ? -1 : 0}
               onClick={() => {
                 clearFieldError('delivery');
                 setOrderState((prev) => ({ ...prev, delivery: 'delivery' }));
@@ -624,7 +629,7 @@ export function Step3ContactDetails({
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">
                   {tText('Delivery', 'Hantar ke Lokasi')}
                 </span>
-                <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">
+                <span className="text-xs text-[var(--ui-muted)] leading-tight font-normal block mt-0.5">
                   {tText('Direct to venue', 'Dihantar ke majlis')}
                 </span>
               </div>
@@ -634,6 +639,7 @@ export function Step3ContactDetails({
               type="button"
               role="radio"
               aria-checked={orderState.delivery === 'pickup'}
+              tabIndex={orderState.delivery === 'pickup' ? 0 : -1}
               onClick={() => {
                 clearFieldError('delivery');
                 setOrderState((prev) => ({ ...prev, delivery: 'pickup' }));
@@ -652,13 +658,13 @@ export function Step3ContactDetails({
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">
                   {tText('Self Pickup', 'Ambil di Restoran')}
                 </span>
-                <span className="text-xs text-stone/85 dark:text-stone-300/85 leading-tight font-normal block mt-0.5">
+                <span className="text-xs text-[var(--ui-muted)] leading-tight font-normal block mt-0.5">
                   {tText('Collect at Presint 2', 'Ambil di Restoran')}
                 </span>
               </div>
             </button>
           </div>
-          {fieldErrors.delivery && <FormError message={fieldErrors.delivery} />}
+          {fieldErrors.delivery && <FormError id="delivery-method-error" message={fieldErrors.delivery} />}
         </div>
 
         {/* Notes input */}
