@@ -48,7 +48,7 @@ function readQueue(): PendingOrder[] {
 
 export const MAX_PENDING_ORDERS = 20;
 
-function writeQueue(queue: PendingOrder[]): void {
+function writeQueue(queue: PendingOrder[]): boolean {
   try {
     if (queue.length > MAX_PENDING_ORDERS) {
       queue = queue.slice(queue.length - MAX_PENDING_ORDERS);
@@ -56,10 +56,10 @@ function writeQueue(queue: PendingOrder[]): void {
     const jsonStr = safeJsonStringify(queue);
     localStorage.setItem(PENDING_ORDERS_STORAGE_KEY, jsonStr);
     // Persist asynchronously to Capacitor Preferences for Android native storage resilience
-    Preferences.set({ key: PENDING_ORDERS_STORAGE_KEY, value: jsonStr }).catch(() => {});
+    void Preferences.set({ key: PENDING_ORDERS_STORAGE_KEY, value: jsonStr }).catch(() => {});
+    return true;
   } catch {
-    // Storage full/unavailable — queueing is a best-effort convenience,
-    // never let it throw into the submit flow that called it.
+    return false;
   }
 }
 
@@ -107,16 +107,13 @@ export function getPendingOrdersCount(): number {
   return readQueue().length;
 }
 
-/** Adds an order to the queue, skipping if the same idempotencyKey is already present. */
-export function addPendingOrder(orderPayload: Record<string, unknown>, idempotencyKey: string): void {
-  if (!idempotencyKey) return;
-  let queue = readQueue();
-  if (queue.some((item) => item.idempotencyKey === idempotencyKey)) return;
+/** Returns whether the order is available in the local queue for retry. */
+export function addPendingOrder(orderPayload: Record<string, unknown>, idempotencyKey: string): boolean {
+  if (!idempotencyKey) return false;
+  const queue = readQueue();
+  if (queue.some((item) => item.idempotencyKey === idempotencyKey)) return true;
   queue.push({ idempotencyKey, orderPayload, queuedAt: Date.now() });
-  if (queue.length > MAX_PENDING_ORDERS) {
-    queue = queue.slice(queue.length - MAX_PENDING_ORDERS);
-  }
-  writeQueue(queue);
+  return writeQueue(queue);
 }
 
 export function removePendingOrder(idempotencyKey: string): void {

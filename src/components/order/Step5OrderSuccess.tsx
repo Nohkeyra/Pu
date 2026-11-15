@@ -195,15 +195,10 @@ export function Step5OrderSuccess({
         </span>
 
         <div className="space-y-1.5 text-xs text-stone">
-          <p className="flex items-center gap-1.5 text-deep-forest font-semibold">
-            <span className="text-deep-forest">✓</span>
-            <span>{tText('Preliminary PDF generated', 'Invois PDF dihasilkan')}</span>
-          </p>
-          
           {emailStatus === 'sending' && (
-            <p className="flex items-center gap-1.5 animate-pulse text-crisp-carrot">
+            <p className="flex items-center gap-1.5 motion-safe:animate-pulse text-crisp-carrot">
               <span className="text-crisp-carrot font-bold">●</span>
-              <span>{tText('Mailing PDF copy...', 'Sedang menghantar salinan emel...')}</span>
+              <span>{tText('Preparing and sending the invoice by email…', 'Sedang menyediakan dan menghantar invois melalui e-mel…')}</span>
             </p>
           )}
 
@@ -217,7 +212,7 @@ export function Step5OrderSuccess({
           {emailStatus === 'failed' && (
             <p className="flex items-center gap-1.5 text-rose-600 font-semibold">
               <span className="text-rose-600 font-bold">×</span>
-              <span>{tText('SMTP delivery deferred. Admin will send copy manually.', 'Penghantaran emel tertangguh. Invois akan dihantar manual.')}</span>
+              <span>{tText('The invoice could not be sent by email.', 'Invois gagal dihantar melalui e-mel.')}</span>
             </p>
           )}
         </div>

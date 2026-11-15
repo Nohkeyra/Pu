@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Phone, User as UserIcon, Ghost, CircleHelp, ChevronDown } from 'lucide-react';
+import { Check, Phone, User as UserIcon, Ghost, CircleHelp, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoicePreviewModal';
@@ -426,7 +426,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   }, [currentStep, orderState, initialData, demoActive]);
 
-  const tText = (en: string, bm: string) => (language === 'bm' ? bm : en);
+  const tText = useCallback((en: string, bm: string) => (language === 'bm' ? bm : en), [language]);
 
   // Human-readable label for the selected meal types. orderState.mealTypes is
   // a multi-select array (customer can pick breakfast + lunch + hi-tea
@@ -848,6 +848,34 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   };
 
+  const sendPreliminaryInvoice = async (order: Order, authorization: string, submissionKey: string) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    let sent = false;
+    try {
+      const response = await fetch(getApiUrl(`/api/orders/${order.id}/send-preliminary-invoice`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authorization,
+        },
+        body: safeJsonStringify({ email: order.email, name: order.name, lang: language }),
+        signal: controller.signal,
+      });
+      sent = response.ok;
+      if (!sent) console.warn('Preliminary invoice email failed:', response.status);
+    } catch (error) {
+      console.warn('Preliminary invoice email request failed:', error);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    // A new order may have started while this request was in progress.
+    if (idempotencyKeyRef.current === submissionKey) {
+      setEmailStatus(sent ? 'success' : 'failed');
+    }
+  };
+
   // FINAL ORDER SUBMISSION PIPELINE
   const handleOrderSubmission = async () => {
     if (demoActive || isSubmitting) return;
@@ -900,6 +928,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     // the same object once it's built, purely so a network-failure catch
     // can queue it — it does not change orderData's own declaration/scope.
     let orderDataForQueue: Record<string, unknown> | null = null;
+    const submissionKey = idempotencyKeyRef.current;
 
     try {
       const mappedMeals = orderState.mealTypes.map((m) => {
@@ -995,7 +1024,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         customMenu: orderState.customMenu,
         userId: signedInUser.uid,
         delivery: orderState.delivery,
-        idempotencyKey: idempotencyKeyRef.current,
+        idempotencyKey: submissionKey,
       };
       orderDataForQueue = orderData;
 
@@ -1004,12 +1033,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       let response;
+      let authorization: string;
       try {
+        authorization = `Bearer ${await signedInUser.getIdToken(true)}`;
         response = await fetch(getApiUrl('/api/orders'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${await signedInUser.getIdToken(true)}`,
+            Authorization: authorization,
           },
           body: safeJsonStringify(orderData),
           signal: controller.signal,
@@ -1078,63 +1109,10 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       };
       setSubmittedOrder(createdOrder);
 
-      // Generate Invoice PDF & Mail to customer
-      try {
-        setEmailStatus('sending');
-        // F-BUNDLE (2026-08-18): pdfService.ts (jsPDF + jspdf-autotable) was
-        // previously a static top-level import, so it shipped inside every
-        // customer's OrderForm bundle even if they never reached this point.
-        // Loading it here, only once an order is actually submitted, keeps
-        // that weight out of the initial order-form chunk for everyone else.
-
-        // F-INV (audit 2026-08-06): this used to call /api/send-invoice, which
-        // requires an admin JWT (verifyAdminToken). OrderForm is customer-facing
-        // and never has one, so this always failed with 401 and the email was
-        // never sent — silently, since only setEmailStatus('failed') ran.
-        // Switched to /api/orders/:id/send-preliminary-invoice, a public endpoint
-        // that verifies pdfBase64/email against the actual stored order before
-        // emailing, so it can't be used to relay mail to arbitrary addresses.
-        const emailController = new AbortController();
-        const emailTimeoutId = setTimeout(() => emailController.abort(), 15000);
-
-        let emailResponse;
-        try {
-          emailResponse = await fetch(
-            getApiUrl(`/api/orders/${generatedOrderId}/send-preliminary-invoice`),
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${await signedInUser.getIdToken(true)}`,
-              },
-              body: safeJsonStringify({
-                email: orderData.email,
-                name: orderData.name,
-
-                lang: language,
-              }),
-              signal: emailController.signal,
-            }
-          );
-        } finally {
-          clearTimeout(emailTimeoutId);
-        }
-
-        if (emailResponse.ok) {
-          setEmailStatus('success');
-          toast({
-            title: t('invoice_emailed'),
-            description: t('email_sent_to').replace('{email}', orderData.email),
-            variant: 'success',
-          });
-        } else {
-          setEmailStatus('failed');
-          console.warn('Backend failed to send email relay.');
-        }
-      } catch (pdfErr) {
-        console.error('Error generating/sending preliminary PDF invoice:', pdfErr);
-        setEmailStatus('failed');
-      }
+      setEmailStatus('sending');
+      clearOrderDraft();
+      setCurrentStep(5);
+      void sendPreliminaryInvoice(createdOrder, authorization, submissionKey);
 
       triggerNotification(NotificationType.Success);
       toast({
@@ -1151,8 +1129,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         orderState.dishes.length + orderState.veggies.length,
         orderState.eventType
       );
-      clearOrderDraft();
-      setCurrentStep(5);
     } catch (err) {
       console.error('Catering submission error:', err);
       triggerNotification(NotificationType.Error);
@@ -1172,7 +1148,18 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       // customer orders from a weak-signal spot. Only the else branch below
       // (a genuine, unhandled submission error) is now reported.
       if (err instanceof Error && err.name === 'OrderNetworkError' && orderDataForQueue) {
-        addPendingOrder(orderDataForQueue, idempotencyKeyRef.current);
+        if (!addPendingOrder(orderDataForQueue, submissionKey)) {
+          toast({
+            title: tText('Could not save order', 'Tempahan gagal disimpan'),
+            description: tText(
+              'Keep this form open and try sending again once your connection returns.',
+              'Biarkan borang ini terbuka dan cuba hantar semula apabila sambungan pulih.'
+            ),
+            variant: 'error',
+            duration: 8000,
+          });
+          return;
+        }
         toast({
           title: tText('Order Saved for Later', 'Tempahan Disimpan'),
           description: tText(
@@ -1265,6 +1252,175 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     }
   };
 
+  const isDishStep = effectiveStep === 2;
+  const selectedItems = [
+    ...effectiveState.dishes.map((item) => ({ item, isVeggie: false })),
+    ...effectiveState.veggies.map((item) => ({ item, isVeggie: true })),
+  ];
+  const selectionCount = selectedItems.length;
+  const selectedMenuSummary = (
+    <div className={isDishStep ? 'customer-order-note-items' : 'pt-2 border-t border-stone/10 space-y-1.5'}>
+      <span className="microcopy-12-upper font-extrabold text-stone uppercase tracking-wider block">
+        {tText('Selected Menu Items', 'Menu Pilihan')}
+      </span>
+      {selectionCount > 0 ? (
+        <ul className={isDishStep ? 'customer-order-note-list' : 'flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1'}>
+          {selectedItems.map(({ item, isVeggie }) => (
+            <li
+              key={`${isVeggie ? 'vegetable' : 'dish'}-${item.id}`}
+              className={isDishStep ? undefined : isVeggie
+                ? 'inline-block bg-deep-forest/20 text-deep-forest dark:text-sunshine font-bold px-2 py-0.5 rounded microcopy-12-upper border border-deep-forest/30'
+                : 'inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20'}
+            >
+              {isDishStep && <Check size={14} aria-hidden="true" />}
+              <span>{tText(item.nameEn, item.nameBm)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span className="microcopy-12 text-stone italic block">
+          {isDishStep
+            ? tText('No dishes selected yet.', 'Belum ada hidangan dipilih.')
+            : tText('Select dishes in Step 2 or use the Box Set.', 'Pilih lauk di Langkah 2 atau gunakan Set Kotak.')}
+        </span>
+      )}
+    </div>
+  );
+
+  const orderSummary = (
+    <div className="customer-order-aside lg:col-span-5 xl:col-span-4 lg:sticky space-y-4">
+      <details
+        className="customer-live-summary customer-order-summary rounded-2xl border p-5 sm:p-6 relative"
+        key={isDishStep ? 'menu-note' : 'order-summary'}
+        open={!isDishStep && (!isNativePresentation || effectiveStep >= 4)}
+      >
+        <summary className="customer-order-summary-heading">
+          <span className="customer-order-summary-label">
+            <span className="customer-order-summary-title">
+              {tText('Order summary', 'Ringkasan tempahan')}
+            </span>
+            {isDishStep && (
+              <span className="customer-order-summary-count" aria-live="polite">
+                {effectiveState.guests} {tText('pax', 'orang')} · {selectionCount}{' '}
+                {tText(selectionCount === 1 ? 'selection' : 'selections', 'pilihan')}
+              </span>
+            )}
+          </span>
+          {!isDishStep && (
+            <span className="customer-order-summary-count">
+              {effectiveState.guests} {tText('pax', 'orang')}
+            </span>
+          )}
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+          {isDishStep && effectiveState.preparationType === 'meal_box' && (
+            <img
+              className="customer-order-note-art"
+              src={getAssetUrl('/assets/illustrations/catering-lunchbox-success.webp')}
+              alt=""
+              width={120}
+              height={60}
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+        </summary>
+        <div className="customer-order-summary-content">
+          {/* Event Type & Pax Badge */}
+          <div className="space-y-3 text-xs">
+            {isDishStep && selectedMenuSummary}
+            <div className="flex justify-between items-center">
+              <span className="text-stone font-medium">
+                {tText('Event Type:', 'Jenis Majlis:')}
+              </span>
+              <span className="font-bold text-deep-forest dark:text-white">
+                {effectiveState.eventType === 'pejabat'
+                  ? tText('Office Feast', 'Jamuan Pejabat')
+                  : effectiveState.eventType === 'lain'
+                    ? tText('Private Event', 'Lain-Lain')
+                    : tText('Not Selected', 'Belum Dipilih')}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-stone font-medium">
+                {tText('Guest Count:', 'Kuantiti Pax:')}
+              </span>
+              <span className="font-bold text-deep-forest dark:text-white">
+                {effectiveState.guests} {tText('pax', 'orang')}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-stone font-medium">
+                {tText('Serving Time:', 'Hidangan Untuk:')}
+              </span>
+              <span className="font-bold text-deep-forest dark:text-white text-right">
+                {getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}
+              </span>
+            </div>
+
+            {effectiveState.date && (
+              <div className="flex justify-between items-center">
+                <span className="text-stone font-medium">
+                  {tText('Date & Time:', 'Tarikh & Masa:')}
+                </span>
+                <span className="font-bold text-deep-forest dark:text-white">
+                  {effectiveState.date} @ {effectiveState.time}
+                </span>
+              </div>
+            )}
+
+            {!isDishStep && selectedMenuSummary}
+
+            {/* Estimation Total Calculation */}
+            <div className="customer-quote-box p-4 rounded-xl border relative overflow-hidden mt-4 space-y-2">
+              <div
+                className="customer-quote-batik absolute inset-0 pointer-events-none"
+                style={{
+                  backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              />
+              <div className="customer-quote-basis relative z-10 flex justify-between items-center">
+                <span className="text-stone-300 microcopy-12 font-medium uppercase tracking-wider">
+                  {tText('Pricing Basis:', 'Asas Harga:')}
+                </span>
+                <span className="font-bold text-[var(--color-sunshine-cta)] text-xs uppercase tracking-wider">
+                  {tText('Inquiry / Custom Quote', 'Pertanyaan / Sebut Harga')}
+                </span>
+              </div>
+
+              <div className="relative z-10 flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                <div className="min-w-0 flex flex-col gap-0.5 lg:flex-1 lg:flex-row lg:items-baseline lg:justify-between lg:gap-3">
+                  <span className="text-xs font-extrabold uppercase tracking-wider">
+                    {tText('Catering Price:', 'Harga Katering:')}
+                  </span>
+                  <span className="customer-quote-status text-xs font-bold uppercase tracking-wider font-display lg:text-sm">
+                    {tText('Quotation Pending', 'Menunggu Sebut Harga')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Fast Contact & Support Button */}
+            <div className="pt-2">
+              <a
+                href="https://wa.me/60173157731?text=Hai%20Pak%20Usop%20%2F%20Restoran%20Wawasan,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="customer-whatsapp-inquiry w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>{tText('Direct WhatsApp Inquiry', 'Tanya Direct WhatsApp')}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+
   return (
     <>
       <AuthModal
@@ -1277,6 +1433,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       <div
         className="customer-order-form flex flex-col w-full max-w-6xl mx-auto font-sans transition-all duration-200"
         data-keyboard-visible={isKeyboardVisible}
+        data-step={effectiveStep}
       >
         <OrderPreviewProgress
           step={effectiveStep}
@@ -1390,7 +1547,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           </div>
         )}
         {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="customer-order-layout grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {isDishStep && orderSummary}
           {/* Left Column: Stepper Wizard & Inputs Panel */}
           <div className="customer-form-panel lg:col-span-7 xl:col-span-8 overflow-hidden">
             {/* Form Steps Container */}
@@ -1492,148 +1650,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             </div>
           </div>
 
-          {/* Right Column: Interactive Sticky Live Summary Card */}
-          <div className="customer-order-aside lg:col-span-5 xl:col-span-4 lg:sticky space-y-4">
-            <details
-              className="customer-live-summary customer-order-summary rounded-2xl border p-5 sm:p-6 relative"
-              open={!isNativePresentation || effectiveStep >= 4}
-            >
-              <summary className="customer-order-summary-heading">
-                <span className="customer-order-summary-title">
-                  {tText('Order summary', 'Ringkasan tempahan')}
-                </span>
-                <span className="customer-order-summary-count">
-                  {effectiveState.guests} {tText('pax', 'orang')}
-                </span>
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-              </summary>
-              <div className="customer-order-summary-content">
-                {/* Event Type & Pax Badge */}
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone font-medium">
-                      {tText('Event Type:', 'Jenis Majlis:')}
-                    </span>
-                    <span className="font-bold text-deep-forest dark:text-white">
-                      {effectiveState.eventType === 'pejabat'
-                        ? tText('Office Feast', 'Jamuan Pejabat')
-                        : effectiveState.eventType === 'lain'
-                          ? tText('Private Event', 'Lain-Lain')
-                          : tText('Not Selected', 'Belum Dipilih')}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone font-medium">
-                      {tText('Guest Count:', 'Kuantiti Pax:')}
-                    </span>
-                    <span className="font-bold text-deep-forest dark:text-white">
-                      {effectiveState.guests} {tText('pax', 'orang')}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone font-medium">
-                      {tText('Serving Time:', 'Hidangan Untuk:')}
-                    </span>
-                    <span className="font-bold text-deep-forest dark:text-white text-right">
-                      {getMealTypesLabel() || tText('Not Selected', 'Belum Dipilih')}
-                    </span>
-                  </div>
-
-                  {effectiveState.date && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone font-medium">
-                        {tText('Date & Time:', 'Tarikh & Masa:')}
-                      </span>
-                      <span className="font-bold text-deep-forest dark:text-white">
-                        {effectiveState.date} @ {effectiveState.time}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Selected Dishes Badges */}
-                  <div className="pt-2 border-t border-stone/10 space-y-1.5">
-                    <span className="microcopy-12-upper font-extrabold text-stone uppercase tracking-wider block">
-                      {tText('Selected Menu Items:', 'Menu Pilihan:')}
-                    </span>
-
-                    {effectiveState.dishes.length > 0 || effectiveState.veggies.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 max-h-[120px] overflow-y-auto pr-1">
-                        {effectiveState.dishes.map((d) => (
-                          <span
-                            key={d.id}
-                            className="inline-block bg-crisp-carrot/10 text-crisp-carrot font-bold px-2 py-0.5 rounded microcopy-12-upper border border-crisp-carrot/20"
-                          >
-                            {tText(d.nameEn, d.nameBm)}
-                          </span>
-                        ))}
-                        {effectiveState.veggies.map((v) => (
-                          <span
-                            key={v.id}
-                            className="inline-block bg-deep-forest/20 text-deep-forest dark:text-sunshine font-bold px-2 py-0.5 rounded microcopy-12-upper border border-deep-forest/30"
-                          >
-                            {tText(v.nameEn, v.nameBm)}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="microcopy-12 text-stone italic block">
-                        {tText(
-                          'Select dishes in Step 2 or use the Box Set.',
-                          'Pilih lauk di Langkah 2 atau gunakan Set Kotak.'
-                        )}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Estimation Total Calculation */}
-                  <div className="customer-quote-box p-4 rounded-xl border relative overflow-hidden mt-4 space-y-2">
-                    <div
-                      className="customer-quote-batik absolute inset-0 pointer-events-none"
-                      style={{
-                        backgroundImage: `url(${getAssetUrl('/assets/heritage/batik_pattern.jpg')})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }}
-                    />
-                    <div className="customer-quote-basis relative z-10 flex justify-between items-center">
-                      <span className="text-stone-300 microcopy-12 font-medium uppercase tracking-wider">
-                        {tText('Pricing Basis:', 'Asas Harga:')}
-                      </span>
-                      <span className="font-bold text-[var(--color-sunshine-cta)] text-xs uppercase tracking-wider">
-                        {tText('Inquiry / Custom Quote', 'Pertanyaan / Sebut Harga')}
-                      </span>
-                    </div>
-
-                    <div className="relative z-10 flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-                      <div className="min-w-0 flex flex-col gap-0.5 lg:flex-1 lg:flex-row lg:items-baseline lg:justify-between lg:gap-3">
-                        <span className="text-xs font-extrabold uppercase tracking-wider">
-                          {tText('Catering Price:', 'Harga Katering:')}
-                        </span>
-                        <span className="customer-quote-status text-xs font-bold uppercase tracking-wider font-display lg:text-sm">
-                          {tText('Quotation Pending', 'Menunggu Sebut Harga')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fast Contact & Support Button */}
-                  <div className="pt-2">
-                    <a
-                      href="https://wa.me/60173157731?text=Hai%20Pak%20Usop%20%2F%20Restoran%20Wawasan,%20saya%20hendak%20bertanya%20mengenai%20tempahan%20katering"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="customer-whatsapp-inquiry w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>{tText('Direct WhatsApp Inquiry', 'Tanya Direct WhatsApp')}</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </details>
-          </div>
+          {!isDishStep && orderSummary}
         </div>{' '}
         {/* End of Responsive Grid */}
       </div>{' '}

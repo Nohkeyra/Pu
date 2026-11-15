@@ -31,7 +31,7 @@ export function LivingPaperOrderScene({ step, language, selectedNames, guests, p
     : step <= 1
       ? { tag: '01 / DISCOVER', title: bm ? 'Majlis anda, sentuhan kami.' : 'Your occasion, our touch.', text: bm ? 'Mulakan dengan butiran majlis anda.' : 'Start with your event details.' }
       : step === 2
-        ? { tag: '02 / CHOOSE', title: bm ? 'Pilih hidangan.' : 'Choose your food.', text: bm ? 'Nama hidangan terpilih muncul pada label. Ilustrasi makanan hanyalah contoh.' : 'Selected dishes appear as paper labels; the food artwork is illustrative.' }
+      ? { tag: '02 / CHOOSE', title: bm ? 'Pratonton hidangan' : 'Dish preview', text: bm ? 'Semak pilihan dalam ringkasan tempahan. Ilustrasi ini sekadar contoh.' : 'See your selections in the order summary. The artwork is illustrative.' }
         : { tag: '03 / PACK', title: bm ? 'Disediakan dengan teliti.' : 'Made with care.', text: bm ? 'Semak butiran tempahan. Sajian ini ialah pratonton sahaja.' : 'Review your request. This is an interactive preview only.' };
 
   return (

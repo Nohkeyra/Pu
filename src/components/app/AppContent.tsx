@@ -41,6 +41,7 @@ function SmoothScrollHandler() {
           const el = document.getElementById(id);
           if (el) {
             e.preventDefault();
+            if (id === 'main-content') el.focus({ preventScroll: true });
             el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           }
         }

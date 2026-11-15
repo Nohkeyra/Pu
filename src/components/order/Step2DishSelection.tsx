@@ -17,7 +17,6 @@ import { FormError } from '@/components/ui/FormError';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getAssetUrl } from '@/lib/utils';
 import { MenuItemCard } from '@/components/order/MenuItemCard';
 
 interface OrderState {
@@ -107,7 +106,7 @@ export function Step2DishSelection({
             <span className="inline-flex items-center gap-1.5">{icon}<span>{title}</span></span>
           </Label>
           {selectedCount > 0 && (
-            <span className="microcopy-12-upper font-bold px-3 py-1 rounded-full transition-colors text-white bg-amber-600 shadow-xs shrink-0 whitespace-nowrap">
+            <span className="customer-menu-selected-count microcopy-12-upper font-bold px-3 py-1 rounded-full shrink-0 whitespace-nowrap">
               {selectedCount} {tText('Selected', 'Dipilih')}
             </span>
           )}
@@ -147,34 +146,24 @@ export function Step2DishSelection({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -16 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-6 text-left"
+      className="customer-menu-step space-y-4 text-left"
     >
-      <div className="batik-header bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] p-5 sm:p-6 rounded-3xl border border-[var(--ui-orange)] dark:border-white/10 relative overflow-hidden">
-        <div className="relative z-10 flex items-center gap-4">
-          <img src={getAssetUrl('/assets/brand/wawasan_logo_badge.png')} alt="Restoran Wawasan" className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20" width={80} height={80} />
-          <div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-stone-950 dark:text-stone-50">
-            {tText('Choose your dishes', 'Pilih hidangan')}
-          </h2>
-          <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed mt-1.5">
-            {tText('Choose a menu for your event.', 'Pilih menu untuk majlis anda.')}
-          </p>
-          </div>
-        </div>
-      </div>
-      <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">{tText('Includes steam white rice, mineral cups and utensils automatically.', 'Nasi putih, air minuman cawan, dan set hidangan dimasukkan percuma.')}</p>
+      <header className="customer-menu-heading">
+        <h2>{tText('Choose your dishes', 'Pilih hidangan')}</h2>
+        <p>{tText('Steamed rice, drinking water and utensils are included.', 'Nasi putih, air minuman cawan dan set hidangan disertakan.')}</p>
+      </header>
 
       {!menuLoading && (
         <div className="space-y-2">
           <label htmlFor="dish-search" className="text-sm font-semibold text-stone-700 dark:text-stone-200">{tText('Find a dish or drink', 'Cari hidangan atau minuman')}</label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-500 dark:text-stone-400" aria-hidden="true" />
-            <input id="dish-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={tText('Search the menu...', 'Cari dalam menu...')} className="min-h-12 w-full rounded-2xl border border-stone-300 bg-white py-3 pl-12 pr-12 text-sm text-stone-900 shadow-sm outline-none placeholder:text-stone-500 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/30 dark:border-stone-700 dark:bg-stone-900 dark:text-white dark:placeholder:text-stone-400" />
+            <input id="dish-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={tText('Search the menu...', 'Cari dalam menu...')} className="customer-menu-search min-h-11 w-full py-2 pl-12 pr-12 text-sm" />
             {search && <button type="button" onClick={() => setSearch('')} aria-label={tText('Clear search', 'Padam carian')} className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-stone-600 hover:bg-stone-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600 dark:text-stone-300 dark:hover:bg-stone-800"><X className="h-4 w-4" aria-hidden="true" /></button>}
           </div>
           {search.trim() && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{matchingAvailable ? tText('Showing matching items. Your selections are kept.', 'Memaparkan padanan. Pilihan anda dikekalkan.') : tText('No matching items in this category. Try another search or category.', 'Tiada padanan dalam kategori ini. Cuba carian atau kategori lain.')}</p>}
           <div role="group" aria-label={tText('Menu categories', 'Kategori menu')} className="flex gap-2 overflow-x-auto py-1 [scrollbar-width:thin]">
-            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${category === option.id ? 'border-orange-600 bg-orange-600 text-white' : 'border-[var(--ui-orange)] bg-[var(--ui-yellow)] text-stone-700 hover:bg-[var(--ui-orange)] dark:border-stone-700 dark:bg-[var(--ui-canvas)] dark:text-stone-200 dark:hover:bg-stone-700'}`}>{option.label}</button>)}
+            {categoryOptions.map(option => <button key={option.id} type="button" aria-pressed={category === option.id} onClick={() => setCategory(option.id)} className="customer-menu-filter min-h-11 shrink-0 px-3 text-sm font-semibold">{option.label}</button>)}
           </div>
           {!search.trim() && !matchingAvailable && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{tText('No items available in this category.', 'Tiada hidangan tersedia dalam kategori ini.')}</p>}
         </div>
@@ -207,7 +196,7 @@ export function Step2DishSelection({
                   <span className="inline-flex items-center gap-1.5"><CupSoda className="w-4 h-4" aria-hidden="true" />{tText('Drinks Selection', 'Pilihan Minuman')}</span>
                 </Label>
                 {orderState.dishes.filter(d => d.category === 'drinks').length > 0 && (
-                  <span className="microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full transition-colors text-white bg-crisp-carrot shadow-sm shrink-0 whitespace-nowrap">
+                  <span className="customer-menu-selected-count microcopy-12-upper font-bold px-2.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
                     {orderState.dishes.filter(d => d.category === 'drinks').length} / {visibleMenu.filter(item => item.category === 'drinks').length} {tText('Selected', 'Dipilih')}
                   </span>
                 )}

@@ -433,6 +433,7 @@ html.wawasan-native .customer-progress-extras button { padding-block: 4px; }
 .customer-order-help-content { padding-top: 8px; display: grid; gap: 8px; }
 .customer-order-help-content > button { justify-self: start; }
 .customer-order-summary-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 44px; cursor: pointer; list-style: none; color: var(--customer-ink); }
+.customer-order-summary-label { flex: 1; min-width: 110px; }
 .customer-order-summary-title { flex: 1; min-width: 110px; font: 700 .875rem/1.4 var(--font-display); }
 .customer-order-summary-count { font-size: .75rem; color: var(--customer-muted); }
 .customer-order-summary-heading > svg { color: var(--customer-accent); flex: none; }
@@ -449,6 +450,179 @@ html.wawasan-native .customer-progress-extras button { padding-block: 4px; }
 .settings-advanced-content { display: grid; gap: 20px; padding-bottom: 16px; }
 .settings-advanced-content .settings-section-card { box-shadow: none; }
 html.wawasan-native .customer-page .customer-order-summary { padding: 10px 14px; }
+
+/* Dish selection and the order note share the active Wawasan theme. */
+.customer-order-form[data-step="2"] {
+  --menu-card-stage: color-mix(in srgb, var(--ui-yellow) 12%, var(--customer-surface));
+  --menu-card-selected: color-mix(in srgb, var(--ui-yellow) 14%, var(--customer-surface));
+  --menu-card-line: color-mix(in srgb, var(--ui-action) 20%, var(--customer-line));
+  --menu-note-paper: color-mix(in srgb, var(--ui-yellow) 16%, var(--customer-surface));
+}
+.dark .customer-order-form[data-step="2"] {
+  --menu-card-stage: color-mix(in srgb, var(--ui-yellow) 7%, var(--customer-surface));
+  --menu-card-selected: color-mix(in srgb, var(--ui-orange) 12%, var(--customer-surface));
+  --menu-note-paper: color-mix(in srgb, var(--ui-yellow) 7%, var(--customer-surface));
+}
+.customer-menu-heading h2 {
+  color: var(--customer-ink);
+  font: 700 clamp(1.5rem, 4vw, 2rem)/1.15 var(--font-display);
+  letter-spacing: -.025em;
+  margin: 0;
+}
+.customer-menu-heading p { margin: 5px 0 0; font-size: .8125rem; color: var(--customer-muted); }
+.customer-page .customer-menu-search,
+.customer-menu-filter { background: var(--customer-surface); border: 1px solid var(--menu-card-line); border-radius: 10px; color: var(--customer-ink); }
+.customer-menu-search::placeholder { color: var(--customer-muted); }
+.customer-menu-filter:hover { border-color: var(--customer-accent); }
+.customer-menu-filter[aria-pressed="true"] { background: var(--ui-action); border-color: var(--ui-action); color: var(--ui-on-action); }
+.customer-menu-selected-count { background: var(--ui-action); color: var(--ui-on-action); }
+.dark .customer-order-form[data-step="2"] .lc-paper-slip { color: var(--ui-on-yellow); }
+
+.customer-menu-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 48px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--menu-card-line);
+  border-radius: 12px;
+  background: var(--customer-surface);
+  color: var(--customer-ink);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--ui-shadow-ink) 14%, transparent);
+  text-align: left;
+  cursor: pointer;
+}
+.customer-menu-card:hover,
+.customer-menu-card[aria-pressed="true"] { border-color: var(--customer-accent); }
+.customer-menu-card[aria-pressed="true"] { background: var(--menu-card-selected); }
+.customer-menu-card-art {
+  position: relative;
+  width: 100%;
+  height: clamp(5.75rem, 18vw, 8.5rem);
+  background: radial-gradient(ellipse at center, var(--customer-surface), var(--menu-card-stage));
+}
+.customer-menu-card[aria-pressed="true"] .customer-menu-card-art {
+  background: radial-gradient(ellipse at center, var(--menu-card-selected), var(--menu-card-stage));
+}
+.customer-menu-card-art img { display: block; }
+.customer-menu-card-placeholder { display: grid; place-items: center; height: 100%; color: var(--customer-muted); }
+.customer-menu-card-placeholder svg { width: 20px; height: 20px; }
+.customer-menu-card-mark {
+  position: absolute;
+  inset: 6px 6px auto auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--menu-card-line);
+  border-radius: 50%;
+  background: var(--customer-surface);
+  color: var(--customer-ink);
+}
+.customer-menu-card[aria-pressed="true"] .customer-menu-card-mark {
+  background: var(--ui-action);
+  border-color: var(--ui-action);
+  color: var(--ui-on-action);
+}
+.customer-menu-card-name {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-height: 44px;
+  padding: 6px 9px;
+  font: 650 .875rem/1.2 var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.customer-page .customer-order-form[data-step="2"] .customer-order-summary {
+  border-inline-start: 4px solid var(--customer-accent);
+  border-radius: 12px;
+  background: var(--menu-note-paper);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--ui-shadow-ink) 15%, transparent);
+  padding: 10px 14px;
+}
+.customer-order-form[data-step="2"] .customer-order-summary-heading {
+  position: relative;
+  flex-wrap: nowrap;
+  min-height: 48px;
+  gap: 8px;
+}
+.customer-order-form[data-step="2"] .customer-order-summary-heading:has(> img) {
+  padding-inline-end: clamp(52px, 18vw, 96px);
+}
+.customer-order-form[data-step="2"] .customer-order-summary-label { display: grid; min-width: 0; gap: 2px; }
+.customer-order-form[data-step="2"] .customer-order-summary-title { min-width: 0; font-size: 1rem; }
+.customer-order-note-art {
+  position: absolute;
+  inset: -13px -12px auto auto;
+  width: clamp(62px, 20vw, 108px);
+  height: auto;
+  filter: drop-shadow(0 4px 3px color-mix(in srgb, var(--ui-shadow-ink) 35%, transparent));
+  pointer-events: none;
+}
+.customer-order-form[data-step="2"] .customer-order-summary-content { border-top-style: dashed; }
+.customer-order-note-items > span:first-child { color: var(--customer-muted); margin-bottom: 4px; }
+.customer-order-note-list { list-style: none; margin: 0; padding: 0; }
+.customer-order-note-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  color: var(--customer-ink);
+  font-size: .8125rem;
+  overflow-wrap: anywhere;
+}
+.customer-order-note-list li + li { border-top: 1px solid var(--customer-line); }
+.customer-order-note-list li svg { flex: none; align-self: center; color: var(--customer-accent); }
+@media (min-width: 1024px) {
+  .customer-order-form[data-step="2"] .customer-form-panel { grid-column-start: 1; grid-row: 1; }
+  .customer-order-form[data-step="2"] .customer-order-aside { grid-column-start: 8; grid-row: 1; }
+}
+@media (min-width: 1280px) {
+  .customer-order-form[data-step="2"] .customer-order-aside { grid-column-start: 9; }
+}
+@media (max-width: 1023px) {
+  .customer-order-form[data-step="2"] .customer-order-layout { row-gap: 12px; }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor .lc-paper-scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 0;
+    padding: 10px 12px;
+    gap: 4px 8px;
+  }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor .lc-paper-copy {
+    grid-column: 1 / -1;
+    max-width: calc(100% - 75px);
+  }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor .lc-paper-copy h2 {
+    font-size: 1rem;
+    margin: 0 0 3px;
+  }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor .lc-paper-art {
+    inset: 0 2px auto auto;
+    width: 82px;
+  }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor :is(.lc-paper-tag, .lc-paper-pips, .lc-paper-slips) { display: none; }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor button.lc-paper-action {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 44px;
+    max-width: min(9rem, 35vw);
+    margin: 0;
+    padding: 5px 8px;
+    font-size: .75rem;
+  }
+  .customer-order-form[data-step="2"] .customer-order-preview-anchor .lc-paper-footer {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+  }
+}
+@media (max-width: 639px) {
+  .customer-order-form[data-step="2"] .customer-step-content { padding: 12px; }
+}
 
 html.wawasan-native .settings-app-info { flex-direction: row; justify-content: space-between; text-align: left; padding-block: 12px; gap: 12px; }
 html.wawasan-native .settings-app-info > * { margin-top: 0; }

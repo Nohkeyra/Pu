@@ -83,7 +83,7 @@ describe('pendingOrdersQueue', () => {
 
   it('adds an order with idempotencyKey', () => {
     const payload = { to: 'Jabatan Perdana Menteri', quantity: 50 };
-    addPendingOrder(payload, 'idemp-123');
+    expect(addPendingOrder(payload, 'idemp-123')).toBe(true);
 
     const queue = getPendingOrders();
     expect(queue.length).toBe(1);
@@ -95,14 +95,26 @@ describe('pendingOrdersQueue', () => {
   it('does not add duplicate orders with the same idempotencyKey', () => {
     const payload = { to: 'Kementerian Kewangan', quantity: 30 };
     addPendingOrder(payload, 'idemp-duplicate');
-    addPendingOrder(payload, 'idemp-duplicate');
+    expect(addPendingOrder(payload, 'idemp-duplicate')).toBe(true);
 
     expect(getPendingOrdersCount()).toBe(1);
   });
 
   it('skips adding if idempotencyKey is empty string', () => {
-    addPendingOrder({ to: 'Test' }, '');
+    expect(addPendingOrder({ to: 'Test' }, '')).toBe(false);
     expect(getPendingOrdersCount()).toBe(0);
+  });
+
+  it('reports when local storage could not save the order', () => {
+    const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage is full', 'QuotaExceededError');
+    });
+    try {
+      expect(addPendingOrder({ to: 'Test' }, 'key-unsaved')).toBe(false);
+      expect(getPendingOrdersCount()).toBe(0);
+    } finally {
+      write.mockRestore();
+    }
   });
 
   it('removes a specific pending order by idempotencyKey', () => {

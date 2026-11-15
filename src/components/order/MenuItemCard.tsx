@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Coffee, UtensilsCrossed } from 'lucide-react';
+import { Check, Coffee, Plus, UtensilsCrossed } from 'lucide-react';
 import { cn, getAssetUrl } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
 import { isMenuCutoutImage } from '@/constants/menuImages';
@@ -29,14 +29,9 @@ export const MenuItemCard = React.memo(
         aria-pressed={isSelected}
         aria-label={tText(item.nameEn, item.nameBm) || item.name}
         onClick={onToggle}
-        className={cn(
-          "group relative flex min-w-0 flex-col overflow-hidden rounded-[20px] border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none min-h-[48px]",
-          isSelected 
-            ? "bg-[var(--ui-yellow)] dark:bg-[var(--ui-canvas)] border-orange-600 shadow-sm ring-1 ring-orange-600"
-            : "bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] hover:bg-[var(--ui-yellow)] dark:hover:bg-stone-800 border-[var(--ui-orange)] dark:border-stone-700 shadow-sm"
-        )}
+        className="customer-menu-card"
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--ui-yellow)] dark:bg-stone-800">
+        <div className="customer-menu-card-art">
           {imageUrl && failedImage !== imageUrl ? (
             <img
               src={imageUrl}
@@ -44,8 +39,8 @@ export const MenuItemCard = React.memo(
               width={640}
               height={480}
               className={cn(
-                "h-full w-full transition-transform duration-500",
-                isCutout ? "object-contain p-2" : item.id === 'nasi_campur' ? "bg-stone-950 object-contain" : "object-cover group-hover:scale-105"
+                "h-full w-full",
+                isCutout ? "object-contain p-1" : item.id === 'nasi_campur' ? "bg-stone-950 object-contain" : "object-cover"
               )}
               loading="lazy"
               decoding="async"
@@ -53,19 +48,15 @@ export const MenuItemCard = React.memo(
               onError={() => setFailedImage(imageUrl)}
             />
           ) : (
-            <span className="flex h-full w-full items-center justify-center bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400" aria-hidden="true">
+            <span className="customer-menu-card-placeholder" aria-hidden="true">
               {isDrink ? <Coffee className="h-5 w-5" /> : <UtensilsCrossed className="h-5 w-5" />}
             </span>
           )}
-          <div className={cn("absolute right-2 top-2 flex h-9 w-9 min-w-[36px] min-h-[36px] items-center justify-center rounded-full border shadow-sm transition-transform group-active:scale-90",
-            isSelected ? "border-orange-600 bg-orange-600 text-white font-bold" : "border-white/80 bg-white/90 text-stone-700")}>
-            {isSelected ? <Check className="h-4.5 w-4.5" aria-hidden="true" /> : <span className="text-xl leading-none font-bold" aria-hidden="true">+</span>}
-          </div>
+          <span className="customer-menu-card-mark" aria-hidden="true">
+            {isSelected ? <Check size={16} /> : <Plus size={16} />}
+          </span>
         </div>
-        <div className="flex min-h-[70px] w-full flex-col items-start justify-center gap-1.5 px-3.5 py-3">
-          <span className="block break-words font-serif text-base font-bold leading-snug text-stone-900 dark:text-stone-100">{tText(item.nameEn, item.nameBm) || item.name}</span>
-          {isSelected && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/70 dark:text-emerald-100"><Check className="h-3 w-3" aria-hidden="true" />{tText('Selected', 'Dipilih')}</span>}
-        </div>
+        <span className="customer-menu-card-name">{tText(item.nameEn, item.nameBm) || item.name}</span>
       </button>
     );
   }
