@@ -12,6 +12,9 @@ async function run() {
   const logoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'apk_logo_clean.png');
   const fallbackLogoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'wawasan_logo.png');
   const activeLogoPath = fs.existsSync(logoPath) ? logoPath : fallbackLogoPath;
+  // Keep launcher artwork independent from splash/onboarding brand assets.
+  const launcherLogoPath = path.join(assetsDir, 'launcher-logo.png');
+  const launcherSourcePath = fs.existsSync(launcherLogoPath) ? launcherLogoPath : activeLogoPath;
   const batikPath = path.join(__dirname, '..', 'public', 'assets', 'heritage', 'batik_pattern_hd.jpg');
 
   console.log('Generating master assets and Android launcher icons...');
@@ -19,9 +22,10 @@ async function run() {
 
   // 1. icon-only.png (1024x1024, full logo centered on a 100% transparent background)
   const trimmedLogoBuffer = await sharp(activeLogoPath).trim().toBuffer();
+  const launcherLogoBuffer = await sharp(launcherSourcePath).trim().toBuffer();
   
-  const iconOnlyLogo = await sharp(trimmedLogoBuffer)
-    .resize(900, 900, { fit: 'inside', kernel: 'lanczos3' })
+  const iconOnlyLogo = await sharp(launcherLogoBuffer)
+    .resize(901, 901, { fit: 'inside', kernel: 'lanczos3' })
     .toBuffer();
 
   await sharp({
@@ -37,9 +41,9 @@ async function run() {
   .toFile(path.join(assetsDir, 'icon-only.png'));
 
   // 2. icon-foreground.png (1024x1024, transparent background for Android adaptive icons)
-  // Scaled to fit within the Android adaptive icon safe zone (680x680 inside 1024x1024 canvas = ~66% safe diameter)
-  const iconFgLogo = await sharp(trimmedLogoBuffer)
-    .resize(680, 680, { fit: 'inside', kernel: 'lanczos3' })
+  // Scaled to fit the circular Android 66 dp safe region, including the logo corners
+  const iconFgLogo = await sharp(launcherLogoBuffer)
+    .resize(Math.round(1024 * 0.56), Math.round(1024 * 0.56), { fit: 'inside', kernel: 'lanczos3' })
     .toBuffer();
 
   await sharp({
@@ -54,13 +58,13 @@ async function run() {
   .png({ compressionLevel: 9 })
   .toFile(path.join(assetsDir, 'icon-foreground.png'));
 
-  // 3. icon-background.png (1024x1024, pure white background #FFFFFF)
+  // 3. icon-background.png (1024x1024, dark chocolate background #21150F)
   await sharp({
     create: {
       width: 1024,
       height: 1024,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
+      background: { r: 33, g: 21, b: 15, alpha: 1 }
     }
   })
   .png({ compressionLevel: 9 })
@@ -104,6 +108,7 @@ async function run() {
   const androidResDir = path.join(__dirname, '..', 'android', 'app', 'src', 'main', 'res');
   if (fs.existsSync(androidResDir)) {
     const densities = [
+      { name: 'mipmap-ldpi', legacySize: 36, adaptiveSize: 81 },
       { name: 'mipmap-mdpi', legacySize: 48, adaptiveSize: 108 },
       { name: 'mipmap-hdpi', legacySize: 72, adaptiveSize: 162 },
       { name: 'mipmap-xhdpi', legacySize: 96, adaptiveSize: 216 },
@@ -119,9 +124,9 @@ async function run() {
         fs.mkdirSync(targetDir, { recursive: true });
       }
 
-      // (a) ic_launcher_foreground.png (Adaptive icon foreground, 108dp base, logo in safe 66% zone)
-      const fgInnerSize = Math.round(d.adaptiveSize * 0.66);
-      const fgLogo = await sharp(trimmedLogoBuffer)
+      // (a) ic_launcher_foreground.png (Adaptive foreground, logo inside central 66dp safe circle)
+      const fgInnerSize = Math.round(d.adaptiveSize * 0.56);
+      const fgLogo = await sharp(launcherLogoBuffer)
         .resize(fgInnerSize, fgInnerSize, { fit: 'inside', kernel: 'lanczos3' })
         .toBuffer();
 
@@ -137,21 +142,21 @@ async function run() {
       .png({ compressionLevel: 9 })
       .toFile(path.join(targetDir, 'ic_launcher_foreground.png'));
 
-      // (b) ic_launcher_background.png (Pure white solid #FFFFFF)
+      // (b) ic_launcher_background.png (Solid dark brown #21150F)
       await sharp({
         create: {
           width: d.adaptiveSize,
           height: d.adaptiveSize,
           channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 }
+          background: { r: 33, g: 21, b: 15, alpha: 1 }
         }
       })
       .png({ compressionLevel: 9 })
       .toFile(path.join(targetDir, 'ic_launcher_background.png'));
 
-      // (c) ic_launcher.png (Legacy square launcher icon with elegant rounded corners on white canvas)
+      // (c) ic_launcher.png (Legacy square launcher icon with dark brown background)
       const legacyInnerSize = Math.round(d.legacySize * 0.82);
-      const legacyLogo = await sharp(trimmedLogoBuffer)
+      const legacyLogo = await sharp(launcherLogoBuffer)
         .resize(legacyInnerSize, legacyInnerSize, { fit: 'inside', kernel: 'lanczos3' })
         .toBuffer();
 
@@ -159,7 +164,7 @@ async function run() {
       const cornerRadius = Math.round(d.legacySize * 0.2);
       const rectSvg = Buffer.from(
         `<svg width="${d.legacySize}" height="${d.legacySize}">
-          <rect x="0" y="0" width="${d.legacySize}" height="${d.legacySize}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#FFFFFF"/>
+          <rect x="0" y="0" width="${d.legacySize}" height="${d.legacySize}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#21150F"/>
         </svg>`
       );
 
@@ -170,16 +175,16 @@ async function run() {
         .png({ compressionLevel: 9 })
         .toFile(path.join(targetDir, 'ic_launcher.png'));
 
-      // (d) ic_launcher_round.png (Legacy round launcher icon with circular white badge)
+      // (d) ic_launcher_round.png (Legacy round launcher icon with circular dark brown badge)
       const circleSvg = Buffer.from(
         `<svg width="${d.legacySize}" height="${d.legacySize}">
-          <circle cx="${d.legacySize / 2}" cy="${d.legacySize / 2}" r="${d.legacySize / 2}" fill="#FFFFFF"/>
+          <circle cx="${d.legacySize / 2}" cy="${d.legacySize / 2}" r="${d.legacySize / 2}" fill="#21150F"/>
         </svg>`
       );
 
       const roundBg = await sharp(circleSvg).png().toBuffer();
-      const roundInnerSize = Math.round(d.legacySize * 0.76);
-      const roundLogo = await sharp(trimmedLogoBuffer)
+      const roundInnerSize = Math.round(d.legacySize * 0.78);
+      const roundLogo = await sharp(launcherLogoBuffer)
         .resize(roundInnerSize, roundInnerSize, { fit: 'inside', kernel: 'lanczos3' })
         .toBuffer();
 
