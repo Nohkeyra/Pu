@@ -24,6 +24,9 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
   const exitTimer = useRef<number | null>(null);
   const completion = useRef(onComplete);
   const isMalay = language === 'bm';
+  const themeLabel = theme === 'light'
+    ? (isMalay ? 'Tukar ke mod gelap' : 'Switch to dark mode')
+    : (isMalay ? 'Tukar ke mod cerah' : 'Switch to light mode');
 
   useEffect(() => { completion.current = onComplete; }, [onComplete]);
   useEffect(() => () => {
@@ -54,10 +57,8 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
       <button
         type="button"
         className="native-welcome__theme-icon"
-        aria-label={theme === 'light'
-          ? (isMalay ? 'Tukar ke mod gelap' : 'Switch to dark mode')
-          : (isMalay ? 'Tukar ke mod cerah' : 'Switch to light mode')}
-        title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+        aria-label={themeLabel}
+        title={themeLabel}
         onClick={() => setThemeFromWelcome(theme === 'light' ? 'dark' : 'light')}
         disabled={exiting}
       >
@@ -80,34 +81,36 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
             />
           </div>
 
-          <div className="native-welcome__message">
-            <h1 className="native-welcome__heading">
-              {isMalay ? 'Selamat Datang!' : 'Welcome!'}
-            </h1>
-            <svg className="native-welcome__underline" aria-hidden="true" viewBox="0 0 188 14" fill="none">
-              <path d="M5 11C52 1 133 1 183 9" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
-            </svg>
-            <p className="native-welcome__tagline">
-              {isMalay ? 'Dari Wawasan, dengan rasa.' : 'From Wawasan, with flavour.'}
-            </p>
-          </div>
+          <div className="native-welcome__content">
+            <div className="native-welcome__message">
+              <h1 className="native-welcome__heading">
+                {isMalay ? 'Selamat Datang!' : 'Welcome!'}
+              </h1>
+              <svg className="native-welcome__underline" aria-hidden="true" viewBox="0 0 188 14" fill="none">
+                <path d="M5 11C52 1 133 1 183 9" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+              </svg>
+              <p className="native-welcome__tagline">
+                {isMalay ? 'Dari Wawasan, dengan rasa.' : 'From Wawasan, with flavour.'}
+              </p>
+            </div>
 
-          <div className="native-welcome__actions">
-            <button
-              type="button"
-              className="native-welcome__button"
-              onClick={start}
-              disabled={isLoading || exiting}
-              aria-label={isMalay ? 'Mula menggunakan aplikasi Restoran Wawasan' : 'Get started with Restoran Wawasan'}
-            >
-              <span>Get Started</span>
-              <ArrowRight size={21} strokeWidth={2.2} aria-hidden="true" />
-            </button>
-            {isLoading && (
-              <span className="native-welcome__status" role="status" aria-live="polite">
-                {isMalay ? 'Menyediakan aplikasi…' : 'Preparing the app…'}
-              </span>
-            )}
+            <div className="native-welcome__actions">
+              <button
+                type="button"
+                className="native-welcome__button"
+                lang="en"
+                onClick={start}
+                disabled={isLoading || exiting}
+              >
+                <span>Get Started</span>
+                <ArrowRight size={21} strokeWidth={2.2} aria-hidden="true" />
+              </button>
+              {isLoading && (
+                <span className="native-welcome__status" role="status" aria-live="polite">
+                  {isMalay ? 'Menyediakan aplikasi…' : 'Preparing the app…'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
