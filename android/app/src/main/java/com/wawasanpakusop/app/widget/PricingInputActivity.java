@@ -221,7 +221,7 @@ public class PricingInputActivity extends Activity {
             try {
                 String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(PricingInputActivity.this);
                 if (adminToken == null || adminToken.isEmpty()) {
-                    return new TaskResult(false, "Sila buka aplikasi dan log masuk sebagai admin sebelum menetapkan harga.", null, false);
+                    return new TaskResult(false, "Sila buka aplikasi dan log masuk sebagai admin sebelum menetapkan harga.", null, false, false);
                 }
 
                 URL url = new URL(API_BASE_URL + ENDPOINT);

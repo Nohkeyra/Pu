@@ -111,6 +111,12 @@ async function startServer() {
           imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
           connectSrc: ["'self'", 'https:', 'wss:', 'ws:'],
           objectSrc: ["'none'"],
+          frameAncestors: [
+            (req) =>
+              (req as any).detectedPlatform === 'google_ai_studio_preview'
+                ? "'self' https://aistudio.google.com https://*.aistudio.google.com https://ai.studio https://*.ai.studio https://*.googleusercontent.com https://*.scf.usercontent.goog"
+                : "'self'",
+          ],
           upgradeInsecureRequests: [],
         },
       },

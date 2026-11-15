@@ -324,31 +324,30 @@
   position: relative;
   height: 0;
   width: 100%;
-  z-index: 3;
+  max-width: var(--rw-content-max);
+  margin-inline: auto;
+  z-index: 1;
   pointer-events: none;
 }
 .customer-order-page .wawasan-order-footer-flower {
-  --wawasan-leaf: var(--ui-green);
-  --wawasan-leaf-edge: var(--ui-yellow);
-  --wawasan-leaf-vein: var(--ui-green);
-  --wawasan-flower: var(--ui-orange);
-  --wawasan-flower-core: var(--ui-yellow);
   position: absolute;
   right: 0;
   bottom: 0;
   width: 100%;
   height: 120px;
-  color: var(--ui-orange);
   pointer-events: none;
+  user-select: none;
 }
 .customer-order-page .wawasan-order-footer-flower .wawasan-batik-flower--right {
   top: auto;
-  bottom: -2px;
-  right: -10px;
+  bottom: 10px;
+  right: 0;
   left: auto;
-  width: clamp(126px, 18vw, 170px);
+  width: clamp(108px, 17vw, 170px);
+  aspect-ratio: 220 / 170;
   height: auto;
   opacity: .86;
+  transform: scaleX(-1);
 }
 @media (max-width: 767px) {
   .customer-order-page .customer-botanical-decoration {
@@ -367,9 +366,9 @@
   }
   .customer-order-page .wawasan-batik-wave { display: none; }
   .customer-order-page .wawasan-order-footer-flower .wawasan-batik-flower--right {
-    width: clamp(112px, 31vw, 145px);
-    right: -12px;
-    bottom: -3px;
+    width: clamp(116px, 31vw, 145px);
+    right: -10px;
+    bottom: 6px;
   }
 }
 

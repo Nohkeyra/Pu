@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
   publicDir: 'public',
   server: {
     port: 3000,
+    allowedHosts: ['.run.app', 'localhost', '127.0.0.1'],
     hmr: process.env.DISABLE_HMR === 'true' ? false : { overlay: false },
   },
   resolve: {
