@@ -152,6 +152,24 @@
         "businessHours": { "type": "string", "description": "Business hours subtitle" },
         "footerAnnouncement": { "type": "string", "description": "Footer tagline or announcement text" }
       }
+    },
+    "AdminNotification": {
+      "title": "AdminNotification",
+      "description": "Server-generated alerts surfaced to administrators, such as offline pricing sync conflicts",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "description": "Notification type, e.g. pricing_conflict" },
+        "orderId": { "type": "string", "description": "Related order document ID" },
+        "invoiceNo": { "type": "string", "description": "Related invoice/quote reference if present" },
+        "customerName": { "type": "string", "description": "Customer or organization label" },
+        "submittedPrices": { "type": "object", "description": "Prices submitted by the offline client" },
+        "clientTimestamp": { "type": "string", "description": "ISO timestamp when the offline entry was recorded" },
+        "serverUpdatedAt": { "type": "string", "description": "ISO timestamp of the newer server record" },
+        "reason": { "type": "string", "description": "Reason the sync was rejected" },
+        "dismissed": { "type": "boolean", "description": "Whether an administrator has dismissed the alert" },
+        "createdAt": { "type": "string", "description": "ISO timestamp when notification was created" }
+      },
+      "required": ["type", "orderId", "dismissed", "createdAt"]
     }
   },
   "firestore": {
@@ -170,6 +188,10 @@
     "audit_logs/{logId}": {
       "schema": "AuditLog",
       "description": "Collection storing system audit trail"
+    },
+    "admin_notifications/{notifId}": {
+      "schema": "AdminNotification",
+      "description": "Collection storing administrative conflict and operational notifications"
     },
     "calendar_notes/{noteId}": {
       "schema": "CalendarNote",

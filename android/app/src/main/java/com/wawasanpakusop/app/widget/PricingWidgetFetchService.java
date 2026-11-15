@@ -37,12 +37,15 @@ public class PricingWidgetFetchService {
             String ordersJson = null;
             boolean success = false;
             boolean authRejected = false;
+            boolean tokenExisted = false;
+            boolean serverAuthFailed = false;
             String errorReason = null;
 
             HttpURLConnection conn = null;
             try {
                 String adminToken = SecureStorage.INSTANCE.getAdminToken(context);
-                if (adminToken == null || adminToken.isEmpty()) {
+                tokenExisted = adminToken != null && !adminToken.isEmpty();
+                if (!tokenExisted) {
                     authRejected = true;
                     errorReason = "Sila buka aplikasi dan log masuk sebagai admin untuk menyegarkan widget.";
                     throw new SecurityException("Missing admin session token");
@@ -70,7 +73,8 @@ public class PricingWidgetFetchService {
                     }
                 } else if (code == 401 || code == 403) {
                     authRejected = true;
-                    errorReason = "Sesi admin tamat atau akses ditolak. Buka aplikasi dan log masuk semula.";
+                    serverAuthFailed = true;
+                    errorReason = "Session expired. Open app to refresh.";
                 } else {
                     errorReason = "Server ralat (HTTP " + code + ")";
                 }
@@ -90,15 +94,23 @@ public class PricingWidgetFetchService {
             // Never keep previously cached admin order data after logout or denial.
             try {
                 if (authRejected) {
+                    if (serverAuthFailed) {
+                        SecureStorage.setWidgetAuthExpired(context, true);
+                    }
                     SecureStorage.INSTANCE.getPrefs(context).edit()
                         .remove(PREF_ORDERS_JSON)
                         .remove(PREF_LAST_SUCCESS_AT)
                         .apply();
+                    if (tokenExisted && serverAuthFailed) {
+                        com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker.triggerImmediate(context);
+                    }
                 } else if (success && ordersJson != null) {
+                    SecureStorage.setWidgetAuthExpired(context, false);
                     SecureStorage.INSTANCE.getPrefs(context).edit()
                         .putString(PREF_ORDERS_JSON, ordersJson)
                         .putString(PREF_LAST_SUCCESS_AT, Long.toString(System.currentTimeMillis()))
                         .apply();
+                    com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker.schedulePeriodic(context);
                     // Drain pending offline price updates only after connectivity is confirmed.
                     OfflinePricingQueue.INSTANCE.flushQueueAsync(context, null);
                 }

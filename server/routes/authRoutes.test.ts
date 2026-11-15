@@ -254,6 +254,35 @@ describe('Admin Authentication & Security', () => {
       expect(data.error).not.toContain('simulated Firestore outage');
     });
 
+    it('POST /api/admin/refresh-widget-token mints a new Admin JWT for a valid session and rejects revoked tokens', async () => {
+      const initialToken = signAdminJwt({ uid: 'widget_refresh_admin', email: 'admin@wawasan.test' });
+      const refreshRes = await fetch(`${baseUrl}/api/admin/refresh-widget-token`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${initialToken}` },
+      });
+      expect(refreshRes.status).toBe(200);
+      const refreshData = await refreshRes.json();
+      expect(refreshData.success).toBe(true);
+      expect(typeof refreshData.token).toBe('string');
+      expect(refreshData.token).not.toBe(initialToken);
+      const decoded = verifyAdminJwt(refreshData.token);
+      expect(decoded?.admin).toBe(true);
+      expect(decoded?.uid).toBe('widget_refresh_admin');
+
+      const unauthRes = await fetch(`${baseUrl}/api/admin/refresh-widget-token`, { method: 'POST' });
+      expect(unauthRes.status).toBe(401);
+
+      await fetch(`${baseUrl}/api/admin/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${initialToken}` },
+      });
+      const revokedRes = await fetch(`${baseUrl}/api/admin/refresh-widget-token`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${initialToken}` },
+      });
+      expect(revokedRes.status).toBe(401);
+    });
+
   });
 
   describe('Distributed rate limit fallback', () => {

@@ -116,6 +116,11 @@ service cloud.firestore {
       allow write: if false; // Admin SDK only
     }
 
+    match /admin_notifications/{notifId} {
+      allow read: if isAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
     match /users/{userId} {
       allow read, write: if isSelf(userId);
     }

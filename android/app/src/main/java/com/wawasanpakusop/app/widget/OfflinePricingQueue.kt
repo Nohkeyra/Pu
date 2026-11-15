@@ -7,6 +7,8 @@ import android.util.Log
 import com.wawasanpakusop.app.security.SecureStorage
 import com.wawasanpakusop.app.telemetry.NativeCrashReporter
 import com.wawasanpakusop.app.widgets.PricingWidgetUpdater
+import com.wawasanpakusop.app.widgets.UpcomingOrdersWidgetUpdater
+import com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -43,10 +45,12 @@ object OfflinePricingQueue {
             val rawQueue = SecureStorage.getString(context, SecureStorage.KEY_OFFLINE_PRICING_QUEUE, "[]")
             val array = JSONArray(rawQueue)
 
+            val nowMs = System.currentTimeMillis()
             val item = JSONObject().apply {
                 put("orderId", orderId)
                 put("prices", JSONObject(prices))
-                put("timestamp", System.currentTimeMillis())
+                put("clientTimestamp", nowMs)
+                put("timestamp", nowMs)
                 put("status", "pending_sync")
             }
 
@@ -105,6 +109,8 @@ object OfflinePricingQueue {
         executor.execute {
             var successCount = 0
             var failedCount = 0
+            var conflictDetected = false
+            var authExpired = false
 
             synchronized(this) {
                 val raw = SecureStorage.getString(context, SecureStorage.KEY_OFFLINE_PRICING_QUEUE, "[]")
@@ -123,35 +129,69 @@ object OfflinePricingQueue {
                     val item = queue.getJSONObject(i)
                     val orderId = item.optString("orderId")
                     val prices = item.optJSONObject("prices")
+                    val clientTimestamp = item.optLong("clientTimestamp", item.optLong("timestamp", System.currentTimeMillis()))
 
                     if (orderId.isNullOrEmpty() || prices == null) continue
+
+                    if (authExpired) {
+                        failedCount++
+                        remaining.put(item)
+                        continue
+                    }
 
                     val body = JSONObject().apply {
                         put("orderId", orderId)
                         put("prices", prices)
+                        put("clientTimestamp", clientTimestamp)
                     }
 
-                    val success = sendPriceUpdate(body.toString(), adminToken)
-                    if (success) {
-                        successCount++
-                        Log.i(TAG, "Successfully synced pending order: $orderId")
-                    } else {
-                        failedCount++
-                        remaining.put(item)
+                    when (sendPriceUpdate(body.toString(), adminToken)) {
+                        SyncOutcome.SYNCED -> {
+                            successCount++
+                            Log.i(TAG, "Successfully synced pending order: $orderId")
+                        }
+                        SyncOutcome.CONFLICT -> {
+                            failedCount++
+                            conflictDetected = true
+                            // Reject stale local change and remove from retry queue; server recorded admin conflict alert.
+                            Log.w(TAG, "Conflict (HTTP 409) rejected stale offline pricing for order: $orderId")
+                        }
+                        SyncOutcome.AUTH_EXPIRED -> {
+                            failedCount++
+                            authExpired = true
+                            remaining.put(item)
+                            Log.w(TAG, "Widget auth expired while syncing pending order: $orderId")
+                        }
+                        SyncOutcome.TRANSIENT_ERROR -> {
+                            failedCount++
+                            remaining.put(item)
+                        }
                     }
                 }
 
                 SecureStorage.saveString(context, SecureStorage.KEY_OFFLINE_PRICING_QUEUE, remaining.toString())
             }
 
-            if (successCount > 0) {
+            if (authExpired) {
+                SecureStorage.setWidgetAuthExpired(context, true)
+                WidgetTokenRefreshWorker.triggerImmediate(context)
+                PricingWidgetUpdater.refresh(context)
+                UpcomingOrdersWidgetUpdater.refresh(context)
+            } else if (successCount > 0 || conflictDetected) {
                 PricingWidgetUpdater.refresh(context)
             }
             onComplete?.invoke(successCount, failedCount)
         }
     }
 
-    private fun sendPriceUpdate(requestBody: String, adminToken: String): Boolean {
+    private enum class SyncOutcome {
+        SYNCED,
+        CONFLICT,
+        AUTH_EXPIRED,
+        TRANSIENT_ERROR
+    }
+
+    private fun sendPriceUpdate(requestBody: String, adminToken: String): SyncOutcome {
         return try {
             val url = URL(API_BASE_URL + ENDPOINT)
             val conn = url.openConnection() as HttpURLConnection
@@ -169,14 +209,29 @@ object OfflinePricingQueue {
 
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-            val response = BufferedReader(InputStreamReader(stream, StandardCharsets.UTF_8)).use { it.readText() }
+            val response = if (stream != null) {
+                BufferedReader(InputStreamReader(stream, StandardCharsets.UTF_8)).use { it.readText() }
+            } else {
+                "{}"
+            }
             conn.disconnect()
 
-            val json = JSONObject(response)
-            json.optBoolean("success", false)
+            if (code == 401 || code == 403) {
+                return SyncOutcome.AUTH_EXPIRED
+            }
+            if (code == 409) {
+                return SyncOutcome.CONFLICT
+            }
+
+            val json = try { JSONObject(response) } catch (_: Exception) { JSONObject() }
+            if (code in 200..299 && json.optBoolean("success", false)) {
+                SyncOutcome.SYNCED
+            } else {
+                SyncOutcome.TRANSIENT_ERROR
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Sync attempt failed: ${e.message}")
-            false
+            SyncOutcome.TRANSIENT_ERROR
         }
     }
 }

@@ -91,4 +91,37 @@ describe('Authenticated rider GPS sessions', () => {
     vi.mocked(firebase.verifyFirebaseIdToken).mockResolvedValue({ uid: 'owner' });
     const result = await fetch(`${base}/orders/${orderId}/rider-location`, { headers: { Authorization: 'Bearer customer-test' } }); expect(result.status).toBe(200); expect(result.headers.get('cache-control')).toContain('no-store');
   });
+
+  it('extends an active rider session before safety timeout and rejects inactive/expired sessions', async () => {
+    const session = await start();
+    const unauth = await fetch(`${base}/orders/${orderId}/rider-session/extend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: session.id }),
+    });
+    expect(unauth.status).toBe(401);
+
+    const ref = getFirestore().collection('orders').doc(orderId);
+    const soonIso = new Date(Date.now() + 10 * 60_000).toISOString();
+    await ref.update({ riderTrackingSession: { ...session, expiresAt: soonIso } });
+
+    const extendRes = await fetch(`${base}/orders/${orderId}/rider-session/extend`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ sessionId: session.id }),
+    });
+    expect(extendRes.status).toBe(200);
+    const extendedJson = await extendRes.json();
+    expect(extendedJson.success).toBe(true);
+    expect(extendedJson.session.id).toBe(session.id);
+    expect(Date.parse(extendedJson.session.expiresAt)).toBeGreaterThan(Date.parse(soonIso) + 3 * 60 * 60_000);
+
+    await publish({ sessionId: session.id, sequence: 1, active: false });
+    const afterStopRes = await fetch(`${base}/orders/${orderId}/rider-session/extend`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ sessionId: session.id }),
+    });
+    expect(afterStopRes.status).toBe(409);
+  });
 });

@@ -14,6 +14,8 @@ interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  // Change theme on APK welcome without the app-wide transition dialog.
+  setThemeFromWelcome: (theme: Theme) => void;
   accent: AccentColor;
   setAccent: (accent: AccentColor) => void;
   updateAccentInDb: (accent: AccentColor, adminToken?: string) => Promise<void>;
@@ -213,6 +215,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }, 550);
   };
 
+  const setThemeFromWelcome = (newTheme: Theme) => {
+    if (newTheme === theme) return;
+    themeChangedRef.current = true;
+    if (transitionTimerRef.current.fade) clearTimeout(transitionTimerRef.current.fade);
+    if (transitionTimerRef.current.end) clearTimeout(transitionTimerRef.current.end);
+    setTransitionState({ active: false, fadingOut: false, targetTheme: null });
+    document.documentElement.classList.remove('theme-transitioning');
+    setTheme(newTheme);
+  };
+
   const toggleTheme = () => {
     const nextTheme: Theme = theme === 'light' ? 'dark' : 'light';
     triggerThemeTransition(nextTheme);
@@ -251,7 +263,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme: handleSetTheme, accent, setAccent, updateAccentInDb }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme: handleSetTheme, setThemeFromWelcome, accent, setAccent, updateAccentInDb }}>
       {children}
 
       {/* Deliberate, Creative & Premium Theme Switch Backdrop-Filter Blur Transition Overlay */}

@@ -25,7 +25,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Explicit sharing only. No boot receiver, sticky restart, raw-token persistence or simulated fixes. */
 public class RiderLocationService extends Service implements LocationListener {
     private static final String CHANNEL = "rider_location_sharing";
+    private static final String WARNING_CHANNEL = "rider_location_warnings";
     private static final int NOTICE = 4811;
+    private static final int WARNING_NOTICE = 4812;
+    private static final long SAFETY_TIMEOUT_MS = 4 * 60 * 60 * 1000L;
+    private static final long WARNING_LEAD_MS = 15 * 60 * 1000L;
+    private static final long WARNING_DELAY_MS = SAFETY_TIMEOUT_MS - WARNING_LEAD_MS;
     private static volatile RiderLocationService instance;
     private static volatile boolean active;
     private static volatile String currentOrder = "", currentSession = "", phase = "idle";
@@ -69,6 +74,7 @@ public class RiderLocationService extends Service implements LocationListener {
             main.postDelayed(this, 10_000);
         }
     };
+    private final Runnable timeoutWarning = this::showTimeoutWarningNotification;
     private final Runnable expiry = () -> finishSharing("ended");
 
     public static JSObject getState() {
@@ -94,18 +100,36 @@ public class RiderLocationService extends Service implements LocationListener {
         else { context.stopService(new Intent(context, RiderLocationService.class)); done.run(); }
     }
 
+    public static void extendSharing(Context context, Runnable done) {
+        RiderLocationService service = instance;
+        if (service != null) {
+            service.main.post(() -> {
+                service.extendShift();
+                done.run();
+            });
+        } else {
+            done.run();
+        }
+    }
+
     @Override public void onCreate() {
         super.onCreate(); instance = this;
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             NotificationChannel channel = new NotificationChannel(CHANNEL, "Perkongsian lokasi rider", NotificationManager.IMPORTANCE_LOW);
             channel.setDescription("Kawalan perkongsian lokasi pesanan yang sedang aktif");
-            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+            nm.createNotificationChannel(channel);
+
+            NotificationChannel warningChannel = new NotificationChannel(WARNING_CHANNEL, "Amaran sesi lokasi rider", NotificationManager.IMPORTANCE_HIGH);
+            warningChannel.setDescription("Amaran sebelum sesi perkongsian lokasi tamat secara automatik");
+            nm.createNotificationChannel(warningChannel);
         }
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && "STOP".equals(intent.getAction())) { finishSharing("idle"); return START_NOT_STICKY; }
+        if (intent != null && "EXTEND".equals(intent.getAction())) { extendShift(); return START_NOT_STICKY; }
         if (intent == null) { stopSelf(); return START_NOT_STICKY; }
         String nextOrder = intent.getStringExtra("orderId"), nextSession = intent.getStringExtra("sessionId");
         if (nextOrder == null || !nextOrder.matches("^[A-Za-z0-9_-]{1,100}$") || nextSession == null || !nextSession.matches("^[A-Za-z0-9_-]{16,80}$")) {
@@ -123,10 +147,52 @@ public class RiderLocationService extends Service implements LocationListener {
             }
             if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, this, Looper.getMainLooper());
             if (manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this, Looper.getMainLooper());
-            main.removeCallbacks(freshness); main.postDelayed(freshness, 10_000);
-            main.removeCallbacks(expiry); main.postDelayed(expiry, 4 * 60 * 60 * 1000L);
+            scheduleSessionTimers();
         } catch (Exception error) { finishSharing("permission_denied"); }
         return START_NOT_STICKY;
+    }
+
+    private void scheduleSessionTimers() {
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(WARNING_NOTICE);
+        main.removeCallbacks(freshness); main.postDelayed(freshness, 10_000);
+        main.removeCallbacks(timeoutWarning); main.postDelayed(timeoutWarning, WARNING_DELAY_MS);
+        main.removeCallbacks(expiry); main.postDelayed(expiry, SAFETY_TIMEOUT_MS);
+    }
+
+    private void extendShift() {
+        if (stopped || !active || sessionId == null) return;
+        startedElapsed = SystemClock.elapsedRealtime();
+        scheduleSessionTimers();
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.notify(NOTICE, notification());
+    }
+
+    private void showTimeoutWarningNotification() {
+        if (stopped || !active) return;
+        if (Build.VERSION.SDK_INT >= 33
+            && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        Intent open = new Intent(this, MainActivity.class)
+            .putExtra("open_admin_panel", true)
+            .putExtra("rider_order_id", orderId)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent content = PendingIntent.getActivity(this, WARNING_NOTICE, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        String warningText = "Your active delivery session is nearing the 4-hour automatic safety timeout. Open the app to extend your shift if needed.";
+        Notification warning = new NotificationCompat.Builder(this, WARNING_CHANNEL)
+            .setSmallIcon(R.drawable.ic_rider_location)
+            .setContentTitle("Wawasan · Shift timeout warning")
+            .setContentText(warningText)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(warningText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setAutoCancel(true)
+            .setContentIntent(content)
+            .build();
+        nm.notify(WARNING_NOTICE, warning);
     }
 
     private Notification notification() {
@@ -146,7 +212,7 @@ public class RiderLocationService extends Service implements LocationListener {
     @Override public void onLocationChanged(Location location) {
         if (stopped || !active || !sessionId.equals(currentSession)) return;
         long elapsed = SystemClock.elapsedRealtime();
-        if (elapsed - startedElapsed >= 4 * 60 * 60 * 1000L) { finishSharing("ended"); return; }
+        if (elapsed - startedElapsed >= SAFETY_TIMEOUT_MS) { finishSharing("ended"); return; }
         long age = (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1_000_000;
         if (age < 0 || age > 30_000 || !location.hasAccuracy() || location.getAccuracy() <= 0 || location.getAccuracy() > 100) return;
         if (elapsed - lastAttempt < 5000 || !uploading.compareAndSet(false, true)) return;
@@ -231,7 +297,10 @@ public class RiderLocationService extends Service implements LocationListener {
 
     private void finishSharing(String finalPhase, String token) {
         if (stopped) return;
-        stopped = true; active = false; phase = finalPhase; removeUpdates(); main.removeCallbacks(expiry); main.removeCallbacks(freshness);
+        stopped = true; active = false; phase = finalPhase; removeUpdates();
+        main.removeCallbacks(timeoutWarning); main.removeCallbacks(expiry); main.removeCallbacks(freshness);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(WARNING_NOTICE);
         String id = orderId, session = sessionId;
         if (id != null && session != null && token != null) {
             final String capturedToken = token;

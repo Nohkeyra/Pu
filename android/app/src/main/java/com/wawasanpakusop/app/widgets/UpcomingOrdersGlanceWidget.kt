@@ -34,6 +34,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.wawasanpakusop.app.MainActivity
 import com.wawasanpakusop.app.R
+import com.wawasanpakusop.app.security.SecureStorage
 import com.wawasanpakusop.app.widget.OrderDetailActivity
 import com.wawasanpakusop.app.widget.WidgetUpdateService
 import org.json.JSONArray
@@ -71,10 +72,15 @@ class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
         }
         val prefs = context.getSharedPreferences(WidgetUpdateService.PREFS_NAME, Context.MODE_PRIVATE)
         val lastSuccessAt = prefs.getLong(WidgetUpdateService.PREF_LAST_SUCCESS_AT, 0L)
+        val isAuthExpired = try {
+            SecureStorage.isWidgetAuthExpired(context)
+        } catch (e: Exception) {
+            false
+        }
 
         provideContent {
             GlanceTheme {
-                UpcomingOrdersScreen(context, orders, lastSuccessAt)
+                UpcomingOrdersScreen(context, orders, lastSuccessAt, isAuthExpired)
             }
         }
     }
@@ -103,22 +109,48 @@ class UpcomingOrdersGlanceWidget : GlanceAppWidget() {
 }
 
 @Composable
-fun UpcomingOrdersScreen(context: Context, orders: List<UpcomingOrderItem>, lastSuccessAt: Long) {
+fun UpcomingOrdersScreen(
+    context: Context,
+    orders: List<UpcomingOrderItem>,
+    lastSuccessAt: Long,
+    isAuthExpired: Boolean = false
+) {
     val freshness = WidgetFreshness.from(lastSuccessAt)
+    val openAdminIntent = Intent(context, MainActivity::class.java).apply {
+        putExtra("open_admin_panel", true)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
     Column(
         modifier = GlanceModifier.fillMaxSize()
             .background(ImageProvider(R.drawable.widget_glass_background))
             .padding(10.dp)
     ) {
-        GlassWidgetHeader("TEMPAHAN AKAN DATANG", "TEMPAHAN", orders.size, lastSuccessAt, actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>())
-        if (orders.isEmpty()) {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
+        GlassWidgetHeader(
+            title = "TEMPAHAN AKAN DATANG",
+            compactTitle = "TEMPAHAN",
+            count = orders.size,
+            lastSuccessAt = lastSuccessAt,
+            refresh = actionRunCallback<RefreshUpcomingOrdersGlanceActionCallback>(),
+            isAuthExpired = isAuthExpired
+        )
+        if (isAuthExpired) {
             Box(
                 modifier = GlanceModifier.fillMaxSize()
                     .background(ImageProvider(R.drawable.widget_glass_card))
-                    .clickable(actionStartActivity(intent)).padding(10.dp),
+                    .clickable(actionStartActivity(openAdminIntent))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Session expired. Open app to refresh.",
+                    style = TextStyle(color = widgetGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                )
+            }
+        } else if (orders.isEmpty()) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize()
+                    .background(ImageProvider(R.drawable.widget_glass_card))
+                    .clickable(actionStartActivity(openAdminIntent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
                 val message = when {

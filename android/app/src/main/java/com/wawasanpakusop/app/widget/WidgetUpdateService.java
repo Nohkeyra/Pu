@@ -58,9 +58,12 @@ public class WidgetUpdateService {
             boolean success = false;
 
             boolean authRejected = false;
+            boolean tokenExisted = false;
+            boolean serverAuthFailed = false;
             try {
                 String adminToken = com.wawasanpakusop.app.security.SecureStorage.INSTANCE.getAdminToken(context);
-                if (adminToken == null || adminToken.isEmpty()) {
+                tokenExisted = adminToken != null && !adminToken.isEmpty();
+                if (!tokenExisted) {
                     authRejected = true;
                     throw new SecurityException("Missing admin session token");
                 }
@@ -74,6 +77,7 @@ public class WidgetUpdateService {
                 int responseCode = conn.getResponseCode();
                 if (responseCode == 401 || responseCode == 403) {
                     authRejected = true;
+                    serverAuthFailed = true;
                 }
                 if (responseCode == 200) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -95,14 +99,26 @@ public class WidgetUpdateService {
 
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             if (authRejected) {
+                if (serverAuthFailed) {
+                    try {
+                        com.wawasanpakusop.app.security.SecureStorage.setWidgetAuthExpired(context, true);
+                    } catch (Exception ignored) {}
+                }
                 // Do not keep displaying operational order data after logout or token rejection.
                 prefs.edit().remove(PREF_ORDERS_JSON).remove(PREF_LAST_SUCCESS_AT).apply();
+                if (tokenExisted && serverAuthFailed) {
+                    com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker.triggerImmediate(context);
+                }
             }
             if (success && ordersJson != null) {
+                try {
+                    com.wawasanpakusop.app.security.SecureStorage.setWidgetAuthExpired(context, false);
+                } catch (Exception ignored) {}
                 prefs.edit()
                     .putString(PREF_ORDERS_JSON, ordersJson)
                     .putLong(PREF_LAST_SUCCESS_AT, System.currentTimeMillis())
                     .apply();
+                com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker.schedulePeriodic(context);
             }
 
             final boolean finalSuccess = success;

@@ -17,6 +17,28 @@ class MemoryFirestore {
   private collections = new Map<string, Map<string, any>>();
   private transactionTail: Promise<void> = Promise.resolve();
 
+  private resolveServerTimestamps(value: any): any {
+    if (value === null || value === undefined || typeof value !== 'object') return value;
+    const serverTimestampSentinel = FieldValue.serverTimestamp();
+    if (typeof value.isEqual === 'function' && value.isEqual(serverTimestampSentinel)) {
+      return Timestamp.now();
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.resolveServerTimestamps(item));
+    }
+    if (value instanceof Date || value instanceof Timestamp) {
+      return value;
+    }
+    if (Object.getPrototypeOf(value) === Object.prototype) {
+      const out: Record<string, any> = {};
+      for (const [k, v] of Object.entries(value)) {
+        out[k] = this.resolveServerTimestamps(v);
+      }
+      return out;
+    }
+    return value;
+  }
+
   private getCol(name: string): Map<string, any> {
     if (!this.collections.has(name)) {
       this.collections.set(name, new Map());
@@ -26,6 +48,7 @@ class MemoryFirestore {
 
   collection(name: string) {
     const col = this.getCol(name);
+    const resolveData = (d: any) => this.resolveServerTimestamps(d);
     const createDocRef = (id?: string) => {
       const docId = id || `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       return {
@@ -41,17 +64,18 @@ class MemoryFirestore {
           };
         },
         set: async (data: any, options?: { merge?: boolean }) => {
+          const resolved = resolveData(data);
           if (options?.merge && col.has(docId)) {
-            col.set(docId, { ...col.get(docId), ...data });
+            col.set(docId, { ...col.get(docId), ...resolved });
           } else {
-            col.set(docId, { ...data });
+            col.set(docId, { ...resolved });
           }
         },
         update: async (data: any) => {
           if (!col.has(docId))
             throw new Error(`NOT_FOUND: Document ${name}/${docId} does not exist`);
           const existing = col.get(docId);
-          col.set(docId, { ...existing, ...data });
+          col.set(docId, { ...existing, ...resolveData(data) });
         },
         delete: async () => {
           col.delete(docId);
@@ -81,7 +105,7 @@ class MemoryFirestore {
         doc: (id?: string) => createDocRef(id),
         add: async (data: any) => {
           const ref = createDocRef();
-          col.set(ref.id, { ...data });
+          col.set(ref.id, { ...resolveData(data) });
           return ref;
         },
         where: (field: string, operator: string, expected: any) => {
@@ -174,10 +198,11 @@ class MemoryFirestore {
       set: (ref: any, data: any, options?: { merge?: boolean }) => {
         operations.push(() => {
           const col = this.getCol(ref._colName || 'orders');
+          const resolved = this.resolveServerTimestamps(data);
           if (options?.merge && col.has(ref.id)) {
-            col.set(ref.id, { ...col.get(ref.id), ...data });
+            col.set(ref.id, { ...col.get(ref.id), ...resolved });
           } else {
-            col.set(ref.id, { ...data });
+            col.set(ref.id, { ...resolved });
           }
         });
       },
@@ -189,7 +214,7 @@ class MemoryFirestore {
               `NOT_FOUND: Document ${ref._colName || 'orders'}/${ref.id} does not exist`
             );
           const existing = col.get(ref.id);
-          col.set(ref.id, { ...existing, ...data });
+          col.set(ref.id, { ...existing, ...this.resolveServerTimestamps(data) });
         });
       },
       delete: (ref: any) => {

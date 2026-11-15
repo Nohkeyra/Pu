@@ -71,4 +71,5 @@ public class RiderTrackingPlugin extends Plugin {
 
     @PluginMethod public void getState(PluginCall call) { call.resolve(RiderLocationService.getState()); }
     @PluginMethod public void stop(PluginCall call) { RiderLocationService.stopSharing(getContext(), () -> call.resolve(RiderLocationService.getState())); }
+    @PluginMethod public void extend(PluginCall call) { RiderLocationService.extendSharing(getContext(), () -> call.resolve(RiderLocationService.getState())); }
 }

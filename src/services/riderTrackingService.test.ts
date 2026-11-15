@@ -67,4 +67,17 @@ describe('Foreground rider GPS lifecycle', () => {
     expect(navigator.geolocation.watchPosition).not.toHaveBeenCalled();
     expect(writes.at(-1)).toMatchObject({ active: false });
   });
+  it('extends an active rider session via authenticated endpoint', async () => {
+    const service = await import('./riderTrackingService');
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ success: true, session: { id: 'test-session-123456', active: true } }));
+    await service.extendRiderSharing('example_order', 'test-session-123456');
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/orders/example_order/rider-session/extend',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer test-admin-token' }),
+        body: JSON.stringify({ sessionId: 'test-session-123456' }),
+      })
+    );
+  });
 });

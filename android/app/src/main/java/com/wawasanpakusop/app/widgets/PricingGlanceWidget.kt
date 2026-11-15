@@ -82,9 +82,15 @@ class PricingGlanceWidget : GlanceAppWidget() {
             0L
         }
 
+        val isAuthExpired = try {
+            SecureStorage.isWidgetAuthExpired(context)
+        } catch (e: Exception) {
+            false
+        }
+
         provideContent {
             GlanceTheme {
-                PricingGlanceScreen(context, orders, lastSuccessAt)
+                PricingGlanceScreen(context, orders, lastSuccessAt, isAuthExpired)
             }
         }
     }
@@ -181,23 +187,49 @@ class PricingGlanceWidget : GlanceAppWidget() {
 }
 
 @Composable
-fun PricingGlanceScreen(context: Context, orders: List<GlanceOrderItem>, lastSuccessAt: Long) {
+fun PricingGlanceScreen(
+    context: Context,
+    orders: List<GlanceOrderItem>,
+    lastSuccessAt: Long,
+    isAuthExpired: Boolean = false
+) {
     val compact = LocalSize.current.width < 260.dp
     val freshness = WidgetFreshness.from(lastSuccessAt)
+    val openAdminIntent = Intent(context, MainActivity::class.java).apply {
+        putExtra("open_admin_panel", true)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
     Column(
         modifier = GlanceModifier.fillMaxSize()
             .background(ImageProvider(R.drawable.widget_glass_background))
             .padding(10.dp)
     ) {
-        GlassWidgetHeader("HARGA TERTUNGGAK", "HARGA", orders.size, lastSuccessAt, actionRunCallback<RefreshGlanceActionCallback>())
-        if (orders.isEmpty()) {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
+        GlassWidgetHeader(
+            title = "HARGA TERTUNGGAK",
+            compactTitle = "HARGA",
+            count = orders.size,
+            lastSuccessAt = lastSuccessAt,
+            refresh = actionRunCallback<RefreshGlanceActionCallback>(),
+            isAuthExpired = isAuthExpired
+        )
+        if (isAuthExpired) {
             Box(
                 modifier = GlanceModifier.fillMaxSize()
                     .background(ImageProvider(R.drawable.widget_glass_card))
-                    .clickable(actionStartActivity(intent)).padding(10.dp),
+                    .clickable(actionStartActivity(openAdminIntent))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Session expired. Open app to refresh.",
+                    style = TextStyle(color = widgetGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                )
+            }
+        } else if (orders.isEmpty()) {
+            Box(
+                modifier = GlanceModifier.fillMaxSize()
+                    .background(ImageProvider(R.drawable.widget_glass_card))
+                    .clickable(actionStartActivity(openAdminIntent)).padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
                 val message = when {

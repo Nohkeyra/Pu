@@ -13,6 +13,7 @@ export interface RiderDeviceState {
 interface NativeRiderPlugin {
   start(options: { orderId: string; sessionId: string }): Promise<RiderDeviceState>;
   stop(): Promise<RiderDeviceState>;
+  extend(): Promise<RiderDeviceState>;
   getState(): Promise<RiderDeviceState>;
 }
 const NativeRider = registerPlugin<NativeRiderPlugin>('RiderTracking');
@@ -59,6 +60,14 @@ export async function stopRiderSharing(): Promise<RiderDeviceState> {
   await pending?.catch(() => {});
   if (previous.active && previous.orderId && previous.sessionId) {
     await riderRequest(`/api/orders/${previous.orderId}/rider-location`, { sessionId: previous.sessionId, sequence: stopSequence, active: false }, activeToken).catch(() => {});
+  }
+  return { ...device };
+}
+
+export async function extendRiderSharing(orderId: string, sessionId?: string): Promise<RiderDeviceState> {
+  await riderRequest(`/api/orders/${orderId}/rider-session/extend`, sessionId ? { sessionId } : {});
+  if (isNativeRider() && Capacitor.isPluginAvailable('RiderTracking')) {
+    return NativeRider.extend();
   }
   return { ...device };
 }

@@ -195,6 +195,7 @@ public class PricingInputActivity extends Activity {
             JSONObject body = new JSONObject();
             body.put("orderId", orderId);
             body.put("prices", prices);
+            body.put("clientTimestamp", System.currentTimeMillis());
 
             new SubmitPricingTask(pricesMap).execute(body.toString());
         } catch (JSONException e) {
@@ -250,18 +251,23 @@ public class PricingInputActivity extends Activity {
                 conn.disconnect();
 
                 JSONObject json = new JSONObject(sb.toString());
+                if (code == 401 || code == 403) {
+                    com.wawasanpakusop.app.security.SecureStorage.setWidgetAuthExpired(PricingInputActivity.this, true);
+                    com.wawasanpakusop.app.widgets.WidgetTokenRefreshWorker.triggerImmediate(getApplicationContext());
+                    return new TaskResult(false, "Session expired. Open app to refresh.", null, false, true);
+                }
                 boolean success = json.optBoolean("success", false);
                 String message = json.optString(success ? "message" : "error", success ? "Berjaya." : "Ralat tidak diketahui.");
                 String invoiceNo = json.optString("invoiceNo", null);
 
-                return new TaskResult(success, message, invoiceNo, false);
+                return new TaskResult(success, message, invoiceNo, false, code == 409);
             } catch (IOException e) {
                 // Network disconnect or timeout: queue locally
                 OfflinePricingQueue.INSTANCE.enqueue(PricingInputActivity.this, orderId, fallbackPrices);
-                return new TaskResult(true, "Rangkaian terputus. Disimpan ke luar talian (Pending Sync).", null, true);
+                return new TaskResult(true, "Rangkaian terputus. Disimpan ke luar talian (Pending Sync).", null, true, false);
             } catch (JSONException e) {
                 com.wawasanpakusop.app.telemetry.NativeCrashReporter.INSTANCE.recordException(e, java.util.Collections.singletonMap("orderId", orderId));
-                return new TaskResult(false, "Format jawapan pelayan tidak sah: " + e.getMessage(), null, false);
+                return new TaskResult(false, "Format jawapan pelayan tidak sah: " + e.getMessage(), null, false, false);
             }
         }
 
@@ -283,6 +289,10 @@ public class PricingInputActivity extends Activity {
                 PricingWidgetUpdater.refresh(getApplicationContext());
                 finish();
             } else {
+                if (result.shouldRefreshWidgets) {
+                    PricingWidgetUpdater.refresh(getApplicationContext());
+                    com.wawasanpakusop.app.widgets.UpcomingOrdersWidgetUpdater.refresh(getApplicationContext());
+                }
                 Toast.makeText(PricingInputActivity.this, "✗ " + result.message, Toast.LENGTH_LONG).show();
             }
         }
@@ -293,12 +303,14 @@ public class PricingInputActivity extends Activity {
         final String message;
         final String invoiceNo;
         final boolean isOfflineQueued;
+        final boolean shouldRefreshWidgets;
 
-        TaskResult(boolean success, String message, String invoiceNo, boolean isOfflineQueued) {
+        TaskResult(boolean success, String message, String invoiceNo, boolean isOfflineQueued, boolean shouldRefreshWidgets) {
             this.success = success;
             this.message = message;
             this.invoiceNo = invoiceNo;
             this.isOfflineQueued = isOfflineQueued;
+            this.shouldRefreshWidgets = shouldRefreshWidgets;
         }
     }
 }

@@ -65,6 +65,48 @@ router.post('/orders/:id/rider-session', verifyAdminToken, async (req, res) => {
   }
 });
 
+router.post('/orders/:id/rider-session/extend', verifyAdminToken, async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ success: false, code: 'INVALID_ORDER' });
+  const requestedSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
+  if (requestedSessionId && !/^[A-Za-z0-9_-]{16,80}$/.test(requestedSessionId)) {
+    return res.status(400).json({ success: false, code: 'INVALID_SESSION' });
+  }
+  try {
+    const db = getFirestore();
+    const ref = db.collection('orders').doc(req.params.id);
+    const currentRef = db.collection('rider_sessions').doc('active');
+    const nowMs = Date.now();
+    const now = new Date(nowMs).toISOString();
+    const extended = await db.runTransaction(async tx => {
+      const [order, current] = await Promise.all([tx.get(ref), tx.get(currentRef)]);
+      if (!order.exists || order.data()?.deletedByAdmin) throw new TrackingError(404, 'ORDER_NOT_FOUND');
+      const data = order.data();
+      if (!canStartRiderTracking(data?.status)) throw new TrackingError(409, 'ORDER_NOT_ELIGIBLE');
+      const session = data?.riderTrackingSession as RiderSession | undefined;
+      if (!session || !session.active || current.data()?.sessionId !== session.id
+        || (requestedSessionId && session.id !== requestedSessionId)) {
+        throw new TrackingError(409, 'SESSION_REPLACED');
+      }
+      if (!Number.isFinite(Date.parse(session.expiresAt)) || Date.parse(session.expiresAt) <= nowMs) {
+        throw new TrackingError(409, 'TRACKING_ENDED');
+      }
+      const nextSession: RiderSession = {
+        ...session,
+        updatedAt: now,
+        expiresAt: new Date(nowMs + RIDER_SESSION_MS).toISOString(),
+      };
+      tx.update(ref, { riderTrackingSession: nextSession });
+      tx.set(currentRef, { orderId: req.params.id, sessionId: session.id, active: true, updatedAt: now });
+      return nextSession;
+    });
+    return res.json({ success: true, session: extended });
+  } catch (error) {
+    if (error instanceof TrackingError) return res.status(error.status).json({ success: false, code: error.code });
+    console.error('[Rider session extend]', error);
+    return res.status(500).json({ success: false, code: 'TRACKING_UNAVAILABLE' });
+  }
+});
+
 router.post('/orders/:id/rider-location', verifyAdminToken, async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ success: false, code: 'INVALID_ORDER' });
   const input = req.body || {};

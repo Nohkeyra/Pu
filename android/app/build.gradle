@@ -141,6 +141,9 @@ dependencies {
 
     // Jetpack Security for EncryptedSharedPreferences
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
+    // WorkManager for periodic/on-demand widget token refresh
+    implementation 'androidx.work:work-runtime-ktx:2.9.1'
 }
 
 apply from: 'capacitor.build.gradle'

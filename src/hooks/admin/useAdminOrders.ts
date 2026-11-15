@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Order } from '@/types';
+import type { AdminConflictNotification, Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
@@ -17,10 +17,12 @@ interface UseAdminOrdersProps {
 
 export function useAdminOrders({ adminToken, onLogout, toast, t, language }: UseAdminOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [conflicts, setConflicts] = useState<AdminConflictNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordersError, setOrdersError] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const requestSequence = useRef(0);
+  const notifiedConflictIds = useRef<Set<string>>(new Set());
   const fallbackActive = useRef(false);
   const invalidateRequests = useCallback(() => ++requestSequence.current, []);
 
@@ -74,12 +76,67 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     }
   }, [adminToken, authHeaders, invalidateRequests]);
 
+  const fetchConflicts = useCallback(async () => {
+    if (!adminToken) {
+      setConflicts([]);
+      return;
+    }
+    try {
+      const response = await fetch(getApiUrl('/api/admin/conflicts'), {
+        headers: authHeaders(),
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!response.ok) return;
+      const data = await response.json().catch(() => ({}));
+      if (data?.success && Array.isArray(data.conflicts)) {
+        const list = data.conflicts as AdminConflictNotification[];
+        setConflicts(list);
+        const unseen = list.filter((c) => !notifiedConflictIds.current.has(c.id));
+        if (unseen.length > 0) {
+          unseen.forEach((c) => notifiedConflictIds.current.add(c.id));
+          toastRef.current({
+            title: language === 'bm' ? 'Konflik Harga Luar Talian' : 'Offline Pricing Conflict',
+            description:
+              language === 'bm'
+                ? `${unseen.length} kemas kini harga luar talian ditolak kerana rekod pelayan lebih baharu.`
+                : `${unseen.length} offline pricing sync update(s) rejected due to newer server changes.`,
+            variant: 'warning',
+            duration: 6000,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[Admin Conflicts] Unable to load conflict notifications:', err);
+    }
+  }, [adminToken, authHeaders, language]);
+
+  const dismissConflict = useCallback(async (conflictId: string) => {
+    if (!adminToken || !conflictId) return;
+    try {
+      const response = await fetch(getApiUrl(`/api/admin/conflicts/${encodeURIComponent(conflictId)}/dismiss`), {
+        method: 'POST',
+        headers: authHeaders(),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (response.ok) {
+        setConflicts((prev) => prev.filter((item) => item.id !== conflictId));
+      }
+    } catch (err) {
+      console.warn('[Admin Conflicts] Unable to dismiss conflict notification:', err);
+    }
+  }, [adminToken, authHeaders]);
+
+  useEffect(() => {
+    void fetchConflicts();
+  }, [fetchConflicts]);
+
   useEffect(() => {
     invalidateRequests();
     fallbackActive.current = false;
     if (!adminToken) {
       setLoading(false);
       setOrders([]);
+      setConflicts([]);
       setOrdersError(false);
       return;
     }
@@ -254,11 +311,14 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
 
   return {
     orders,
+    conflicts,
     loading,
     ordersError,
     isApproving,
     setIsApproving,
     fetchOrders,
+    fetchConflicts,
+    dismissConflict,
     handleUpdateOrderStatus,
     handleDeleteOrder,
     handleBatchDelete,

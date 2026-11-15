@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken } from '../firebaseAdmin.js';
+import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
@@ -253,20 +253,115 @@ router.get(['/widget/today-pricing-orders', '/widget/unpriced-orders'], widgetPr
   }
 });
 
+function parseTimestampMs(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d+$/.test(trimmed)) {
+      const num = Number(trimmed);
+      return Number.isFinite(num) && num > 0 ? num : null;
+    }
+    const parsed = Date.parse(trimmed);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isFinite(ms) && ms > 0 ? ms : null;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as { toMillis?: () => number; seconds?: number; nanoseconds?: number; _seconds?: number; _nanoseconds?: number };
+    if (typeof obj.toMillis === 'function') {
+      const ms = obj.toMillis();
+      return Number.isFinite(ms) && ms > 0 ? ms : null;
+    }
+    const seconds = typeof obj.seconds === 'number' ? obj.seconds : (typeof obj._seconds === 'number' ? obj._seconds : null);
+    const nanoseconds = typeof obj.nanoseconds === 'number' ? obj.nanoseconds : (typeof obj._nanoseconds === 'number' ? obj._nanoseconds : 0);
+    if (seconds !== null && Number.isFinite(seconds)) {
+      const ms = seconds * 1000 + Math.floor((nanoseconds || 0) / 1_000_000);
+      return Number.isFinite(ms) && ms > 0 ? ms : null;
+    }
+  }
+  return null;
+}
+
+function getOrderUpdatedAtMs(order: Record<string, any> | undefined): number | null {
+  if (!order) return null;
+  return (
+    parseTimestampMs(order.updatedAt) ??
+    parseTimestampMs(order.billedAt) ??
+    parseTimestampMs(order.approvedAt)
+  );
+}
+
+async function recordPricingConflictNotification(params: {
+  db: FirebaseFirestore.Firestore;
+  orderId: string;
+  order?: Record<string, any>;
+  submittedPrices: Record<string, number>;
+  clientTimestampMs: number | null;
+  serverUpdatedAtMs: number | null;
+  reason: string;
+}): Promise<string | null> {
+  const { db, orderId, order, submittedPrices, clientTimestampMs, serverUpdatedAtMs, reason } = params;
+  const customerName = String(order?.to || order?.company || order?.name || 'Pelanggan');
+  const invoiceNo = order?.invoiceNo ? String(order.invoiceNo) : null;
+  const clientTimestampIso = clientTimestampMs !== null ? new Date(clientTimestampMs).toISOString() : null;
+  const serverUpdatedAtIso = serverUpdatedAtMs !== null ? new Date(serverUpdatedAtMs).toISOString() : null;
+  const createdAt = new Date().toISOString();
+
+  try {
+    const ref = await db.collection('admin_notifications').add({
+      type: 'pricing_conflict',
+      orderId,
+      invoiceNo,
+      customerName,
+      submittedPrices,
+      clientTimestamp: clientTimestampIso,
+      serverUpdatedAt: serverUpdatedAtIso,
+      reason,
+      dismissed: false,
+      createdAt,
+    });
+
+    void sendNotificationToTopic(
+      'new_orders',
+      'Konflik Penyegerakan Harga Luar Talian',
+      `Perubahan luar talian untuk ${customerName}${invoiceNo ? ` (${invoiceNo})` : ''} ditolak kerana rekod pelayan lebih baharu.`,
+      {
+        type: 'pricing_conflict',
+        orderId,
+        notificationId: ref.id,
+      }
+    ).catch((fcmErr) => {
+      console.warn('[Widget] Failed to push pricing conflict alert:', fcmErr);
+    });
+
+    return ref.id;
+  } catch (err) {
+    console.error('[Widget] Failed to record pricing conflict notification:', err);
+    return null;
+  }
+}
+
 // ─── 3. Set pricing + auto-generate & email final invoice (admin-authenticated) ─
 // This is the core action of the pricing widget:
-//   1. Receive pricePerPax per meal type from widget input
-//   2. Calculate totalAmount
-//   3. Generate sequential invoice number
-//   4. Generate full PDF (server-side, same design as app)
-//   5. Email PDF to customer
-//   6. Update Firestore order to status: 'billed'
+//   1. Receive pricePerPax per meal type from widget input (+ optional clientTimestamp)
+//   2. Compare clientTimestamp against server updatedAt to reject stale offline overwrites
+//   3. Calculate totalAmount
+//   4. Generate sequential invoice number
+//   5. Generate full PDF (server-side, same design as app)
+//   6. Email PDF to customer
+//   7. Update Firestore order to status: 'billed'
 router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
   if (!(await verifyAdminAuth(req, res))) return;
 
-  const { orderId, prices } = req.body as {
+  const { orderId, prices, clientTimestamp } = req.body as {
     orderId: string;
     prices: Record<string, number>;
+    clientTimestamp?: number | string;
   };
 
   if (!orderId || typeof orderId !== 'string') {
@@ -274,6 +369,14 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
   }
   if (!prices || typeof prices !== 'object' || Object.keys(prices).length === 0) {
     return res.status(400).json({ success: false, error: 'prices object required.' });
+  }
+
+  let clientTimestampMs: number | null = null;
+  if (clientTimestamp !== undefined && clientTimestamp !== null) {
+    clientTimestampMs = parseTimestampMs(clientTimestamp);
+    if (clientTimestampMs === null) {
+      return res.status(400).json({ success: false, error: 'clientTimestamp must be a valid epoch timestamp or ISO date string.' });
+    }
   }
 
   // Validate all submitted values before any database or invoice side effects.
@@ -299,9 +402,55 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order is no longer available.' });
     }
 
+    const initialServerUpdatedAtMs = getOrderUpdatedAtMs(order);
+    if (clientTimestampMs !== null && initialServerUpdatedAtMs !== null && initialServerUpdatedAtMs > clientTimestampMs) {
+      const reason = 'Server record updated more recently than offline pricing submission.';
+      const notificationId = await recordPricingConflictNotification({
+        db,
+        orderId,
+        order,
+        submittedPrices: prices,
+        clientTimestampMs,
+        serverUpdatedAtMs: initialServerUpdatedAtMs,
+        reason,
+      });
+      return res.status(409).json({
+        success: false,
+        conflict: true,
+        code: 'PRICING_CONFLICT',
+        orderId,
+        clientTimestamp: new Date(clientTimestampMs).toISOString(),
+        serverUpdatedAt: new Date(initialServerUpdatedAtMs).toISOString(),
+        ...(notificationId ? { notificationId } : {}),
+        error: 'Conflict: Order was updated more recently on the server. Offline pricing was not applied.',
+      });
+    }
+
     const currentStatus = String(order.status || 'pending').toLowerCase().trim();
     // Guard: only price pending/approved orders; don't re-bill a billed or delivered order accidentally
     if (!['pending', 'approved'].includes(currentStatus)) {
+      if (clientTimestampMs !== null) {
+        const notificationId = await recordPricingConflictNotification({
+          db,
+          orderId,
+          order,
+          submittedPrices: prices,
+          clientTimestampMs,
+          serverUpdatedAtMs: initialServerUpdatedAtMs,
+          reason: `Order status transitioned to '${currentStatus}' before offline sync completed.`,
+        });
+        return res.status(409).json({
+          success: false,
+          conflict: true,
+          code: 'PRICING_CONFLICT',
+          orderId,
+          clientTimestamp: new Date(clientTimestampMs).toISOString(),
+          ...(initialServerUpdatedAtMs !== null ? { serverUpdatedAt: new Date(initialServerUpdatedAtMs).toISOString() } : {}),
+          ...(notificationId ? { notificationId } : {}),
+          invoiceNo: order.invoiceNo || null,
+          error: `Conflict: Order is already '${currentStatus}'. Cannot apply offline pricing.`,
+        });
+      }
       return res.status(409).json({
         success: false,
         error: `Order is already '${currentStatus}'. Cannot re-price.`,
@@ -351,8 +500,8 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
       : (order.invoiceNo || await generateSequentialInvoiceNo(false, order.eventDate || order.date));
 
-    // Make the eligibility check and billing transition one Firestore transaction.
-    // A concurrent request will re-read the order and fail once another request bills it.
+    // Make the eligibility check, timestamp conflict guard, and billing transition one Firestore transaction.
+    // A concurrent request will re-read the order and fail once another request updates or bills it.
     const invoiceGeneratedAt = new Date().toISOString();
     const txResult = await db.runTransaction(async (tx: any) => {
       const freshSnap = await tx.get(orderRef);
@@ -362,10 +511,20 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         throw error;
       }
       const freshOrder = freshSnap.data()!;
+      const freshServerUpdatedAtMs = getOrderUpdatedAtMs(freshOrder);
+      if (clientTimestampMs !== null && freshServerUpdatedAtMs !== null && freshServerUpdatedAtMs > clientTimestampMs) {
+        const error: any = new Error('PRICING_CONFLICT');
+        error.code = 'PRICING_CONFLICT';
+        error.freshOrder = freshOrder;
+        error.serverUpdatedAtMs = freshServerUpdatedAtMs;
+        throw error;
+      }
       if (freshOrder.deletedByAdmin || !['pending', 'approved'].includes(String(freshOrder.status || 'pending').toLowerCase().trim())) {
         const error: any = new Error('ORDER_NOT_ELIGIBLE');
         error.code = 'ORDER_NOT_ELIGIBLE';
         error.currentStatus = freshOrder.status || 'pending';
+        error.freshOrder = freshOrder;
+        error.serverUpdatedAtMs = freshServerUpdatedAtMs;
         throw error;
       }
       const freshQuantity = Number(freshOrder.quantity || freshOrder.guests || freshOrder.pax || 0);
@@ -374,6 +533,8 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         || freshOrder.invoiceNo !== order.invoiceNo) {
         const error: any = new Error('ORDER_CHANGED');
         error.code = 'ORDER_CHANGED';
+        error.freshOrder = freshOrder;
+        error.serverUpdatedAtMs = freshServerUpdatedAtMs;
         throw error;
       }
       const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
@@ -428,11 +589,81 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     if (code === 'ORDER_NOT_FOUND') {
       return res.status(404).json({ success: false, error: 'Order not found.' });
     }
-    if (code === 'ORDER_NOT_ELIGIBLE' || code === 'ORDER_CHANGED') {
+    if (code === 'PRICING_CONFLICT' || code === 'ORDER_NOT_ELIGIBLE' || code === 'ORDER_CHANGED') {
+      if (clientTimestampMs !== null) {
+        const db = getFirestore();
+        const serverUpdatedAtMs = (err as any)?.serverUpdatedAtMs ?? null;
+        const notificationId = await recordPricingConflictNotification({
+          db,
+          orderId,
+          order: (err as any)?.freshOrder,
+          submittedPrices: prices,
+          clientTimestampMs,
+          serverUpdatedAtMs,
+          reason: code === 'PRICING_CONFLICT'
+            ? 'Server record updated more recently than offline pricing submission.'
+            : `Concurrent modification (${code}) detected during offline pricing sync.`,
+        });
+        return res.status(409).json({
+          success: false,
+          conflict: true,
+          code: 'PRICING_CONFLICT',
+          orderId,
+          clientTimestamp: new Date(clientTimestampMs).toISOString(),
+          ...(serverUpdatedAtMs !== null ? { serverUpdatedAt: new Date(serverUpdatedAtMs).toISOString() } : {}),
+          ...(notificationId ? { notificationId } : {}),
+          error: 'Conflict: Order was updated more recently on the server. Offline pricing was not applied.',
+        });
+      }
       return res.status(409).json({ success: false, error: 'Order changed or is not eligible for pricing. Refresh the widget and try again.' });
     }
     telemetry.captureException(err, { req, metadata: { orderId } });
     return res.status(500).json({ success: false, error: 'Unable to save pricing and queue the invoice.' });
+  }
+});
+
+// ─── 4. Admin conflict notifications (offline pricing sync conflicts) ────────
+router.get('/admin/conflicts', async (req, res) => {
+  if (!(await verifyAdminAuth(req, res))) return;
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection('admin_notifications')
+      .where('dismissed', '==', false)
+      .get();
+
+    const conflicts = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter((item: any) => item.type === 'pricing_conflict')
+      .sort((a: any, b: any) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+    return res.json({ success: true, conflicts });
+  } catch (err) {
+    console.error('[Widget] Error loading admin conflict notifications:', err);
+    return res.status(500).json({ success: false, error: 'Unable to load conflict notifications.' });
+  }
+});
+
+router.post('/admin/conflicts/:id/dismiss', async (req, res) => {
+  if (!(await verifyAdminAuth(req, res))) return;
+  const notifId = req.params.id;
+  if (!notifId || !/^[A-Za-z0-9_-]{1,128}$/.test(notifId)) {
+    return res.status(400).json({ success: false, error: 'Invalid conflict notification id.' });
+  }
+  try {
+    const db = getFirestore();
+    const ref = db.collection('admin_notifications').doc(notifId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ success: false, error: 'Conflict notification not found.' });
+    }
+    await ref.update({
+      dismissed: true,
+      dismissedAt: new Date().toISOString(),
+    });
+    return res.json({ success: true, id: notifId });
+  } catch (err) {
+    console.error('[Widget] Error dismissing conflict notification:', err);
+    return res.status(500).json({ success: false, error: 'Unable to dismiss conflict notification.' });
   }
 });
 

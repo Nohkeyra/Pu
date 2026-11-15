@@ -110,6 +110,38 @@ router.get('/admin/verify', verifyAdminToken, async (req, res) => {
   });
 });
 
+// Mint a fresh 24h widget Admin JWT while the caller still presents an
+// unrevoked admin session (Admin JWT or Firebase Admin ID token).
+router.post('/admin/refresh-widget-token', verifyAdminToken, async (req, res) => {
+  try {
+    const userPayload = (req as any).adminPayload || (req as any).user;
+    const adminEmail =
+      userPayload?.email ||
+      (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '').split(',')[0].trim();
+    const adminUid =
+      userPayload?.uid ||
+      'admin_' + createHash('sha256').update(adminEmail || 'admin@wawasan.local').digest('hex').slice(0, 12);
+    const expiresInSeconds = 24 * 60 * 60;
+    const token = signAdminJwt(
+      {
+        uid: adminUid,
+        ...(adminEmail ? { email: adminEmail } : {}),
+        admin: true,
+      },
+      expiresInSeconds
+    );
+
+    return res.json({
+      success: true,
+      token,
+      expiresInSeconds,
+    });
+  } catch (err) {
+    console.error('[Admin Auth] Widget token refresh error:', err);
+    return res.status(500).json({ success: false, error: 'Unable to refresh widget token.' });
+  }
+});
+
 // Revoke the presented admin credential, including the Firebase ID tokens used
 // by normal admin sign-in. Store only its hash; other devices remain signed in.
 // Missing/expired/already-revoked credentials remain idempotent.

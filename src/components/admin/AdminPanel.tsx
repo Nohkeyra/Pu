@@ -12,7 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { Badge } from '@/components/ui/badge';
-import { FileText, RefreshCw, Table, Utensils as UtensilsIcon } from 'lucide-react';
+import { AlertTriangle, FileText, RefreshCw, Table, Utensils as UtensilsIcon, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useNavigate } from 'react-router-dom';
 import WawasanLoader from '@/components/brand/WawasanLoader';
@@ -74,10 +74,13 @@ export default function AdminPanel({
 
   const {
     orders,
+    conflicts,
     loading,
     ordersError,
     isApproving,
     fetchOrders,
+    fetchConflicts,
+    dismissConflict,
     handleUpdateOrderStatus,
     handleDeleteOrder,
     handleBatchDelete,
@@ -175,7 +178,7 @@ export default function AdminPanel({
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
-      await fetchOrders(true);
+      await Promise.all([fetchOrders(true), fetchConflicts()]);
     },
   });
 
@@ -471,6 +474,68 @@ export default function AdminPanel({
 
         {activeTab !== 'menu' && (
           <AdminStatsKpiStrip stats={kpiStats} language={language} />
+        )}
+        {conflicts.length > 0 && (
+          <section
+            aria-label={language === 'bm' ? 'Notifikasi konflik harga luar talian' : 'Offline pricing conflict alerts'}
+            className="mb-6 space-y-2"
+          >
+            {conflicts.map((conflict) => {
+              const targetOrder = orders.find((o) => o.id === conflict.orderId);
+              const priceSummary = conflict.submittedPrices
+                ? Object.entries(conflict.submittedPrices)
+                    .map(([meal, val]) => `${meal}: RM ${Number(val).toFixed(2)}`)
+                    .join(', ')
+                : '';
+              return (
+                <div
+                  key={conflict.id}
+                  role="alert"
+                  className="rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0 text-xs sm:text-sm text-stone-800 dark:text-stone-100">
+                      <p className="font-bold">
+                        {language === 'bm' ? 'Konflik Penyegerakan Harga Luar Talian' : 'Offline Pricing Sync Conflict'}
+                        {' — '}
+                        {conflict.customerName || conflict.orderId}
+                        {conflict.invoiceNo ? ` (${conflict.invoiceNo})` : ''}
+                      </p>
+                      <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
+                        {conflict.reason ||
+                          (language === 'bm'
+                            ? 'Rekod pelayan mempunyai kemas kini yang lebih baharu; perubahan luar talian ditolak.'
+                            : 'Server record had a newer timestamp; stale offline pricing submission was rejected.')}
+                        {priceSummary ? ` [${priceSummary}]` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {targetOrder && (
+                      <button
+                        type="button"
+                        onClick={() => openOrderDetail(targetOrder)}
+                        className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-colors cursor-pointer"
+                      >
+                        {language === 'bm' ? 'Semak Pesanan' : 'Review Order'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void dismissConflict(conflict.id);
+                      }}
+                      aria-label={language === 'bm' ? 'Tutup amaran konflik' : 'Dismiss conflict alert'}
+                      className="p-1.5 rounded-lg border border-stone-300 dark:border-white/15 text-stone-600 dark:text-stone-300 hover:bg-stone-200/60 dark:hover:bg-white/10 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
         )}
         {ordersError && (
           <ErrorState

@@ -339,5 +339,93 @@ describe('Widget Routes Authorization & Pricing Security', () => {
         })
       );
     });
+
+    it('rejects stale offline pricing submission with 409 and records an admin conflict notification', async () => {
+      const db = getFirestore();
+      const serverUpdatedAt = '2026-11-15T10:00:00.000Z';
+      const staleClientTs = Date.parse('2026-11-15T09:45:00.000Z');
+
+      await db.collection('orders').doc('ord_conflict_stale').set({
+        to: 'Conflict Corp',
+        email: 'conflict@example.com',
+        meals: ['lunch'],
+        quantity: 30,
+        status: 'pending',
+        updatedAt: serverUpdatedAt,
+      });
+
+      const res = await fetch(`${baseUrl}/api/widget/set-pricing`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: 'ord_conflict_stale',
+          prices: { lunch: 14 },
+          clientTimestamp: staleClientTs,
+        }),
+      });
+
+      expect(res.status).toBe(409);
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.conflict).toBe(true);
+      expect(json.code).toBe('PRICING_CONFLICT');
+      expect(json.notificationId).toBeTruthy();
+
+      // Order must remain untouched
+      const untouchedSnap = await db.collection('orders').doc('ord_conflict_stale').get();
+      expect(untouchedSnap.data()?.status).toBe('pending');
+      expect(untouchedSnap.data()?.totalAmount).toBeUndefined();
+
+      // Admin conflict endpoint surfaces the alert and dismisses it cleanly
+      const listRes = await fetch(`${baseUrl}/api/admin/conflicts`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(listRes.status).toBe(200);
+      const listJson = await listRes.json();
+      expect(listJson.success).toBe(true);
+      const recorded = listJson.conflicts.find((c: any) => c.id === json.notificationId);
+      expect(recorded).toBeDefined();
+      expect(recorded.orderId).toBe('ord_conflict_stale');
+      expect(recorded.customerName).toBe('Conflict Corp');
+      expect(recorded.submittedPrices).toEqual({ lunch: 14 });
+
+      const dismissRes = await fetch(`${baseUrl}/api/admin/conflicts/${json.notificationId}/dismiss`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(dismissRes.status).toBe(200);
+
+      const listAfterRes = await fetch(`${baseUrl}/api/admin/conflicts`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const listAfterJson = await listAfterRes.json();
+      expect(listAfterJson.conflicts.some((c: any) => c.id === json.notificationId)).toBe(false);
+    });
+
+    it('accepts offline pricing submission when clientTimestamp is newer than server updatedAt', async () => {
+      const db = getFirestore();
+      await db.collection('orders').doc('ord_conflict_fresh').set({
+        to: 'Fresh Sync Corp',
+        meals: ['lunch'],
+        quantity: 10,
+        status: 'pending',
+        updatedAt: '2026-11-15T08:00:00.000Z',
+      });
+
+      const res = await fetch(`${baseUrl}/api/widget/set-pricing`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: 'ord_conflict_fresh',
+          prices: { lunch: 18 },
+          clientTimestamp: Date.parse('2026-11-15T08:30:00.000Z'),
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.totalAmount).toBe(180);
+    });
   });
 });

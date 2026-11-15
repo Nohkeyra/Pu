@@ -36,7 +36,14 @@ internal val widgetGold = ColorProvider(Color(0xFFFFB02E))
 internal val widgetAmberText = ColorProvider(Color(0xFF211A19))
 
 @Composable
-internal fun GlassWidgetHeader(title: String, compactTitle: String, count: Int, lastSuccessAt: Long, refresh: Action) {
+internal fun GlassWidgetHeader(
+    title: String,
+    compactTitle: String,
+    count: Int,
+    lastSuccessAt: Long,
+    refresh: Action,
+    isAuthExpired: Boolean = false
+) {
     val compact = LocalSize.current.width < 260.dp
     // Keep the original header height on short, resized home-screen widgets.
     val hasRoomForFreshness = LocalSize.current.height >= 145.dp
@@ -71,10 +78,14 @@ internal fun GlassWidgetHeader(title: String, compactTitle: String, count: Int, 
                     )
                     if (hasRoomForFreshness) {
                         Text(
-                            text = if (compact) freshness.compactLabel else freshness.label,
+                            text = when {
+                                isAuthExpired -> if (compact) "Session expired" else "Session expired · open app"
+                                compact -> freshness.compactLabel
+                                else -> freshness.label
+                            },
                             maxLines = 1,
                             style = TextStyle(
-                                color = if (freshness.isStale) widgetGold else widgetMuted,
+                                color = if (isAuthExpired || freshness.isStale) widgetGold else widgetMuted,
                                 fontSize = 9.sp
                             )
                         )

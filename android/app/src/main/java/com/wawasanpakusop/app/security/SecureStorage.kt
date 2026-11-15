@@ -20,6 +20,7 @@ object SecureStorage {
     const val KEY_ADMIN_TOKEN = "admin_auth_jwt"
     const val KEY_OFFLINE_PRICING_QUEUE = "offline_pricing_queue"
     const val KEY_CACHED_PRICING_ORDERS = "cached_pricing_orders"
+    const val KEY_WIDGET_AUTH_EXPIRED = "WIDGET_AUTH_EXPIRED"
 
     @Volatile
     private var securePrefs: SharedPreferences? = null
@@ -83,6 +84,21 @@ object SecureStorage {
     @JvmStatic
     fun getAdminToken(context: Context): String? {
         return getString(context, KEY_ADMIN_TOKEN, null)
+    }
+
+    @JvmStatic
+    fun setWidgetAuthExpired(context: Context, expired: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_WIDGET_AUTH_EXPIRED, expired).apply()
+    }
+
+    @JvmStatic
+    fun isWidgetAuthExpired(context: Context): Boolean {
+        return try {
+            getPrefs(context).getBoolean(KEY_WIDGET_AUTH_EXPIRED, false)
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to read WIDGET_AUTH_EXPIRED flag", e)
+            false
+        }
     }
 
     @JvmStatic

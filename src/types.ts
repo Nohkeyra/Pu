@@ -172,3 +172,17 @@ export interface ConsolidatedInvoicePayload {
   invoiceNo?: string;
   lang?: 'en' | 'bm';
 }
+
+export interface AdminConflictNotification {
+  id: string;
+  type: 'pricing_conflict' | string;
+  orderId: string;
+  invoiceNo?: string | null;
+  customerName?: string;
+  submittedPrices?: Record<string, number>;
+  clientTimestamp?: string | null;
+  serverUpdatedAt?: string | null;
+  reason?: string;
+  dismissed?: boolean;
+  createdAt?: string;
+}

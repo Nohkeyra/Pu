@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRiderTracking } from '@/hooks/delivery/useRiderTracking';
 import { canStartRiderTracking, distanceMetres, formatRiderDistance, isFreshRiderLocation, validCoordinates } from '@/lib/riderTracking';
 import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
-import { isNativeRider, RiderTrackingError, startOtwGroup, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';
+import { extendRiderSharing, isNativeRider, RiderTrackingError, startOtwGroup, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';
 import type { Order } from '@/types';
 import { RiderRouteMap, type MapPoint } from './RiderRouteMap';
 import './rider-tracking.css';
@@ -35,6 +35,9 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
   const sharingThisOrder = device.active && device.orderId === order.id;
   const anotherOrder = device.active && device.orderId !== order.id;
   const uploadOffline = sharingThisOrder && device.phase === 'offline';
+  const expiresAtMs = session?.active && session.expiresAt ? Date.parse(session.expiresAt) : NaN;
+  const remainingMs = Number.isFinite(expiresAtMs) ? expiresAtMs - now : null;
+  const nearingTimeout = remainingMs !== null && remainingMs > 0 && remainingMs <= 20 * 60_000;
   const canStart = canStartRiderTracking(status) && connection === 'connected';
   const ageSeconds = location ? Math.max(0, Math.floor((now - Date.parse(location.updatedAt)) / 1000)) : 0;
   const lastSeen = ageSeconds < 60 ? text(`${ageSeconds}s lalu`, `${ageSeconds}s ago`) : text(`${Math.floor(ageSeconds / 60)} min lalu`, `${Math.floor(ageSeconds / 60)} min ago`);
@@ -101,6 +104,27 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
               ? text('OTW aktif. Status sesi ditutup secara automatik sejam selepas dimulakan.', 'OTW is active. The session closes automatically one hour after it starts.')
               : text('OTW meliputi penghantaran dalam sesi sama, dari waktu pesanan ini hingga 60 minit berikutnya, untuk hari ini sahaja.', 'OTW covers deliveries in this session from this order’s event time through the next 60 minutes, for today only.')}</p>}
             {sharingThisOrder ? <button disabled={busy} className="rider-button rider-button-stop" onClick={() => void action(stopRiderSharing)}><CircleStop size={19} />{text('Henti perkongsian lokasi', 'Stop location sharing')}</button> : <button disabled={busy || !canStart} className="rider-button rider-button-stop" onClick={() => void action(() => startRiderSharing(order.id!))}><Navigation size={19} />{busy ? text('Menyambung…', 'Connecting…') : text('Mula kongsi lokasi', 'Start sharing location')}</button>}
+            {!finished && session?.active && (sharingThisOrder || (remainingMs !== null && remainingMs > 0)) && (
+              <div className={nearingTimeout ? 'rider-warning' : 'mt-2'} role={nearingTimeout ? 'alert' : undefined}>
+                {nearingTimeout && (
+                  <p className="mb-2 font-semibold">
+                    {text(
+                      'Sesi lokasi penghantaran hampir mencapai had keselamatan 4 jam.',
+                      'Your active session is nearing the 4-hour automatic safety timeout.'
+                    )}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="rider-button rider-button-primary"
+                  onClick={() => void action(() => extendRiderSharing(order.id!, session.id))}
+                >
+                  <ShieldCheck size={18} />
+                  {text('Lanjutkan sesi (+4 jam)', 'Extend shift (+4h)')}
+                </button>
+              </div>
+            )}
             {!finished && <p className="rider-privacy"><ShieldCheck size={15} />{isNativeRider() ? text('Selepas anda mula, lokasi dikongsi di latar belakang dengan notifikasi. Hentikan di sini atau melalui notifikasi.', 'Once started, sharing continues in the background with a notification. Stop here or from the notification.') : text('Versi web berkongsi ketika peta ini dibuka. Menutup peta menghentikan GPS.', 'Web sharing works while this map is open. Closing the map stops GPS.')}</p>}
             <div className="rider-actions"><button disabled={busy} onClick={() => void openNavigation()}><Navigation size={18} />{text('Navigasi', 'Navigate')}<ArrowUpRight size={14} /></button>{order.contact && <a href={`tel:${order.contact.replace(/[^+\d]/g, '')}`}><Phone size={18} />{text('Telefon', 'Call')}</a>}</div>
             {onUpdateStatus && !finished && canStartRiderTracking(status) && <button disabled={busy} className="rider-complete" onClick={() => setConfirmFinish(true)}><Check size={17} />{text('Tandakan telah dihantar', 'Mark as delivered')}</button>}
