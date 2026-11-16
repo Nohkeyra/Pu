@@ -47,6 +47,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
     <main
       className={`native-welcome${exiting ? ' native-welcome--exiting' : ''}`}
       data-theme={theme}
+      data-ready={!isLoading}
       aria-label={isMalay ? 'Selamat datang ke Restoran Wawasan' : 'Welcome to Restoran Wawasan'}
     >
       <div className="native-welcome__wall" aria-hidden="true">

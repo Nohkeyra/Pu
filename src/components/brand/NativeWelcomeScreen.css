@@ -4,6 +4,12 @@
   font-display: swap;
 }
 
+@property --wawasan-welcome-lamp-output {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
 /* APK welcome screen only. */
 .native-welcome {
   --welcome-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
@@ -128,12 +134,33 @@
   opacity: 0;
   transition: opacity var(--welcome-wall-fade) ease;
 }
-.native-welcome[data-theme='dark'] .native-welcome__led-ambient { opacity: .74; }
+.native-welcome[data-theme='dark'] .native-welcome__led-ambient {
+  opacity: calc(.74 * var(--wawasan-welcome-lamp-output, 1));
+  transition: none;
+}
 .native-welcome[data-theme='dark'] .native-welcome__sign {
-  filter: drop-shadow(0 0 5px rgba(255,178,70,.70))
-          drop-shadow(0 0 20px rgba(255,128,25,.65))
-          drop-shadow(0 0 29px rgba(255,117,22,.27))
-          drop-shadow(7px 10px 5px rgba(0,0,0,.50));
+  filter: drop-shadow(0 0 5px rgba(255, 178, 70, calc(.70 * var(--wawasan-welcome-lamp-output, 1))))
+          drop-shadow(0 0 20px rgba(255, 128, 25, calc(.65 * var(--wawasan-welcome-lamp-output, 1))))
+          drop-shadow(0 0 29px rgba(255, 117, 22, calc(.27 * var(--wawasan-welcome-lamp-output, 1))))
+          drop-shadow(7px 10px 5px rgba(0, 0, 0, .50));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .native-welcome[data-theme='dark'][data-ready='false'] .native-welcome__sign-stage {
+    --wawasan-welcome-lamp-output: .12;
+  }
+  .native-welcome[data-theme='dark'][data-ready='true'] .native-welcome__sign-stage {
+    animation: native-wawasan-lamp-on 620ms linear;
+  }
+}
+
+@keyframes native-wawasan-lamp-on {
+  0% { --wawasan-welcome-lamp-output: .12; }
+  14% { --wawasan-welcome-lamp-output: .73; }
+  26% { --wawasan-welcome-lamp-output: .29; }
+  44% { --wawasan-welcome-lamp-output: .88; }
+  55% { --wawasan-welcome-lamp-output: .60; }
+  82%, 100% { --wawasan-welcome-lamp-output: 1; }
 }
 
 .native-welcome__content {
