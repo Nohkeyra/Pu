@@ -32,10 +32,10 @@ export function isAllowedApkUrl(value: string): boolean {
 const INVALID_APK_URL_MESSAGE = 'apkUrl must be an .apk asset from this repository\'s GitHub releases.';
 
 const DEFAULT_VERSION_CONFIG = {
-  latestVersion: '1.3.223',
+  latestVersion: '1.3.224',
   minVersion: '1.2.0',
-  buildNumber: 355,
-  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.223/app-release-signed.apk',
+  buildNumber: 356,
+  apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.3.224/app-release-signed.apk',
   bundleUrl: '',
   releaseNotes: [
     'Prestasi aplikasi & kestabilan haptik dipertingkatkan.',
