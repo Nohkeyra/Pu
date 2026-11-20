@@ -144,7 +144,7 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     doc.setTextColor(114, 80, 20);
     doc.text('RESTORAN WAWASAN', 39, 16);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(45, 38, 30);
     doc.text(INVOICE_CONTACT.address, 39, 23);
     doc.setFont('helvetica', 'bold');
@@ -152,7 +152,7 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     doc.setTextColor(114, 80, 20);
     doc.text(bm ? 'INVOIS' : 'INVOICE', 282, 19, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setTextColor(45, 38, 30);
     doc.text(`${bm ? 'No. Invois' : 'Invoice No'}: ${page.invoiceNo}`, 282, 26, { align: 'right' });
     doc.text(`${bm ? 'Tarikh' : 'Date'}: ${invoiceDate(options.issuedAt)}`, 282, 31, {
@@ -162,11 +162,11 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     doc.setDrawColor(222, 211, 193);
     doc.roundedRect(15, 40, 267, data.recipientHeight, 2, 2, 'FD');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.text(bm ? 'KEPADA' : 'BILL TO', 19, 45);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(data.recipientLines, 19, 50, { lineHeightFactor: 1.27 });
+    doc.setFontSize(10);
+    doc.text(data.recipientLines, 19, 50.5, { lineHeightFactor: 1.27 });
     if (options.layoutVersion === 2) {
       let y = data.tableY;
       doc.setFillColor(166, 124, 30);
@@ -241,7 +241,7 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     doc.setDrawColor(194, 147, 45);
     doc.line(15, 201, 282, 201);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(120, 110, 95);
     doc.text(INVOICE_CONTACT.address, 15, 206);
     doc.link(15, 202.5, 210, 5, { url: INVOICE_CONTACT.maps });

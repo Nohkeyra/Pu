@@ -71,7 +71,7 @@ export function drawInvoiceCalligraphy(
 }
 export function drawInvoiceContactLinks(doc: jsPDF, y: number, width = 210): void {
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
+  doc.setFontSize(9);
   doc.setTextColor(114, 80, 20);
   const a = doc.getTextWidth(INVOICE_CONTACT.phone),
     b = doc.getTextWidth(INVOICE_CONTACT.email),
@@ -93,10 +93,10 @@ export function drawInvoiceBankDetails(
   doc.roundedRect(15, y, 267, 18, 2, 2, 'FD');
   doc.setTextColor(114, 80, 20);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
+  doc.setFontSize(8);
   doc.text('MAKLUMAT AKAUN BANK / BANK ACCOUNT DETAILS', 19, y + 4);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(6.5);
+  doc.setFontSize(7.5);
   doc.text(
     lang === 'bm' ? 'Disediakan oleh: Restoran Wawasan' : 'Prepared by: Restoran Wawasan',
     278,
@@ -107,16 +107,16 @@ export function drawInvoiceBankDetails(
     labels =
       lang === 'bm' ? ['Nama Akaun', 'Bank', 'No. Akaun'] : ['Account Name', 'Bank', 'Account No.'];
   doc.setTextColor(105, 95, 85);
-  doc.setFontSize(7);
+  doc.setFontSize(7.5);
   labels.forEach((label, index) => doc.text(label, xs[index], y + 8));
   doc.setTextColor(26, 24, 22);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(9.5);
   [bank.bankAccountName, bank.bankName, bank.bankAccountNumber].forEach((value, index) =>
     doc.text(value, xs[index], y + 12)
   );
   doc.setFont('helvetica', 'italic');
-  doc.setFontSize(6.5);
+  doc.setFontSize(7);
   doc.setTextColor(105, 95, 85);
   doc.text(INVOICE_BUSINESS.pricingNote[lang], 19, y + 16);
   doc.text(INVOICE_BUSINESS.generatedNote[lang], 278, y + 16, { align: 'right' });
