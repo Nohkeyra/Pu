@@ -8,9 +8,12 @@ import {
 } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
+import { Firestore as CloudFirestore } from '@google-cloud/firestore';
+import { google } from 'googleapis';
 import { firebaseConfig, STRICT_FIREBASE_ADMIN } from './config.js';
 
 let adminApp: App | undefined;
+let productionFirestore: FirebaseFirestore.Firestore | undefined;
 let memoryFirestoreInstance: any = null;
 
 class MemoryFirestore {
@@ -263,67 +266,36 @@ class MemoryFirestore {
   }
 }
 
-export function hasAdminCredentials(): boolean {
-  let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-    ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
-    : undefined;
-  if (
-    email &&
-    ((email.startsWith('"') && email.endsWith('"')) ||
-      (email.startsWith("'") && email.endsWith("'")))
-  ) {
-    email = email.slice(1, -1).trim();
-  }
-
-  let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-    ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
-    : undefined;
-  if (privateKey) {
-    if (
-      (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
-      (privateKey.startsWith("'") && privateKey.endsWith("'"))
-    ) {
-      privateKey = privateKey.slice(1, -1).trim();
+/** Read server-controlled service account secrets; never expose these in logs. */
+function serviceAccountFromEnv(): { email: string; privateKey: string } | null {
+  const unwrap = (value: string | undefined): string => {
+    const trimmed = value?.trim() || '';
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+      return trimmed.slice(1, -1).trim();
     }
-  }
+    return trimmed;
+  };
+  const email = unwrap(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
+  const privateKey = unwrap(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY).replace(/\\n/g, '\n');
+  return email && privateKey ? { email, privateKey } : null;
+}
 
-  return Boolean((email && privateKey) || process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim());
+export function hasAdminCredentials(): boolean {
+  return Boolean(serviceAccountFromEnv() || process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim());
 }
 
 export function getAdminApp(): App {
   if (!adminApp) {
     const apps = getApps();
     if (apps.length === 0) {
-      let email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-        ? process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL.trim()
-        : undefined;
-      if (
-        email &&
-        ((email.startsWith('"') && email.endsWith('"')) ||
-          (email.startsWith("'") && email.endsWith("'")))
-      ) {
-        email = email.slice(1, -1).trim();
-      }
-
-      let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-        ? process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.trim()
-        : undefined;
-      if (privateKey) {
-        if (
-          (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
-          (privateKey.startsWith("'") && privateKey.endsWith("'"))
-        ) {
-          privateKey = privateKey.slice(1, -1).trim();
-        }
-        privateKey = privateKey.replace(/\\n/g, '\n');
-      }
-
-      if (email && privateKey) {
+      const serviceAccount = serviceAccountFromEnv();
+      if (serviceAccount) {
         adminApp = initializeApp({
           credential: cert({
             projectId: firebaseConfig.projectId,
-            clientEmail: email,
-            privateKey: privateKey,
+            clientEmail: serviceAccount.email,
+            privateKey: serviceAccount.privateKey,
           }),
           projectId: firebaseConfig.projectId,
         });
@@ -421,21 +393,43 @@ export function getFirestore(): FirebaseFirestore.Firestore {
     return memoryFirestoreInstance as unknown as FirebaseFirestore.Firestore;
   }
 
+  // The Firebase Admin SDK still passes `credentials` to the Firestore constructor
+  // when initialized with cert(). Modern Google Auth deprecates that option.
+  // Use the same service account via an explicit auth object for Firestore only;
+  // Firebase Admin continues to handle Auth and Messaging as before.
+  if (productionFirestore) return productionFirestore;
   const app = getAdminApp();
-  const dbId = firebaseConfig.firestoreDatabaseId;
+  const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+  const serviceAccount = serviceAccountFromEnv();
 
-  if (dbId && dbId !== '(default)') {
-    try {
-      return getFirestoreModular(app, dbId);
-    } catch (err) {
-      console.warn(
-        `Failed to initialize Firestore with database ID ${dbId}, falling back to default:`,
-        err
-      );
-      return getFirestoreModular(app);
-    }
+  if (serviceAccount) {
+    const scopes = ['https://www.googleapis.com/auth/datastore'];
+    const jwt = new google.auth.JWT({
+      email: serviceAccount.email,
+      key: serviceAccount.privateKey,
+      scopes,
+    });
+    const auth = new google.auth.GoogleAuth({
+      projectId: firebaseConfig.projectId,
+      authClient: jwt,
+      scopes,
+    });
+    // Firestore forwards `auth` to the Google GAX client without the deprecated
+    // `credentials` object. Do not serialize the auth object: it holds a key.
+    productionFirestore = new CloudFirestore({
+      projectId: firebaseConfig.projectId,
+      databaseId: dbId,
+      auth,
+    });
+    return productionFirestore;
   }
-  return getFirestoreModular(app);
+
+  // ADC-backed Firebase Admin keeps its previous behavior when no inline
+  // service account key is configured (e.g. GOOGLE_APPLICATION_CREDENTIALS).
+  productionFirestore = dbId === '(default)'
+    ? getFirestoreModular(app)
+    : getFirestoreModular(app, dbId);
+  return productionFirestore;
 }
 
 export interface OrderData {

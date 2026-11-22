@@ -8,6 +8,8 @@ describe('Cloud Run startup and strict credential readiness', () => {
     process.env = { ...originalEnv };
     vi.doUnmock('./firebaseAdmin.js');
     vi.doUnmock('firebase-admin/app');
+    vi.doUnmock('@google-cloud/firestore');
+    vi.doUnmock('googleapis');
     vi.resetModules();
     vi.restoreAllMocks();
   });
@@ -49,6 +51,58 @@ describe('Cloud Run startup and strict credential readiness', () => {
     const app = getAdminApp();
     expect(app).toEqual({ name: '[DEFAULT]' });
     expect(initializeAppMock).toHaveBeenCalledWith({ projectId: 'restoran-wawasan' });
+  });
+
+  it('passes a typed auth object rather than deprecated credentials to Firestore', async () => {
+    vi.doUnmock('./firebaseAdmin.js');
+    vi.resetModules();
+    process.env.NODE_ENV = 'development';
+    delete process.env.CI;
+    delete process.env.VITEST;
+    delete process.env.USE_MEMORY_FIRESTORE;
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = ' "account@example.iam.gserviceaccount.com" ';
+    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = '"fake\\nkey"';
+
+    let firestoreOptions: Record<string, unknown> | undefined;
+    class FakeFirestore {
+      constructor(options: Record<string, unknown>) { firestoreOptions = options; }
+    }
+    class FakeJWT {
+      constructor(readonly options: Record<string, unknown>) {}
+    }
+    class FakeGoogleAuth {
+      constructor(readonly options: Record<string, unknown>) {}
+    }
+    const certMock = vi.fn(() => ({ source: 'service-account' }));
+    vi.doMock('firebase-admin/app', () => ({
+      initializeApp: vi.fn((options) => ({ name: '[DEFAULT]', options })),
+      cert: certMock,
+      getApps: () => [],
+    }));
+    vi.doMock('@google-cloud/firestore', () => ({ Firestore: FakeFirestore }));
+    vi.doMock('googleapis', () => ({ google: { auth: {
+      JWT: FakeJWT,
+      GoogleAuth: FakeGoogleAuth,
+    } } }));
+
+    const { getFirestore } = await import('./firebaseAdmin.js');
+    const instance = getFirestore();
+    expect(getFirestore()).toBe(instance); // Reuse one connection pool.
+    expect(firestoreOptions).toMatchObject({
+      projectId: 'restoran-wawasan',
+      databaseId: '(default)',
+      auth: expect.any(FakeGoogleAuth),
+    });
+    expect(firestoreOptions).not.toHaveProperty('credentials');
+    const auth = firestoreOptions!.auth as FakeGoogleAuth;
+    expect(auth.options.authClient).toBeInstanceOf(FakeJWT);
+    expect((auth.options.authClient as FakeJWT).options).toMatchObject({
+      email: 'account@example.iam.gserviceaccount.com',
+      key: 'fake\nkey',
+      scopes: ['https://www.googleapis.com/auth/datastore'],
+    });
+    expect(certMock).toHaveBeenCalledOnce(); // Keep Firebase Auth initialization intact.
   });
 
   it('rejects blank GOOGLE_APPLICATION_CREDENTIALS in hasAdminCredentials and throws in strict mode', async () => {

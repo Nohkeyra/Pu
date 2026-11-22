@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "unset npm_config_cache_dir NPM_CONFIG_CACHE_DIR; npm run build",
   "outputDirectory": "dist",
   "rewrites": [
     {
@@ -10,5 +10,6 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "installCommand": "unset npm_config_cache_dir NPM_CONFIG_CACHE_DIR; npm ci --include=dev"
 }
