@@ -296,6 +296,7 @@ jobs:
             echo "::error::Unable to determine the release keystore SHA-1."
             exit 1
           fi
+          echo "Firebase Android release SHA-1 to register: $SHA1"
           ANDROID_RELEASE_SHA1="$SHA1" node scripts/verify-firebase-google-signin.cjs
 
       - name: Setup Gradle permissions and wrapper integrity
