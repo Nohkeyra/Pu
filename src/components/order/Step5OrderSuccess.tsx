@@ -49,8 +49,12 @@ export function Step5OrderSuccess({
   tText,
 }: Step5OrderSuccessProps) {
   const reduceMotion = useReducedMotion();
+  const notifiedReference = React.useRef<string | null>(null);
 
   React.useEffect(() => {
+    // A locale change or StrictMode effect replay is not a new order receipt.
+    if (!referenceNumber || notifiedReference.current === referenceNumber) return;
+    notifiedReference.current = referenceNumber;
     // Preserve the existing order-received notification; the celebration itself
     // is now a lightweight, on-screen paper-stamp motion, not particle confetti.
     // Trigger native notification

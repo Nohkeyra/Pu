@@ -108,7 +108,13 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
         if (disposed || latestFinished.current) return;
         line?.remove(); line = L.polyline(coordinates, { color: '#b95a28', weight: 5, opacity: .8, className: 'rider-route-line' }).addTo(instance);
         setRouteUnavailable(false);
-      } catch { if (!disposed) { line?.remove(); line = null; setRouteUnavailable(true); } }
+      } catch {
+        // A late failure must not cut short the completion fade or present a
+        // route error after the actual order has finished.
+        if (!disposed && !latestFinished.current) {
+          line?.remove(); line = null; setRouteUnavailable(true);
+        }
+      }
     };
     void loadRoute();
     const timer = setInterval(loadRoute, 30_000);

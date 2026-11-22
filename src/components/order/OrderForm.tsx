@@ -5,7 +5,7 @@ import { Check, Phone, User as UserIcon, Ghost, CircleHelp, ChevronDown } from '
 import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoicePreviewModal';
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { getApiUrl, fetchWithCache, invalidateFetchCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, sendEmailVerification, type User } from 'firebase/auth';
@@ -1586,15 +1586,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             >
               <motion.div
                 ref={stepContentRef}
+                key={effectiveStep}
                 initial={false}
                 animate={{ x: stepPulling ? '100%' : 0 }}
-                transition={{ duration: pullDuration, ease: [0.5, 0.05, 0.25, 1] }}
+                transition={{ duration: stepPulling ? pullDuration : 0, ease: [0.5, 0.05, 0.25, 1] }}
                 style={{ pointerEvents: stepTransitionBusy ? 'none' : undefined }}
               >
-                {/* A stable outer shell preserves the native mascot pull. AnimatePresence
-                    now lets existing step exit/entry animations run without layout motion. */}
-                <MotionConfig reducedMotion="user">
-                  <AnimatePresence mode="wait" initial={false}>
+                {/* The mascot owns the outgoing move. Mount the next sheet at rest;
+                    its own short arrival must not replay the outgoing sheet or pull. */}
                 {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
                 {effectiveStep === 1 && (
                   <Step1EventMeal
@@ -1678,8 +1677,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     tText={tText}
                   />
                 )}
-                  </AnimatePresence>
-                </MotionConfig>
               </motion.div>
             </div>
           </div>

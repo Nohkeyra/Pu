@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { ArrowLeft, Coffee, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
@@ -49,13 +49,13 @@ export function Step4ReviewSubmit({
   tText,
   t,
 }: Step4ReviewSubmitProps) {
+  const reduceMotion = useReducedMotion();
   return (
     <motion.div
       key="step4"
-      initial={{ opacity: 0, x: 16 }}
+      initial={reduceMotion ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-5 text-left"
     >
       <div className="customer-step-banner batik-header p-5 rounded-2xl border relative overflow-hidden shadow-md">
