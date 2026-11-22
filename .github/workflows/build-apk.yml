@@ -278,6 +278,28 @@ jobs:
           cp android/app/key.properties android/key.properties
           echo "✅ Keystore successfully configured for release signing!"
 
+      - name: Show release APK SHA-256
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          SHA256="$(keytool -list -v \
+            -keystore android/app/release-key.jks \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            | awk '/SHA256:/ {print $2}')"
+          if [[ ! "$SHA256" =~ ^([[:xdigit:]]{2}:){31}[[:xdigit:]]{2}$ ]]; then
+            echo "::error::Could not read a valid SHA-256 fingerprint from the release signing certificate."
+            exit 1
+          fi
+          echo "Android release APK SHA-256: $SHA256"
+          {
+            echo "### Wawasan Android release signing certificate"
+            echo "- **SHA-256:** `$SHA256`"
+            echo "- **Firebase Android package:** `com.wawasanpakusop.app`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Setup Gradle permissions and wrapper integrity
         run: |
           cd android
