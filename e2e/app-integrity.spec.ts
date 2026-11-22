@@ -33,7 +33,7 @@ const [{ MemoryRouter, useLocation }, { DiagnosticConsole }, { default: InAppUpd
   import('/src/hooks/native/useDeepLinks.ts'),
 ]);
 function BackFixture() {
-  useNativeBackButton();
+  useNativeBackButton(new URLSearchParams(location.search).get('screen') === 'welcome-back');
   const location = useLocation();
   const [parent, setParent] = React.useState(true), [child, setChild] = React.useState(true);
   React.useEffect(() => { document.getElementById('child-close')?.focus(); }, []);
@@ -57,7 +57,7 @@ function Fixture() {
     apkUrl: 'https://local.invalid/Wawasan.apk', releaseNotes: [], forceUpdate: false,
     bundleUrl: screen === 'update-ota' ? 'https://local.invalid/bundle.zip' : '' };
   if (screen === 'links') return React.createElement(MemoryRouter, { initialEntries: ['/home'] }, React.createElement(LinkFixture));
-  if (screen === 'back') return React.createElement(MemoryRouter, { initialEntries: ['/home', '/order'] }, React.createElement(BackFixture));
+  if (screen === 'back' || screen === 'welcome-back') return React.createElement(MemoryRouter, { initialEntries: ['/home', '/order'] }, React.createElement(BackFixture));
   return React.createElement(React.Fragment, null,
     React.createElement('button', { onClick: () => setOpen(true) }, 'Open fixture'),
     screen === 'diagnostics' ? React.createElement(DiagnosticConsole, { isOpen: open, onClose: close })
@@ -189,4 +189,13 @@ test('native URL and notification actions navigate only to existing allowed scre
   await expect(page.locator('#route')).toHaveText('/calendar');
   await page.evaluate(() => (window as unknown as { __url: (event: { url: string }) => void }).__url({ url: 'https://untrusted.invalid/admin' }));
   await expect(page.locator('#route')).toHaveText('/calendar');
+});
+
+test('Back on welcome minimizes without dismissing welcome or navigating hidden screens', async ({ page }) => {
+  await page.goto('/__app-integrity?screen=welcome-back');
+  await expect(page.getByRole('button', { name: 'Close child' })).toBeFocused();
+  await page.evaluate(() => (window as unknown as { __back: (event: { canGoBack: boolean }) => void }).__back({ canGoBack: true }));
+  expect(await page.evaluate(() => (window as unknown as { __minimized: number }).__minimized)).toBe(1);
+  await expect(page.locator('#route')).toHaveText('/order');
+  await expect(page.getByRole('alertdialog')).toBeVisible();
 });

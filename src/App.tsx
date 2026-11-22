@@ -260,7 +260,7 @@ function App() {
             <Router>
               <VercelSpeedInsights />
               <PushNotificationHandler />
-              {(isSplashFinished || !isNative) && <NativeBackButtonHandler />}
+              <NativeBackButtonHandler isWelcomeActive={isNative && !isSplashFinished} />
               <NativeAppListeners />
               {isSplashFinished && (
                 <>

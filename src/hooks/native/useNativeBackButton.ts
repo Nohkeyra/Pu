@@ -19,7 +19,7 @@ const ROOT_PATHS = ['/', '/main', '/home', '/login', '/app'];
  * 2. Navigating back in React Router history if on a nested route.
  * 3. Double-tapping to minimize the native app if on a top-level root path.
  */
-export function useNativeBackButton() {
+export function useNativeBackButton(isWelcomeActive = false) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -43,6 +43,12 @@ export function useNativeBackButton() {
       try {
         const handle = await App.addListener('backButton', ({ canGoBack }: BackButtonListenerEvent) => {
           if (!active) return;
+          // Welcome remains until Get Started. Back may minimize the app but
+          // must never dismiss welcome or navigate its still-hidden routes.
+          if (isWelcomeActive) {
+            void App.minimizeApp();
+            return;
+          }
           // The first Back press while typing should dismiss the IME, not leave the order.
           if (keyboardVisibleRef.current) {
             void Keyboard.hide().catch(() => { /* Android normally hides the IME itself. */ });
@@ -128,5 +134,5 @@ export function useNativeBackButton() {
         listenerHandle.remove();
       }
     };
-  }, [navigate, location.pathname, toast]);
+  }, [navigate, location.pathname, toast, isWelcomeActive]);
 }
