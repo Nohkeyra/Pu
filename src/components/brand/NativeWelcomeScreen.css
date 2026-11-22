@@ -4,12 +4,6 @@
   font-display: swap;
 }
 
-@property --wawasan-welcome-lamp-output {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 1;
-}
-
 /* APK welcome screen only. */
 .native-welcome {
   --welcome-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
@@ -119,42 +113,57 @@
 .native-welcome__sign {
   display: block;
   position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
   filter: drop-shadow(9px 11px 6px rgba(50, 27, 13, .27));
   -webkit-user-drag: none;
 }
-.native-welcome__led-ambient {
+.native-welcome__led-ambient,
+.native-welcome__rim-light {
   position: absolute;
-  inset: -22%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(255,153,37,.52) 0%, rgba(242,111,12,.24) 38%, transparent 68%);
-  filter: blur(16px);
-  opacity: 0;
-  transition: opacity var(--welcome-wall-fade) ease;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: none;
 }
+.native-welcome__led-ambient { z-index: 0; filter: blur(15px); }
+.native-welcome__rim-light { z-index: 2; }
+.native-welcome__light-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.native-welcome__led-ambient .native-welcome__light-path { stroke: #ff9c36; stroke-width: 34; opacity: .66; }
+.native-welcome__rim-halo { stroke: #ff9c36; stroke-width: 11; opacity: .7; filter: blur(4px); }
+.native-welcome__rim-tube { stroke: #ffc878; stroke-width: 4.4; }
+.native-welcome__rim-core { stroke: #fff1cf; stroke-width: 1.8; }
 .native-welcome[data-theme='dark'] .native-welcome__led-ambient {
-  opacity: calc(.74 * var(--wawasan-welcome-lamp-output, 1));
-  transition: none;
+  display: block;
 }
+.native-welcome[data-theme='dark'] .native-welcome__rim-light { display: block; }
 .native-welcome[data-theme='dark'] .native-welcome__sign {
-  filter: drop-shadow(0 0 5px rgba(255, 178, 70, calc(.70 * var(--wawasan-welcome-lamp-output, 1))))
-          drop-shadow(0 0 20px rgba(255, 128, 25, calc(.65 * var(--wawasan-welcome-lamp-output, 1))))
-          drop-shadow(0 0 29px rgba(255, 117, 22, calc(.27 * var(--wawasan-welcome-lamp-output, 1))))
-          drop-shadow(7px 10px 5px rgba(0, 0, 0, .50));
+  /* The physical contact shadow never travels with the light. */
+  filter: drop-shadow(7px 10px 5px rgba(0, 0, 0, .50));
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .native-welcome[data-theme='dark'][data-ready='false'] .native-welcome__sign-stage {
-    --wawasan-welcome-lamp-output: .12;
+  .native-welcome[data-theme='dark'] .native-welcome__light-path {
+    stroke-dashoffset: 1;
   }
-  .native-welcome[data-theme='dark'][data-ready='true'] .native-welcome__sign-stage {
-    animation: native-wawasan-lamp-on 620ms linear both;
+  .native-welcome[data-theme='dark'][data-sign-ready='false'] .native-welcome__light-path,
+  .native-welcome[data-theme='dark'][data-ready='false'] .native-welcome__light-path {
+    opacity: 0;
   }
-  /* The words arrive only after the sign receives power. This sequence is
-     triggered by the actual light→dark theme switch, not by a scroll event. */
-  .native-welcome[data-theme='dark'][data-ready='true'] .native-welcome__message {
+  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__light-path {
+    /* One accumulating circuit, then a steady closed tube. Never a looping chase. */
+    animation: native-wawasan-rim-on 6s linear both;
+  }
+  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__message {
     animation: native-wawasan-afterglow-copy 310ms 400ms cubic-bezier(.22,1,.36,1) both;
   }
 }
@@ -164,13 +173,9 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes native-wawasan-lamp-on {
-  0% { --wawasan-welcome-lamp-output: .12; }
-  14% { --wawasan-welcome-lamp-output: .73; }
-  26% { --wawasan-welcome-lamp-output: .29; }
-  44% { --wawasan-welcome-lamp-output: .88; }
-  55% { --wawasan-welcome-lamp-output: .60; }
-  82%, 100% { --wawasan-welcome-lamp-output: 1; }
+@keyframes native-wawasan-rim-on {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
 }
 
 .native-welcome__content {
