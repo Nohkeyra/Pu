@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { CalendarDays, MapPin, UserRound, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function CustomerDashboard() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const bm = language === 'bm';
+  const reduceMotion = useReducedMotion();
   const [user, setUser] = useState<User | null>(() => auth.currentUser);
   const [ready, setReady] = useState(false);
   useEffect(() => onAuthStateChanged(auth, signedIn => {
@@ -60,7 +62,15 @@ export default function CustomerDashboard() {
           </div>
         <div className="customer-dashboard-actions grid grid-cols-1 gap-3 sm:grid-cols-2">
           {actions.map(({ icon: Icon, title, description, path }, index) => (
-            <button type="button" key={path} onClick={() => navigate(path)} className="customer-dashboard-action">
+            <motion.button
+              type="button"
+              key={path}
+              onClick={() => navigate(path)}
+              className="customer-dashboard-action"
+              whileHover={reduceMotion ? undefined : { y: -2 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.985, y: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 35 }}
+            >
               <span className="customer-dashboard-action-top">
                 <span className="customer-dashboard-action-icon"><Icon aria-hidden="true" /></span>
                 <span className="customer-dashboard-action-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
@@ -68,7 +78,7 @@ export default function CustomerDashboard() {
               <span className="customer-dashboard-action-title">{title}</span>
               <span className="customer-dashboard-action-description">{description}</span>
               <ArrowRight className="customer-dashboard-action-arrow" aria-hidden="true" />
-            </button>
+            </motion.button>
           ))}
         </div>
         </section>
