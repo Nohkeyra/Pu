@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { 
   Sparkles,
   CupSoda,
@@ -56,6 +56,7 @@ export function Step2DishSelection({
   tText,
   t,
 }: Step2DishSelectionProps) {
+  const reduceMotion = useReducedMotion();
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
@@ -149,10 +150,9 @@ export function Step2DishSelection({
   return (
     <motion.div
       key="step2"
-      initial={{ opacity: 0, x: 16 }}
+      initial={reduceMotion ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
       className="customer-menu-step space-y-4 text-left"
     >
       <header className="customer-menu-heading">

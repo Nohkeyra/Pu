@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { 
   Check, 
   Briefcase, 
@@ -42,6 +42,7 @@ export function Step1EventMeal({
   handleStepNext,
   tText,
 }: Step1EventMealProps) {
+  const reduceMotion = useReducedMotion();
   const [fieldErrors, setFieldErrors] = useState<{ eventType?: string; mealTypes?: string; guests?: string }>({});
   const stepRef = useRef<HTMLDivElement>(null);
 
@@ -74,10 +75,9 @@ export function Step1EventMeal({
     <motion.div
       ref={stepRef}
       key="step1"
-      initial={{ opacity: 0, x: 16 }}
+      initial={reduceMotion ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
       className="customer-step-one text-left"
     >
       <div className="customer-step-heading batik-header">

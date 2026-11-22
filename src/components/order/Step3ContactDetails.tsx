@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   Truck,
   Store,
@@ -73,16 +73,16 @@ export function Step3ContactDetails({
   fieldErrors,
   clearFieldError,
 }: Step3ContactDetailsProps) {
+  const reduceMotion = useReducedMotion();
   // The sticky mobile action and the in-form action must validate identically.
   const validateAndNext = () => handleStepNext(3);
 
   return (
     <motion.div
       key="step3"
-      initial={{ opacity: 0, x: 16 }}
+      initial={reduceMotion ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-5 text-left"
     >
       <div className="customer-step-banner batik-header p-5 rounded-2xl border relative overflow-hidden shadow-md">
