@@ -112,10 +112,13 @@ function PageTransition({ children }: { children: ReactNode }) {
   const isNative = Capacitor.isNativePlatform();
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: isNative ? 4 : 8, scale: 0.995 }}
+      // Native route changes must not translate or zoom the document: a small
+      // transform here feels like scroll bounce beside the fixed bottom dock.
+      // Web keeps its established spatial transition.
+      initial={reduceMotion ? false : { opacity: 0, y: isNative ? 0 : 8, scale: isNative ? 1 : 0.995 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: isNative ? -4 : -6, scale: 0.995 }}
-      transition={reduceMotion ? { duration: 0 } : { duration: isNative ? 0.12 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+      exit={reduceMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: isNative ? 0 : -6, scale: isNative ? 1 : 0.995 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: isNative ? 0.16 : 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="flex-grow flex flex-col w-full h-full relative"
     >
       {children}
