@@ -139,7 +139,8 @@ export function isGooglePopupDismissed(error: unknown): boolean {
 }
 
 export function googleAuthErrorMessage(error: unknown, language: Language, action: GoogleAction): string {
-  const code = (error as { code?: string } | null)?.code;
+  const rawCode = (error as { code?: string | number } | null)?.code;
+  const code = rawCode == null ? '' : String(rawCode);
   const bm = language === 'bm';
   switch (code) {
     case 'auth/account-exists-with-different-credential':
@@ -168,6 +169,14 @@ export function googleAuthErrorMessage(error: unknown, language: Language, actio
       return bm ? 'Domain web ini belum dibenarkan dalam Firebase Authentication.' : 'This website domain is not authorized in Firebase Authentication.';
     case 'auth/operation-not-allowed':
       return bm ? 'Google Sign-In belum diaktifkan dalam Firebase Authentication.' : 'Google Sign-In is not enabled in Firebase Authentication.';
+    case 'DEVELOPER_ERROR':
+    case '10':
+    case 'auth/configuration-not-found':
+    case 'auth/invalid-api-key':
+    case 'auth/app-not-authorized':
+      return bm
+        ? 'Google Sign-In tidak tersedia kerana konfigurasi aplikasi Android belum lengkap. Sila gunakan e-mel dan kata laluan sementara pentadbir menyemak Firebase dan sijil APK.'
+        : 'Google Sign-In is unavailable due to an Android app configuration issue. Please use email/password while support checks Firebase and the APK signing certificate.';
     case 'auth/missing-google-id-token':
     case 'auth/invalid-credential':
       return bm ? 'Pengesahan Google tidak lengkap. Sila cuba lagi atau hubungi pentadbir aplikasi.' : 'Google authentication was incomplete. Try again or contact support.';
