@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
-import { motion } from 'motion/react';
+import { useRef } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { X, FileDown, Share2 } from 'lucide-react';
 import AdminPdfCanvasPreview from './AdminPdfCanvasPreview';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import WawasanLoader from '@/components/brand/WawasanLoader';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 
 interface AdminPdfShareModalProps {
   isOpen: boolean;
@@ -27,6 +29,10 @@ export function AdminPdfShareModal({
   language,
   toast,
 }: AdminPdfShareModalProps) {
+  const reduceMotion = useReducedMotion();
+  const modalRef = useRef<HTMLDivElement>(null);
+  useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
+
   if (!isOpen) return null;
 
   const safeFileName = (previewFileName || 'Invoice.pdf').replace(/[\\/:*?"<>|]/g, '_');
@@ -103,21 +109,23 @@ export function AdminPdfShareModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="pdf-preview-title"
       className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-6"
       id="pdf-preview-dialog-overlay"
     >
       <motion.div 
-        initial={{ opacity: 0 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.16 }}
         className="absolute inset-0 bg-deep-forest/90 backdrop-blur-md" 
         onClick={onClose}
       />
       
       <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        ref={modalRef}
+        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         className="w-full h-full max-w-6xl bg-white dark:bg-stone-900 border border-white/20 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative z-[2001]"
         onClick={(e) => e.stopPropagation()}
         id="pdf-preview-dialog-container"
@@ -125,7 +133,7 @@ export function AdminPdfShareModal({
         {/* Header */}
         <div className="px-4 sm:px-8 py-3 sm:py-5 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50/80 dark:bg-stone-900/80 backdrop-blur-md flex-shrink-0" id="pdf-preview-header">
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
+            <h2 id="pdf-preview-title" className="text-xl md:text-2xl font-display font-bold text-deep-forest dark:text-white truncate">
               {previewFileName || 'PDF Invoice Preview'}
             </h2>
             <p className="text-xs md:text-sm text-stone-500 mt-0.5">
@@ -136,7 +144,7 @@ export function AdminPdfShareModal({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="ml-4 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 hover:rotate-90 transition-transform"
+            className="ml-4 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800"
             aria-label="Close"
             id="pdf-preview-close-btn"
           >

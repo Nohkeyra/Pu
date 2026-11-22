@@ -1,0 +1,44 @@
+name: Motion QA
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/admin/**'
+      - 'src/components/ui/**'
+      - 'src/main.tsx'
+      - 'src/index.css'
+      - 'src/styles/**'
+      - 'e2e/motion-completion.spec.ts'
+      - 'playwright.config.ts'
+      - '.github/workflows/motion-qa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: motion-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Motion browser interactions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Set up npm 11.9.0
+        run: npm install --global npm@11.9.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/motion-completion.spec.ts --project=chromium --workers=2 --reporter=line
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: motion-browser-failure
+          path: test-results/
+          retention-days: 7

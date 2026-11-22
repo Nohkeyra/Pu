@@ -6,7 +6,7 @@ import {
 } from '@/hooks/ui/useRememberedView';
 import { OrderReadingCard } from './OrderReadingCard';
 import { useEffect, useState, useMemo, Suspense } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
@@ -64,6 +64,7 @@ export default function AdminPanel({
   const { t, language } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
   const viewScope = adminViewScope(adminToken);
   const [readingOrder, setReadingOrder] = useState<Order | null>(null);
@@ -349,10 +350,11 @@ export default function AdminPanel({
       <motion.div
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
         animate={{
-          y: isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
+          y: reduceMotion ? 0 : isRefreshing ? 20 : Math.max(0, Math.min(pullDistance - 40, 20)),
           opacity: pullDistance > 10 || isRefreshing ? 1 : 0,
-          scale: pullDistance > 10 || isRefreshing ? 1 : 0.8,
+          scale: reduceMotion || pullDistance > 10 || isRefreshing ? 1 : 0.8,
         }}
+        transition={reduceMotion ? { duration: 0 } : undefined}
       >
         <div className="bg-white dark:bg-card shadow-premium rounded-full p-2.5 border border-[var(--color-sunshine-cta)]/20 flex items-center gap-2">
           <RefreshCw

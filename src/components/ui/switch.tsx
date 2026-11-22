@@ -26,7 +26,7 @@ const Switch = React.forwardRef<
       ref={ref}
       data-slot="switch"
       className={cn(
-        "peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs transition-all duration-200 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none data-[state=checked]:bg-[var(--color-sunshine-cta)] data-[state=unchecked]:bg-stone-300 dark:data-[state=unchecked]:bg-stone-700 hover:brightness-105",
+        "peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-xs transition-[background-color,filter,transform] duration-200 ease-out active:scale-[0.96] motion-reduce:active:scale-100 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-sunshine-cta)] focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none data-[state=checked]:bg-[var(--color-sunshine-cta)] data-[state=unchecked]:bg-stone-300 dark:data-[state=unchecked]:bg-stone-700 hover:brightness-105",
         sizeClasses[size],
         className
       )}
@@ -35,7 +35,7 @@ const Switch = React.forwardRef<
       <SwitchPrimitives.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "pointer-events-none block rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ease-out",
+          "pointer-events-none block rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
           thumbClasses[size]
         )}
       />
