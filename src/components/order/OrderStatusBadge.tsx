@@ -11,7 +11,17 @@ interface OrderStatusBadgeProps {
 export function OrderStatusBadge({ status, language, className }: OrderStatusBadgeProps) {
   const presentation = getOrderStatus(status, language);
   return (
-    <Badge variant="outline" data-status={presentation.key} className={cn('text-xs font-semibold', presentation.className, className)}>
+    <Badge
+      variant="outline"
+      data-status={presentation.key}
+      className={cn(
+        // Smooth only a genuine Firestore-driven status/color change. No
+        // entrance animation, duplicate popup or fabricated progress state.
+        'text-xs font-semibold motion-safe:transition-colors motion-safe:duration-200',
+        presentation.className,
+        className,
+      )}
+    >
       {presentation.label}
     </Badge>
   );

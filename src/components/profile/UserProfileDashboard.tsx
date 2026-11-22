@@ -16,7 +16,7 @@ import WawasanLoader from '@/components/brand/WawasanLoader';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
 import { User as UserIcon, X, LogOut } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { format } from 'date-fns';
 import type { Order, UserProfile, SavedLocation } from '@/types';
 import { cn, compareTimestampValues, getDisplayInvoiceNo } from '@/lib/utils';
@@ -69,6 +69,7 @@ export default function UserProfileDashboard({
 }: UserProfileDashboardProps) {
   const { language, t: tGlobal } = useLanguage();
   const profileId = useId();
+  const reduceMotion = useReducedMotion();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -793,13 +794,16 @@ export default function UserProfileDashboard({
         animate={{ y: isRefreshing ? 60 : pullDistance * 0.5 }}
         transition={{ type: 'spring', stiffness: 400, damping: 40 }}
       >
-        <div
+        <motion.div
           key={activeTab}
           id={`${profileId}-panel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`${profileId}-tab-${activeTab}`}
           className="profile-tab-panel"
           tabIndex={0}
+          initial={reduceMotion ? false : { opacity: 0.72, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
         >
           {activeTab === 'orders' && (
             <ProfileOrdersTab
@@ -884,7 +888,7 @@ export default function UserProfileDashboard({
               t={t}
             />
           )}
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
