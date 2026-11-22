@@ -58,12 +58,30 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
+      - name: Restore Firebase configuration for Android CodeQL build
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ ! -s android/app/google-services.json ]; then
+            if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+              echo "::error::GOOGLE_SERVICES_JSON_BASE64 is required for the Android CodeQL build."
+              exit 1
+            fi
+            umask 077
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          fi
+          node -e 'const c = require("./android/app/google-services.json"); if (!c.client?.some(x => x.client_info?.android_client_info?.package_name === "com.wawasanpakusop.app")) { console.error("Invalid Firebase Android package configuration"); process.exit(1) }'
+
       - name: Build Android app
         if: matrix.build-mode == 'manual'
         shell: bash
         run: |
           npm run build
           test -f dist/index.html
+          node scripts/patch-capacitor.js
           npx cap sync android
           cd android
           ./gradlew --no-daemon :app:compileDebugJavaWithJavac

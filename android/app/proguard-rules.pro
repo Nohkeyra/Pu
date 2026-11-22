@@ -67,3 +67,13 @@
 -keep class com.google.gson.** { *; }
 -keep class sun.misc.Unsafe { *; }
 
+
+# Capawesome Firebase Authentication v8.6.0 ships an optional Facebook handler
+# even when only Google Sign-In is configured (see capacitor.config.ts).
+# The Facebook SDK is intentionally not installed. Suppress only the four
+# optional classes reported by R8, rather than adding an unused SDK to the APK.
+# If Facebook login is ever enabled, install its SDK and remove these rules.
+-dontwarn com.facebook.CallbackManager
+-dontwarn com.facebook.CallbackManager$Factory
+-dontwarn com.facebook.FacebookCallback
+-dontwarn com.facebook.login.LoginManager

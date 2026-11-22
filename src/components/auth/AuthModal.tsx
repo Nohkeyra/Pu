@@ -6,7 +6,7 @@ import {
   sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db, isNative } from '@/firebaseConfig';
+import { auth, db } from '@/firebaseConfig';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { signInWithGoogle, googleAuthErrorMessage, isGooglePopupDismissed } from '@/services/googleAuthService';
 import { useLanguage } from '@/context/LanguageContext';
