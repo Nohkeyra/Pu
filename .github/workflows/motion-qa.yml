@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/components/admin/**'
+      - 'src/components/profile/**'
       - 'src/components/ui/**'
       - 'src/components/order/**'
       - 'src/components/delivery/**'
@@ -19,6 +20,7 @@ on:
       - 'e2e/motion-completion.spec.ts'
       - 'e2e/motion-foundation.spec.ts'
       - 'e2e/mascot-transition.spec.ts'
+      - 'e2e/rider-map-reveal.spec.ts'
       - 'playwright.config.ts'
       - '.github/workflows/motion-qa.yml'
 
@@ -44,7 +46,13 @@ jobs:
         run: npm install --global npm@11.9.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/motion-completion.spec.ts e2e/motion-foundation.spec.ts e2e/mascot-transition.spec.ts --project=chromium --workers=2 --reporter=line
+      - run: npx playwright test e2e/motion-completion.spec.ts e2e/motion-foundation.spec.ts e2e/mascot-transition.spec.ts e2e/rider-map-reveal.spec.ts --project=chromium --workers=2 --reporter=line
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rider-map-motion-proof
+          path: test-results/rider-map-reveal-*/
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -1,5 +1,6 @@
 import { canViewRiderTracking } from '@/lib/riderTracking';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { TrackingMapOrigin } from '@/components/delivery/RiderMapReveal';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -56,7 +57,7 @@ interface ProfileOrdersTabProps {
   setConfirmDialog: (val: { type: 'cancel' | 'delete'; orderId: string } | null) => void;
   cancellingOrderId: string | null;
   deletingOrderId: string | null;
-  setTrackingOrder?: (order: Order | null) => void;
+  setTrackingOrder?: (order: Order | null, origin?: TrackingMapOrigin) => void;
   t: (en: string, bm: string) => string;
 }
 
@@ -71,7 +72,7 @@ interface OrderItemProps {
   setPreviewOrder: (order: Order | null) => void;
   handleRequestInvoiceEmail: (order: Order) => Promise<void>;
   pokingOrderId: string | null;
-  setTrackingOrder?: (order: Order | null) => void;
+  setTrackingOrder?: (order: Order | null, origin?: TrackingMapOrigin) => void;
   setConfirmDialog: (val: { type: 'cancel' | 'delete'; orderId: string } | null) => void;
   setEditingOrder?: (order: Order) => void;
   cancellingOrderId: string | null;
@@ -99,6 +100,7 @@ function OrderItem({
   itemVariants
 }: OrderItemProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
@@ -134,6 +136,7 @@ function OrderItem({
 
       {/* Foreground Draggable Card */}
       <motion.div
+        ref={cardRef}
         drag={isDeletable && !isSelectMode ? "x" : false}
         dragConstraints={{ left: -100, right: 0 }}
         dragElastic={0.2}
@@ -173,6 +176,12 @@ function OrderItem({
           <Button type="button" size="sm" onClick={() => setPreviewOrder(order)}>
             {t('View details', 'Lihat butiran')}<ChevronRight className="w-4 h-4" aria-hidden="true" />
           </Button>
+          {order.id && canViewRiderTracking(order.status) && setTrackingOrder && (
+            <Button type="button" size="sm" className="profile-order-track" aria-label={t('Track Delivery', 'Jejak Penghantaran')}
+              onClick={event => setTrackingOrder(order, cardRef.current ? { card: cardRef.current, trigger: event.currentTarget } : undefined)}>
+              <Truck className="w-4 h-4" aria-hidden="true" />{t('Track', 'Jejak')}
+            </Button>
+          )}
           <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
             <DialogTrigger asChild>
               <Button type="button" variant="outline" size="icon" className="profile-order-more"
@@ -281,19 +290,6 @@ function OrderItem({
             </Button>
           )}
 
-          {order.id && canViewRiderTracking(order.status) && setTrackingOrder && (
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                setTrackingOrder(order);
-              }}
-              size="sm"
-              className="rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs gap-1.5 h-8 px-3 shadow-sm flex items-center"
-            >
-              <Truck className="w-3.5 h-3.5" />
-              <span>{t('Track Delivery', 'Jejak Penghantaran')}</span>
-            </Button>
-          )}
 
           {order.id && order.status === 'pending' && (
             <>

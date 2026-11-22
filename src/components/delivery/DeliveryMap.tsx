@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Check, CircleStop, Crosshair, MapPin, MessageCircle, Navigation, Phone, Radio, ShieldCheck, Truck, WifiOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/context/LanguageContext';
@@ -8,6 +8,7 @@ import { launchMaps, launchWhatsApp } from '@/lib/nativeService';
 import { extendRiderSharing, isNativeRider, RiderTrackingError, startOtwGroup, startRiderSharing, stopRiderSharing } from '@/services/riderTrackingService';
 import type { Order } from '@/types';
 import { RiderRouteMap, type MapPoint } from './RiderRouteMap';
+import { RiderMapReveal, type TrackingMapOrigin } from './RiderMapReveal';
 import './rider-tracking.css';
 
 interface DeliveryMapProps {
@@ -15,9 +16,10 @@ interface DeliveryMapProps {
   onClose: () => void;
   onUpdateStatus?: (orderId: string, status: string) => void | Promise<void>;
   isAdmin?: boolean;
+  origin?: TrackingMapOrigin | null;
 }
 
-export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }: DeliveryMapProps) {
+export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false, origin }: DeliveryMapProps) {
   const { language } = useLanguage();
   const bm = language === 'bm';
   const text = (ms: string, en: string) => bm ? ms : en;
@@ -26,6 +28,24 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const immersive = Boolean(origin && !isAdmin);
+  const sheetRef = useRef<HTMLElement>(null);
+  const [mapBottomInset, setMapBottomInset] = useState(0);
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    if (!immersive || !sheet) return;
+    const update = () => setMapBottomInset(sheet.offsetHeight + 24);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(sheet);
+    return () => observer.disconnect();
+  }, [immersive]);
+  const requestClose = () => {
+    if (busy || closing) return;
+    if (immersive) setClosing(true);
+    else onClose();
+  };
   const location = snapshot?.riderLocation;
   const session = snapshot?.session;
   const status = snapshot?.status || order.status;
@@ -70,17 +90,17 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
     else window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.location)}`, '_blank', 'noopener,noreferrer');
   });
 
-  return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
-    <DialogContent showCloseButton={false} className="rider-dialog">
+  const content = <>
       <header className="rider-header">
-        <button disabled={busy} className="rider-icon-button" aria-label={text('Tutup peta', 'Close map')} onClick={onClose}><ArrowLeft size={21} /></button>
+        <button disabled={busy || closing} className="rider-icon-button" aria-label={text('Tutup peta', 'Close map')} onClick={requestClose}><ArrowLeft size={21} /></button>
         <div><p className="rider-eyebrow">WAWASAN · {text('PENGHANTARAN', 'DELIVERY')}</p><DialogTitle>{text('Jejak pesanan', 'Track your order')}</DialogTitle></div>
         <span className="rider-secure" aria-label={text('Akses pesanan dilindungi', 'Protected order access')}><ShieldCheck size={22} /></span>
         <DialogDescription className="sr-only">{text('Peta GPS rider dan status perkongsian lokasi pesanan.', 'Rider GPS map and order location-sharing status.')}</DialogDescription>
       </header>
       <div className="rider-layout">
-        <RiderRouteMap address={order.location} rider={point} live={live} finished={finished} bm={bm} onDestination={setDestination} initialCoordinates={order.locationCoordinates} />
-        <section className="rider-sheet" aria-label={text('Butiran penjejakan', 'Tracking details')}>
+        <RiderRouteMap address={order.location} rider={point} live={live} finished={finished} bm={bm} onDestination={setDestination} initialCoordinates={order.locationCoordinates} bottomInset={mapBottomInset} />
+        <section ref={sheetRef} className="rider-sheet" aria-label={text('Butiran penjejakan', 'Tracking details')}>
+          <div className="rider-sheet-body">
           <div className="rider-sheet-handle" aria-hidden="true" />
           <div className="rider-status-row"><span className={`rider-status ${live ? 'is-live' : ''}`} role="status"><span className="rider-dot" />{badge}</span><span className="rider-order-ref">#{(order.invoiceNo || order.id || '').slice(-14)}</span></div>
           <h2>{title}</h2><p className="rider-description">{detail}</p>
@@ -133,8 +153,16 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
           {connection === 'offline' && <button className="rider-retry" onClick={refresh}><WifiOff size={17} />{text('Cuba sambung semula', 'Reconnect')}</button>}
           {error && <p role="alert" className="rider-warning">{error}</p>}
           {confirmFinish && <div className="rider-confirm" role="group" aria-label={text('Pengesahan serahan', 'Confirm handover')}><strong>{text('Pesanan telah diserahkan?', 'Has the order been handed over?')}</strong><p>{text('Perkongsian lokasi akan dihentikan.', 'Location sharing will stop.')}</p><div><button disabled={busy} onClick={() => setConfirmFinish(false)}>{text('Batal', 'Cancel')}</button><button disabled={busy} onClick={() => void action(async () => { await onUpdateStatus?.(order.id!, 'delivered'); await stopRiderSharing(); setConfirmFinish(false); })}>{text('Ya, telah dihantar', 'Yes, delivered')}</button></div></div>}
+          </div>
         </section>
       </div>
+    </>;
+
+  return <Dialog open onOpenChange={open => { if (!open) requestClose(); }}>
+    <DialogContent showCloseButton={false} className={`rider-dialog${immersive ? ' rider-dialog--immersive' : ''}`} onCloseAutoFocus={event => {
+      if (origin?.trigger.isConnected) { event.preventDefault(); origin.trigger.focus({ preventScroll: true }); }
+    }}>
+      {immersive && origin ? <RiderMapReveal origin={origin} closing={closing} onClosed={onClose}>{content}</RiderMapReveal> : content}
     </DialogContent>
   </Dialog>;
 }

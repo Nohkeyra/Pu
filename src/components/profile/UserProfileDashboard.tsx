@@ -39,6 +39,7 @@ import '@/components/profile/profile-dashboard.css';
 import { ProfileInfoTab } from '@/components/profile/ProfileInfoTab';
 import { ProfileLocationsTab } from '@/components/profile/ProfileLocationsTab';
 import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTab';
+import type { TrackingMapOrigin } from '@/components/delivery/RiderMapReveal';
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
@@ -119,6 +120,11 @@ export default function UserProfileDashboard({
     orderId: string;
   } | null>(null);
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [trackingOrigin, setTrackingOrigin] = useState<TrackingMapOrigin | null>(null);
+  const openTrackingOrder = (order: Order | null, origin?: TrackingMapOrigin) => {
+    setTrackingOrigin(origin ?? null);
+    setTrackingOrder(order);
+  };
 
   const t = (en: string, bm: string) => (language === 'bm' ? bm : en);
 
@@ -825,7 +831,7 @@ export default function UserProfileDashboard({
               setConfirmDialog={setConfirmDialog}
               cancellingOrderId={cancellingOrderId}
               deletingOrderId={deletingOrderId}
-              setTrackingOrder={setTrackingOrder}
+              setTrackingOrder={openTrackingOrder}
               t={t}
             />
           )}
@@ -1021,6 +1027,7 @@ export default function UserProfileDashboard({
         {trackingOrder && (
           <DeliveryMap
             order={trackingOrder}
+            origin={trackingOrigin}
             isAdmin={false}
             onClose={() => setTrackingOrder(null)}
           />
@@ -1070,6 +1077,7 @@ export default function UserProfileDashboard({
         <Suspense fallback={null}>
           <DeliveryMap
             order={trackingOrder}
+            origin={trackingOrigin}
             isAdmin={false}
             onClose={() => setTrackingOrder(null)}
           />
