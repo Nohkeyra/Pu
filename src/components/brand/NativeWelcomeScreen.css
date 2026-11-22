@@ -150,8 +150,18 @@
     --wawasan-welcome-lamp-output: .12;
   }
   .native-welcome[data-theme='dark'][data-ready='true'] .native-welcome__sign-stage {
-    animation: native-wawasan-lamp-on 620ms linear;
+    animation: native-wawasan-lamp-on 620ms linear both;
   }
+  /* The words arrive only after the sign receives power. This sequence is
+     triggered by the actual light→dark theme switch, not by a scroll event. */
+  .native-welcome[data-theme='dark'][data-ready='true'] .native-welcome__message {
+    animation: native-wawasan-afterglow-copy 310ms 400ms cubic-bezier(.22,1,.36,1) both;
+  }
+}
+
+@keyframes native-wawasan-afterglow-copy {
+  from { opacity: .65; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes native-wawasan-lamp-on {
@@ -267,6 +277,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .native-welcome__message, .native-welcome__sign-stage { animation: none !important; }
   .native-welcome { --welcome-wall-fade: 0s; }
   .native-welcome, .native-welcome__button, .native-welcome__theme-icon { transition: none; }
   .native-welcome__theme-icon:active:not(:disabled),
