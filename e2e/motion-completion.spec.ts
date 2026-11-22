@@ -106,7 +106,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
           expect(samples.at(-1)!.opacity).toBe(1);
           expect(await panel.evaluate(el => el.contains(document.activeElement))).toBe(true);
           // Focus wraps back to the last control when Shift+Tab is pressed at the first.
-          const controls = panel.locator('button:enabled, input:enabled, select:enabled, textarea:enabled, a[href]');
+          const controls = panel.locator('button:enabled:visible, input:enabled:visible, select:enabled:visible, textarea:enabled:visible, a[href]:visible');
           await controls.first().focus();
           await page.keyboard.press('Shift+Tab');
           await expect(controls.last()).toBeFocused();

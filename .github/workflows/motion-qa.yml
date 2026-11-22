@@ -9,6 +9,7 @@ on:
       - 'src/main.tsx'
       - 'src/index.css'
       - 'src/styles/**'
+      - 'src/hooks/ui/useOverlayAccessibility.ts'
       - 'e2e/motion-completion.spec.ts'
       - 'playwright.config.ts'
       - '.github/workflows/motion-qa.yml'
