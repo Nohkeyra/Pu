@@ -81,3 +81,12 @@ test('patch-capacitor script removes jcenter() and deprecated AGP DSL from capac
     assert.doesNotMatch(biometricGradle, /\blintOptions\s*\{/);
   }
 });
+
+test('activity delegates Back to Capacitor so overlays and wizard steps receive it', () => {
+  const activity = read('android/app/src/main/java/com/wawasanpakusop/app/MainActivity.java');
+  assert.doesNotMatch(activity, /getOnBackPressedDispatcher\(\)\.addCallback/);
+  assert.doesNotMatch(activity, /webView\.goBack\(\)/);
+  const appPlugin = read('node_modules/@capacitor/app/android/src/main/java/com/capacitorjs/plugins/app/AppPlugin.java');
+  assert.match(appPlugin, /notifyListeners\(EVENT_BACK_BUTTON, data, true\)/);
+  assert.match(read('src/hooks/native/useNativeBackButton.ts'), /App\.addListener\('backButton'/);
+});

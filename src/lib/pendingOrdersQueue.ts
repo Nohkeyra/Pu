@@ -30,16 +30,30 @@ export interface PendingOrder {
   queuedAt: number;
 }
 
+let nativeWrites: Promise<void> = Promise.resolve();
+let clearGeneration = 0;
+const removedKeys = new Set<string>();
+
+function persistNative(operation: () => Promise<unknown>): void {
+  // A slow older native write must never overwrite a newer discard/clear.
+  nativeWrites = nativeWrites.then(operation).then(() => undefined).catch(() => {});
+}
+
+function isPendingOrder(item: unknown): item is PendingOrder {
+  if (!item || typeof item !== 'object') return false;
+  const row = item as Partial<PendingOrder>;
+  return typeof row.idempotencyKey === 'string' && row.idempotencyKey.length > 0
+    && Boolean(row.orderPayload) && typeof row.orderPayload === 'object'
+    && !Array.isArray(row.orderPayload);
+}
+
 function readQueue(): PendingOrder[] {
   try {
     const raw = localStorage.getItem(PENDING_ORDERS_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is PendingOrder =>
-        item && typeof item === 'object' && typeof item.idempotencyKey === 'string' && !!item.orderPayload
-    );
+    return parsed.filter(isPendingOrder);
   } catch {
     // Corrupt or unavailable storage — treat as empty rather than throwing.
     return [];
@@ -50,13 +64,10 @@ export const MAX_PENDING_ORDERS = 20;
 
 function writeQueue(queue: PendingOrder[]): boolean {
   try {
-    if (queue.length > MAX_PENDING_ORDERS) {
-      queue = queue.slice(queue.length - MAX_PENDING_ORDERS);
-    }
     const jsonStr = safeJsonStringify(queue);
     localStorage.setItem(PENDING_ORDERS_STORAGE_KEY, jsonStr);
     // Persist asynchronously to Capacitor Preferences for Android native storage resilience
-    void Preferences.set({ key: PENDING_ORDERS_STORAGE_KEY, value: jsonStr }).catch(() => {});
+    persistNative(() => Preferences.set({ key: PENDING_ORDERS_STORAGE_KEY, value: jsonStr }));
     return true;
   } catch {
     return false;
@@ -65,8 +76,12 @@ function writeQueue(queue: PendingOrder[]): boolean {
 
 /** Rehydrates queue from native Capacitor Preferences into localStorage if needed. */
 export async function rehydrateQueueFromNative(): Promise<PendingOrder[]> {
+  const startedBeforeClear = clearGeneration;
   try {
+    await nativeWrites;
     const { value } = await Preferences.get({ key: PENDING_ORDERS_STORAGE_KEY });
+    // A snapshot requested before Clear belongs to the previous local queue.
+    if (startedBeforeClear !== clearGeneration) return readQueue();
     if (value) {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -76,9 +91,8 @@ export async function rehydrateQueueFromNative(): Promise<PendingOrder[]> {
 
         for (const item of parsed) {
           if (
-            item &&
-            typeof item === 'object' &&
-            typeof item.idempotencyKey === 'string' &&
+            isPendingOrder(item) &&
+            !removedKeys.has(item.idempotencyKey) &&
             !existingKeys.has(item.idempotencyKey)
           ) {
             currentLocal.push(item);
@@ -112,19 +126,26 @@ export function addPendingOrder(orderPayload: Record<string, unknown>, idempoten
   if (!idempotencyKey) return false;
   const queue = readQueue();
   if (queue.some((item) => item.idempotencyKey === idempotencyKey)) return true;
+  // A full queue rejects the new save; it never silently evicts a customer's request.
+  if (queue.length >= MAX_PENDING_ORDERS) return false;
   queue.push({ idempotencyKey, orderPayload, queuedAt: Date.now() });
-  return writeQueue(queue);
+  const saved = writeQueue(queue);
+  if (saved) removedKeys.delete(idempotencyKey);
+  return saved;
 }
 
 export function removePendingOrder(idempotencyKey: string): void {
+  removedKeys.add(idempotencyKey);
   const queue = readQueue().filter((item) => item.idempotencyKey !== idempotencyKey);
   writeQueue(queue);
 }
 
 export function clearPendingOrders(): void {
+  clearGeneration++;
+  removedKeys.clear();
   try {
     localStorage.removeItem(PENDING_ORDERS_STORAGE_KEY);
-    Preferences.remove({ key: PENDING_ORDERS_STORAGE_KEY }).catch(() => {});
+    persistNative(() => Preferences.remove({ key: PENDING_ORDERS_STORAGE_KEY }));
   } catch {
     /* ignore */
   }

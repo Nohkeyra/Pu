@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 import com.wawasanpakusop.app.security.AdminTokenBridgePlugin;
 
@@ -32,19 +31,9 @@ public class MainActivity extends BridgeActivity {
             settings.setUserAgentString(settings.getUserAgentString() + " RestoranWawasan/" + BuildConfig.VERSION_NAME + " (https://github.com/Nohkeyra/Pu)");
         }
 
-        // Native back button handling for API 33+
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                WebView webView = getBridge().getWebView();
-                if (webView != null && webView.canGoBack()) {
-                    webView.goBack();
-                } else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
-                }
-            }
-        });
+        // Capacitor App owns Back dispatch. Its JS listener prioritizes dialogs,
+        // the keyboard and order steps before route history or minimization.
+        // A second activity callback would intercept that event entirely.
 
         if (savedInstanceState == null) {
             handleWidgetIntent(getIntent());

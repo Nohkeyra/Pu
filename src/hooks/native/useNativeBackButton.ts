@@ -42,6 +42,7 @@ export function useNativeBackButton() {
     const setupListener = async () => {
       try {
         const handle = await App.addListener('backButton', ({ canGoBack }: BackButtonListenerEvent) => {
+          if (!active) return;
           // The first Back press while typing should dismiss the IME, not leave the order.
           if (keyboardVisibleRef.current) {
             void Keyboard.hide().catch(() => { /* Android normally hides the IME itself. */ });
@@ -51,9 +52,14 @@ export function useNativeBackButton() {
 
           // An open modal takes precedence over the form wizard and router.
           // Exclude unrelated `data-state="open"` controls such as accordions.
-          const openOverlay = Array.from(document.querySelectorAll<HTMLElement>(
+          const visibleOverlays = Array.from(document.querySelectorAll<HTMLElement>(
             '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
-          )).find(element => element.getClientRects().length > 0);
+          )).filter(element => element.getClientRects().length > 0);
+          const focusedOverlay = document.activeElement?.closest<HTMLElement>(
+            '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
+          );
+          const openOverlay = focusedOverlay && visibleOverlays.includes(focusedOverlay)
+            ? focusedOverlay : visibleOverlays.at(-1);
 
           if (openOverlay) {
             const closeButton = openOverlay.querySelector<HTMLButtonElement>(

@@ -66,7 +66,8 @@ import { isUserAdmin } from '@/constants/auth';
 
 import { RESTORAN_CONTACT } from '@/constants/contact';
 
-import { getApiUrl, invalidateFetchCache } from '@/lib/api';
+import { getApiUrl } from '@/lib/api';
+import { clearTemporaryAppCaches } from '@/lib/appDiagnostics';
 import { removeSecureItem } from '@/lib/preferences';
 import { DiagnosticConsole } from '@/components/system/DiagnosticConsole';
 import { onIdTokenChanged, signOut, type User } from 'firebase/auth';
@@ -284,13 +285,7 @@ export default function SettingsPage() {
     await triggerMediumImpact();
     setClearingCache(true);
     try {
-      invalidateFetchCache();
-      // Never remove Service Worker offline assets while the user is offline.
-      // Restrict deletions to this app's cache namespace on shared origins.
-      if (navigator.onLine && 'caches' in window) {
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.filter(key => key.startsWith('wawasan-')).map(key => caches.delete(key)));
-      }
+      await clearTemporaryAppCaches();
       await calculateCacheSize();
       setOfflinePendingCount(getPendingOrdersCount());
 
