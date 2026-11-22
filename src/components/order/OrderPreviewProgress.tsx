@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ChevronUp, MoreHorizontal } from 'lucide-react';
 import type { MenuItem } from '@/constants/menu';
 import { KraftLunchboxArtwork } from '@/components/brand/KraftLunchboxArtwork';
@@ -22,6 +23,11 @@ interface OrderPreviewProgressProps {
 export function OrderPreviewProgress({ children, isKeyboardVisible, ...props }: OrderPreviewProgressProps) {
   const { step, language, dishes, veggies, customMenu, preparationType, guests, isDemo } = props;
   const bm = language === 'bm';
+  // The APK uses a stable compact progress bar rather than a tall preview
+  // followed by a scroll-triggered resize. This avoids visual jumping and
+  // exposing a sliver of the large scene beneath the fixed native header.
+  // The full Living Paper preview remains available from the progress button.
+  const nativeCompact = Capacitor.isNativePlatform();
   const anchor = useRef<HTMLDivElement>(null);
   const progress = useRef<HTMLElement>(null);
   const contentId = useId();
@@ -33,7 +39,7 @@ export function OrderPreviewProgress({ children, isKeyboardVisible, ...props }: 
     .filter(Boolean).map(item => bm ? (item.nameBm || item.nameEn) : (item.nameEn || item.nameBm)).filter(Boolean)));
   if (typeof customMenu === 'string' && customMenu.trim()) selectedNames.push(bm ? 'Menu khas' : 'Custom menu');
   const closed = preparationType === 'meal_box' && ((step === 5 && !isDemo) || (previewClosed && selectedNames.length > 0));
-  const mini = docked || isKeyboardVisible;
+  const mini = nativeCompact || docked || isKeyboardVisible;
   const sceneProps = { step, language, selectedNames, guests, preparationType, isDemo, previewClosed: closed, onPreviewClosedChange: setPreviewClosed };
 
   useEffect(() => { setPreviewClosed(false); }, [step, preparationType]);
@@ -86,9 +92,11 @@ export function OrderPreviewProgress({ children, isKeyboardVisible, ...props }: 
 
   return (
     <>
-      <div ref={anchor} className="customer-order-preview-anchor">
-        <LivingPaperOrderScene {...sceneProps} />
-      </div>
+      {!nativeCompact && (
+        <div ref={anchor} className="customer-order-preview-anchor">
+          <LivingPaperOrderScene {...sceneProps} />
+        </div>
+      )}
       {step <= 4 && (
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
           <nav ref={progress} id="wawasan-order-wizard" className="customer-order-progress batik-header" aria-label={bm ? 'Kemajuan tempahan' : 'Order progress'} data-preview-docked={mini} data-actions-open={actionsOpen} data-keyboard-visible={isKeyboardVisible}>
