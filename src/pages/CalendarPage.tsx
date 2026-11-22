@@ -1,6 +1,7 @@
 import { fetchCalendarEndpoint } from '@/lib/calendarApi';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -88,6 +89,7 @@ export default function CalendarPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const dateLocale = language === 'bm' ? ms : enUS;
+  const reduceMotion = useReducedMotion();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [publicOrders, setPublicOrders] = useState<Order[]>([]);
@@ -767,9 +769,15 @@ export default function CalendarPage() {
               </Button>
 
               <div className="min-w-0 text-center flex-1" aria-live="polite">
-                <h2 className="customer-calendar-month-title">
+                <motion.h2
+                  key={format(currentDate, 'yyyy-MM')}
+                  className="customer-calendar-month-title"
+                  initial={reduceMotion ? false : { opacity: .6, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : { duration: .18, ease: [0.22, 1, 0.36, 1] }}
+                >
                   {format(currentDate, 'MMMM yyyy', { locale: dateLocale })}
-                </h2>
+                </motion.h2>
               </div>
 
               <Button
@@ -892,6 +900,17 @@ export default function CalendarPage() {
                           : ""
                       )}
                     >
+                      {/* Selection stays inside the existing cell: no height or
+                          scroll change when a different day is chosen. */}
+                      {isDaySelected && (
+                        <motion.span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-x-2 top-1 h-[2px] rounded-full bg-[var(--customer-accent)]"
+                          initial={reduceMotion ? false : { opacity: .5, scaleX: 0 }}
+                          animate={{ opacity: 1, scaleX: 1 }}
+                          transition={reduceMotion ? { duration: 0 } : { duration: .2, ease: [0.16, 1, 0.3, 1] }}
+                        />
+                      )}
                       {/* Top Row: Day Number & Indicators */}
                       <div className="flex items-center justify-between w-full">
                         {isCurrentDay ? (
@@ -1011,7 +1030,13 @@ export default function CalendarPage() {
 
           {/* 3. REFINED SELECTED DAY AGENDA */}
           {selectedDay && (
-            <div className="customer-calendar-panel overflow-hidden">
+            <motion.div
+              key={format(selectedDay, 'yyyy-MM-dd')}
+              className="customer-calendar-panel overflow-hidden"
+              initial={reduceMotion ? false : { opacity: .72, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: .18, ease: [0.22, 1, 0.36, 1] }}
+            >
               
               {/* Day Header */}
               <div className="customer-calendar-agenda-heading batik-header p-4 sm:p-5 border-b border-stone-100 dark:border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 dark:bg-stone-900/40">
@@ -1221,7 +1246,7 @@ export default function CalendarPage() {
                   </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
           )}
 
           {/* 4. MODAL: ORDER DETAILS */}
