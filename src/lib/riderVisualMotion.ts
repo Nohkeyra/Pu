@@ -25,6 +25,8 @@ export function riderVisualPointAt(
   to: RiderVisualPoint,
   elapsedMs: number,
 ): RiderVisualPoint {
+  if (elapsedMs <= 0) return from;
+  if (elapsedMs >= RIDER_MARKER_TWEEN_MS) return to;
   const t = Math.max(0, Math.min(1, elapsedMs / RIDER_MARKER_TWEEN_MS));
   const eased = 1 - Math.pow(1 - t, 3);
   return {
