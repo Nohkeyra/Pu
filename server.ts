@@ -34,7 +34,7 @@ telemetry.initProcessHandlers();
 const ALLOWED_ORIGINS = [
   'https://restoran-wawasan-bio.onrender.com',
   'https://restoran-wawasan.pxxl.click',
-  'https://pu-tau.vercel.app',
+  'https://wawasanhub.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
   'capacitor://localhost',

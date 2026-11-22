@@ -6,7 +6,9 @@ import {
   sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/firebaseConfig';
+import { auth, db, isNative } from '@/firebaseConfig';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { signInWithGoogle, googleAuthErrorMessage, isGooglePopupDismissed } from '@/services/googleAuthService';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
@@ -274,6 +276,35 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
       });
     } else {
       notifyBiometricNotEnabled();
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (isLoading || isAdminAuth) return;
+    setIsLoading(true);
+    try {
+      const { profileReady } = await signInWithGoogle();
+      toast({
+        title: t('Signed in with Google', 'Log Masuk Google Berjaya'),
+        description: profileReady
+          ? t('You can now use your Wawasan account.', 'Akaun Wawasan anda kini boleh digunakan.')
+          : t('Signed in. Your profile could not be synced; check your details in Profile.', 'Log masuk berjaya. Profil belum dapat disegerakkan; semak maklumat anda di Profil.'),
+        variant: profileReady ? 'success' : 'warning',
+      });
+      resetForm();
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      if (!isGooglePopupDismissed(error)) {
+        toast({
+          title: t('Google Sign-In Failed', 'Log Masuk Google Gagal'),
+          description: googleAuthErrorMessage(error, language, 'signin'),
+          variant: 'error',
+          duration: 7000,
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -703,6 +734,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                       : t('Sign In with Fingerprint / Face ID', 'Log Masuk dengan Cap Jari / Wajah')}
                   </span>
                 </Button>
+              )}
+
+              {mode === 'signin' && !isAdminAuth && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+                    <span className="h-px flex-1 bg-border" />
+                    <span>{t('or continue with', 'atau teruskan dengan')}</span>
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                  <GoogleAuthButton
+                    label={t('Sign in with Google', 'Log masuk dengan Google')}
+                    busy={isLoading}
+                    onClick={handleGoogleSignIn}
+                  />
+                </div>
               )}
 
               {/* Toggle modes */}

@@ -69,8 +69,10 @@ import { RESTORAN_CONTACT } from '@/constants/contact';
 import { getApiUrl, invalidateFetchCache } from '@/lib/api';
 import { removeSecureItem } from '@/lib/preferences';
 import { DiagnosticConsole } from '@/components/system/DiagnosticConsole';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { onIdTokenChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { googleAuthErrorMessage, isGoogleLinked, isGooglePopupDismissed, linkCurrentUserWithGoogle } from '@/services/googleAuthService';
 import {
   getPendingOrdersCount,
   rehydrateQueueFromNative,
@@ -187,6 +189,8 @@ export default function SettingsPage() {
 
   // Authentication state
   const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
+  const [googleLinked, setGoogleLinked] = useState(() => isGoogleLinked(auth.currentUser));
+  const [googleLinking, setGoogleLinking] = useState(false);
 
   // Storage & Cache states
   const [cacheSizeStr, setCacheSizeStr] = useState<string>('Calculating...');
@@ -232,8 +236,10 @@ export default function SettingsPage() {
   }, [language]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    // A provider can be linked without a sign-in state transition.
+    const unsub = onIdTokenChanged(auth, (user) => {
       setCurrentUser(user);
+      setGoogleLinked(isGoogleLinked(user));
     });
     calculateCacheSize();
     setOfflinePendingCount(getPendingOrdersCount());
@@ -244,6 +250,33 @@ export default function SettingsPage() {
     });
     return () => unsub();
   }, [calculateCacheSize]);
+
+  const handleLinkGoogle = async () => {
+    if (googleLinking || googleLinked) return;
+    setGoogleLinking(true);
+    try {
+      await linkCurrentUserWithGoogle();
+      setGoogleLinked(true);
+      toast({
+        title: language === 'bm' ? 'Akaun Google Dihubungkan' : 'Google Account Connected',
+        description: language === 'bm'
+          ? 'Google kini menggunakan akaun Wawasan yang sama. UID dan rekod sedia ada dikekalkan.'
+          : 'Google now uses the same Wawasan account. Your UID and existing records are preserved.',
+        variant: 'success',
+      });
+    } catch (error) {
+      if (!isGooglePopupDismissed(error)) {
+        toast({
+          title: language === 'bm' ? 'Tidak Dapat Hubungkan Google' : 'Could Not Connect Google',
+          description: googleAuthErrorMessage(error, language, 'link'),
+          variant: 'error',
+          duration: 7000,
+        });
+      }
+    } finally {
+      setGoogleLinking(false);
+    }
+  };
 
   // Clear disposable cached responses only. Do NOT erase localStorage or
   // sessionStorage: they contain drafts, queued offline orders and credentials.
@@ -967,6 +1000,31 @@ export default function SettingsPage() {
                     {language === 'bm' ? 'Aktif' : 'Active'}
                   </span>
                 </div>
+
+                {(
+                  <SettingsRow
+                    icon={ShieldCheck}
+                    iconBg="bg-blue-500/10"
+                    iconColor="text-blue-600 dark:text-blue-400"
+                    title={language === 'bm' ? 'Akaun Google' : 'Google Account'}
+                    description={googleLinked
+                      ? (language === 'bm' ? 'Google boleh digunakan untuk log masuk ke akaun Wawasan yang sama.' : 'Google can sign in to the same Wawasan account.')
+                      : (language === 'bm' ? 'Hubungkan Google tanpa menukar UID atau rekod akaun anda.' : 'Connect Google without changing your UID or account records.')}
+                    action={googleLinked ? (
+                      <span className="inline-flex min-h-11 max-w-full items-center gap-2 text-xs font-semibold text-deep-forest dark:text-white" role="status">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#34A853]" aria-hidden="true" />
+                        <span className="text-left">{language === 'bm' ? 'Akaun Google Telah Dihubungkan' : 'Google Account Connected'}</span>
+                      </span>
+                    ) : (
+                      <GoogleAuthButton
+                        compact
+                        label={language === 'bm' ? 'Hubungkan ke Akaun Google' : 'Connect to Google'}
+                        busy={googleLinking}
+                        onClick={handleLinkGoogle}
+                      />
+                    )}
+                  />
+                )}
 
                 <SettingsRow
                   icon={Fingerprint}

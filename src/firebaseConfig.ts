@@ -14,6 +14,7 @@ import {
   indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  browserPopupRedirectResolver,
   inMemoryPersistence,
   type Auth,
 } from "firebase/auth";
@@ -137,6 +138,8 @@ try {
       browserSessionPersistence,
       inMemoryPersistence,
     ],
+    // Custom initializeAuth requires the resolver explicitly for web OAuth popups.
+    ...(!isNative ? { popupRedirectResolver: browserPopupRedirectResolver } : {}),
   });
 } catch {
   authInstance = getAuth(app);

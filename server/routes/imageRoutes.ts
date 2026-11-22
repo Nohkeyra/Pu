@@ -26,7 +26,7 @@ const TRUSTED_REFERER_DOMAINS = new Set([
   'ai.studio',
   'restoran-wawasan-bio.onrender.com',
   'restoran-wawasan.pxxl.click',
-  'pu-tau.vercel.app',
+  'wawasanhub.vercel.app',
   'localhost',
   '127.0.0.1',
 ]);

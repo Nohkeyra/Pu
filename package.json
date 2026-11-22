@@ -20,6 +20,7 @@
     "@capacitor-community/fcm": "^8.1.0",
     "@capacitor-community/keep-awake": "^8.0.1",
     "@capacitor-firebase/analytics": "^8.4.0",
+    "@capacitor-firebase/authentication": "8.6.0",
     "@capacitor-firebase/crashlytics": "^8.4.0",
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "^8.1.1",
