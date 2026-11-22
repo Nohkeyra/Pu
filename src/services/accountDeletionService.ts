@@ -61,7 +61,7 @@ export function resolveReauthStrategy(providerIds?: string[]): ReauthStrategy {
   if (list.length === 0 || list.includes('password')) {
     return { kind: 'password' };
   }
-  if (list.includes('google.com')) {
+  if (list.some((id) => id === 'google.com')) {
     return { kind: 'google' };
   }
   const federatedProviderId = list.find(
