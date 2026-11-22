@@ -27,3 +27,12 @@ export function getDeepLinkRoute(value: string): string | null {
     return null;
   }
 }
+
+/** Push payloads select existing screens only; they never supply an arbitrary URL. */
+export function getPushNotificationRoute(payload: unknown): '/profile' | '/admin' | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const type = (payload as { type?: unknown }).type;
+  if (type === 'order_status') return '/profile';
+  if (type === 'new_order' || type === 'cancel_requested') return '/admin';
+  return null;
+}

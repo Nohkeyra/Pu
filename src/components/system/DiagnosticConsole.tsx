@@ -46,6 +46,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   const [pingFailed, setPingFailed] = useState(false);
   const pingRequest = useRef<AbortController | null>(null);
   const cacheTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const session = useRef({ active: false });
 
   // 4. Batik playground states connected directly to global SettingsContext
   const { 
@@ -102,6 +103,10 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
 
   useEffect(() => {
     if (!isOpen) return;
+    const current = { active: true };
+    session.current = current;
+    setClearingCache(false);
+    setCacheCleaned(false);
 
     // Detect Platform
     const userAgent = navigator.userAgent;
@@ -136,8 +141,10 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
     testPing();
 
     return () => {
+      current.active = false;
       window.removeEventListener('deviceorientation', handleDeviceOrientation);
       pingRequest.current?.abort();
+      if (cacheTimer.current) clearTimeout(cacheTimer.current);
     };
   }, [isOpen, addLog, calculateStorage, testPing]);
 
@@ -153,19 +160,22 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   }, []);
 
   const clearAppCache = useCallback(async () => {
+    const operation = session.current;
+    if (!operation.active) return;
     void triggerHeavyImpact();
     setClearingCache(true);
     try {
       const count = await clearTemporaryAppCaches();
+      if (!operation.active) return;
       calculateStorage();
       setCacheCleaned(true);
       addLog(`Cleared temporary responses (${count} browser caches). Drafts, offline requests and sessions preserved.`);
       if (cacheTimer.current) clearTimeout(cacheTimer.current);
       cacheTimer.current = setTimeout(() => setCacheCleaned(false), 2000);
     } catch {
-      addLog('Could not clear temporary caches. Personal data was preserved.');
+      if (operation.active) addLog('Could not clear temporary caches. Personal data was preserved.');
     } finally {
-      setClearingCache(false);
+      if (operation.active) setClearingCache(false);
     }
   }, [calculateStorage, addLog]);
 

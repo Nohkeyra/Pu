@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCustomerHomePath, getDeepLinkRoute, getNativeStartRoute } from './appEntryRoutes';
+import { getCustomerHomePath, getDeepLinkRoute, getNativeStartRoute, getPushNotificationRoute } from './appEntryRoutes';
 
 // Exercise the routing functions used by the app, not a second menu invented by this test.
 describe('app entry policy', () => {
@@ -15,6 +15,15 @@ describe('app entry policy', () => {
   ] as const)('native=%s signed-in=%s has home %s', (native, member, expected) => {
     expect(getCustomerHomePath(native, member)).toBe(expected);
   });
+});
+
+describe('notification action destinations', () => {
+  it.each([
+    ['order_status', '/profile'], ['new_order', '/admin'], ['cancel_requested', '/admin'],
+  ] as const)('opens %s in %s', (type, route) => expect(getPushNotificationRoute({ type })).toBe(route));
+  it.each([null, {}, { type: 'test_notification' }, { type: 'unknown', url: 'https://untrusted.invalid' }])(
+    'ignores an unknown notification payload %j', payload => expect(getPushNotificationRoute(payload)).toBeNull(),
+  );
 });
 
 describe('manifest-backed deep links', () => {

@@ -200,7 +200,7 @@ function App() {
             }
           });
           if (active) safeAreaListenerHandle = handle;
-          else void handle.remove();
+          else await handle.remove();
         }
       } catch (err) {
         console.warn('SafeArea plugin error:', err);
@@ -215,7 +215,7 @@ function App() {
       clearTimeout(healthTimeout);
       unsubscribeIdToken();
       if (safeAreaListenerHandle) {
-        safeAreaListenerHandle.remove();
+        void safeAreaListenerHandle.remove();
       }
     };
   }, []);

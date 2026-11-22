@@ -5,7 +5,7 @@ import type { PluginListenerHandle } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { getDeepLinkRoute } from '@/lib/appEntryRoutes';
+import { getDeepLinkRoute, getPushNotificationRoute } from '@/lib/appEntryRoutes';
 
 export function useDeepLinks() {
   const navigate = useNavigate();
@@ -15,6 +15,12 @@ export function useDeepLinks() {
 
     let isActive = true;
     let listenerHandle: PluginListenerHandle | null = null;
+    const onPushAction = (event: Event) => {
+      if (!isActive) return;
+      const route = getPushNotificationRoute((event as CustomEvent<unknown>).detail);
+      if (route) navigate(route);
+    };
+    window.addEventListener('wawasan:push_action', onPushAction);
 
     const setupDeepLinks = async () => {
       try {
@@ -39,6 +45,7 @@ export function useDeepLinks() {
 
     return () => {
       isActive = false;
+      window.removeEventListener('wawasan:push_action', onPushAction);
       if (listenerHandle) {
         listenerHandle.remove();
       }

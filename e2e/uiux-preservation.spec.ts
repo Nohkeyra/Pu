@@ -148,7 +148,9 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.getByRole('button', { name: 'Retry menu', exact: true })).toBeVisible();
     const summary = page.locator('.customer-order-summary');
     await expect(summary).not.toHaveAttribute('open', '');
-    expect(await page.locator('.customer-order-layout').evaluate(el => el.firstElementChild?.classList.contains('customer-order-aside'))).toBe(true);
+    const summaryBounds = await page.locator('.customer-order-aside').boundingBox();
+    const formBounds = await page.locator('.customer-form-panel').boundingBox();
+    expect(summaryBounds!.y).toBeGreaterThanOrEqual(formBounds!.y + formBounds!.height);
     const card = page.locator('[data-tour="step2-dish-list"] .customer-menu-card').first();
     const name = await card.getAttribute('aria-label');
     await card.click();

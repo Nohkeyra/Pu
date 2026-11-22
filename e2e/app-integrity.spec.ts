@@ -25,11 +25,12 @@ document.addEventListener('click', e => {
   const link = e.target.closest?.('a[target="_blank"]');
   if (link) { e.preventDefault(); window.__downloads.push(link.href); }
 }, true);
-const [{ MemoryRouter, useLocation }, { DiagnosticConsole }, { default: InAppUpdateModal }, { useNativeBackButton }] = await Promise.all([
+const [{ MemoryRouter, useLocation }, { DiagnosticConsole }, { default: InAppUpdateModal }, { useNativeBackButton }, { useDeepLinks }] = await Promise.all([
   import('/node_modules/.vite/deps/react-router-dom.js'),
   import('/src/components/system/DiagnosticConsole.tsx'),
   import('/src/components/system/InAppUpdateModal.tsx'),
   import('/src/hooks/native/useNativeBackButton.ts'),
+  import('/src/hooks/native/useDeepLinks.ts'),
 ]);
 function BackFixture() {
   useNativeBackButton();
@@ -43,6 +44,10 @@ function BackFixture() {
     child && React.createElement('section', { role: 'alertdialog', 'aria-label': 'Child dialog' },
       React.createElement('button', { id: 'child-close', 'aria-label': 'Close child', onClick: () => setChild(false) }, 'Close child')));
 }
+function LinkFixture() {
+  useDeepLinks();
+  return React.createElement('output', { id: 'route' }, useLocation().pathname);
+}
 function Fixture() {
   const screen = new URLSearchParams(location.search).get('screen');
   const [open, setOpen] = React.useState(false);
@@ -51,6 +56,7 @@ function Fixture() {
   const config = { latestVersion: '9.0.0', minVersion: '1.0.0', buildNumber: 900,
     apkUrl: 'https://local.invalid/Wawasan.apk', releaseNotes: [], forceUpdate: false,
     bundleUrl: screen === 'update-ota' ? 'https://local.invalid/bundle.zip' : '' };
+  if (screen === 'links') return React.createElement(MemoryRouter, { initialEntries: ['/home'] }, React.createElement(LinkFixture));
   if (screen === 'back') return React.createElement(MemoryRouter, { initialEntries: ['/home', '/order'] }, React.createElement(BackFixture));
   return React.createElement(React.Fragment, null,
     React.createElement('button', { onClick: () => setOpen(true) }, 'Open fixture'),
@@ -63,6 +69,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
 test.use({ viewport: { width: 393, height: 851 }, reducedMotion: 'reduce' });
 
 test.beforeEach(async ({ page }) => {
+  page.on('pageerror', error => console.error('Integrity fixture:', error.message));
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (!['localhost', '127.0.0.1'].includes(url.hostname)) return route.abort();
@@ -70,14 +77,14 @@ test.beforeEach(async ({ page }) => {
     const scripts: Record<string, string> = {
       '/src/context/SettingsContext.tsx': 'export const useSettings = () => window.__settings;',
       '/src/context/LanguageContext.tsx': 'export const useLanguage = () => ({ language: "en" });',
-      '/src/lib/haptics.ts': 'export const triggerLightImpact = async () => {}, triggerMediumImpact = async () => {}, triggerHeavyImpact = async () => {}, triggerNotification = async () => {}; export const NotificationType = { Success: "SUCCESS", Warning: "WARNING", Error: "ERROR" };',
+      '/src/lib/haptics.ts': 'export const playClickSound = () => {}, triggerLightImpact = async () => {}, triggerMediumImpact = async () => {}, triggerHeavyImpact = async () => {}, triggerNotification = async () => {}; export const NotificationType = { Success: "SUCCESS", Warning: "WARNING", Error: "ERROR" };',
       '/src/services/updateService.ts': 'export const CURRENT_APP_VERSION = "1.0.0", DEFAULT_APK_URL = "https://local.invalid/Wawasan.apk"; export const downloadAndApplyCapgoOta = () => new Promise(r => { window.__finishOTA = r; });',
       '/src/hooks/native/useMobileKeyboard.ts': 'export const useMobileKeyboard = () => ({ isKeyboardVisible: false });',
       '/src/components/ui/Toast.tsx': 'export const useToast = () => ({ toast: () => window.__toasts++ });',
     };
     if (scripts[url.pathname]) return route.fulfill({ contentType: 'application/javascript', body: scripts[url.pathname] });
     if (url.pathname.endsWith('/@capacitor_core.js')) return route.fulfill({ contentType: 'application/javascript', body: 'export const Capacitor = { isNativePlatform: () => window.__native, getPlatform: () => window.__native ? "android" : "web", convertFileSrc: x => x }; export const registerPlugin = () => ({});' });
-    if (url.pathname.endsWith('/@capacitor_app.js')) return route.fulfill({ contentType: 'application/javascript', body: 'export const App = { addListener: async (_, cb) => { window.__back = cb; return { remove: () => {} }; }, minimizeApp: async () => { window.__minimized++; } };' });
+    if (url.pathname.endsWith('/@capacitor_app.js')) return route.fulfill({ contentType: 'application/javascript', body: 'export const App = { addListener: async (name, cb) => { if (name === "backButton") window.__back = cb; else window.__url = cb; return { remove: () => {} }; }, minimizeApp: async () => { window.__minimized++; } };' });
     if (url.pathname.endsWith('/@capacitor_keyboard.js')) return route.fulfill({ contentType: 'application/javascript', body: 'export const Keyboard = { hide: async () => {} };' });
     if (url.pathname.endsWith('/@capacitor_app-launcher.js')) return route.fulfill({ contentType: 'application/javascript', body: 'export const AppLauncher = { openUrl: async ({ url }) => { window.__launches.push(url); return { completed: window.__launchOK }; } };' });
     if (url.pathname === '/api/health') return route.fulfill({ status: 503, json: { status: 'unavailable' } });
@@ -168,4 +175,18 @@ test('Back closes the focused overlay, then consumes a wizard step, then navigat
   expect(await page.evaluate(() => (window as unknown as { __toasts: number }).__toasts)).toBe(1);
   await back();
   expect(await page.evaluate(() => (window as unknown as { __minimized: number }).__minimized)).toBe(1);
+});
+
+
+test('native URL and notification actions navigate only to existing allowed screens', async ({ page }) => {
+  await page.goto('/__app-integrity?screen=links');
+  await expect(page.locator('#route')).toHaveText('/home');
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('wawasan:push_action', { detail: { type: 'order_status', orderId: 'local-order' } })));
+  await expect(page.locator('#route')).toHaveText('/profile');
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('wawasan:push_action', { detail: { type: 'cancel_requested', orderId: 'local-order' } })));
+  await expect(page.locator('#route')).toHaveText('/admin');
+  await page.evaluate(() => (window as unknown as { __url: (event: { url: string }) => void }).__url({ url: 'wawasanpakusop://app/calendar?month=2026-12' }));
+  await expect(page.locator('#route')).toHaveText('/calendar');
+  await page.evaluate(() => (window as unknown as { __url: (event: { url: string }) => void }).__url({ url: 'https://untrusted.invalid/admin' }));
+  await expect(page.locator('#route')).toHaveText('/calendar');
 });
