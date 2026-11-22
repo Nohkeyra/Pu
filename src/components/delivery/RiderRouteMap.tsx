@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocateFixed, RotateCw } from 'lucide-react';
 import { RESTORAN_COORDS, validCoordinates } from '@/lib/riderTracking';
+import { RIDER_MARKER_TWEEN_MS, riderVisualPointAt, shouldTweenRiderMarker } from '@/lib/riderVisualMotion';
 
 export type MapPoint = { lat: number; lng: number };
 const addressCache = new Map<string, MapPoint>();
@@ -11,11 +13,16 @@ const markerIcon = (kind: string, label: string) => L.divIcon({
   html: `<span class="rider-pin rider-pin--${kind}" role="img" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${kind === 'destination' ? 'M3 10 12 3 21 10V21H3Z M9 21V13H15V21' : 'M12 3 20 21 12 17 4 21Z'}"/></svg></span>`,
 });
 
-export function RiderRouteMap({ address, rider, live, bm, onDestination, initialCoordinates }: {
-  address: string; rider: MapPoint | null; live: boolean; bm: boolean; onDestination: (point: MapPoint | null) => void;
+export function RiderRouteMap({ address, rider, live, finished = false, bm, onDestination, initialCoordinates }: {
+  address: string; rider: MapPoint | null; live: boolean; finished?: boolean; bm: boolean; onDestination: (point: MapPoint | null) => void;
   initialCoordinates?: MapPoint | null;
 }) {
   const element = useRef<HTMLDivElement>(null);
+  const reducedMotion = Boolean(useReducedMotion());
+  const riderFrame = useRef<number | null>(null);
+  const riderWasLive = useRef(false);
+  const latestFinished = useRef(finished);
+  useEffect(() => { latestFinished.current = finished; }, [finished]);
   const map = useRef<ReturnType<typeof L.map> | null>(null);
   const tileLayer = useRef<ReturnType<typeof L.tileLayer> | null>(null);
   const riderMarker = useRef<ReturnType<typeof L.marker> | null>(null);
@@ -40,7 +47,11 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination, initial
     tiles.on('tileerror', () => setTilesFailed(true));
     const observer = new ResizeObserver(() => instance.invalidateSize());
     observer.observe(element.current);
-    return () => { observer.disconnect(); instance.remove(); map.current = null; riderMarker.current = null; destinationMarker.current = null; };
+    return () => {
+      if (riderFrame.current !== null) window.cancelAnimationFrame(riderFrame.current);
+      riderFrame.current = null;
+      observer.disconnect(); instance.remove(); map.current = null; riderMarker.current = null; destinationMarker.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -85,6 +96,7 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination, initial
     let line: ReturnType<typeof L.polyline> | null = null;
     let controller: AbortController | null = null;
     const loadRoute = async () => {
+      if (latestFinished.current) return; // Completed orders never request fresh routes.
       controller?.abort(); controller = new AbortController();
       const origin = latestRider.current || RESTORAN_COORDS;
       try {
@@ -93,8 +105,8 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination, initial
         const data = await response.json();
         const coordinates: [number, number][] = data.routes?.[0]?.geometry?.coordinates?.map(([lng, lat]: [number, number]) => [lat, lng]);
         if (!coordinates?.length) throw new Error('Route unavailable');
-        if (disposed) return;
-        line?.remove(); line = L.polyline(coordinates, { color: '#b95a28', weight: 5, opacity: .8 }).addTo(instance);
+        if (disposed || latestFinished.current) return;
+        line?.remove(); line = L.polyline(coordinates, { color: '#b95a28', weight: 5, opacity: .8, className: 'rider-route-line' }).addTo(instance);
         setRouteUnavailable(false);
       } catch { if (!disposed) { line?.remove(); line = null; setRouteUnavailable(true); } }
     };
@@ -106,19 +118,53 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination, initial
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
-    if (!rider) { riderMarker.current?.remove(); riderMarker.current = null; return; }
+    if (riderFrame.current !== null) {
+      window.cancelAnimationFrame(riderFrame.current);
+      riderFrame.current = null;
+    }
+    if (!rider) {
+      riderWasLive.current = false;
+      riderMarker.current?.remove(); riderMarker.current = null;
+      return;
+    }
+
+    const wasLive = riderWasLive.current;
+    riderWasLive.current = live;
     const icon = markerIcon(live ? 'live' : 'stale', live ? 'GPS' : bm ? 'Lokasi terakhir' : 'Last location');
-    if (!riderMarker.current) riderMarker.current = L.marker(rider, { icon, zIndexOffset: 500 }).addTo(instance);
-    else riderMarker.current.setLatLng(rider).setIcon(icon);
+    if (!riderMarker.current) {
+      riderMarker.current = L.marker(rider, { icon, zIndexOffset: 500 }).addTo(instance);
+    } else {
+      const marker = riderMarker.current;
+      const from = marker.getLatLng();
+      const to = L.latLng(rider.lat, rider.lng);
+      const distance = from.distanceTo(to);
+      marker.setIcon(icon);
+      if (shouldTweenRiderMarker(distance, live, wasLive, reducedMotion, !document.hidden)) {
+        const started = performance.now();
+        const frame = (now: number) => {
+          const elapsed = Math.max(0, now - started);
+          marker.setLatLng(riderVisualPointAt(from, to, elapsed));
+          if (elapsed < RIDER_MARKER_TWEEN_MS) {
+            riderFrame.current = window.requestAnimationFrame(frame);
+          } else {
+            riderFrame.current = null;
+          }
+        };
+        riderFrame.current = window.requestAnimationFrame(frame);
+      } else {
+        // Long jumps, stale fixes and Reduce Motion show the actual GPS point.
+        marker.setLatLng(to);
+      }
+    }
     if (!fittedFirstFix.current) {
       fittedFirstFix.current = true;
       instance.setView(rider, 14, { animate: false });
     }
     // Do not pan on every update: users retain control while inspecting the map.
-  }, [rider, live, bm]);
+  }, [rider?.lat, rider?.lng, live, bm, reducedMotion]);
 
   return <div className="rider-map-wrap">
-    <div ref={element} className="rider-map" aria-label={bm ? 'Peta lokasi penghantaran' : 'Delivery location map'} />
+    <div ref={element} className={finished ? 'rider-map rider-map--completed' : 'rider-map'} aria-label={bm ? 'Peta lokasi penghantaran' : 'Delivery location map'} />
     <div className="rider-map-caption"><span className={live ? 'rider-dot is-live' : 'rider-dot'} />{live ? bm ? 'Lokasi GPS sebenar' : 'Actual GPS location' : bm ? 'Peta penghantaran' : 'Delivery map'}</div>
     <button className="rider-map-locate" aria-label={bm ? 'Muatkan lokasi pada peta' : 'Fit locations on map'} onClick={() => {
       const points = [rider, destination].filter((point): point is MapPoint => point !== null);
