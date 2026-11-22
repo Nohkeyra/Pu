@@ -31,7 +31,7 @@
 .rider-dot { width:6px; height:6px; border-radius:50%; background:var(--ui-raised); flex-shrink:0; display:inline-block; }
 .is-live .rider-dot,.rider-dot.is-live { background:var(--ui-green); box-shadow:0 0 0 3px color-mix(in srgb, var(--ui-shadow-ink) 12.5%, transparent); }
 .rider-order-ref { font-size:9px; color:var(--rider-muted); font-weight:600; letter-spacing:.3px; overflow-wrap:anywhere; }
-.rider-sheet>h2 { margin:18px 0 8px; font-size:26px; line-height:1.17; font-weight:850; letter-spacing:-.8px; max-width:290px; }
+.rider-sheet-body>h2 { margin:18px 0 8px; font-size:26px; line-height:1.17; font-weight:850; letter-spacing:-.8px; max-width:290px; }
 .rider-description { font-size:12px; line-height:1.65; color:var(--rider-muted); }
 .rider-metrics { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:17px 0; margin:8px 0 4px; border-bottom:1px solid var(--rider-line); }
 .rider-metrics>div { display:flex; gap:9px; align-items:center; }
@@ -80,7 +80,7 @@
  .rider-map-wrap { min-height:250px; height:35dvh; }
  .rider-sheet { margin-top:-18px; z-index:2; border-radius:25px 25px 0 0; padding:10px 22px calc(25px + var(--sab,env(safe-area-inset-bottom,0px))); overflow:visible; min-height:55dvh; box-shadow:0 -6px 24px color-mix(in srgb, var(--ui-shadow-ink) 6.3%, transparent); }
  .rider-sheet-handle { display:block; width:34px; height:4px; background:var(--rider-line); border-radius:4px; margin:0 auto 16px; }
- .rider-sheet>h2 { font-size:25px; max-width:320px; margin-top:15px; }
+ .rider-sheet-body>h2 { font-size:25px; max-width:320px; margin-top:15px; }
  .rider-map-caption { top:16px; left:16px; }
  .rider-map-notice { bottom:36px; }
  .rider-map .leaflet-bottom { bottom:20px; }
@@ -89,4 +89,35 @@
 
 html.wawasan-native .rider-map-wrap { min-height: 180px; height: 29dvh; }
 html.wawasan-native .rider-sheet { padding-inline: max(18px, var(--sal, 0px)); }
-html.wawasan-native .rider-sheet > h2 { font-size: 1.375rem; margin-top: 12px; }
+html.wawasan-native .rider-sheet-body > h2 { font-size: 1.375rem; margin-top: 12px; }
+
+/* Customer card-to-map presentation. The map keeps its full-size Leaflet
+   canvas while the reveal clips it; the existing details form the bottom dock. */
+.rider-dialog.rider-dialog--immersive {
+  position:fixed!important; inset:0!important; width:100vw!important;
+  height:100dvh!important; max-height:100dvh!important; max-width:none!important;
+  transform:none!important; translate:none!important; border:0!important;
+  border-radius:0!important; animation:none!important; scrollbar-gutter:auto;
+}
+.rider-map-reveal { position:absolute; inset:0; overflow:hidden; isolation:isolate; }
+.rider-dialog--immersive .rider-layout { display:block; height:100%; max-height:none; overflow:hidden; }
+.rider-dialog--immersive .rider-map-wrap { height:100%!important; min-height:100%!important; }
+.rider-dialog--immersive .rider-header {
+  position:absolute; top:calc(12px + var(--sat,0px)); left:max(12px,var(--sal,0px)); right:max(12px,var(--sar,0px));
+  z-index:4; border:1px solid var(--rider-line); border-radius:20px;
+  padding:10px 12px; box-shadow:0 6px 22px color-mix(in srgb,var(--ui-shadow-ink) 14%,transparent);
+}
+.rider-dialog--immersive .rider-sheet {
+  position:absolute; left:max(12px,var(--sal,0px)); right:max(12px,var(--sar,0px)); bottom:calc(12px + var(--sab,0px));
+  z-index:3; width:auto; max-width:560px; max-height:46dvh; min-height:0;
+  margin:0 auto; padding:16px 18px; overflow:auto; border:1px solid var(--rider-line);
+  border-radius:26px; transform-origin:top left;
+  box-shadow:0 12px 38px color-mix(in srgb,var(--ui-shadow-ink) 20%,transparent);
+}
+.rider-dialog--immersive .rider-sheet-body>h2 { font-size:20px; margin:12px 0 6px; max-width:none; }
+.rider-dialog--immersive .rider-metrics { padding:12px 0; }
+.rider-dialog--immersive .rider-progress { margin:16px 0; }
+.rider-dialog--immersive .rider-map-caption,
+.rider-dialog--immersive .rider-map-locate { top:calc(100px + var(--sat,0px)); }
+.rider-dialog--immersive .rider-map-notice { bottom:calc(46dvh + 30px + var(--sab,0px)); }
+.rider-dialog--immersive .rider-map .leaflet-bottom { bottom:calc(46dvh + 24px + var(--sab,0px)); }

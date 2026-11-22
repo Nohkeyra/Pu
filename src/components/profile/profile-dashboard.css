@@ -91,10 +91,11 @@
 .profile-order-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 12px; color: var(--profile-muted); }
 .profile-order-meta span { display: inline-flex; align-items: center; gap: 5px; }
 .profile-order-dishes { font-size: 13px; color: var(--profile-muted); line-height: 1.7; margin-top: 10px; overflow-wrap: anywhere; }
-.profile-order-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--profile-border); padding-top: 12px; }
+.profile-order-footer { display: flex; flex-wrap:wrap; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--profile-border); padding-top: 12px; }
 .profile-order-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--profile-muted); cursor: pointer; min-height: 44px; }
 .profile-order-select input { min-height: auto; width: 20px; height: 20px; accent-color: var(--color-sunshine-cta); }
 .profile-order-footer button { min-height: 44px; border-radius: 12px; }
+.profile-order-footer .profile-order-track { border-radius:999px; gap:6px; background:var(--ui-action); color:var(--ui-on-action); }
 .profile-order-more { flex-shrink: 0; }
 .profile-order-action-sheet { max-height: calc(100dvh - 32px); overflow-y: auto; z-index: 1600; }
 .profile-order-edit-sheet, .profile-customer-dialog { z-index: 1600; max-height: calc(100dvh - 32px); overflow-y: auto; }

@@ -13,9 +13,10 @@ const markerIcon = (kind: string, label: string) => L.divIcon({
   html: `<span class="rider-pin rider-pin--${kind}" role="img" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${kind === 'destination' ? 'M3 10 12 3 21 10V21H3Z M9 21V13H15V21' : 'M12 3 20 21 12 17 4 21Z'}"/></svg></span>`,
 });
 
-export function RiderRouteMap({ address, rider, live, finished = false, bm, onDestination, initialCoordinates }: {
+export function RiderRouteMap({ address, rider, live, finished = false, bm, onDestination, initialCoordinates, bottomInset = 0 }: {
   address: string; rider: MapPoint | null; live: boolean; finished?: boolean; bm: boolean; onDestination: (point: MapPoint | null) => void;
   initialCoordinates?: MapPoint | null;
+  bottomInset?: number;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const reducedMotion = Boolean(useReducedMotion());
@@ -86,8 +87,12 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
     if (!instance) return;
     if (destinationMarker.current) instance.removeLayer(destinationMarker.current);
     destinationMarker.current = destination ? L.marker(destination, { icon: markerIcon('destination', bm ? 'Destinasi anggaran alamat' : 'Approximate address destination') }).addTo(instance) : null;
-    if (destination) instance.fitBounds(L.latLngBounds([latestRider.current || RESTORAN_COORDS, destination]), { padding: [60, 60], maxZoom: 15, animate: false });
-  }, [destination, bm]);
+    if (destination) instance.fitBounds(L.latLngBounds([latestRider.current || RESTORAN_COORDS, destination]), {
+      paddingTopLeft: [60, bottomInset ? 110 : 60],
+      paddingBottomRight: [60, Math.min(bottomInset + 60, Math.max(60, instance.getSize().y - 160))],
+      maxZoom: 15, animate: false,
+    });
+  }, [destination, bm, bottomInset]);
 
   useEffect(() => {
     const instance = map.current;
@@ -177,7 +182,11 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
     <div className="rider-map-caption"><span className={live ? 'rider-dot is-live' : 'rider-dot'} />{live ? bm ? 'Lokasi GPS sebenar' : 'Actual GPS location' : bm ? 'Peta penghantaran' : 'Delivery map'}</div>
     <button className="rider-map-locate" aria-label={bm ? 'Muatkan lokasi pada peta' : 'Fit locations on map'} onClick={() => {
       const points = [rider, destination].filter((point): point is MapPoint => point !== null);
-      if (points.length) map.current?.fitBounds(L.latLngBounds(points), { padding: [70, 70], maxZoom: 16 });
+      if (points.length && map.current) map.current.fitBounds(L.latLngBounds(points), {
+        paddingTopLeft: [70, bottomInset ? 110 : 70],
+        paddingBottomRight: [70, Math.min(bottomInset + 70, Math.max(70, map.current.getSize().y - 160))],
+        maxZoom: 16, animate: !reducedMotion,
+      });
     }}><LocateFixed size={20} /></button>
     {(lookup !== 'ready' || tilesFailed || routeUnavailable) && <div className="rider-map-notice" role="status">
       {tilesFailed ? bm ? 'Jubin peta tidak dapat dimuatkan. Status GPS masih tersedia.' : 'Map tiles unavailable. GPS status remains available.' : lookup === 'loading' ? bm ? 'Mencari alamat…' : 'Finding address…' : lookup === 'failed' ? bm ? 'Alamat tidak dapat dipastikan pada peta.' : 'Could not locate this address on the map.' : bm ? 'Laluan tidak tersedia. Penanda lokasi masih boleh dilihat.' : 'Route unavailable. Location markers remain visible.'}
