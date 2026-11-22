@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { MotionConfig } from 'motion/react';
 import App from './App.tsx';
 import { Capacitor } from '@capacitor/core';
 import './index.css';
@@ -66,7 +67,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <SettingsProvider>
         <ThemeProvider>
           <LanguageProvider>
-            <App />
+            <MotionConfig reducedMotion="user">
+              <App />
+            </MotionConfig>
           </LanguageProvider>
         </ThemeProvider>
       </SettingsProvider>

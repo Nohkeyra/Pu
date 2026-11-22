@@ -26,7 +26,7 @@ import {
   ChevronDown,
   MoreHorizontal,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import type { Order } from '../../types';
 import type { ToastMessage } from '../ui/Toast';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,7 @@ export function AdminTablesTab({
   isGeneratingConsolidated = false,
   handleGenerateConsolidatedInvoice,
 }: AdminTablesTabProps) {
+  const reduceMotion = useReducedMotion();
   // Search & Filters
   const [searchTerm, setSearchTerm] = useRememberedState<string>(
     viewScope + ':tables:searchTerm',
@@ -1343,7 +1344,7 @@ export function AdminTablesTab({
 
                 {visibleColumns.has('actions') && (
                   <th
-                    className={`py-3 px-2 ${openActionRowId ? 'min-w-[320px]' : 'min-w-[60px]'} text-center sticky right-0 bg-cream dark:bg-background border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-20 whitespace-nowrap transition-all duration-300`}
+                    className={`py-3 px-2 ${openActionRowId ? 'min-w-[320px]' : 'min-w-[60px]'} text-center sticky right-0 bg-cream dark:bg-background border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-20 whitespace-nowrap transition-colors duration-200`}
                   >
                     {openActionRowId ? (
                       isBm ? (
@@ -1626,15 +1627,16 @@ export function AdminTablesTab({
                       {/* Actions Sticky Column - Collapsible */}
                       {visibleColumns.has('actions') && (
                         <td
-                          className={`${densityCellPadding} text-center sticky right-0 bg-white dark:bg-card group-hover:bg-cream dark:group-hover:bg-stone/25 border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap transition-all duration-300`}
+                          className={`${densityCellPadding} text-center sticky right-0 bg-white dark:bg-card group-hover:bg-cream dark:group-hover:bg-stone/25 border-l border-stone/15 dark:border-white/10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap transition-colors duration-200`}
                         >
                           <div className="flex items-center justify-center">
                             <AnimatePresence initial={false}>
                               {openActionRowId === order.id && (
                                 <motion.div
-                                  initial={{ width: 0, opacity: 0, x: 20 }}
-                                  animate={{ width: 'auto', opacity: 1, x: 0 }}
-                                  exit={{ width: 0, opacity: 0, x: 20 }}
+                                  initial={reduceMotion ? false : { opacity: 0, x: 8 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: reduceMotion ? 1 : 0, x: reduceMotion ? 0 : 4 }}
+                                  transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
                                   className="flex items-center gap-1 overflow-hidden"
                                 >
                                   <button

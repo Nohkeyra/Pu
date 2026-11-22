@@ -21,6 +21,13 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
+function getFocusableControls(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (element) => element.tabIndex >= 0 && element.getClientRects().length > 0 &&
+      window.getComputedStyle(element).visibility !== 'hidden'
+  );
+}
+
 /**
  * Shared overlay behaviour for dialogs, drawers, sheets and menus.
  *
@@ -45,7 +52,7 @@ export function useOverlayAccessibility({
     const focusFirst = () => {
       const container = containerRef.current;
       if (!container) return;
-      const focusables = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      const focusables = getFocusableControls(container);
       if (focusables.length > 0) {
         focusables[0].focus();
       } else {
@@ -62,9 +69,7 @@ export function useOverlayAccessibility({
       if (event.key !== 'Tab') return;
       const container = containerRef.current;
       if (!container) return;
-      const focusables = Array.from(
-        container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      );
+      const focusables = getFocusableControls(container);
       if (focusables.length === 0) {
         event.preventDefault();
         return;

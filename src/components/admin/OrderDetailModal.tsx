@@ -1,7 +1,7 @@
 import { canViewRiderTracking } from '@/lib/riderTracking';
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { X, Loader2, CheckCircle, XCircle, Send, Copy, Trash2, Truck, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ export function OrderDetailModal({
 }: OrderDetailModalProps) {
   const { toast } = useToast();
   const modalRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
 
@@ -99,9 +100,9 @@ export function OrderDetailModal({
 
       <motion.div
         ref={modalRef}
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-5xl max-h-[92vh] bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative text-stone-900 dark:text-stone-100"
         onClick={(e) => e.stopPropagation()}
         id="order-detail-dialog-container"
