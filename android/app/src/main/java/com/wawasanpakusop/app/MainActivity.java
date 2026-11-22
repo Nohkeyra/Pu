@@ -62,11 +62,8 @@ public class MainActivity extends BridgeActivity {
         if (intent != null && intent.getBooleanExtra("open_admin_panel", false)) {
             WebView webView = getBridge().getWebView();
             if (webView != null) {
-                // Post to main queue without replacing BridgeWebViewClient
-                String orderId = intent.getStringExtra("rider_order_id");
-                String script = orderId != null && orderId.matches("^[A-Za-z0-9_-]{1,100}$")
-                    ? "sessionStorage.setItem('wawasan_open_rider_order', " + org.json.JSONObject.quote(orderId) + "); window.location.hash = '#/admin'; window.dispatchEvent(new Event('rider:open-order'));"
-                    : "window.location.hash = '#/admin';";
+                // Post only constant JavaScript to avoid evaluating any intent-derived input
+                final String script = "window.location.hash = '#/admin'; window.dispatchEvent(new Event('rider:open-order'));";
                 webView.post(() -> webView.evaluateJavascript(script, null));
             }
         }
