@@ -5,7 +5,7 @@ import { Check, Phone, User as UserIcon, Ghost, CircleHelp, ChevronDown } from '
 import { format } from 'date-fns';
 import { safeCopyToClipboard, getAssetUrl, safeJsonStringify } from '@/lib/utils';
 import { CustomerInvoicePreviewModal } from '@/components/order/CustomerInvoicePreviewModal';
-import { motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { getApiUrl, fetchWithCache, invalidateFetchCache } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import { onAuthStateChanged, sendEmailVerification, type User } from 'firebase/auth';
@@ -166,6 +166,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { isKeyboardVisible } = useMobileKeyboard();
+  const reduceMotion = useReducedMotion();
 
   // Only scroll when a focused field would actually be obscured by the IME.
   useEffect(() => {
@@ -1318,7 +1319,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             </span>
             {isDishStep && (
               <span className="customer-order-summary-count" aria-live="polite">
-                {effectiveState.guests} {tText('pax', 'orang')} · {selectionCount}{' '}
+                {effectiveState.guests} {tText('pax', 'orang')} ·{' '}
+                <motion.span
+                  key={selectionCount}
+                  className="inline-block"
+                  initial={reduceMotion ? false : { opacity: 0.65, scale: 0.82, y: 3 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 30 }}
+                >{selectionCount}</motion.span>{' '}
                 {tText(selectionCount === 1 ? 'selection' : 'selections', 'pilihan')}
               </span>
             )}
@@ -1578,15 +1586,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             >
               <motion.div
                 ref={stepContentRef}
-                key={effectiveStep}
                 initial={false}
                 animate={{ x: stepPulling ? '100%' : 0 }}
                 transition={{ duration: pullDuration, ease: [0.5, 0.05, 0.25, 1] }}
                 style={{ pointerEvents: stepTransitionBusy ? 'none' : undefined }}
               >
+                {/* A stable outer shell preserves the native mascot pull. AnimatePresence
+                    now lets existing step exit/entry animations run without layout motion. */}
+                <MotionConfig reducedMotion="user">
+                  <AnimatePresence mode="wait" initial={false}>
                 {/* STEP 1: PILIH JENIS MAJLIS & HIDANGAN */}
                 {effectiveStep === 1 && (
                   <Step1EventMeal
+                    key="step1"
                     orderState={effectiveState}
                     setOrderState={setOrderState}
                     handleToggleMeal={handleToggleMeal}
@@ -1599,6 +1611,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* STEP 2: PILIH LAUK PAUK & CALCULATE PRICE */}
                 {effectiveStep === 2 && (
                   <Step2DishSelection
+                    key="step2"
                     orderState={effectiveState}
                     setOrderState={setOrderState}
                     menuLoading={menuLoading}
@@ -1617,6 +1630,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* STEP 3: BUTIRAN TEMPAHAN */}
                 {effectiveStep === 3 && (
                   <Step3ContactDetails
+                    key="step3"
                     orderState={effectiveState}
                     setOrderState={setOrderState}
                     isProfileLoading={isProfileLoading}
@@ -1638,6 +1652,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* STEP 4: REVIEW & CONFIRMATION */}
                 {effectiveStep === 4 && (
                   <Step4ReviewSubmit
+                    key="step4"
                     orderState={effectiveState}
                     getMealTypesLabel={getMealTypesLabel}
                     isSubmitting={isSubmitting}
@@ -1652,6 +1667,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                 {/* STEP 5: KEJAYAAN / SUCCESS */}
                 {effectiveStep === 5 && (
                   <Step5OrderSuccess
+                    key="step5"
                     orderState={effectiveState}
                     referenceNumber={referenceNumber}
                     getMealTypesLabel={getMealTypesLabel}
@@ -1662,6 +1678,8 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     tText={tText}
                   />
                 )}
+                  </AnimatePresence>
+                </MotionConfig>
               </motion.div>
             </div>
           </div>

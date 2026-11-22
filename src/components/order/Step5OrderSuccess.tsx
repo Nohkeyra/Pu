@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { 
   Eye, 
   ExternalLink,
@@ -48,21 +48,12 @@ export function Step5OrderSuccess({
   handleShareReceipt,
   tText,
 }: Step5OrderSuccessProps) {
-  React.useEffect(() => {
-    // 1. Trigger Confetti Cannon dynamically for a delightful "unpredictable" touch!
-    import('canvas-confetti').then((confettiModule) => {
-      const fireConfetti = confettiModule.default || confettiModule;
-      fireConfetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#f69913', '#e96212', '#0c453c', '#e03f14'], // Amber, Orange, Emerald, Blue
-        disableForReducedMotion: true,
-        zIndex: 2000
-      });
-    }).catch(() => {});
+  const reduceMotion = useReducedMotion();
 
-    // 2. Trigger native notification
+  React.useEffect(() => {
+    // Preserve the existing order-received notification; the celebration itself
+    // is now a lightweight, on-screen paper-stamp motion, not particle confetti.
+    // Trigger native notification
     scheduleLocalNotification({
       id: Math.floor(Math.random() * 100000),
       title: tText('Catering Request Received! 🍲', 'Tempahan Katering Diterima! 🍲'),
@@ -77,9 +68,9 @@ export function Step5OrderSuccess({
   return (
     <motion.div
       key="step5"
-      initial={{ opacity: 0, scale: 0.94 }}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.985 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
       className="space-y-5 text-center"
     >
       <section aria-labelledby="booking-sent-heading" className="relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-[var(--ui-surface)] px-5 pb-6 pt-3 text-center shadow-sm dark:border-amber-400/15 dark:bg-[var(--ui-canvas)] sm:px-8">
@@ -95,9 +86,18 @@ export function Step5OrderSuccess({
               height={600}
               className="block h-auto w-full object-contain"
             />
-            <span aria-hidden="true" className="absolute right-[9%] top-[9%] flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-white bg-[var(--ui-green)] text-white shadow-md dark:border-[var(--ui-border)]">
-              <Check className="h-6 w-6" strokeWidth={3} />
-            </span>
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-[6%] right-[6%] z-10 flex min-h-[3.6rem] min-w-[7.5rem] flex-col items-center justify-center rounded-md border-[3px] border-double border-[var(--ui-action)] bg-[var(--ui-surface)] px-2 py-1 text-[var(--ui-action)] shadow-md"
+              initial={reduceMotion ? false : { opacity: 0, scale: 1.38, rotate: -22 }}
+              animate={{ opacity: 1, scale: 1, rotate: -9 }}
+              transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 440, damping: 22, delay: 0.2 }}
+            >
+              <span className="font-display text-[10px] font-black leading-tight tracking-widest">WAWASAN</span>
+              <span className="mt-0.5 flex items-center gap-1 text-[11px] font-black leading-tight tracking-wide">
+                <Check size={13} strokeWidth={3} /> {tText('RECEIVED', 'DITERIMA')}
+              </span>
+            </motion.span>
           </div>
           <h2 id="booking-sent-heading" className="font-display text-3xl font-black leading-tight tracking-tight text-[var(--ui-green)] dark:text-[var(--ui-legacy-white)] sm:text-4xl">
             {tText('Booking request', 'Tempahan')} <span className="text-[var(--ui-orange)] dark:text-[var(--ui-orange)]">{tText('sent!', 'dihantar!')}</span>
@@ -117,7 +117,12 @@ export function Step5OrderSuccess({
         <div className="flex items-center gap-3 border-b border-orange-100 py-3 dark:border-white/10">
           <ClipboardList className="h-5 w-5 shrink-0 text-orange-700 dark:text-amber-400" aria-hidden="true" />
           <div className="min-w-0 flex-1 text-sm text-stone-700 dark:text-stone-300">{tText('Reference number', 'Nombor rujukan')}</div>
-          <strong className="select-all break-all text-right text-sm text-[var(--ui-green)] dark:text-white">{referenceNumber}</strong>
+          <motion.strong
+            className="select-all break-all text-right text-sm text-[var(--ui-green)] dark:text-white"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.26, ease: 'easeOut', delay: 0.45 }}
+          >{referenceNumber}</motion.strong>
         </div>
         <div className="flex items-center gap-3 border-b border-orange-100 py-3 dark:border-white/10">
           <CalendarDays className="h-5 w-5 shrink-0 text-orange-700 dark:text-amber-400" aria-hidden="true" />
