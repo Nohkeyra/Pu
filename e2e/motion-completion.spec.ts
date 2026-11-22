@@ -72,7 +72,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
         await expect(toggle).toBeChecked();
         await expect.poll(async () => (await thumb.boundingBox())!.x - start!.x).toBeGreaterThan(8);
         if (reducedMotion === 'reduce') {
-          expect(await thumb.evaluate(el => getComputedStyle(el).transitionDuration)).toBe('0s');
+          expect(await thumb.evaluate(el => getComputedStyle(el).transitionProperty)).toBe('none');
         }
         await page.keyboard.press('Space');
         await expect(toggle).not.toBeChecked();
