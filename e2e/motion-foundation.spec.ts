@@ -122,6 +122,14 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       });
       await page.goto('/#/order');
       await expect(page.locator('[data-tour="step2-next"]')).toBeVisible({ timeout: 20_000 });
+      const expectSummaryBelowForm = async () => {
+        const positions = await page.evaluate(() => ({
+          summary: document.querySelector('.customer-order-aside')!.getBoundingClientRect().top,
+          form: document.querySelector('.customer-form-panel')!.getBoundingClientRect().bottom,
+        }));
+        expect(positions.summary).toBeGreaterThanOrEqual(positions.form);
+      };
+      await expectSummaryBelowForm();
       if (reducedMotion === 'no-preference') {
         await page.waitForFunction(() => ((document.querySelector('video[src*="daun_penarik"]') as HTMLVideoElement | null)?.readyState ?? 0) >= 2);
       }
@@ -140,8 +148,15 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await expect(page.locator('#contact-name')).toBeVisible();
       const faults = await page.evaluate(() => (window as unknown as { handoffFaults: string[] }).handoffFaults);
       expect(faults).toEqual([]);
+      await expectSummaryBelowForm();
       if (reducedMotion === 'reduce') {
         await expect(page.locator('.customer-step-content > div > div')).toHaveCSS('opacity', '1');
+        await page.getByRole('button', { name: 'Back', exact: true }).click();
+        await expect(page.locator('[data-tour="step2-next"]')).toBeVisible();
+        await expectSummaryBelowForm();
+        await page.getByRole('button', { name: 'Back', exact: true }).click();
+        await expect(page.locator('.customer-step-one')).toBeVisible();
+        await expectSummaryBelowForm();
       }
     });
   });

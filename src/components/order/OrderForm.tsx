@@ -1570,7 +1570,6 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         )}
         {/* Responsive Grid: Steps Form on Left + Live Order Summary Sidebar on Right */}
         <div className="customer-order-layout grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {isDishStep && orderSummary}
           {/* Left Column: Stepper Wizard & Inputs Panel */}
           <div className="customer-form-panel lg:col-span-7 xl:col-span-8 overflow-hidden">
             {/* Form Steps Container */}
@@ -1681,7 +1680,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
             </div>
           </div>
 
-          {!isDishStep && orderSummary}
+          {orderSummary}
         </div>{' '}
         {/* End of Responsive Grid */}
       </div>{' '}

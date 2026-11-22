@@ -97,7 +97,7 @@ html.wawasan-native .rider-sheet-body > h2 { font-size: 1.375rem; margin-top: 12
   position:fixed!important; inset:0!important; width:100vw!important;
   height:100dvh!important; max-height:100dvh!important; max-width:none!important;
   transform:none!important; translate:none!important; border:0!important;
-  border-radius:0!important; animation:none!important;
+  border-radius:0!important; animation:none!important; scrollbar-gutter:auto;
 }
 .rider-map-reveal { position:absolute; inset:0; overflow:hidden; isolation:isolate; }
 .rider-dialog--immersive .rider-layout { display:block; height:100%; max-height:none; overflow:hidden; }

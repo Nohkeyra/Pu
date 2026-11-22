@@ -10,6 +10,7 @@ import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
 import RefreshRuntime from '/@react-refresh';
 import '/src/index.css';
 import '/src/styles/wawasan-four-colour-theme.css';
+import '/src/styles/wawasan-refinement-v5.css';
 import '/src/components/profile/profile-dashboard.css';
 RefreshRuntime.injectIntoGlobalHook(window);
 window.$RefreshReg$ = () => {};
@@ -75,7 +76,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
         const trigger = page.getByRole('button', { name: 'Track Delivery', exact: true });
         await expect(trigger).toBeVisible();
         const card = page.locator('.profile-order-card');
-        const original = await card.boundingBox();
+        await page.evaluate(() => document.fonts.ready);
+        // Layout size excludes the card's independent entrance transform.
+        const original = await card.evaluate(el => ({ width: (el as HTMLElement).offsetWidth, height: (el as HTMLElement).offsetHeight }));
         const initialOverflow = await page.evaluate(() => getComputedStyle(document.body).overflow);
         await trigger.click();
         const stage = page.locator('.rider-map-reveal');
@@ -103,9 +106,8 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
         await expect(page.getByRole('dialog')).toHaveCount(0);
         await expect(trigger).toBeFocused();
         expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).toBe(initialOverflow);
-        const restored = await card.boundingBox();
-        expect(restored!.width).toBeCloseTo(original!.width, 0);
-        expect(restored!.height).toBeCloseTo(original!.height, 0);
+        const restored = await card.evaluate(el => ({ width: (el as HTMLElement).offsetWidth, height: (el as HTMLElement).offsetHeight }));
+        expect(restored).toEqual(original);
 
         // Reverse during opening, then reopen and rotate while the map is alive.
         await trigger.click();

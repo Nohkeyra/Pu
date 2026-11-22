@@ -1029,7 +1029,7 @@ export default function UserProfileDashboard({
             order={trackingOrder}
             origin={trackingOrigin}
             isAdmin={false}
-            onClose={() => setTrackingOrder(null)}
+            onClose={() => openTrackingOrder(null)}
           />
         )}
       </div>
@@ -1079,7 +1079,7 @@ export default function UserProfileDashboard({
             order={trackingOrder}
             origin={trackingOrigin}
             isAdmin={false}
-            onClose={() => setTrackingOrder(null)}
+            onClose={() => openTrackingOrder(null)}
           />
         </Suspense>
       )}
