@@ -24,8 +24,7 @@ const props = {
 function renderPreview() {
   return renderToStaticMarkup(createElement(
     OrderPreviewProgress,
-    props,
-    createElement('span', null, 'Step 1 of 4'),
+    { ...props, children: createElement('span', null, 'Step 1 of 4') },
   ));
 }
 
