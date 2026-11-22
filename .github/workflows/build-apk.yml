@@ -278,25 +278,28 @@ jobs:
           cp android/app/key.properties android/key.properties
           echo "✅ Keystore successfully configured for release signing!"
 
-      - name: Show release APK SHA-256
+      - name: Show release APK SHA-1 and SHA-256
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
-          SHA256="$(keytool -list -v \
+          CERT_DETAILS="$(keytool -list -v \
             -keystore android/app/release-key.jks \
             -storepass "$KEYSTORE_PASSWORD" \
-            -alias "$KEY_ALIAS" \
-            | awk '/SHA256:/ {print $2}')"
-          if [[ ! "$SHA256" =~ ^([[:xdigit:]]{2}:){31}[[:xdigit:]]{2}$ ]]; then
-            echo "::error::Could not read a valid SHA-256 fingerprint from the release signing certificate."
+            -alias "$KEY_ALIAS")"
+          SHA1="$(printf '%s\n' "$CERT_DETAILS" | awk '/^[[:space:]]*SHA1:/ {print $2; exit}')"
+          SHA256="$(printf '%s\n' "$CERT_DETAILS" | awk '/^[[:space:]]*SHA256:/ {print $2; exit}')"
+          if [[ ! "$SHA1" =~ ^([[:xdigit:]]{2}:){19}[[:xdigit:]]{2}$ ]] || \
+             [[ ! "$SHA256" =~ ^([[:xdigit:]]{2}:){31}[[:xdigit:]]{2}$ ]]; then
+            echo "::error::Could not read valid SHA-1 and SHA-256 fingerprints from the release signing certificate."
             exit 1
           fi
+          echo "Android release APK SHA-1: $SHA1"
           echo "Android release APK SHA-256: $SHA256"
           {
             echo "### Wawasan Android release signing certificate"
-            printf "%s\n" "- **SHA-256:** $SHA256" "- **Firebase Android package:** com.wawasanpakusop.app"
+            printf "%s\n" "- **SHA-1:** $SHA1" "- **SHA-256:** $SHA256" "- **Firebase Android package:** com.wawasanpakusop.app"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup Gradle permissions and wrapper integrity
