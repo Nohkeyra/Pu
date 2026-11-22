@@ -33,7 +33,7 @@ const [{ MemoryRouter, useLocation }, { DiagnosticConsole }, { default: InAppUpd
   import('/src/hooks/native/useDeepLinks.ts'),
 ]);
 function BackFixture() {
-  useNativeBackButton(new URLSearchParams(location.search).get('screen') === 'welcome-back');
+  useNativeBackButton(new URLSearchParams(window.location.search).get('screen') === 'welcome-back');
   const location = useLocation();
   const [parent, setParent] = React.useState(true), [child, setChild] = React.useState(true);
   React.useEffect(() => { document.getElementById('child-close')?.focus(); }, []);
@@ -51,6 +51,8 @@ function LinkFixture() {
 function Fixture() {
   const screen = new URLSearchParams(location.search).get('screen');
   const [open, setOpen] = React.useState(false);
+  const [, forceRender] = React.useState(0);
+  window.__rerender = () => forceRender(n => n + 1);
   window.__close = () => setOpen(false);
   const close = React.useCallback(() => setOpen(false), []);
   const config = { latestVersion: '9.0.0', minVersion: '1.0.0', buildNumber: 900,
@@ -60,7 +62,7 @@ function Fixture() {
   if (screen === 'back' || screen === 'welcome-back') return React.createElement(MemoryRouter, { initialEntries: ['/home', '/order'] }, React.createElement(BackFixture));
   return React.createElement(React.Fragment, null,
     React.createElement('button', { onClick: () => setOpen(true) }, 'Open fixture'),
-    screen === 'diagnostics' ? React.createElement(DiagnosticConsole, { isOpen: open, onClose: close })
+    screen === 'diagnostics' ? React.createElement(DiagnosticConsole, { isOpen: open, onClose: () => setOpen(false) })
       : React.createElement(InAppUpdateModal, { isOpen: open, config, isForceUpdate: false, onDismiss: close }));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(React.StrictMode, null, React.createElement(Fixture)));
@@ -198,4 +200,19 @@ test('Back on welcome minimizes without dismissing welcome or navigating hidden 
   expect(await page.evaluate(() => (window as unknown as { __minimized: number }).__minimized)).toBe(1);
   await expect(page.locator('#route')).toHaveText('/order');
   await expect(page.getByRole('alertdialog')).toBeVisible();
+});
+
+test('dialog focus stays on its field when the parent replaces its close callback', async ({ page }) => {
+  await page.goto('/__app-integrity?screen=diagnostics');
+  await page.getByRole('button', { name: 'Open fixture' }).click();
+  const slider = page.getByRole('slider');
+  await slider.focus();
+  await page.evaluate(async () => {
+    (window as unknown as { __rerender: () => void }).__rerender();
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+  });
+  await expect(slider).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
