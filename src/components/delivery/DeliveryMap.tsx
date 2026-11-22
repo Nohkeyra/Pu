@@ -79,7 +79,7 @@ export function DeliveryMap({ order, onClose, onUpdateStatus, isAdmin = false }:
         <DialogDescription className="sr-only">{text('Peta GPS rider dan status perkongsian lokasi pesanan.', 'Rider GPS map and order location-sharing status.')}</DialogDescription>
       </header>
       <div className="rider-layout">
-        <RiderRouteMap address={order.location} rider={point} live={live} bm={bm} onDestination={setDestination} initialCoordinates={order.locationCoordinates} />
+        <RiderRouteMap address={order.location} rider={point} live={live} finished={finished} bm={bm} onDestination={setDestination} initialCoordinates={order.locationCoordinates} />
         <section className="rider-sheet" aria-label={text('Butiran penjejakan', 'Tracking details')}>
           <div className="rider-sheet-handle" aria-hidden="true" />
           <div className="rider-status-row"><span className={`rider-status ${live ? 'is-live' : ''}`} role="status"><span className="rider-dot" />{badge}</span><span className="rider-order-ref">#{(order.invoiceNo || order.id || '').slice(-14)}</span></div>

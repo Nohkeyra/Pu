@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Order } from '@/types';
 import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
 import { 
@@ -43,6 +43,7 @@ export function CustomerInvoicePreviewModal({
   const [copiedBank, setCopiedBank] = useState(false);
   const [copiedInvoiceNo, setCopiedInvoiceNo] = useState(false);
   const [isFolded, setIsFolded] = useState(false);
+  const reduceMotion = Boolean(useReducedMotion());
   const modalContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,10 +150,14 @@ export function CustomerInvoicePreviewModal({
               type="button"
               onClick={() => {
                 triggerLightImpact();
-                setIsFolded(!isFolded);
+                setIsFolded(current => !current);
               }}
               className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border-stone-600/50 backdrop-blur-md shadow-md active:scale-95"
-              title={isFolded ? 'Buka Kertas Lipatan' : 'Lipat Semula Kertas'}
+              aria-pressed={isFolded}
+              aria-label={isFolded
+                ? (language === 'bm' ? 'Buka kertas lipatan' : 'Unfold paper')
+                : (language === 'bm' ? 'Lipat kertas' : 'Fold paper')}
+              title={isFolded ? (language === 'bm' ? 'Buka kertas lipatan' : 'Unfold paper') : (language === 'bm' ? 'Lipat kertas' : 'Fold paper')}
             >
               <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFolded ? 'rotate-180 text-amber-400' : 'text-stone-300'}`} />
               <span className="hidden sm:inline">{isFolded ? (language === 'bm' ? 'Buka Kertas' : 'Unfold Paper') : (language === 'bm' ? 'Lipat Kertas' : 'Fold Paper')}</span>
@@ -175,9 +180,9 @@ export function CustomerInvoicePreviewModal({
         {/* 3D Realistic Origami Paper Container */}
         <motion.div 
           ref={modalContentRef}
-          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+          transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 330 }}
           className="w-full relative select-text"
           style={{ transformStyle: 'preserve-3d' }}
         >
@@ -197,13 +202,13 @@ export function CustomerInvoicePreviewModal({
             {/* SEGMENT 1: TOP HEADER & COMPANY IDENTITY (ORIGAMI FOLD 1) */}
             {/* ======================================================== */}
             <motion.div 
-              initial={{ rotateX: -65, opacity: 0.2 }}
-              animate={{ 
-                rotateX: isFolded ? -75 : 0, 
-                opacity: isFolded ? 0.35 : 1,
-                y: isFolded ? -20 : 0
+              initial={reduceMotion ? false : { rotateX: -65, opacity: 0.2 }}
+              animate={{
+                rotateX: reduceMotion ? 0 : isFolded ? -75 : 0,
+                opacity: isFolded ? (reduceMotion ? .8 : .35) : 1,
+                y: reduceMotion ? 0 : isFolded ? -20 : 0
               }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
               className="p-5 sm:p-7 border-b border-dashed border-stone-300 dark:border-stone-700/80 relative bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)]"
             >
@@ -288,13 +293,13 @@ export function CustomerInvoicePreviewModal({
             {/* SEGMENT 2: CLIENT DETAILS & ITEMIZED DISH TABLE (ORIGAMI FOLD 2) */}
             {/* ======================================================== */}
             <motion.div 
-              initial={{ rotateX: 45, opacity: 0.3 }}
-              animate={{ 
-                rotateX: isFolded ? 60 : 0, 
-                opacity: isFolded ? 0.4 : 1,
-                y: isFolded ? -10 : 0
+              initial={reduceMotion ? false : { rotateX: 45, opacity: 0.3 }}
+              animate={{
+                rotateX: reduceMotion ? 0 : isFolded ? 60 : 0,
+                opacity: isFolded ? (reduceMotion ? .8 : .4) : 1,
+                y: reduceMotion ? 0 : isFolded ? -10 : 0
               }}
-              transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
               className="p-5 sm:p-7 space-y-5 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative"
             >
@@ -411,13 +416,13 @@ export function CustomerInvoicePreviewModal({
             {/* SEGMENT 3: TOTALS, RUBBER STAMP & PAYMENT (ORIGAMI FOLD 3) */}
             {/* ======================================================== */}
             <motion.div 
-              initial={{ rotateX: -35, opacity: 0.2 }}
-              animate={{ 
-                rotateX: isFolded ? -55 : 0, 
-                opacity: isFolded ? 0.4 : 1,
-                y: isFolded ? 10 : 0
+              initial={reduceMotion ? false : { rotateX: -35, opacity: 0.2 }}
+              animate={{
+                rotateX: reduceMotion ? 0 : isFolded ? -55 : 0,
+                opacity: isFolded ? (reduceMotion ? .8 : .4) : 1,
+                y: reduceMotion ? 0 : isFolded ? 10 : 0
               }}
-              transition={{ duration: 0.55, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
               style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
               className="p-5 sm:p-7 bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)] space-y-5 relative"
             >

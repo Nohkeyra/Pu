@@ -13,6 +13,11 @@
 .rider-map { height:100%; min-height:inherit; z-index:0; background:var(--ui-surface); }
 .rider-map .leaflet-control-attribution { font-size:9px; background:color-mix(in srgb, var(--ui-surface) 93.3%, transparent); color:var(--ui-ink); }
 .rider-map .leaflet-control-attribution a { color:var(--ui-green); }
+/* Only the displayed OSRM line fades when Firestore reports delivery completion.
+   GPS telemetry, geofencing and order status remain authoritative. */
+.rider-map .rider-route-line { transition: stroke-opacity .65s cubic-bezier(.22,1,.36,1); }
+.rider-map--completed .rider-route-line { stroke-opacity: 0 !important; }
+
 .rider-map-caption { position:absolute; top:20px; left:20px; display:flex; align-items:center; gap:8px; background:color-mix(in srgb, var(--ui-surface) 93.3%, transparent); color:var(--ui-green); padding:10px 13px; border:1px solid var(--ui-border); border-radius:30px; font-size:11px; font-weight:700; box-shadow:0 3px 12px color-mix(in srgb, var(--ui-shadow-ink) 7.1%, transparent); }
 .rider-map-locate { position:absolute; right:18px; top:18px; background:var(--ui-surface); color:var(--ui-green); width:44px; height:44px; border-radius:15px; display:grid; place-items:center; box-shadow:0 3px 15px color-mix(in srgb, var(--ui-shadow-ink) 14.9%, transparent); }
 .rider-map-notice { position:absolute; bottom:28px; left:16px; right:16px; padding:10px 13px; background:color-mix(in srgb, var(--ui-surface) 96.1%, transparent); color:var(--ui-ink); font-size:11px; border:1px solid var(--ui-border); border-radius:14px; }
