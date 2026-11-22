@@ -59,7 +59,10 @@ key.properties
 android/app/key.properties
 firebase-service-account.json
 
-# Keep Firebase client configuration for Android
+# Firebase Android config is provided by GOOGLE_SERVICES_JSON_BASE64 in CI.
+# Local Firebase configuration can be downloaded for development, but must not
+# accidentally override the production signing/OAuth configuration in Git.
+android/app/google-services.json
 
 # Test reports & execution artifacts
 test-results/
