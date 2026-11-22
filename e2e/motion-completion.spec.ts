@@ -5,16 +5,25 @@ import { test, expect } from '@playwright/test';
 const fixture = `
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <div id="root"></div><script type="module">
-  import React, { useState, useCallback } from '/node_modules/.vite/deps/react.js';
+  import React from '/node_modules/.vite/deps/react.js';
   import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
-  import { MotionConfig } from '/node_modules/.vite/deps/motion_react.js';
-  import { Switch } from '/src/components/ui/switch.tsx';
-  import { AdminPdfShareModal } from '/src/components/admin/AdminPdfShareModal.tsx';
-  import { OrderDetailModal } from '/src/components/admin/OrderDetailModal.tsx';
-  import { AdminTablesTab } from '/src/components/admin/AdminTablesTab.tsx';
-  import { ToastProvider } from '/src/components/ui/Toast.tsx';
+  import RefreshRuntime from '/@react-refresh';
   import '/src/index.css';
   import '/src/styles/wawasan-four-colour-theme.css';
+  RefreshRuntime.injectIntoGlobalHook(window);
+  window.$RefreshReg$ = () => {};
+  window.$RefreshSig$ = () => type => type;
+  window.__vite_plugin_react_preamble_installed__ = true;
+  const { useState, useCallback } = React;
+  const [{ MotionConfig }, { Switch }, { AdminPdfShareModal }, { OrderDetailModal },
+    { AdminTablesTab }, { ToastProvider }] = await Promise.all([
+      import('/node_modules/.vite/deps/motion_react.js'),
+      import('/src/components/ui/switch.tsx'),
+      import('/src/components/admin/AdminPdfShareModal.tsx'),
+      import('/src/components/admin/OrderDetailModal.tsx'),
+      import('/src/components/admin/AdminTablesTab.tsx'),
+      import('/src/components/ui/Toast.tsx'),
+    ]);
   const noop = () => {}, t = key => key;
   const order = { id: 'local-motion-sample', name: 'Local sample', status: 'pending',
     date: '2026-12-06', meals: ['lunch'], menu: 'Soto', quantity: 20 };
@@ -49,7 +58,10 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     for (const viewport of [{ width: 393, height: 851 }, { width: 1280, height: 900 }]) {
       test(`motion handoff: ${reducedMotion}, ${dark ? 'dark' : 'light'}, ${viewport.width}px`, async ({ page }) => {
         const errors: string[] = [];
-        page.on('pageerror', error => errors.push(error.message));
+        page.on('pageerror', error => {
+          errors.push(error.message);
+          console.error('Motion fixture:', error.message);
+        });
         await page.setViewportSize(viewport);
         await page.emulateMedia({ reducedMotion });
         await page.route('**/*', route => {
