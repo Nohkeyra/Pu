@@ -115,6 +115,8 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
     return () => { disposed = true; clearInterval(timer); controller?.abort(); line?.remove(); };
   }, [destination, retry]);
 
+  const riderLatitude = rider?.lat;
+  const riderLongitude = rider?.lng;
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
@@ -122,21 +124,22 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
       window.cancelAnimationFrame(riderFrame.current);
       riderFrame.current = null;
     }
-    if (!rider) {
+    if (riderLatitude === undefined || riderLongitude === undefined) {
       riderWasLive.current = false;
       riderMarker.current?.remove(); riderMarker.current = null;
       return;
     }
+    const position = { lat: riderLatitude, lng: riderLongitude };
 
     const wasLive = riderWasLive.current;
     riderWasLive.current = live;
     const icon = markerIcon(live ? 'live' : 'stale', live ? 'GPS' : bm ? 'Lokasi terakhir' : 'Last location');
     if (!riderMarker.current) {
-      riderMarker.current = L.marker(rider, { icon, zIndexOffset: 500 }).addTo(instance);
+      riderMarker.current = L.marker(position, { icon, zIndexOffset: 500 }).addTo(instance);
     } else {
       const marker = riderMarker.current;
       const from = marker.getLatLng();
-      const to = L.latLng(rider.lat, rider.lng);
+      const to = L.latLng(position.lat, position.lng);
       const distance = from.distanceTo(to);
       marker.setIcon(icon);
       if (shouldTweenRiderMarker(distance, live, wasLive, reducedMotion, !document.hidden)) {
@@ -158,10 +161,10 @@ export function RiderRouteMap({ address, rider, live, finished = false, bm, onDe
     }
     if (!fittedFirstFix.current) {
       fittedFirstFix.current = true;
-      instance.setView(rider, 14, { animate: false });
+      instance.setView(position, 14, { animate: false });
     }
     // Do not pan on every update: users retain control while inspecting the map.
-  }, [rider?.lat, rider?.lng, live, bm, reducedMotion]);
+  }, [riderLatitude, riderLongitude, live, bm, reducedMotion]);
 
   return <div className="rider-map-wrap">
     <div ref={element} className={finished ? 'rider-map rider-map--completed' : 'rider-map'} aria-label={bm ? 'Peta lokasi penghantaran' : 'Delivery location map'} />
