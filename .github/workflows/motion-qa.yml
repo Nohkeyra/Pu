@@ -10,6 +10,10 @@ on:
       - 'src/components/order/**'
       - 'src/components/delivery/**'
       - 'src/components/brand/NativeWelcomeScreen*'
+      - 'assets/launcher-*.webp'
+      - 'public/assets/illustrations/wawasan-native-neon*'
+      - 'scripts/*icons.cjs'
+      - 'scripts/prepare-assets.cjs'
       - 'src/pages/CustomerDashboard.tsx'
       - 'src/hooks/ui/useMascotStepTransition.ts'
       - 'src/lib/riderVisualMotion*'
@@ -47,7 +51,7 @@ jobs:
         run: npm install --global npm@11.9.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/motion-completion.spec.ts e2e/motion-foundation.spec.ts e2e/mascot-transition.spec.ts e2e/rider-map-reveal.spec.ts e2e/welcome-sign-light.spec.ts --project=chromium --workers=2 --reporter=line
+      - run: npx playwright test e2e/motion-completion.spec.ts e2e/motion-foundation.spec.ts e2e/mascot-transition.spec.ts e2e/rider-map-reveal.spec.ts e2e/welcome-sign-light.spec.ts --project=chromium --workers=2 --retries=0 --reporter=line
       - uses: actions/upload-artifact@v4
         if: always()
         with:

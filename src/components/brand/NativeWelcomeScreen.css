@@ -106,9 +106,25 @@
   position: relative;
   flex: none;
   width: min(100%, 83vw, clamp(160px, calc(64dvh - 98px), 490px));
-  aspect-ratio: 753 / 647;
+  aspect-ratio: 1;
   user-select: none;
   pointer-events: none;
+}
+.native-welcome__mask-source { display: none; }
+.native-welcome__board {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  filter: drop-shadow(8px 12px 6px rgba(50, 27, 13, .27));
+}
+.native-welcome__sign,
+.native-welcome__neon-tubes {
+  mask-image: url('/assets/illustrations/wawasan-native-neon-mask.webp');
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-image: url('/assets/illustrations/wawasan-native-neon-mask.webp');
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
 }
 .native-welcome__sign {
   display: block;
@@ -117,65 +133,66 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(9px 11px 6px rgba(50, 27, 13, .27));
+  border-radius: inherit;
   -webkit-user-drag: none;
 }
-.native-welcome__led-ambient,
-.native-welcome__rim-light {
+.native-welcome[data-theme='dark'] .native-welcome__board {
+  /* The fixed board shadow belongs to the physical sign, not to its power. */
+  filter: drop-shadow(6px 10px 5px rgba(0, 0, 0, .5));
+}
+.native-welcome[data-theme='dark'] .native-welcome__sign { filter: brightness(.18); }
+.native-welcome__neon-power {
+  display: none;
   position: absolute;
   inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+.native-welcome__neon-tubes {
+  display: block;
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  display: none;
+  border-radius: inherit;
+  object-fit: contain;
+  -webkit-user-drag: none;
 }
-.native-welcome__led-ambient { z-index: 0; filter: blur(15px); }
-.native-welcome__rim-light { z-index: 2; }
-.native-welcome__light-path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
+.native-welcome__neon-spill {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: contain;
+  opacity: .48;
+  /* Precomputed alpha follows the source's real orange/green emitters. Blur is
+     static and local; only the parent opacity changes during ignition. */
+  filter: blur(16px);
+  -webkit-user-drag: none;
 }
-.native-welcome__led-ambient .native-welcome__light-path { stroke: #ff9c36; stroke-width: 34; opacity: .66; }
-.native-welcome__rim-halo { stroke: #ff9c36; stroke-width: 11; opacity: .7; filter: blur(4px); }
-.native-welcome__rim-tube { stroke: #ffc878; stroke-width: 4.4; }
-.native-welcome__rim-core { stroke: #fff1cf; stroke-width: 1.8; }
-.native-welcome[data-theme='dark'] .native-welcome__led-ambient {
-  display: block;
-}
-.native-welcome[data-theme='dark'] .native-welcome__rim-light { display: block; }
-.native-welcome[data-theme='dark'] .native-welcome__sign {
-  /* The physical contact shadow never travels with the light. */
-  filter: drop-shadow(7px 10px 5px rgba(0, 0, 0, .50));
+.native-welcome[data-theme='dark'] .native-welcome__neon-power { display: block; }
+.native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .native-welcome[data-theme='dark'] .native-welcome__light-path {
-    stroke-dashoffset: 1;
-  }
-  .native-welcome[data-theme='dark'][data-sign-ready='false'] .native-welcome__light-path,
-  .native-welcome[data-theme='dark'][data-ready='false'] .native-welcome__light-path {
-    opacity: 0;
-  }
-  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__light-path {
-    /* One accumulating circuit, then a steady closed tube. Never a looping chase. */
-    animation: native-wawasan-rim-on 6s linear both;
-  }
-  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__message {
-    animation: native-wawasan-afterglow-copy 310ms 400ms cubic-bezier(.22,1,.36,1) both;
+  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
+    /* Three uneven starter attempts, then permanent power. No looping flicker,
+       per-frame JavaScript, or separate glow timeline that can drift. */
+    animation: native-wawasan-neon-start 2800ms linear both;
   }
 }
-
-@keyframes native-wawasan-afterglow-copy {
-  from { opacity: .65; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes native-wawasan-rim-on {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+@keyframes native-wawasan-neon-start {
+  0%, 10% { opacity: 0; }
+  12%, 17% { opacity: .64; }
+  19%, 37% { opacity: .03; }
+  40%, 46% { opacity: .85; }
+  48%, 65% { opacity: .06; }
+  69%, 76% { opacity: 1; }
+  78%, 88% { opacity: .2; }
+  100% { opacity: 1; }
 }
 
 .native-welcome__content {

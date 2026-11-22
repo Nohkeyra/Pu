@@ -1,65 +1,122 @@
-const fs = require('fs');
-const path = require('path');
+#!/usr/bin/env node
+const fs = require('node:fs/promises');
+const path = require('node:path');
 const sharp = require('sharp');
 
-async function regenerateIcons() {
-  const logoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'apk_logo_clean.png');
-  const fallbackLogoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'wawasan_logo.png');
-  const activeLogoPath = fs.existsSync(logoPath) ? logoPath : fallbackLogoPath;
-  const iconsDir = path.join(__dirname, '..', 'public', 'assets', 'icons');
+const ROOT = path.resolve(__dirname, '..');
+const BACKGROUND = '#080707';
+const DENSITIES = [
+  ['ldpi', 36, 81], ['mdpi', 48, 108], ['hdpi', 72, 162],
+  ['xhdpi', 96, 216], ['xxhdpi', 144, 324], ['xxxhdpi', 192, 432],
+];
 
-  if (!fs.existsSync(activeLogoPath)) {
-    console.error('❌ Base logo not found at:', activeLogoPath);
-    process.exit(1);
+// Export packaging only: the owner's supplied on-state is never redrawn.
+async function regenerateIcons(root = ROOT) {
+  const source = path.join(root, 'assets/launcher-logo.webp');
+  const metadata = await sharp(source).metadata();
+  if (metadata.width !== metadata.height) throw new Error('Launcher source must be square.');
+  const icons = path.join(root, 'public/assets/icons');
+  const res = path.join(root, 'android/app/src/main/res');
+  await fs.mkdir(icons, { recursive: true });
+
+  const square = async (size, imageScale = 1) => {
+    const image = await sharp(source).resize(Math.round(size * imageScale)).png().toBuffer();
+    return sharp({ create: { width: size, height: size, channels: 4, background: BACKGROUND } })
+      .composite([{ input: image, gravity: 'centre' }]).png().toBuffer();
+  };
+  const mask = (size, round) => Buffer.from(`<svg width="${size}" height="${size}">
+    ${round ? `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="white"/>`
+      : `<rect width="${size}" height="${size}" rx="${size * .2}" fill="white"/>`}</svg>`);
+  const masked = async (size, scale, round) => sharp(await square(size, scale))
+    .composite([{ input: mask(size, round), blend: 'dest-in' }]).png().toBuffer();
+
+  // Derive a stencil from tube/body brightness, rather than exposing the opaque
+  // photographic rectangle as Android's themed icon. The RGB artwork is intact.
+  const radiance = async size => {
+    const { data, info } = await sharp(source).resize(size, size).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const pixels = Buffer.alloc(info.width * info.height * 4);
+    for (let i = 0; i < info.width * info.height; i++) {
+      const offset = i * info.channels;
+      const peak = Math.max(data[offset], data[offset + 1], data[offset + 2]);
+      pixels[i * 4] = data[offset];
+      pixels[i * 4 + 1] = data[offset + 1];
+      pixels[i * 4 + 2] = data[offset + 2];
+      pixels[i * 4 + 3] = Math.round(Math.max(0, Math.min(1, (peak - 48) / 112)) * 255);
+    }
+    return sharp(pixels, { raw: { width: size, height: size, channels: 4 } });
+  };
+  const monochrome = async size => {
+    const stencil = await (await radiance(Math.round(size * .62))).png().toBuffer();
+    return sharp({ create: { width: size, height: size, channels: 4, background: '#00000000' } })
+      .composite([{ input: stencil, gravity: 'centre' }]).png().toBuffer();
+  };
+
+  // Android 108dp layers have a 66dp safe circle. The photograph at 62% keeps
+  // its actual luminous contour inside that circle, checked by the asset test.
+  await sharp(await square(1024, .9)).toFile(path.join(root, 'assets/icon-only.png'));
+  await sharp(await square(1024, .62)).toFile(path.join(root, 'assets/icon-foreground.png'));
+  await sharp({ create: { width: 1024, height: 1024, channels: 4, background: BACKGROUND } })
+    .png().toFile(path.join(root, 'assets/icon-background.png'));
+
+  for (const [density, legacy, adaptive] of DENSITIES) {
+    const dir = path.join(res, `mipmap-${density}`);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'ic_launcher.png'), await masked(legacy, .9, false));
+    await fs.writeFile(path.join(dir, 'ic_launcher_round.png'), await masked(legacy, .82, true));
+    await fs.writeFile(path.join(dir, 'ic_launcher_foreground.png'), await square(adaptive, .62));
+    await sharp({ create: { width: adaptive, height: adaptive, channels: 4, background: BACKGROUND } })
+      .png().toFile(path.join(dir, 'ic_launcher_background.png'));
+    await fs.writeFile(path.join(dir, 'ic_launcher_monochrome.png'), await monochrome(adaptive));
   }
-
-  if (!fs.existsSync(iconsDir)) {
-    fs.mkdirSync(iconsDir, { recursive: true });
+  for (const size of [48, 72, 96, 128, 192, 256, 512]) {
+    // PWA maskable icons are opaque with no baked rounded border.
+    await sharp(await square(size, .82)).webp({ quality: 94, effort: 6 })
+      .toFile(path.join(icons, `icon-${size}.webp`));
   }
-
-  const sizes = [48, 72, 96, 128, 192, 256, 512];
-
-  console.log('🔄 Regenerating high-quality PWA icons from clean brand logo...');
-
-  const trimmedLogoBuffer = await sharp(activeLogoPath).trim().toBuffer();
-
-  for (const size of sizes) {
-    // Calculate inner logo size with proper safe padding for maskable appearance
-    const innerSize = Math.round(size * 0.80);
-    
-    const resizedLogo = await sharp(trimmedLogoBuffer)
-      .resize(innerSize, innerSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
-      .toBuffer();
-
-    // Create a pristine white rounded background for web app icon clarity
-    const cornerRadius = Math.round(size * 0.22);
-    const rectSvg = Buffer.from(
-      `<svg width="${size}" height="${size}">
-        <rect x="0" y="0" width="${size}" height="${size}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#FFFFFF"/>
-      </svg>`
-    );
-
-    const canvas = await sharp(rectSvg).png().toBuffer();
-
-    const compositeIcon = await sharp(canvas)
-      .composite([{ input: resizedLogo, gravity: 'center' }])
-      .png({ quality: 100 })
-      .toBuffer();
-
-    // Save as webp
-    const webpDest = path.join(iconsDir, `icon-${size}.webp`);
-    await sharp(compositeIcon)
-      .webp({ quality: 95, effort: 6 })
-      .toFile(webpDest);
-
-    console.log(`✓ Generated icon-${size}.webp`);
+  // Build the board silhouette from the supplied outer neon tube. Filling the
+  // closed contour removes only the photographed wall, not any logo elements.
+  // This same mask clips both plates; the separate wall reflection stays outside.
+  const boardSize = 640;
+  const boardData = await sharp(source).resize(boardSize, boardSize).removeAlpha().raw().toBuffer();
+  const blocked = new Uint8Array(boardSize * boardSize);
+  const outside = new Uint8Array(boardSize * boardSize);
+  const queue = new Int32Array(boardSize * boardSize);
+  let head = 0, tail = 0;
+  for (let y = 0; y < boardSize; y++) for (let x = 0; x < boardSize; x++) {
+    const i = (y * boardSize + x) * 3;
+    if (Math.max(boardData[i], boardData[i + 1], boardData[i + 2]) < 175) continue;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (x + dx >= 0 && x + dx < boardSize && y + dy >= 0 && y + dy < boardSize) blocked[(y + dy) * boardSize + x + dx] = 1;
+    }
   }
-
-  console.log('🎉 Successfully regenerated all PWA icons (.webp) in public/assets/icons/!');
+  const enqueue = index => {
+    if (index >= 0 && !outside[index] && !blocked[index]) { outside[index] = 1; queue[tail++] = index; }
+  };
+  for (let i = 0; i < boardSize; i++) for (const index of [i, (boardSize - 1) * boardSize + i, i * boardSize, i * boardSize + boardSize - 1]) enqueue(index);
+  while (head < tail) {
+    const index = queue[head++], x = index % boardSize, y = (index - x) / boardSize;
+    for (const next of [x ? index - 1 : -1, x < boardSize - 1 ? index + 1 : -1, y ? index - boardSize : -1, y < boardSize - 1 ? index + boardSize : -1]) enqueue(next);
+  }
+  const board = Buffer.alloc(boardSize * boardSize * 4, 255);
+  for (let i = 0; i < outside.length; i++) board[i * 4 + 3] = outside[i] ? 0 : 255;
+  const coverage = 1 - tail / outside.length;
+  if (coverage < .4 || coverage > .7) throw new Error('Neon board contour is not closed; inspect the source before exporting.');
+  const illustrations = path.join(root, 'public/assets/illustrations');
+  await sharp(board, { raw: { width: boardSize, height: boardSize, channels: 4 } }).blur(.5)
+    .webp({ lossless: true, effort: 6 }).toFile(path.join(illustrations, 'wawasan-native-neon-mask.webp'));
+  await sharp(source).resize(960, 960).webp({ quality: 91, effort: 6 })
+    .toFile(path.join(illustrations, 'wawasan-native-neon.webp'));
+  await (await radiance(320)).webp({ quality: 88, alphaQuality: 95, effort: 6 })
+    .toFile(path.join(illustrations, 'wawasan-native-neon-spill.webp'));
+  await sharp(path.join(root, 'assets/launcher-neon-unlit.webp')).resize(960, 960)
+    .webp({ quality: 91, effort: 6 }).toFile(path.join(illustrations, 'wawasan-native-neon-unlit.webp'));
+  await fs.writeFile(path.join(res, 'values/ic_launcher_background.xml'),
+    `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">${BACKGROUND}</color>\n</resources>\n`);
+  console.log('Generated Android legacy/adaptive/themed, PWA and welcome assets from launcher-logo.webp.');
 }
 
-regenerateIcons().catch(err => {
-  console.error('❌ Failed to regenerate icons:', err);
-  process.exit(1);
+module.exports = { regenerateIcons, DENSITIES };
+if (require.main === module) regenerateIcons().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
 });
-
