@@ -47,6 +47,7 @@ import {
 import { useAdminBiometric } from '@/hooks/admin/useAdminBiometric';
 import { useCustomerBiometricEnrollment } from '@/hooks/native/useBiometricEnrollment';
 import { BiometricEnrollDialog } from '@/components/auth/BiometricEnrollDialog';
+import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 import { clearAdminSession } from '@/services/authService';
 import { triggerLightImpact, triggerMediumImpact, playClickSound } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -1013,7 +1014,6 @@ export default function SettingsPage() {
                   iconBg="bg-rose-500/10"
                   iconColor="text-rose-600 dark:text-rose-400"
                   title={language === 'bm' ? 'Log Keluar' : 'Sign Out'}
-                  isLast={true}
                   action={
                     <Button
                       type="button"
@@ -1026,6 +1026,33 @@ export default function SettingsPage() {
                       className="h-8 px-3 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl"
                     >
                       {language === 'bm' ? 'Keluar' : 'Sign Out'}
+                    </Button>
+                  }
+                />
+
+                <SettingsRow
+                  icon={Trash2}
+                  iconBg="bg-[var(--color-danger-soft)]"
+                  iconColor="text-[var(--ui-danger)]"
+                  title={language === 'bm' ? 'Padam Akaun & Data' : 'Delete Account & Data'}
+                  description={
+                    language === 'bm'
+                      ? 'Padam profil, nota peribadi dan akaun log masuk secara kekal.'
+                      : 'Permanently delete your profile, personal notes and login account.'
+                  }
+                  isLast={true}
+                  action={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="compact"
+                      onClick={async () => {
+                        await triggerLightImpact();
+                        setDeleteAccountModalOpen(true);
+                      }}
+                      className="rounded-xl text-xs font-bold border-[var(--ui-danger)]/45 bg-[var(--customer-surface)] text-[var(--ui-danger)] hover:bg-[var(--color-danger-soft)] hover:border-[var(--ui-danger)] shadow-none transition-colors"
+                    >
+                      {language === 'bm' ? 'Padam Akaun' : 'Delete Account'}
                     </Button>
                   }
                 />
@@ -2020,61 +2047,18 @@ export default function SettingsPage() {
         </Dialog>
 
         {/* DIALOG 6: DELETE ACCOUNT & DATA REQUEST */}
-        <Dialog open={deleteAccountModalOpen} onOpenChange={setDeleteAccountModalOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-                <AlertTriangle className="w-5 h-5" />
-                {language === 'bm' ? 'Pemadaman Akaun & Data' : 'Delete Account & Data'}
-              </DialogTitle>
-              <DialogDescription>
-                {language === 'bm'
-                  ? 'Pematuhan standard dasar privasi Google Play Store & Apple App Store'
-                  : 'Google Play & Apple App Store Privacy & Data Erasure Compliance'}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 space-y-3 py-2">
-              <p>
-                {language === 'bm'
-                  ? 'Memadam akaun akan mengeluarkan profil, sesi aktif, dan semua data cache daripada peranti ini serta-merta.'
-                  : 'Deleting your account will immediately purge your profile, active session credentials, and local cached data from this device.'}
-              </p>
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs space-y-1">
-                <p className="font-bold">
-                  {language === 'bm' ? 'Permintaan Audit PDPA:' : 'Permanent PDPA Audit Erasure:'}
-                </p>
-                <p>
-                  {language === 'bm'
-                    ? 'Untuk memadam rekod pesanan arkib dari pangkalan data pelayan awam, sila emel kepada pengurusan kami di wawasan.orders@gmail.com dengan tajuk [Permintaan Padam Data].'
-                    : 'To erase archived server records from our cloud database, please email management at wawasan.orders@gmail.com with subject [Data Erasure Request].'}
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDeleteAccountModalOpen(false)}
-                className="rounded-xl text-xs font-semibold"
-              >
-                {language === 'bm' ? 'Batal' : 'Cancel'}
-              </Button>
-              <Button
-                type="button"
-                onClick={async () => {
-                  await handleClearCache();
-                  await handleSignOut();
-                  setDeleteAccountModalOpen(false);
-                }}
-                className="rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700"
-              >
-                {language === 'bm' ? 'Padam & Log Keluar' : 'Purge & Sign Out'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DeleteAccountDialog
+          open={deleteAccountModalOpen}
+          onOpenChange={setDeleteAccountModalOpen}
+          userEmail={currentUser?.email ?? ''}
+          providerIds={currentUser?.providerData?.map((p) => p.providerId)}
+          isAdminSession={isAdmin || currentUser?.uid === 'admin' || isUserAdmin(currentUser?.email)}
+          onCleanupLocalCache={async () => {
+            await calculateCacheSize();
+            setOfflinePendingCount(getPendingOrdersCount());
+            await customerBiometric.refresh();
+          }}
+        />
 
         {/* DIALOG 7: ADMIN PROFILE INFO */}
         <Dialog open={adminProfileModalOpen} onOpenChange={setAdminProfileModalOpen}>

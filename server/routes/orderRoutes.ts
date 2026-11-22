@@ -237,6 +237,19 @@ router.post(
         eventDate: derivedDate,
         time: dateTime.slice(11, 16),
         location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
+        ...(rawBody.locationCoordinates &&
+        typeof rawBody.locationCoordinates === 'object' &&
+        typeof (rawBody.locationCoordinates as any).lat === 'number' &&
+        typeof (rawBody.locationCoordinates as any).lng === 'number' &&
+        Math.abs((rawBody.locationCoordinates as any).lat) <= 90 &&
+        Math.abs((rawBody.locationCoordinates as any).lng) <= 180
+          ? {
+              locationCoordinates: {
+                lat: Number((rawBody.locationCoordinates as any).lat),
+                lng: Number((rawBody.locationCoordinates as any).lng),
+              },
+            }
+          : {}),
         quantity: qty,
         guests: qty,
         pax: qty,

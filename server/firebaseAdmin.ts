@@ -454,6 +454,7 @@ export interface OrderData {
   invoiceDeliveryStatus?: string;
   meals?: string | string[];
   location?: string;
+  locationCoordinates?: { lat: number; lng: number };
   menu?: string;
   notes?: string;
   userId?: string | null;

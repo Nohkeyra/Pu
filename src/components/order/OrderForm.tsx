@@ -58,6 +58,7 @@ export interface OrderState {
   date: string;
   time: string;
   location: string;
+  locationCoordinates?: { lat: number; lng: number };
   billingAddress: string;
   delivery: 'delivery' | 'pickup';
   notes: string;
@@ -645,7 +646,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       const data = await response.json();
       const displayName = data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
 
-      setOrderState((prev) => ({ ...prev, location: displayName }));
+      setOrderState((prev) => ({
+        ...prev,
+        location: displayName,
+        locationCoordinates: { lat: latitude, lng: longitude },
+      }));
       toast({
         title: tText('Location Detected', 'Lokasi Diperoleh'),
         description: tText(
@@ -1019,6 +1024,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         eventDate: formattedDateStr,
         time: orderState.time,
         location: orderState.location,
+        locationCoordinates: orderState.locationCoordinates,
         billingAddress: orderState.billingAddress.trim(),
         quantity: orderState.guests,
         meals: mappedMeals,

@@ -11,8 +11,9 @@ const markerIcon = (kind: string, label: string) => L.divIcon({
   html: `<span class="rider-pin rider-pin--${kind}" role="img" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${kind === 'destination' ? 'M3 10 12 3 21 10V21H3Z M9 21V13H15V21' : 'M12 3 20 21 12 17 4 21Z'}"/></svg></span>`,
 });
 
-export function RiderRouteMap({ address, rider, live, bm, onDestination }: {
+export function RiderRouteMap({ address, rider, live, bm, onDestination, initialCoordinates }: {
   address: string; rider: MapPoint | null; live: boolean; bm: boolean; onDestination: (point: MapPoint | null) => void;
+  initialCoordinates?: MapPoint | null;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<ReturnType<typeof L.map> | null>(null);
@@ -49,6 +50,9 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination }: {
     const find = async () => {
       try {
         let point = addressCache.get(address);
+        if (!point && initialCoordinates && validCoordinates(initialCoordinates.lat, initialCoordinates.lng)) {
+          point = initialCoordinates;
+        }
         const coordinates = address.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
         if (!point && coordinates && validCoordinates(Number(coordinates[1]), Number(coordinates[2]))) point = { lat: Number(coordinates[1]), lng: Number(coordinates[2]) };
         if (!point) {
@@ -64,7 +68,7 @@ export function RiderRouteMap({ address, rider, live, bm, onDestination }: {
       } catch { if (!disposed) setLookup('failed'); }
     };
     void find(); return () => { disposed = true; controller.abort(); };
-  }, [address, retry]);
+  }, [address, retry, initialCoordinates]);
 
   useEffect(() => {
     const instance = map.current;

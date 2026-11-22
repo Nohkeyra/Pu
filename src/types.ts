@@ -109,6 +109,7 @@ export interface Order {
   date?: string | Date;
   dateTime: string;
   location: string;
+  locationCoordinates?: { lat: number; lng: number };
   quantity: number;
   meals: ('breakfast' | 'lunch' | 'hi_tea' | string)[];
   preparationType?: 'meal_box' | 'buffet';

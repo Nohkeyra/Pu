@@ -1,8 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { motion } from 'motion/react';
 import {
-  Loader2,
-  MapPin,
   Truck,
   Store,
   ArrowLeft,
@@ -30,6 +28,7 @@ import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn } from '@/lib/utils';
 import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
+import { LocationAutocompletePicker } from '@/components/order/LocationAutocompletePicker';
 import type { OrderState } from '@/components/order/OrderForm';
 import type { OrderContactField, OrderContactErrors } from '@/lib/orderContactValidation';
 
@@ -518,75 +517,24 @@ export function Step3ContactDetails({
           );
         })()}
 
-        {/* Geolocation Autocomplete Venue Location */}
+        {/* Geolocation Autocomplete Venue Location & Pin Map */}
         <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <Label
-              htmlFor="contact-location"
-              className="text-xs font-bold text-deep-forest dark:text-[var(--ui-legacy-white)] uppercase tracking-wider"
-            >
-              {tText('Event Venue Address', 'Lokasi / Alamat Majlis *')}
-            </Label>
-            <button
-              type="button"
-              onClick={handleDetectLocation}
-              disabled={isDetectingLocation}
-              className="inline-flex items-center gap-1 microcopy-12 font-bold text-[var(--ui-action)] hover:underline transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {isDetectingLocation ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>{tText('Detecting...', 'Mengesan...')}</span>
-                </>
-              ) : (
-                <>
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>{tText('Autofill Location', 'Kesan Lokasi')}</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {savedLocations.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1 pb-1">
-              <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block w-full">
-                {tText('Choose from Saved Locations:', 'Pilih dari Lokasi Disimpan:')}
-              </span>
-              {savedLocations.map((loc) => (
-                <button
-                  key={loc.id}
-                  type="button"
-                  onClick={() => {
-                    clearFieldError('location');
-                    setOrderState((prev) => ({ ...prev, location: loc.address }));
-                  }}
-                  className={cn(
-                    'px-3 py-1.5 bg-cream/30 dark:bg-card border border-stone/10 hover:border-[var(--color-sunshine-cta)] microcopy-12 font-medium rounded-xl text-deep-forest transition-all cursor-pointer',
-                    orderState.location === loc.address &&
-                      'border-[var(--color-sunshine-cta)] bg-[var(--color-sunshine-cta)]/5 ring-1 ring-[var(--color-sunshine-cta)]'
-                  )}
-                >
-                  {loc.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <Textarea
-            id="contact-location"
-            data-tour="step3-location"
+          <LocationAutocompletePicker
             value={orderState.location}
-            onChange={(e) => {
+            coordinates={orderState.locationCoordinates}
+            onChange={(address, coordinates) => {
               clearFieldError('location');
-              setOrderState((prev) => ({ ...prev, location: e.target.value }));
+              setOrderState((prev) => ({
+                ...prev,
+                location: address,
+                locationCoordinates: coordinates,
+              }));
             }}
-            placeholder={tText(
-              'e.g. No 10, Jalan Presint 8, Putrajaya',
-              'Contoh: No 10, Jalan Presint 8, Putrajaya'
-            )}
-            aria-invalid={Boolean(fieldErrors.location)}
-            aria-describedby={fieldErrors.location ? 'location-error' : undefined}
-            className="rounded-xl min-h-[70px] font-sans"
+            onDetectLocation={handleDetectLocation}
+            isDetectingLocation={isDetectingLocation}
+            savedLocations={savedLocations}
+            fieldError={fieldErrors.location}
+            tText={tText}
           />
           {fieldErrors.location && <FormError id="location-error" message={fieldErrors.location} />}
         </div>
