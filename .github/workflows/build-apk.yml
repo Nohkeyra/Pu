@@ -171,15 +171,25 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Setup Gradle permissions and wrapper integrity
+        run: |
+          cd android
+          chmod +x gradlew
+          WRAPPER_SHA=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172
+          if ! echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check --status; then
+            echo "Restoring official Gradle 8.14.3 wrapper..."
+            curl --fail --location --retry 3 -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
+          fi
+          echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check
+          unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null
+
       # setup-gradle manages dependency, wrapper and local build caches.
       # Do not combine it with actions/cache for ~/.gradle (competing caches).
       # The existing SHA-256 wrapper integrity check remains in place below.
       - name: Set up Gradle and build cache
         uses: gradle/actions/setup-gradle@v5
         with:
-          # The workflow validates/restores the pinned wrapper jar before execution.
-          # Avoid an earlier wrapper-validation failure before that repair step.
-          validate-wrappers: false
+          validate-wrappers: true
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -309,18 +319,6 @@ jobs:
             echo "### Wawasan Android release signing certificate"
             printf "%s\n" "- **SHA-1:** $SHA1" "- **SHA-256:** $SHA256" "- **Firebase Android package:** com.wawasanpakusop.app"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Setup Gradle permissions and wrapper integrity
-        run: |
-          cd android
-          chmod +x gradlew
-          WRAPPER_SHA=7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172
-          if ! echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check --status; then
-            echo "Restoring official Gradle 8.14.3 wrapper..."
-            curl --fail --location --retry 3 -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
-          fi
-          echo "$WRAPPER_SHA  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check
-          unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null
 
       - name: Build debug APK
         if: github.event_name == 'workflow_dispatch' && inputs.build_mode == 'full'
