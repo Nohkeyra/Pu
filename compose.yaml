@@ -1,0 +1,6 @@
+services:
+  pu:
+    image: pu
+    build:
+      context: .
+      dockerfile: ./Dockerfile
