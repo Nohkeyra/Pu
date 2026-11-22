@@ -39,6 +39,7 @@ export function RiderMapReveal({ origin, closing, onClosed, children }: {
       stage.style.clipPath = finalClip;
       dock.style.transform = 'none';
       dock.style.backgroundColor = targetColor;
+      dock.style.borderRadius = '26px';
       body.style.opacity = '1';
       header.style.opacity = '1';
     };
@@ -57,11 +58,18 @@ export function RiderMapReveal({ origin, closing, onClosed, children }: {
     const clampY = (value: number) => Math.max(0, Math.min(viewport.height, value));
     const clampX = (value: number) => Math.max(0, Math.min(viewport.width, value));
     const sourceClip = `inset(${clampY(card.top - viewport.top)}px ${clampX(viewport.right - card.right)}px ${clampY(viewport.bottom - card.bottom)}px ${clampX(card.left - viewport.left)}px round 16px)`;
-    const sourceDock = `translate(${trigger.left - target.left}px, ${trigger.top - target.top}px) scale(${trigger.width / Math.max(1, target.width)}, ${trigger.height / Math.max(1, target.height)})`;
+    const scaleX = Math.max(.001, trigger.width / Math.max(1, target.width));
+    const scaleY = Math.max(.001, trigger.height / Math.max(1, target.height));
+    const sourceDock = `translate(${trigger.left - target.left}px, ${trigger.top - target.top}px) scale(${scaleX}, ${scaleY})`;
+    // Compensate the FLIP scale so the source starts as the actual pill, rather
+    // than growing into a large circular blob before reaching the paper dock.
+    const radius = Math.min(trigger.width, trigger.height) / 2;
+    const sourceRadius = `${radius / scaleX}px / ${radius / scaleY}px`;
     if (first.current) {
       stage.style.clipPath = sourceClip;
       dock.style.transform = sourceDock;
       dock.style.backgroundColor = sourceColor;
+      dock.style.borderRadius = sourceRadius;
       body.style.opacity = '0';
       header.style.opacity = '0';
       first.current = false;
@@ -75,7 +83,7 @@ export function RiderMapReveal({ origin, closing, onClosed, children }: {
     };
     const mapAnimation = stage.animate({ clipPath: [getComputedStyle(stage).clipPath, closing ? sourceClip : finalClip] }, options);
     animations.push(mapAnimation,
-      dock.animate({ transform: [getComputedStyle(dock).transform, closing ? sourceDock : 'none'], backgroundColor: [getComputedStyle(dock).backgroundColor, closing ? sourceColor : targetColor], borderRadius: closing ? ['26px', '999px'] : ['999px', '26px'] }, options),
+      dock.animate({ transform: [getComputedStyle(dock).transform, closing ? sourceDock : 'none'], backgroundColor: [getComputedStyle(dock).backgroundColor, closing ? sourceColor : targetColor], borderRadius: [getComputedStyle(dock).borderRadius, closing ? sourceRadius : '26px'] }, options),
       body.animate({ opacity: [Number(getComputedStyle(body).opacity), closing ? 0 : 1] }, { duration: closing ? 100 : 200, delay: closing ? 0 : 220, fill: 'both' }),
       header.animate({ opacity: [Number(getComputedStyle(header).opacity), closing ? 0 : 1] }, { duration: closing ? 100 : 180, delay: closing ? 0 : 220, fill: 'both' }),
     );
@@ -95,6 +103,7 @@ export function RiderMapReveal({ origin, closing, onClosed, children }: {
       stage.style.clipPath = getComputedStyle(stage).clipPath;
       dock.style.transform = getComputedStyle(dock).transform;
       dock.style.backgroundColor = getComputedStyle(dock).backgroundColor;
+      dock.style.borderRadius = getComputedStyle(dock).borderRadius;
       body.style.opacity = getComputedStyle(body).opacity;
       header.style.opacity = getComputedStyle(header).opacity;
       animations.forEach(animation => animation.cancel());
