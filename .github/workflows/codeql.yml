@@ -62,6 +62,8 @@ jobs:
         if: matrix.build-mode == 'manual'
         shell: bash
         run: |
+          npm run build
+          test -f dist/index.html
           npx cap sync android
           cd android
           ./gradlew --no-daemon :app:compileDebugJavaWithJavac
