@@ -20,7 +20,15 @@ async function regenerateIcons(root = ROOT) {
   await fs.mkdir(icons, { recursive: true });
 
   const square = async (size, imageScale = 1) => {
-    const image = await sharp(source).resize(Math.round(size * imageScale)).png().toBuffer();
+    const inner = Math.round(size * imageScale);
+    // Feather only the black photographic margin, outside the luminous artwork,
+    // so the resized photo cannot leave a hard inner rectangle in launcher masks.
+    const edge = Buffer.from(`<svg width="${inner}" height="${inner}"><defs>
+      <linearGradient id="x"><stop stop-color="white" stop-opacity="0"/><stop offset="3%" stop-color="white"/><stop offset="97%" stop-color="white"/><stop offset="100%" stop-color="white" stop-opacity="0"/></linearGradient>
+      <linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop stop-color="white" stop-opacity="0"/><stop offset="3%" stop-color="white"/><stop offset="97%" stop-color="white"/><stop offset="100%" stop-color="white" stop-opacity="0"/></linearGradient>
+      <mask id="edge"><rect width="100%" height="100%" fill="url(#y)"/></mask>
+      </defs><rect width="100%" height="100%" fill="url(#x)" mask="url(#edge)"/></svg>`);
+    const image = await sharp(source).resize(inner).composite([{ input: edge, blend: 'dest-in' }]).png().toBuffer();
     return sharp({ create: { width: size, height: size, channels: 4, background: BACKGROUND } })
       .composite([{ input: image, gravity: 'centre' }]).png().toBuffer();
   };
@@ -32,21 +40,21 @@ async function regenerateIcons(root = ROOT) {
 
   // Derive a stencil from tube/body brightness, rather than exposing the opaque
   // photographic rectangle as Android's themed icon. The RGB artwork is intact.
-  const radiance = async size => {
+  const radiance = async (size, stencil = false) => {
     const { data, info } = await sharp(source).resize(size, size).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const pixels = Buffer.alloc(info.width * info.height * 4);
     for (let i = 0; i < info.width * info.height; i++) {
       const offset = i * info.channels;
       const peak = Math.max(data[offset], data[offset + 1], data[offset + 2]);
-      pixels[i * 4] = data[offset];
-      pixels[i * 4 + 1] = data[offset + 1];
-      pixels[i * 4 + 2] = data[offset + 2];
+      pixels[i * 4] = stencil ? 255 : data[offset];
+      pixels[i * 4 + 1] = stencil ? 255 : data[offset + 1];
+      pixels[i * 4 + 2] = stencil ? 255 : data[offset + 2];
       pixels[i * 4 + 3] = Math.round(Math.max(0, Math.min(1, (peak - 48) / 112)) * 255);
     }
     return sharp(pixels, { raw: { width: size, height: size, channels: 4 } });
   };
   const monochrome = async size => {
-    const stencil = await (await radiance(Math.round(size * .62))).png().toBuffer();
+    const stencil = await (await radiance(Math.round(size * .62), true)).png().toBuffer();
     return sharp({ create: { width: size, height: size, channels: 4, background: '#00000000' } })
       .composite([{ input: stencil, gravity: 'centre' }]).png().toBuffer();
   };

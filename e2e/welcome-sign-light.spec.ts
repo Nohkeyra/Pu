@@ -90,7 +90,9 @@ test('the tube and actual wall reflection share each starter pulse while the con
   // Pixel check outside the board: the real rendered reflection brightens with
   // its emitter. The wall texture is the same fixture in both captures.
   const sign = (await page.locator('.native-welcome__sign-stage').boundingBox())!;
-  const clip = { x: Math.ceil(sign.x + sign.width + 1), y: Math.ceil(sign.y + sign.height * .45), width: 10, height: Math.floor(sign.height * .35) };
+  // The physical top rim sits at about 9% of the square plate. Sample the
+  // nearby wall just above that arc, not beyond the image's empty right margin.
+  const clip = { x: Math.ceil(sign.x + sign.width * .42), y: Math.ceil(sign.y + sign.height * .035), width: Math.floor(sign.width * .16), height: Math.floor(sign.height * .035) };
   await seek(0);
   const off = await page.screenshot({ clip });
   await page.screenshot({ path: test.info().outputPath('sign-starter-off.png') });
@@ -111,8 +113,9 @@ test('daylight has no powered tubes, spill, flicker or hidden delayed relight', 
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
-  await expect(page.locator('.native-welcome__sign')).toHaveAttribute('src', /neon-unlit.webp$/);
+  await expect(page.locator('.native-welcome__sign')).toHaveAttribute('src', /neon-unlit\.webp(?:\?|$)/);
   expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).some(a => a instanceof CSSAnimation && a.animationName === 'native-wawasan-neon-start'))).toBe(false);
+  await expect(page.locator('.native-welcome__wall-image--night')).toHaveCSS('opacity', '0');
   await page.screenshot({ path: test.info().outputPath('sign-day-off.png') });
   await page.getByRole('button', { name: 'Switch to dark mode' }).click();
   await expect(page.locator('.native-welcome__neon-power')).toHaveCSS('animation-name', 'native-wawasan-neon-start');
