@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { MenuItemCard } from './MenuItemCard';
 import { Step5OrderSuccess } from './Step5OrderSuccess';
 
-const english = (en: string, _bm: string) => en;
+const english = (en: string, bm: string) => en || bm;
 
 describe('Wawasan order motion — accessible state and meaning', () => {
   it('keeps menu choices as real toggle buttons while the visual marker changes', () => {
