@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { FCM } from '@capacitor-community/fcm';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { db, auth } from '@/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -74,12 +74,27 @@ export function useNativeNotifications() {
       return;
     }
 
+    let active = true;
+    const handles = new Set<PluginListenerHandle>();
+    const removeOwnedListeners = () => {
+      for (const handle of handles) void handle.remove().catch(err => console.warn('[FCM] Listener cleanup failed:', err));
+      handles.clear();
+    };
+    const attach = async (pending: Promise<PluginListenerHandle>): Promise<boolean> => {
+      const handle = await pending;
+      if (!active) { await handle.remove(); return false; }
+      handles.add(handle);
+      return true;
+    };
+
     const setupPush = async () => {
       try {
         let permStatus = await PushNotifications.checkPermissions();
+        if (!active) return;
         if (permStatus.receive === 'prompt' || (permStatus.receive as string) === 'prompt-with-rationale') {
           permStatus = await PushNotifications.requestPermissions();
         }
+        if (!active) return;
         if (permStatus.receive !== 'granted') {
           console.warn('Push notifications permission status:', permStatus.receive);
           return;
@@ -96,6 +111,7 @@ export function useNativeNotifications() {
             vibration: true,
           });
 
+          if (!active) return;
           await PushNotifications.createChannel({
             id: 'new_orders',
             name: 'Tempahan Baharu (Admin) / New Orders',
@@ -108,7 +124,9 @@ export function useNativeNotifications() {
           console.warn('Error creating notification channels:', channelErr);
         }
 
-        await PushNotifications.addListener('registration', async (token) => {
+        if (!active) return;
+        if (!await attach(PushNotifications.addListener('registration', async (token) => {
+          if (!active) return;
           // Never log device push tokens; they can be used to address this device.
           
           try {
@@ -128,10 +146,12 @@ export function useNativeNotifications() {
             console.warn('[PushNotifications] FCM.getToken failed, using native device token fallback:', fcmErr);
           }
 
+          if (!active) return;
           tokenRef.current = activePushToken;
 
           // Both cold-start sessions and fresh sign-ins must subscribe.
           await subscribeAdminToPushTopic(activePushToken);
+          if (!active) return;
 
           try {
             localStorage.setItem('wawasan_fcm_token', activePushToken);
@@ -142,6 +162,7 @@ export function useNativeNotifications() {
           // The server requires a verified Firebase session; guest devices
           // must not send an unauthenticated request that will always be rejected.
           await syncCustomerFcmToken(activePushToken, token.value);
+          if (!active) return;
 
           const currentUser = auth.currentUser;
           if (currentUser) {
@@ -157,39 +178,43 @@ export function useNativeNotifications() {
               console.warn('Failed to update user profile with push token:', userDocErr);
             }
           }
-        });
+        }))) return;
 
-        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        if (!await attach(PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          if (!active) return;
           console.log('Push received in foreground: ', notification);
           window.dispatchEvent(new CustomEvent('wawasan:push_received', { detail: notification }));
-        });
+        }))) return;
 
-        await PushNotifications.addListener('registrationError', (error) => {
+        if (!await attach(PushNotifications.addListener('registrationError', (error) => {
+          if (!active) return;
           console.error('Push notification registration failed:', error.error);
-        });
+        }))) return;
 
-        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        if (!await attach(PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          if (!active) return;
           console.log('Push notification action performed:', action);
           const data = action.notification.data;
           window.dispatchEvent(new CustomEvent('wawasan:push_action', { detail: data }));
           if (data && data.orderId) {
             console.log('Notification has orderId payload:', data.orderId);
           }
-        });
+        }))) return;
 
         await PushNotifications.register();
       } catch (err) {
+        active = false;
+        removeOwnedListeners();
         console.error('Error setting up push notifications:', err);
       }
     };
 
     setupPush();
 
-    // Cleanup listeners if component unmounts
     return () => {
-      if (Capacitor.isNativePlatform()) {
-        PushNotifications.removeAllListeners();
-      }
+      active = false;
+      tokenRef.current = null;
+      removeOwnedListeners();
     };
   }, [notificationsEnabled]);
 
@@ -197,10 +222,12 @@ export function useNativeNotifications() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !notificationsEnabled) return;
 
+    let active = true;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && tokenRef.current) {
+      if (active && user && tokenRef.current) {
         // A user may sign in after the native registration callback already ran.
         await syncCustomerFcmToken(tokenRef.current);
+        if (!active || auth.currentUser?.uid !== user.uid) return;
         try {
           const userDocRef = doc(db, 'users', user.uid);
           await setDoc(userDocRef, { fcmToken: tokenRef.current }, { merge: true });
@@ -219,6 +246,7 @@ export function useNativeNotifications() {
     window.addEventListener('admin:login-state-change', onAdminSessionChange);
 
     return () => {
+      active = false;
       unsubscribe();
       window.removeEventListener('admin:login-state-change', onAdminSessionChange);
     };

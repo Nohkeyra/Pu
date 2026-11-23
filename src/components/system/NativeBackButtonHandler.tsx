@@ -1,7 +1,7 @@
 import { useNativeBackButton } from '@/hooks/native/useNativeBackButton';
 
-function NativeBackButtonHandler() {
-  useNativeBackButton();
+function NativeBackButtonHandler({ isWelcomeActive = false }: { isWelcomeActive?: boolean }) {
+  useNativeBackButton(isWelcomeActive);
   return null;
 }
 

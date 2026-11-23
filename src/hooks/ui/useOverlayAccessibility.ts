@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 interface UseOverlayAccessibilityOptions {
   isOpen: boolean;
@@ -43,6 +43,8 @@ export function useOverlayAccessibility({
   restoreFocus = true,
   lockBodyScroll = true,
 }: UseOverlayAccessibilityOptions) {
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
   useEffect(() => {
     if (!isOpen) return;
 
@@ -63,7 +65,7 @@ export function useOverlayAccessibility({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        closeRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -104,5 +106,5 @@ export function useOverlayAccessibility({
         previouslyFocused.focus();
       }
     };
-  }, [isOpen, onClose, containerRef, restoreFocus, lockBodyScroll]);
+  }, [isOpen, containerRef, restoreFocus, lockBodyScroll]);
 }

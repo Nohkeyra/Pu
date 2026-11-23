@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Download, 
@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/LanguageContext';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
 import { Capacitor } from '@capacitor/core';
+import { AppLauncher } from '@capacitor/app-launcher';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 import type { AppVersionConfig } from '@/services/updateService';
 import { CURRENT_APP_VERSION, DEFAULT_APK_URL, downloadAndApplyCapgoOta } from '@/services/updateService';
 
@@ -47,76 +49,79 @@ export default function InAppUpdateModal({
   onDismiss,
 }: InAppUpdateModalProps) {
   const { language } = useLanguage();
-  const [downloading, setDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [phase, setPhase] = useState<'idle' | 'ota' | 'opening' | 'opened' | 'applied' | 'error'>('idle');
+  const modalRef = useRef<HTMLDivElement>(null);
+  const session = useRef({ active: false });
+  const busy = useRef(false);
+  const dismiss = useRef({ onDismiss, isForceUpdate });
+  useEffect(() => { dismiss.current = { onDismiss, isForceUpdate }; }, [onDismiss, isForceUpdate]);
+  const requestDismiss = useCallback(() => {
+    if (!busy.current && !dismiss.current.isForceUpdate) dismiss.current.onDismiss();
+  }, []);
+  useOverlayAccessibility({ isOpen: isOpen && Boolean(config), onClose: requestDismiss, containerRef: modalRef });
+
+  useEffect(() => {
+    const current = { active: isOpen };
+    session.current = current;
+    busy.current = false;
+    setPhase('idle');
+    return () => { current.active = false; };
+  }, [isOpen, config?.latestVersion]);
 
   if (!isOpen || !config) return null;
 
   const displayCurrentVersion = currentVersion || CURRENT_APP_VERSION;
   const isBM = language === 'bm';
   const apkUrl = getSafeApkUrl(config.apkUrl);
-  const hasCapgoBundle = Boolean(config.bundleUrl && config.bundleUrl.trim().length > 0);
+  const hasCapgoBundle = Capacitor.isNativePlatform() && Boolean(config.bundleUrl?.trim());
+  const downloading = phase === 'ota' || phase === 'opening';
 
   const handleStartUpdate = async () => {
-    await triggerMediumImpact();
-    setDownloading(true);
-    setDownloadProgress(10);
-
-    // If native device and Capgo live update zip bundle URL exists
-    if (Capacitor.isNativePlatform() && hasCapgoBundle) {
-      setDownloadProgress(35);
-      const success = await downloadAndApplyCapgoOta(config.bundleUrl!, config.latestVersion);
-      if (success) {
-        setDownloadProgress(100);
-        setDownloading(false);
-        return;
+    const operation = session.current;
+    if (busy.current || !operation.active) return;
+    busy.current = true;
+    void triggerMediumImpact();
+    setPhase(hasCapgoBundle ? 'ota' : 'opening');
+    try {
+      if (hasCapgoBundle) {
+        const success = await downloadAndApplyCapgoOta(config.bundleUrl!, config.latestVersion);
+        if (!operation.active) return;
+        if (success) { setPhase('applied'); return; }
+        setPhase('opening');
       }
+
+      if (Capacitor.isNativePlatform()) {
+        const result = await AppLauncher.openUrl({ url: apkUrl });
+        if (!result.completed) throw new Error('No application opened the APK link');
+      } else {
+        // Preserve the browser's user gesture. Opening an APK is not a web reload
+        // and does not provide byte progress or confirm installation.
+        const link = document.createElement('a');
+        link.href = apkUrl;
+        link.download = 'Wawasan.Hub.apk';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+      if (operation.active) setPhase('opened');
+    } catch {
+      if (operation.active) setPhase('error');
+    } finally {
+      if (operation.active) busy.current = false;
     }
-
-    // Fallback: Direct APK download or web reload
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + Math.floor(Math.random() * 20) + 10;
-      });
-    }, 250);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      setDownloadProgress(100);
-
-      setTimeout(() => {
-        if (Capacitor.isNativePlatform()) {
-          // Open direct APK download in native browser or package installer
-          window.open(apkUrl, '_system');
-        } else {
-          // On Web: trigger APK download or reload
-          const link = document.createElement('a');
-          link.href = apkUrl;
-          link.download = 'Wawasan.Hub.apk';
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          if (location.protocol.startsWith('http')) {
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          }
-        }
-        setDownloading(false);
-      }, 600);
-    }, 1800);
   };
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[2100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md">
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="app-update-title"
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.92, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }}
@@ -158,7 +163,7 @@ export default function InAppUpdateModal({
                   ? (isBM ? 'Kemaskini Penting Diperlukan' : 'Critical Update Required') 
                   : (isBM ? 'Kemaskini Terus Aplikasi' : 'Live In-App Update')}
               </span>
-              <h2 className="text-xl font-display font-bold text-deep-forest dark:text-white mt-0.5">
+              <h2 id="app-update-title" className="text-xl font-display font-bold text-deep-forest dark:text-white mt-0.5">
                 {isBM ? 'Versi Baru Tersedia!' : 'New Version Available!'}
               </h2>
             </div>
@@ -203,25 +208,16 @@ export default function InAppUpdateModal({
             </ul>
           </div>
 
-          {/* Download Progress Bar when active */}
-          {downloading && (
-            <div className="space-y-2 pt-1">
-              <div className="flex justify-between text-xs font-semibold text-deep-forest dark:text-white">
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--color-sunshine-cta)]" />
-                  {isBM ? 'Menyediakan Muat Turun APK...' : 'Preparing Live Package Download...'}
-                </span>
-                <span>{downloadProgress}%</span>
-              </div>
-              <div className="h-2 w-full bg-stone/20 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-[var(--color-sunshine)] to-[var(--color-sunshine-cta)] rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${downloadProgress}%` }}
-                  transition={{ duration: 0.2 }}
-                />
-              </div>
-            </div>
+          {/* Native OTA has no byte-progress callback here. Show the actual
+              operation, never a fabricated percentage or installation claim. */}
+          {phase !== 'idle' && (
+            <p role={phase === 'error' ? 'alert' : 'status'} aria-live="polite" className="text-sm text-deep-forest dark:text-white">
+              {phase === 'ota' ? (isBM ? 'Memuat turun dan menerapkan kemas kini…' : 'Downloading and applying update…')
+                : phase === 'opening' ? (isBM ? 'Membuka pautan muat turun…' : 'Opening download link…')
+                : phase === 'opened' ? (isBM ? 'Pautan APK telah dibuka. Selesaikan muat turun dan pemasangan melalui peranti anda.' : 'APK link opened. Complete the download and installation on your device.')
+                : phase === 'applied' ? (isBM ? 'Pakej kemas kini sedia digunakan.' : 'Update package is ready.')
+                : (isBM ? 'Tidak dapat membuka kemas kini. Sila cuba lagi.' : 'Could not open the update. Please try again.')}
+            </p>
           )}
 
           {/* Action Buttons */}
@@ -235,7 +231,7 @@ export default function InAppUpdateModal({
               {downloading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  {isBM ? 'Memuat Turun & Menerapkan OTA...' : 'Applying Live OTA Update...'}
+                  {phase === 'ota' ? (isBM ? 'Menerapkan kemas kini…' : 'Applying update…') : (isBM ? 'Membuka muat turun…' : 'Opening download…')}
                 </>
               ) : hasCapgoBundle ? (
                 <>

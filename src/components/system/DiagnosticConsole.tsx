@@ -19,6 +19,9 @@ import {
   NotificationType 
 } from '@/lib/haptics';
 import { useSettings } from '@/context/SettingsContext';
+import { Capacitor } from '@capacitor/core';
+import { clearTemporaryAppCaches, measureApiLatency } from '@/lib/appDiagnostics';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 
 interface DiagnosticConsoleProps {
   isOpen: boolean;
@@ -26,17 +29,24 @@ interface DiagnosticConsoleProps {
 }
 
 export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, onClose }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
   // 1. Device Hardware telemetry
   const [motion, setMotion] = useState({ alpha: 0, beta: 0, gamma: 0 });
   const [platform, setPlatform] = useState({ name: 'Web Browser', isCapacitor: false, userAgent: '' });
   
   // 2. Storage metrics
-  const [storageSize, setStorageSize] = useState({ used: 0, total: 5120, pct: 0 });
+  const [storageSize, setStorageSize] = useState<number | null>(null);
   const [cacheCleaned, setCacheCleaned] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
 
   // 3. Network Ping
   const [ping, setPing] = useState<number | null>(null);
   const [isPinging, setIsPinging] = useState(false);
+  const [pingFailed, setPingFailed] = useState(false);
+  const pingRequest = useRef<AbortController | null>(null);
+  const cacheTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const session = useRef({ active: false });
 
   // 4. Batik playground states connected directly to global SettingsContext
   const { 
@@ -56,46 +66,51 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   }, []);
 
   const calculateStorage = useCallback(() => {
-    let totalChars = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        totalChars += key.length + (localStorage.getItem(key)?.length || 0);
+    try {
+      let totalChars = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) totalChars += key.length + (localStorage.getItem(key)?.length || 0);
       }
+      // Approximate UTF-16 storage only; the browser's actual quota is unknown.
+      setStorageSize(Math.round((totalChars * 2) / 1024 * 10) / 10);
+    } catch {
+      setStorageSize(null);
     }
-    // Storage sizes are stored as 16-bit characters (2 bytes)
-    const usedKB = Math.round((totalChars * 2) / 1024 * 10) / 10;
-    const totalKB = 5120; // 5MB standard limit
-    const pct = Math.min(100, Math.round((usedKB / totalKB) * 100));
-    setStorageSize({ used: usedKB, total: totalKB, pct });
   }, []);
 
   const testPing = useCallback(async () => {
+    pingRequest.current?.abort();
+    const controller = new AbortController();
+    pingRequest.current = controller;
     setIsPinging(true);
-    addLog('Executing ICMP latency ping...');
-    const start = Date.now();
+    setPing(null);
+    setPingFailed(false);
+    addLog('Measuring API HTTP round-trip...');
     try {
-      // Fetch a fast file or endpoint with cache-busting to measure real latency
-      await fetch('/favicon.ico?cb=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
-      const duration = Date.now() - start;
+      const duration = await measureApiLatency(controller.signal);
+      if (controller.signal.aborted) return;
       setPing(duration);
       addLog(`Latency reply received: ${duration}ms`);
     } catch {
-      // Fallback local calculation
-      const duration = Math.floor(Math.random() * 15) + 3;
-      setPing(duration);
-      addLog(`Local interface loopback latency: ${duration}ms`);
+      if (controller.signal.aborted) return;
+      setPingFailed(true);
+      addLog('API request failed or timed out; latency is unavailable.');
     } finally {
-      setIsPinging(false);
+      if (pingRequest.current === controller && !controller.signal.aborted) setIsPinging(false);
     }
   }, [addLog]);
 
   useEffect(() => {
     if (!isOpen) return;
+    const current = { active: true };
+    session.current = current;
+    setClearingCache(false);
+    setCacheCleaned(false);
 
     // Detect Platform
     const userAgent = navigator.userAgent;
-    const isCapacitor = !!(window as any).Capacitor;
+    const isCapacitor = Capacitor.isNativePlatform();
     const name = isCapacitor 
       ? 'Native Android APK (Capacitor)' 
       : /Android/i.test(userAgent) 
@@ -126,7 +141,10 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
     testPing();
 
     return () => {
+      current.active = false;
       window.removeEventListener('deviceorientation', handleDeviceOrientation);
+      pingRequest.current?.abort();
+      if (cacheTimer.current) clearTimeout(cacheTimer.current);
     };
   }, [isOpen, addLog, calculateStorage, testPing]);
 
@@ -137,21 +155,28 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
     }
   }, [terminalLogs]);
 
-  const clearAppCache = useCallback(() => {
-    triggerHeavyImpact();
-    // Clear only non-auth caching fields
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && !key.includes('firebase') && !key.includes('user')) {
-        keysToRemove.push(key);
-      }
+  useEffect(() => () => {
+    if (cacheTimer.current) clearTimeout(cacheTimer.current);
+  }, []);
+
+  const clearAppCache = useCallback(async () => {
+    const operation = session.current;
+    if (!operation.active) return;
+    void triggerHeavyImpact();
+    setClearingCache(true);
+    try {
+      const count = await clearTemporaryAppCaches();
+      if (!operation.active) return;
+      calculateStorage();
+      setCacheCleaned(true);
+      addLog(`Cleared temporary responses (${count} browser caches). Drafts, offline requests and sessions preserved.`);
+      if (cacheTimer.current) clearTimeout(cacheTimer.current);
+      cacheTimer.current = setTimeout(() => setCacheCleaned(false), 2000);
+    } catch {
+      if (operation.active) addLog('Could not clear temporary caches. Personal data was preserved.');
+    } finally {
+      if (operation.active) setClearingCache(false);
     }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    calculateStorage();
-    setCacheCleaned(true);
-    addLog(`Cleared ${keysToRemove.length} cached data logs and state fragments.`);
-    setTimeout(() => setCacheCleaned(false), 2000);
   }, [calculateStorage, addLog]);
 
   const triggerDiagnosticHaptic = async (style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => {
@@ -176,6 +201,11 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md transition-opacity duration-300">
       <div 
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="diagnostic-console-title"
+        tabIndex={-1}
         className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-gold/20 bg-[var(--ui-canvas)] text-white flex flex-col shadow-2xl"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
       >
@@ -186,7 +216,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
               <Terminal className="h-5 w-5 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
+              <h2 id="diagnostic-console-title" className="text-lg font-bold tracking-tight flex items-center gap-2">
                 Restoran Wawasan <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full font-mono uppercase tracking-widest">Secret Console</span>
               </h2>
               <p className="text-xs text-white/60">Live Hardware Telemetry, Physics Playground & Diagnostics</p>
@@ -241,7 +271,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                 <div>
                   <span className="text-white/40 text-xs block">HTTP RTT Connection</span>
                   <span className="text-3xl font-extrabold font-mono text-gold">
-                    {ping !== null ? `${ping}ms` : '---'}
+                    {ping !== null ? `${ping}ms` : pingFailed ? 'Unavailable' : '---'}
                   </span>
                 </div>
                 <button 
@@ -259,21 +289,16 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-3">
               <div className="flex items-center gap-2 text-gold">
                 <HardDrive className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">App Cache Allocation</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Local App Data</span>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Used Cache Capacity</span>
-                  <span className="font-mono text-white/90">{storageSize.used} KB / {storageSize.total} KB</span>
-                </div>
-                <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gold h-full rounded-full transition-all duration-500" 
-                    style={{ width: `${storageSize.pct}%` }}
-                  />
+                  <span className="text-white/40">Estimated localStorage size</span>
+                  <span className="font-mono text-white/90">{storageSize !== null ? `${storageSize} KB` : 'Unavailable'}</span>
                 </div>
                 <button 
                   onClick={clearAppCache}
+                  disabled={clearingCache}
                   className="w-full justify-center rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold py-1.5 transition-colors flex items-center gap-1.5 min-h-[44px] touch-target"
                 >
                   {cacheCleaned ? (
@@ -334,7 +359,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                     );
                   })}
                 </div>
-                <span className="absolute bottom-1 right-2 text-xs font-mono text-white/30 uppercase tracking-widest">Physics Core</span>
+                <span className="absolute bottom-1 right-2 text-xs font-mono text-white/30 uppercase tracking-widest">Orientation illustration</span>
               </div>
             </div>
 
@@ -396,25 +421,20 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                 <div>
                   <label htmlFor="diag-batik-color" className="text-xs text-white/60 block mb-1">Kunyit Accent Shade Controller</label>
                   <div className="flex gap-2">
-                    <input 
+                    <select
                       id="diag-batik-color"
-                      aria-label="Pemilih warna aksen kunyit"
-                      type="color" 
+                      aria-label="Warna aksen batik"
                       value={customBatikColor}
-                      onChange={(e) => {
+                      onChange={e => {
                         setCustomBatikColor(e.target.value);
-                        addLog(`Dynamic Batik Tint shifted to: ${e.target.value}`);
+                        addLog(`Batik palette accent: ${e.target.value}`);
                       }}
-                      className="rounded-lg bg-black/40 border border-white/10 h-10 w-20 cursor-pointer"
-                    />
-                    <input 
-                      id="diag-batik-hex"
-                      aria-label="Nilai hex warna corak batik"
-                      type="text" 
-                      value={customBatikColor}
-                      readOnly
-                      className="rounded-lg bg-black/40 border border-white/10 px-3 text-sm font-mono text-gold flex-1 text-center"
-                    />
+                      className="rounded-lg bg-black/40 border border-white/10 h-10 px-3 text-sm flex-1"
+                    >
+                      <option value="orange">Orange</option>
+                      <option value="yellow">Yellow</option>
+                      <option value="green">Green</option>
+                    </select>
                   </div>
                 </div>
                 <div>
@@ -446,8 +466,8 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
                       key={i} 
                       className="aspect-square rounded-md border transform rotate-45 transition-all duration-300"
                       style={{ 
-                        borderColor: customBatikColor,
-                        background: i % 2 === 0 ? `${customBatikColor}20` : 'transparent'
+                        borderColor: `var(--ui-${customBatikColor})`,
+                        background: i % 2 === 0 ? `color-mix(in srgb, var(--ui-${customBatikColor}) 12%, transparent)` : 'transparent'
                       }}
                     />
                   ))}
@@ -489,7 +509,7 @@ export const DiagnosticConsole: React.FC<DiagnosticConsoleProps> = ({ isOpen, on
 
         {/* Footer */}
         <div className="flex justify-between items-center border-t border-gold/10 p-4 bg-[var(--ui-green)] text-xs text-white/40 font-mono">
-          <span>Engine version: 2.14.0 (Stabilised)</span>
+          <span>Local device diagnostics</span>
           <span>Malaysian Heritage Food Tech Suite</span>
         </div>
       </div>

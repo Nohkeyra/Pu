@@ -8,6 +8,7 @@ async function setupCommonRoutes(
     adminVerified?: boolean;
   } = {}
 ) {
+  page.on('pageerror', error => console.error('Account fixture:', error.message));
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (!['localhost', '127.0.0.1'].includes(url.hostname)) return route.abort();
@@ -51,7 +52,10 @@ async function setupCommonRoutes(
             export const EmailAuthProvider = {
               credential: (email, password) => ({ providerId: 'password', email, password }),
             };
-            export class GoogleAuthProvider {}
+            export class GoogleAuthProvider {
+              setCustomParameters() {}
+              static credential() { return { providerId: 'google.com' }; }
+            }
             export class OAuthProvider { constructor(id) { this.providerId = id; } }
             export function onAuthStateChanged(auth, cb) {
               auth.__listeners?.add(cb);
@@ -85,6 +89,10 @@ async function setupCommonRoutes(
             export async function sendPasswordResetEmail() {}
             export async function sendEmailVerification() {}
             export async function signInWithCustomToken() { return {}; }
+            export async function signInWithCredential() { return {}; }
+            export async function signInWithPopup() { return {}; }
+            export async function linkWithCredential() { return {}; }
+            export async function linkWithPopup() { return {}; }
           `,
         });
       }

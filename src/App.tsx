@@ -90,6 +90,7 @@ function App() {
 
   useEffect(() => {
     // Initialize session state on cold start to allow open browsing
+    let active = true;
     try {
       const isFreshSession = !sessionStorage.getItem('wawasan_app_initialized');
       if (isFreshSession) {
@@ -156,6 +157,7 @@ function App() {
     let safeAreaListenerHandle: { remove: () => void } | null = null;
 
     const applySafeAreaInsets = (insets: { top: number; bottom: number; left: number; right: number }) => {
+      if (!active) return;
       const root = document.documentElement;
       root.style.setProperty('--safe-area-inset-top', `${insets.top}px`);
       root.style.setProperty('--safe-area-inset-bottom', `${insets.bottom}px`);
@@ -175,9 +177,10 @@ function App() {
       } catch (err) {
         console.warn('SplashScreen hide warning:', err);
       } finally {
-        setIsAppLoading(false);
+        if (active) setIsAppLoading(false);
       }
 
+      if (!active) return;
       try {
         if (Capacitor.isPluginAvailable('SafeArea')) {
           const result = await withTimeout(
@@ -185,16 +188,19 @@ function App() {
             1500,
             { insets: { top: 0, bottom: 0, left: 0, right: 0 } }
           );
+          if (!active) return;
           if (result && result.insets) {
             applySafeAreaInsets(result.insets);
           }
 
           // Dynamically listen for safe area changes (orientation, system cutouts, soft keyboard/navigation)
-          safeAreaListenerHandle = await SafeArea.addListener('safeAreaChanged', (data) => {
+          const handle = await SafeArea.addListener('safeAreaChanged', (data) => {
             if (data && data.insets) {
               applySafeAreaInsets(data.insets);
             }
           });
+          if (active) safeAreaListenerHandle = handle;
+          else await handle.remove();
         }
       } catch (err) {
         console.warn('SafeArea plugin error:', err);
@@ -204,9 +210,12 @@ function App() {
     initializeNativePlugins();
 
     return () => {
+      active = false;
+      healthController.abort();
+      clearTimeout(healthTimeout);
       unsubscribeIdToken();
       if (safeAreaListenerHandle) {
-        safeAreaListenerHandle.remove();
+        void safeAreaListenerHandle.remove();
       }
     };
   }, []);
@@ -251,7 +260,7 @@ function App() {
             <Router>
               <VercelSpeedInsights />
               <PushNotificationHandler />
-              {(isSplashFinished || !isNative) && <NativeBackButtonHandler />}
+              <NativeBackButtonHandler isWelcomeActive={isNative && !isSplashFinished} />
               <NativeAppListeners />
               {isSplashFinished && (
                 <>
