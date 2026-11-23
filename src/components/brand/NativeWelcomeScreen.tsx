@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { useReducedMotion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,6 +28,10 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
   const exitTimer = useRef<number | null>(null);
   const completion = useRef(onComplete);
   const isMalay = language === 'bm';
+  // CSS masks must use the exact preloaded URL, including its cache key.
+  // A second, cold URL can leave the first short strike without visible tubes.
+  const dayMask = getAssetUrl('/assets/illustrations/wawasan-native-neon-day-mask.webp');
+  const nightMask = getAssetUrl('/assets/illustrations/wawasan-native-neon-mask.webp');
   const themeLabel = theme === 'light'
     ? (isMalay ? 'Tukar ke mod gelap' : 'Switch to dark mode')
     : (isMalay ? 'Tukar ke mod cerah' : 'Switch to light mode');
@@ -81,7 +85,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
           <div className="native-welcome__sign-stage" role="img" aria-label={isMalay ? 'Papan tanda tiga dimensi Restoran Wawasan' : 'Three-dimensional Restoran Wawasan wall sign'}>
             <img
               ref={image => { signImages.current[3] = image; }}
-              src={getAssetUrl('/assets/illustrations/wawasan-native-neon-mask.webp')}
+              src={nightMask}
               className="native-welcome__mask-source"
               alt=""
               aria-hidden="true"
@@ -89,7 +93,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
             />
             <img
               ref={image => { signImages.current[4] = image; }}
-              src={getAssetUrl('/assets/illustrations/wawasan-native-neon-day-mask.webp')}
+              src={dayMask}
               className="native-welcome__mask-source"
               alt=""
               aria-hidden="true"
@@ -100,6 +104,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
                 ref={image => { signImages.current[0] = image; }}
                 src={getAssetUrl('/assets/illustrations/wawasan-native-neon-unlit.webp')}
                 className="native-welcome__sign"
+                style={{ '--welcome-board-mask': `url("${dayMask}")` } as CSSProperties}
                 alt=""
                 width={960}
                 height={960}
@@ -126,11 +131,12 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
                 ref={image => { signImages.current[2] = image; }}
                 src={getAssetUrl('/assets/illustrations/wawasan-native-neon.webp')}
                 className="native-welcome__neon-tubes"
+                style={{ '--welcome-board-mask': `url("${nightMask}")` } as CSSProperties}
                 alt=""
                 width={960}
                 height={960}
                 draggable={false}
-                decoding="async"
+                decoding="sync"
                 onLoad={() => imageLoaded(2)}
               />
             </div>
