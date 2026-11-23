@@ -109,7 +109,7 @@
         <!-- Firebase Cloud Messaging Default Notification Icon & Channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher_foreground"
+            android:resource="@mipmap/ic_launcher_monochrome"
         />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"

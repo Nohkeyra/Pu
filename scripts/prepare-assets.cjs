@@ -12,63 +12,14 @@ async function run() {
   const logoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'apk_logo_clean.png');
   const fallbackLogoPath = path.join(__dirname, '..', 'public', 'assets', 'brand', 'wawasan_logo.png');
   const activeLogoPath = fs.existsSync(logoPath) ? logoPath : fallbackLogoPath;
-  // Keep launcher artwork independent from splash/onboarding brand assets.
-  const launcherLogoPath = path.join(assetsDir, 'launcher-logo.png');
-  const launcherSourcePath = fs.existsSync(launcherLogoPath) ? launcherLogoPath : activeLogoPath;
   const batikPath = path.join(__dirname, '..', 'public', 'assets', 'heritage', 'batik_pattern_hd.jpg');
 
   console.log('Generating master assets and Android launcher icons...');
   console.log('Using logo source:', activeLogoPath);
 
-  // 1. icon-only.png (1024x1024, full logo centered on a 100% transparent background)
+  // Both entry points share the same source and launcher export pipeline.
+  await require('./regenerate-icons.cjs').regenerateIcons();
   const trimmedLogoBuffer = await sharp(activeLogoPath).trim().toBuffer();
-  const launcherLogoBuffer = await sharp(launcherSourcePath).trim().toBuffer();
-  
-  const iconOnlyLogo = await sharp(launcherLogoBuffer)
-    .resize(901, 901, { fit: 'inside', kernel: 'lanczos3' })
-    .toBuffer();
-
-  await sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    }
-  })
-  .composite([{ input: iconOnlyLogo, gravity: 'center' }])
-  .png({ compressionLevel: 9 })
-  .toFile(path.join(assetsDir, 'icon-only.png'));
-
-  // 2. icon-foreground.png (1024x1024, transparent background for Android adaptive icons)
-  // Scaled to fit the circular Android 66 dp safe region, including the logo corners
-  const iconFgLogo = await sharp(launcherLogoBuffer)
-    .resize(Math.round(1024 * 0.56), Math.round(1024 * 0.56), { fit: 'inside', kernel: 'lanczos3' })
-    .toBuffer();
-
-  await sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    }
-  })
-  .composite([{ input: iconFgLogo, gravity: 'center' }])
-  .png({ compressionLevel: 9 })
-  .toFile(path.join(assetsDir, 'icon-foreground.png'));
-
-  // 3. icon-background.png (1024x1024, dark chocolate background #21150F)
-  await sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
-      background: { r: 33, g: 21, b: 15, alpha: 1 }
-    }
-  })
-  .png({ compressionLevel: 9 })
-  .toFile(path.join(assetsDir, 'icon-background.png'));
 
   // 4. splash.png (2048x2048, batik pattern background with centered logo)
   if (fs.existsSync(batikPath)) {
@@ -102,99 +53,6 @@ async function run() {
       ])
       .png({ compressionLevel: 8 })
       .toFile(path.join(assetsDir, 'splash-dark.png'));
-  }
-
-  // 6. Direct generation of Android mipmap icons
-  const androidResDir = path.join(__dirname, '..', 'android', 'app', 'src', 'main', 'res');
-  if (fs.existsSync(androidResDir)) {
-    const densities = [
-      { name: 'mipmap-ldpi', legacySize: 36, adaptiveSize: 81 },
-      { name: 'mipmap-mdpi', legacySize: 48, adaptiveSize: 108 },
-      { name: 'mipmap-hdpi', legacySize: 72, adaptiveSize: 162 },
-      { name: 'mipmap-xhdpi', legacySize: 96, adaptiveSize: 216 },
-      { name: 'mipmap-xxhdpi', legacySize: 144, adaptiveSize: 324 },
-      { name: 'mipmap-xxxhdpi', legacySize: 192, adaptiveSize: 432 }
-    ];
-
-    console.log('Generating crisp Android mipmap launcher icons...');
-
-    for (const d of densities) {
-      const targetDir = path.join(androidResDir, d.name);
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-
-      // (a) ic_launcher_foreground.png (Adaptive foreground, logo inside central 66dp safe circle)
-      const fgInnerSize = Math.round(d.adaptiveSize * 0.56);
-      const fgLogo = await sharp(launcherLogoBuffer)
-        .resize(fgInnerSize, fgInnerSize, { fit: 'inside', kernel: 'lanczos3' })
-        .toBuffer();
-
-      await sharp({
-        create: {
-          width: d.adaptiveSize,
-          height: d.adaptiveSize,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0 }
-        }
-      })
-      .composite([{ input: fgLogo, gravity: 'center' }])
-      .png({ compressionLevel: 9 })
-      .toFile(path.join(targetDir, 'ic_launcher_foreground.png'));
-
-      // (b) ic_launcher_background.png (Solid dark brown #21150F)
-      await sharp({
-        create: {
-          width: d.adaptiveSize,
-          height: d.adaptiveSize,
-          channels: 4,
-          background: { r: 33, g: 21, b: 15, alpha: 1 }
-        }
-      })
-      .png({ compressionLevel: 9 })
-      .toFile(path.join(targetDir, 'ic_launcher_background.png'));
-
-      // (c) ic_launcher.png (Legacy square launcher icon with dark brown background)
-      const legacyInnerSize = Math.round(d.legacySize * 0.82);
-      const legacyLogo = await sharp(launcherLogoBuffer)
-        .resize(legacyInnerSize, legacyInnerSize, { fit: 'inside', kernel: 'lanczos3' })
-        .toBuffer();
-
-      // Rounded rect mask for legacy icon
-      const cornerRadius = Math.round(d.legacySize * 0.2);
-      const rectSvg = Buffer.from(
-        `<svg width="${d.legacySize}" height="${d.legacySize}">
-          <rect x="0" y="0" width="${d.legacySize}" height="${d.legacySize}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#21150F"/>
-        </svg>`
-      );
-
-      const legacyBg = await sharp(rectSvg).png().toBuffer();
-
-      await sharp(legacyBg)
-        .composite([{ input: legacyLogo, gravity: 'center' }])
-        .png({ compressionLevel: 9 })
-        .toFile(path.join(targetDir, 'ic_launcher.png'));
-
-      // (d) ic_launcher_round.png (Legacy round launcher icon with circular dark brown badge)
-      const circleSvg = Buffer.from(
-        `<svg width="${d.legacySize}" height="${d.legacySize}">
-          <circle cx="${d.legacySize / 2}" cy="${d.legacySize / 2}" r="${d.legacySize / 2}" fill="#21150F"/>
-        </svg>`
-      );
-
-      const roundBg = await sharp(circleSvg).png().toBuffer();
-      const roundInnerSize = Math.round(d.legacySize * 0.78);
-      const roundLogo = await sharp(launcherLogoBuffer)
-        .resize(roundInnerSize, roundInnerSize, { fit: 'inside', kernel: 'lanczos3' })
-        .toBuffer();
-
-      await sharp(roundBg)
-        .composite([{ input: roundLogo, gravity: 'center' }])
-        .png({ compressionLevel: 9 })
-        .toFile(path.join(targetDir, 'ic_launcher_round.png'));
-
-      console.log(`✓ Generated ${d.name} launcher icons (adaptive: ${d.adaptiveSize}px, legacy: ${d.legacySize}px)`);
-    }
   }
 
   console.log('✅ All master assets and Android launcher icons generated successfully!');

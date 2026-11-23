@@ -44,68 +44,111 @@ async function openWelcome(page: Page) {
 
 test.use({ viewport: { width: 393, height: 851 }, video: { mode: 'on', size: { width: 393, height: 851 } } });
 
-test('one clockwise accumulating circuit, coherent wall spill, then steady light', async ({ page }) => {
+test('night starter runs once, stays lit, and a locale rerender never restarts it', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openWelcome(page);
   const screen = page.locator('.native-welcome');
-  const core = page.locator('.native-welcome__rim-core');
+  const power = page.locator('.native-welcome__neon-power');
   await expect(page.getByRole('button', { name: 'Get Started' })).toBeDisabled();
-  await expect(core).toHaveCSS('opacity', '0');
+  await expect(power).toHaveCSS('opacity', '0');
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.getByRole('button', { name: 'Get Started' })).toBeEnabled();
-  await expect(core).toHaveCSS('animation-duration', '6s');
-  await expect(core).toHaveCSS('animation-iteration-count', '1');
-  const offsets = async () => page.locator('.native-welcome__light-path').evaluateAll(els => els.map(el => parseFloat(getComputedStyle(el).strokeDashoffset)));
-  const shadow = await page.locator('.native-welcome__sign').evaluate(el => getComputedStyle(el).filter);
-  await page.screenshot({ path: test.info().outputPath('sign-start.png') });
-  for (const [limit, label] of [[.75, 'quarter'], [.5, 'half'], [.25, 'three-quarter']] as const) {
-    await expect.poll(async () => (await offsets())[0], { timeout: 3000 }).toBeLessThan(limit);
-    const values = await offsets();
-    expect(Math.max(...values) - Math.min(...values)).toBeLessThan(.005);
-    await page.screenshot({ path: test.info().outputPath('sign-' + label + '.png') });
-  }
-  await expect(core).toHaveCSS('stroke-dashoffset', '0px', { timeout: 3000 });
-  await page.screenshot({ path: test.info().outputPath('sign-steady.png') });
-  expect(await page.locator('.native-welcome__sign').evaluate(el => getComputedStyle(el).filter)).toBe(shadow);
-  expect(await screen.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length)).toBe(0);
-  // A normal rerender never starts another circuit.
+  await expect(power).toHaveCSS('animation-duration', '2.8s');
+  await expect(power).toHaveCSS('animation-iteration-count', '1');
+  await expect.poll(() => power.evaluate(el => el.getAnimations().filter(a => a.playState === 'running').length), { timeout: 4500 }).toBe(0);
+  await expect(power).toHaveCSS('opacity', '1');
+  await page.screenshot({ path: test.info().outputPath('sign-night-steady.png') });
   await page.evaluate(() => (window as unknown as { __welcomeMalay: () => void }).__welcomeMalay());
   await expect(page.getByRole('heading', { name: 'Selamat Datang!' })).toBeVisible();
-  await expect(core).toHaveCSS('stroke-dashoffset', '0px');
-  const geometry = await screen.evaluate(el => ({ width: el.scrollWidth, height: el.scrollHeight, viewportWidth: innerWidth, viewportHeight: innerHeight }));
-  expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth);
-  expect(geometry.height).toBeLessThanOrEqual(geometry.viewportHeight);
-  // A new dark-mode activation is a new power-on; leaving is never gated on it.
-  await page.getByRole('button', { name: 'Tukar ke mod cerah' }).click();
-  await expect(page.locator('.native-welcome__rim-light')).toBeHidden();
-  await page.screenshot({ path: test.info().outputPath('sign-day.png') });
-  await page.getByRole('button', { name: 'Tukar ke mod gelap' }).click();
-  expect((await offsets())[0]).toBeGreaterThan(.8);
-  await page.getByRole('button', { name: 'Get Started' }).click();
-  await expect(page.locator('[data-completed]')).toHaveAttribute('data-completed', '1');
+  await expect(power).toHaveCSS('opacity', '1');
+  expect(await screen.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length)).toBe(0);
   expect(errors).toEqual([]);
 });
 
-test('Reduced Motion has steady light immediately and permits immediate exit', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+test('the tube and actual wall reflection share each starter pulse while the contact shadow stays fixed', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openWelcome(page);
-  await expect(page.locator('.native-welcome__rim-core')).toHaveCSS('stroke-dashoffset', '0px');
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
-  expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length)).toBe(0);
+  const power = page.locator('.native-welcome__neon-power');
+  await expect(power).toHaveCSS('animation-name', 'native-wawasan-neon-start');
+  expect(await power.locator('.native-welcome__neon-tubes').count()).toBe(1);
+  expect(await power.locator('.native-welcome__neon-spill').count()).toBe(1);
+  const shadow = await page.locator('.native-welcome__board').evaluate(el => getComputedStyle(el).filter);
+  expect(shadow).toContain('drop-shadow');
+  const seek = async (time: number) => {
+    await power.evaluate((el, ms) => { const a = el.getAnimations()[0]; a.pause(); a.currentTime = ms; }, time);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    return Number(await power.evaluate(el => getComputedStyle(el).opacity));
+  };
+  for (const [time, expected] of [[0, 0], [420, .64], [800, .03], [1200, .85], [1600, .06], [2050, 1], [2350, .2], [2800, 1]]) {
+    expect(await seek(time)).toBeCloseTo(expected, 2);
+    expect(await page.locator('.native-welcome__board').evaluate(el => getComputedStyle(el).filter)).toBe(shadow);
+    expect(await page.locator('.native-welcome__wall').evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
+  }
+  // Pixel check outside the board: the real rendered reflection brightens with
+  // its emitter. The wall texture is the same fixture in both captures.
+  const sign = (await page.locator('.native-welcome__sign-stage').boundingBox())!;
+  // The physical top rim sits at about 9% of the square plate. Sample the
+  // nearby wall just above that arc, not beyond the image's empty right margin.
+  const clip = { x: Math.ceil(sign.x + sign.width * .42), y: Math.ceil(sign.y + sign.height * .035), width: Math.floor(sign.width * .16), height: Math.floor(sign.height * .035) };
+  await seek(0);
+  const off = await page.screenshot({ clip });
+  await page.screenshot({ path: test.info().outputPath('sign-starter-off.png') });
+  await seek(2050);
+  const on = await page.screenshot({ clip });
+  await page.screenshot({ path: test.info().outputPath('sign-starter-on.png') });
+  const sharp = (await import('sharp')).default;
+  const brightness = async (buffer: Buffer) => {
+    const { data } = await sharp(buffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    return data.reduce((sum, value) => sum + value, 0) / data.length;
+  };
+  expect(await brightness(on)).toBeGreaterThan((await brightness(off)) + .5);
+});
+
+test('daylight has no powered tubes, spill, flicker or hidden delayed relight', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await openWelcome(page);
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
+  await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
+  await expect(page.locator('.native-welcome__sign')).toHaveAttribute('src', /neon-unlit\.webp(?:\?|$)/);
+  expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).some(a => a instanceof CSSAnimation && a.animationName === 'native-wawasan-neon-start'))).toBe(false);
+  await expect(page.locator('.native-welcome__wall-image--night')).toHaveCSS('opacity', '0');
+  await page.screenshot({ path: test.info().outputPath('sign-day-off.png') });
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  await expect(page.locator('.native-welcome__neon-power')).toHaveCSS('animation-name', 'native-wawasan-neon-start');
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
   await page.getByRole('button', { name: 'Get Started' }).click();
   await expect(page.locator('[data-completed]')).toHaveAttribute('data-completed', '1');
 });
 
-test('a landscape viewport retains the same complete contour', async ({ page }) => {
+test('Reduced Motion gives steady night light and still keeps daylight off', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.setViewportSize({ width: 851, height: 393 });
   await openWelcome(page);
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
-  const sign = await page.locator('.native-welcome__sign').boundingBox();
-  const light = await page.locator('.native-welcome__rim-light').boundingBox();
-  expect(light).toEqual(sign);
-  await expect(page.getByRole('button', { name: 'Get Started' })).toBeInViewport();
-  await page.screenshot({ path: test.info().outputPath('sign-landscape.png') });
+  await expect(page.locator('.native-welcome__neon-power')).toHaveCSS('opacity', '1');
+  expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length)).toBe(0);
+  await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
+  await page.getByRole('button', { name: 'Get Started' }).click();
+  await expect(page.locator('[data-completed]')).toHaveAttribute('data-completed', '1');
 });
+
+for (const viewport of [{ width: 320, height: 568 }, { width: 851, height: 393 }]) {
+  test(`${viewport.width}x${viewport.height} retains the whole sign and reachable controls`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(viewport);
+    await openWelcome(page);
+    await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
+    const sign = await page.locator('.native-welcome__sign').boundingBox();
+    const tubes = await page.locator('.native-welcome__neon-tubes').boundingBox();
+    expect(tubes).toEqual(sign);
+    await expect(page.getByRole('button', { name: 'Get Started' })).toBeInViewport();
+    const geometry = await page.locator('.native-welcome__scroll').evaluate(el => ({ scroll: el.scrollHeight, client: el.clientHeight }));
+    expect(geometry.scroll).toBeLessThanOrEqual(geometry.client + 1);
+    await page.screenshot({ path: test.info().outputPath('sign-layout.png') });
+  });
+}
