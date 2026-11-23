@@ -181,20 +181,22 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
-    /* Three uneven starter attempts, then permanent power. No looping flicker,
-       per-frame JavaScript, or separate glow timeline that can drift. */
-    animation: native-wawasan-neon-start 2800ms linear both;
+    /* Glow-starter-inspired rhythm: thermal gaps, two brief failed strikes,
+       then a permanent catch. This 2.5s UI preset is not an electrical model;
+       real starting times vary (Philips Fluorescent Gear guide, section 5.2;
+       https://elm-chan.org/works/fldrv2/report.html, figure 3a/movie).
+       Step changes keep ignition abrupt; the shared group keeps wall spill
+       in sync, without a looping animation or per-frame JavaScript. */
+    animation: native-wawasan-neon-start 2500ms step-end both;
   }
 }
 @keyframes native-wawasan-neon-start {
-  0%, 10% { opacity: 0; }
-  12%, 17% { opacity: .64; }
-  19%, 37% { opacity: .03; }
-  40%, 46% { opacity: .85; }
-  48%, 65% { opacity: .06; }
-  69%, 76% { opacity: 1; }
-  78%, 88% { opacity: .2; }
-  100% { opacity: 1; }
+  0% { opacity: 0; }
+  36% { opacity: .85; }   /* 900ms: first strike, 50ms long. */
+  38% { opacity: 0; }
+  66% { opacity: 1; }     /* 1650ms: second strike, 80ms long. */
+  69.2% { opacity: 0; }
+  92%, 100% { opacity: 1; } /* 2300ms: catches and stays on. */
 }
 
 .native-welcome__content {

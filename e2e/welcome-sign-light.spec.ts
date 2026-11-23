@@ -55,7 +55,7 @@ test('night starter runs once, stays lit, and a locale rerender never restarts i
   await expect(power).toHaveCSS('opacity', '0');
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.getByRole('button', { name: 'Get Started' })).toBeEnabled();
-  await expect(power).toHaveCSS('animation-duration', '2.8s');
+  await expect(power).toHaveCSS('animation-duration', '2.5s');
   await expect(power).toHaveCSS('animation-iteration-count', '1');
   await expect.poll(() => power.evaluate(el => el.getAnimations().filter(a => a.playState === 'running').length), { timeout: 4500 }).toBe(0);
   await expect(power).toHaveCSS('opacity', '1');
@@ -82,7 +82,14 @@ test('the tube and actual wall reflection share each starter pulse while the con
     await page.evaluate(() => new Promise(requestAnimationFrame));
     return Number(await power.evaluate(el => getComputedStyle(el).opacity));
   };
-  for (const [time, expected] of [[0, 0], [420, .64], [800, .03], [1200, .85], [1600, .06], [2050, 1], [2350, .2], [2800, 1]]) {
+  // Sample both sides of every ignition edge. A smooth opacity ramp or a
+  // residual glow during the thermal gaps must fail this regression.
+  const samples = [
+    [0, 0], [450, 0], [899, 0], [901, .85], [925, .85], [949, .85],
+    [951, 0], [1250, 0], [1649, 0], [1651, 1], [1690, 1], [1729, 1],
+    [1731, 0], [2000, 0], [2299, 0], [2301, 1], [2500, 1], [4000, 1],
+  ];
+  for (const [time, expected] of samples) {
     expect(await seek(time)).toBeCloseTo(expected, 2);
     expect(await page.locator('.native-welcome__board').evaluate(el => getComputedStyle(el).filter)).toBe(shadow);
     expect(await page.locator('.native-welcome__wall').evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
@@ -96,7 +103,7 @@ test('the tube and actual wall reflection share each starter pulse while the con
   await seek(0);
   const off = await page.screenshot({ clip });
   await page.screenshot({ path: test.info().outputPath('sign-starter-off.png') });
-  await seek(2050);
+  await seek(2301);
   const on = await page.screenshot({ clip });
   await page.screenshot({ path: test.info().outputPath('sign-starter-on.png') });
   const sharp = (await import('sharp')).default;
