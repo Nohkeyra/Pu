@@ -40,6 +40,17 @@ async function openWelcome(page: Page) {
   });
   await page.goto('/__welcome-light');
   await expect(page.locator('.native-welcome')).toHaveAttribute('data-sign-ready', 'true');
+  // The readiness gate must warm the very resources CSS will render, rather
+  // than a different URL with the same pathname but a different cache key.
+  const maskResources = await page.locator('.native-welcome__sign-stage').evaluate(stage => {
+    const warmed = [...stage.querySelectorAll<HTMLImageElement>('.native-welcome__mask-source')].map(img => img.currentSrc);
+    const rendered = [...stage.querySelectorAll('.native-welcome__sign, .native-welcome__neon-tubes')].map(el => {
+      const mask = getComputedStyle(el).maskImage;
+      return mask.slice(5, -2);
+    });
+    return { warmed: warmed.sort(), rendered: rendered.sort() };
+  });
+  expect(maskResources.rendered).toEqual(maskResources.warmed);
 }
 
 test.use({ viewport: { width: 393, height: 851 }, video: { mode: 'on', size: { width: 393, height: 851 } } });

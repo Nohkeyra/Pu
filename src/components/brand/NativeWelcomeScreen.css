@@ -127,7 +127,6 @@
   -webkit-mask-repeat: no-repeat;
 }
 .native-welcome__sign {
-  --welcome-board-mask: url('/assets/illustrations/wawasan-native-neon-day-mask.webp');
   display: block;
   position: relative;
   z-index: 1;
@@ -152,7 +151,6 @@
   pointer-events: none;
 }
 .native-welcome__neon-tubes {
-  --welcome-board-mask: url('/assets/illustrations/wawasan-native-neon-mask.webp');
   display: block;
   position: relative;
   z-index: 1;
@@ -180,11 +178,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .native-welcome[data-theme='dark'] .native-welcome__neon-power {
-    /* Prepare the single light group while images load, before its first
-       50ms strike. Otherwise masked tubes can rasterize after the wall spill. */
-    will-change: opacity;
-  }
   .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
     /* Glow-starter-inspired rhythm: thermal gaps, two brief failed strikes,
        then a permanent catch. This 2.5s UI preset is not an electrical model;
