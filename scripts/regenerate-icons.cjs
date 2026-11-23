@@ -13,6 +13,9 @@ const DENSITIES = [
 // Export packaging only: the owner's supplied on-state is never redrawn.
 async function regenerateIcons(root = ROOT) {
   const source = path.join(root, 'assets/launcher-logo.webp');
+  // Welcome artwork is selected independently from the approved launcher icon.
+  const welcomeDay = path.join(root, 'assets/onboarding-sign-day.webp');
+  const welcomeNight = path.join(root, 'assets/onboarding-sign-night.webp');
   const metadata = await sharp(source).metadata();
   if (metadata.width !== metadata.height) throw new Error('Launcher source must be square.');
   const icons = path.join(root, 'public/assets/icons');
@@ -40,8 +43,8 @@ async function regenerateIcons(root = ROOT) {
 
   // Derive a stencil from tube/body brightness, rather than exposing the opaque
   // photographic rectangle as Android's themed icon. The RGB artwork is intact.
-  const radiance = async (size, stencil = false) => {
-    const { data, info } = await sharp(source).resize(size, size).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const radiance = async (size, stencil = false, photo = source) => {
+    const { data, info } = await sharp(photo).resize(size, size).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const pixels = Buffer.alloc(info.width * info.height * 4);
     for (let i = 0; i < info.width * info.height; i++) {
       const offset = i * info.channels;
@@ -81,46 +84,66 @@ async function regenerateIcons(root = ROOT) {
     await sharp(await square(size, .82)).webp({ quality: 94, effort: 6 })
       .toFile(path.join(icons, `icon-${size}.webp`));
   }
-  // Build the board silhouette from the supplied outer neon tube. Filling the
-  // closed contour removes only the photographed wall, not any logo elements.
-  // This same mask clips both plates; the separate wall reflection stays outside.
+  // Trace the closed physical rim in each supplied plate. Warm wall reflections
+  // are not part of the board; retain only its largest connected silhouette.
   const boardSize = 640;
-  const boardData = await sharp(source).resize(boardSize, boardSize).removeAlpha().raw().toBuffer();
-  const blocked = new Uint8Array(boardSize * boardSize);
-  const outside = new Uint8Array(boardSize * boardSize);
-  const queue = new Int32Array(boardSize * boardSize);
-  let head = 0, tail = 0;
-  for (let y = 0; y < boardSize; y++) for (let x = 0; x < boardSize; x++) {
-    const i = (y * boardSize + x) * 3;
-    if (Math.max(boardData[i], boardData[i + 1], boardData[i + 2]) < 175) continue;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      if (x + dx >= 0 && x + dx < boardSize && y + dy >= 0 && y + dy < boardSize) blocked[(y + dy) * boardSize + x + dx] = 1;
+  const boardMask = async (photo, day) => {
+    const data = await sharp(photo).resize(boardSize, boardSize).removeAlpha().raw().toBuffer();
+    const blocked = new Uint8Array(boardSize * boardSize);
+    const outside = new Uint8Array(boardSize * boardSize);
+    const queue = new Int32Array(boardSize * boardSize);
+    let head = 0, tail = 0;
+    for (let y = 0; y < boardSize; y++) for (let x = 0; x < boardSize; x++) {
+      const i = (y * boardSize + x) * 3;
+      const low = Math.min(data[i], data[i + 1], data[i + 2]);
+      const high = Math.max(data[i], data[i + 1], data[i + 2]);
+      const tube = day ? low > 90 && high - low < 40 : low > 175;
+      if (!tube) continue;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (x + dx >= 0 && x + dx < boardSize && y + dy >= 0 && y + dy < boardSize) blocked[(y + dy) * boardSize + x + dx] = 1;
+      }
     }
-  }
-  const enqueue = index => {
-    if (index >= 0 && !outside[index] && !blocked[index]) { outside[index] = 1; queue[tail++] = index; }
+    const enqueue = index => {
+      if (index >= 0 && !outside[index] && !blocked[index]) { outside[index] = 1; queue[tail++] = index; }
+    };
+    const neighbours = index => {
+      const x = index % boardSize, y = (index - x) / boardSize;
+      return [x ? index - 1 : -1, x < boardSize - 1 ? index + 1 : -1, y ? index - boardSize : -1, y < boardSize - 1 ? index + boardSize : -1];
+    };
+    for (let i = 0; i < boardSize; i++) for (const index of [i, (boardSize - 1) * boardSize + i, i * boardSize, i * boardSize + boardSize - 1]) enqueue(index);
+    while (head < tail) for (const next of neighbours(queue[head++])) enqueue(next);
+
+    const visited = new Uint8Array(outside.length);
+    let largest = [];
+    for (let i = 0; i < outside.length; i++) {
+      if (outside[i] || visited[i]) continue;
+      head = 0; tail = 1; queue[0] = i; visited[i] = 1;
+      while (head < tail) {
+        for (const next of neighbours(queue[head++])) {
+          if (next >= 0 && !outside[next] && !visited[next]) { visited[next] = 1; queue[tail++] = next; }
+        }
+      }
+      if (tail > largest.length) largest = Array.from(queue.subarray(0, tail));
+    }
+    const coverage = largest.length / outside.length;
+    if (coverage < .4 || coverage > .7) throw new Error(`Welcome ${day ? 'day' : 'night'} rim is not closed; inspect the source before exporting.`);
+    const board = Buffer.alloc(boardSize * boardSize * 4);
+    for (const i of largest) { board[i * 4] = board[i * 4 + 1] = board[i * 4 + 2] = board[i * 4 + 3] = 255; }
+    return sharp(board, { raw: { width: boardSize, height: boardSize, channels: 4 } }).blur(.5)
+      .webp({ lossless: true, effort: 6 });
   };
-  for (let i = 0; i < boardSize; i++) for (const index of [i, (boardSize - 1) * boardSize + i, i * boardSize, i * boardSize + boardSize - 1]) enqueue(index);
-  while (head < tail) {
-    const index = queue[head++], x = index % boardSize, y = (index - x) / boardSize;
-    for (const next of [x ? index - 1 : -1, x < boardSize - 1 ? index + 1 : -1, y ? index - boardSize : -1, y < boardSize - 1 ? index + boardSize : -1]) enqueue(next);
-  }
-  const board = Buffer.alloc(boardSize * boardSize * 4, 255);
-  for (let i = 0; i < outside.length; i++) board[i * 4 + 3] = outside[i] ? 0 : 255;
-  const coverage = 1 - tail / outside.length;
-  if (coverage < .4 || coverage > .7) throw new Error('Neon board contour is not closed; inspect the source before exporting.');
   const illustrations = path.join(root, 'public/assets/illustrations');
-  await sharp(board, { raw: { width: boardSize, height: boardSize, channels: 4 } }).blur(.5)
-    .webp({ lossless: true, effort: 6 }).toFile(path.join(illustrations, 'wawasan-native-neon-mask.webp'));
-  await sharp(source).resize(960, 960).webp({ quality: 91, effort: 6 })
+  await (await boardMask(welcomeNight, false)).toFile(path.join(illustrations, 'wawasan-native-neon-mask.webp'));
+  await (await boardMask(welcomeDay, true)).toFile(path.join(illustrations, 'wawasan-native-neon-day-mask.webp'));
+  await sharp(welcomeNight).resize(960, 960).webp({ quality: 91, effort: 6 })
     .toFile(path.join(illustrations, 'wawasan-native-neon.webp'));
-  await (await radiance(320)).webp({ quality: 88, alphaQuality: 95, effort: 6 })
+  await (await radiance(320, false, welcomeNight)).webp({ quality: 88, alphaQuality: 95, effort: 6 })
     .toFile(path.join(illustrations, 'wawasan-native-neon-spill.webp'));
-  await sharp(path.join(root, 'assets/launcher-neon-unlit.webp')).resize(960, 960)
+  await sharp(welcomeDay).resize(960, 960)
     .webp({ quality: 91, effort: 6 }).toFile(path.join(illustrations, 'wawasan-native-neon-unlit.webp'));
   await fs.writeFile(path.join(res, 'values/ic_launcher_background.xml'),
     `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">${BACKGROUND}</color>\n</resources>\n`);
-  console.log('Generated Android legacy/adaptive/themed, PWA and welcome assets from launcher-logo.webp.');
+  console.log('Generated launcher assets and the owner-supplied day/night welcome plates.');
 }
 
 module.exports = { regenerateIcons, DENSITIES };

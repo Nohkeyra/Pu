@@ -14,7 +14,7 @@ interface NativeWelcomeScreenProps {
 /**
  * APK-only, single-screen onboarding. Stays open until Get Started is pressed.
  * The unpowered sign, wall and emitted light are separate layers. The owner
- * supplied the on-state; a matching unlit plate keeps daylight free of glow.
+ * supplied both plates; daylight uses their approved unpowered artwork.
  */
 export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWelcomeScreenProps) {
   const { language } = useLanguage();
@@ -23,7 +23,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
   const [exiting, setExiting] = useState(false);
   const [loadedImages, setLoadedImages] = useState(0);
   const signImages = useRef<Array<HTMLImageElement | null>>([]);
-  const signReady = loadedImages === 15;
+  const signReady = loadedImages === 31;
   const imageLoaded = (index: number) => setLoadedImages(value => value | (1 << index));
   const exitTimer = useRef<number | null>(null);
   const completion = useRef(onComplete);
@@ -87,19 +87,27 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
               aria-hidden="true"
               onLoad={() => imageLoaded(3)}
             />
-            <div className="native-welcome__board">
             <img
-              ref={image => { signImages.current[0] = image; }}
-              src={getAssetUrl('/assets/illustrations/wawasan-native-neon-unlit.webp')}
-              className="native-welcome__sign"
+              ref={image => { signImages.current[4] = image; }}
+              src={getAssetUrl('/assets/illustrations/wawasan-native-neon-day-mask.webp')}
+              className="native-welcome__mask-source"
               alt=""
-              width={960}
-              height={960}
-              draggable={false}
-              decoding="async"
-              fetchPriority="high"
-              onLoad={() => imageLoaded(0)}
+              aria-hidden="true"
+              onLoad={() => imageLoaded(4)}
             />
+            <div className="native-welcome__board">
+              <img
+                ref={image => { signImages.current[0] = image; }}
+                src={getAssetUrl('/assets/illustrations/wawasan-native-neon-unlit.webp')}
+                className="native-welcome__sign"
+                alt=""
+                width={960}
+                height={960}
+                draggable={false}
+                decoding="async"
+                fetchPriority="high"
+                onLoad={() => imageLoaded(0)}
+              />
             </div>
             {/* A single opacity envelope powers the tubes AND their wall spill.
                 Static contact shadows and daylight do not belong to this group. */}

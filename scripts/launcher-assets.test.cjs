@@ -72,19 +72,46 @@ test('onboarding mask preserves the closed logo body while removing its photogra
   assert.equal(mask.data[3], 0);
   const center = (Math.floor(mask.info.height / 2) * mask.info.width + Math.floor(mask.info.width / 2)) * 4;
   assert.ok(mask.data[center + 3] > 245, 'the body remains opaque behind the tubes');
-  const source = await sharp(path.join(root, 'assets/launcher-logo.webp')).resize(mask.info.width, mask.info.height).removeAlpha().raw().toBuffer();
+  const source = await sharp(path.join(root, 'assets/onboarding-sign-night.webp')).resize(mask.info.width, mask.info.height).removeAlpha().raw().toBuffer();
   let bright = 0, cut = 0;
   for (let i = 0; i < mask.info.width * mask.info.height; i++) {
-    if (Math.max(source[i * 3], source[i * 3 + 1], source[i * 3 + 2]) > 210) {
+    if (Math.min(source[i * 3], source[i * 3 + 1], source[i * 3 + 2]) > 210) {
       bright++;
       if (mask.data[i * 4 + 3] < 180) cut++;
     }
   }
   assert.ok(bright > 1000);
-  assert.ok(cut / bright < .001, 'retain the owner-supplied luminous artwork');
+  assert.ok(cut / bright < .001, 'retain the owner-supplied tube cores, not detached wall reflections');
 });
 
 test('FCM uses the transparent stencil rather than the opaque launcher photograph', () => {
   assert.match(fs.readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8'),
     /default_notification_icon"\s+android:resource="@mipmap\/ic_launcher_monochrome"/);
+});
+
+for (const [name, expected] of [
+  ['day', 'e5f23453b7a50b51bee6c1999d4835ebdb35f30ec34c289ab0c55c7a60d5df60'],
+  ['night', '11e73f32b6ffb16317967633f2e573f290f11ac191d19902daa62e80e37498b6'],
+]) {
+  test(`welcome ${name} master is the exact owner-supplied replacement`, () => {
+    const source = fs.readFileSync(path.join(root, `assets/onboarding-sign-${name}.webp`));
+    assert.equal(crypto.createHash('sha256').update(source).digest('hex'), expected);
+  });
+}
+
+test('day mask keeps the supplied neutral glass tubes, not the warm cream wall', async () => {
+  const mask = await pixels(path.join(root, 'public/assets/illustrations/wawasan-native-neon-day-mask.webp'));
+  const source = await sharp(path.join(root, 'assets/onboarding-sign-day.webp')).resize(mask.info.width, mask.info.height).removeAlpha().raw().toBuffer();
+  let tube = 0, cut = 0;
+  for (let i = 0; i < mask.info.width * mask.info.height; i++) {
+    const values = [source[i * 3], source[i * 3 + 1], source[i * 3 + 2]];
+    const low = Math.min(...values), high = Math.max(...values);
+    if (low > 210 && high - low < 30) {
+      tube++;
+      if (mask.data[i * 4 + 3] < 180) cut++;
+    }
+  }
+  assert.ok(tube > 1000);
+  assert.ok(cut / tube < .001, 'do not clip the original grey/white glass');
+  assert.equal(mask.data[3], 0);
 });

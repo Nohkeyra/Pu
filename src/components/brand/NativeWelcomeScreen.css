@@ -119,14 +119,15 @@
 }
 .native-welcome__sign,
 .native-welcome__neon-tubes {
-  mask-image: url('/assets/illustrations/wawasan-native-neon-mask.webp');
+  mask-image: var(--welcome-board-mask);
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
-  -webkit-mask-image: url('/assets/illustrations/wawasan-native-neon-mask.webp');
+  -webkit-mask-image: var(--welcome-board-mask);
   -webkit-mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
 }
 .native-welcome__sign {
+  --welcome-board-mask: url('/assets/illustrations/wawasan-native-neon-day-mask.webp');
   display: block;
   position: relative;
   z-index: 1;
@@ -151,6 +152,7 @@
   pointer-events: none;
 }
 .native-welcome__neon-tubes {
+  --welcome-board-mask: url('/assets/illustrations/wawasan-native-neon-mask.webp');
   display: block;
   position: relative;
   z-index: 1;
