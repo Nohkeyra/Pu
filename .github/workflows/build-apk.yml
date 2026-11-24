@@ -200,6 +200,23 @@ jobs:
         run: |
           npm ci
 
+      # Test the exact version-bumped checkout that will be signed and published.
+      # Parallel CI may still be checking an earlier push after the version step.
+      - name: Release quality gate
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test -- --run
+          npm run test:migrations
+          npm audit --omit=dev --audit-level=high
+
+      - name: Release browser regression gate
+        if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test --project=chromium --workers=2 --retries=0 --reporter=line
+
       - name: Patch capacitor-updater enum switch cases (Java 21 fix)
         run: |
           node scripts/patch-capacitor.js

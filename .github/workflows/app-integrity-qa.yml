@@ -2,18 +2,7 @@ name: App Integrity QA
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'src/App.tsx'
-      - 'src/components/system/DiagnosticConsole.tsx'
-      - 'src/components/system/InAppUpdateModal.tsx'
-      - 'src/hooks/native/**'
-      - 'src/lib/appDiagnostics*'
-      - 'src/lib/pendingOrdersQueue*'
-      - 'src/lib/appEntryRoutes.ts'
-      - 'android/app/src/main/java/com/wawasanpakusop/app/MainActivity.java'
-      - 'e2e/app-integrity.spec.ts'
-      - 'e2e/delete-account.spec.ts'
-      - '.github/workflows/app-integrity-qa.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
