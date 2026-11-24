@@ -37,7 +37,7 @@ export function isGoogleLinked(user: User | null): boolean {
  * Do NOT use native Firebase sign-in here (skipNativeAuth: true), as it would create
  * a second, unsynchronised Firebase Auth session on Android.
  */
-async function getNativeGoogleCredential(): Promise<AuthCredential> {
+export async function getNativeGoogleCredential(): Promise<AuthCredential> {
   const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
   const result = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
   const idToken = result.credential?.idToken;

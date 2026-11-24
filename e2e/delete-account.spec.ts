@@ -180,6 +180,11 @@ async function setupCommonRoutes(
       });
     }
 
+    if (url.pathname === '/api/user/delete-account') {
+      await page.evaluate(() => (window as unknown as { __e2eDeleteEvents: string[] }).__e2eDeleteEvents.push('deleteAccountOnServer'));
+      return route.fulfill({ status: 200, json: { success: true } });
+    }
+
     if (url.pathname.startsWith('/api/')) {
       return route.fulfill({
         status: 200,
@@ -425,10 +430,7 @@ test('delete account flow handles offline guard, wrong password error, and order
   expect(events).toEqual([
     'reauthenticate:Salah123',
     'reauthenticate:KataLaluanBetul123!',
-    'deleteDoc:calendar_notes/cust_e2e_1_2026-12-01',
-    'deleteDoc:company_presets/preset_e2e_1',
-    'deleteDoc:users/cust_e2e_1',
-    'deleteUser:cust_e2e_1',
+    'deleteAccountOnServer',
     'signOut',
   ]);
 });

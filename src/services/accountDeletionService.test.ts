@@ -44,23 +44,8 @@ function createDeps(overrides: Partial<AccountDeletionDeps> = {}): AccountDeleti
     reauthenticateWithGoogle: vi.fn(async () => ({} as never)),
     reauthenticateWithProviderId: vi.fn(async () => ({} as never)),
     buildCredential: vi.fn((email, password) => ({ email, password } as never)),
-    removeAuthUser: vi.fn(async () => undefined),
+    deleteAccountOnServer: vi.fn(async () => undefined),
     signOutAuth: vi.fn(async () => undefined),
-    docRef: vi.fn((_db, col, id) => ({ path: `${col}/${id}` } as never)),
-    collectionRef: vi.fn((_db, col) => ({ col } as never)),
-    whereClause: vi.fn((field, op, val) => ({ field, op, val } as never)),
-    buildQuery: vi.fn((col, clause) => ({ col, clause } as never)),
-    fetchDocs: vi.fn(async () => ({ docs: [] } as never)),
-    createWriteBatch: vi.fn(() => {
-      const ops: unknown[] = [];
-      return {
-        delete: vi.fn((ref: unknown) => {
-          ops.push(ref);
-        }),
-        commit: vi.fn(async () => undefined),
-        _ops: ops,
-      } as never;
-    }),
     clearBiometrics: vi.fn(async () => true),
     clearFetchCache: vi.fn(() => undefined),
     clearQueuedOrders: vi.fn(() => undefined),
@@ -86,7 +71,6 @@ describe('deleteCustomerAccountAndData', () => {
         {
           password: 'secret',
           authInstance: { currentUser: null } as never,
-          dbInstance: {} as never,
         },
         deps
       )
@@ -103,7 +87,6 @@ describe('deleteCustomerAccountAndData', () => {
           password: 'secret',
           isAdminSession: true,
           authInstance: { currentUser: { uid: 'cust_1', email: 'cust@example.com' } } as never,
-          dbInstance: {} as never,
         },
         deps
       )
@@ -114,14 +97,13 @@ describe('deleteCustomerAccountAndData', () => {
         {
           password: 'secret',
           authInstance: { currentUser: { uid: 'admin', email: 'wawasan.orders@gmail.com' } } as never,
-          dbInstance: {} as never,
         },
         deps
       )
     ).rejects.toMatchObject({ code: 'ADMIN_ACCOUNT_PROTECTED' });
 
-    expect(deps.removeAuthUser).not.toHaveBeenCalled();
-    expect(deps.createWriteBatch).not.toHaveBeenCalled();
+    expect(deps.deleteAccountOnServer).not.toHaveBeenCalled();
+
   });
 
   it('fails fast with NETWORK_ERROR when device is offline without touching Firestore or Auth', async () => {
@@ -133,16 +115,15 @@ describe('deleteCustomerAccountAndData', () => {
         {
           password: 'MyStrongPassword!1',
           authInstance: { currentUser: { uid: 'cust_1', email: 'cust@example.com' } } as never,
-          dbInstance: {} as never,
         },
         deps
       )
     ).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
 
     expect(deps.reauthenticate).not.toHaveBeenCalled();
-    expect(deps.fetchDocs).not.toHaveBeenCalled();
-    expect(deps.createWriteBatch).not.toHaveBeenCalled();
-    expect(deps.removeAuthUser).not.toHaveBeenCalled();
+
+
+    expect(deps.deleteAccountOnServer).not.toHaveBeenCalled();
   });
 
   it('requires password confirmation before re-authenticating password accounts', async () => {
@@ -158,7 +139,6 @@ describe('deleteCustomerAccountAndData', () => {
               providerData: [{ providerId: 'password' }],
             },
           } as never,
-          dbInstance: {} as never,
         },
         deps
       )
@@ -183,14 +163,12 @@ describe('deleteCustomerAccountAndData', () => {
               providerData: [{ providerId: 'password' }],
             },
           } as never,
-          dbInstance: {} as never,
         },
         deps
       )
     ).rejects.toMatchObject({ code: 'INVALID_PASSWORD' });
 
-    expect(deps.createWriteBatch).not.toHaveBeenCalled();
-    expect(deps.removeAuthUser).not.toHaveBeenCalled();
+    expect(deps.deleteAccountOnServer).not.toHaveBeenCalled();
     expect(deps.clearBiometrics).not.toHaveBeenCalled();
   });
 
@@ -206,15 +184,14 @@ describe('deleteCustomerAccountAndData', () => {
             providerData: [{ providerId: 'google.com' }],
           },
         } as never,
-        dbInstance: {} as never,
       },
       deps
     );
 
     expect(deps.reauthenticateWithGoogle).toHaveBeenCalledTimes(1);
     expect(deps.reauthenticate).not.toHaveBeenCalled();
-    expect(deps.createWriteBatch).toHaveBeenCalledTimes(1);
-    expect(deps.removeAuthUser).toHaveBeenCalledTimes(1);
+
+    expect(deps.deleteAccountOnServer).toHaveBeenCalledTimes(1);
   });
 
   it('supports other federated OAuth providers (e.g. apple.com) via OAuthProvider popup', async () => {
@@ -229,7 +206,6 @@ describe('deleteCustomerAccountAndData', () => {
             providerData: [{ providerId: 'apple.com' }],
           },
         } as never,
-        dbInstance: {} as never,
       },
       deps
     );
@@ -239,8 +215,8 @@ describe('deleteCustomerAccountAndData', () => {
       'apple.com'
     );
     expect(deps.reauthenticateWithGoogle).not.toHaveBeenCalled();
-    expect(deps.createWriteBatch).toHaveBeenCalledTimes(1);
-    expect(deps.removeAuthUser).toHaveBeenCalledTimes(1);
+
+    expect(deps.deleteAccountOnServer).toHaveBeenCalledTimes(1);
   });
 
   it('maps cancelled and mismatched popup re-authentication errors cleanly', async () => {
@@ -261,7 +237,6 @@ describe('deleteCustomerAccountAndData', () => {
               providerData: [{ providerId: 'google.com' }],
             },
           } as never,
-          dbInstance: {} as never,
         },
         cancelledDeps
       )
@@ -284,14 +259,13 @@ describe('deleteCustomerAccountAndData', () => {
               providerData: [{ providerId: 'google.com' }],
             },
           } as never,
-          dbInstance: {} as never,
         },
         mismatchDeps
       )
     ).rejects.toMatchObject({ code: 'REAUTH_MISMATCH' });
 
-    expect(cancelledDeps.createWriteBatch).not.toHaveBeenCalled();
-    expect(mismatchDeps.removeAuthUser).not.toHaveBeenCalled();
+    expect(cancelledDeps.deleteAccountOnServer).not.toHaveBeenCalled();
+    expect(mismatchDeps.deleteAccountOnServer).not.toHaveBeenCalled();
   });
 
   it('rejects unsupported sign-in providers (e.g. phone or anonymous) cleanly without touching data', async () => {
@@ -307,85 +281,25 @@ describe('deleteCustomerAccountAndData', () => {
               providerData: [{ providerId: 'phone' }],
             },
           } as never,
-          dbInstance: {} as never,
         },
         deps
       )
     ).rejects.toMatchObject({ code: 'UNSUPPORTED_AUTH_PROVIDER' });
 
-    expect(deps.createWriteBatch).not.toHaveBeenCalled();
-    expect(deps.removeAuthUser).not.toHaveBeenCalled();
+    expect(deps.deleteAccountOnServer).not.toHaveBeenCalled();
   });
 
-  it('aborts auth deletion and commits no partial deletes if atomic Firestore batch fails', async () => {
-    const deps = createDeps({
-      fetchDocs: vi.fn(async () => ({ docs: [{ ref: { path: 'calendar_notes/note_1' } }] } as never)),
-      createWriteBatch: vi.fn(() => ({
-        delete: vi.fn(),
-        commit: vi.fn(async () => {
-          throw new Error('Firestore unavailable');
-        }),
-      }) as never),
-    });
-
-    await expect(
-      deleteCustomerAccountAndData(
-        {
-          password: 'correct-password',
-          authInstance: { currentUser: { uid: 'cust_1', email: 'cust@example.com' } } as never,
-          dbInstance: {} as never,
-        },
-        deps
-      )
-    ).rejects.toBeInstanceOf(AccountDeletionError);
-
-    expect(deps.removeAuthUser).not.toHaveBeenCalled();
+  it('does not clear local data or sign out when server deletion fails', async () => {
+    const deps = createDeps({ deleteAccountOnServer: vi.fn(async () => { throw new Error('Server unavailable'); }) });
+    await expect(deleteCustomerAccountAndData({
+      password: 'correct-password',
+      authInstance: { currentUser: { uid: 'cust_1', email: 'cust@example.com' } } as never,
+    }, deps)).rejects.toBeInstanceOf(AccountDeletionError);
+    expect(deps.clearBiometrics).not.toHaveBeenCalled();
+    expect(deps.signOutAuth).not.toHaveBeenCalled();
   });
 
-  it('chunks atomic writeBatch commits safely when more than 450 documents are owned', async () => {
-    const noteDocs = Array.from({ length: 460 }, (_, idx) => ({
-      ref: { path: `calendar_notes/note_${idx}` },
-    }));
-    const batchSizes: number[] = [];
-
-    const deps = createDeps({
-      fetchDocs: vi.fn(async (q: unknown) => {
-        const colName = (q as { col: { col: string } }).col.col;
-        return (colName === 'calendar_notes' ? { docs: noteDocs } : { docs: [] }) as never;
-      }),
-      createWriteBatch: vi.fn(() => {
-        let count = 0;
-        return {
-          delete: vi.fn(() => {
-            count += 1;
-          }),
-          commit: vi.fn(async () => {
-            batchSizes.push(count);
-          }),
-        } as never;
-      }),
-    });
-
-    await deleteCustomerAccountAndData(
-      {
-        password: 'MyStrongPassword!1',
-        authInstance: {
-          currentUser: {
-            uid: 'cust_heavy',
-            email: 'heavy@example.com',
-            providerData: [{ providerId: 'password' }],
-          },
-        } as never,
-        dbInstance: {} as never,
-      },
-      deps
-    );
-
-    expect(batchSizes).toEqual([450, 11]);
-    expect(deps.removeAuthUser).toHaveBeenCalledTimes(1);
-  });
-
-  it('re-authenticates, atomically deletes owned Firestore collections and user profile before deleting Auth user, then clears all local/draft/biometric data', async () => {
+  it('re-authenticates, confirms server deletion, then clears all local/draft/biometric data', async () => {
     const callOrder: string[] = [];
     sessionStorage.setItem('wawasan_session_started', 'true');
     sessionStorage.setItem('wawasan_guest_allowed', 'true');
@@ -407,30 +321,7 @@ describe('deleteCustomerAccountAndData', () => {
         callOrder.push('reauthenticate');
         return {} as never;
       }),
-      fetchDocs: vi.fn(async (q: unknown) => {
-        const colName = (q as { col: { col: string } }).col.col;
-        if (colName === 'calendar_notes') {
-          return { docs: [{ ref: { path: 'calendar_notes/note_1' } }] } as never;
-        }
-        if (colName === 'company_presets') {
-          return { docs: [{ ref: { path: 'company_presets/preset_1' } }] } as never;
-        }
-        return { docs: [] } as never;
-      }),
-      createWriteBatch: vi.fn(() => {
-        const staged: string[] = [];
-        return {
-          delete: vi.fn((ref: unknown) => {
-            staged.push((ref as { path: string }).path);
-          }),
-          commit: vi.fn(async () => {
-            callOrder.push(`batchCommit:${staged.join(',')}`);
-          }),
-        } as never;
-      }),
-      removeAuthUser: vi.fn(async () => {
-        callOrder.push('removeAuthUser');
-      }),
+      deleteAccountOnServer: vi.fn(async () => { callOrder.push('deleteAccountOnServer'); }),
       clearBiometrics: vi.fn(async () => {
         callOrder.push('clearBiometrics');
         return true;
@@ -450,15 +341,13 @@ describe('deleteCustomerAccountAndData', () => {
       {
         password: 'MyStrongPassword!1',
         authInstance: { currentUser: user } as never,
-        dbInstance: {} as never,
       },
       deps
     );
 
     expect(callOrder).toEqual([
       'reauthenticate',
-      'batchCommit:calendar_notes/note_1,company_presets/preset_1,users/cust_123',
-      'removeAuthUser',
+      'deleteAccountOnServer',
       'clearBiometrics',
       'clearQueuedOrders',
       'clearFetchCache',

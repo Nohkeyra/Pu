@@ -2,30 +2,18 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
-  deleteUser,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   signOut,
   type Auth,
   type User,
 } from 'firebase/auth';
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  where,
-  writeBatch,
-  type DocumentReference,
-  type Firestore,
-} from 'firebase/firestore';
-import { auth, db } from '@/firebaseConfig';
+import { auth, isNative } from '@/firebaseConfig';
+import { getNativeGoogleCredential } from '@/services/googleAuthService';
 import { isUserAdmin } from '@/constants/auth';
-import { invalidateFetchCache } from '@/lib/api';
+import { getApiUrl, invalidateFetchCache } from '@/lib/api';
 import { clearPendingOrders } from '@/lib/pendingOrdersQueue';
 import { deleteCustomerBiometricCredentials } from '@/services/authService';
-
-const MAX_BATCH_DELETE_OPS = 450;
 
 export type AccountDeletionErrorCode =
   | 'ACCOUNT_NOT_SIGNED_IN'
@@ -77,7 +65,6 @@ export interface DeleteCustomerAccountOptions {
   password: string;
   isAdminSession?: boolean;
   authInstance?: Auth;
-  dbInstance?: Firestore;
   onCleanupLocalCache?: () => Promise<void>;
 }
 
@@ -86,14 +73,8 @@ export interface AccountDeletionDeps {
   reauthenticateWithGoogle: (user: User) => Promise<unknown>;
   reauthenticateWithProviderId: (user: User, providerId: string) => Promise<unknown>;
   buildCredential: typeof EmailAuthProvider.credential;
-  removeAuthUser: typeof deleteUser;
+  deleteAccountOnServer: (user: User) => Promise<void>;
   signOutAuth: typeof signOut;
-  docRef: typeof doc;
-  collectionRef: typeof collection;
-  whereClause: typeof where;
-  buildQuery: typeof query;
-  fetchDocs: typeof getDocs;
-  createWriteBatch: typeof writeBatch;
   clearBiometrics: typeof deleteCustomerBiometricCredentials;
   clearFetchCache: typeof invalidateFetchCache;
   clearQueuedOrders: typeof clearPendingOrders;
@@ -101,19 +82,22 @@ export interface AccountDeletionDeps {
 
 const defaultDeps: AccountDeletionDeps = {
   reauthenticate: reauthenticateWithCredential,
-  reauthenticateWithGoogle: (user: User) =>
-    reauthenticateWithPopup(user, new GoogleAuthProvider()),
+  reauthenticateWithGoogle: async (user: User) =>
+    isNative ? reauthenticateWithCredential(user, await getNativeGoogleCredential())
+      : reauthenticateWithPopup(user, new GoogleAuthProvider()),
   reauthenticateWithProviderId: (user: User, providerId: string) =>
     reauthenticateWithPopup(user, new OAuthProvider(providerId)),
   buildCredential: EmailAuthProvider.credential,
-  removeAuthUser: deleteUser,
+  deleteAccountOnServer: async (user: User) => {
+    const token = await user.getIdToken(true);
+    const response = await fetch(getApiUrl('/api/user/delete-account'), {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(60_000),
+    });
+    const result = await response.json();
+    if (!response.ok || result.success !== true) throw new Error(result.error || 'Account deletion failed.');
+  },
   signOutAuth: signOut,
-  docRef: doc,
-  collectionRef: collection,
-  whereClause: where,
-  buildQuery: query,
-  fetchDocs: getDocs,
-  createWriteBatch: writeBatch,
   clearBiometrics: deleteCustomerBiometricCredentials,
   clearFetchCache: invalidateFetchCache,
   clearQueuedOrders: clearPendingOrders,
@@ -140,33 +124,6 @@ function mapFirebaseErrorToCode(error: unknown): AccountDeletionErrorCode {
       return 'REAUTH_MISMATCH';
     default:
       return 'DELETE_FAILED';
-  }
-}
-
-async function collectOwnedDocRefs(
-  dbInstance: Firestore,
-  collectionName: 'calendar_notes' | 'company_presets',
-  uid: string,
-  deps: AccountDeletionDeps
-): Promise<DocumentReference[]> {
-  const col = deps.collectionRef(dbInstance, collectionName);
-  const ownedQuery = deps.buildQuery(col, deps.whereClause('userId', '==', uid));
-  const snapshot = await deps.fetchDocs(ownedQuery);
-  return snapshot.docs.map((item) => item.ref);
-}
-
-async function commitAtomicBatchDeletes(
-  dbInstance: Firestore,
-  refs: DocumentReference[],
-  deps: AccountDeletionDeps
-): Promise<void> {
-  for (let i = 0; i < refs.length; i += MAX_BATCH_DELETE_OPS) {
-    const chunk = refs.slice(i, i + MAX_BATCH_DELETE_OPS);
-    const batch = deps.createWriteBatch(dbInstance);
-    for (const ref of chunk) {
-      batch.delete(ref);
-    }
-    await batch.commit();
   }
 }
 
@@ -217,7 +174,6 @@ export async function deleteCustomerAccountAndData(
   deps: AccountDeletionDeps = defaultDeps
 ): Promise<void> {
   const authInstance = options.authInstance ?? auth;
-  const dbInstance = options.dbInstance ?? db;
   const user: User | null = authInstance.currentUser;
 
   if (!user) {
@@ -291,35 +247,14 @@ export async function deleteCustomerAccountAndData(
     );
   }
 
-  // Delete personal Firestore records in an atomic batch BEFORE deleting the Auth
-  // user so firestore.rules (`request.auth.uid == uid`) still authorize cleanup
-  // and no partial cleanup occurs on connection drop.
+  if (authInstance.currentUser?.uid !== user.uid)
+    throw new AccountDeletionError('REAUTH_MISMATCH', 'The signed-in account changed.');
   try {
-    const [calendarNoteRefs, companyPresetRefs] = await Promise.all([
-      collectOwnedDocRefs(dbInstance, 'calendar_notes', user.uid, deps),
-      collectOwnedDocRefs(dbInstance, 'company_presets', user.uid, deps),
-    ]);
-    const userDocRef = deps.docRef(dbInstance, 'users', user.uid);
-    await commitAtomicBatchDeletes(
-      dbInstance,
-      [...calendarNoteRefs, ...companyPresetRefs, userDocRef],
-      deps
-    );
+    await deps.deleteAccountOnServer(user);
   } catch (err) {
-    const mappedCode = mapFirebaseErrorToCode(err);
     throw new AccountDeletionError(
-      mappedCode,
-      err instanceof Error ? err.message : 'Failed to erase personal cloud data.'
-    );
-  }
-
-  try {
-    await deps.removeAuthUser(user);
-  } catch (err) {
-    const mappedCode = mapFirebaseErrorToCode(err);
-    throw new AccountDeletionError(
-      mappedCode,
-      err instanceof Error ? err.message : 'Failed to delete Firebase Auth account.'
+      mapFirebaseErrorToCode(err),
+      err instanceof Error ? err.message : 'Failed to delete account. Please retry.'
     );
   }
 
