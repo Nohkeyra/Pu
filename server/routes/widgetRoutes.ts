@@ -541,14 +541,13 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
       const deliveryStatus = recipientEmail.includes('@') ? 'queued' : 'skipped_no_email';
       const charges = calculateOrderCharges(totalAmount, freshOrder);
-      totalAmount = charges.totalAmount;
       const updates = {
         status: 'billed',
         prices: finalPrices,
         deliveryCharge: charges.deliveryCharge,
         serviceChargeRate: charges.serviceChargeRate,
         serviceChargeAmount: charges.serviceChargeAmount,
-        totalAmount,
+        totalAmount: charges.totalAmount,
         invoiceNo,
         officialInvoiceNo: invoiceNo,
         billedAt: freshOrder.billedAt || invoiceGeneratedAt,
@@ -559,7 +558,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       if (deliveryStatus === 'queued') {
         await invoiceQueue.service.enqueueInTransaction(tx, {
           orderId, orderForPdf: { ...freshOrder, ...updates, id: orderId }, invoiceNo,
-          recipientEmail, totalAmount, companyName: freshOrder.to || freshOrder.company || 'Pelanggan',
+          recipientEmail, totalAmount: charges.totalAmount, companyName: freshOrder.to || freshOrder.company || 'Pelanggan',
           lang: freshOrder.lang === 'en' ? 'en' : 'bm',
         });
       }
@@ -568,6 +567,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     });
 
     const { deliveryStatus, mergedOrder } = txResult;
+    totalAmount = mergedOrder.totalAmount;
     publicCalendar.invalidate();
     void syncGoogleCalendarEvent(orderId, mergedOrder as any).catch((calErr) => {
       console.error('[Widget] Calendar sync failed for %s:', orderId, calErr);
