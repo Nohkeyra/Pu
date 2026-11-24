@@ -1883,12 +1883,12 @@ export default function SettingsPage() {
 
               <div className="space-y-1.5">
                 <h4 className="font-bold text-deep-forest dark:text-white text-sm">
-                  {language === 'bm' ? '2. Deposit & Pembayaran' : '2. Deposit & Payment Terms'}
+                  {language === 'bm' ? '2. Terma Invois & Pembayaran' : '2. Invoicing & Payment Terms'}
                 </h4>
                 <p>
                   {language === 'bm'
-                    ? 'Deposit komitmen sebanyak 30% daripada jumlah sebut harga diperlukan untuk mengesahkan tempahan slot tarikh acara. Baki bayaran hendaklah diselesaikan sebelum atau semasa hari penghantaran.'
-                    : 'A 30% confirmation deposit is required to secure your event date. The remaining balance must be settled prior to or upon delivery on the event day.'}
+                    ? 'Invois rasmi lazimnya dikeluarkan selepas pesanan selesai. Invois pelanggan korporat boleh dikeluarkan secara individu atau disatukan secara bulanan. Pembayaran tertakluk kepada terma pembayaran yang dipersetujui.'
+                    : 'Official invoices are generally issued after order completion. Corporate invoices may be issued individually or consolidated monthly. Payment is subject to the applicable agreed payment terms.'}
                 </p>
               </div>
 
