@@ -6,6 +6,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, getAdminApp, verifyFirebaseIdToken, hasAdminCredentials, isFirebaseAdminIdentity, firebaseTokenRevocationId, firebaseSessionRevocationId } from '../firebaseAdmin.js';
 import { verifyAdminToken, adminLoginLimiter, signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
+import { deleteCustomerData } from '../services/accountDeletion.js';
 
 const router = Router();
 
@@ -275,6 +276,28 @@ router.post('/admin/send-test-push', verifyAdminToken, async (req, res) => {
   } catch (err) {
     console.error('[FCM] Send test push failed:', err);
     return res.status(500).json({ success: false, error: 'Failed to send test push notification.' });
+  }
+});
+
+const accountDeletionLimiter = createDistributedRateLimiter({
+  prefix: 'account_deletion', limit: 5, windowMs: 15 * 60 * 1000,
+});
+
+router.post('/user/delete-account', accountDeletionLimiter, async (req, res) => {
+  const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7).trim() : '';
+  const identity = token ? await verifyFirebaseIdToken(token, { allowPendingDeletion: true }) : null;
+  if (!identity) return res.status(401).json({ success: false, error: 'Authentication is required.' });
+  if (isFirebaseAdminIdentity(identity) || identity.uid === 'admin')
+    return res.status(403).json({ success: false, error: 'Administrator accounts are protected.' });
+  const age = Math.floor(Date.now() / 1000) - Number(identity.auth_time);
+  if (!Number.isFinite(age) || age < -30 || age > 300)
+    return res.status(403).json({ success: false, error: 'Recent authentication is required.' });
+  try {
+    await deleteCustomerData(identity.uid);
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('[Account deletion] Failed; retry the authenticated request.', error);
+    return res.status(503).json({ success: false, error: 'Account deletion could not finish. Sign in again and retry.' });
   }
 });
 
