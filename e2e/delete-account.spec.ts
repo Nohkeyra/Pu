@@ -17,7 +17,10 @@ async function setupCommonRoutes(
   page.on('pageerror', error => console.error('Account fixture:', error.message));
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
-    if (!['localhost', '127.0.0.1'].includes(url.hostname)) return route.abort();
+    // Native API URLs are absolute. Let them reach the fixture responses below,
+    // while continuing to abort external assets. Every /api/ request is fulfilled
+    // locally; no request is continued to a real backend.
+    if (!['localhost', '127.0.0.1'].includes(url.hostname) && !url.pathname.startsWith('/api/')) return route.abort();
 
     if (options.simulateCustomer) {
       if (url.pathname === '/src/firebaseConfig.ts') {
@@ -676,12 +679,31 @@ test('returning Android administrator keeps the existing admin landing screen', 
   await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true, adminVerified: true });
   await seedAppStorage(page, { language: 'en', isAdmin: true });
   await seedNativeLaunch(page, { completed: true });
-  await Promise.all([
-    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/verify' && response.ok()),
+  const [verification] = await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/verify'
+      && response.request().method() === 'GET' && response.status() === 200),
     page.goto('/#/'),
   ]);
+  expect(await verification.json()).toMatchObject({ verified: true, admin: true });
   await expect(page).toHaveURL(/#\/admin$/);
   await expect(page.locator('.app-admin-tabs')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
+});
+
+test('returning Android administrator cannot restore a rejected stored token', async ({ page }) => {
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true, adminVerified: false });
+  await seedAppStorage(page, { language: 'en', isAdmin: true });
+  await seedNativeLaunch(page, { completed: true });
+  const [verification] = await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/verify'
+      && response.request().method() === 'GET' && response.status() === 401),
+    page.goto('/#/'),
+  ]);
+  expect(await verification.json()).toMatchObject({ success: false, error: 'Unauthorized' });
+  await expect(page.getByRole('heading', { name: 'Admin Access Restricted' })).toBeVisible();
+  await expect(page.locator('.app-admin-tabs')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('wawasan_admin_token'))).toBeNull();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('CapacitorStorage.wawasan_admin_token'))).toBeNull();
   await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
 });
 
