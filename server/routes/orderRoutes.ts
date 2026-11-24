@@ -238,6 +238,7 @@ router.post(
               : '',
         date: derivedDate,
         eventDate: derivedDate,
+        calendarDateKey: derivedDate,
         time: dateTime.slice(11, 16),
         location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
         ...(rawBody.locationCoordinates &&

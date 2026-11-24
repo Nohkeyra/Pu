@@ -24,14 +24,17 @@ export interface PublicCalendarData {
   orders: PublicOrder[];
   sessions: Record<string, { breakfast: SessionCount; lunch: SessionCount; hi_tea: SessionCount }>;
 }
-async function readPublicRecords(): Promise<CalendarRecord[]> {
+async function readPublicRecords(range?: { from: string; to: string }): Promise<CalendarRecord[]> {
   // Preserve legacy date/dateTime/createdAt records; cache only public scheduling fields.
   const collection = getFirestore().collection('orders');
   // Project scheduling fields only; legacy dates remain supported. The
   // in-memory test adapter does not implement select().
-  const snapshot = await (typeof collection.select === 'function'
-    ? collection.select('eventDate', 'date', 'dateTime', 'createdAt', 'deletedByAdmin', 'guests', 'quantity', 'status', 'meals')
-    : collection).get();
+  const query = range
+    ? collection.where('calendarDateKey', '>=', range.from).where('calendarDateKey', '<=', range.to)
+    : collection;
+  const snapshot = await (typeof query.select === 'function'
+    ? query.select('eventDate', 'date', 'dateTime', 'createdAt', 'deletedByAdmin', 'guests', 'quantity', 'status', 'meals')
+    : query).get();
   return snapshot.docs.flatMap((doc) => {
     const data = doc.data();
     if (data.deletedByAdmin) return [];
@@ -52,38 +55,65 @@ async function readPublicRecords(): Promise<CalendarRecord[]> {
     ];
   });
 }
-/** One snapshot shared across date ranges, concurrent clients and all public calendar routes. */
+// A bounded request may use the new index only after a verified backfill.
+type ReadRange = { from: string; to: string };
+function indexedRange(from: string, to: string): ReadRange | undefined {
+  if (!from || !to || Date.parse(to) - Date.parse(from) > 93 * 86_400_000) return undefined;
+  // Bucket ranges to whole months to share reads across different callers.
+  const start = from.slice(0, 7) + '-01';
+  const endMonth = to.slice(0, 7);
+  const [year, month] = endMonth.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return { from: start, to: endMonth + '-' + String(lastDay).padStart(2, '0') };
+}
+
+/** Shared, revision-aware cache; legacy full reads remain available before migration. */
 export class PublicCalendarService {
-  private cache: { records: CalendarRecord[]; expiresAt: number } | null = null;
-  private inFlight: { revision: number; promise: Promise<CalendarRecord[]> } | null = null;
+  private cache = new Map<string, { records: CalendarRecord[]; expiresAt: number }>();
+  private inFlight = new Map<string, { revision: number; promise: Promise<CalendarRecord[]> }>();
   private revision = 0;
+  constructor(private readonly indexReady = () => process.env.FIRESTORE_CALENDAR_INDEX_READY === 'true') {}
   invalidate(): void {
     this.revision++;
-    this.cache = null;
+    this.cache.clear();
   }
-  private async records(): Promise<CalendarRecord[]> {
+  private async records(from: string, to: string): Promise<CalendarRecord[]> {
+    const range = this.indexReady() ? indexedRange(from, to) : undefined;
+    const key = range ? range.from + ':' + range.to : '*';
     for (;;) {
-      if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.records;
-      if (!this.inFlight) {
+      const now = Date.now();
+      const cached = this.cache.get(key);
+      if (cached && cached.expiresAt > now) return cached.records;
+      this.cache.delete(key);
+      let flight = this.inFlight.get(key);
+      if (!flight) {
         const revision = this.revision;
-        const promise = firestoreQuota.run(readPublicRecords).then((records) => {
-          if (revision === this.revision) this.cache = { records, expiresAt: Date.now() + 180_000 };
+        const promise = firestoreQuota.run(() => readPublicRecords(range)).then((records) => {
+          if (revision === this.revision) {
+            for (const [k, entry] of this.cache) if (entry.expiresAt <= Date.now()) this.cache.delete(k);
+            // Bound memory when many different months are requested.
+            if (this.cache.size >= 12) {
+              const first = this.cache.keys().next().value;
+              if (first !== undefined) this.cache.delete(first);
+            }
+            this.cache.set(key, { records, expiresAt: Date.now() + 180_000 });
+          }
           return records;
         });
-        this.inFlight = { revision, promise };
+        flight = { revision, promise };
+        this.inFlight.set(key, flight);
       }
-      const flight = this.inFlight;
       let records: CalendarRecord[];
       try {
         records = await flight.promise;
       } finally {
-        if (this.inFlight === flight) this.inFlight = null;
+        if (this.inFlight.get(key) === flight) this.inFlight.delete(key);
       }
       if (flight.revision === this.revision) return records;
     }
   }
   async getData(from = '', to = ''): Promise<PublicCalendarData> {
-    const records = await this.records();
+    const records = await this.records(from, to);
     const inRange = (date: string | null) =>
       Boolean(date && (!from || date >= from) && (!to || date <= to));
     const orders = records

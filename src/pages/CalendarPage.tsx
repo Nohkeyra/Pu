@@ -130,6 +130,9 @@ export default function CalendarPage() {
   const isAdmin = currentUser?.uid === 'admin' || localStorage.getItem('wawasan_admin_token') !== null;
 
   const calendarMonth = format(currentDate, 'yyyy-MM');
+  // Include adjacent grid cells, but do not download the entire booking history.
+  const calendarRangeStart = format(startOfMonth(subMonths(currentDate, 1)), 'yyyy-MM-dd');
+  const calendarRangeEnd = format(endOfMonth(addMonths(currentDate, 1)), 'yyyy-MM-dd');
   const loadNotesFromApi = useCallback(async (signal?: AbortSignal) => {
     if (!isAdmin && !currentUser) return;
     const token = isAdmin
@@ -167,7 +170,7 @@ export default function CalendarPage() {
       try {
         const data = await fetchCalendarEndpoint<{
           success: boolean; sessions: typeof aggregatedSessions; orders: Order[];
-        }>(getApiUrl('/api/calendar-data'), controller.signal);
+        }>(getApiUrl('/api/calendar-data?'+ new URLSearchParams({ from: calendarRangeStart, to: calendarRangeEnd }).toString()), controller.signal);
         if (!data.success || !data.sessions || !Array.isArray(data.orders)) throw new Error('Calendar response is incomplete');
         if (controller.signal.aborted) return;
         setAggregatedSessions(data.sessions);
@@ -186,7 +189,7 @@ export default function CalendarPage() {
     return () => {
       controller.abort();
     };
-  }, [calendarRefresh]);
+  }, [calendarRefresh, calendarRangeStart, calendarRangeEnd]);
 
   // 2. Real-time direct Firestore bindings
   useEffect(() => {

@@ -11,6 +11,7 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { Firestore as CloudFirestore } from '@google-cloud/firestore';
 import { google } from 'googleapis';
 import { firebaseConfig, STRICT_FIREBASE_ADMIN } from './config.js';
+import { getOrderCalendarDate } from '../src/lib/orderTimestamp.js';
 
 let adminApp: App | undefined;
 let productionFirestore: FirebaseFirestore.Firestore | undefined;
@@ -640,6 +641,7 @@ export async function createOrder(
     ...orderData,
     status: (orderData.status || 'pending').toLowerCase(),
     eventTimestamp,
+    calendarDateKey: getOrderCalendarDate({ ...orderData, createdAt: new Date() }) ?? '',
     createdAt: FieldValue.serverTimestamp(),
   };
 
