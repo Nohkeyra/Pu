@@ -12,12 +12,14 @@ Act as an evidence-driven agent. Never treat a plausible change as a verified re
 
 ## Stack
 
-- **Frontend**: React + Vite
+- **Frontend**: React + Vite + TypeScript
+- **Styling**: Tailwind CSS v4. Theme tokens live in `src/index.css` (`@theme`); there is no `tailwind.config.*`. Dark mode is class-based (`@custom-variant dark`).
 - **Backend**: Express/Node.js, modular routes in `/server/routes`, binds `0.0.0.0:3000`
 - **Mobile**: Capacitor (Android)
 - **Database/Auth**: Firebase Firestore + Firebase Auth
 - **Package manager**: `npm` only. Never generate `bun.lock`.
-- **Scripts**: `dev`, `build`, `start`, `lint`, `test`
+- **Tests**: Vitest (unit, `npm run test`) and Playwright (`/e2e`, `npm run test:e2e`)
+- **Scripts**: `dev`, `build`, `start`, `lint`, `lint:structure`, `lint:visual`, `typecheck`, `test`, `test:e2e`, `test:migrations`
 
 **Directories**: `/src`, `/server`, `/android`, `/scripts`, `/public`, `/e2e`
 
@@ -35,7 +37,7 @@ Read the associated spec **before** changing the area:
 | Design system / UI kit | `tokens/`, `docs/UIUX_AUDIT_FIXES.md` |
 | Auth / Firebase / security | `firestore.rules`, `server/adminAuth.ts`, `server/routes/authRoutes.ts` |
 | Android build / release | `scripts/build-apk.sh`, `.github/workflows/build-apk.yml` |
-| WhatsApp / Email / Calendar | `AGENTS.md` (this file) |
+| WhatsApp / invoice sending | `src/components/admin/SendInvoiceModal.tsx`, `src/components/admin/AdminOrdersTab.tsx` |
 
 Do not attempt work in these areas without reading the corresponding spec.
 
@@ -76,9 +78,7 @@ something unless it actually happened.
 
 ---
 
-## Working Loop
-
-### Protected brand typography — explicit owner requirement
+## Protected Brand Typography — explicit owner requirement
 
 Preserve the existing typography of the "Restoran Wawasan" brand name and logo.
 The existing `font-artistic` / "Uncial Antiqua" wordmark styling is intentional
@@ -90,6 +90,10 @@ general UI consistency pass as authorization to redesign the wordmark.
 UI typography improvements may apply to labels, forms, buttons and content
 without changing the protected brand styling. If fonts are self-hosted for
 offline reliability, preserve the original font, license and visual appearance.
+
+---
+
+## Working Loop
 
 Use fewer stages for trivial work; the full loop for complex/risky work.
 
@@ -132,6 +136,14 @@ Do not hide errors, suppress warnings, or add random retries just to pass a chec
 
 ---
 
+## UI Conventions
+
+- User-facing text goes through `src/context/LanguageContext.tsx` (`en` and `bm`). Do not hardcode user-facing strings; add both languages for every new key.
+- Dark is the default theme. Check UI changes in both dark and light.
+- Brand typography rules above take priority over any general UI consistency pass.
+
+---
+
 ## Security — Basics
 
 For current enforcement, inspect `firestore.rules` and `server/adminAuth.ts`. Never:
@@ -149,7 +161,15 @@ For current enforcement, inspect `firestore.rules` and `server/adminAuth.ts`. Ne
 
 ## Validation
 
-Run before finishing: `npm run lint` → `npm run test` → `npm run build`.
+Run before finishing: `npm run lint` → `npm run typecheck` → `npm run test` → `npm run build`.
+
+`npm run build` does not type-check, so `typecheck` is required.
+
+Also run when relevant:
+
+- `npm run lint:structure` — after moving, renaming, or adding source files.
+- `npm run lint:visual` — after changing visual/design-system code.
+- `npm run test:e2e` — after changing launch, auth, admin, calendar, or Android Back handling.
 
 Use the strongest applicable checks: tests • type checks • lint • build • runtime •
 browser/UI • API • database • security • device. Changing code alone is not verification.
@@ -215,7 +235,7 @@ re-verify and check for regressions. If blocked, state exactly why.
 - [ ] Requested behavior implemented, scope minimal
 - [ ] Existing conventions followed
 - [ ] Tests added/updated where applicable
-- [ ] Lint / test / build pass (or blocked, stated)
+- [ ] Lint / typecheck / test / build pass (or blocked, stated)
 - [ ] No secrets or unrelated changes
 - [ ] Docs updated if APIs/config/setup changed
 - [ ] No debug artifacts remain
