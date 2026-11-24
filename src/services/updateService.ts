@@ -1,5 +1,5 @@
 import { db } from '@/firebaseConfig';
-import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { getApiUrl } from '@/lib/api';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
@@ -236,23 +236,19 @@ export async function publishAppUpdate(
     updatedAt: new Date().toISOString()
   };
 
-  // 1. Write to Firestore doc
-  const docRef = doc(db, 'app_config', 'version');
-  await setDoc(docRef, payload, { merge: true });
-
-  // 2. Also notify backend API
-  try {
-    await fetch(getApiUrl('/api/app-version'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {})
-      },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    console.warn('[UpdateService] Failed to notify API of version update:', err);
+  // The server verifies publication and is the only writer of release metadata.
+  const response = await fetch(getApiUrl('/api/app-version'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {})
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const result = await response.json();
+  if (!response.ok || result.success !== true || !result.config) {
+    throw new Error(result.error || 'Release publication failed.');
   }
-
-  return payload;
+  return result.config as AppVersionConfig;
 }
