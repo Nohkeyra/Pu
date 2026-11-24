@@ -1,3 +1,4 @@
+import { minimumServingQuantity } from '@/lib/bookingPolicy';
 import React, { useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { 
@@ -54,8 +55,8 @@ export function Step1EventMeal({
     if (orderState.mealTypes.length === 0) {
       next.mealTypes = tText('Please select at least one meal.', 'Sila pilih sekurang-kurangnya satu hidangan.');
     }
-    if (!orderState.guests || orderState.guests < 1) {
-      next.guests = tText('Minimum order is 1 guest.', 'Minimum tempahan ialah 1 orang.');
+    if (!orderState.guests || orderState.guests < minimumServingQuantity(orderState.preparationType)) {
+      next.guests = orderState.preparationType === 'buffet' ? tText('Minimum buffet order is 20 pax.', 'Minimum tempahan bufet ialah 20 pax.') : tText('Minimum order is 1 guest.', 'Minimum tempahan ialah 1 orang.');
     }
     setFieldErrors(next);
     if (Object.keys(next).length > 0) {
@@ -221,7 +222,7 @@ export function Step1EventMeal({
               {tText('Quantity', 'Kuantiti')}
             </Label>
             <span className="microcopy-12 text-stone font-normal block leading-none mt-1">
-              {tText('Minimum order: 1 pax.', 'Minima tempahan katering: 1 orang.')}
+              {orderState.preparationType === 'buffet' ? tText('Minimum buffet: 20 pax.', 'Minimum bufet: 20 pax.') : tText('Minimum order: 1 pax.', 'Minimum tempahan: 1 pax.')}
             </span>
           </div>
 
@@ -237,7 +238,7 @@ export function Step1EventMeal({
             <input
               id="guests-input"
               type="number"
-              min="1"
+              min={minimumServingQuantity(orderState.preparationType)}
               max="5000"
               inputMode="numeric"
               value={orderState.guests || ''}

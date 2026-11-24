@@ -1,3 +1,4 @@
+import { minimumServingQuantity } from '@/lib/bookingPolicy';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -791,14 +792,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         });
         return;
       }
-      if (!effectiveState.guests || effectiveState.guests < 1) {
+      if (!effectiveState.guests || effectiveState.guests < minimumServingQuantity(effectiveState.preparationType)) {
         triggerWarning();
         toast({
           title: tText('Minimum Quantity Required', 'Kuantiti Minimum Diperlukan'),
-          description: tText(
-            'Minimum catering order is 1 pax.',
-            'Minimum tempahan katering adalah 1 orang.'
-          ),
+          description: effectiveState.preparationType === 'buffet' ? tText('Minimum buffet order is 20 pax.', 'Minimum tempahan bufet ialah 20 pax.') : tText('Minimum catering order is 1 pax.', 'Minimum tempahan katering ialah 1 pax.'),
           variant: 'warning',
         });
         return;

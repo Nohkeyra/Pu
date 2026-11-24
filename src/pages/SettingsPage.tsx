@@ -1,3 +1,4 @@
+import { WAWASAN_TERMS, WAWASAN_FAQ } from '@/constants/wawasanPolicies';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -1870,49 +1871,14 @@ export default function SettingsPage() {
             </DialogHeader>
 
             <div className="space-y-4 text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed py-2">
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-deep-forest dark:text-white text-sm">
-                  {language === 'bm' ? '1. Tempahan Katering & Notis Awal' : '1. Catering Bookings & Lead Time'}
-                </h4>
-                <p>
-                  {language === 'bm'
-                    ? 'Tempahan 1–29 pack boleh dibuat pada hari yang sama. Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal sebelum masa majlis.'
-                    : 'Same-day bookings are allowed for 1–29 packs. Orders of 30 packs or more require at least 12 hours’ advance notice before the event time.'}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-deep-forest dark:text-white text-sm">
-                  {language === 'bm' ? '2. Terma Invois & Pembayaran' : '2. Invoicing & Payment Terms'}
-                </h4>
-                <p>
-                  {language === 'bm'
-                    ? 'Invois rasmi lazimnya dikeluarkan selepas pesanan selesai. Invois pelanggan korporat boleh dikeluarkan secara individu atau disatukan secara bulanan. Pembayaran tertakluk kepada terma pembayaran yang dipersetujui.'
-                    : 'Official invoices are generally issued after order completion. Corporate invoices may be issued individually or consolidated monthly. Payment is subject to the applicable agreed payment terms.'}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-deep-forest dark:text-white text-sm">
-                  {language === 'bm' ? '3. Kawasan Liputan Penghantaran' : '3. Delivery Coverage'}
-                </h4>
-                <p>
-                  {language === 'bm'
-                    ? 'Perkhidmatan katering kami meliputi kawasan Putrajaya, Cyberjaya, Bangi, Kajang, Sepang, Puchong, dan kawasan terpilih di Lembah Klang / Selangor. Caj penghantaran bergantung kepada jarak lokasi majlis.'
-                    : 'Our catering service covers Putrajaya, Cyberjaya, Bangi, Kajang, Sepang, Puchong, and selected Klang Valley / Selangor regions. Delivery logistics fees vary based on venue distance.'}
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-deep-forest dark:text-white text-sm">
-                  {language === 'bm' ? '4. Pembatalan & Pindaan Tarikh' : '4. Cancellations & Date Changes'}
-                </h4>
-                <p>
-                  {language === 'bm'
-                    ? 'Pindaan tarikh dibenarkan tertakluk kepada kekosongan slot sekiranya dimaklumkan sekurang-kurangnya 3 hari sebelum acara. Pembatalan saat akhir mungkin tertakluk kepada caj penyediaan.'
-                    : 'Date reschedulings are subject to calendar availability if notified at least 3 days prior. Last-minute cancellations may incur preparation charges.'}
-                </p>
-              </div>
+              {WAWASAN_TERMS.map((term, index) => (
+                <div key={term.en} className="space-y-1.5">
+                  <h4 className="font-bold text-deep-forest dark:text-white text-sm">
+                    {index + 1}. {language === 'bm' ? term.bm : term.en}
+                  </h4>
+                  <p>{language === 'bm' ? term.bodyBm : term.bodyEn}</p>
+                </div>
+              ))}
             </div>
 
             <DialogFooter>
@@ -1992,35 +1958,10 @@ export default function SettingsPage() {
             </DialogHeader>
 
             <div className="space-y-4 text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed py-2">
-              {[
-                {
-                  q: language === 'bm' ? 'Adakah anda menerima pesanan katering?' : 'Do you accept catering orders?',
-                  a: language === 'bm' 
-                    ? 'Ya! Kami pakar dalam katering untuk kenduri, pejabat, dan majlis peribadi. Anda boleh mendapatkan sebut harga terus melalui aplikasi ini.' 
-                    : 'Yes! We specialize in catering for weddings, corporate events, and private parties. You can request a quote directly through this app.'
-                },
-                {
-                  q: language === 'bm' ? 'Berapa awal saya perlu memesan?' : 'How early should I order?',
-                  a: language === 'bm'
-                    ? 'Untuk 1–29 pack, tiada minimum notis awal. Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal.'
-                    : 'For 1–29 packs, there is no minimum advance notice. Orders of 30 packs or more require at least 12 hours’ advance notice.'
-                },
-                {
-                  q: language === 'bm' ? 'Di mana lokasi restoran anda?' : 'Where is your restaurant located?',
-                  a: language === 'bm'
-                    ? 'Kami terletak di Putrajaya. Lokasi tepat boleh didapati di bahagian "Hubungi Kami" atau di Google Maps.'
-                    : 'We are located in Putrajaya. The exact location can be found in the "Contact Us" section or on Google Maps.'
-                },
-                {
-                  q: language === 'bm' ? 'Adakah makanan anda Halal?' : 'Is your food Halal?',
-                  a: language === 'bm'
-                    ? 'Ya, 100% Halal. Kami adalah restoran Muslim yang mementingkan kualiti dan kebersihan mengikut syariat.'
-                    : 'Yes, 100% Halal. We are a Muslim-owned restaurant that prioritizes quality and cleanliness according to Sharia standards.'
-                }
-              ].map((faq, i) => (
+              {WAWASAN_FAQ.map((faq, i) => (
                 <div key={i} className="space-y-1.5 p-3 rounded-xl bg-stone-100 dark:bg-stone-800/50 border border-stone-200/50 dark:border-white/5">
-                  <h4 className="font-bold text-deep-forest dark:text-white">{faq.q}</h4>
-                  <p className="text-stone-600 dark:text-stone-400">{faq.a}</p>
+                  <h4 className="font-bold text-deep-forest dark:text-white">{language === 'bm' ? faq.bm : faq.en}</h4>
+                  <p className="text-stone-600 dark:text-stone-400">{language === 'bm' ? faq.bodyBm : faq.bodyEn}</p>
                 </div>
               ))}
             </div>

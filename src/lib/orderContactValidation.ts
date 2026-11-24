@@ -1,9 +1,11 @@
 import { getBookingNoticeError } from './dateUtils.js';
+import { isRestrictedBookingDay, minimumServingQuantity, MIN_RESTRICTED_DAY_PAX } from './bookingPolicy.js';
 
 /** Single contact-detail validation policy for both Order Step 3 and its sticky mobile action. */
 export interface OrderContactFields {
   eventType: 'pejabat' | 'lain' | '';
   guests: number;
+  preparationType?: 'meal_box' | 'buffet';
   companyName: string;
   customCompany: string;
   name: string;
@@ -62,6 +64,7 @@ export function validateOrderContactDetails(
     errors.confirmEmail = tText('Email confirmation does not match.', 'Pengesahan emel tidak sepadan.');
   }
   if (!state.date) errors.date = tText('Please select the event date.', 'Sila pilih tarikh majlis.');
+  else if (isRestrictedBookingDay(state.date) && state.guests < MIN_RESTRICTED_DAY_PAX) errors.date = tText('Weekend and Putrajaya public holiday orders require at least 60 pax.', 'Tempahan hujung minggu dan cuti umum Putrajaya memerlukan minimum 60 pax.');
   if (!state.time) errors.time = tText('Please select the event time.', 'Sila pilih masa majlis.');
   if (state.date && state.time) {
     const issue = getBookingNoticeError(state.date, state.time, state.guests, now);
@@ -80,7 +83,7 @@ export function getValidOrderStep(
   state: OrderContactFields & { mealTypes: readonly string[]; guests: number },
 ): number {
   const step = Number.isFinite(requestedStep) ? Math.min(4, Math.max(1, Math.floor(requestedStep))) : 1;
-  if (step > 1 && (!state.eventType || !state.mealTypes.length || !Number.isFinite(state.guests) || state.guests < 1)) return 1;
+  if (step > 1 && (!state.eventType || !state.mealTypes.length || !Number.isFinite(state.guests) || state.guests < minimumServingQuantity(state.preparationType))) return 1;
   if (step === 4 && Object.keys(validateOrderContactDetails(state, en => en)).length) return 3;
   return step;
 }

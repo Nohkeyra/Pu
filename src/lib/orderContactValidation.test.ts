@@ -5,7 +5,7 @@ const english = (en: string) => en;
 const valid: OrderContactFields = {
   eventType: 'lain', guests: 29, companyName: '', customCompany: '', name: 'Amin',
   contact: '0123456789', email: 'amin@example.com', confirmEmail: 'amin@example.com',
-  date: '2099-12-12', time: '12:00', location: 'Presint 2, Putrajaya', delivery: 'delivery',
+  date: '2099-12-14', time: '12:00', location: 'Presint 2, Putrajaya', delivery: 'delivery',
 };
 
 describe('Order contact validation used by both Next buttons', () => {
@@ -68,5 +68,18 @@ describe('Quantity-based booking notice', () => {
   it('accepts exactly 12 hours and rejects past events', () => {
     expect(validateOrderContactDetails({ ...booking, guests: 30, time: '09:00' }, english, now)).toEqual({});
     expect(validateOrderContactDetails({ ...booking, date: '2026-11-24', time: '20:59', guests: 1 }, english, now).time).toBeTruthy();
+  });
+});
+
+describe('Weekend and holiday order minimum', () => {
+  const now = Date.parse('2026-11-24T10:00:00+08:00');
+  const order = { ...valid, time: '12:00', date: '2026-11-28' };
+  it('requires 60 pax on weekends and holidays', () => {
+    expect(validateOrderContactDetails({ ...order, guests: 59 }, english, now).date).toBeTruthy();
+    expect(validateOrderContactDetails({ ...order, guests: 60 }, english, now)).toEqual({});
+    expect(validateOrderContactDetails({ ...order, date: '2026-12-25', guests: 59 }, english, now).date).toBeTruthy();
+  });
+  it('returns undersized buffet drafts to the first step', () => {
+    expect(getValidOrderStep(4, { ...valid, guests: 19, preparationType: 'buffet', mealTypes: ['tengahari'] })).toBe(1);
   });
 });
