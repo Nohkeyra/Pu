@@ -7,6 +7,7 @@ import {
   getFirestore,
   type OrderData,
   generateSequentialInvoiceNo,
+  allocateInvoiceNumbers,
   verifyCustomerIdToken,
   verifyFirebaseIdToken,
   sendNotificationToTopic,
@@ -286,9 +287,8 @@ router.post(
       if (idempotencyKey) {
         const idempRef = db.collection('idempotency_keys').doc(idempotencyKey);
         const orderRef = db.collection('orders').doc();
-        // Reserve the invoice number outside the transaction. Concurrent retries may
-        // leave gaps in the sequence, but cannot create two orders for the same key.
-        const reservedInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
+        // Read the idempotency record first; allocate a number only for a new order,
+        // inside the same transaction so duplicate requests do not consume numbers.
         const transactionResult = await db.runTransaction(async (transaction) => {
           const existing = await transaction.get(idempRef);
           if (existing.exists) {
@@ -306,6 +306,7 @@ router.post(
               invoiceNo: String(data.invoiceNo || ''),
             };
           }
+          const [reservedInvoiceNo] = await allocateInvoiceNumbers(transaction, 1, true, derivedDate);
           const orderWithInvoice = {
             ...sanitizedOrderDoc,
             invoiceNo: reservedInvoiceNo,

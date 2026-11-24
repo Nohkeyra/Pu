@@ -51,6 +51,7 @@
                 <data android:scheme="https" android:host="restoran-wawasan-bio.onrender.com" />
                 <data android:scheme="https" android:host="restoran-wawasan.pxxl.click" />
                 <data android:scheme="https" android:host="wawasan.web.app" />
+                <data android:scheme="https" android:host="wawasanhub.vercel.app" />
             </intent-filter>
         </activity>
 

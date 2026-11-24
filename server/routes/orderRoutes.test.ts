@@ -248,6 +248,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
 
     it('creates only one order when the same request arrives concurrently', async () => {
       const key = `concurrent_${Date.now()}`;
+      const reservations = getFirestore().collection('invoice_numbers');
+      const before = (await reservations.get()).size;
       const requests = Array.from({ length: 4 }, () => fetch(`${baseUrl}/api/orders`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
         body: JSON.stringify({ ...orderPayload, idempotencyKey: key }),
@@ -257,6 +259,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       const bodies = await Promise.all(responses.map(response => response.json()));
       expect(new Set(bodies.map(body => body.id)).size).toBe(1);
       expect(bodies.filter(body => body.duplicate === false)).toHaveLength(1);
+      expect(new Set(bodies.map(body => body.invoiceNo)).size).toBe(1);
+      expect((await reservations.get()).size - before).toBe(1);
     });
 
     it('rejects guest orders with or without a claimed user', async () => {
