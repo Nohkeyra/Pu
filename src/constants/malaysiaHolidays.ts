@@ -47,11 +47,3 @@ export function getMalaysiaHolidayInfo(dateStr: string): HolidayInfo | null {
   return MALAYSIA_HOLIDAYS[dateStr] || null;
 }
 
-/**
- * Minimum lead notice time for catering orders (default: 2 days ahead).
- */
-export function getMinCateringBookingDate(noticeDays = 2): string {
-  const d = new Date();
-  d.setDate(d.getDate() + noticeDays);
-  return d.toISOString().split('T')[0];
-}

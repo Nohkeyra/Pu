@@ -1,11 +1,11 @@
-import { toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
+import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 
 export interface ValidationError {
   field: string;
   message: string;
 }
 
-export function validateOrderPayload(body: any): { valid: boolean; errors: ValidationError[] } {
+export function validateOrderPayload(body: any, now = Date.now()): { valid: boolean; errors: ValidationError[] } {
   const errors: ValidationError[] = [];
 
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -51,6 +51,13 @@ export function validateOrderPayload(body: any): { valid: boolean; errors: Valid
     errors.push({ field: 'quantity', message: 'Quantity / pax must be a positive whole number' });
   } else if (qty > 10000) {
     errors.push({ field: 'quantity', message: 'Quantity / pax exceeds maximum allowable value (10000)' });
+  }
+
+  if (Number.isSafeInteger(qty) && qty > 0 && qty <= 10000 && !errors.some(e => e.field === 'date' || e.field === 'time')) {
+    const issue = getBookingNoticeError(dateVal, eventTime ?? '12:00', qty, now);
+    if (issue === 'invalid') errors.push({ field: 'time', message: 'Valid event date and time are required' });
+    if (issue === 'past') errors.push({ field: 'time', message: body.lang === 'bm' ? 'Masa majlis tidak boleh telah berlalu.' : 'Event time cannot be in the past.' });
+    if (issue === 'notice') errors.push({ field: 'time', message: body.lang === 'bm' ? 'Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal.' : 'Orders of 30 packs or more require at least 12 hours’ advance notice.' });
   }
 
   if (body.notes && typeof body.notes === 'string' && body.notes.length > 5000) {

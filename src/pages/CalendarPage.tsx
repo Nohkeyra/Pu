@@ -61,7 +61,8 @@ import {
   parseISO
 } from 'date-fns';
 import { ms, enUS } from 'date-fns/locale';
-import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
+import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
+import { getEarliestBookingSlot } from '@/lib/dateUtils';
 import { cn, toJSDate } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { Button } from '@/components/ui/button';
@@ -725,7 +726,9 @@ export default function CalendarPage() {
     : 0;
   const selectedDayOrders = selectedDay ? getOrdersForDay(selectedDay) : [];
   const selectedDayDate = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null;
-  const meetsNotice = Boolean(selectedDayDate && selectedDayDate >= getMinCateringBookingDate());
+  // Quantity is not known until the order form. Allow any day with a future
+  // selectable minute; Step 3 and the server enforce the quantity-specific cutoff.
+  const canStartBooking = Boolean(selectedDayDate && selectedDayDate >= getEarliestBookingSlot(1).date);
   const selectedDaySummary = calendarDataLoading
     ? tl('Loading bookings…', 'Memuatkan tempahan…')
     : calendarDataError
@@ -796,8 +799,8 @@ export default function CalendarPage() {
                   <>
                     <h3>{format(selectedDay, 'EEE, d MMM yyyy', { locale: dateLocale })}</h3>
                     <p>{selectedDaySummary}</p>
-                    {!meetsNotice && selectedDayOrders.length === 0 && (
-                      <p>{tl('New bookings need at least 2 days’ notice.', 'Tempahan baharu perlu dibuat sekurang-kurangnya 2 hari awal.')}</p>
+                    {!canStartBooking && selectedDayOrders.length === 0 && (
+                      <p>{tl('New bookings cannot be made for past dates.', 'Tempahan baharu tidak boleh dibuat untuk tarikh yang telah berlalu.')}</p>
                     )}
                   </>
                 ) : (
@@ -820,7 +823,7 @@ export default function CalendarPage() {
                   >
                     {tl('View bookings', 'Lihat tempahan')}
                   </Button>
-                ) : selectedDayDate && meetsNotice && !calendarDataLoading && (
+                ) : selectedDayDate && canStartBooking && !calendarDataLoading && (
                   <Button
                     type="button"
                     size="compact"

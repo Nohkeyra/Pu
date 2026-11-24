@@ -1,6 +1,9 @@
+import { getBookingNoticeError } from './dateUtils.js';
+
 /** Single contact-detail validation policy for both Order Step 3 and its sticky mobile action. */
 export interface OrderContactFields {
   eventType: 'pejabat' | 'lain' | '';
+  guests: number;
   companyName: string;
   customCompany: string;
   name: string;
@@ -34,6 +37,7 @@ export const ORDER_CONTACT_FOCUS_IDS: Partial<Record<OrderContactField, string>>
 export function validateOrderContactDetails(
   state: OrderContactFields,
   tText: (en: string, bm: string) => string,
+  now = Date.now(),
 ): OrderContactErrors {
   const errors: OrderContactErrors = {};
   if (state.eventType === 'pejabat') {
@@ -59,6 +63,12 @@ export function validateOrderContactDetails(
   }
   if (!state.date) errors.date = tText('Please select the event date.', 'Sila pilih tarikh majlis.');
   if (!state.time) errors.time = tText('Please select the event time.', 'Sila pilih masa majlis.');
+  if (state.date && state.time) {
+    const issue = getBookingNoticeError(state.date, state.time, state.guests, now);
+    if (issue === 'invalid') errors.time = tText('Please enter a valid event date and time.', 'Sila masukkan tarikh dan masa majlis yang sah.');
+    if (issue === 'past') errors.time = tText('Event time cannot be in the past.', 'Masa majlis tidak boleh telah berlalu.');
+    if (issue === 'notice') errors.time = tText('Orders of 30 or more require at least 12 hours’ advance notice.', 'Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal.');
+  }
   if (!state.location?.trim()) errors.location = tText('Please enter the delivery/pickup location.', 'Sila masukkan lokasi.');
   if (!state.delivery) errors.delivery = tText('Please choose delivery or pickup.', 'Sila pilih hantar atau ambil sendiri.');
   return errors;

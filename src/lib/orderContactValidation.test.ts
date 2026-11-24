@@ -3,9 +3,9 @@ import { getValidOrderStep, validateOrderContactDetails, type OrderContactFields
 
 const english = (en: string) => en;
 const valid: OrderContactFields = {
-  eventType: 'lain', companyName: '', customCompany: '', name: 'Amin',
+  eventType: 'lain', guests: 29, companyName: '', customCompany: '', name: 'Amin',
   contact: '0123456789', email: 'amin@example.com', confirmEmail: 'amin@example.com',
-  date: '2026-12-12', time: '12:00', location: 'Presint 2, Putrajaya', delivery: 'delivery',
+  date: '2099-12-12', time: '12:00', location: 'Presint 2, Putrajaya', delivery: 'delivery',
 };
 
 describe('Order contact validation used by both Next buttons', () => {
@@ -55,5 +55,18 @@ describe('Restored order progress', () => {
     expect(getValidOrderStep(4, { ...state, eventType: 'pejabat' })).toBe(3);
     expect(getValidOrderStep(Number.NaN, state)).toBe(1);
     expect(getValidOrderStep(99, state)).toBe(4);
+  });
+});
+
+describe('Quantity-based booking notice', () => {
+  const now = Date.parse('2026-11-24T21:00:00+08:00');
+  const booking = { ...valid, date: '2026-11-25', time: '08:59' };
+  it('accepts 29 packs but rejects 30 before the 12-hour cutoff', () => {
+    expect(validateOrderContactDetails({ ...booking, guests: 29 }, english, now)).toEqual({});
+    expect(validateOrderContactDetails({ ...booking, guests: 30 }, english, now).time).toBeTruthy();
+  });
+  it('accepts exactly 12 hours and rejects past events', () => {
+    expect(validateOrderContactDetails({ ...booking, guests: 30, time: '09:00' }, english, now)).toEqual({});
+    expect(validateOrderContactDetails({ ...booking, date: '2026-11-24', time: '20:59', guests: 1 }, english, now).time).toBeTruthy();
   });
 });

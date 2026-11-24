@@ -81,8 +81,8 @@ for (const theme of ['light', 'dark'] as const) {
     await openCalendar(page, theme);
     const toolbar = page.locator('.customer-calendar-toolbar');
     const book = toolbar.getByRole('button', { name: 'Tempah untuk tarikh ini', exact: true });
-    await expect(toolbar.getByText('Tempahan baharu perlu dibuat sekurang-kurangnya 2 hari awal.')).toBeVisible();
-    await expect(book).toHaveCount(0);
+    // Same-day bookings are allowed; quantity-specific notice is validated in the form.
+    await expect(book).toBeVisible();
     await toolbar.getByRole('button', { name: 'Bulan Seterusnya' }).click();
     await expect(toolbar.getByRole('status')).toHaveText('Pilih tarikh untuk melihat tempahan.');
     await expect(book).toHaveCount(0);

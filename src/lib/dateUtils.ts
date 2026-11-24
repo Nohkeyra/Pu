@@ -190,3 +190,31 @@ export function formatDateTimeDisplay(val: unknown, timeStr?: string, fallback =
   }
   return formattedDate;
 }
+
+
+/** New customer bookings: quantity 30+ requires 12 hours' advance notice. */
+export const ADVANCE_BOOKING_QUANTITY = 30;
+export const ADVANCE_BOOKING_HOURS = 12;
+
+export function getBookingNoticeHours(quantity: number): number {
+  return quantity >= ADVANCE_BOOKING_QUANTITY ? ADVANCE_BOOKING_HOURS : 0;
+}
+
+/** Malaysian date/time of the earliest selectable minute. */
+export function getEarliestBookingSlot(quantity: number, now = Date.now()): { date: string; time: string } {
+  const minute = 60_000;
+  const earliest = Math.ceil((now + getBookingNoticeHours(quantity) * 60 * minute) / minute) * minute;
+  const local = new Date(earliest + 8 * 60 * minute).toISOString();
+  return { date: local.slice(0, 10), time: local.slice(11, 16) };
+}
+
+export function getBookingNoticeError(
+  date: unknown, time: unknown, quantity: number, now = Date.now(),
+): 'invalid' | 'past' | 'notice' | null {
+  const event = toMalaysiaDateTime(date, time);
+  if (!event) return 'invalid';
+  const eventMs = Date.parse(event);
+  if (!Number.isFinite(eventMs)) return 'invalid';
+  if (eventMs < now) return 'past';
+  return eventMs - now < getBookingNoticeHours(quantity) * 3_600_000 ? 'notice' : null;
+}
