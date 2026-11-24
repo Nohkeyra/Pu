@@ -448,7 +448,7 @@ export default function AdminPanel({
         </div>
       </nav>
 
-      <motion.main className="wawasan-admin-content [grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
+      <motion.div className="wawasan-admin-content [grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
         <div className="wawasan-admin-heading batik-header mb-6">
           <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-1 tracking-tight">
             {activeTab === 'orders'
@@ -722,7 +722,7 @@ export default function AdminPanel({
             />
           )}
         </Suspense>
-      </motion.main>
+      </motion.div>
     </div>
   );
 }

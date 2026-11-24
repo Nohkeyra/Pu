@@ -677,6 +677,7 @@ export function AdminTablesTab({
             <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
               <Filter className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
               <select
+                aria-label={isBm ? 'Tapis mengikut status' : 'Filter by status'}
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -700,6 +701,7 @@ export function AdminTablesTab({
               <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
                 <Building2 className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
                 <select
+                  aria-label={isBm ? 'Tapis mengikut klien' : 'Filter by client'}
                   value={clientFilter}
                   onChange={(e) => {
                     setClientFilter(e.target.value);
@@ -1743,6 +1745,7 @@ export function AdminTablesTab({
                 {isBm ? 'Baris:' : 'Rows:'}
               </span>
               <select
+                aria-label={isBm ? 'Baris setiap halaman' : 'Rows per page'}
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));
@@ -1761,9 +1764,11 @@ export function AdminTablesTab({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              aria-label={isBm ? 'Halaman sebelumnya' : 'Previous page'}
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="p-1.5 rounded-lg border border-stone/15 dark:border-white/10 bg-white dark:bg-card text-deep-forest dark:text-white disabled:opacity-40 hover:bg-stone/10 transition-all"
+              className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-stone/15 dark:border-white/10 bg-white dark:bg-card text-deep-forest dark:text-white disabled:opacity-40 hover:bg-stone/10 transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -1771,9 +1776,11 @@ export function AdminTablesTab({
               {currentPage} / {totalPages}
             </span>
             <button
+              type="button"
+              aria-label={isBm ? 'Halaman seterusnya' : 'Next page'}
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="p-1.5 rounded-lg border border-stone/15 dark:border-white/10 bg-white dark:bg-card text-deep-forest dark:text-white disabled:opacity-40 hover:bg-stone/10 transition-all"
+              className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-stone/15 dark:border-white/10 bg-white dark:bg-card text-deep-forest dark:text-white disabled:opacity-40 hover:bg-stone/10 transition-all"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

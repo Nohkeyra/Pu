@@ -42,7 +42,7 @@ const StorySection = React.memo(() => {
   };
 
   return (
-    <section id="story" className="section-padding bg-cream dark:bg-background relative overflow-hidden">
+    <section id="story" tabIndex={-1} className="section-padding bg-cream dark:bg-background relative overflow-hidden">
       {/* Subtle parallax batik motif creating depth as user scrolls through heritage history */}
       <BatikParallaxContainer
         className="pointer-events-none absolute inset-0 z-0"

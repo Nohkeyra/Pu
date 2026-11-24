@@ -111,7 +111,7 @@ const ReviewsSection = React.memo(() => {
   };
 
   return (
-    <section id="reviews" className="section-padding bg-cream dark:bg-background relative">
+    <section id="reviews" tabIndex={-1} className="section-padding bg-cream dark:bg-background relative">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <div className="content-container">
         

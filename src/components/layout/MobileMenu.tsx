@@ -66,7 +66,9 @@ export default function MobileMenu({ isOpen, onClose, links, currentUser, onAuth
       animations.revert();
       overlay?.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
+      if (document.activeElement === document.body || overlay?.contains(document.activeElement)) {
+        previousFocus?.focus();
+      }
     };
   }, [isOpen, onClose]);
 

@@ -154,7 +154,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-cream dark:bg-background">
+    <div className="min-h-screen bg-cream dark:bg-background">
       <ErrorBoundary>
         <AdminPanel
           adminToken={adminToken}
@@ -164,6 +164,6 @@ export default function AdminPage() {
           }}
         />
       </ErrorBoundary>
-    </main>
+    </div>
   );
 }

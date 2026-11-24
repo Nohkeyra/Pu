@@ -75,7 +75,7 @@ const ExperienceSection = React.memo(() => {
   };
 
   return (
-    <section id="experience" className="section-padding bg-cream dark:bg-background relative overflow-hidden">
+    <section id="experience" tabIndex={-1} className="section-padding bg-cream dark:bg-background relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       {/* Subtle parallax batik motif creating depth as user scrolls through dining heritage pillars */}
       <BatikParallaxContainer

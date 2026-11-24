@@ -1,6 +1,6 @@
 import { fetchCalendarEndpoint } from '@/lib/calendarApi';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -108,6 +108,7 @@ export default function CalendarPage() {
 
   // Active Selected Day
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+  const eventDialogTrigger = useRef<HTMLElement | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [quickActionEvent, setQuickActionEvent] = useState<Order | null>(null);
   const { toast } = useToast();
@@ -549,8 +550,8 @@ export default function CalendarPage() {
   };
 
   // Handle click on a calendar cell
-  const handleDayClick = async (date: Date) => {
-    await triggerLightImpact();
+  const handleDayClick = (date: Date) => {
+    void triggerLightImpact();
     setSelectedDay(date);
 
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -657,15 +658,15 @@ export default function CalendarPage() {
     setCurrentDate((prev) => addMonths(prev, 1));
   };
 
-  const handleToday = async () => {
+  const handleToday = () => {
     const today = new Date();
     setCurrentDate(today);
-    await handleDayClick(today);
+    handleDayClick(today);
   };
 
-  const handleAdjacentDay = async (day: Date) => {
+  const handleAdjacentDay = (day: Date) => {
     setCurrentDate(day);
-    await handleDayClick(day);
+    handleDayClick(day);
   };
 
   // Calendar calculations (Monday-first ISO grid)
@@ -1133,8 +1134,14 @@ export default function CalendarPage() {
                               tl={tl}
                               totalPax={totalPax}
                               eventTime={eventDeliveryTime}
-                              onOpenDetails={(o) => setSelectedOrder(o)}
-                              onLongPress={(o) => setQuickActionEvent(o)}
+                              onOpenDetails={(o) => {
+                                eventDialogTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                                setSelectedOrder(o);
+                              }}
+                              onLongPress={(o) => {
+                                eventDialogTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                                setQuickActionEvent(o);
+                              }}
                             />
                           );
                         })}
@@ -1250,9 +1257,17 @@ export default function CalendarPage() {
           )}
 
           {/* 4. MODAL: ORDER DETAILS */}
-          {selectedOrder && (
-            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-              <div className="bg-white dark:bg-stone-900 w-full max-w-md rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+          <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+            <DialogContent
+              className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 dark:border-stone-800 dark:bg-stone-900 sm:max-w-md sm:p-0"
+              showCloseButton={false}
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                eventDialogTrigger.current?.focus({ preventScroll: true });
+              }}
+            >
+              {selectedOrder && <>
                 
                 {/* Banner Header */}
                 <div className="relative h-32 w-full overflow-hidden shrink-0">
@@ -1271,15 +1286,15 @@ export default function CalendarPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedOrder(null)}
-                        className="p-1 h-7 w-7 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
+                        className="h-11 w-11 min-h-11 min-w-11 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
                         aria-label={tl('Close', 'Tutup')}
                       >
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-                    <h3 className="font-display font-bold text-base tracking-tight mt-1 text-white">
-                      {selectedOrder.guests || selectedOrder.quantity || 0} Pax • {selectedOrder.meals?.join(' & ') || 'Event'}
-                    </h3>
+                    <DialogTitle className="font-display font-bold text-base tracking-tight mt-1 text-white">
+                      {selectedOrder.guests || selectedOrder.quantity || 0} Pax • {selectedOrder.meals?.join(' & ') || tl('Event', 'Acara')}
+                    </DialogTitle>
                   </div>
                 </div>
 
@@ -1392,9 +1407,9 @@ export default function CalendarPage() {
                   </Button>
                 </div>
 
-              </div>
-            </div>
-          )}
+              </>}
+            </DialogContent>
+          </Dialog>
 
           {/* Quick Actions Dialog for Calendar Event */}
           <Dialog open={!!quickActionEvent} onOpenChange={(open) => !open && setQuickActionEvent(null)}>

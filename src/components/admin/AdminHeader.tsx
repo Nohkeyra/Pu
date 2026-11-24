@@ -113,11 +113,12 @@ export function AdminHeader({
           {onLogout && (
             <Button
               onClick={onLogout}
+              aria-label={language === 'bm' ? 'Log Keluar' : 'Log Out'}
               variant="outline"
               size="sm"
               className="h-9 px-3.5 rounded-xl border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-500/50 font-semibold text-xs transition-all gap-1.5"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">{language === 'en' ? 'Log Out' : 'Log Keluar'}</span>
             </Button>
           )}

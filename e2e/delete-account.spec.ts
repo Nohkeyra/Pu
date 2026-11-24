@@ -1,10 +1,14 @@
 import fs from 'node:fs';
+import { jsPDF } from 'jspdf';
 import { test, expect, type Page } from '@playwright/test';
 
 async function setupCommonRoutes(
   page: Page,
   options: {
     simulateCustomer?: boolean;
+    verifiedCustomer?: boolean;
+    recoverProfileHistory?: boolean;
+    startSignedOut?: boolean;
     adminVerified?: boolean;
   } = {}
 ) {
@@ -23,6 +27,8 @@ async function setupCommonRoutes(
               uid: 'cust_e2e_1',
               email: 'pelanggan.ujian@example.com',
               displayName: 'Pelanggan Ujian',
+              emailVerified: ${options.verifiedCustomer === true},
+              reload: async () => {},
               providerData: [{ providerId: 'password' }],
               getIdToken: async () => 'e2e-mock-token',
             };
@@ -32,7 +38,8 @@ async function setupCommonRoutes(
             export const db = {};
             export const analytics = null;
             export const auth = {
-              currentUser: mockUser,
+              currentUser: ${options.startSignedOut === true} ? null : mockUser,
+              __mockUser: mockUser,
               __listeners: listeners,
               __setUser(next) {
                 this.currentUser = next;
@@ -84,7 +91,15 @@ async function setupCommonRoutes(
               window.__e2eDeleteEvents.push('signOut');
               auth.__setUser?.(null);
             }
-            export async function signInWithEmailAndPassword() { return {}; }
+            export async function signInWithEmailAndPassword(auth, _email, password) {
+              if (password !== 'SyntheticPass123!') {
+                const error = new Error('Invalid fixture credentials');
+                error.code = 'auth/invalid-credential';
+                throw error;
+              }
+              auth.__setUser(auth.__mockUser);
+              return { user: auth.currentUser };
+            }
             export async function createUserWithEmailAndPassword() { return {}; }
             export async function sendPasswordResetEmail() {}
             export async function sendEmailVerification() {}
@@ -129,7 +144,16 @@ async function setupCommonRoutes(
             }
             export async function setDoc() {}
             export async function updateDoc() {}
-            export function onSnapshot() { return () => {}; }
+            let historyRequests = 0;
+            export function onSnapshot(source, next, fail) {
+              if (!${options.recoverProfileHistory === true} || source?.col?.col !== 'orders' || source?.clause?.field !== 'userId') return () => {};
+              const simulateError = historyRequests++ === 0;
+              const timer = setTimeout(() => {
+                if (simulateError) fail(new Error('Simulated profile history outage'));
+                else next({ forEach() {} });
+              }, 250);
+              return () => clearTimeout(timer);
+            }
           `,
         });
       }
@@ -164,6 +188,8 @@ async function seedAppStorage(
     localStorage.setItem('app_theme', theme);
     localStorage.setItem('CapacitorStorage.app_theme', theme);
     localStorage.setItem('wawasan_privacy_acknowledged', 'true');
+    localStorage.setItem('wawasan_ghost_demo_seen_v1', '1');
+    localStorage.setItem('wawasan_order_tip_dismissed_v1', '1');
     sessionStorage.setItem('wawasan_session_started', 'true');
     sessionStorage.setItem('wawasan_guest_allowed', 'true');
     if (isAdmin) {
@@ -353,4 +379,191 @@ test('delete account flow handles offline guard, wrong password error, and order
     'deleteUser:cust_e2e_1',
     'signOut',
   ]);
+});
+
+for (const [language, theme, width] of [
+  ['bm', 'light', 390], ['en', 'dark', 390], ['bm', 'dark', 1280], ['en', 'light', 1280],
+] as const) {
+  test(`${language} ${theme} ${width}: signed-out sign-in and registration labels match the language`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setupCommonRoutes(page);
+    await seedAppStorage(page, { language, theme });
+    await page.goto('/#/login');
+    const bm = language === 'bm';
+    await expect(page.getByRole('button', { name: bm ? 'Akses Pentadbir' : 'Admin Access' })).toBeVisible();
+    const signIn = page.getByRole('button', { name: bm ? 'Log Masuk / Daftar' : 'Sign In / Register' });
+    await signIn.click();
+    const dialog = page.getByRole('dialog');
+    const email = dialog.locator('#auth-email');
+    await expect(email).toHaveAttribute('placeholder', bm ? 'cth. nama@organisasi.gov.my' : 'e.g. name@organisation.gov.my');
+    await dialog.getByRole('button', { name: bm ? 'Lupa Kata Laluan?' : 'Forgot Password?' }).click();
+    await expect(dialog.getByRole('heading', { name: bm ? 'Set Semula Kata Laluan' : 'Reset Password' })).toBeFocused();
+    await dialog.getByRole('button', { name: bm ? 'Kembali ke log masuk' : 'Back to sign in' }).click();
+    await expect(dialog.getByRole('heading', { name: bm ? 'Log Masuk' : 'Sign In' })).toBeFocused();
+    await dialog.getByRole('button', { name: bm ? 'Daftar akaun' : 'Register account', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: bm ? 'Daftar Akaun Baru' : 'Register Account' })).toBeFocused();
+    await expect(dialog.locator('#signup-name')).toHaveAttribute('placeholder', bm ? 'cth. Dato’ Ahmad' : 'e.g. Dato’ Ahmad');
+    await expect(dialog.locator('#signup-contact')).toHaveAttribute('placeholder', bm ? 'cth. 012-345 6789' : 'e.g. 012-345 6789');
+    await page.keyboard.press('Escape');
+    await expect(signIn).toBeFocused();
+  });
+
+  test(`${language} ${theme} ${width}: member dashboard links to settings with localized switch names`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setupCommonRoutes(page, { simulateCustomer: true });
+    await seedAppStorage(page, { language, theme });
+    await page.goto('/#/app');
+    const bm = language === 'bm';
+    await expect(page.getByText('Pelanggan Ujian', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(bm ? 'Sahkan e-mel sebelum menghantar tempahan.' : 'Verify your email before submitting an order.')).toBeVisible();
+    await page.getByRole('button', { name: bm ? /Maklumat & tetapan/ : /Details & settings/ }).click();
+    await expect(page).toHaveURL(/#\/settings$/);
+    await page.locator('.settings-advanced summary').click();
+    const haptics = page.getByRole('switch', { name: bm ? 'Getaran Maklum Balas (Haptic)' : 'Haptic Feedback' });
+    const checked = await haptics.getAttribute('aria-checked');
+    await haptics.focus();
+    await page.keyboard.press('Space');
+    await expect(haptics).toHaveAttribute('aria-checked', checked === 'true' ? 'false' : 'true');
+  });
+}
+
+for (const [theme, width] of [['light', 390], ['dark', 1280]] as const) {
+  test(`${theme}: simulated administrator can open each admin view`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setupCommonRoutes(page, { adminVerified: true });
+    await seedAppStorage(page, { language: 'en', theme, isAdmin: true });
+    await page.goto('/#/admin');
+    const tabs = page.locator('.app-admin-tabs');
+    await expect(tabs).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('main')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Log Out', exact: true })).toBeVisible();
+    for (const name of ['Tables View', 'Menu Manager', 'Orders']) {
+      const button = tabs.getByRole('button', { name, exact: true });
+      await button.click();
+      await expect(button).toHaveAttribute('aria-pressed', 'true');
+      if (name === 'Tables View') {
+        await expect(page.getByRole('combobox', { name: 'Filter by status' })).toBeVisible();
+        await expect(page.getByRole('combobox', { name: 'Rows per page' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Previous page' })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
+      }
+    }
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 2);
+  });
+}
+
+test('simulated admin invoice preview recovers after a failed PDF request', async ({ page }) => {
+  test.setTimeout(75_000);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await setupCommonRoutes(page, { adminVerified: true });
+  await seedAppStorage(page, { language: 'en', theme: 'light', isAdmin: true });
+  const fixture = {
+    id: 'audit-invoice', name: 'Invoice audit sample', status: 'approved', invoiceNo: 'AUDIT-1',
+    date: '2026-11-23', guests: 20, quantity: 20, totalAmount: 200,
+  };
+  await page.route('**/api/admin/orders', route => route.fulfill({ json: { success: true, orders: [fixture] } }));
+  const pdf = new jsPDF();
+  pdf.text('Simulated invoice AUDIT-1', 20, 20);
+  let unavailable = true;
+  await page.route('**/api/invoice/audit-invoice/pdf?*', route => unavailable
+    ? route.fulfill({ status: 503, json: { error: 'Simulated PDF service outage' } })
+    : route.fulfill({ contentType: 'application/pdf', body: Buffer.from(pdf.output('arraybuffer')) }));
+  await page.goto('/#/admin');
+  await page.getByRole('button', { name: 'Tables View', exact: true }).click({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Refresh Data', exact: true }).click();
+  await page.getByText('Details and actions', { exact: true }).click();
+  const preview = page.getByRole('button', { name: 'Preview PDF', exact: true });
+  await preview.click();
+  await expect(page.getByText(/Failed to generate PDF from server/)).toBeVisible();
+  unavailable = false;
+  await preview.click();
+  await expect(page.getByText('Invoice_AUDIT-1.pdf', { exact: true })).toBeVisible();
+});
+
+test('verified customer completes a simulated catering submission', async ({ page }) => {
+  test.setTimeout(75_000);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.clock.setFixedTime(new Date(2026, 10, 23, 12));
+  await setupCommonRoutes(page, { simulateCustomer: true, verifiedCustomer: true });
+  await seedAppStorage(page, { language: 'bm', theme: 'dark' });
+  let attempts = 0;
+  await page.route('**/api/orders', route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    attempts += 1;
+    return attempts === 1
+      ? route.fulfill({ status: 503, json: { error: 'Simulated outage' } })
+      : route.fulfill({ json: { success: true, id: 'audit-booking-ref' } });
+  });
+  await page.goto('/#/order');
+  await page.locator('[data-tour="step1-event-type"] button').last().click();
+  await page.locator('[data-tour="step1-meal-tengahari"]').click();
+  await page.locator('[data-tour="step1-next"]').click();
+  await page.locator('[data-tour="step2-next"]').click();
+  await page.locator('#contact-name').fill('Contoh Ujian');
+  await page.locator('#contact-phone').fill('0100000000');
+  await page.locator('#contact-email').fill('pelanggan.ujian@example.com');
+  await page.locator('#contact-confirm-email').fill('pelanggan.ujian@example.com');
+  await page.locator('#event-date').fill('2026-12-15');
+  await page.locator('#event-time').fill('09:00');
+  await page.locator('#contact-location').fill('Lokasi simulasi');
+  await page.getByRole('radio', { name: /Ambil di Restoran/ }).click();
+  await page.locator('[data-tour="step3-next"]').click();
+  const submit = page.locator('[data-tour="step4-submit"]');
+  await submit.click();
+  await expect(page.getByText('Tempahan tidak dapat dihantar', { exact: true })).toBeVisible();
+  expect(attempts).toBe(1);
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.locator('#booking-sent-heading')).toBeVisible();
+  await expect(page.locator('#booking-summary').getByText('audit-booking-ref', { exact: true })).toBeVisible();
+  expect(attempts).toBe(2);
+});
+
+test('public landing aliases and fallback reach the same home screen', async ({ page }) => {
+  test.setTimeout(75_000);
+  await setupCommonRoutes(page);
+  await seedAppStorage(page);
+  for (const route of ['/home', '/main', '/unregistered-audit-route']) {
+    await page.goto(`/#${route}`);
+    await expect(page.locator('.landing-hero')).toBeVisible();
+  }
+  await expect(page).toHaveURL(/#\/$/);
+});
+
+test('signed-in profile distinguishes history failure from an empty result', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await setupCommonRoutes(page, { simulateCustomer: true, recoverProfileHistory: true });
+  await seedAppStorage(page, { language: 'en', theme: 'dark' });
+  await page.goto('/#/profile');
+  await expect(page.getByText('Could not load orders', { exact: true })).toBeVisible();
+  await expect(page.getByText('No Past Orders Found', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(page.getByText('No Past Orders Found', { exact: true })).toBeVisible();
+});
+
+test('local sign-in fixture covers reset, invalid credentials and successful entry', async ({ page }) => {
+  test.setTimeout(75_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true });
+  await seedAppStorage(page, { language: 'en', theme: 'dark' });
+  await page.goto('/#/login');
+  await page.getByRole('button', { name: 'Sign In / Register', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Forgot Password?' }).click();
+  const email = dialog.locator('#auth-email');
+  await email.fill('invalid');
+  expect(await email.evaluate((input: HTMLInputElement) => input.validity.typeMismatch)).toBe(true);
+  await email.fill('pelanggan.ujian@example.com');
+  await dialog.locator('button[type="submit"]').click();
+  await expect(page.getByText('Email Sent', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Sign In' })).toBeFocused();
+
+  const password = dialog.locator('#auth-password');
+  await password.fill('wrong-fixture-value');
+  await dialog.locator('button[type="submit"]').click();
+  await expect(page.getByText('Invalid email or password.', { exact: true })).toBeVisible();
+  await password.fill('SyntheticPass123!');
+  await dialog.locator('button[type="submit"]').click();
+  await expect(page).toHaveURL(/#\/app$/);
+  await expect(page.getByText('Pelanggan Ujian', { exact: true })).toBeVisible();
 });

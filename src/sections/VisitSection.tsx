@@ -29,7 +29,7 @@ const VisitSection = React.memo(() => {
   };
 
   return (
-    <section id="visit" className="py-24 bg-background dark:bg-stone-950 relative overflow-hidden">
+    <section id="visit" tabIndex={-1} className="py-24 bg-background dark:bg-stone-950 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--color-sunshine-cta)]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-deep-forest/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />

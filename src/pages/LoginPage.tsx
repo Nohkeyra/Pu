@@ -85,7 +85,7 @@ export default function LoginPage() {
             size="icon"
             onClick={handleAdminAccess}
             className="text-deep-forest/50 hover:text-[var(--color-sunshine-cta)]"
-            aria-label="Admin Access"
+            aria-label={tLocal('Admin Access', 'Akses Pentadbir')}
             id="admin-secret-trigger"
           >
             <Shield className="h-5 w-5" />

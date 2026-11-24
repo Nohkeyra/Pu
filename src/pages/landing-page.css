@@ -27,7 +27,7 @@
   outline: 3px solid var(--landing-accent);
   outline-offset: 4px;
 }
-.landing-page section[id] {
+.landing-page :is(section[id], #main-content) {
   scroll-margin-top: calc(100px + var(--sat, 0px));
 }
 .landing-page #app-header {
@@ -774,7 +774,19 @@
   .landing-page #app-header > div {
     gap: 8px;
   }
+  .landing-page #app-header > div > a {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .landing-page #app-header > div > a > :last-child {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .landing-page #app-header > div > a .font-artistic {
+    white-space: normal;
+  }
   .landing-page #app-header .h-11.w-11 {
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
   }

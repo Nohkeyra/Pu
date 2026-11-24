@@ -50,9 +50,9 @@ for (const theme of ['light', 'dark'] as const) {
     const advanced = page.locator('.settings-advanced');
     await expect(advanced).toBeVisible();
     await expect(advanced).not.toHaveAttribute('open', '');
-    await expect(page.getByRole('switch', { name: 'Toggle immersive mode' })).toBeHidden();
+    await expect(page.getByRole('switch', { name: 'Mod Skrin Penuh (Imersif)' })).toBeHidden();
     await advanced.locator('summary').click();
-    await expect(page.getByRole('switch', { name: 'Toggle immersive mode' })).toBeVisible();
+    await expect(page.getByRole('switch', { name: 'Mod Skrin Penuh (Imersif)' })).toBeVisible();
     await page.keyboard.press('Tab');
     await page.screenshot({ path: info.outputPath(`advanced-${theme}.png`) });
     await page.goto('/#/calendar');

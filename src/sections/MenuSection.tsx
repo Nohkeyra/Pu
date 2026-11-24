@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Coffee, Flame, Search, Sparkles, UtensilsCrossed, X } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -56,6 +56,11 @@ export default function MenuSection() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
+  const clearSearch = () => {
+    setSearchQuery('');
+    searchInput.current?.focus();
+  };
   const categories = [
     { id: 'all', label: bm ? 'Semua sajian' : 'All dishes', icon: UtensilsCrossed },
     { id: 'mains', label: bm ? 'Hidangan utama' : 'Mains', icon: Flame },
@@ -90,12 +95,12 @@ export default function MenuSection() {
   };
 
   return (
-    <section id="menu" className="landing-menu-section">
+    <section id="menu" className="landing-menu-section" tabIndex={-1} aria-labelledby="landing-menu-title">
       <div className="content-container">
         <div className="landing-section-heading">
           <div>
             <p className="landing-eyebrow">{bm ? 'DIPILIH UNTUK ANDA' : 'PICKED FOR YOU'}</p>
-            <h2 className="landing-section-title">{t('menu_title')}</h2>
+            <h2 id="landing-menu-title" className="landing-section-title">{t('menu_title')}</h2>
           </div>
           <p>{t('menu_subtitle')}</p>
         </div>
@@ -127,6 +132,7 @@ export default function MenuSection() {
             <Search size={17} aria-hidden="true" />
             <input
               id="landing-menu-search"
+              ref={searchInput}
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -135,7 +141,7 @@ export default function MenuSection() {
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={clearSearch}
                 aria-label={bm ? 'Kosongkan carian' : 'Clear search'}
               >
                 <X size={16} aria-hidden="true" />
@@ -164,7 +170,7 @@ export default function MenuSection() {
             <button
               type="button"
               onClick={() => {
-                setSearchQuery('');
+                clearSearch();
                 setActiveCategory('all');
               }}
             >
