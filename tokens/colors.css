@@ -15,6 +15,10 @@
   --ui-on-action: var(--ui-canvas);
   --ui-on-accent: var(--ui-canvas);
   --ui-on-yellow: var(--ui-ink);
+  --ui-order-selection: var(--ui-green);
+  --ui-order-status-pending: rgb(from var(--ui-yellow) calc(r * .56) calc(g * .56) calc(b * .56));
+  --ui-order-status-success: var(--ui-green);
+  --ui-order-status-danger: rgb(from var(--ui-orange) calc(r * .78) calc(g * .78) calc(b * .78));
   --ui-danger: var(--ui-action);
   --ui-success: var(--ui-green);
   --ui-shadow-ink: var(--ui-ink);
@@ -68,6 +72,10 @@
   --ui-on-action: var(--ui-canvas);
   --ui-on-accent: var(--ui-canvas);
   --ui-on-yellow: var(--ui-canvas);
+  --ui-order-selection: var(--ui-yellow);
+  --ui-order-status-pending: var(--ui-yellow);
+  --ui-order-status-success: color-mix(in srgb, var(--ui-green) 45%, var(--ui-paper));
+  --ui-order-status-danger: color-mix(in srgb, var(--ui-orange) 65%, var(--ui-paper));
   --ui-danger: color-mix(in srgb, var(--ui-orange) 50%, var(--ui-yellow));
   --ui-success: var(--ui-green);
   --ui-shadow-ink: var(--ui-canvas);

@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Sparkles,
   Building2,
+  Check,
   PlusCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,6 @@ import {
 import { SAVED_COMPANIES } from '@/constants/companies';
 import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
 import { getBookingNoticeHours, getEarliestBookingSlot } from '@/lib/dateUtils';
-import { cn } from '@/lib/utils';
 import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
 import { LocationAutocompletePicker } from '@/components/order/LocationAutocompletePicker';
 import type { OrderState } from '@/components/order/OrderForm';
@@ -56,6 +56,10 @@ interface Step3ContactDetailsProps {
   fieldErrors: OrderContactErrors;
   clearFieldError: (field: OrderContactField) => void;
 }
+
+const deliveryOptionClass = 'group relative flex min-h-[105px] cursor-pointer select-none flex-col items-center justify-between rounded-2xl border border-[color:var(--ui-border)] bg-[var(--ui-surface)] p-3 text-center transition-all duration-200 hover:bg-[var(--ui-raised)] aria-checked:border-[color:var(--ui-order-selection)] aria-checked:ring-1 aria-checked:ring-[var(--ui-order-selection)]/30 active:scale-[0.99]';
+const deliverySelectionMarkClass = 'absolute end-2.5 top-2.5 hidden size-4 text-[color:var(--ui-order-selection)] group-aria-checked:block';
+const deliveryIconClass = 'size-4 text-[color:var(--ui-muted)] group-aria-checked:text-[color:var(--ui-order-selection)]';
 
 export function Step3ContactDetails({
   orderState,
@@ -566,15 +570,11 @@ export function Step3ContactDetails({
                 clearFieldError('delivery');
                 setOrderState((prev) => ({ ...prev, delivery: 'delivery' }));
               }}
-              className={cn(
-                'p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]',
-                orderState.delivery === 'delivery'
-                  ? 'bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30'
-                  : 'bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50'
-              )}
+              className={deliveryOptionClass}
             >
-              <div className="w-8 h-8 rounded-xl bg-card border border-stone/10 dark:bg-stone-800 flex items-center justify-center transition-all shrink-0">
-                <Truck className="w-4 h-4 text-crisp-carrot" />
+              <Check aria-hidden="true" className={deliverySelectionMarkClass} />
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-[color:var(--ui-border)] bg-[var(--ui-raised)] transition-colors">
+                <Truck aria-hidden="true" className={deliveryIconClass} />
               </div>
               <div className="w-full">
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">
@@ -595,15 +595,11 @@ export function Step3ContactDetails({
                 clearFieldError('delivery');
                 setOrderState((prev) => ({ ...prev, delivery: 'pickup' }));
               }}
-              className={cn(
-                'p-3 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-between min-h-[105px] cursor-pointer relative select-none active:scale-[0.99]',
-                orderState.delivery === 'pickup'
-                  ? 'bg-crisp-carrot/10 border-crisp-carrot text-crisp-carrot shadow-sm ring-1 ring-crisp-carrot/30'
-                  : 'bg-muted/70 hover:bg-muted border-stone/15 text-stone dark:bg-stone-800/50'
-              )}
+              className={deliveryOptionClass}
             >
-              <div className="w-8 h-8 rounded-xl bg-card border border-stone/10 dark:bg-stone-800 flex items-center justify-center transition-all shrink-0">
-                <Store className="w-4 h-4 text-crisp-carrot" />
+              <Check aria-hidden="true" className={deliverySelectionMarkClass} />
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-[color:var(--ui-border)] bg-[var(--ui-raised)] transition-colors">
+                <Store aria-hidden="true" className={deliveryIconClass} />
               </div>
               <div className="w-full">
                 <span className="text-xs sm:text-sm font-bold block leading-tight text-deep-forest dark:text-white">
