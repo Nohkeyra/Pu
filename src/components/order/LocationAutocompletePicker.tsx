@@ -85,11 +85,26 @@ export function LocationAutocompletePicker({
   const markerRef = useRef<ReturnType<typeof L.marker> | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const initialCoordsRef = useRef(coordinates);
+  const handleReverseGeocodeRef = useRef<(lat: number, lng: number) => Promise<void>>(async () => {});
+
+  const coordLat = coordinates?.lat;
+  const coordLng = coordinates?.lng;
 
   // Sync external value changes into local input if different
   useEffect(() => {
     setQuery(value);
   }, [value]);
+
+  // Clean up pending debounce timers and fetches on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Fetch location suggestions with server proxy + client Nominatim fallback
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
@@ -134,7 +149,7 @@ export function LocationAutocompletePicker({
           const raw = await directRes.json();
           if (Array.isArray(raw)) {
             results = raw
-              .map((item: any) => {
+              .map((item: { lat?: unknown; lon?: unknown; display_name?: unknown; place_id?: unknown }) => {
                 const lat = Number(item.lat);
                 const lng = Number(item.lon);
                 if (!validCoordinates(lat, lng)) return null;
@@ -241,70 +256,75 @@ export function LocationAutocompletePicker({
     [onChange, tText, value]
   );
 
-  // Initialize or update Leaflet map
   useEffect(() => {
-    if (!mapElementRef.current) return;
+    handleReverseGeocodeRef.current = handleReverseGeocode;
+  }, [handleReverseGeocode]);
 
-    if (!mapInstanceRef.current) {
-      const initialCenter: [number, number] = coordinates
-        ? [coordinates.lat, coordinates.lng]
-        : [RESTORAN_COORDS.lat, RESTORAN_COORDS.lng];
+  // Initialize Leaflet map once on mount so typing or coordinate updates never recreate the map
+  useEffect(() => {
+    const mapElement = mapElementRef.current;
+    if (!mapElement || mapInstanceRef.current) return;
 
-      const instance = L.map(mapElementRef.current, {
-        zoomControl: false,
-        attributionControl: true,
-      }).setView(initialCenter, coordinates ? 16 : 14);
+    const initial = initialCoordsRef.current;
+    const hasInitialCoords = initial && validCoordinates(initial.lat, initial.lng);
+    const initialCenter: [number, number] = hasInitialCoords
+      ? [initial.lat, initial.lng]
+      : [RESTORAN_COORDS.lat, RESTORAN_COORDS.lng];
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(instance);
+    const instance = L.map(mapElement, {
+      zoomControl: false,
+      attributionControl: true,
+    }).setView(initialCenter, hasInitialCoords ? 16 : 14);
 
-      L.control.zoom({ position: 'bottomright' }).addTo(instance);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(instance);
 
-      // Click anywhere on the map to set / adjust the pin
-      instance.on('click', (e: any) => {
-        const { lat, lng } = e.latlng;
-        if (markerRef.current) {
-          markerRef.current.setLatLng([lat, lng]);
-        } else {
-          const newMarker = L.marker([lat, lng], {
-            icon: venuePinIcon(),
-            draggable: true,
-          }).addTo(instance);
-          markerRef.current = newMarker;
-          newMarker.on('dragend', () => {
-            const pos = newMarker.getLatLng();
-            handleReverseGeocode(pos.lat, pos.lng);
-          });
-        }
-        handleReverseGeocode(lat, lng);
-      });
+    L.control.zoom({ position: 'bottomright' }).addTo(instance);
 
-      mapInstanceRef.current = instance;
+    // Click anywhere on the map to set / adjust the pin
+    instance.on('click', (e: { latlng: { lat: number; lng: number } }) => {
+      const { lat, lng } = e.latlng;
+      if (markerRef.current) {
+        markerRef.current.setLatLng([lat, lng]);
+      } else {
+        const newMarker = L.marker([lat, lng], {
+          icon: venuePinIcon(),
+          draggable: true,
+        }).addTo(instance);
+        markerRef.current = newMarker;
+        newMarker.on('dragend', () => {
+          const pos = newMarker.getLatLng();
+          void handleReverseGeocodeRef.current(pos.lat, pos.lng);
+        });
+      }
+      void handleReverseGeocodeRef.current(lat, lng);
+    });
 
-      // Handle resize observer
-      const observer = new ResizeObserver(() => {
-        instance.invalidateSize();
-      });
-      observer.observe(mapElementRef.current);
+    mapInstanceRef.current = instance;
 
-      return () => {
-        observer.disconnect();
-        instance.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
-      };
-    }
-  }, [handleReverseGeocode, coordinates]);
+    // Handle resize observer
+    const observer = new ResizeObserver(() => {
+      instance.invalidateSize();
+    });
+    observer.observe(mapElement);
+
+    return () => {
+      observer.disconnect();
+      instance.remove();
+      mapInstanceRef.current = null;
+      markerRef.current = null;
+    };
+  }, []);
 
   // Update marker position on coordinates change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (coordinates && validCoordinates(coordinates.lat, coordinates.lng)) {
-      const targetLatLng: [number, number] = [coordinates.lat, coordinates.lng];
+    if (coordLat !== undefined && coordLng !== undefined && validCoordinates(coordLat, coordLng)) {
+      const targetLatLng: [number, number] = [coordLat, coordLng];
       if (!markerRef.current) {
         const marker = L.marker(targetLatLng, {
           icon: venuePinIcon(),
@@ -312,15 +332,25 @@ export function LocationAutocompletePicker({
         }).addTo(map);
         marker.on('dragend', () => {
           const pos = marker.getLatLng();
-          handleReverseGeocode(pos.lat, pos.lng);
+          void handleReverseGeocodeRef.current(pos.lat, pos.lng);
         });
         markerRef.current = marker;
+        map.setView(targetLatLng, Math.max(map.getZoom(), 16), { animate: true });
       } else {
-        markerRef.current.setLatLng(targetLatLng);
+        const currentPos = markerRef.current.getLatLng();
+        const moved =
+          Math.abs(currentPos.lat - coordLat) > 1e-6 || Math.abs(currentPos.lng - coordLng) > 1e-6;
+        if (moved) {
+          markerRef.current.setLatLng(targetLatLng);
+          map.setView(targetLatLng, Math.max(map.getZoom(), 16), { animate: true });
+        }
       }
-      map.setView(targetLatLng, 16, { animate: true });
+    } else if (markerRef.current) {
+      markerRef.current.remove();
+      markerRef.current = null;
+      setPinStatus(null);
     }
-  }, [coordinates, handleReverseGeocode]);
+  }, [coordLat, coordLng]);
 
   // Handle selecting a suggestion
   const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
@@ -373,10 +403,11 @@ export function LocationAutocompletePicker({
   // Recenter map on current coordinates or restaurant
   const handleRecenter = () => {
     if (!mapInstanceRef.current) return;
-    const center = coordinates
-      ? [coordinates.lat, coordinates.lng]
-      : [RESTORAN_COORDS.lat, RESTORAN_COORDS.lng];
-    mapInstanceRef.current.setView(center as [number, number], 16, { animate: true });
+    const center: [number, number] =
+      coordinates && validCoordinates(coordinates.lat, coordinates.lng)
+        ? [coordinates.lat, coordinates.lng]
+        : [RESTORAN_COORDS.lat, RESTORAN_COORDS.lng];
+    mapInstanceRef.current.setView(center, 16, { animate: true });
   };
 
   return (

@@ -60,7 +60,8 @@ function hasWriteAccess(authInfo?: McpAuthInfo): boolean {
 }
 
 const menuSchema = z.object({});
-const orderSchema = z.object({ orderId: z.string().min(1).max(200) });
+const orderIdField = z.string().regex(/^[A-Za-z0-9_-]{1,100}$/, 'Invalid order ID format.');
+const orderSchema = z.object({ orderId: orderIdField });
 const listOrdersSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   status: z.string().min(1).max(50).optional(),
@@ -77,16 +78,16 @@ const salesSchema = z.object({
 });
 const calendarSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
 const statusSchema = z.object({
-  orderId: z.string().min(1).max(200),
+  orderId: orderIdField,
   status: z.enum(['pending', 'approved', 'billed', 'in_transit', 'delivered', 'completed', 'cancel_requested', 'cancelled', 'rejected']),
 });
 const billSchema = z.object({
-  orderId: z.string().min(1).max(200),
+  orderId: orderIdField,
   prices: z.record(z.string().min(1).max(50), z.number().finite().positive().max(100000)),
   sendInvoiceEmail: z.boolean().default(true),
 });
 const sendInvoiceSchema = z.object({
-  orderId: z.string().min(1).max(200),
+  orderId: orderIdField,
   email: z.string().email().optional(),
 });
 const findOrdersSchema = z.object({

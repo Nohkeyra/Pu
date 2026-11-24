@@ -210,7 +210,7 @@ export function useAdminMessaging({
       if (Capacitor.isNativePlatform()) {
         window.location.assign(url);
       } else {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
 
       toast({ title: t('whatsapp_opened'), variant: 'success' });

@@ -365,8 +365,8 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     clientTimestamp?: number | string;
   };
 
-  if (!orderId || typeof orderId !== 'string') {
-    return res.status(400).json({ success: false, error: 'orderId required.' });
+  if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId)) {
+    return res.status(400).json({ success: false, error: 'Valid orderId required.' });
   }
   if (!prices || typeof prices !== 'object' || Object.keys(prices).length === 0) {
     return res.status(400).json({ success: false, error: 'prices object required.' });

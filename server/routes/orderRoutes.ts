@@ -37,6 +37,7 @@ export { validateAdminOrderUpdate } from '../services/orderMutations.js';
 const router = Router();
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{5,50}$/;
+const ORDER_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
 
 // C-3 fix: validate and whitelist the delivery field shape so arbitrary nested
 // objects cannot be written to Firestore unchecked.
@@ -396,7 +397,7 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
   try {
     const { action, orderId, data } = req.body || {};
     if ((action === 'update' || action === 'delete') &&
-        (typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId))) {
+        (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId))) {
       return res.status(400).json({ error: 'A valid orderId is required' });
     }
     const db = getFirestore();
@@ -509,6 +510,9 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 // Admin Quick Status Change
 router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res) => {
   const { orderId } = req.params;
+  if (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId)) {
+    return res.status(400).json({ error: 'A valid orderId is required' });
+  }
   const { status } = req.body || {};
   if (typeof status !== 'string' || !status.trim()) {
     return res.status(400).json({ error: 'A valid status is required' });
@@ -551,8 +555,8 @@ router.patch('/admin/orders/:orderId/status', verifyAdminToken, async (req, res)
 // pending status against the same snapshot used for the write.
 router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
   const { orderId, notes, time } = req.body || {};
-  if (typeof orderId !== 'string' || !orderId.trim())
-    return res.status(400).json({ error: 'orderId is required' });
+  if (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId))
+    return res.status(400).json({ error: 'A valid orderId is required' });
   const callerUid = await verifyCustomerIdToken(req);
   if (!callerUid) return res.status(403).json({ error: 'Not authorized to update this order' });
 
@@ -602,8 +606,8 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
 // Customer cancel request: make the transition and ownership check atomic.
 router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body || {};
-  if (typeof orderId !== 'string' || !orderId.trim())
-    return res.status(400).json({ error: 'orderId is required' });
+  if (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId))
+    return res.status(400).json({ error: 'A valid orderId is required' });
   const callerUid = await verifyCustomerIdToken(req);
   if (!callerUid) return res.status(403).json({ error: 'Not authorized to cancel this order' });
 
@@ -678,8 +682,8 @@ router.post('/orders/cancel', customerOrderActionLimiter, async (req, res) => {
 // Customer deletion: ownership and billed status must still hold at commit time.
 router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body || {};
-  if (typeof orderId !== 'string' || !orderId.trim())
-    return res.status(400).json({ error: 'orderId is required' });
+  if (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId))
+    return res.status(400).json({ error: 'A valid orderId is required' });
   const callerUid = await verifyCustomerIdToken(req);
   if (!callerUid) return res.status(403).json({ error: 'Not authorized to delete this order' });
 
@@ -724,8 +728,8 @@ router.post('/orders/delete', customerOrderActionLimiter, async (req, res) => {
 // without an authenticated owner must not be mutable by anyone knowing its ID.
 router.post('/orders/poke', customerOrderActionLimiter, async (req, res) => {
   const { orderId } = req.body || {};
-  if (typeof orderId !== 'string' || !orderId.trim())
-    return res.status(400).json({ error: 'orderId is required' });
+  if (typeof orderId !== 'string' || !ORDER_ID_RE.test(orderId))
+    return res.status(400).json({ error: 'A valid orderId is required' });
   const callerUid = await verifyCustomerIdToken(req);
   if (!callerUid) return res.status(403).json({ error: 'Not authorized to poke this order' });
 
@@ -771,8 +775,8 @@ router.post(
     const { id } = req.params;
     const { email, name, lang } = req.body || {};
 
-    if (!id || !email) {
-      return res.status(400).json({ error: 'id and email are required' });
+    if (!id || typeof id !== 'string' || !ORDER_ID_RE.test(id) || !email) {
+      return res.status(400).json({ error: 'Valid id and email are required' });
     }
 
     try {

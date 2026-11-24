@@ -2,16 +2,14 @@ import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness.js';
 /**
  * serverPdfService.ts
  *
- * Server-side equivalent of src/services/pdfService.ts.
+ * Server-side PDF invoice and quotation generator.
  * Runs in Node.js (Express/Render) — no browser DOM, no canvas, no Vite env.
  *
- * Key differences from the browser version:
- *  - Images loaded via fs.readFileSync() instead of new Image() + canvas
- *  - process.env instead of import.meta.env for bank details
- *  - Returns Buffer (for nodemailer attachment) instead of jsPDF output string
- *  - getBilingualWordsInTotal() inlined (can't import from src/ in server build)
- *
- * Design output is intentionally identical to generateInvoicePDF() in the app.
+ * Design notes:
+ *  - Images loaded via fs.readFileSync()
+ *  - process.env for bank/business details fallback
+ *  - Returns Buffer (for HTTP download & nodemailer attachments)
+ *  - getBilingualWordsInTotal() inlined to avoid pulling browser-only deps into the server build
  */
 
 import path from 'path';
@@ -245,8 +243,7 @@ function enWords(num: number): string {
 // imported the other way (server importing from src/services is fine;
 // src/lib/dateUtils.ts imports browser-safe code but duplicating this one
 // tiny function avoids any risk of pulling in client-only deps by accident).
-// Format: DD/MM/YYYY — matches every other date shown in the app since the
-// formatDateSafe → formatDateDisplay migration in pdfService.ts.
+// Format: DD/MM/YYYY — matches formatDateDisplay across the app.
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return '-';
   const trimmed = dateStr.trim();
@@ -274,7 +271,7 @@ const mealLabels: Record<string, string> = {
   tea_break: 'Rehat / Tea Break',
 };
 
-// ─── PDF drawing helpers (same coordinates as browser pdfService.ts) ──────────
+// ─── PDF drawing helpers ──────────────────────────────────────────────────────
 function drawHeaderBackground(doc: jsPDF, headerHeight = 36, pageWidth = 210) {
   drawInvoiceCalligraphy(doc, cachedJawiBase64, headerHeight, pageWidth);
 }

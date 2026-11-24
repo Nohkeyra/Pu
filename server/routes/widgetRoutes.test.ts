@@ -427,5 +427,17 @@ describe('Widget Routes Authorization & Pricing Security', () => {
       expect(json.success).toBe(true);
       expect(json.totalAmount).toBe(180);
     });
+
+    it('rejects malformed orderId containing path separators with 400', async () => {
+      const res = await fetch(`${baseUrl}/api/widget/set-pricing`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: 'bad/path/id',
+          prices: { lunch: 18 },
+        }),
+      });
+      expect(res.status).toBe(400);
+    });
   });
 });

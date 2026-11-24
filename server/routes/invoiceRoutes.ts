@@ -250,8 +250,8 @@ router.post('/send-invoice', verifyAdminToken, async (req, res) => {
 router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
-    if (!orderId || typeof orderId !== 'string') {
-      return res.status(400).json({ success: false, error: 'orderId parameter is required' });
+    if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId)) {
+      return res.status(400).json({ success: false, error: 'Valid orderId parameter is required' });
     }
 
     const callerAuth = await getInvoiceCallerAuth(req);

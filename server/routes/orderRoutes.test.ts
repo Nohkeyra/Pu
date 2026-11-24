@@ -705,5 +705,29 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       }
     });
   });
+
+  describe('orderId format validation', () => {
+    it('rejects malformed orderId containing path separators with 400 instead of 500', async () => {
+      const adminToken = signAdminJwt({ uid: 'admin_test', email: 'admin@wawasan.test' });
+      const statusRes = await fetch(`${baseUrl}/api/admin/orders/bad%2Fpath%2Fid/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ status: 'approved' }),
+      });
+      expect(statusRes.status).toBe(400);
+
+      for (const endpoint of ['/api/orders/update', '/api/orders/cancel', '/api/orders/delete', '/api/orders/poke']) {
+        const res = await fetch(`${baseUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: 'bad/path/id' }),
+        });
+        expect(res.status).toBe(400);
+      }
+    });
+  });
 });
 

@@ -328,4 +328,12 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       expect(res.headers.get('content-type')).toContain('application/pdf');
     });
   });
+
+  it('rejects malformed orderId on single invoice PDF endpoint with 400', async () => {
+    const adminToken = signAdminJwt({ uid: 'admin_root', email: 'admin@wawasan.test' });
+    const res = await fetch(`${baseUrl}/api/invoice/bad%2Fpath%2Fid/pdf`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    expect(res.status).toBe(400);
+  });
 });
