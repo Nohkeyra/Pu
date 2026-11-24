@@ -471,6 +471,10 @@ export interface OrderData {
   deletedByAdminAt?: string | Timestamp | FieldValue;
   deletedByUser?: boolean;
   deletedByUserAt?: string | Timestamp | FieldValue;
+  deliveryCharge?: number;
+  serviceChargeRate?: number;
+  serviceChargeAmount?: number;
+  delivery?: unknown;
   totalAmount?: number | null;
   eventTimestamp?: Timestamp;
   createdAt?: Timestamp | { seconds?: number; nanoseconds?: number } | FieldValue;

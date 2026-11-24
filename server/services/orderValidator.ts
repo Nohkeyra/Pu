@@ -1,3 +1,4 @@
+import { isRestrictedBookingDay, minimumServingQuantity, MIN_RESTRICTED_DAY_PAX } from '../../src/lib/bookingPolicy.js';
 import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 
 export interface ValidationError {
@@ -53,6 +54,10 @@ export function validateOrderPayload(body: any, now = Date.now()): { valid: bool
     errors.push({ field: 'quantity', message: 'Quantity / pax exceeds maximum allowable value (10000)' });
   }
 
+  if (Number.isSafeInteger(qty) && qty > 0 && qty <= 10000) {
+    if (qty < minimumServingQuantity(body.preparationType === 'buffet' ? 'buffet' : 'meal_box')) errors.push({ field: 'quantity', message: body.lang === 'bm' ? 'Minimum tempahan bufet ialah 20 pax.' : 'Minimum buffet order is 20 pax.' });
+    if (isRestrictedBookingDay(dateVal) && qty < MIN_RESTRICTED_DAY_PAX) errors.push({ field: 'quantity', message: body.lang === 'bm' ? 'Tempahan hujung minggu dan cuti umum Putrajaya memerlukan minimum 60 pax.' : 'Weekend and Putrajaya public holiday orders require at least 60 pax.' });
+  }
   if (Number.isSafeInteger(qty) && qty > 0 && qty <= 10000 && !errors.some(e => e.field === 'date' || e.field === 'time')) {
     const issue = getBookingNoticeError(dateVal, eventTime ?? '12:00', qty, now);
     if (issue === 'invalid') errors.push({ field: 'time', message: 'Valid event date and time are required' });

@@ -1,3 +1,4 @@
+import { initialOrderCharges } from '../../src/lib/orderCharges.js';
 import riderRoutes from './riderRoutes.js';
 import { generateServerInvoicePdf } from '../services/serverPdfService.js';
 import { Router } from 'express';
@@ -255,12 +256,13 @@ router.post(
         pax: qty,
         meals: mappedMeals,
         menu: typeof rawBody.menu === 'string' ? rawBody.menu.slice(0, 500) : SET_BOX_MENU_TITLE,
-        preparationType: rawBody.preparationType === 'meal_box' ? 'meal_box' : 'buffet',
+        preparationType: rawBody.preparationType === 'buffet' ? 'buffet' : 'meal_box',
         notes: typeof rawBody.notes === 'string' ? rawBody.notes.slice(0, 5000) : '',
         dateTime,
         lang: rawBody.lang === 'en' ? 'en' : 'bm',
         status: 'pending',
         prices,
+        ...initialOrderCharges(rawBody.preparationType),
         totalAmount,
         dishes: processedDishes,
         veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],

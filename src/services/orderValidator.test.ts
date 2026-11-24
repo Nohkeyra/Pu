@@ -100,3 +100,18 @@ describe('Server quantity-based notice enforcement', () => {
     expect(validateOrderPayload({ ...order, quantity: 1, eventDate: '2026-11-24', time: '20:59' }, now).valid).toBe(false);
   });
 });
+
+describe('Wawasan minimum quantities', () => {
+  const now = Date.parse('2026-11-24T10:00:00+08:00');
+  const order = { name: 'Test', contact: '0123456789', eventDate: '2026-11-26', time: '12:00' };
+  it('enforces the buffet minimum of 20 on a weekday', () => {
+    expect(validateOrderPayload({ ...order, preparationType: 'buffet', quantity: 19 }, now).valid).toBe(false);
+    expect(validateOrderPayload({ ...order, preparationType: 'buffet', quantity: 20 }, now).valid).toBe(true);
+  });
+  it('enforces 60 pax on Saturdays, Sundays, and Putrajaya holidays', () => {
+    for (const eventDate of ['2026-11-28', '2026-11-29', '2026-12-25', '2027-02-08']) {
+      expect(validateOrderPayload({ ...order, eventDate, quantity: 59 }, now).valid).toBe(false);
+      expect(validateOrderPayload({ ...order, eventDate, quantity: 60 }, now).valid).toBe(true);
+    }
+  });
+});

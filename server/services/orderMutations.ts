@@ -1,3 +1,4 @@
+import { calculateOrderCharges, orderFoodSubtotal, validCharge, validServiceRate } from '../../src/lib/orderCharges.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, generateSequentialInvoiceNo, type OrderData } from '../firebaseAdmin.js';
 import { isValidStatusTransition } from './orderValidator.js';
@@ -7,7 +8,7 @@ import { invoiceQueue } from './invoiceQueue.js';
 // request keys into Firestore: that permits changes to ownership, deletion flags,
 // creation timestamps, and other server-owned invariants.
 const ADMIN_ORDER_MUTABLE_FIELDS = new Set([
-  'status', 'prices', 'totalAmount', 'approvedAt', 'billedAt', 'invoiceNo',
+  'status', 'prices', 'totalAmount', 'approvedAt', 'billedAt', 'invoiceNo', 'deliveryCharge', 'serviceChargeRate', 'serviceChargeAmount',
 ]);
 
 export function validateAdminOrderUpdate(data: unknown): string | null {
@@ -21,6 +22,8 @@ export function validateAdminOrderUpdate(data: unknown): string | null {
       Object.entries(value).some(([meal, price]) => !meal || typeof price !== 'number' || !Number.isFinite(price) || price < 0))) {
       return 'Invalid meal prices';
     }
+    if ((key === 'deliveryCharge' || key === 'serviceChargeAmount') && !validCharge(value)) return 'Invalid charge amount';
+    if (key === 'serviceChargeRate' && !validServiceRate(value)) return 'Invalid service charge rate';
     if (key === 'totalAmount' && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
       return 'Invalid total amount';
     }
@@ -105,6 +108,27 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
     }
 
     const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
+    // Recompute totals for charge-aware orders from persisted quantity and meal prices.
+    // Status-only transitions and historical invoices without charges stay unchanged.
+    const chargeFields = ['deliveryCharge', 'serviceChargeRate', 'serviceChargeAmount'];
+    const hasChargeChange = chargeFields.some(key => key in data);
+    if (hasChargeChange && (data.status !== 'billed' || !data.prices)) return { error: 'Charges must be saved with invoice pricing', httpStatus: 400 } as const;
+    if (data.status === 'billed' && data.prices && (hasChargeChange || oldData.serviceChargeRate !== undefined || oldData.deliveryCharge !== undefined)) {
+      try {
+        const quantity = Number(oldData.quantity ?? oldData.guests ?? oldData.pax ?? 0);
+        const foodSubtotal = orderFoodSubtotal(data.prices, quantity);
+        const charges = calculateOrderCharges(foodSubtotal, {
+          ...oldData, deliveryCharge: data.deliveryCharge ?? oldData.deliveryCharge,
+          serviceChargeRate: data.serviceChargeRate ?? oldData.serviceChargeRate,
+        });
+        if (data.totalAmount !== undefined && Math.round(data.totalAmount * 100) !== Math.round(charges.totalAmount * 100)) {
+          return { error: 'Invoice total does not match the meal prices and charges', httpStatus: 400 } as const;
+        }
+        Object.assign(updates, { deliveryCharge: charges.deliveryCharge, serviceChargeRate: charges.serviceChargeRate, serviceChargeAmount: charges.serviceChargeAmount, totalAmount: charges.totalAmount });
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : 'Invalid invoice charges', httpStatus: 400 } as const;
+      }
+    }
     if (data.status === 'approved' || data.status === 'billed') {
       if (!oldData.invoiceNo) {
         if (!reservedInvoiceNo) {

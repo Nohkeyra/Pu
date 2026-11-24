@@ -242,7 +242,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
 
     const orderPayload = {
       name: 'Customer', contact: '+60123456789', email: 'customer@example.com',
-      eventDate: '2027-11-20', time: '12:00', quantity: 10, meals: ['lunch'],
+      eventDate: '2027-11-19', time: '12:00', quantity: 10, meals: ['lunch'],
     };
 
     it('creates only one order when the same request arrives concurrently', async () => {

@@ -1,3 +1,4 @@
+import { calculateOrderCharges } from '../../src/lib/orderCharges.js';
 import { Router } from 'express';
 import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
@@ -539,10 +540,14 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       }
       const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
       const deliveryStatus = recipientEmail.includes('@') ? 'queued' : 'skipped_no_email';
+      const charges = calculateOrderCharges(totalAmount, freshOrder);
       const updates = {
         status: 'billed',
         prices: finalPrices,
-        totalAmount,
+        deliveryCharge: charges.deliveryCharge,
+        serviceChargeRate: charges.serviceChargeRate,
+        serviceChargeAmount: charges.serviceChargeAmount,
+        totalAmount: charges.totalAmount,
         invoiceNo,
         officialInvoiceNo: invoiceNo,
         billedAt: freshOrder.billedAt || invoiceGeneratedAt,
@@ -553,7 +558,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       if (deliveryStatus === 'queued') {
         await invoiceQueue.service.enqueueInTransaction(tx, {
           orderId, orderForPdf: { ...freshOrder, ...updates, id: orderId }, invoiceNo,
-          recipientEmail, totalAmount, companyName: freshOrder.to || freshOrder.company || 'Pelanggan',
+          recipientEmail, totalAmount: charges.totalAmount, companyName: freshOrder.to || freshOrder.company || 'Pelanggan',
           lang: freshOrder.lang === 'en' ? 'en' : 'bm',
         });
       }
@@ -562,6 +567,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     });
 
     const { deliveryStatus, mergedOrder } = txResult;
+    totalAmount = mergedOrder.totalAmount;
     publicCalendar.invalidate();
     void syncGoogleCalendarEvent(orderId, mergedOrder as any).catch((calErr) => {
       console.error('[Widget] Calendar sync failed for %s:', orderId, calErr);
