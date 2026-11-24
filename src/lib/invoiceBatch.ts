@@ -15,6 +15,9 @@ export interface InvoiceRecord {
   notes?: string;
   meals?: string[];
   prices?: Record<string, number>;
+  deliveryCharge?: number;
+  serviceChargeRate?: number;
+  serviceChargeAmount?: number;
   totalAmount?: number;
 }
 export interface InvoiceRecipient {
@@ -114,6 +117,9 @@ export function invoiceSnapshot(order: InvoiceRecord): InvoiceRecord {
         .filter(([, v]) => Number.isFinite(Number(v)))
         .map(([k, v]) => [k, Number(v)])
     ),
+    ...(order.deliveryCharge !== undefined ? { deliveryCharge: order.deliveryCharge } : {}),
+    ...(order.serviceChargeRate !== undefined ? { serviceChargeRate: order.serviceChargeRate } : {}),
+    ...(order.serviceChargeAmount !== undefined ? { serviceChargeAmount: order.serviceChargeAmount } : {}),
     totalAmount: invoiceAmountCents(order) / 100,
   };
 }

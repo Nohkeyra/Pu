@@ -48,3 +48,12 @@ describe('Reference invoice table and signature',()=>{
     expect(content).not.toContain('(Pak Usop)');
   });
 });
+
+it('itemises charges on a V3 invoice even when order notes are excluded', () => {
+  const charged = { ...order, deliveryCharge: 10, serviceChargeRate: 10, serviceChargeAmount: 36, totalAmount: 406 };
+  const opts = { ...options, includeNotes: false };
+  const data = createInvoiceTableLayout(new jsPDF(), [charged], opts);
+  expect(data.rows[0].lines[4].join(' ')).toContain('Delivery Charge: RM 10.00');
+  expect(data.rows[0].lines[4].join(' ')).toContain('Service Charge: RM 36.00');
+  expect(planInvoicePages([charged], opts)[0].totalCents).toBe(40600);
+});

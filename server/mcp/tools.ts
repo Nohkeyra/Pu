@@ -1,3 +1,4 @@
+import { calculateOrderCharges } from '../../src/lib/orderCharges.js';
 import { z } from 'zod';
 import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
@@ -143,7 +144,8 @@ function calculatePrices(order: Record<string, any>, prices: Record<string, numb
     }
   }
 
-  return { quantity, finalPrices, totalAmount: Math.round(totalAmount * 100) / 100 };
+  const charges = calculateOrderCharges(totalAmount, order);
+  return { quantity, finalPrices, ...charges };
 }
 
 async function sendFinalInvoiceEmail(order: Record<string, any>, invoiceNo: string, totalAmount: number, pdfBuffer: Buffer, recipientEmail?: string) {

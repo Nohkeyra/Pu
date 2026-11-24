@@ -1,3 +1,4 @@
+import { calculateOrderCharges, isSelfPickup, validCharge, validServiceRate } from '@/lib/orderCharges';
 import {
   useRememberedState,
   useRememberedPageScroll,
@@ -154,6 +155,8 @@ export default function AdminPanel({
   }, [orders]);
 
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [deliveryFee, setDeliveryFee] = useState('0');
+  const [serviceRate, setServiceRate] = useState('0');
   const [statusFilter, setStatusFilter] = useRememberedState<string>(
     viewScope + ':statusFilter',
     'all'
@@ -264,6 +267,13 @@ export default function AdminPanel({
       total += roundedPrice * safeQty;
     }
 
+    const deliveryCharge = isSelfPickup(order.delivery) ? 0 : Number(deliveryFee);
+    const serviceChargeRate = order.preparationType === 'buffet' ? Number(serviceRate) : 0;
+    if (!validCharge(deliveryCharge) || !validServiceRate(serviceChargeRate)) {
+      toast({ title: language === 'bm' ? 'Caj tidak sah' : 'Invalid charges', variant: 'warning' });
+      return;
+    }
+    const charges = calculateOrderCharges(total, { ...order, deliveryCharge, serviceChargeRate });
     const updatedInvoiceNo = order.invoiceNo
       ? order.invoiceNo.startsWith('QT')
         ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
@@ -274,7 +284,10 @@ export default function AdminPanel({
       orderId,
       {
         prices: mealPrices,
-        totalAmount: Math.round(total * 100) / 100,
+        deliveryCharge: charges.deliveryCharge,
+        serviceChargeRate: charges.serviceChargeRate,
+        serviceChargeAmount: charges.serviceChargeAmount,
+        totalAmount: charges.totalAmount,
         ...(updatedInvoiceNo ? { invoiceNo: updatedInvoiceNo } : {}),
         status: 'billed',
         approvedAt: order.approvedAt || new Date().toISOString(),
@@ -288,7 +301,10 @@ export default function AdminPanel({
         {
           ...order,
           prices: mealPrices,
-          totalAmount: total,
+          deliveryCharge: charges.deliveryCharge,
+          serviceChargeRate: charges.serviceChargeRate,
+          serviceChargeAmount: charges.serviceChargeAmount,
+          totalAmount: charges.totalAmount,
           invoiceNo: updatedInvoiceNo || getDisplayInvoiceNo(order),
           status: 'billed',
         },
@@ -302,6 +318,8 @@ export default function AdminPanel({
 
   const openOrderDetail = (order: Order) => {
     setSelectedOrder(order);
+    setDeliveryFee(String(isSelfPickup(order.delivery) ? 0 : order.deliveryCharge ?? 0));
+    setServiceRate(String(order.preparationType === 'buffet' ? order.serviceChargeRate ?? 0 : 0));
     if (order.prices && Object.keys(order.prices).length > 0) {
       const priceStrings = Object.keys(order.prices).reduce(
         (acc, key) => {
@@ -645,6 +663,10 @@ export default function AdminPanel({
               language={language}
               prices={prices}
               setPrices={setPrices}
+              deliveryFee={deliveryFee}
+              setDeliveryFee={setDeliveryFee}
+              serviceRate={serviceRate}
+              setServiceRate={setServiceRate}
               getStatusBadge={getStatusBadge}
               isApproving={isApproving}
               handleCancelOrderAdmin={(id: string) => {

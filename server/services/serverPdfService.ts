@@ -518,7 +518,11 @@ export async function generateServerInvoicePdf(
     url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationVal)}`,
   });
   const tableStartY = locationY + locationHeight + 5;
-  if (tableStartY + meals.length * 10 + 57 > 253)
+  const chargeRows = isFinal ? [
+    { label: lang === 'bm' ? 'Caj penghantaran' : 'Delivery Charge', amount: Number(order.deliveryCharge ?? 0) },
+    { label: lang === 'bm' ? 'Caj perkhidmatan' : 'Service Charge', amount: Number(order.serviceChargeAmount ?? 0) },
+  ].filter(row => Number.isFinite(row.amount) && row.amount > 0) : [];
+  if (tableStartY + meals.length * 10 + chargeRows.length * 7 + 57 > 253)
     throw new Error('Invoice details exceed one page. Shorten the customer or location text.');
   doc.setFillColor(114, 80, 20); // Deep Royal Bronze-Gold (#725014)
   doc.rect(15, tableStartY, 180, 8, 'F');
@@ -599,6 +603,22 @@ export async function generateServerInvoicePdf(
 
     currentY += 10;
   });
+
+  for (const charge of chargeRows) {
+    doc.setFillColor(253, 252, 250);
+    doc.rect(15, currentY, 180, 7, 'F');
+    doc.setDrawColor(226, 220, 210);
+    doc.line(15, currentY, 195, currentY);
+    [15, 110, 165, 195].forEach(x => doc.line(x, currentY, x, currentY + 7));
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(26, 24, 22);
+    doc.text(charge.label, 18, currentY + 4.8);
+    doc.text('-', 137.5, currentY + 4.8, { align: 'center' });
+    doc.text(charge.amount.toFixed(2), 192, currentY + 4.8, { align: 'right' });
+    grandTotal += charge.amount;
+    currentY += 7;
+  }
 
   // End vertical line border for rows
   doc.setDrawColor(226, 220, 210);

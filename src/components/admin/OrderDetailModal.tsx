@@ -1,3 +1,4 @@
+import { calculateOrderCharges, isSelfPickup, validCharge, validServiceRate } from '@/lib/orderCharges';
 import { canViewRiderTracking } from '@/lib/riderTracking';
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -22,6 +23,10 @@ interface OrderDetailModalProps {
   language: string;
   prices: Record<string, string>;
   setPrices: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  deliveryFee?: string;
+  setDeliveryFee?: (value: string) => void;
+  serviceRate?: string;
+  setServiceRate?: (value: string) => void;
   getStatusBadge: (status?: string) => React.ReactNode;
   isApproving: boolean;
   handleCancelOrderAdmin: (id: string) => Promise<void> | void;
@@ -51,6 +56,10 @@ export function OrderDetailModal({
   language,
   prices,
   setPrices,
+  deliveryFee = '0',
+  setDeliveryFee,
+  serviceRate = '0',
+  setServiceRate,
   getStatusBadge,
   isApproving,
   handleCancelOrderAdmin,
@@ -73,11 +82,19 @@ export function OrderDetailModal({
   const safeMeals = Array.isArray(selectedOrder?.meals) ? selectedOrder.meals : [];
   const rawQty = Number(selectedOrder?.quantity ?? selectedOrder?.guests ?? 0);
   const safeQuantity = Number.isFinite(rawQty) && rawQty > 0 ? rawQty : 0;
-  const computedGrandTotal = safeMeals.reduce((total, meal) => {
+  const foodSubtotal = safeMeals.reduce((total, meal) => {
     const price = parseFloat(prices[meal] || '0');
-    return total + (Number.isFinite(price) && price > 0 ? price : 0) * safeQuantity;
+    return total + (Number.isFinite(price) && price > 0 ? Math.round(price * 100) / 100 : 0) * safeQuantity;
   }, 0);
+  const pickup = isSelfPickup(selectedOrder?.delivery);
+  const buffet = selectedOrder?.preparationType === 'buffet';
+  const deliveryCharge = pickup ? 0 : Number(deliveryFee);
+  const serviceChargeRate = buffet ? Number(serviceRate) : 0;
+  const invalidCharges = !validCharge(deliveryCharge) || !validServiceRate(serviceChargeRate);
+  const charges = calculateOrderCharges(foodSubtotal, { preparationType: selectedOrder?.preparationType, delivery: selectedOrder?.delivery, deliveryCharge: invalidCharges ? 0 : deliveryCharge, serviceChargeRate: invalidCharges ? 0 : serviceChargeRate });
+  const computedGrandTotal = charges.totalAmount;
   const hasInvalidPricing =
+    invalidCharges ||
     !selectedOrder ||
     safeMeals.length === 0 ||
     safeQuantity <= 0 ||
@@ -413,8 +430,20 @@ export function OrderDetailModal({
                     )}
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="delivery-charge">{language === 'bm' ? 'Caj penghantaran (RM)' : 'Delivery charge (RM)'}</Label>
+                    <Input id="delivery-charge" type="number" min="0" step="0.01" value={pickup ? '0' : deliveryFee} disabled={pickup} onChange={e => setDeliveryFee?.(e.target.value)} />
+                    {buffet && <>
+                      <Label htmlFor="service-charge-rate">{language === 'bm' ? 'Caj perkhidmatan bufet (%)' : 'Buffet service charge (%)'}</Label>
+                      <Input id="service-charge-rate" type="number" min="0" max="100" step="0.01" value={serviceRate} onChange={e => setServiceRate?.(e.target.value)} />
+                    </>}
+                    <p className="text-xs text-stone-500">{language === 'bm' ? 'Maklumkan pelanggan sebelum mengenakan caj.' : 'Inform the customer before applying charges.'}</p>
+                  </div>
                   {/* Total Preview */}
                   <div className="p-4 bg-orange-500/5 dark:bg-orange-500/10 rounded-xl border border-orange-500/20">
+                    <div className="flex justify-between text-xs"><span>{language === 'bm' ? 'Jumlah makanan' : 'Food subtotal'}</span><span>RM {charges.foodSubtotal.toFixed(2)}</span></div>
+                    {charges.deliveryCharge > 0 && <div className="flex justify-between text-xs"><span>{language === 'bm' ? 'Penghantaran' : 'Delivery'}</span><span>RM {charges.deliveryCharge.toFixed(2)}</span></div>}
+                    {charges.serviceChargeAmount > 0 && <div className="flex justify-between text-xs"><span>Service Charge ({charges.serviceChargeRate}%)</span><span>RM {charges.serviceChargeAmount.toFixed(2)}</span></div>}
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
                         {t('grand_total')}:

@@ -207,3 +207,11 @@ it('keeps invoice details on page one and moves contact information to an unnumb
   expect(streams[1]).not.toContain('RW LAYOUT-01');
   expect(streams[1]).not.toContain('JUMLAH KESELURUHAN');
 });
+
+it('itemises both charges separately in the official single invoice', async () => {
+  const order = { to: 'Contoh', invoiceNo: 'RW CHARGES', name: 'Contoh', eventDate: '2026-11-26', quantity: 20, meals: ['lunch'], prices: { lunch: 10 }, deliveryCharge: 5, serviceChargeRate: 10, serviceChargeAmount: 20, totalAmount: 225, lang: 'en', location: 'Putrajaya' };
+  const content = readablePdfStreams(await generateServerInvoicePdf(order, true));
+  expect(content).toContain('Delivery Charge');
+  expect(content).toContain('Service Charge');
+  expect(content).toContain('RM 225.00');
+});

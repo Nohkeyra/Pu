@@ -1,3 +1,4 @@
+import { initialOrderCharges } from '../../src/lib/orderCharges.js';
 import riderRoutes from './riderRoutes.js';
 import { generateServerInvoicePdf } from '../services/serverPdfService.js';
 import { Router } from 'express';
@@ -261,6 +262,7 @@ router.post(
         lang: rawBody.lang === 'en' ? 'en' : 'bm',
         status: 'pending',
         prices,
+        ...initialOrderCharges(rawBody.preparationType),
         totalAmount,
         dishes: processedDishes,
         veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],

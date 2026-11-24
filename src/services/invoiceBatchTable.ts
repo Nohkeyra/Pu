@@ -41,7 +41,7 @@ export function createInvoiceTableLayout(doc: jsPDF, orders: InvoiceRecord[], op
       meals.map(meal => meal.label).join(' + ') || ' ',
       String(quantity),
       options.includeNotes ? order.notes || ' ' : ' ',
-      order.menu || ' ',
+      [order.menu || ' ', ...(Number(order.deliveryCharge) > 0 ? [`Delivery Charge: RM ${money(Number(order.deliveryCharge))}`] : []), ...(Number(order.serviceChargeAmount) > 0 ? [`Service Charge: RM ${money(Number(order.serviceChargeAmount))}`] : [])].join('\n'),
       ...columns.map(meal => price(meal.key) != null ? money(price(meal.key)!) : '-'),
       ...columns.map(meal => price(meal.key) != null ? money(Math.round(price(meal.key)! * quantity * 100) / 100) : '-'),
       money(invoiceAmountCents(order) / 100),

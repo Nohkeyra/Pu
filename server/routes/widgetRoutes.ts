@@ -1,3 +1,4 @@
+import { calculateOrderCharges } from '../../src/lib/orderCharges.js';
 import { Router } from 'express';
 import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
@@ -539,9 +540,14 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       }
       const recipientEmail = typeof freshOrder.email === 'string' ? freshOrder.email.trim() : '';
       const deliveryStatus = recipientEmail.includes('@') ? 'queued' : 'skipped_no_email';
+      const charges = calculateOrderCharges(totalAmount, freshOrder);
+      totalAmount = charges.totalAmount;
       const updates = {
         status: 'billed',
         prices: finalPrices,
+        deliveryCharge: charges.deliveryCharge,
+        serviceChargeRate: charges.serviceChargeRate,
+        serviceChargeAmount: charges.serviceChargeAmount,
         totalAmount,
         invoiceNo,
         officialInvoiceNo: invoiceNo,

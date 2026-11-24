@@ -120,6 +120,10 @@ export interface Order {
   notes?: string;
   time?: string;
   prices?: Record<string, number>;
+  delivery?: unknown;
+  deliveryCharge?: number;
+  serviceChargeRate?: number;
+  serviceChargeAmount?: number;
   totalAmount?: number;
   invoiceNo?: string;
   orderId?: string;
