@@ -252,7 +252,7 @@ describe('Widget Routes Authorization & Pricing Security', () => {
       expect(stringRes.status).toBe(400);
     });
 
-    it.each([{ lunch: 12.345 }, [12.5]])('rejects sub-cent or array pricing before billing', async (prices) => {
+    it.each([{ prices: { lunch: 12.345 } }, { prices: [12.5] }])('rejects sub-cent or array pricing before billing', async ({ prices }) => {
       const response = await fetch(baseUrl + '/api/widget/set-pricing', {
         method: 'POST',
         headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },

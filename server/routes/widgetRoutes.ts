@@ -467,7 +467,6 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Order quantity or meal information is invalid.' });
     }
 
-    let totalAmount = 0;
     const finalPrices: Record<string, number> = {};
 
     let missingMealPrice = false;
@@ -478,7 +477,6 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         continue;
       }
       finalPrices[meal] = priceForMeal;
-
     }
 
     // Preserve the existing single-default-price contract only when no individual
@@ -486,13 +484,12 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     if (missingMealPrice) {
       if (Object.keys(finalPrices).length === 0 && typeof prices.default === 'number' && Number.isFinite(prices.default) && prices.default > 0) {
         finalPrices.default = prices.default;
-
       } else {
         return res.status(400).json({ success: false, error: 'A valid price is required for every meal in the order.' });
       }
     }
 
-    totalAmount = orderFoodSubtotal(finalPrices, quantity);
+    let totalAmount = orderFoodSubtotal(finalPrices, quantity);
     if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
       return res.status(400).json({ success: false, error: 'Could not compute a valid total.' });
     }
