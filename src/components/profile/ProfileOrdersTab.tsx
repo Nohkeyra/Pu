@@ -1,5 +1,5 @@
 import { canViewRiderTracking } from '@/lib/riderTracking';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TrackingMapOrigin } from '@/components/delivery/RiderMapReveal';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -44,6 +44,7 @@ interface ProfileOrdersTabProps {
   language: 'en' | 'bm';
   ordersError?: boolean;
   onRetryOrders?: () => void;
+  focusedBookingId?: string;
   selectedOrders: Set<string>;
   isSelectMode: boolean;
   setIsSelectMode: (val: boolean | ((prev: boolean) => boolean)) => void;
@@ -64,6 +65,7 @@ interface ProfileOrdersTabProps {
 // Swipe-to-Reveal Delete Item
 interface OrderItemProps {
   order: Order;
+  isFocusedBooking: boolean;
   isSelected: boolean;
   isSelectMode: boolean;
   handleToggleOrderSelect: (id: string) => void;
@@ -83,6 +85,7 @@ interface OrderItemProps {
 
 function OrderItem({
   order,
+  isFocusedBooking,
   isSelected,
   isSelectMode,
   handleToggleOrderSelect,
@@ -104,6 +107,14 @@ function OrderItem({
   const x = useMotionValue(0);
   const swipeOpacity = useTransform(x, [-100, -50, 0], [1, 0, 0]);
   const swipeScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
+  const displayReference = getDisplayInvoiceNo(order);
+  const bookingReferenceLabel = t('Booking reference', 'Nombor rujukan');
+
+  useEffect(() => {
+    if (!isFocusedBooking || !cardRef.current) return;
+    cardRef.current.focus({ preventScroll: true });
+    cardRef.current.scrollIntoView({ block: 'center', behavior: 'instant' });
+  }, [isFocusedBooking]);
   
   const isDeletable = Boolean(order.id && (order.status || '').toLowerCase() === 'billed');
 
@@ -137,12 +148,15 @@ function OrderItem({
       {/* Foreground Draggable Card */}
       <motion.div
         ref={cardRef}
+        role={isFocusedBooking ? 'group' : undefined}
+        aria-label={isFocusedBooking ? `${bookingReferenceLabel} ${order.id}` : undefined}
+        tabIndex={isFocusedBooking ? -1 : undefined}
         drag={isDeletable && !isSelectMode ? "x" : false}
         dragConstraints={{ left: -100, right: 0 }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         style={{ x }}
-        className={`profile-order-card relative z-10 transition-colors ${
+        className={`profile-order-card relative z-10 transition-colors ${isFocusedBooking ? 'outline-2 -outline-offset-2 outline-[var(--ui-action)]' : ''} ${
           isSelected
             ? 'bg-stone-50/50 dark:bg-stone-900/30 border-primary/50 ring-2 ring-primary/20 shadow-sm'
             : order.deletedByAdmin
@@ -151,10 +165,13 @@ function OrderItem({
         }`}
       >
         <div className="profile-order-top">
-          <span className="profile-order-ref">{getDisplayInvoiceNo(order)}</span>
+          <span className="profile-order-ref">{displayReference}</span>
           <span className="profile-order-status">{getStatusBadge(order.status)}</span>
         </div>
         <div className="min-w-0">
+          {isFocusedBooking && displayReference !== order.id && (
+            <p className="profile-order-meta break-all">{bookingReferenceLabel} {order.id}</p>
+          )}
           <h4 className="profile-order-title">
             {order.eventType === 'pejabat' ? t('Office Feast', 'Jamuan Pejabat') : t('Private Event', 'Majlis Katering')}
           </h4>
@@ -338,6 +355,7 @@ export function ProfileOrdersTab({
   language,
   ordersError = false,
   onRetryOrders,
+  focusedBookingId,
   selectedOrders,
   isSelectMode,
   setIsSelectMode,
@@ -488,6 +506,11 @@ export function ProfileOrdersTab({
       </CardHeader>
 
       <CardContent className="p-0 pt-0 space-y-4">
+      {focusedBookingId && !isLoadingOrders && !ordersError && !orders.some((order) => order.id === focusedBookingId) && (
+        <p role="status" className="text-sm text-[var(--ui-muted)]">
+          {t('This booking is unavailable. Your booking history is shown below.', 'Tempahan ini tidak tersedia. Sejarah tempahan anda dipaparkan di bawah.')}
+        </p>
+      )}
 
       {ordersError && (
         <ErrorState
@@ -525,6 +548,7 @@ export function ProfileOrdersTab({
               <OrderItem 
                 key={order.id || `order-${idx}`}
                 order={order}
+                isFocusedBooking={Boolean(focusedBookingId && order.id === focusedBookingId)}
                 isSelected={isSelected}
                 isSelectMode={isSelectMode}
                 handleToggleOrderSelect={handleToggleOrderSelect}

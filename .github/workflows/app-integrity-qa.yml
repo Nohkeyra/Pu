@@ -12,6 +12,7 @@ on:
       - 'src/lib/appEntryRoutes.ts'
       - 'android/app/src/main/java/com/wawasanpakusop/app/MainActivity.java'
       - 'e2e/app-integrity.spec.ts'
+      - 'e2e/delete-account.spec.ts'
       - '.github/workflows/app-integrity-qa.yml'
 permissions:
   contents: read

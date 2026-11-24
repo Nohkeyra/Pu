@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { 
   Eye, 
-  ExternalLink,
+  ArrowRight,
   Share2,
   MessageCircle,
   Clock3,
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { scheduleLocalNotification, launchWhatsApp } from '@/lib/nativeService';
 import { RESTORAN_CONTACT } from '@/constants/contact';
 import { getAssetUrl } from '@/lib/utils';
+import { getCustomerBookingPath } from '@/lib/appEntryRoutes';
 
 interface OrderState {
   name: string;
@@ -30,6 +31,7 @@ interface OrderState {
 interface Step5OrderSuccessProps {
   orderState: OrderState;
   referenceNumber: string;
+  bookingId?: string;
   getMealTypesLabel: () => string;
   emailStatus: 'idle' | 'sending' | 'success' | 'failed';
   setShowPdfPreviewModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,6 +43,7 @@ interface Step5OrderSuccessProps {
 export function Step5OrderSuccess({
   orderState,
   referenceNumber,
+  bookingId,
   getMealTypesLabel,
   emailStatus,
   setShowPdfPreviewModal,
@@ -293,11 +296,11 @@ export function Step5OrderSuccess({
         </div>
 
         <Link
-          to="/profile"
+          to={getCustomerBookingPath(bookingId)}
           className="w-full h-12 rounded-2xl border border-stone/15 dark:border-white/10 flex items-center justify-center gap-2 text-deep-forest dark:text-white font-bold text-sm hover:bg-muted/50 transition-colors"
         >
-          <span>{tText('View Transaction Logs', 'Lihat Log Transaksi')}</span>
-          <ExternalLink className="w-4 h-4 text-stone" />
+          <span>{bookingId ? tText('View this booking', 'Lihat tempahan ini') : tText('View bookings', 'Lihat tempahan')}</span>
+          <ArrowRight className="w-4 h-4 text-stone" aria-hidden="true" />
         </Link>
       </div>
     </motion.div>

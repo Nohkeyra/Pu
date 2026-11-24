@@ -60,3 +60,23 @@ The [platform tests](../e2e/platform-restyle.spec.ts), [calendar tests](../e2e/c
 ## Verification limits
 
 Live Firebase credentials and a native Android runtime were unavailable. An APK screen rendered in Chromium with simulated device insets covers layout only. The native runtime is still needed for biometric prompts, Android Back behavior and real notifications, permissions, file sharing and device gestures. Live accounts and test-service access are still needed for email and Google sign-in, mailbox delivery, live order persistence, calendar synchronization, and invoice generation and dispatch. Keyboard behavior and selected contrast ratios were checked in the browser. Assistive technology and exhaustive contrast coverage across all states remain open.
+
+## Latest booking follow-up
+
+The signed-in dashboard shows the most recently submitted booking visible in the customer's history, with its event date, booking reference and status. Loading, empty history and a failed read have distinct messages. A retry refreshes the same customer's history.
+
+The dashboard and submission confirmation link to the matching card in profile history. The card receives keyboard focus once its record is available. An unavailable reference opens the customer's own history with an explanatory message.
+
+## Calendar selection follow-up
+
+The selected date and its booking status appear above the month grid. The action on an eligible empty day starts a catering draft with that date filled in. An incomplete schedule is labeled as such and offers a draft once the request finishes. Dates that fall inside the order form's existing minimum notice period display that requirement.
+
+Dates with visible bookings offer a jump to the day's agenda, including past dates. The agenda heading receives keyboard focus. Browsing another month clears the previous selection until a new day is picked.
+
+## Android first-run welcome
+
+The full neon welcome stays open on first launch until the user selects **Get Started**. Completion is recorded in Capacitor Preferences for the installation, with a local copy that keeps launches working when the native bridge responds slowly. Existing installations see the welcome once after updating because earlier versions had no saved completion flag.
+
+Returning launches use a static Wawasan logo while the native splash finishes, then follow the app's existing sign-in, customer or administrator route. The neon wall and sign artwork are loaded only while the full welcome is open. Screens and storage behavior are exercised in Chromium with a simulated Android bridge. Verification on an installed APK remains open.
+
+Four launch checks verified explicit entry by keyboard, completion on cold relaunch, the signed-out and administrator destinations, and recovery when the native preference read stalls or the write fails. The existing neon ignition, daylight, reduced motion, small and landscape layouts, app links, and system Back fixtures also passed.

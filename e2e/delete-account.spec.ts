@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { jsPDF } from 'jspdf';
 import { test, expect, type Page } from '@playwright/test';
+import type { Order } from '../src/types';
 
 async function setupCommonRoutes(
   page: Page,
@@ -8,6 +9,7 @@ async function setupCommonRoutes(
     simulateCustomer?: boolean;
     verifiedCustomer?: boolean;
     recoverProfileHistory?: boolean;
+    customerOrders?: Array<Partial<Order> & { id: string; userId: string }>;
     startSignedOut?: boolean;
     adminVerified?: boolean;
   } = {}
@@ -15,7 +17,10 @@ async function setupCommonRoutes(
   page.on('pageerror', error => console.error('Account fixture:', error.message));
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
-    if (!['localhost', '127.0.0.1'].includes(url.hostname)) return route.abort();
+    // Native API URLs are absolute. Let them reach the fixture responses below,
+    // while continuing to abort external assets. Every /api/ request is fulfilled
+    // locally; no request is continued to a real backend.
+    if (!['localhost', '127.0.0.1'].includes(url.hostname) && !url.pathname.startsWith('/api/')) return route.abort();
 
     if (options.simulateCustomer) {
       if (url.pathname === '/src/firebaseConfig.ts') {
@@ -146,11 +151,18 @@ async function setupCommonRoutes(
             export async function updateDoc() {}
             let historyRequests = 0;
             export function onSnapshot(source, next, fail) {
-              if (!${options.recoverProfileHistory === true} || source?.col?.col !== 'orders' || source?.clause?.field !== 'userId') return () => {};
-              const simulateError = historyRequests++ === 0;
+              if (source?.col?.col !== 'orders') return () => {};
+              if (!source.clause && ${options.adminVerified === true}) {
+                const timer = setTimeout(() => next({ forEach() {} }), 0);
+                return () => clearTimeout(timer);
+              }
+              if (source.clause?.field !== 'userId') return () => {};
+              const simulateError = ${options.recoverProfileHistory === true} && historyRequests++ === 0;
+              const fixtures = ${JSON.stringify(options.customerOrders ?? [])};
+              const ownedOrders = fixtures.filter(order => order.userId === source.clause.val);
               const timer = setTimeout(() => {
                 if (simulateError) fail(new Error('Simulated profile history outage'));
-                else next({ forEach() {} });
+                else next({ forEach: callback => ownedOrders.forEach(order => callback({ id: order.id, data: () => order })) });
               }, 250);
               return () => clearTimeout(timer);
             }
@@ -203,6 +215,46 @@ async function seedAppStorage(
       localStorage.removeItem('wawasan_admin_authenticated');
     }
   }, options);
+}
+
+const nativeWelcomeKey = 'wawasan_native_welcome_completed_v1';
+
+// Use the actual Capacitor platform detection and preference client with a local Android bridge.
+async function seedNativeLaunch(page: Page, options: {
+  completed?: boolean;
+  pauseSplash?: boolean;
+  stallWelcomeRead?: boolean;
+  failWelcomeWrite?: boolean;
+} = {}) {
+  await page.addInitScript(({ key, completed, pauseSplash, stallWelcomeRead, failWelcomeWrite }) => {
+    if (completed) localStorage.setItem(`CapacitorStorage.${key}`, 'true');
+    Object.assign(window, {
+      androidBridge: {},
+      Capacitor: {
+        PluginHeaders: [
+          { name: 'Preferences', methods: ['get', 'set', 'remove'].map(name => ({ name, rtype: 'promise' })) },
+          { name: 'SplashScreen', methods: [{ name: 'hide', rtype: 'promise' }] },
+        ],
+        nativePromise: async (plugin: string, method: string, input?: { key: string; value: string }) => {
+          if (plugin === 'SplashScreen') {
+            if (!pauseSplash) return;
+            return new Promise<void>(resolve => Object.assign(window, { __finishStartupSplash: resolve }));
+          }
+          if (!input) return;
+          const storageKey = `CapacitorStorage.${input.key}`;
+          if (method === 'get') {
+            if (stallWelcomeRead && input.key === key) return new Promise(() => {});
+            return { value: localStorage.getItem(storageKey) };
+          }
+          if (method === 'remove') localStorage.removeItem(storageKey);
+          if (method === 'set') {
+            if (failWelcomeWrite && input.key === key) throw new Error('Fixture preference write failed');
+            localStorage.setItem(storageKey, input.value);
+          }
+        },
+      },
+    });
+  }, { ...options, key: nativeWelcomeKey });
 }
 
 async function measureButtonContrast(locator: ReturnType<Page['locator']>): Promise<number> {
@@ -416,6 +468,7 @@ for (const [language, theme, width] of [
     const bm = language === 'bm';
     await expect(page.getByText('Pelanggan Ujian', { exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(bm ? 'Sahkan e-mel sebelum menghantar tempahan.' : 'Verify your email before submitting an order.')).toBeVisible();
+    await expect(page.getByText(bm ? 'Belum ada tempahan.' : 'No bookings yet.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: bm ? /Maklumat & tetapan/ : /Details & settings/ }).click();
     await expect(page).toHaveURL(/#\/settings$/);
     await page.locator('.settings-advanced summary').click();
@@ -484,7 +537,9 @@ test('verified customer completes a simulated catering submission', async ({ pag
   test.setTimeout(75_000);
   await page.setViewportSize({ width: 390, height: 900 });
   await page.clock.setFixedTime(new Date(2026, 10, 23, 12));
-  await setupCommonRoutes(page, { simulateCustomer: true, verifiedCustomer: true });
+  await setupCommonRoutes(page, { simulateCustomer: true, verifiedCustomer: true, customerOrders: [
+    { id: 'audit-booking-ref', userId: 'cust_e2e_1', status: 'pending', date: '2026-12-15' },
+  ] });
   await seedAppStorage(page, { language: 'bm', theme: 'dark' });
   let attempts = 0;
   await page.route('**/api/orders', route => {
@@ -517,6 +572,159 @@ test('verified customer completes a simulated catering submission', async ({ pag
   await expect(page.locator('#booking-sent-heading')).toBeVisible();
   await expect(page.locator('#booking-summary').getByText('audit-booking-ref', { exact: true })).toBeVisible();
   expect(attempts).toBe(2);
+  await page.getByRole('link', { name: 'Lihat tempahan ini' }).click();
+  await expect(page).toHaveURL(/#\/profile\?booking=audit-booking-ref$/);
+  await expect(page.getByRole('group', { name: 'Nombor rujukan audit-booking-ref' })).toBeFocused();
+});
+
+for (const [language, theme, width] of [['bm', 'dark', 320], ['en', 'light', 1280]] as const) {
+  test(`${language}: latest booking shows the most recently submitted visible order and opens it`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setupCommonRoutes(page, {
+      simulateCustomer: true,
+      recoverProfileHistory: true,
+      customerOrders: [
+        { id: 'older-audit-booking', userId: 'cust_e2e_1', createdAt: '2026-11-01', date: '2026-12-30', status: 'pending' },
+        { id: 'latest-audit-booking', userId: 'cust_e2e_1', createdAt: '2026-11-21', date: '2026-12-15', status: 'approved' },
+        { id: 'hidden-audit-booking', userId: 'cust_e2e_1', createdAt: '2026-11-23', deletedByUser: true },
+        { id: 'other-account-booking', userId: 'other-fixture-user', createdAt: '2026-11-24' },
+      ],
+    });
+    await seedAppStorage(page, { language, theme });
+    await page.goto('/#/app');
+    const bm = language === 'bm';
+    const card = page.getByRole('region', { name: bm ? 'Tempahan terkini' : 'Latest booking' });
+    await expect(card.getByRole('alert')).toBeVisible();
+    await card.getByRole('button', { name: bm ? 'Cuba lagi' : 'Try again' }).click();
+    await expect(card.getByText('latest-audit-booking', { exact: true })).toBeVisible();
+    await expect(card.getByText('15/12/2026', { exact: true })).toBeVisible();
+    await expect(card.getByText(bm ? 'Diluluskan' : 'Approved', { exact: true })).toBeVisible();
+    await expect(card.getByRole('alert')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 2);
+    await card.screenshot({ path: test.info().outputPath('latest-booking.png') });
+    await card.getByRole('link', { name: bm ? 'Lihat tempahan' : 'View booking' }).click();
+    await expect(page).toHaveURL(/#\/profile\?booking=latest-audit-booking$/);
+    await expect(page.getByRole('group', { name: bm ? 'Nombor rujukan latest-audit-booking' : 'Booking reference latest-audit-booking' })).toBeFocused();
+    await expect(page.locator('.profile-order-card')).toHaveCount(2);
+  });
+}
+
+test('unknown booking link shows only the signed-in customer history', async ({ page }) => {
+  await setupCommonRoutes(page, { simulateCustomer: true, customerOrders: [
+    { id: 'other-account-booking', userId: 'other-fixture-user', createdAt: '2026-11-24' },
+  ] });
+  await seedAppStorage(page, { language: 'en' });
+  await page.goto('/#/profile?booking=other-account-booking');
+  await expect(page.getByText('This booking is unavailable. Your booking history is shown below.')).toBeVisible();
+  await expect(page.getByText('No Past Orders Found', { exact: true })).toBeVisible();
+  await expect(page.locator('.profile-order-card')).toHaveCount(0);
+});
+
+test('Android welcome waits for Get Started once and survives a cold launch', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupCommonRoutes(page, { simulateCustomer: true });
+  await seedAppStorage(page, { language: 'en', theme: 'dark' });
+  await seedNativeLaunch(page);
+  await page.clock.install();
+  await page.goto('/#/');
+  const getStarted = page.getByRole('button', { name: 'Get Started' });
+  await expect(getStarted).toBeEnabled();
+  await expect(page.locator('.native-welcome')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('.native-welcome')).toHaveAttribute('data-sign-ready', 'true');
+  await page.clock.fastForward(5500);
+  await expect(getStarted).toBeInViewport();
+  await expect(page.locator('.customer-dashboard-welcome')).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), nativeWelcomeKey)).toBeNull();
+
+  await getStarted.focus();
+  await expect(getStarted).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#\/app$/);
+  await expect(page.locator('.customer-dashboard-welcome')).toBeVisible();
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(`CapacitorStorage.${key}`), nativeWelcomeKey)).toBe('true');
+
+  // Exercise the native preference read on cold launch without the local mirror.
+  await page.evaluate(key => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem('wawasan_app_initialized');
+  }, nativeWelcomeKey);
+  const requestedArtwork: string[] = [];
+  page.on('request', request => {
+    if (/wawasan-native-(neon|wall)/.test(request.url())) requestedArtwork.push(request.url());
+  });
+  await page.reload();
+  await expect(page).toHaveURL(/#\/app$/);
+  await expect(page.locator('.customer-dashboard-welcome')).toBeVisible();
+  await expect(getStarted).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), nativeWelcomeKey)).toBe('true');
+  expect(requestedArtwork).toHaveLength(0);
+});
+
+test('returning Android visitor sees the short startup cover and reaches sign-in', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true });
+  await seedAppStorage(page, { language: 'en' });
+  await seedNativeLaunch(page, { completed: true, pauseSplash: true });
+  await page.goto('/#/', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('status').getByText('Opening the app…')).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
+  await page.waitForFunction(() => '__finishStartupSplash' in window);
+  await page.evaluate(() => (window as unknown as { __finishStartupSplash: () => void }).__finishStartupSplash());
+  await expect(page).toHaveURL(/#\/login$/);
+  await expect(page.getByRole('button', { name: 'Sign In / Register', exact: true })).toBeVisible();
+});
+
+test('returning Android administrator keeps the existing admin landing screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true, adminVerified: true });
+  await seedAppStorage(page, { language: 'en', isAdmin: true });
+  await seedNativeLaunch(page, { completed: true });
+  const [verification] = await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/verify'
+      && response.request().method() === 'GET' && response.status() === 200),
+    page.goto('/#/'),
+  ]);
+  expect(await verification.json()).toMatchObject({ verified: true, admin: true });
+  await expect(page).toHaveURL(/#\/admin$/);
+  await expect(page.locator('.app-admin-tabs')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
+});
+
+test('returning Android administrator cannot restore a rejected stored token', async ({ page }) => {
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true, adminVerified: false });
+  await seedAppStorage(page, { language: 'en', isAdmin: true });
+  await seedNativeLaunch(page, { completed: true });
+  const [verification] = await Promise.all([
+    page.waitForResponse(response => new URL(response.url()).pathname === '/api/admin/verify'
+      && response.request().method() === 'GET' && response.status() === 401),
+    page.goto('/#/'),
+  ]);
+  expect(await verification.json()).toMatchObject({ success: false, error: 'Unauthorized' });
+  await expect(page.getByRole('heading', { name: 'Admin Access Restricted' })).toBeVisible();
+  await expect(page.locator('.app-admin-tabs')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('wawasan_admin_token'))).toBeNull();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('CapacitorStorage.wawasan_admin_token'))).toBeNull();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
+});
+
+test('Android welcome recovers from a slow read and a failed native save', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupCommonRoutes(page, { simulateCustomer: true, startSignedOut: true });
+  await seedAppStorage(page, { language: 'en' });
+  await seedNativeLaunch(page, { stallWelcomeRead: true, failWelcomeWrite: true });
+  await page.goto('/#/');
+  const getStarted = page.getByRole('button', { name: 'Get Started' });
+  await expect(getStarted).toBeEnabled();
+  await expect(page.locator('.native-welcome')).toHaveAttribute('data-theme', 'light');
+  await getStarted.click();
+  await expect(page).toHaveURL(/#\/login$/);
+  expect(await page.evaluate(key => localStorage.getItem(key), nativeWelcomeKey)).toBe('true');
+  expect(await page.evaluate(key => localStorage.getItem(`CapacitorStorage.${key}`), nativeWelcomeKey)).toBeNull();
+  await page.evaluate(() => sessionStorage.removeItem('wawasan_app_initialized'));
+  await page.reload();
+  await expect(page).toHaveURL(/#\/login$/);
+  await expect(page.getByRole('button', { name: 'Sign In / Register', exact: true })).toBeVisible();
+  await expect(getStarted).toHaveCount(0);
 });
 
 test('public landing aliases and fallback reach the same home screen', async ({ page }) => {

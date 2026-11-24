@@ -1,4 +1,4 @@
-/* Member workspace: one primary booking action, then four quiet shortcuts. */
+/* Member workspace, latest booking and navigation shortcuts. */
 .customer-dashboard-page .customer-dashboard-content { max-width: 1040px; display: flex; flex-direction: column; gap: 28px; }
 .customer-dashboard-page .customer-dashboard-welcome { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(180px, .8fr); align-items: center; gap: 24px; padding: 32px; border: 1px solid var(--ui-border); border-radius: 24px 24px 8px 24px; background: var(--ui-raised); box-shadow: var(--rw-paper-shadow); position: relative; isolation: isolate; }
 .customer-dashboard-welcome-copy { min-width: 0; }
@@ -11,6 +11,15 @@
 .customer-dashboard-welcome-art { position: relative; isolation: isolate; }
 .customer-dashboard-welcome-art::before { content: ''; position: absolute; z-index: -1; inset: 12% 7%; border-radius: 50% 50% 16px 16px; background: var(--ui-yellow); transform: rotate(8deg); }
 .customer-dashboard-welcome-art > svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 10px color-mix(in srgb, var(--ui-shadow-ink) 14%, transparent)); }
+.customer-dashboard-page .customer-dashboard-latest { border-color: var(--ui-border); background: var(--ui-surface); color: var(--ui-ink); }
+.customer-dashboard-latest-heading, .customer-dashboard-latest-body, .customer-dashboard-booking-retry { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.customer-dashboard-latest-heading h2 { font: 700 1.25rem/1.3 var(--font-display); }
+.customer-dashboard-latest-body { margin-top: 14px; }
+.customer-dashboard-booking-facts { display: flex; flex-wrap: wrap; gap: 8px 28px; min-width: 0; }
+.customer-dashboard-booking-facts dt, .customer-dashboard-booking-message { color: var(--ui-muted); font-size: .875rem; }
+.customer-dashboard-booking-facts dd { font-weight: 650; overflow-wrap: anywhere; }
+.customer-dashboard-booking-message, .customer-dashboard-booking-retry { margin-top: 10px; }
+.customer-dashboard-booking-retry .customer-dashboard-booking-message { margin-top: 0; }
 .customer-dashboard-shortcuts-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 16px; }
 .customer-dashboard-shortcuts-heading h2 { font: 700 1.25rem/1.3 var(--font-display); color: var(--ui-ink); }
 .customer-dashboard-shortcuts-heading p { font-size: .8125rem; color: var(--ui-muted); }
