@@ -5,17 +5,26 @@ const aliases: Record<string, OrderStatusKey> = {
   dibatalkan: 'cancelled', ditolak: 'rejected',
 };
 
-const statuses: Record<OrderStatusKey, { en: string; bm: string; className: string }> = {
-  pending: { en: 'Pending review', bm: 'Dalam semakan', className: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700' },
-  approved: { en: 'Approved', bm: 'Diluluskan', className: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-700' },
-  billed: { en: 'Billed', bm: 'Telah diinvois', className: 'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-200 dark:border-indigo-700' },
-  in_transit: { en: 'In transit', bm: 'Dalam perjalanan', className: 'bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-950/60 dark:text-sky-200 dark:border-sky-700' },
-  delivered: { en: 'Delivered', bm: 'Dihantar', className: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-700' },
-  completed: { en: 'Completed', bm: 'Selesai', className: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-200 dark:border-stone-600' },
-  cancel_requested: { en: 'Cancellation requested', bm: 'Pembatalan dimohon', className: 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-700' },
-  cancelled: { en: 'Cancelled', bm: 'Dibatalkan', className: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-200 dark:border-stone-600' },
-  rejected: { en: 'Rejected', bm: 'Ditolak', className: 'bg-red-100 text-red-900 border-red-300 dark:bg-red-950/60 dark:text-red-200 dark:border-red-700' },
-  unknown: { en: 'Status unavailable', bm: 'Status belum tersedia', className: 'bg-stone-100 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-200 dark:border-stone-600' },
+const statusToneClass = {
+  pending: '[--order-status-accent:var(--ui-order-status-pending)]',
+  success: '[--order-status-accent:var(--ui-order-status-success)]',
+  danger: '[--order-status-accent:var(--ui-order-status-danger)]',
+  neutral: '[--order-status-accent:var(--ui-muted)]',
+} as const;
+
+const statusSurfaceClass = 'bg-[color-mix(in_srgb,var(--order-status-accent)_9%,var(--ui-surface))] text-[color:var(--ui-ink)] border-[color:color-mix(in_srgb,var(--order-status-accent)_53%,var(--ui-surface))]';
+
+const statuses: Record<OrderStatusKey, { en: string; bm: string; tone: keyof typeof statusToneClass }> = {
+  pending: { en: 'Pending review', bm: 'Dalam semakan', tone: 'pending' },
+  approved: { en: 'Approved', bm: 'Diluluskan', tone: 'success' },
+  billed: { en: 'Billed', bm: 'Telah diinvois', tone: 'neutral' },
+  in_transit: { en: 'In transit', bm: 'Dalam perjalanan', tone: 'neutral' },
+  delivered: { en: 'Delivered', bm: 'Dihantar', tone: 'success' },
+  completed: { en: 'Completed', bm: 'Selesai', tone: 'neutral' },
+  cancel_requested: { en: 'Cancellation requested', bm: 'Pembatalan dimohon', tone: 'danger' },
+  cancelled: { en: 'Cancelled', bm: 'Dibatalkan', tone: 'neutral' },
+  rejected: { en: 'Rejected', bm: 'Ditolak', tone: 'danger' },
+  unknown: { en: 'Status unavailable', bm: 'Status belum tersedia', tone: 'neutral' },
 };
 
 export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -35,5 +44,6 @@ export function getOrderStatus(status: string | undefined, language: 'en' | 'bm'
   const normalized = status?.trim().toLowerCase() || 'pending';
   const alias = Object.prototype.hasOwnProperty.call(aliases, normalized) ? aliases[normalized] : undefined;
   const key: OrderStatusKey = alias || (Object.prototype.hasOwnProperty.call(statuses, normalized) ? normalized as OrderStatusKey : 'unknown');
-  return { key, label: statuses[key][language], className: statuses[key].className };
+  const presentation = statuses[key];
+  return { key, label: presentation[language], className: `${statusSurfaceClass} ${statusToneClass[presentation.tone]}` };
 }

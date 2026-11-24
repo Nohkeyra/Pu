@@ -22,6 +22,7 @@ export function OrderStatusBadge({ status, language, className }: OrderStatusBad
         className,
       )}
     >
+      <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[var(--order-status-accent)]" />
       {presentation.label}
     </Badge>
   );
