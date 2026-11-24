@@ -38,6 +38,25 @@ export const DEFAULT_VERSION_CONFIG: AppVersionConfig = {
   publishedBy: 'System Admin'
 };
 
+// A missing/unreachable release registry must not turn a source version into
+// a downloadable update. Keep DEFAULT_VERSION_CONFIG for admin form defaults.
+export const NO_PUBLISHED_RELEASE: AppVersionConfig = {
+  ...DEFAULT_VERSION_CONFIG,
+  latestVersion: '0.0.0',
+  minVersion: '0.0.0',
+  buildNumber: 0,
+  apkUrl: '',
+  bundleUrl: '',
+  releaseNotes: [],
+  forceUpdate: false,
+  publishedBy: 'Unavailable',
+};
+
+function readPublishedConfig(data: Partial<AppVersionConfig>): AppVersionConfig | null {
+  if (typeof data.latestVersion !== 'string' || !semver.valid(data.latestVersion) || !data.apkUrl) return null;
+  return { ...NO_PUBLISHED_RELEASE, ...data };
+}
+
 /**
  * Resolves the currently running/installed app version and build number.
  * On native Android / iOS platforms, queries @capacitor/app directly.
@@ -160,7 +179,8 @@ export async function fetchLatestAppVersion(): Promise<AppVersionConfig> {
     const docRef = doc(db, 'app_config', 'version');
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return { ...DEFAULT_VERSION_CONFIG, ...snap.data() } as AppVersionConfig;
+      const published = readPublishedConfig(snap.data());
+      if (published) return published;
     }
   } catch (err) {
     console.warn('[UpdateService] Firestore version check fallback to API:', err);
@@ -172,14 +192,15 @@ export async function fetchLatestAppVersion(): Promise<AppVersionConfig> {
     if (res.ok) {
       const data = await res.json();
       if (data && data.latestVersion) {
-        return { ...DEFAULT_VERSION_CONFIG, ...data };
+        const published = readPublishedConfig(data);
+        if (published) return published;
       }
     }
   } catch (err) {
     console.warn('[UpdateService] API version check fallback failed:', err);
   }
 
-  return DEFAULT_VERSION_CONFIG;
+  return NO_PUBLISHED_RELEASE;
 }
 
 /**
@@ -190,14 +211,13 @@ export function subscribeToAppUpdates(callback: (config: AppVersionConfig) => vo
   
   const unsubscribe = onSnapshot(docRef, (snap) => {
     if (snap.exists()) {
-      const data = { ...DEFAULT_VERSION_CONFIG, ...snap.data() } as AppVersionConfig;
-      callback(data);
+      callback(readPublishedConfig(snap.data()) ?? NO_PUBLISHED_RELEASE);
     } else {
-      callback(DEFAULT_VERSION_CONFIG);
+      callback(NO_PUBLISHED_RELEASE);
     }
   }, (err) => {
     console.warn('[UpdateService] Real-time updates subscription fallback:', err);
-    callback(DEFAULT_VERSION_CONFIG);
+    callback(NO_PUBLISHED_RELEASE);
   });
 
   return unsubscribe;

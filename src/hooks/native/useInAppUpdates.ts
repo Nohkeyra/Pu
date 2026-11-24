@@ -97,6 +97,9 @@ export function useInAppUpdates() {
     setChecking(true);
     try {
       const config = await fetchLatestAppVersion();
+      if (!config.apkUrl || config.latestVersion === '0.0.0') {
+        throw new Error('Published release information is temporarily unavailable.');
+      }
       const localInfo = await getInstalledAppInfo();
       setCurrentVersion(localInfo.version);
       setCurrentBuild(localInfo.buildNumber);

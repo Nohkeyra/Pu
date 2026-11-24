@@ -252,6 +252,15 @@ describe('Widget Routes Authorization & Pricing Security', () => {
       expect(stringRes.status).toBe(400);
     });
 
+    it.each([{ prices: { lunch: 12.345 } }, { prices: [12.5] }])('rejects sub-cent or array pricing before billing', async ({ prices }) => {
+      const response = await fetch(baseUrl + '/api/widget/set-pricing', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: 'invalid_pricing_precision', prices }),
+      });
+      expect(response.status).toBe(400);
+    });
+
     it('rejects pricing when an order has multiple meals and not all are priced', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('ord_multi_meal').set({

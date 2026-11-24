@@ -43,7 +43,7 @@ describe('GET /api/app-version read-only behavior', () => {
 
   it('performs zero Firestore .set() writes on GET even when stored version is outdated', async () => {
     const db = getFirestore();
-    await db.collection('app_config').doc('version').set({ latestVersion: '1.0.0' });
+    await db.collection('app_config').doc('version').set({ latestVersion: '1.0.0', apkUrl: 'https://github.com/Nohkeyra/Pu/releases/download/v1.0.0/app-release-signed.apk', buildNumber: 100 });
 
     const originalCollection = db.collection.bind(db);
     const setSpy = vi.fn();
@@ -73,9 +73,9 @@ describe('GET /api/app-version read-only behavior', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    // The response should prefer the configured current version over the stale stored value.
-    // Avoid pinning a specific release number here; CI can bump versions before running tests.
-    expect(json.latestVersion).not.toBe('1.0.0');
+    // Never advertise a build-time version over the last published version.
+    expect(json.latestVersion).toBe('1.0.0');
+    expect(json.apkUrl).toContain('/v1.0.0/');
     expect(setSpy).not.toHaveBeenCalled();
   });
 });

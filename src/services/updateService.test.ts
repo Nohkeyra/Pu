@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareVersions, isUpdateRequired, type AppVersionConfig } from './updateService';
+import { compareVersions, isUpdateRequired, NO_PUBLISHED_RELEASE, type AppVersionConfig } from './updateService';
 
 // F-TEST (audit 2026-08-11): compareVersions/isUpdateRequired decide whether
 // the app force-updates a customer or silently offers an optional update.
@@ -51,6 +51,10 @@ describe('isUpdateRequired', () => {
     forceUpdate: false,
     updatedAt: new Date().toISOString(),
   };
+
+  it('does not announce or force an update when the published release registry is unavailable', () => {
+    expect(isUpdateRequired(NO_PUBLISHED_RELEASE, '1.2.0', 120)).toEqual({ hasUpdate: false, isForce: false });
+  });
 
   it('flags an optional update when latestVersion is newer than current, but current still meets minVersion', () => {
     const result = isUpdateRequired(baseConfig, '1.2.5');

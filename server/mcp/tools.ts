@@ -1,4 +1,4 @@
-import { calculateOrderCharges } from '../../src/lib/orderCharges.js';
+import { calculateOrderCharges, orderFoodSubtotal, validCharge } from '../../src/lib/orderCharges.js';
 import { z } from 'zod';
 import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
@@ -122,17 +122,19 @@ function activeOrder(data: Record<string, any>): boolean {
 
 function calculatePrices(order: Record<string, any>, prices: Record<string, number>) {
   const quantity = Number(order.quantity || order.guests || order.pax || 0);
-  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Order has an invalid quantity/pax value.');
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) throw new Error('Order has an invalid quantity/pax value.');
 
   const meals: string[] = Array.isArray(order.meals) ? order.meals : (order.meals ? [String(order.meals)] : []);
+  if (meals.some(meal => typeof meal !== 'string' || !meal.trim()) || new Set(meals).size !== meals.length)
+    throw new Error('Order has invalid or duplicate meal types.');
+  if (Object.values(prices).some(price => !validCharge(price) || price <= 0))
+    throw new Error('Each meal must have a valid positive MYR price in whole cents.');
   const finalPrices: Record<string, number> = {};
-  let totalAmount = 0;
 
   if (meals.length === 0) {
     const defaultPrice = prices.default;
     if (!defaultPrice) throw new Error('No meal types are stored on this order. Provide a positive prices.default value.');
-    finalPrices.default = Math.round(defaultPrice * 100) / 100;
-    totalAmount = finalPrices.default * quantity;
+    finalPrices.default = defaultPrice;
   } else {
     for (const meal of meals) {
       const normalized = meal.replace('_', '');
@@ -140,12 +142,11 @@ function calculatePrices(order: Record<string, any>, prices: Record<string, numb
       if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
         throw new Error(`Missing positive price for meal '${meal}'. Provide a price for every meal on the order.`);
       }
-      finalPrices[meal] = Math.round(price * 100) / 100;
-      totalAmount += finalPrices[meal] * quantity;
+      finalPrices[meal] = price;
     }
   }
 
-  const charges = calculateOrderCharges(totalAmount, order);
+  const charges = calculateOrderCharges(orderFoodSubtotal(finalPrices, quantity), order);
   return { quantity, finalPrices, ...charges };
 }
 

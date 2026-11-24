@@ -7,6 +7,7 @@ import {
   getFirestore,
   type OrderData,
   generateSequentialInvoiceNo,
+  allocateInvoiceNumbers,
   verifyCustomerIdToken,
   verifyFirebaseIdToken,
   sendNotificationToTopic,
@@ -20,7 +21,7 @@ import {
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
-import { toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
+import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
   paginateSortedOrders,
   sortOrdersByCreatedAt,
@@ -286,9 +287,8 @@ router.post(
       if (idempotencyKey) {
         const idempRef = db.collection('idempotency_keys').doc(idempotencyKey);
         const orderRef = db.collection('orders').doc();
-        // Reserve the invoice number outside the transaction. Concurrent retries may
-        // leave gaps in the sequence, but cannot create two orders for the same key.
-        const reservedInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
+        // Read the idempotency record first; allocate a number only for a new order,
+        // inside the same transaction so duplicate requests do not consume numbers.
         const transactionResult = await db.runTransaction(async (transaction) => {
           const existing = await transaction.get(idempRef);
           if (existing.exists) {
@@ -306,6 +306,7 @@ router.post(
               invoiceNo: String(data.invoiceNo || ''),
             };
           }
+          const [reservedInvoiceNo] = await allocateInvoiceNumbers(transaction, 1, true, derivedDate);
           const orderWithInvoice = {
             ...sanitizedOrderDoc,
             invoiceNo: reservedInvoiceNo,
@@ -579,10 +580,23 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
       }
       const updates: Partial<OrderData> = { updatedAt: FieldValue.serverTimestamp() };
       if (typeof notes === 'string') updates.notes = notes.slice(0, 5000);
-      if (typeof time === 'string') {
-        const dateVal = (oldData as any).eventDate || oldData.date;
+      if (time !== undefined) {
+        const dateVal = oldData.eventDate || oldData.date;
         const dateTime = toMalaysiaDateTime(dateVal, time);
         if (!dateTime) return { error: 'Valid event time (HH:mm) is required', httpStatus: 400 } as const;
+        // An unchanged time in a notes-only edit must not reapply the booking cutoff.
+        if (dateTime.slice(11, 16) !== oldData.time) {
+          const quantity = Number(oldData.quantity ?? oldData.guests ?? oldData.pax);
+          if (!Number.isSafeInteger(quantity) || quantity <= 0)
+            return { error: 'Order quantity is invalid', httpStatus: 400 } as const;
+          const issue = getBookingNoticeError(dateVal, time, quantity);
+          if (issue === 'past')
+            return { error: 'Event time cannot be in the past.', httpStatus: 400 } as const;
+          if (issue === 'notice')
+            return { error: 'Event time does not meet the minimum advance booking notice.', httpStatus: 400 } as const;
+          if (issue === 'invalid')
+            return { error: 'Valid event date and time are required', httpStatus: 400 } as const;
+        }
         updates.time = dateTime.slice(11, 16);
         updates.dateTime = dateTime;
       }

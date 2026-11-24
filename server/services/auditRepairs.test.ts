@@ -232,6 +232,23 @@ it('returns an awaitable error when standalone enqueue cannot persist', async ()
   ).rejects.toThrow('outbox unavailable');
 });
 
+it('rejects sub-cent MCP billing before changing the order or creating an invoice job', async () => {
+  const id = 'repair_mcp_subcent';
+  const ref = db.collection('orders').doc(id);
+  await ref.set({
+    status: 'pending', quantity: 10, meals: ['lunch'],
+    invoiceNo: 'QT REPAIR-00003', email: 'audit@example.invalid',
+  });
+  const result = await executeMcpTool(
+    'bill_order',
+    { orderId: id, prices: { lunch: 12.345 }, sendInvoiceEmail: true },
+    { scopes: ['wawasan'] }
+  );
+  expect(result.isError).toBe(true);
+  expect((await ref.get()).data()?.status).toBe('pending');
+  expect((await db.collection('invoice_outbox').where('orderId', '==', id).get()).size).toBe(0);
+});
+
 it('queues exactly one invoice for competing MCP billing actions after committing the record', async () => {
   const id = 'repair_mcp_bill';
   await db

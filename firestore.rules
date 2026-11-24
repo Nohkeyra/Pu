@@ -51,7 +51,7 @@ service cloud.firestore {
 
     match /orders/{orderId} {
 
-      // Orders are created through the server API, including guest submissions.
+      // Orders are created through the server API by verified customers.
       // Admin SDK writes bypass these client security rules.
       allow create: if false;
 
@@ -61,40 +61,10 @@ service cloud.firestore {
                         || resource.data.uid == request.auth.uid
                         || resource.data.userId == request.auth.uid);
 
-      // Rider telemetry is written only by the authenticated, validated server endpoints.
-      allow update: if isAdmin()
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['riderLocation', 'riderTrackingSession'])
-        && orderId.matches('^[A-Za-z0-9_-]{5,50}$')
-        && request.resource.data.name     == resource.data.name
-        && request.resource.data.email    == resource.data.email
-        && request.resource.data.contact  == resource.data.contact
-        && request.resource.data.location == resource.data.location
-        && request.resource.data.quantity == resource.data.quantity
-        && request.resource.data.meals    == resource.data.meals
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.status in [
-             'pending','approved','billed','in_transit','delivered','cancelled','rejected','cancel_requested','completed'
-           ]
-        && (
-          (resource.data.status == 'pending'          && request.resource.data.status in ['pending','approved','billed','cancelled','rejected','cancel_requested']) ||
-          (resource.data.status == 'approved'         && request.resource.data.status in ['approved','billed','in_transit','cancelled','rejected','cancel_requested']) ||
-          (resource.data.status == 'billed'           && request.resource.data.status in ['billed','in_transit','delivered','completed','cancelled','cancel_requested']) ||
-          (resource.data.status == 'in_transit'       && request.resource.data.status in ['in_transit','delivered','completed','cancelled']) ||
-          (resource.data.status == 'delivered'        && request.resource.data.status in ['delivered','completed']) ||
-          (resource.data.status == 'cancel_requested' && request.resource.data.status in ['cancel_requested','cancelled','approved','pending']) ||
-          (resource.data.status == 'cancelled'        && request.resource.data.status == 'cancelled') ||
-          (resource.data.status == 'rejected'         && request.resource.data.status == 'rejected') ||
-          (resource.data.status == 'completed'        && request.resource.data.status == 'completed')
-        )
-        && (
-          !(request.resource.data.status in ['approved','billed','delivered','in_transit']) ||
-          (
-            request.resource.data.prices is map &&
-            request.resource.data.prices.keys().size() == request.resource.data.meals.size()
-          )
-        )
-        && (!('invoiceNo' in request.resource.data)
-            || (request.resource.data.invoiceNo is string && request.resource.data.invoiceNo.size() <= 100));
+      // All order mutations, including administrator billing/status and rider
+      // telemetry, go through authenticated server endpoints using the Admin SDK.
+      // Direct client writes would bypass transactional financial invariants.
+      allow update: if false;
 
       // F-07: no client-side delete. Archive only via Admin SDK.
       allow delete: if false;

@@ -47,6 +47,19 @@ const DEFAULT_VERSION_CONFIG = {
   publishedBy: 'System Admin'
 };
 
+// Build-time constants identify source versions, not published releases.
+const NO_PUBLISHED_RELEASE = {
+  ...DEFAULT_VERSION_CONFIG,
+  latestVersion: '0.0.0',
+  minVersion: '0.0.0',
+  buildNumber: 0,
+  apkUrl: '',
+  bundleUrl: '',
+  releaseNotes: [],
+  forceUpdate: false,
+  publishedBy: 'Unavailable',
+};
+
 router.get('/app-version', async (_req, res) => {
   try {
     const db = getFirestore();
@@ -54,17 +67,14 @@ router.get('/app-version', async (_req, res) => {
     const docSnap = await docRef.get();
     if (docSnap.exists) {
       const data = docSnap.data() || {};
-      const remoteVer = String(data.latestVersion || '0.0.0');
-      const cleanRemote = semver.clean(remoteVer) || semver.coerce(remoteVer)?.version || '0.0.0';
-      if (semver.valid(cleanRemote) && semver.lt(cleanRemote, DEFAULT_VERSION_CONFIG.latestVersion)) {
-        const merged = { ...data, ...DEFAULT_VERSION_CONFIG };
-        return res.json({ success: true, ...merged });
+      if (typeof data.latestVersion === 'string' && semver.valid(data.latestVersion)
+        && typeof data.apkUrl === 'string' && isAllowedApkUrl(data.apkUrl)) {
+        return res.json({ success: true, ...NO_PUBLISHED_RELEASE, ...data });
       }
-      return res.json({ success: true, ...DEFAULT_VERSION_CONFIG, ...data });
     }
-    return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
+    return res.json({ success: true, ...NO_PUBLISHED_RELEASE });
   } catch {
-    return res.json({ success: true, ...DEFAULT_VERSION_CONFIG });
+    return res.json({ success: true, ...NO_PUBLISHED_RELEASE });
   }
 });
 

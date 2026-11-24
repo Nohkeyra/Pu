@@ -7,6 +7,7 @@ import { getFirestore } from '../firebaseAdmin.js';
 import { firestoreQuota } from '../services/firestoreQuota';
 import { publicCalendar } from '../services/publicCalendar';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
+import { getEarliestBookingSlot, ADVANCE_BOOKING_HOURS } from '../../src/lib/dateUtils.js';
 
 describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', () => {
   it('normalizes the same supported dates as the order validator', () => {
@@ -166,6 +167,24 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       expect((await db.collection('orders').doc('unpriced_bill_test').get()).data()?.status).toBe('approved');
     });
 
+    it('rejects a mismatched or incomplete explicit bill even for a legacy order without charge fields', async () => {
+      const ref = getFirestore().collection('orders').doc('legacy_billing_total_test');
+      await ref.set({ status: 'approved', quantity: 20, meals: ['breakfast', 'lunch'], prices: {}, totalAmount: 0 });
+      for (const data of [
+        { status: 'billed', prices: { lunch: 15 }, totalAmount: 300 },
+        { status: 'billed', prices: { breakfast: 5, lunch: 15 }, totalAmount: 399 },
+        { status: 'billed', prices: { breakfast: 5, lunch: 15, extra: 1 }, totalAmount: 420 },
+      ]) {
+        const res = await fetch(baseUrl + '/api/admin/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify({ action: 'update', orderId: ref.id, data }),
+        });
+        expect(res.status).toBe(400);
+        expect((await ref.get()).data()?.status).toBe('approved');
+      }
+    });
+
     it('allows PATCH /status to billed when positive pricing already exists on the order', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('priced_bill_test').set({
@@ -247,6 +266,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
 
     it('creates only one order when the same request arrives concurrently', async () => {
       const key = `concurrent_${Date.now()}`;
+      const reservations = getFirestore().collection('invoice_numbers');
+      const before = (await reservations.get()).size;
       const requests = Array.from({ length: 4 }, () => fetch(`${baseUrl}/api/orders`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
         body: JSON.stringify({ ...orderPayload, idempotencyKey: key }),
@@ -256,6 +277,8 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       const bodies = await Promise.all(responses.map(response => response.json()));
       expect(new Set(bodies.map(body => body.id)).size).toBe(1);
       expect(bodies.filter(body => body.duplicate === false)).toHaveLength(1);
+      expect(new Set(bodies.map(body => body.invoiceNo)).size).toBe(1);
+      expect((await reservations.get()).size - before).toBe(1);
     });
 
     it('rejects guest orders with or without a claimed user', async () => {
@@ -703,6 +726,43 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
         expect((sessionDay as any).name).toBeUndefined();
         expect((sessionDay as any).email).toBeUndefined();
       }
+    });
+  });
+
+  describe('Customer rescheduling booking notice', () => {
+    it.each([
+      { name: 'past', offsetHours: -2, quantity: 1, expected: 400 },
+      { name: 'insufficient_notice', offsetHours: 1, quantity: 30, expected: 400 },
+      { name: 'valid_notice', offsetHours: ADVANCE_BOOKING_HOURS + 2, quantity: 30, expected: 200 },
+    ])('validates $name inside the update transaction', async ({ name, offsetHours, quantity, expected }) => {
+      const db = getFirestore();
+      const slot = getEarliestBookingSlot(1, Date.now() + offsetHours * 3_600_000);
+      const originalTime = slot.time === '23:59' ? '23:58' : '23:59';
+      const ref = db.collection('orders').doc('reschedule_' + name);
+      await ref.set({ userId: 'reschedule_owner', status: 'pending', quantity, eventDate: slot.date, time: originalTime });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('reschedule_owner');
+      const response = await fetch(baseUrl + '/api/orders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+        body: JSON.stringify({ orderId: ref.id, time: slot.time, notes: 'reschedule test' }),
+      });
+      expect(response.status).toBe(expected);
+      const saved = (await ref.get()).data();
+      expect(saved?.time).toBe(expected === 200 ? slot.time : originalTime);
+      expect(saved?.notes).toBe(expected === 200 ? 'reschedule test' : undefined);
+    });
+    it('preserves notes-only edits even when the original booking cutoff has passed', async () => {
+      const ref = getFirestore().collection('orders').doc('reschedule_notes_only');
+      const slot = getEarliestBookingSlot(1, Date.now() - 2 * 3_600_000);
+      await ref.set({ userId: 'reschedule_owner', status: 'pending', quantity: 30, eventDate: slot.date, time: slot.time });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('reschedule_owner');
+      const response = await fetch(baseUrl + '/api/orders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+        body: JSON.stringify({ orderId: ref.id, time: slot.time, notes: 'updated notes' }),
+      });
+      expect(response.status).toBe(200);
+      expect((await ref.get()).data()?.notes).toBe('updated notes');
     });
   });
 

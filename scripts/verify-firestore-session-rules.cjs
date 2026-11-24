@@ -56,6 +56,8 @@ async function main() {
     await expectStatus(order, token('session-rules-owner'), 200);
     await expectStatus(order, token('session-rules-other'), 403);
     await expectStatus(order, token(uid, true), 200);
+    await expectStatus(order, token(uid, true), 403, 'PATCH', { status: { stringValue: 'billed' } });
+    await expectStatus(order, token('session-rules-owner'), 403, 'PATCH', { totalAmount: { integerValue: '1' } });
     await expectStatus(settings, token(uid, true), 200, 'PATCH', { value: { stringValue: 'before-logout' } });
 
     await expectStatus(record, 'owner', 200, 'PATCH', { uid: { stringValue: uid } });
