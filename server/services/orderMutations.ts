@@ -19,7 +19,7 @@ export function validateAdminOrderUpdate(data: unknown): string | null {
     if (!ADMIN_ORDER_MUTABLE_FIELDS.has(key) || key.includes('.')) return `Unsupported order update field: ${key}`;
     if (key === 'status' && (typeof value !== 'string' || !value.trim())) return 'Invalid order status';
     if (key === 'prices' && (value === null || typeof value !== 'object' || Array.isArray(value) ||
-      Object.entries(value).some(([meal, price]) => !meal || typeof price !== 'number' || !Number.isFinite(price) || price < 0))) {
+      Object.entries(value).some(([meal, price]) => !meal.trim() || !validCharge(price)))) {
       return 'Invalid meal prices';
     }
     if ((key === 'deliveryCharge' || key === 'serviceChargeAmount') && !validCharge(value)) return 'Invalid charge amount';
@@ -108,14 +108,21 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
     }
 
     const updates: Partial<OrderData> = { ...data, updatedAt: FieldValue.serverTimestamp() };
-    // Recompute totals for charge-aware orders from persisted quantity and meal prices.
-    // Status-only transitions and historical invoices without charges stay unchanged.
+    // Recompute every explicitly submitted bill from persisted quantity and meal prices.
+    // Preserve existing historical records for status-only transitions.
     const chargeFields = ['deliveryCharge', 'serviceChargeRate', 'serviceChargeAmount'];
     const hasChargeChange = chargeFields.some(key => key in data);
     if (hasChargeChange && (data.status !== 'billed' || !data.prices)) return { error: 'Charges must be saved with invoice pricing', httpStatus: 400 } as const;
-    if (data.status === 'billed' && data.prices && (hasChargeChange || oldData.serviceChargeRate !== undefined || oldData.deliveryCharge !== undefined)) {
+    if (data.status === 'billed' && data.prices) {
       try {
         const quantity = Number(oldData.quantity ?? oldData.guests ?? oldData.pax ?? 0);
+        const meals = Array.isArray(oldData.meals) ? oldData.meals : oldData.meals ? [oldData.meals] : [];
+        if (meals.some(meal => typeof meal !== 'string' || !meal.trim()) || new Set(meals).size !== meals.length)
+          return { error: 'Order has invalid or duplicate meal types', httpStatus: 400 } as const;
+        const priceKeys = Object.keys(data.prices);
+        const legacyDefault = meals.length === 0 && priceKeys.length === 1 && priceKeys[0] === 'default';
+        if (!legacyDefault && (priceKeys.length !== meals.length || meals.some(meal => !Object.prototype.hasOwnProperty.call(data.prices, meal))))
+          return { error: 'A valid price is required for every meal in the order', httpStatus: 400 } as const;
         const foodSubtotal = orderFoodSubtotal(data.prices, quantity);
         const charges = calculateOrderCharges(foodSubtotal, {
           ...oldData, deliveryCharge: data.deliveryCharge ?? oldData.deliveryCharge,

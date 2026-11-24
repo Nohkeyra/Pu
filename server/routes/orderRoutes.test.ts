@@ -167,6 +167,24 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       expect((await db.collection('orders').doc('unpriced_bill_test').get()).data()?.status).toBe('approved');
     });
 
+    it('rejects a mismatched or incomplete explicit bill even for a legacy order without charge fields', async () => {
+      const ref = getFirestore().collection('orders').doc('legacy_billing_total_test');
+      await ref.set({ status: 'approved', quantity: 20, meals: ['breakfast', 'lunch'], prices: {}, totalAmount: 0 });
+      for (const data of [
+        { status: 'billed', prices: { lunch: 15 }, totalAmount: 300 },
+        { status: 'billed', prices: { breakfast: 5, lunch: 15 }, totalAmount: 399 },
+        { status: 'billed', prices: { breakfast: 5, lunch: 15, extra: 1 }, totalAmount: 420 },
+      ]) {
+        const res = await fetch(baseUrl + '/api/admin/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify({ action: 'update', orderId: ref.id, data }),
+        });
+        expect(res.status).toBe(400);
+        expect((await ref.get()).data()?.status).toBe('approved');
+      }
+    });
+
     it('allows PATCH /status to billed when positive pricing already exists on the order', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('priced_bill_test').set({
