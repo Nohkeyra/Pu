@@ -31,7 +31,7 @@ export default function LandingPage() {
         {/* Default variant restores the transparent header over the full-bleed hero,
             then uses the existing scroll-aware header styling further down. */}
         <Header variant="default" />
-        <main id="landing-content">
+        <main id="main-content" tabIndex={-1}>
           <HeroSection />
           <HighlightsSection />
           <MenuSection />

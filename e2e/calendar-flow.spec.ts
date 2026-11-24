@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-async function openCalendar(page: Page, theme: 'light' | 'dark', scenario = { unavailable: false }) {
+async function openCalendar(page: Page, theme: 'light' | 'dark', scenario: { unavailable: boolean; eventDate?: string } = { unavailable: false }) {
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (['/api/calendar-data', '/api/calendar-sessions', '/api/calendar-orders'].includes(url.pathname)) {
@@ -9,7 +9,7 @@ async function openCalendar(page: Page, theme: 'light' | 'dark', scenario = { un
         contentType: 'application/json',
         body: JSON.stringify(scenario.unavailable
           ? { error: 'Simulated service unavailable' }
-          : { success: true, sessions: {}, orders: [] }),
+          : { success: true, sessions: {}, orders: scenario.eventDate ? [{ id: 'fixture-calendar-event', eventDate: scenario.eventDate, status: 'approved', guests: 20 }] : [] }),
       });
     }
     if (!['127.0.0.1', 'localhost'].includes(url.hostname)) return route.abort();
@@ -66,7 +66,9 @@ for (const theme of ['light', 'dark'] as const) {
 
   test(`${theme}: booking from a selected day carries that date into the order form`, async ({ page }) => {
     await openCalendar(page, theme);
-    await page.locator('.customer-calendar-day[aria-label*=", 5 "]').click();
+    const day = page.locator('.customer-calendar-day[aria-label*=", 5 "]');
+    await day.click();
+    await expect(day).toHaveAttribute('aria-pressed', 'true');
     const expectedDate = await page.evaluate(() => {
       const now = new Date();
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-05`;
@@ -79,5 +81,36 @@ for (const theme of ['light', 'dark'] as const) {
     await page.locator('.customer-next-button').click();
     await expect(page.locator('#event-date')).toHaveValue(expectedDate);
     // Stop at the date field; no order is submitted and no real account is used.
+  });
+}
+
+for (const [theme, width] of [['light', 390], ['dark', 1280]] as const) {
+  test(`${theme}: calendar event details trap and restore focus with a 44px close button`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.clock.setFixedTime(new Date(2026, 10, 23, 12));
+    await openCalendar(page, theme, { unavailable: false, eventDate: '2026-11-23T12:00:00' });
+
+    const trigger = page.getByRole('button', { name: 'Lihat Butiran', exact: true });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: '20 Pax • Acara' });
+    const close = dialog.getByRole('button', { name: 'Tutup', exact: true }).first();
+    await expect(close).toBeFocused();
+    const bounds = await close.boundingBox();
+    expect(bounds?.width).toBeGreaterThanOrEqual(44);
+    expect(bounds?.height).toBeGreaterThanOrEqual(44);
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(dialog.getByRole('button', { name: 'Lihat di Profil' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+
+    const actions = page.getByRole('button', { name: 'Buka tindakan pantas' });
+    await actions.click();
+    await page.getByRole('button', { name: 'Lihat Butiran Acara' }).click();
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(actions).toBeFocused();
   });
 }

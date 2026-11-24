@@ -41,7 +41,7 @@ function SmoothScrollHandler() {
           const el = document.getElementById(id);
           if (el) {
             e.preventDefault();
-            if (id === 'main-content') el.focus({ preventScroll: true });
+            if (el.hasAttribute('tabindex')) el.focus({ preventScroll: true });
             el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           }
         }
@@ -251,7 +251,9 @@ function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
 
 export default function AppContent() {
   const location = useLocation();
-  const isStandaloneScreen = location.pathname === '/login' || (!Capacitor.isNativePlatform() && ['/', '/home', '/main'].includes(location.pathname));
+  const isLandingScreen = !Capacitor.isNativePlatform() && ['/', '/home', '/main'].includes(location.pathname);
+  const isStandaloneScreen = location.pathname === '/login' || isLandingScreen;
+  const RouteContainer = isLandingScreen ? 'div' : 'main';
   // Presentation marker only: native customer screens manage their own dock clearance.
   const isCustomerScreen = ['/app', '/order', '/profile', '/calendar', '/settings'].includes(location.pathname);
   const reduceMotion = useReducedMotion();
@@ -306,7 +308,7 @@ export default function AppContent() {
         </div>
       </motion.div>
 
-      <main id="main-content" tabIndex={-1} className={cn('flex-grow relative focus:outline-none', isCustomerScreen && 'wawasan-customer-main', !isStandaloneScreen && 'pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]')}>
+      <RouteContainer id={isLandingScreen ? undefined : 'main-content'} tabIndex={isLandingScreen ? undefined : -1} className={cn('flex-grow relative focus:outline-none', isCustomerScreen && 'wawasan-customer-main', !isStandaloneScreen && 'pb-[calc(96px+var(--safe-area-inset-bottom,env(safe-area-inset-bottom,16px)))]')}>
         <RouteErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-cream dark:bg-background"><WawasanLoader size={80} /></div>}>
             <AnimatePresence mode="wait">
@@ -314,7 +316,7 @@ export default function AppContent() {
             </AnimatePresence>
           </Suspense>
         </RouteErrorBoundary>
-      </main>
+      </RouteContainer>
       {!isStandaloneScreen && <BottomNavigation />}
     </div>
   );

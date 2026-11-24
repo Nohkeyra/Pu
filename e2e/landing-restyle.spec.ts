@@ -55,10 +55,15 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.getByRole('heading', { name: 'Sajian tidak ditemui' })).toBeVisible();
     await page.getByRole('button', { name: 'Lihat semua sajian', exact: true }).click();
     await expect(search).toHaveValue('');
+    await expect(search).toBeFocused();
     await expect(
       categories.getByRole('button', { name: 'Semua sajian', exact: true })
     ).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.landing-menu-card')).toHaveCount(8);
+    await search.fill('teh');
+    await page.getByRole('button', { name: 'Kosongkan carian' }).click();
+    await expect(search).toHaveValue('');
+    await expect(search).toBeFocused();
   });
 
   test(`${theme}: tablet menu is visible, traps Tab, closes with Escape and reaches sections`, async ({
@@ -83,6 +88,7 @@ for (const theme of ['light', 'dark'] as const) {
     await menu.getByRole('link', { name: 'Menu', exact: true }).click();
     await expect(menu).toHaveCount(0);
     await expect(page.locator('#menu')).toBeInViewport();
+    await expect(page.locator('#menu')).toBeFocused();
     await expect(page).toHaveURL(/#\/$/);
   });
 
@@ -111,5 +117,32 @@ for (const theme of ['light', 'dark'] as const) {
       .click();
     await expect(page).toHaveURL(/#\/order$/);
     await expect(page.locator('.customer-page')).toBeVisible();
+  });
+}
+
+for (const width of [320, 390, 1280, 1440]) {
+  test(`landing navigation and header fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openLanding(page, 'light');
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+    await expect(page.getByRole('main')).toHaveCount(1);
+    const skip = page.getByRole('link', { name: /skip to main content/i });
+    await skip.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#main-content')).toBeFocused();
+
+    const visibleHeaderControls = page.locator('#app-header :is(a, button):visible');
+    for (const control of await visibleHeaderControls.all()) {
+      const bounds = await control.boundingBox();
+      expect(bounds?.x).toBeGreaterThanOrEqual(0);
+      expect((bounds?.x ?? width) + (bounds?.width ?? 1)).toBeLessThanOrEqual(width);
+    }
+
+    const menuLink = page.locator('.heritage-hero-actions a[href="#menu"]');
+    await menuLink.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#menu')).toBeFocused();
+    await expect(page).toHaveURL(/#\/$/);
   });
 }

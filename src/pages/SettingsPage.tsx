@@ -1224,7 +1224,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notificationsEnabled}
                     onCheckedChange={handleToggleNotifications}
-                    aria-label="Toggle notifications"
+                    aria-label={language === 'bm' ? 'Notifikasi pada peranti ini' : 'Notifications on this device'}
                   />
                 }
               />
@@ -1313,7 +1313,7 @@ export default function SettingsPage() {
                       await triggerMediumImpact();
                     }
                   }}
-                  aria-label="Toggle haptic feedback"
+                  aria-label={language === 'bm' ? 'Getaran Maklum Balas (Haptic)' : 'Haptic Feedback'}
                 />
               }
             />
@@ -1348,7 +1348,7 @@ export default function SettingsPage() {
                       }
                       triggerLightImpact();
                     }}
-                    aria-label="Toggle mechanical thock touch sounds"
+                    aria-label={language === 'bm' ? 'Kesan Bunyi Sentuhan Mechanical "Thock"' : 'Mechanical "Thock" Touch Sounds'}
                   />
                 </div>
               }
@@ -1366,7 +1366,7 @@ export default function SettingsPage() {
                 <Switch
                   checked={keepAwakeEnabled}
                   onCheckedChange={handleToggleKeepAwake}
-                  aria-label="Toggle keep screen awake"
+                  aria-label={language === 'bm' ? 'Kekalkan Skrin Aktif' : 'Keep Screen Awake'}
                 />
               }
             />
@@ -1381,7 +1381,7 @@ export default function SettingsPage() {
                 <Switch
                   checked={statusBarHidden}
                   onCheckedChange={handleToggleStatusBarHidden}
-                  aria-label="Toggle immersive mode"
+                  aria-label={language === 'bm' ? 'Mod Skrin Penuh (Imersif)' : 'Immersive Fullscreen'}
                 />
               }
             />
@@ -1567,7 +1567,7 @@ export default function SettingsPage() {
                     <Switch
                       checked={developerMode}
                       onCheckedChange={handleToggleDeveloper}
-                      aria-label="Toggle developer mode"
+                      aria-label={language === 'bm' ? 'Mod Pembangun' : 'Developer Mode'}
                     />
                   }
                 />

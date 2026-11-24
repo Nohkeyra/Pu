@@ -1193,8 +1193,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
           eventType: orderState.eventType,
         });
         toast({
-          title: t('error'),
-          description: err instanceof Error ? err.message : String(err),
+          title: tText('Order could not be sent', 'Tempahan tidak dapat dihantar'),
+          description: tText(
+            'Your draft is still open. Review your details and try again.',
+            'Draf anda masih terbuka. Semak butiran dan cuba lagi.'
+          ),
           variant: 'error',
         });
       }

@@ -62,6 +62,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [isLoading, setIsLoading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const modeHeadingRef = useRef<HTMLHeadingElement>(null);
+  const shouldFocusModeHeading = useRef(false);
 
   useOverlayAccessibility({ isOpen, onClose, containerRef: modalRef });
 
@@ -236,7 +238,15 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     }
   }, [isOpen, initialMode]);
 
+  useEffect(() => {
+    if (isOpen && shouldFocusModeHeading.current) {
+      shouldFocusModeHeading.current = false;
+      modeHeadingRef.current?.focus();
+    }
+  }, [isOpen, mode]);
+
   const handleModeChange = (newMode: AuthMode) => {
+    shouldFocusModeHeading.current = true;
     setMode(newMode);
   };
 
@@ -416,7 +426,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           description: t('Password reset instructions have been sent to your email.', 'Arahan set semula kata laluan telah dihantar ke e-mel anda.'),
           variant: 'success'
         });
-        setMode('signin');
+        handleModeChange('signin');
       }
     } catch (err) {
       console.error('Authentication Error:', err);
@@ -490,7 +500,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           <div className="relative p-6 sm:p-8 z-10 overflow-y-auto flex-1">
             {/* Header */}
             <div className="app-auth-heading text-left mb-6 pr-10">
-              <h2 className="font-display text-xl font-semibold text-foreground leading-tight">
+              <h2 ref={modeHeadingRef} tabIndex={-1} className="font-display text-xl font-semibold text-foreground leading-tight">
                 {mode === 'signin' && t('Sign In', 'Log Masuk')}
                 {mode === 'signup' && t('Register Account', 'Daftar Akaun Baru')}
                 {mode === 'forgot' && t('Reset Password', 'Set Semula Kata Laluan')}
@@ -518,7 +528,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Dato' Ahmad"
+                        placeholder={t('e.g. Dato’ Ahmad', 'cth. Dato’ Ahmad')}
                         autoComplete="name"
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
@@ -537,7 +547,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                         type="tel"
                         value={contact}
                         onChange={(e) => setContact(formatPhoneNumber(e.target.value))}
-                        placeholder="e.g. 012-345 6789"
+                        placeholder={t('e.g. 012-345 6789', 'cth. 012-345 6789')}
                         autoComplete="tel"
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         required
@@ -607,7 +617,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                           type="text"
                           value={department}
                           onChange={(e) => setDepartment(e.target.value)}
-                          placeholder="cth: Bahagian Kewangan"
+                          placeholder={t('e.g. Finance Division', 'cth. Bahagian Kewangan')}
                           className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         />
                       </div>
@@ -625,7 +635,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                         type="text"
                         value={attn}
                         onChange={(e) => setAttn(e.target.value)}
-                        placeholder="cth: Encik Ahmad / Puan Siti"
+                        placeholder={t('e.g. Mr Ahmad / Ms Siti', 'cth. Encik Ahmad / Puan Siti')}
                         className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                       />
                     </div>
@@ -645,7 +655,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. nama@organisasi.gov.my"
+                    placeholder={t('e.g. name@organisation.gov.my', 'cth. nama@organisasi.gov.my')}
                     autoComplete="email"
                     className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                     required
