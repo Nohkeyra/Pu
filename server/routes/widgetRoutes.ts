@@ -1,4 +1,4 @@
-import { calculateOrderCharges } from '../../src/lib/orderCharges.js';
+import { calculateOrderCharges, orderFoodSubtotal, validCharge } from '../../src/lib/orderCharges.js';
 import { Router } from 'express';
 import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
@@ -368,7 +368,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
   if (!orderId || typeof orderId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(orderId)) {
     return res.status(400).json({ success: false, error: 'Valid orderId required.' });
   }
-  if (!prices || typeof prices !== 'object' || Object.keys(prices).length === 0) {
+  if (!prices || typeof prices !== 'object' || Array.isArray(prices) || Object.keys(prices).length === 0) {
     return res.status(400).json({ success: false, error: 'prices object required.' });
   }
 
@@ -381,11 +381,10 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
   }
 
   // Validate all submitted values before any database or invoice side effects.
-  // Do not invent a business price ceiling; enforce finite positive MYR values here
-  // and leave any approved ceiling to explicit business configuration.
+  // Match the existing shared monetary validation used by admin billing.
   for (const [meal, price] of Object.entries(prices)) {
-    if (!meal.trim() || typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
-      return res.status(400).json({ success: false, error: 'Each meal must have a finite positive price.' });
+    if (!meal.trim() || !validCharge(price) || price <= 0) {
+      return res.status(400).json({ success: false, error: 'Each meal must have a valid positive MYR price in whole cents.' });
     }
   }
 
@@ -463,7 +462,8 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     const quantity = Number(order.quantity || order.guests || order.pax || 0);
     const orderMeals: string[] = Array.isArray(order.meals) ? order.meals : (order.meals ? [String(order.meals)] : []);
 
-    if (!Number.isFinite(quantity) || quantity <= 0 || orderMeals.length === 0) {
+    if (!Number.isSafeInteger(quantity) || quantity <= 0 || orderMeals.length === 0 ||
+        orderMeals.some(meal => typeof meal !== 'string' || !meal.trim()) || new Set(orderMeals).size !== orderMeals.length) {
       return res.status(400).json({ success: false, error: 'Order quantity or meal information is invalid.' });
     }
 
@@ -478,7 +478,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         continue;
       }
       finalPrices[meal] = priceForMeal;
-      totalAmount += priceForMeal * quantity;
+
     }
 
     // Preserve the existing single-default-price contract only when no individual
@@ -486,12 +486,13 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
     if (missingMealPrice) {
       if (Object.keys(finalPrices).length === 0 && typeof prices.default === 'number' && Number.isFinite(prices.default) && prices.default > 0) {
         finalPrices.default = prices.default;
-        totalAmount = prices.default * quantity;
+
       } else {
         return res.status(400).json({ success: false, error: 'A valid price is required for every meal in the order.' });
       }
     }
 
+    totalAmount = orderFoodSubtotal(finalPrices, quantity);
     if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
       return res.status(400).json({ success: false, error: 'Could not compute a valid total.' });
     }

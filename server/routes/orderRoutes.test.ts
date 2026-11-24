@@ -7,6 +7,7 @@ import { getFirestore } from '../firebaseAdmin.js';
 import { firestoreQuota } from '../services/firestoreQuota';
 import { publicCalendar } from '../services/publicCalendar';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
+import { getEarliestBookingSlot, ADVANCE_BOOKING_HOURS } from '../../src/lib/dateUtils.js';
 
 describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', () => {
   it('normalizes the same supported dates as the order validator', () => {
@@ -703,6 +704,43 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
         expect((sessionDay as any).name).toBeUndefined();
         expect((sessionDay as any).email).toBeUndefined();
       }
+    });
+  });
+
+  describe('Customer rescheduling booking notice', () => {
+    it.each([
+      { name: 'past', offsetHours: -2, quantity: 1, expected: 400 },
+      { name: 'insufficient_notice', offsetHours: 1, quantity: 30, expected: 400 },
+      { name: 'valid_notice', offsetHours: ADVANCE_BOOKING_HOURS + 2, quantity: 30, expected: 200 },
+    ])('validates $name inside the update transaction', async ({ name, offsetHours, quantity, expected }) => {
+      const db = getFirestore();
+      const slot = getEarliestBookingSlot(1, Date.now() + offsetHours * 3_600_000);
+      const originalTime = slot.time === '23:59' ? '23:58' : '23:59';
+      const ref = db.collection('orders').doc('reschedule_' + name);
+      await ref.set({ userId: 'reschedule_owner', status: 'pending', quantity, eventDate: slot.date, time: originalTime });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('reschedule_owner');
+      const response = await fetch(baseUrl + '/api/orders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+        body: JSON.stringify({ orderId: ref.id, time: slot.time, notes: 'reschedule test' }),
+      });
+      expect(response.status).toBe(expected);
+      const saved = (await ref.get()).data();
+      expect(saved?.time).toBe(expected === 200 ? slot.time : originalTime);
+      expect(saved?.notes).toBe(expected === 200 ? 'reschedule test' : undefined);
+    });
+    it('preserves notes-only edits even when the original booking cutoff has passed', async () => {
+      const ref = getFirestore().collection('orders').doc('reschedule_notes_only');
+      const slot = getEarliestBookingSlot(1, Date.now() - 2 * 3_600_000);
+      await ref.set({ userId: 'reschedule_owner', status: 'pending', quantity: 30, eventDate: slot.date, time: slot.time });
+      vi.spyOn(firebaseAdminModule, 'verifyCustomerIdToken').mockResolvedValue('reschedule_owner');
+      const response = await fetch(baseUrl + '/api/orders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+        body: JSON.stringify({ orderId: ref.id, time: slot.time, notes: 'updated notes' }),
+      });
+      expect(response.status).toBe(200);
+      expect((await ref.get()).data()?.notes).toBe('updated notes');
     });
   });
 
