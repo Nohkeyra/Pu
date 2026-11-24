@@ -1030,7 +1030,9 @@ async function handlePublicCalendar(
   }
   try {
     const data = await publicCalendar.getData(from, to);
-    return res.json({ success: true, ...(view !== 'sessions' ? { orders: data.orders } : {}),
+    // Individual records belong in the authenticated Firestore streams.
+    // Retain the legacy orders-array response shape without exposing order IDs.
+    return res.json({ success: true, ...(view !== 'sessions' ? { orders: [] } : {}),
       ...(view !== 'orders' ? { sessions: data.sessions } : {}) });
   } catch (error) {
     if (isFirestoreQuotaError(error)) {

@@ -671,7 +671,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
   });
 
   describe('Public Calendar Endpoints Data Minimization', () => {
-    it('GET /api/calendar-orders returns only non-PII scheduling fields', async () => {
+    it('GET /api/calendar-orders never exposes individual order records', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('cal_order_1').set({
         name: 'Sensitive Customer Name',
@@ -691,23 +691,13 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       const json = await res.json();
       expect(json.success).toBe(true);
 
-      const item = json.orders.find((o: any) => o.id === 'cal_order_1');
-      expect(item).toBeDefined();
-
-      // Allowed fields
-      expect(item.id).toBe('cal_order_1');
-      expect(item.status).toBe('approved');
-      expect(item.eventDate).toBe('2026-11-25');
-      expect(item.meals).toEqual(['lunch']);
-      expect(item.guests).toBe(75);
-
-      // Stripped PII & financial fields
-      expect((item as any).name).toBeUndefined();
-      expect((item as any).email).toBeUndefined();
-      expect((item as any).contact).toBeUndefined();
-      expect((item as any).location).toBeUndefined();
-      expect((item as any).totalAmount).toBeUndefined();
-      expect((item as any).prices).toBeUndefined();
+      expect(json.orders).toEqual([]);
+      expect(JSON.stringify(json)).not.toContain('cal_order_1');
+      expect(JSON.stringify(json)).not.toContain('sensitive@example.com');
+      const summary = await fetch(baseUrl + '/api/calendar-data?from=2026-11-01&to=2026-11-30');
+      const data = await summary.json();
+      expect(data.orders).toEqual([]);
+      expect(data.sessions['2026-11-25'].lunch.pax).toBeGreaterThanOrEqual(75);
     });
 
     it('GET /api/calendar-sessions returns purely aggregated session counts without PII', async () => {

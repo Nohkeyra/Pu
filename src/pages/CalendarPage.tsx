@@ -158,7 +158,7 @@ export default function CalendarPage() {
     return mergeCalendarOrders(publicOrders, ownOrders ?? []);
   }, [isAdmin, ownOrders, publicOrders]);
 
-  // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API
+  // 1. Fetch public workload aggregates; individual records come from the authorized stream.
   useEffect(() => {
     const controller = new AbortController();
     setCalendarDataLoading(true);
@@ -725,6 +725,7 @@ export default function CalendarPage() {
     ? (selectedDaySessions.breakfast.pax + selectedDaySessions.lunch.pax + selectedDaySessions.hi_tea.pax)
     : 0;
   const selectedDayOrders = selectedDay ? getOrdersForDay(selectedDay) : [];
+  const selectedDayHasBookings = selectedDayOrders.length > 0 || selectedDayTotalPax > 0;
   const selectedDayDate = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null;
   // Quantity is not known until the order form. Allow any day with a future
   // selectable minute; Step 3 and the server enforce the quantity-specific cutoff.
@@ -811,7 +812,7 @@ export default function CalendarPage() {
                 <Button type="button" variant="outline" size="compact" onClick={handleToday}>
                   {tl('Today', 'Hari Ini')}
                 </Button>
-                {selectedDayOrders.length > 0 ? (
+                {selectedDayHasBookings ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -903,7 +904,7 @@ export default function CalendarPage() {
                   const dayNotes = isAdmin ? getNotesForDay(day) : [];
                   const sessions = getDailySessions(day);
                   const totalPax = sessions.breakfast.pax + sessions.lunch.pax + sessions.hi_tea.pax;
-                  const hasOrders = dayOrders.length > 0;
+                  const hasOrders = dayOrders.length > 0 || totalPax > 0;
                   const isWeekendDay = isWeekend(day);
                   const dateIso = format(day, 'yyyy-MM-dd');
                   const holiday = getMalaysiaHolidayInfo(dateIso);
@@ -923,7 +924,7 @@ export default function CalendarPage() {
                         format(day, 'EEEE, d MMMM yyyy', { locale: dateLocale }),
                         ...(isCurrentDay ? [tl('Today', 'Hari ini')] : []),
                         ...(holiday ? [holiday.nameBm] : []),
-                        ...(hasOrders ? [`${dayOrders.length} ${tl('bookings', 'tempahan')}`] : []),
+                        ...(hasOrders ? [totalPax > 0 ? `${totalPax} ${tl('pax booked', 'pax ditempah')}` : `${dayOrders.length} ${tl('bookings', 'tempahan')}`] : []),
                         ...(dayNotes.length ? [tl('Has note', 'Ada nota')] : []),
                       ].join(', ')}
                       className={cn(
@@ -1015,9 +1016,11 @@ export default function CalendarPage() {
                               <span className="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-extrabold tabular-nums text-xs leading-none">
                                 {totalPax > 0 ? `${totalPax}p` : `${dayOrders.length} ord`}
                               </span>
-                              <span className="hidden sm:inline opacity-75 font-medium text-xs">
-                                ({dayOrders.length})
-                              </span>
+                              {dayOrders.length > 0 && (
+                                <span className="hidden sm:inline opacity-75 font-medium text-xs">
+                                  ({dayOrders.length})
+                                </span>
+                              )}
                             </div>
                           </div>
                         ) : (
@@ -1063,7 +1066,7 @@ export default function CalendarPage() {
             </div>
 
           {/* 3. REFINED SELECTED DAY AGENDA */}
-          {selectedDay && (selectedDayOrders.length > 0 || isAdmin) && (
+          {selectedDay && (selectedDayHasBookings || isAdmin) && (
             <motion.div
               key={format(selectedDay, 'yyyy-MM-dd')}
               className="customer-calendar-panel overflow-hidden"
@@ -1124,13 +1127,13 @@ export default function CalendarPage() {
                   <div className={cn("space-y-3", isAdmin ? "lg:col-span-7" : "lg:col-span-12")}>
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({calendarDataLoading || calendarDataError ? '—' : selectedDayOrders.length})
+                        {isAdmin ? tl('Bookings for this date', 'Tempahan pada tarikh ini') : tl('Your bookings for this date', 'Tempahan anda pada tarikh ini')} ({calendarDataLoading || calendarDataError ? '—' : selectedDayOrders.length})
                       </span>
                     </div>
 
                     {selectedDayOrders.length === 0 ? (
                       <div className="customer-calendar-empty p-4 text-center">
-                        <p className="text-xs font-medium text-[var(--customer-muted)]">{selectedDaySummary}</p>
+                        <p className="text-xs font-medium text-[var(--customer-muted)]">{!isAdmin && selectedDayHasBookings ? tl('Other bookings are shown as session totals only.', 'Tempahan lain dipaparkan sebagai jumlah sesi sahaja.') : selectedDaySummary}</p>
                       </div>
                     ) : (
                       <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">

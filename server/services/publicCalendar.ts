@@ -26,7 +26,12 @@ export interface PublicCalendarData {
 }
 async function readPublicRecords(): Promise<CalendarRecord[]> {
   // Preserve legacy date/dateTime/createdAt records; cache only public scheduling fields.
-  const snapshot = await getFirestore().collection('orders').get();
+  const collection = getFirestore().collection('orders');
+  // Project scheduling fields only; legacy dates remain supported. The
+  // in-memory test adapter does not implement select().
+  const snapshot = await (typeof collection.select === 'function'
+    ? collection.select('eventDate', 'date', 'dateTime', 'createdAt', 'deletedByAdmin', 'guests', 'quantity', 'status', 'meals')
+    : collection).get();
   return snapshot.docs.flatMap((doc) => {
     const data = doc.data();
     if (data.deletedByAdmin) return [];
