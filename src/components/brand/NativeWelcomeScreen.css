@@ -137,19 +137,19 @@
   -webkit-user-drag: none;
 }
 .native-welcome[data-theme='dark'] .native-welcome__board {
-  /* The fixed board shadow belongs to the physical sign, not to its power. */
-  filter: drop-shadow(6px 10px 5px rgba(0, 0, 0, .5));
+  /* The board sits close to the wall, with a short fixed mounting shadow. */
+  filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, .5));
 }
 .native-welcome[data-theme='dark'] .native-welcome__sign { filter: brightness(.18); }
-.native-welcome__neon-power {
+.native-welcome__neon-power,
+.native-welcome__neon-spill {
   display: none;
   position: absolute;
   inset: 0;
-  z-index: 2;
-  border-radius: inherit;
   opacity: 0;
   pointer-events: none;
 }
+.native-welcome__neon-power { z-index: 2; }
 .native-welcome__neon-tubes {
   display: block;
   position: relative;
@@ -161,40 +161,43 @@
   -webkit-user-drag: none;
 }
 .native-welcome__neon-spill {
-  position: absolute;
-  inset: -8%;
-  width: 116%;
-  height: 116%;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  opacity: .48;
-  /* Precomputed alpha follows the source's real orange/green emitters. Blur is
-     static and local; only the parent opacity changes during ignition. */
-  filter: blur(16px);
+  /* Light adds to the wall behind the board and its mounting shadow. */
+  mix-blend-mode: screen;
+  /* Feather the square edges of the reflection artwork into the wall. */
+  mask-image:
+    linear-gradient(to right, transparent, #000 3%, #000 97%, transparent),
+    linear-gradient(to bottom, transparent, #000 3%, #000 97%, transparent);
+  mask-composite: intersect;
   -webkit-user-drag: none;
 }
-.native-welcome[data-theme='dark'] .native-welcome__neon-power { display: block; }
-.native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
+.native-welcome[data-theme='dark'] :is(.native-welcome__neon-power, .native-welcome__neon-spill) {
+  display: block;
+}
+.native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] :is(.native-welcome__neon-power, .native-welcome__neon-spill) {
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] .native-welcome__neon-power {
-    /* Glow-starter-inspired rhythm: thermal gaps, two brief failed strikes,
-       then a permanent catch. This 2.5s UI preset is not an electrical model;
+  .native-welcome[data-theme='dark'][data-ready='true'][data-sign-ready='true'] :is(.native-welcome__neon-power, .native-welcome__neon-spill) {
+    /* Glow-starter-inspired rhythm: two brief failed strikes grow stronger
+       before the final catch. This UI timing is not an electrical model;
        real starting times vary (Philips Fluorescent Gear guide, section 5.2;
        https://elm-chan.org/works/fldrv2/report.html, figure 3a/movie).
-       Step changes keep ignition abrupt; the shared group keeps wall spill
-       in sync, without a looping animation or per-frame JavaScript. */
-    animation: native-wawasan-neon-start 2500ms step-end both;
+       A shared keyframe sequence drives the tubes and wall spill in sync. */
+    animation: native-wawasan-neon-start 1400ms step-end both;
   }
 }
 @keyframes native-wawasan-neon-start {
   0% { opacity: 0; }
-  36% { opacity: .85; }   /* 900ms: first strike, 50ms long. */
-  38% { opacity: 0; }
-  66% { opacity: 1; }     /* 1650ms: second strike, 80ms long. */
-  69.2% { opacity: 0; }
-  92%, 100% { opacity: 1; } /* 2300ms: catches and stays on. */
+  15% { opacity: .48; }  /* 210ms: weak first strike. */
+  20% { opacity: 0; }
+  40% { opacity: .82; }  /* 560ms: stronger second strike. */
+  47% { opacity: 0; }
+  70%, 100% { opacity: 1; } /* 980ms: catches and stays on. */
 }
 
 .native-welcome__content {

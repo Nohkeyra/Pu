@@ -66,7 +66,7 @@ test('night starter runs once, stays lit, and a locale rerender never restarts i
   await expect(power).toHaveCSS('opacity', '0');
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.getByRole('button', { name: 'Get Started' })).toBeEnabled();
-  await expect(power).toHaveCSS('animation-duration', '2.5s');
+  await expect(power).toHaveCSS('animation-duration', '1.4s');
   await expect(power).toHaveCSS('animation-iteration-count', '1');
   await expect.poll(() => power.evaluate(el => el.getAnimations().filter(a => a.playState === 'running').length), { timeout: 4500 }).toBe(0);
   await expect(power).toHaveCSS('opacity', '1');
@@ -85,23 +85,34 @@ test('the tube and actual wall reflection share each starter pulse while the con
   const power = page.locator('.native-welcome__neon-power');
   await expect(power).toHaveCSS('animation-name', 'native-wawasan-neon-start');
   expect(await power.locator('.native-welcome__neon-tubes').count()).toBe(1);
-  expect(await power.locator('.native-welcome__neon-spill').count()).toBe(1);
+  const lights = page.locator(':is(.native-welcome__neon-power, .native-welcome__neon-spill)');
+  const startTimes = await lights.evaluateAll(async (elements) => {
+    const animations = elements.map((element) => element.getAnimations()[0]);
+    await Promise.all(animations.map((animation) => animation.ready));
+    return animations.map((animation) => animation.startTime);
+  });
+  expect(startTimes).toHaveLength(2);
+  expect(startTimes[0]).toBe(startTimes[1]);
   const shadow = await page.locator('.native-welcome__board').evaluate(el => getComputedStyle(el).filter);
   expect(shadow).toContain('drop-shadow');
-  const seek = async (time: number) => {
-    await power.evaluate((el, ms) => { const a = el.getAnimations()[0]; a.pause(); a.currentTime = ms; }, time);
-    await page.evaluate(() => new Promise(requestAnimationFrame));
-    return Number(await power.evaluate(el => getComputedStyle(el).opacity));
-  };
+  const seek = (time: number) => lights.evaluateAll(async (elements, ms) => {
+    for (const element of elements) {
+      const animation = element.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = ms;
+    }
+    await new Promise(requestAnimationFrame);
+    return elements.map((element) => Number(getComputedStyle(element).opacity));
+  }, time);
   // Sample both sides of every ignition edge. A smooth opacity ramp or a
   // residual glow during the thermal gaps must fail this regression.
   const samples = [
-    [0, 0], [450, 0], [899, 0], [901, .85], [925, .85], [949, .85],
-    [951, 0], [1250, 0], [1649, 0], [1651, 1], [1690, 1], [1729, 1],
-    [1731, 0], [2000, 0], [2299, 0], [2301, 1], [2500, 1], [4000, 1],
+    [0, 0], [209, 0], [211, .48], [245, .48], [279, .48],
+    [281, 0], [559, 0], [561, .82], [610, .82], [657, .82],
+    [659, 0], [979, 0], [981, 1], [1400, 1], [4000, 1],
   ];
   for (const [time, expected] of samples) {
-    expect(await seek(time)).toBeCloseTo(expected, 2);
+    expect(await seek(time)).toEqual([expected, expected]);
     expect(await page.locator('.native-welcome__board').evaluate(el => getComputedStyle(el).filter)).toBe(shadow);
     expect(await page.locator('.native-welcome__wall').evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
   }
@@ -111,18 +122,42 @@ test('the tube and actual wall reflection share each starter pulse while the con
   // The physical top rim sits at about 9% of the square plate. Sample the
   // nearby wall just above that arc, not beyond the image's empty right margin.
   const clip = { x: Math.ceil(sign.x + sign.width * .42), y: Math.ceil(sign.y + sign.height * .035), width: Math.floor(sign.width * .16), height: Math.floor(sign.height * .035) };
+  const belowSign = {
+    left: Math.ceil(sign.x + sign.width * .38),
+    top: Math.ceil(sign.y + sign.height * .88),
+    width: Math.floor(sign.width * .24),
+    height: Math.floor(sign.height * .03),
+  };
   await seek(0);
   const off = await page.screenshot({ clip });
-  await page.screenshot({ path: test.info().outputPath('sign-starter-off.png') });
-  await seek(2301);
+  const offFrame = await page.screenshot({ path: test.info().outputPath('sign-starter-off.png') });
+  await seek(245);
+  const firstStrike = await page.screenshot({ clip });
+  await seek(610);
+  const secondStrike = await page.screenshot({ clip });
+  await seek(981);
   const on = await page.screenshot({ clip });
-  await page.screenshot({ path: test.info().outputPath('sign-starter-on.png') });
+  const onFrame = await page.screenshot({ path: test.info().outputPath('sign-starter-on.png') });
   const sharp = (await import('sharp')).default;
   const brightness = async (buffer: Buffer) => {
     const { data } = await sharp(buffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     return data.reduce((sum, value) => sum + value, 0) / data.length;
   };
-  expect(await brightness(on)).toBeGreaterThan((await brightness(off)) + .5);
+  const [offLight, firstLight, secondLight, steadyLight] =
+    await Promise.all([off, firstStrike, secondStrike, on].map(brightness));
+  expect(firstLight).toBeGreaterThan(offLight + .5);
+  expect(secondLight).toBeGreaterThan(firstLight + .5);
+  expect(steadyLight).toBeGreaterThan(secondLight + .5);
+  const [unlitWall, illuminatedWall] = await Promise.all(
+    [offFrame, onFrame].map(async (frame) =>
+      sharp(frame).extract(belowSign).removeAlpha().raw().toBuffer()
+    )
+  );
+  // The reflection should add light to the wall, including where the board
+  // casts its shadow. Allow a small difference for compositor rounding.
+  expect(illuminatedWall.every((value, i) => value >= unlitWall[i] - 2)).toBe(true);
+  const gain = illuminatedWall.reduce((sum, value, i) => sum + value - unlitWall[i], 0);
+  expect(gain / illuminatedWall.length).toBeGreaterThan(20);
 });
 
 test('daylight has no powered tubes, spill, flicker or hidden delayed relight', async ({ page }) => {
@@ -131,6 +166,7 @@ test('daylight has no powered tubes, spill, flicker or hidden delayed relight', 
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
+  await expect(page.locator('.native-welcome__neon-spill')).toBeHidden();
   await expect(page.locator('.native-welcome__sign')).toHaveAttribute('src', /neon-unlit\.webp(?:\?|$)/);
   expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).some(a => a instanceof CSSAnimation && a.animationName === 'native-wawasan-neon-start'))).toBe(false);
   await expect(page.locator('.native-welcome__wall-image--night')).toHaveCSS('opacity', '0');
@@ -139,6 +175,7 @@ test('daylight has no powered tubes, spill, flicker or hidden delayed relight', 
   await expect(page.locator('.native-welcome__neon-power')).toHaveCSS('animation-name', 'native-wawasan-neon-start');
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await expect(page.locator('.native-welcome__neon-power')).toBeHidden();
+  await expect(page.locator('.native-welcome__neon-spill')).toBeHidden();
   await page.getByRole('button', { name: 'Get Started' }).click();
   await expect(page.locator('[data-completed]')).toHaveAttribute('data-completed', '1');
 });
@@ -148,6 +185,7 @@ test('Reduced Motion gives steady night light and still keeps daylight off', asy
   await openWelcome(page);
   await page.evaluate(() => (window as unknown as { __welcomeReady: () => void }).__welcomeReady());
   await expect(page.locator('.native-welcome__neon-power')).toHaveCSS('opacity', '1');
+  await expect(page.locator('.native-welcome__neon-spill')).toHaveCSS('opacity', '1');
   expect(await page.locator('.native-welcome').evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length)).toBe(0);
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
   await expect(page.locator('.native-welcome__neon-power')).toBeHidden();

@@ -99,6 +99,17 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
               aria-hidden="true"
               onLoad={() => imageLoaded(4)}
             />
+            <img
+              ref={image => { signImages.current[1] = image; }}
+              src={getAssetUrl('/assets/illustrations/wawasan-native-neon-spill.webp')}
+              className="native-welcome__neon-spill"
+              alt=""
+              aria-hidden="true"
+              width={320}
+              height={320}
+              draggable={false}
+              onLoad={() => imageLoaded(1)}
+            />
             <div className="native-welcome__board">
               <img
                 ref={image => { signImages.current[0] = image; }}
@@ -114,19 +125,7 @@ export default function NativeWelcomeScreen({ isLoading, onComplete }: NativeWel
                 onLoad={() => imageLoaded(0)}
               />
             </div>
-            {/* A single opacity envelope powers the tubes AND their wall spill.
-                Static contact shadows and daylight do not belong to this group. */}
             <div className="native-welcome__neon-power" aria-hidden="true">
-              <img
-                ref={image => { signImages.current[1] = image; }}
-                src={getAssetUrl('/assets/illustrations/wawasan-native-neon-spill.webp')}
-                className="native-welcome__neon-spill"
-                alt=""
-                width={320}
-                height={320}
-                draggable={false}
-                onLoad={() => imageLoaded(1)}
-              />
               <img
                 ref={image => { signImages.current[2] = image; }}
                 src={getAssetUrl('/assets/illustrations/wawasan-native-neon.webp')}
