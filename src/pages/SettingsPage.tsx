@@ -1876,8 +1876,8 @@ export default function SettingsPage() {
                 </h4>
                 <p>
                   {language === 'bm'
-                    ? 'Semua pakej katering bufet dan jamuan kenduri memerlukan tempahan sekurang-kurangnya 48 jam sebelum tarikh acara bagi memastikan persiapan bahan mentah segar dan kualiti hidangan terbaik.'
-                    : 'All buffet catering and large banquet orders require a minimum booking lead time of 48 hours prior to the event date to ensure fresh ingredient procurement and top-tier preparation.'}
+                    ? 'Tempahan 1–29 pack boleh dibuat pada hari yang sama. Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal sebelum masa majlis.'
+                    : 'Same-day bookings are allowed for 1–29 packs. Orders of 30 packs or more require at least 12 hours’ advance notice before the event time.'}
                 </p>
               </div>
 
@@ -2002,8 +2002,8 @@ export default function SettingsPage() {
                 {
                   q: language === 'bm' ? 'Berapa awal saya perlu memesan?' : 'How early should I order?',
                   a: language === 'bm'
-                    ? 'Untuk katering besar, kami memerlukan sekurang-kurangnya 48 jam notis. Untuk pesanan harian, anda boleh memesan pada bila-bila masa.'
-                    : 'For large catering, we require at least 48 hours notice. For daily orders, you can order anytime during operation hours.'
+                    ? 'Untuk 1–29 pack, tiada minimum notis awal. Tempahan 30 pack dan ke atas memerlukan sekurang-kurangnya 12 jam notis awal.'
+                    : 'For 1–29 packs, there is no minimum advance notice. Orders of 30 packs or more require at least 12 hours’ advance notice.'
                 },
                 {
                   q: language === 'bm' ? 'Di mana lokasi restoran anda?' : 'Where is your restaurant located?',

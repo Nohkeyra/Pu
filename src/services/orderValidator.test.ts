@@ -66,7 +66,7 @@ describe('Order Validator & Status State Machine', () => {
       meals: ['lunch'],
     };
 
-    const result = validateOrderPayload(validPayload);
+    const result = validateOrderPayload(validPayload, Date.parse('2026-09-14T12:00:00+08:00'));
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
@@ -85,5 +85,18 @@ describe('Order Validator & Status State Machine', () => {
     expect(result.errors.some(e => e.field === 'contact')).toBe(true);
     expect(result.errors.some(e => e.field === 'date')).toBe(true);
     expect(result.errors.some(e => e.field === 'quantity')).toBe(true);
+  });
+});
+
+describe('Server quantity-based notice enforcement', () => {
+  const now = Date.parse('2026-11-24T21:00:00+08:00');
+  const order = { name: 'Test', contact: '0123456789', eventDate: '2026-11-25', time: '08:59' };
+  it('accepts 1 and 29 packs, rejects 30 and 31 before the cutoff', () => {
+    for (const quantity of [1, 29]) expect(validateOrderPayload({ ...order, quantity }, now).valid).toBe(true);
+    for (const quantity of [30, 31]) expect(validateOrderPayload({ ...order, quantity }, now).valid).toBe(false);
+  });
+  it('accepts 30 at exactly 12 hours and rejects past orders', () => {
+    expect(validateOrderPayload({ ...order, quantity: 30, time: '09:00' }, now).valid).toBe(true);
+    expect(validateOrderPayload({ ...order, quantity: 1, eventDate: '2026-11-24', time: '20:59' }, now).valid).toBe(false);
   });
 });

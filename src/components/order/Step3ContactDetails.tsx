@@ -25,7 +25,8 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { SAVED_COMPANIES } from '@/constants/companies';
-import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
+import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
+import { getBookingNoticeHours, getEarliestBookingSlot } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
 import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
 import { LocationAutocompletePicker } from '@/components/order/LocationAutocompletePicker';
@@ -434,7 +435,8 @@ export function Step3ContactDetails({
         {/* Date & Time Inputs */}
         {(() => {
           const holidayInfo = getMalaysiaHolidayInfo(orderState.date);
-          const minBookingDate = getMinCateringBookingDate(2);
+          const earliestSlot = getEarliestBookingSlot(orderState.guests);
+          const requiresNotice = getBookingNoticeHours(orderState.guests) > 0;
           return (
             <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -447,7 +449,7 @@ export function Step3ContactDetails({
                       {tText('Event Date', 'Tarikh Majlis *')}
                     </Label>
                     <span className="text-xs font-semibold text-[var(--ui-action)]">
-                      {tText('Min. 2 days notice', 'Min. 2 hari awal')}
+                      {requiresNotice ? tText('Min. 12 hours notice', 'Min. 12 jam awal') : tText('Same-day booking', 'Tempahan hari sama')}
                     </span>
                   </div>
                   <input
@@ -455,7 +457,7 @@ export function Step3ContactDetails({
                     data-tour="step3-date"
                     type="date"
                     value={orderState.date}
-                    min={minBookingDate}
+                    min={earliestSlot.date}
                     onChange={(e) => {
                       clearFieldError('date');
                       setOrderState((prev) => ({ ...prev, date: e.target.value }));
@@ -478,6 +480,7 @@ export function Step3ContactDetails({
                     data-tour="step3-time"
                     type="time"
                     value={orderState.time}
+                    min={orderState.date === earliestSlot.date ? earliestSlot.time : undefined}
                     onChange={(e) => {
                       clearFieldError('time');
                       setOrderState((prev) => ({ ...prev, time: e.target.value }));

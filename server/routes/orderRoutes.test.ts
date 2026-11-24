@@ -331,7 +331,7 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
         name: 'Attacker Client',
         contact: '+60123456789',
         email: 'attacker@example.com',
-        eventDate: '2026-11-20',
+        eventDate: '2099-11-20',
         time: '12:00',
         quantity: 100,
         meals: ['lunch'],
