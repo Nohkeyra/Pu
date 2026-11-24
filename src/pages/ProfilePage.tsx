@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/firebaseConfig';
 import { Capacitor } from '@capacitor/core';
@@ -17,6 +17,8 @@ import AuthModal from '@/components/auth/AuthModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const focusedBookingId = searchParams.get('booking') || undefined;
   const { t, language } = useLanguage();
   const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
   const [loading, setLoading] = useState(() => !auth.currentUser && !sessionStorage.getItem('wawasan_session_started'));
@@ -133,8 +135,10 @@ export default function ProfilePage() {
           <div className="customer-profile-member">
             <div className="relative">
               <UserProfileDashboard
+                key={focusedBookingId}
                 isOpen={true}
                 isEmbedded={true}
+                focusedBookingId={focusedBookingId}
                 onClose={() => navigate(homePath)}
                 onReorder={(data) => navigate('/order', { state: { reorderData: data } })}
               />

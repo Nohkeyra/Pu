@@ -12,10 +12,13 @@ import NativeAppListeners from './components/system/NativeAppListeners';
 import { useBatikScrollOpacity } from './hooks/ui/useBatikScrollOpacity';
 import CateringSplashScreen from './components/brand/SplashScreen';
 import NativeWelcomeScreen from './components/brand/NativeWelcomeScreen';
+import WawasanLoader from './components/brand/WawasanLoader';
+import { useLanguage } from './context/LanguageContext';
 import AppContent from './components/app/AppContent';
 import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/brand/BatikMotionProvider';
 import { useBackgroundSync } from './hooks/native/useBackgroundSync';
+import { useNativeWelcome } from './hooks/native/useNativeWelcome';
 import { initInteractiveNotifications } from './services/interactiveNotifications';
 import { purgeLegacyPlaintextCredentials, syncRefreshedAdminToken } from './services/authService';
 import { onIdTokenChanged } from 'firebase/auth';
@@ -38,8 +41,13 @@ function App() {
   useBackgroundSync();
 
   const [isAppLoading, setIsAppLoading] = useState(true);
-  const [isSplashFinished, setIsSplashFinished] = useState(false);
+  const [isWebSplashFinished, setIsWebSplashFinished] = useState(false);
   const isNative = Capacitor.isNativePlatform();
+  const { language } = useLanguage();
+  const { stage: welcomeStage, completeWelcome } = useNativeWelcome(isNative);
+  const isSplashFinished = isNative
+    ? welcomeStage === 'complete' && !isAppLoading
+    : isWebSplashFinished;
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   useEffect(() => {
@@ -59,11 +67,10 @@ function App() {
   });
 
   useEffect(() => {
-    // Keep the existing web-only failsafe. APK welcome must never auto-dismiss;
-    // entering the application always requires an explicit Get Started tap.
+    // The native welcome is controlled by the saved first-run preference.
     if (isNative) return;
     const watchdog = setTimeout(() => {
-      setIsSplashFinished(true);
+      setIsWebSplashFinished(true);
     }, 5000);
     return () => clearTimeout(watchdog);
   }, [isNative]);
@@ -73,10 +80,6 @@ function App() {
     window.addEventListener('app:open-privacy-policy', handleOpenPrivacy);
     return () => window.removeEventListener('app:open-privacy-policy', handleOpenPrivacy);
   }, []);
-
-  const handleSplashComplete = () => {
-    setIsSplashFinished(true);
-  };
 
   const handlePrivacyUnderstood = () => {
     setShowPrivacyPolicy(false);
@@ -235,14 +238,18 @@ function App() {
   return (
     <>
       {!isSplashFinished && (isNative ? (
-        <NativeWelcomeScreen
-          isLoading={isAppLoading}
-          onComplete={handleSplashComplete}
-        />
+        welcomeStage === 'welcome' ? (
+          <NativeWelcomeScreen isLoading={isAppLoading} onComplete={completeWelcome} />
+        ) : (
+          <div role="status" className="fixed inset-0 z-[9999] grid place-items-center bg-[var(--ui-canvas)]">
+            <div aria-hidden="true"><WawasanLoader size={144} /></div>
+            <span className="sr-only">{language === 'bm' ? 'Membuka aplikasi…' : 'Opening the app…'}</span>
+          </div>
+        )
       ) : (
         <CateringSplashScreen
           isLoading={isAppLoading}
-          onComplete={handleSplashComplete}
+          onComplete={() => setIsWebSplashFinished(true)}
         />
       ))}
       <TooltipProvider delayDuration={500}>

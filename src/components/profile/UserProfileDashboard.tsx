@@ -6,7 +6,7 @@ import {
   useCallback,
   Suspense,
 } from 'react';
-import { collection, query, where, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/firebaseConfig';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,12 +14,13 @@ import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/button';
 import WawasanLoader from '@/components/brand/WawasanLoader';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
+import { useCustomerOrders } from '@/hooks/ui/useCustomerOrders';
 import { User as UserIcon, X, LogOut } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { format } from 'date-fns';
 import type { Order, UserProfile, SavedLocation } from '@/types';
-import { cn, compareTimestampValues, getDisplayInvoiceNo } from '@/lib/utils';
+import { cn, getDisplayInvoiceNo } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ interface UserProfileDashboardProps {
   onClose: () => void;
   onReorder: (orderData: Order) => void;
   isEmbedded?: boolean;
+  focusedBookingId?: string;
 }
 
 export default function UserProfileDashboard({
@@ -67,6 +69,7 @@ export default function UserProfileDashboard({
   onClose,
   onReorder,
   isEmbedded = false,
+  focusedBookingId,
 }: UserProfileDashboardProps) {
   const { language, t: tGlobal } = useLanguage();
   const profileId = useId();
@@ -74,12 +77,9 @@ export default function UserProfileDashboard({
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { orders, isLoadingOrders, ordersError, retryOrders } = useCustomerOrders(currentUser?.uid);
+  const profileOwnerRef = useRef<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [ordersError, setOrdersError] = useState(false);
-  const [ordersRetryKey, setOrdersRetryKey] = useState(0);
-  const ordersOwnerRef = useRef<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'locations' | 'preferences'>(
     'orders'
@@ -160,65 +160,17 @@ export default function UserProfileDashboard({
   }, []);
 
   useEffect(() => {
-    let disposed = false;
-    let revision = 0;
-    let unsubscribeOrders: (() => void) | undefined;
-
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      const requestRevision = ++revision;
-      unsubscribeOrders?.();
-      unsubscribeOrders = undefined;
+    return onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      setOrdersError(false);
-      if (user) {
-        if (ordersOwnerRef.current !== user.uid) {
-          setOrders([]);
-          setProfile(null);
-          setSavedLocations([]);
-          ordersOwnerRef.current = user.uid;
-        }
-        setIsLoadingOrders(true);
-        await fetchUserProfile(user);
-        if (disposed || requestRevision !== revision) return;
-
-        const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
-        unsubscribeOrders = onSnapshot(
-          q,
-          (querySnapshot) => {
-            if (disposed || requestRevision !== revision) return;
-            const fetchedOrders: Order[] = [];
-            querySnapshot.forEach((docSnap) => {
-              const data = docSnap.data() as Order;
-              if (!data.deletedByUser) fetchedOrders.push({ ...data, id: docSnap.id });
-            });
-            fetchedOrders.sort((a, b) => compareTimestampValues(a.createdAt, b.createdAt, 'desc'));
-            setOrders(fetchedOrders);
-            setOrdersError(false);
-            setIsLoadingOrders(false);
-          },
-          (err) => {
-            if (disposed || requestRevision !== revision) return;
-            console.error('Error fetching orders in realtime:', err);
-            setOrdersError(true);
-            setIsLoadingOrders(false);
-          }
-        );
-      } else {
-        ordersOwnerRef.current = null;
+      const userId = user?.uid ?? null;
+      if (profileOwnerRef.current !== userId) {
+        profileOwnerRef.current = userId;
         setProfile(null);
-        setOrders([]);
         setSavedLocations([]);
-        setIsLoadingOrders(false);
       }
+      if (user) void fetchUserProfile(user);
     });
-
-    return () => {
-      disposed = true;
-      revision += 1;
-      unsubscribeAuth();
-      unsubscribeOrders?.();
-    };
-  }, [fetchUserProfile, ordersRetryKey]);
+  }, [fetchUserProfile]);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh: async () => {
@@ -816,7 +768,8 @@ export default function UserProfileDashboard({
               orders={orders}
               isLoadingOrders={isLoadingOrders}
               ordersError={ordersError}
-              onRetryOrders={() => setOrdersRetryKey((value) => value + 1)}
+              onRetryOrders={retryOrders}
+              focusedBookingId={focusedBookingId}
               language={language}
               selectedOrders={selectedOrders}
               isSelectMode={isSelectMode}

@@ -13,7 +13,6 @@ import { getApiUrl } from '@/lib/api';
 import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
 import { mergeCalendarOrders } from '@/lib/calendarOrderVisibility';
 import { triggerLightImpact, triggerMediumImpact } from '@/lib/haptics';
-import WawasanLoader from '@/components/brand/WawasanLoader';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -62,7 +61,7 @@ import {
   parseISO
 } from 'date-fns';
 import { ms, enUS } from 'date-fns/locale';
-import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
+import { getMalaysiaHolidayInfo, getMinCateringBookingDate } from '@/constants/malaysiaHolidays';
 import { cn, toJSDate } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { Button } from '@/components/ui/button';
@@ -100,7 +99,7 @@ export default function CalendarPage() {
     lunch: { count: number; pax: number };
     hi_tea: { count: number; pax: number };
   }>>({});
-  const [loading, setLoading] = useState(true);
+  const [calendarDataLoading, setCalendarDataLoading] = useState(true);
   const [calendarDataError, setCalendarDataError] = useState(false);
   const [calendarRefresh, setCalendarRefresh] = useState(0);
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -108,6 +107,7 @@ export default function CalendarPage() {
 
   // Active Selected Day
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
+  const agendaHeading = useRef<HTMLHeadingElement | null>(null);
   const eventDialogTrigger = useRef<HTMLElement | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [quickActionEvent, setQuickActionEvent] = useState<Order | null>(null);
@@ -160,7 +160,7 @@ export default function CalendarPage() {
   // 1. Fetch aggregated calendar workloads and full orders publicly from server-side API
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    setCalendarDataLoading(true);
     setCalendarDataError(false);
     const fetchCalendarData = async () => {
       try {
@@ -177,7 +177,7 @@ export default function CalendarPage() {
         console.warn('Public calendar data unavailable; available records retained:', err);
         setCalendarDataError(true);
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) setCalendarDataLoading(false);
       }
     };
     fetchCalendarData();
@@ -209,10 +209,8 @@ export default function CalendarPage() {
         });
         // Calendar events are selected by event date, not creation recency; do not drop older orders here.
         setAuthorizedOrders({ scope: 'admin', items: sortOrdersByCreatedAt(list, 'desc') });
-        setLoading(false);
       }, (err) => {
         console.warn("Order stream permission note:", err);
-        setLoading(false);
       });
 
       const notesCol = collection(db, 'calendar_notes');
@@ -241,7 +239,6 @@ export default function CalendarPage() {
           map.set(docSnap.id, { ...(docSnap.data() as Order), id: docSnap.id });
         });
         setAuthorizedOrders({ scope: currentUser.uid, items: Array.from(map.values()).filter(order => !order.deletedByAdmin) });
-        setLoading(false);
       };
 
       let snap1Docs: any[] = [];
@@ -274,7 +271,6 @@ export default function CalendarPage() {
       // Unauthenticated visitor
       setAuthorizedOrders(null);
       setCalendarNotes([]);
-      setLoading(false);
     }
 
     return () => {
@@ -648,14 +644,16 @@ export default function CalendarPage() {
   };
 
   // Navigation handlers
-  const handlePrevMonth = async () => {
-    await triggerLightImpact();
+  const handlePrevMonth = () => {
+    void triggerLightImpact();
     setCurrentDate((prev) => subMonths(prev, 1));
+    setSelectedDay(null);
   };
 
-  const handleNextMonth = async () => {
-    await triggerLightImpact();
+  const handleNextMonth = () => {
+    void triggerLightImpact();
     setCurrentDate((prev) => addMonths(prev, 1));
+    setSelectedDay(null);
   };
 
   const handleToday = () => {
@@ -725,17 +723,18 @@ export default function CalendarPage() {
   const selectedDayTotalPax = selectedDaySessions 
     ? (selectedDaySessions.breakfast.pax + selectedDaySessions.lunch.pax + selectedDaySessions.hi_tea.pax)
     : 0;
-
-  const todayAction = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleToday}
-      className="text-xs font-semibold px-3 py-1.5 h-auto rounded-lg"
-    >
-      {tl('Today', 'Hari Ini')}
-    </Button>
-  );
+  const selectedDayOrders = selectedDay ? getOrdersForDay(selectedDay) : [];
+  const selectedDayDate = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null;
+  const meetsNotice = Boolean(selectedDayDate && selectedDayDate >= getMinCateringBookingDate());
+  const selectedDaySummary = calendarDataLoading
+    ? tl('Loading bookings…', 'Memuatkan tempahan…')
+    : calendarDataError
+      ? tl('Booking information could not be confirmed.', 'Maklumat tempahan belum dapat dipastikan.')
+      : selectedDayTotalPax > 0
+        ? `${selectedDayTotalPax} ${tl('guests booked', 'tetamu ditempah')}`
+        : selectedDayOrders.length > 0
+          ? `${selectedDayOrders.length} ${selectedDayOrders.length === 1 ? tl('booking', 'tempahan') : tl('bookings', 'tempahan')}`
+          : tl('No bookings found for this date.', 'Tiada tempahan untuk tarikh ini.');
 
   return (
     <ErrorBoundary>
@@ -792,8 +791,48 @@ export default function CalendarPage() {
               </Button>
             </div>
             <div className="customer-calendar-toolbar-foot">
-              <span>{selectedDay ? `${tl('Selected', 'Dipilih')}: ${format(selectedDay, 'd MMM yyyy', { locale: dateLocale })}` : tl('Choose a date', 'Pilih tarikh')}</span>
-              {todayAction}
+              <div className="customer-calendar-date-summary" role="status" aria-atomic="true">
+                {selectedDay ? (
+                  <>
+                    <h3>{format(selectedDay, 'EEE, d MMM yyyy', { locale: dateLocale })}</h3>
+                    <p>{selectedDaySummary}</p>
+                    {!meetsNotice && selectedDayOrders.length === 0 && (
+                      <p>{tl('New bookings need at least 2 days’ notice.', 'Tempahan baharu perlu dibuat sekurang-kurangnya 2 hari awal.')}</p>
+                    )}
+                  </>
+                ) : (
+                  <p>{tl('Choose a date to see its bookings.', 'Pilih tarikh untuk melihat tempahan.')}</p>
+                )}
+              </div>
+              <div className="customer-calendar-date-actions">
+                <Button type="button" variant="outline" size="compact" onClick={handleToday}>
+                  {tl('Today', 'Hari Ini')}
+                </Button>
+                {selectedDayOrders.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="compact"
+                    onClick={() => {
+                      agendaHeading.current?.focus({ preventScroll: true });
+                      agendaHeading.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+                    }}
+                  >
+                    {tl('View bookings', 'Lihat tempahan')}
+                  </Button>
+                ) : selectedDayDate && meetsNotice && !calendarDataLoading && (
+                  <Button
+                    type="button"
+                    size="compact"
+                    onClick={() => navigate('/order', { state: { reorderData: { date: selectedDayDate } } })}
+                  >
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {calendarDataError
+                      ? tl('Start a draft', 'Mulakan draf')
+                      : tl('Book for this date', 'Tempah untuk tarikh ini')}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -808,14 +847,6 @@ export default function CalendarPage() {
           )}
 
           {/* 2. CALENDAR GRID WITH BATIK PATTERN OVERLAYS */}
-          {loading ? (
-            <div className="bg-white dark:bg-card border border-stone-200/80 dark:border-stone-800 rounded-2xl p-16 text-center shadow-xs flex flex-col items-center justify-center space-y-4">
-              <WawasanLoader size={64} />
-              <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">
-                {tl('Loading calendar...', 'Memuatkan kalendar...')}
-              </p>
-            </div>
-          ) : (
             <div className="customer-calendar-panel overflow-hidden">
               
               {/* Weekdays Header Row with Batik Overlay */}
@@ -1027,10 +1058,9 @@ export default function CalendarPage() {
                 )}
               </div>
             </div>
-          )}
 
           {/* 3. REFINED SELECTED DAY AGENDA */}
-          {selectedDay && (
+          {selectedDay && (selectedDayOrders.length > 0 || isAdmin) && (
             <motion.div
               key={format(selectedDay, 'yyyy-MM-dd')}
               className="customer-calendar-panel overflow-hidden"
@@ -1047,7 +1077,7 @@ export default function CalendarPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-display font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100 leading-tight">
+                      <h3 ref={agendaHeading} tabIndex={-1} className="customer-calendar-agenda-title font-display font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100 leading-tight">
                         {format(selectedDay, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
                       </h3>
                       {isToday(selectedDay) && (
@@ -1056,15 +1086,6 @@ export default function CalendarPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs mt-0.5">
-                      {calendarDataError
-                        ? tl('Booking information could not be confirmed', 'Maklumat tempahan belum dapat dipastikan')
-                        : selectedDayTotalPax > 0
-                        ? `${selectedDayTotalPax} ${tl('total pax booked', 'jumlah pax ditempah')}`
-                        : getOrdersForDay(selectedDay).length > 0
-                        ? `${getOrdersForDay(selectedDay).length} ${tl('bookings', 'tempahan')}`
-                        : tl('No bookings found for this date', 'Tiada tempahan untuk tarikh ini')}
-                    </p>
                   </div>
                 </div>
 
@@ -1100,28 +1121,17 @@ export default function CalendarPage() {
                   <div className={cn("space-y-3", isAdmin ? "lg:col-span-7" : "lg:col-span-12")}>
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-xs font-extrabold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({calendarDataError ? '—' : getOrdersForDay(selectedDay).length})
+                        {tl('Bookings for this date', 'Tempahan pada tarikh ini')} ({calendarDataLoading || calendarDataError ? '—' : selectedDayOrders.length})
                       </span>
                     </div>
 
-                    {getOrdersForDay(selectedDay).length === 0 ? (
-                      <div className="customer-calendar-empty p-6 text-center rounded-xl space-y-3">
-                        <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                          {calendarDataError ? tl('Booking information could not be confirmed.', 'Maklumat tempahan belum dapat dipastikan.') : tl('No bookings found for this date.', 'Tiada tempahan untuk tarikh ini.')}
-                        </p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => navigate('/order', { state: { reorderData: { date: format(selectedDay, 'yyyy-MM-dd') } } })}
-                          className="gap-1.5 text-xs font-bold rounded-xl shadow-xs"
-                        >
-                          <Plus className="w-4 h-4" />
-                          {tl('Book for this date', 'Tempah untuk tarikh ini')}
-                        </Button>
+                    {selectedDayOrders.length === 0 ? (
+                      <div className="customer-calendar-empty p-4 text-center">
+                        <p className="text-xs font-medium text-[var(--customer-muted)]">{selectedDaySummary}</p>
                       </div>
                     ) : (
                       <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                        {getOrdersForDay(selectedDay).map((ord) => {
+                        {selectedDayOrders.map((ord) => {
                           const totalPax = ord.guests || ord.quantity || 0;
                           const eventDeliveryTime = getCustomerSelectedEventTime(ord);
 

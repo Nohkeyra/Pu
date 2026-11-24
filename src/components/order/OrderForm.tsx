@@ -1671,6 +1671,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     key="step5"
                     orderState={effectiveState}
                     referenceNumber={referenceNumber}
+                    bookingId={submittedOrder?.id}
                     getMealTypesLabel={getMealTypesLabel}
                     emailStatus={emailStatus}
                     setShowPdfPreviewModal={setShowPdfPreviewModal}

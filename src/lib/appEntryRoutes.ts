@@ -8,6 +8,10 @@ export function getCustomerHomePath(isNative: boolean, isSignedIn: boolean): '/a
   return isNative || isSignedIn ? '/app' : '/';
 }
 
+export function getCustomerBookingPath(bookingId?: string) {
+  return bookingId ? `/profile?${new URLSearchParams({ booking: bookingId })}` : '/profile';
+}
+
 const DEEP_LINK_ROUTES = new Set(['/order', '/admin', '/login', '/profile', '/settings', '/calendar', '/home', '/app', '/']);
 const APP_LINK_HOSTS = new Set(['restoran-wawasan-bio.onrender.com', 'restoran-wawasan.pxxl.click', 'wawasan.web.app', 'wawasanhub.vercel.app']);
 

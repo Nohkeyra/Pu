@@ -58,6 +58,8 @@ for (const theme of ['light', 'dark'] as const) {
     await page.goto('/#/calendar');
     await expect(page.locator('.customer-calendar-day').first()).toBeVisible({ timeout: 20000 });
     await expect(page.locator('.customer-calendar-internal-notes')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Bulan Seterusnya', exact: true }).click();
+    await page.locator('.customer-calendar-day').nth(3).click();
     await expect(page.getByRole('button', { name: 'Tempah untuk tarikh ini' })).toBeVisible();
   });
 }
