@@ -145,24 +145,34 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     // records remain eligible. Use the REST fallback only if the listener fails.
     // Do not orderBy/limit in Firestore: legacy records may lack createdAt or use mixed types.
     let disposed = false;
+    const byId = new Map<string, Order>();
     const q = query(collection(db, 'orders'));
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
         if (disposed) return;
         invalidateRequests();
-        const fetchedOrders: Order[] = [];
-        querySnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data.deletedByAdmin) {
-            return;
+        // Firebase sends incremental changes after the initial snapshot.
+        // Retain the full dataset needed by admin filters, but only decode
+        // changed documents. The full-snapshot fallback supports older mocks.
+        if (typeof querySnapshot.docChanges === 'function') {
+          for (const change of querySnapshot.docChanges()) {
+            const id = change.doc.id;
+            if (change.type === 'removed') {
+              byId.delete(id);
+              continue;
+            }
+            const data = change.doc.data();
+            if (data.deletedByAdmin) byId.delete(id);
+            else byId.set(id, { ...data, id } as Order);
           }
-          
-          fetchedOrders.push({ 
-            id: docSnap.id, 
-            ...data,
-          } as Order);
-        });
-      setOrders(sortOrdersByCreatedAt(fetchedOrders, 'desc'));
+        } else {
+          byId.clear();
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (!data.deletedByAdmin) byId.set(docSnap.id, { ...data, id: docSnap.id } as Order);
+          });
+        }
+      setOrders(sortOrdersByCreatedAt(Array.from(byId.values()), 'desc'));
       setOrdersError(false);
       setLoading(false);
     }, (error) => {
@@ -177,6 +187,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
 
     return () => {
       disposed = true;
+      byId.clear();
       invalidateRequests();
       unsubscribeSnapshot();
     };

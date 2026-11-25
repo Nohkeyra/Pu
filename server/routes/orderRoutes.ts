@@ -23,6 +23,7 @@ import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
 import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
+  getOrderEventDate,
   paginateSortedOrders,
   sortOrdersByCreatedAt,
 } from '../../src/lib/orderTimestamp.js';
@@ -238,6 +239,7 @@ router.post(
               : '',
         date: derivedDate,
         eventDate: derivedDate,
+        calendarDateKey: derivedDate,
         time: dateTime.slice(11, 16),
         location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
         ...(rawBody.locationCoordinates &&
@@ -581,7 +583,7 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
       const updates: Partial<OrderData> = { updatedAt: FieldValue.serverTimestamp() };
       if (typeof notes === 'string') updates.notes = notes.slice(0, 5000);
       if (time !== undefined) {
-        const dateVal = oldData.eventDate || oldData.date;
+        const dateVal = getOrderEventDate(oldData);
         const dateTime = toMalaysiaDateTime(dateVal, time);
         if (!dateTime) return { error: 'Valid event time (HH:mm) is required', httpStatus: 400 } as const;
         // An unchanged time in a notes-only edit must not reapply the booking cutoff.
@@ -599,6 +601,7 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
         }
         updates.time = dateTime.slice(11, 16);
         updates.dateTime = dateTime;
+        updates.calendarDateKey = dateTime.slice(0, 10);
       }
       tx.update(orderRef, updates);
       return { oldData, updates };
@@ -1030,7 +1033,9 @@ async function handlePublicCalendar(
   }
   try {
     const data = await publicCalendar.getData(from, to);
-    return res.json({ success: true, ...(view !== 'sessions' ? { orders: data.orders } : {}),
+    // Individual records belong in the authenticated Firestore streams.
+    // Retain the legacy orders-array response shape without exposing order IDs.
+    return res.json({ success: true, ...(view !== 'sessions' ? { orders: [] } : {}),
       ...(view !== 'orders' ? { sessions: data.sessions } : {}) });
   } catch (error) {
     if (isFirestoreQuotaError(error)) {

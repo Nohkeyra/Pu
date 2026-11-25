@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const h = vi.hoisted(() => ({ get: vi.fn() }));
+const h = vi.hoisted(() => ({ get: vi.fn(), where: vi.fn() }));
 vi.mock('../firebaseAdmin.js', () => ({
-  getFirestore: () => ({ collection: () => ({ get: h.get }) }),
+  getFirestore: () => ({ collection: () => ({ get: h.get, where: h.where }) }),
 }));
 import { PublicCalendarService } from './publicCalendar';
 import { firestoreQuota } from './firestoreQuota';
@@ -16,7 +16,9 @@ describe('public calendar shared snapshot', () => {
     vi.setSystemTime(0);
     firestoreQuota.reset();
     h.get.mockReset();
-    service = new PublicCalendarService();
+    h.where.mockReset();
+    h.where.mockImplementation(() => ({ where: h.where, get: h.get }));
+    service = new PublicCalendarService(() => false);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -32,6 +34,27 @@ describe('public calendar shared snapshot', () => {
     expect(results[0].sessions['2026-11-10'].lunch).toEqual({ count: 1, pax: 25 });
     await service.getData('2026-12-01', '2026-12-31');
     expect(h.get).toHaveBeenCalledTimes(1);
+  });
+  it('uses bounded indexed month reads after migration, shares cache and preserves unbounded fallback', async () => {
+    service = new PublicCalendarService(() => true);
+    h.get.mockResolvedValue(snapshot([row]));
+    const [first, second] = await Promise.all([
+      service.getData('2026-11-01', '2026-11-30'),
+      service.getData('2026-11-10', '2026-11-15'),
+    ]);
+    expect(h.where.mock.calls).toEqual([
+      ['calendarDateKey', '>=', '2026-11-01'],
+      ['calendarDateKey', '<=', '2026-11-30'],
+    ]);
+    expect(h.get).toHaveBeenCalledTimes(1);
+    expect(first.sessions).toEqual(second.sessions);
+    await service.getData('2026-12-01', '2026-12-31');
+    expect(h.get).toHaveBeenCalledTimes(2);
+    await service.getData();
+    expect(h.get).toHaveBeenCalledTimes(3);
+    service.invalidate();
+    await service.getData('2026-11-01', '2026-11-30');
+    expect(h.get).toHaveBeenCalledTimes(4);
   });
   it('preserves legacy dates, deleted-record handling and privacy', async () => {
     h.get.mockResolvedValue(

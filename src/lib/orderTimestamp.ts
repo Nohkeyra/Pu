@@ -1,4 +1,4 @@
-import { compareTimestampValues, toISODateString } from './dateUtils';
+import { compareTimestampValues, toISODateString, toJSDate } from './dateUtils';
 
 export interface TimestampedOrder {
   id?: string;
@@ -48,10 +48,26 @@ export function paginateSortedOrders<T extends TimestampedOrder>(
   };
 }
 
+// The index and runtime must agree even when migration runs in another timezone.
+// Preserve explicit calendar dates; convert instant-like legacy values in Malaysia.
+const malaysiaDate = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit', day: '2-digit',
+});
+function normalizeOrderDate(value: unknown): string | null {
+  if (typeof value === 'string' && /^(?:\d{4}-\d{2}-\d{2}(?:$|[Tt ])|\d{2}[/-]\d{2}[/-]\d{4}$)/.test(value.trim())) {
+    return toISODateString(value);
+  }
+  const parsed = toJSDate(value);
+  if (!parsed) return null;
+  const parts = malaysiaDate.formatToParts(parsed);
+  const part = (type: string) => parts.find(p => p.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
 /** Resolve event-date fields without treating order creation time as an event date. */
 export function getOrderEventDate(order: TimestampedOrder): string | null {
   for (const candidate of [order.eventDate, order.date, order.dateTime]) {
-    const normalized = toISODateString(candidate);
+    const normalized = normalizeOrderDate(candidate);
     if (normalized) return normalized;
   }
   return null;
@@ -59,7 +75,7 @@ export function getOrderEventDate(order: TimestampedOrder): string | null {
 
 /** Calendar aggregation historically falls back to createdAt when all event-date fields are absent. */
 export function getOrderCalendarDate(order: TimestampedOrder): string | null {
-  return getOrderEventDate(order) || toISODateString(order.createdAt);
+  return getOrderEventDate(order) || normalizeOrderDate(order.createdAt);
 }
 
 export function isOrderDateInRange(order: TimestampedOrder, from?: string, to?: string): boolean {

@@ -11,6 +11,7 @@ import { getMessaging } from 'firebase-admin/messaging';
 import { Firestore as CloudFirestore } from '@google-cloud/firestore';
 import { google } from 'googleapis';
 import { firebaseConfig, STRICT_FIREBASE_ADMIN } from './config.js';
+import { getOrderCalendarDate } from '../src/lib/orderTimestamp.js';
 
 let adminApp: App | undefined;
 let productionFirestore: FirebaseFirestore.Firestore | undefined;
@@ -337,7 +338,7 @@ export function firebaseSessionRevocationId(identity: { uid: string; auth_time?:
 
 export async function verifyFirebaseIdToken(
   idToken: string,
-  { checkSessionRevocation = true }: { checkSessionRevocation?: boolean } = {},
+  { checkSessionRevocation = true, allowPendingDeletion = false }: { checkSessionRevocation?: boolean; allowPendingDeletion?: boolean } = {},
 ): Promise<{ uid: string; email?: string; email_verified?: boolean; admin?: boolean; auth_time?: number } | null> {
   if (!idToken || typeof idToken !== 'string') return null;
 
@@ -349,6 +350,10 @@ export async function verifyFirebaseIdToken(
     const decoded = await getAuth(getAdminApp()).verifyIdToken(idToken, true);
     if (checkSessionRevocation && isFirebaseAdminIdentity(decoded) &&
         (await getFirestore().collection('admin_revocations').doc(firebaseSessionRevocationId(decoded) || firebaseTokenRevocationId(idToken)).get()).exists) {
+      return null;
+    }
+    if (!allowPendingDeletion && !isFirebaseAdminIdentity(decoded) &&
+        (await getFirestore().collection('account_deletions').doc(decoded.uid).get()).exists) {
       return null;
     }
     return {
@@ -440,6 +445,7 @@ export interface OrderData {
   status?: string;
   date?: string;
   eventDate?: string;
+  calendarDateKey?: string;
   time?: string;
   dateTime?: string;
   quantity?: number;
@@ -636,6 +642,7 @@ export async function createOrder(
     ...orderData,
     status: (orderData.status || 'pending').toLowerCase(),
     eventTimestamp,
+    calendarDateKey: getOrderCalendarDate({ ...orderData, createdAt: new Date() }) ?? '',
     createdAt: FieldValue.serverTimestamp(),
   };
 

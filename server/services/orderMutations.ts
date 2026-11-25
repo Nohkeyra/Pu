@@ -33,8 +33,15 @@ export function validateAdminOrderUpdate(data: unknown): string | null {
       return 'Invalid invoice number';
     }
   }
-  if (data && (data as Record<string, unknown>).status === 'billed') {
-    const rec = data as Record<string, unknown>;
+  const rec = data as Record<string, unknown>;
+  const changesPricing = ['prices', 'totalAmount', 'deliveryCharge', 'serviceChargeRate', 'serviceChargeAmount'].some(key => key in rec);
+  if (changesPricing && (rec.status !== 'billed' || rec.prices === undefined || rec.totalAmount === undefined)) {
+    return 'Prices and total amount must be submitted together with billed status';
+  }
+  if (rec.invoiceNo !== undefined && rec.status !== 'billed' && rec.status !== 'approved') {
+    return 'Invoice number is server-managed';
+  }
+  if (rec.status === 'billed') {
     if (rec.prices !== undefined) {
       const priceVals = Object.values(rec.prices as Record<string, unknown>);
       if (priceVals.length === 0 || priceVals.some((p) => typeof p !== 'number' || !Number.isFinite(p) || p <= 0)) {
@@ -90,6 +97,14 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
         error: `Invalid status transition from '${oldData.status || 'pending'}' to '${data.status}'`,
         httpStatus: 400,
       } as const;
+    }
+
+    if (data.invoiceNo !== undefined) {
+      const currentInvoice = oldData.invoiceNo;
+      const expectedInvoice = currentInvoice?.replace(/^QT\s*/i, 'RW ');
+      if (!currentInvoice || (data.invoiceNo !== currentInvoice && data.invoiceNo !== expectedInvoice)) {
+        return { error: 'Invoice number is server-managed and cannot be replaced', httpStatus: 400 } as const;
+      }
     }
 
     if (data.status === 'billed') {
