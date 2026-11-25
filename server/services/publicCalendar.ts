@@ -72,7 +72,10 @@ export class PublicCalendarService {
   private cache = new Map<string, { records: CalendarRecord[]; expiresAt: number }>();
   private inFlight = new Map<string, { revision: number; promise: Promise<CalendarRecord[]> }>();
   private revision = 0;
-  constructor(private readonly indexReady = () => process.env.FIRESTORE_CALENDAR_INDEX_READY === 'true') {}
+  private readonly indexReady: () => boolean;
+  constructor(indexReady = () => process.env.FIRESTORE_CALENDAR_INDEX_READY === 'true') {
+    this.indexReady = indexReady;
+  }
   invalidate(): void {
     this.revision++;
     this.cache.clear();

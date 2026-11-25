@@ -185,6 +185,25 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       }
     });
 
+    it('blocks standalone price/total edits and replacement of an existing invoice number', async () => {
+      const ref = getFirestore().collection('orders').doc('immutable_billing_test');
+      await ref.set({ status: 'approved', quantity: 20, meals: ['lunch'], prices: { lunch: 15 }, totalAmount: 300, invoiceNo: 'RW ORIGINAL' });
+      for (const data of [
+        { prices: { lunch: 1 } },
+        { totalAmount: 1 },
+        { status: 'billed', totalAmount: 1 },
+        { status: 'billed', prices: { lunch: 15 }, totalAmount: 300, invoiceNo: 'RW REPLACED' },
+      ]) {
+        const res = await fetch(baseUrl + '/api/admin/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+          body: JSON.stringify({ action: 'update', orderId: ref.id, data }),
+        });
+        expect(res.status).toBe(400);
+        expect((await ref.get()).data()).toMatchObject({ status: 'approved', totalAmount: 300, invoiceNo: 'RW ORIGINAL' });
+      }
+    });
+
     it('allows PATCH /status to billed when positive pricing already exists on the order', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('priced_bill_test').set({
