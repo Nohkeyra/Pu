@@ -41,6 +41,13 @@ describe('timestamp-aware order query results', () => {
     expect(paginateSortedOrders(sorted, 2)).toMatchObject({ cursorFound: true });
   });
 
+  it('normalizes legacy instant values in Malaysia independently of the host timezone', () => {
+    expect(getOrderCalendarDate({ date: new Date('2026-11-24T17:00:00Z') })).toBe('2026-11-25');
+    expect(getOrderCalendarDate({ createdAt: { seconds: Date.parse('2026-11-24T17:00:00Z') / 1000 } })).toBe('2026-11-25');
+    expect(getOrderCalendarDate({ eventDate: '2026-11-24T23:00:00-05:00' })).toBe('2026-11-24');
+    expect(getOrderCalendarDate({ date: 'invalid' })).toBeNull();
+  });
+
   it('sorts ascending and resolves valid legacy date fallbacks for range filters', () => {
     expect(sortOrdersByCreatedAt(records, 'asc').map(o => o.id)).toEqual(['oldest', 'middle', 'newest', 'invalid', 'missing']);
     expect(getOrderCalendarDate({ eventDate: '2026-11-25', date: '2026-11-26' })).toBe('2026-11-25');

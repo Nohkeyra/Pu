@@ -600,6 +600,7 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
         }
         updates.time = dateTime.slice(11, 16);
         updates.dateTime = dateTime;
+        updates.calendarDateKey = dateTime.slice(0, 10);
       }
       tx.update(orderRef, updates);
       return { oldData, updates };

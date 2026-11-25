@@ -445,6 +445,7 @@ export interface OrderData {
   status?: string;
   date?: string;
   eventDate?: string;
+  calendarDateKey?: string;
   time?: string;
   dateTime?: string;
   quantity?: number;
