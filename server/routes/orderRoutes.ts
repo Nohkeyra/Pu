@@ -23,6 +23,7 @@ import { generateOrdersWorkbook } from '../exportService.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
 import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
+  getOrderEventDate,
   paginateSortedOrders,
   sortOrdersByCreatedAt,
 } from '../../src/lib/orderTimestamp.js';
@@ -582,7 +583,7 @@ router.post('/orders/update', customerOrderActionLimiter, async (req, res) => {
       const updates: Partial<OrderData> = { updatedAt: FieldValue.serverTimestamp() };
       if (typeof notes === 'string') updates.notes = notes.slice(0, 5000);
       if (time !== undefined) {
-        const dateVal = oldData.eventDate || oldData.date;
+        const dateVal = getOrderEventDate(oldData);
         const dateTime = toMalaysiaDateTime(dateVal, time);
         if (!dateTime) return { error: 'Valid event time (HH:mm) is required', httpStatus: 400 } as const;
         // An unchanged time in a notes-only edit must not reapply the booking cutoff.

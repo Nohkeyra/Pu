@@ -17,7 +17,10 @@ export async function migrateCalendarIndex(db: FirebaseFirestore.Firestore, appl
   const pageSize = 400;
   let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
   for (;;) {
-    let query = db.collection('orders').limit(pageSize);
+    const collection = db.collection('orders');
+    const fields = ['eventDate', 'date', 'dateTime', 'createdAt', 'calendarDateKey'];
+    // Preserve updateTime and document reference while avoiding payload fields.
+    let query = collection.select(...fields).limit(pageSize);
     if (cursor) query = query.startAfter(cursor);
     const snapshot = await query.get();
     if (snapshot.empty) break;
