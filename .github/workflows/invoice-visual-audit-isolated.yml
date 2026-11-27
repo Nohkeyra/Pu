@@ -1,0 +1,153 @@
+name: Invoice Visual Audit (isolated)
+on:
+  pull_request:
+    branches: [audit/invoice-visual-base-20261127]
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --global npm@11.9.0
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Render synthetic documents using unchanged app services
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-output
+          master=public/assets/invoices/Restoran_Wawasan_Template_Invois_Individu_Final.pdf
+          test "$(git hash-object "$master")" = 15e828e7d7d727a8dfc8d4283e01ee54a42479a0
+          cp "$master" audit-output/00-master.pdf
+          git rev-parse HEAD > audit-output/source-commit.txt
+          git log -1 --format=%H -- server/services/serverPdfService.ts > audit-output/renderer-commit.txt
+          cat > scripts/.invoice-visual-audit.ts <<'TS'
+          import { writeFileSync } from 'node:fs';
+          import {
+            generateServerInvoicePdf,
+            generateSavedInvoicePdf,
+            generateServerConsolidatedInvoicePdf,
+          } from '../server/services/serverPdfService.ts';
+          import { planInvoicePages } from '../src/services/invoiceBatchPdf.ts';
+          import { PDFDocument, PDFArray, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
+          const out = 'audit-output';
+          const base = {
+            id: 'audit-only-01', to: 'AUDIT SAHAJA - BUKAN INVOIS SEBENAR',
+            name: 'Pegawai Contoh', contact: '0000000000', email: 'audit@example.invalid',
+            billingAddress: 'Aras 3, Bangunan Contoh, Presint 2, Putrajaya',
+            location: 'Dewan Contoh, Putrajaya', date: '2026-11-09',
+            eventDate: '2026-11-09', billedAt: '2026-11-10',
+            invoiceNo: 'AUDIT-IND-001', quoteNo: 'AUDIT-QT-001',
+            quantity: 20, meals: ['lunch'], prices: { lunch: 10 },
+            menu: 'Nasi Putih, Ayam Goreng Berempah, Sayur Campur',
+            totalAmount: 200, status: 'billed', lang: 'bm' as const,
+          };
+          const summary: Record<string, unknown>[] = [];
+          let failed = false;
+          async function run(name: string, render: () => Promise<Buffer>, expected: { landscape?: boolean; multiple?: boolean; signature?: boolean; pageNumbers?: string[] } = {}) {
+            try {
+              const bytes = await render();
+              writeFileSync(out + '/' + name + '.pdf', bytes);
+              const pdf = await PDFDocument.load(bytes);
+              const pages = pdf.getPages();
+              const signatures = pages.map(p => {
+                const c = p.node.Contents();
+                const refs = c instanceof PDFArray ? c.asArray() : c ? [c] : [];
+                const streams = refs.map(ref => {
+                  const stream = pdf.context.lookup(ref);
+                  return stream instanceof PDFRawStream ? Buffer.from(decodePDFRawStream(stream).decode()).toString('latin1') : '';
+                }).join('\n');
+                return (streams.match(/\/fzImg0\s+Do\b/g) || []).length;
+              });
+              const problems: string[] = [];
+              if (expected.multiple && pages.length < 2) problems.push('Expected multiple pages');
+              for (const p of pages) {
+                const {width,height} = p.getSize();
+                const w = expected.landscape ? 841.89 : 595.28;
+                const h = expected.landscape ? 595.28 : 841.89;
+                if (Math.abs(width-w)>2 || Math.abs(height-h)>2) problems.push('Unexpected page geometry');
+              }
+              if (expected.signature && signatures.some((n,i)=> n !== (i===pages.length-1 ? 1 : 0))) problems.push('Master signature count differs');
+              if (expected.pageNumbers && expected.pageNumbers.length !== pages.length) problems.push('Saved page count differs');
+              summary.push({name,pages:pages.length,bytes:bytes.length,signatures,expected,problems});
+              if (problems.length) failed=true;
+            } catch (e) { failed=true; summary.push({name,error:String(e)}); }
+            writeFileSync(out+'/generation.json', JSON.stringify(summary,null,2));
+          }
+          async function main() {
+            await run('01-individual',()=>generateServerInvoicePdf(base,true,'invoice'),{signature:true});
+            const petronas = {...base, to:'PETROLIAM NASIONAL BERHAD (PETRONAS)', companyCode:'9999', department:'Bahagian Contoh - AUDIT SAHAJA', attn:'Pegawai Contoh', billingAddress:'Aras 22, Blok A, Bangunan Contoh Perkhidmatan Korporat, Jalan Persiaran Contoh, Pusat Bandar, 50088 Kuala Lumpur, Wilayah Persekutuan', location:'Dewan Persidangan Utama, Aras 12, Bangunan Pentadbiran Contoh, Presint 2, Putrajaya', lang:'en' as const};
+            await run('02-long-address-subject',()=>generateServerInvoicePdf(petronas,true,'invoice'),{signature:true});
+            const long = {...base, meals:['breakfast','tea_break','lunch','hi_tea'], prices:{breakfast:10,tea_break:8,lunch:20,hi_tea:12}, quantity:50,totalAmount:2500,menu:Array.from({length:18},(_,i)=>'Hidangan Istimewa Nombor '+(i+1)+' dengan Sambal Tradisional').join(', ')};
+            await run('03-multipage-individual',()=>generateServerInvoicePdf(long,true,'invoice'),{signature:true,multiple:true});
+            await run('04-quotation',()=>generateServerInvoicePdf({...base,status:'pending'},false,'quotation'),{signature:true});
+            await run('05-receipt',()=>generateServerInvoicePdf({...base,status:'completed',lang:'en'},true,'receipt'),{signature:true});
+            await run('06-charges',()=>generateServerInvoicePdf({...base,lang:'en',deliveryCharge:5,serviceChargeRate:10,serviceChargeAmount:20,totalAmount:225},true,'invoice'),{signature:true});
+            const orders=Array.from({length:25},(_,i)=>({...base,id:'audit-batch-'+(i+1),eventDate:'2026-11-'+String(i+1).padStart(2,'0'),date:'2026-11-'+String(i+1).padStart(2,'0'),quantity:10,meals:['breakfast','lunch','hi_tea'],prices:{breakfast:8,lunch:20,hi_tea:8},totalAmount:360,menu:'Set Nasi dan Minuman',notes:'Audit sahaja'}));
+            async function batch(name:string, selected:typeof orders, layoutVersion:2|3, multiple=false) {
+              const opts={recipient:{company:base.to,address:base.billingAddress,email:base.email},includeNotes:true,lang:'bm' as const,issuedAt:'2026-11-10T04:00:00Z',layoutVersion};
+              try {
+                const pages=planInvoicePages(selected,opts).map((p,i)=>({...p,invoiceNo:'AUDIT-'+name+'-'+String(i+1).padStart(2,'0')}));
+                await run(name,()=>generateSavedInvoicePdf({...opts,invoiceNo:pages[0].invoiceNo,orders:selected,pages}),{landscape:true,multiple,pageNumbers:pages.map(p=>p.invoiceNo)});
+                writeFileSync(out+'/'+name+'-plan.json',JSON.stringify(pages,null,2));
+              } catch(e){failed=true;summary.push({name,error:String(e)});writeFileSync(out+'/generation.json',JSON.stringify(summary,null,2));}
+            }
+            await batch('07-consolidated-v3',orders.slice(0,2),3);
+            await batch('08-consolidated-v3-multipage',orders,3,true);
+            await batch('09-consolidated-v2-legacy',orders.slice(0,2),2);
+            await run('10-consolidated-alternative',()=>generateServerConsolidatedInvoicePdf(orders.slice(0,2),'AUDIT-ALT-001',true,'bm'),{landscape:true});
+            if(failed) process.exitCode=1;
+          }
+          main().catch(e=>{console.error(e);process.exitCode=1});
+          TS
+          npx --no-install tsx scripts/.invoice-visual-audit.ts
+      - name: Rasterize PDFs and produce visual evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-output
+          python3 -m venv "$RUNNER_TEMP/invoice-audit-venv"
+          "$RUNNER_TEMP/invoice-audit-venv/bin/pip" install --disable-pip-version-check 'PyMuPDF==1.26.5'
+          "$RUNNER_TEMP/invoice-audit-venv/bin/python" - <<'PY'
+          import fitz, json, pathlib, hashlib
+          folder=pathlib.Path('audit-output')
+          master=folder/'00-master.pdf'
+          clip=fitz.Rect(42.5,20,390,120)
+          def digest(p):
+              return hashlib.sha256(p.get_pixmap(matrix=fitz.Matrix(2,2),clip=clip,alpha=False).samples).hexdigest()
+          reference=None
+          if master.exists():
+              with fitz.open(master) as doc: reference=digest(doc[0])
+          report=[]
+          for f in sorted(folder.glob('*.pdf')):
+              with fitz.open(f) as doc:
+                  pages=[]
+                  for i,p in enumerate(doc):
+                      p.get_pixmap(matrix=fitz.Matrix(2,2),alpha=False).save(folder/(f.stem+'-p%02d.png'%(i+1)))
+                      text=p.get_text()
+                      (folder/(f.stem+'-p%02d.txt'%(i+1))).write_text(text,encoding='utf8')
+                      blocks=p.get_text('blocks')
+                      outside=[b[4][:120] for b in blocks if b[6]==0 and (b[0]<-1 or b[1]<-1 or b[2]>p.rect.width+1 or b[3]>p.rect.height+1)]
+                      pages.append({'page':i+1,'size_pt':[p.rect.width,p.rect.height],'master_left_header_pixel_match':digest(p)==reference if p.rect.height>p.rect.width and reference else None,'out_of_page_text_candidates':outside})
+                  report.append({'file':f.name,'pages':pages})
+          (folder/'visual-report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - name: Run existing PDF integrity tests without edits
+        if: always()
+        run: npx --no-install vitest run server/services/serverPdfService.test.ts src/services/invoiceBatchTable.test.ts
+      - name: Upload audit evidence only (never publish invoices)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: invoice-visual-audit
+          path: audit-output/
+          if-no-files-found: error
+          retention-days: 7
