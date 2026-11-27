@@ -11,26 +11,6 @@ on:
       - master
       - main
       - develop
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Version bump type (only applied on main / manual runs that publish)'
-        required: false
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - none
-      build_mode:
-        description: 'Fast: signed APK only; Full: debug APK, signed APK and Play Store AAB'
-        required: true
-        default: fast
-        type: choice
-        options:
-          - fast
-          - full
 
 permissions:
   contents: read
