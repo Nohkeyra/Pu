@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { inflateSync } from 'node:zlib';
+import { PDFArray, PDFDocument, PDFHexString, PDFRawStream, PDFString, decodePDFRawStream } from 'pdf-lib';
 import { planInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
 import {
@@ -79,21 +79,39 @@ describe('serverPdfService - Integrity & Validation', () => {
   });
 });
 
-function readablePdfStreams(bytes: Buffer): string {
-  const raw = bytes.toString('latin1');
-  let decoded = raw;
-  const regex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(raw)) !== null) {
-    const startOffset = match.index + (raw[match.index + 6] === '\r' ? 8 : 7);
-    const compressed = bytes.subarray(startOffset, startOffset + match[1].length);
-    try {
-      decoded += '\n' + inflateSync(compressed).toString('latin1');
-    } catch {
-      decoded += '\n' + match[1];
+// Inspect only page content streams, not image bytes, xref tables or font data.
+// pdf-lib emits hex text operands; jsPDF/ReportLab can emit literal strings.
+async function inspectPdf(bytes: Buffer) {
+  const document = await PDFDocument.load(bytes);
+  const streams = document.getPages().map((page) => {
+    const contents = page.node.Contents();
+    const refs = contents instanceof PDFArray ? contents.asArray() : contents ? [contents] : [];
+    return refs.map((ref) => {
+      const stream = document.context.lookup(ref);
+      if (!(stream instanceof PDFRawStream)) throw new Error('Expected PDF page content stream');
+      return Buffer.from(decodePDFRawStream(stream).decode()).toString('latin1');
+    }).join('\n');
+  });
+  const pageTexts = streams.map((stream) => {
+    const text: string[] = [];
+    const operands = /(<[0-9a-fA-F\s]+>|\((?:\\[\s\S]|[^\\()])*\))\s*Tj\b|\[((?:[^\]\\]|\\[\s\S])*)\]\s*TJ\b/g;
+    const decode = (token: string) => token.startsWith('<')
+      ? PDFHexString.of(token.slice(1, -1).replace(/\s/g, '')).decodeText()
+      : PDFString.of(token.slice(1, -1)).decodeText();
+    for (const match of stream.matchAll(operands)) {
+      if (match[1]) text.push(decode(match[1]));
+      else {
+        const tokens = match[2].match(/<[0-9a-fA-F\s]+>|\((?:\\[\s\S]|[^\\()])*\)/g) || [];
+        text.push(tokens.map(decode).join(''));
+      }
     }
-  }
-  return decoded;
+    return text;
+  });
+  return { pageTexts, streams, text: pageTexts.flat().join('\n'), pageCount: document.getPageCount() };
+}
+
+async function readablePdfStreams(bytes: Buffer): Promise<string> {
+  return (await inspectPdf(bytes)).text;
 }
 
 afterEach(() => vi.unstubAllEnvs());
@@ -139,7 +157,7 @@ it('prints the account number, full address and standard notes in both invoice f
     invoiceNo: 'RW00012',
     status: 'billed',
   };
-  const single = readablePdfStreams(await generateServerInvoicePdf(order, true));
+  const single = await readablePdfStreams(await generateServerInvoicePdf(order, true));
   const recipient = { company: order.to, address: order.billingAddress, email: order.email },
     options = {
       recipient,
@@ -151,7 +169,7 @@ it('prints the account number, full address and standard notes in both invoice f
     ...page,
     invoiceNo: 'RW BANK-TEST',
   }));
-  const batch = readablePdfStreams(
+  const batch = await readablePdfStreams(
     await generateSavedInvoicePdf({
       invoiceNo: 'RW BANK-TEST',
       orders: [order],
@@ -194,7 +212,7 @@ it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS co
   };
 
   const invoiceBytes = await generateServerInvoicePdf(petronasOrder, true, 'invoice');
-  const invoiceText = readablePdfStreams(invoiceBytes);
+  const invoiceText = await readablePdfStreams(invoiceBytes);
   expect(invoiceText).toContain('INVOICE');
   expect(invoiceText).toContain('RW00001');
   expect(invoiceText).toContain('0001');
@@ -207,7 +225,7 @@ it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS co
     false,
     'quotation'
   );
-  const quoteText = readablePdfStreams(quoteBytes);
+  const quoteText = await readablePdfStreams(quoteBytes);
   expect(quoteText).toContain('SEBUT HARGA');
   expect(quoteText).toContain('QT-20261109-01');
   expect(quoteText).toContain('Ini adalah sebut harga janaan komputer. Tiada cop syarikat diperlukan.');
@@ -217,7 +235,7 @@ it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS co
     true,
     'receipt'
   );
-  const receiptText = readablePdfStreams(receiptBytes);
+  const receiptText = await readablePdfStreams(receiptBytes);
   expect(receiptText).toContain('RECEIPT');
   expect(receiptText).toContain('COMPLETED');
   expect(receiptText).toContain('official catering receipt from Restoran Wawasan');
@@ -233,9 +251,9 @@ it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS co
     true,
     'invoice'
   );
-  const nonPetronasText = readablePdfStreams(nonPetronasBytes);
-  expect(nonPetronasText).toContain('(-)');
-  expect(nonPetronasText).not.toContain('(0001)');
+  const nonPetronasText = (await inspectPdf(nonPetronasBytes)).pageTexts.flat();
+  expect(nonPetronasText).toContain('-');
+  expect(nonPetronasText).not.toContain('0001');
 });
 
 it('paginates long multi-row menus cleanly and keeps signature only on the final page', async () => {
@@ -255,12 +273,13 @@ it('paginates long multi-row menus cleanly and keeps signature only on the final
     lang: 'bm',
   };
   const bytes = await generateServerInvoicePdf(order, true);
-  const decoded = readablePdfStreams(bytes);
-  expect(decoded.match(/\/Type \/Page\b/g)?.length).toBeGreaterThanOrEqual(2);
-  expect(decoded).toContain('Halaman 1 /');
-  expect(decoded).toContain('Halaman 2 /');
-  // Signature XObject (/fzImg0 Do) must appear only once (on final summary page)
-  expect(decoded.match(/\/fzImg0 Do/g)).toHaveLength(1);
+  const decoded = await inspectPdf(bytes);
+  expect(decoded.pageCount).toBeGreaterThanOrEqual(2);
+  expect(decoded.text).toContain('Halaman 1 /');
+  expect(decoded.text).toContain('Halaman 2 /');
+  // Signature XObject must be drawn exactly once, only on the final page.
+  expect(decoded.streams.map((stream) => (stream.match(/\/fzImg0\s+Do\b/g) || []).length))
+    .toEqual(decoded.streams.map((_, index) => index === decoded.pageCount - 1 ? 1 : 0));
 });
 
 it('itemises both charges separately in the official single invoice', async () => {
@@ -279,7 +298,7 @@ it('itemises both charges separately in the official single invoice', async () =
     lang: 'en',
     location: 'Putrajaya',
   };
-  const content = readablePdfStreams(await generateServerInvoicePdf(order, true));
+  const content = await readablePdfStreams(await generateServerInvoicePdf(order, true));
   expect(content).toContain('Delivery Charge');
   expect(content).toContain('Service Charge');
   expect(content).toContain('225.00');
