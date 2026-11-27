@@ -185,11 +185,38 @@ jobs:
       VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
     steps:
-      - name: Checkout exact build commit
+      # Only check out trusted release branches. Never use a job output as a checkout ref.
+      - name: Checkout main release branch
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.release_sha }}
+          ref: refs/heads/main
           persist-credentials: false
+
+      - name: Checkout master release branch
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/master
+          persist-credentials: false
+
+      - name: Checkout original event commit for non-release build
+        if: github.event_name == 'pull_request' || (github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master')
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Fail closed if the branch advanced after prepare; do not run code or access caches.
+      - name: Verify prepared commit before setup
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.prepare.outputs.release_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]]; then
+            echo "::error::Checkout does not match the prepared commit. Start a fresh workflow run."
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -451,11 +478,32 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - name: Checkout exact build commit
+      # Only check out trusted release branches. Never use a job output as a checkout ref.
+      - name: Checkout main release branch
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.release_sha }}
+          ref: refs/heads/main
           persist-credentials: false
+
+      - name: Checkout master release branch
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/master
+          persist-credentials: false
+
+      # Fail closed if the branch advanced after prepare; do not run code or access caches.
+      - name: Verify prepared commit before setup
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.prepare.outputs.release_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]]; then
+            echo "::error::Checkout does not match the prepared commit. Start a fresh workflow run."
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
