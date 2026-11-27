@@ -26,6 +26,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SAVED_COMPANIES } from '@/constants/companies';
+import { PetronasCompanyFieldNotice } from '@/components/order/PetronasCompanyFieldNotice';
+import {
+  PETRONAS_COMPANIES,
+  applyCanonicalCompanyName,
+  resolveVerifiedPetronasCode,
+} from '@/lib/petronasAutofill';
 import { triggerNotification, NotificationType } from '@/lib/haptics';
 import '../ui/presentation.css';
 import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
@@ -74,6 +80,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
   const [contact, setContact] = useState('');
   const [to, setTo] = useState(''); // Organization
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
   const [attn, setAttn] = useState(''); // Attn
   const [department, setDepartment] = useState(''); // Corporate Billing Details (Division / Department)
   const [initials, setInitials] = useState(''); // Initial Identifier
@@ -93,6 +100,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
     setContact('');
     setTo('');
     setSelectedCompany('');
+    setCompanyCode('');
     setAttn('');
     setDepartment('');
     setInitials('');
@@ -383,6 +391,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
           email,
           contact,
           to,
+          companyCode: resolveVerifiedPetronasCode(to).companyCode,
           attn,
           department,
           division: department,
@@ -569,8 +578,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                           setSelectedCompany(val);
                           if (val === 'other') {
                             setTo('');
+                            setCompanyCode('');
                           } else {
                             setTo(val);
+                            setCompanyCode(resolveVerifiedPetronasCode(val).companyCode);
                           }
                         }}
                         autoComplete="organization"
@@ -582,6 +593,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                             {company}
                           </option>
                         ))}
+                        <optgroup label={t('PETRONAS Group Entities', 'Entiti Kumpulan PETRONAS')}>
+                          {PETRONAS_COMPANIES.map((entity) => (
+                            <option key={entity.code} value={entity.name} className="text-foreground bg-background">
+                              {entity.code} — {entity.name}
+                            </option>
+                          ))}
+                        </optgroup>
                         <option value="other" className="text-sunshine-cta bg-background font-semibold">{t('Other (Specify)', 'Lain-lain (Nyatakan)')}</option>
                       </select>
                       <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -597,12 +615,30 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
                           aria-label={t('Other Company Name', 'Nama Syarikat Lain')}
                           type="text"
                           value={to}
-                          onChange={(e) => setTo(e.target.value)}
+                          onChange={(e) => {
+                            const nextVal = e.target.value;
+                            setTo(nextVal);
+                            setCompanyCode(resolveVerifiedPetronasCode(nextVal).companyCode);
+                          }}
                           placeholder={t('e.g. PMO Putrajaya', 'cth. PMO Putrajaya')}
                           className="w-full h-11 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-kiwi/60 focus:ring-1 focus:ring-kiwi/40 outline-none transition-all duration-200"
                         />
                       </div>
                     )}
+                    <PetronasCompanyFieldNotice
+                      companyValue={to}
+                      companyCode={companyCode}
+                      language={language}
+                      onSelectCanonical={(canonicalName, code) => {
+                        if (selectedCompany === 'other') {
+                          setTo(applyCanonicalCompanyName(to, canonicalName));
+                        } else {
+                          setSelectedCompany(canonicalName);
+                          setTo(canonicalName);
+                        }
+                        setCompanyCode(code);
+                      }}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

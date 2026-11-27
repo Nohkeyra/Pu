@@ -16,6 +16,7 @@ interface PdfPageDimensions {
 interface AdminPdfCanvasPreviewProps {
   pdfUrl: string;
   language: string;
+  fetchHeaders?: HeadersInit;
 }
 
 const PAGE_GAP = 16;
@@ -137,8 +138,12 @@ function PdfCanvasPage({
 }
 
 /** A true PDF render, fitted inside the available modal space at its original aspect ratio. */
-export default function AdminPdfCanvasPreview({ pdfUrl, language }: AdminPdfCanvasPreviewProps) {
+export default function AdminPdfCanvasPreview({ pdfUrl, language, fetchHeaders }: AdminPdfCanvasPreviewProps) {
   const scrollRoot = useRef<HTMLDivElement>(null);
+  const fetchHeadersRef = useRef(fetchHeaders);
+  useEffect(() => {
+    fetchHeadersRef.current = fetchHeaders;
+  }, [fetchHeaders]);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
   const [pages, setPages] = useState<PdfPageDimensions[]>([]);
@@ -178,7 +183,8 @@ export default function AdminPdfCanvasPreview({ pdfUrl, language }: AdminPdfCanv
         const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
         if (cancelled) return;
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const response = await fetch(pdfUrl);
+        const headers = fetchHeadersRef.current;
+        const response = await fetch(pdfUrl, headers ? { headers } : undefined);
         if (!response.ok) throw new Error(`PDF request failed (${response.status})`);
         const bytes = new Uint8Array(await response.arrayBuffer());
         if (cancelled) return;

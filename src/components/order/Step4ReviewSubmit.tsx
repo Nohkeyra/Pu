@@ -6,6 +6,7 @@ import { ResponsiveButtonGroup } from '@/components/ui/ResponsiveButtonGroup';
 import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
 import { repairDishImage } from '@/lib/imageRepair';
 import { isMenuCutoutImage } from '@/constants/menuImages';
+import { getVerifiedOrderCompanyCode } from '@/lib/petronasAutofill';
 
 function ReviewMenuImage({ item }: { item: any }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
@@ -137,6 +138,26 @@ export function Step4ReviewSubmit({
                   {orderState.companyName === 'other' ? orderState.customCompany : orderState.companyName}
                 </span>
               </div>
+              {(() => {
+                const selectedCompanyText =
+                  orderState.companyName === 'other'
+                    ? orderState.customCompany
+                    : orderState.companyName;
+                const verifiedCode = getVerifiedOrderCompanyCode({
+                  to: selectedCompanyText,
+                  companyCode: orderState.companyCode,
+                });
+                return verifiedCode ? (
+                  <div className="flex justify-between items-center text-xs gap-4">
+                    <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">
+                      {tText('PETRONAS Code', 'Kod PETRONAS')}
+                    </span>
+                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">
+                      {verifiedCode}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
               {orderState.department && (
                 <div className="flex justify-between items-start text-xs gap-4">
                   <span className="text-stone-700 dark:text-stone-300 font-medium shrink-0">{tText('Division / Dept', 'Bahagian / Jabatan')}</span>

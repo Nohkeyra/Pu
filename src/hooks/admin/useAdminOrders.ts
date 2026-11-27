@@ -193,7 +193,12 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     };
   }, [adminToken, fetchOrders, invalidateRequests]);
 
-  const handleUpdateOrderStatus = async (orderId: string, data: Partial<Order>, successMsg?: string) => {
+  const handleUpdateOrderStatus = async (
+    orderId: string,
+    data: Partial<Order>,
+    successMsg?: string,
+    onSuccess?: (saved: { invoiceNo?: string }) => void
+  ) => {
     setIsApproving(true);
     try {
       const response = await fetch(getApiUrl('/api/admin/orders'), {
@@ -218,6 +223,7 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
             variant: 'success'
           });
         }
+        onSuccess?.({ invoiceNo: typeof saved.invoiceNo === 'string' ? saved.invoiceNo : undefined });
         return true;
       }
       const errData = await response.json().catch(() => ({}));

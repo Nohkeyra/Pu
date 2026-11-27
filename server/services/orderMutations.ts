@@ -1,6 +1,7 @@
 import { calculateOrderCharges, orderFoodSubtotal, validCharge, validServiceRate } from '../../src/lib/orderCharges.js';
+import { resolveVerifiedPetronasCode } from '../../src/lib/petronasAutofill.js';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getFirestore, generateSequentialInvoiceNo, type OrderData } from '../firebaseAdmin.js';
+import { getFirestore, generateSequentialIndividualInvoiceNo, type OrderData } from '../firebaseAdmin.js';
 import { isValidStatusTransition } from './orderValidator.js';
 import { invoiceQueue } from './invoiceQueue.js';
 
@@ -29,7 +30,7 @@ export function validateAdminOrderUpdate(data: unknown): string | null {
     }
     if ((key === 'approvedAt' || key === 'billedAt') &&
       (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) return `Invalid ${key}`;
-    if (key === 'invoiceNo' && (typeof value !== 'string' || !/^((QT|RW)\s+[\w-]+)$/.test(value))) {
+    if (key === 'invoiceNo' && (typeof value !== 'string' || !/^(?:(?:QT|RW)\s+[\w-]+|RW\d{5})$/.test(value))) {
       return 'Invalid invoice number';
     }
   }
@@ -74,8 +75,8 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
 
   const initialOrder = initial.data() as OrderData;
   let reservedInvoiceNo: string | undefined;
-  if ((data.status === 'approved' || data.status === 'billed') && !initialOrder.invoiceNo) {
-    reservedInvoiceNo = await generateSequentialInvoiceNo(false, initialOrder.eventDate || initialOrder.date);
+  if ((data.status === 'approved' || data.status === 'billed') && (!initialOrder.invoiceNo || initialOrder.invoiceNo.startsWith('QT'))) {
+    reservedInvoiceNo = await generateSequentialIndividualInvoiceNo();
   }
 
   return db.runTransaction(async (tx: any) => {
@@ -152,16 +153,24 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
       }
     }
     if (data.status === 'approved' || data.status === 'billed') {
-      if (!oldData.invoiceNo) {
+      if (!oldData.invoiceNo || oldData.invoiceNo.startsWith('QT')) {
         if (!reservedInvoiceNo) {
-          // Another writer cleared the invoice after the first read.
+          // Another writer cleared or changed the invoice after the first read.
           return { error: 'Invoice changed concurrently; retry the request', httpStatus: 409 } as const;
         }
+        if (oldData.invoiceNo?.startsWith('QT')) {
+          updates.quoteNo = oldData.quoteNo || oldData.invoiceNo;
+        }
         updates.invoiceNo = reservedInvoiceNo;
-        (updates as any).officialInvoiceNo = reservedInvoiceNo;
-      } else if (oldData.invoiceNo.startsWith('QT')) {
-        updates.invoiceNo = oldData.invoiceNo.replace(/^QT\s*/i, 'RW ');
-        (updates as any).officialInvoiceNo = updates.invoiceNo;
+        updates.officialInvoiceNo = reservedInvoiceNo;
+        const { companyCode: verifiedCode } = resolveVerifiedPetronasCode(
+          String(oldData.to || oldData.company || '')
+        );
+        if (verifiedCode) {
+          updates.companyCode = verifiedCode;
+        } else if (oldData.companyCode) {
+          updates.companyCode = '';
+        }
       }
     }
 

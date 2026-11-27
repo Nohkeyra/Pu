@@ -440,6 +440,10 @@ export function getFirestore(): FirebaseFirestore.Firestore {
 export interface OrderData {
   id?: string;
   invoiceNo?: string;
+  quoteNo?: string;
+  officialInvoiceNo?: string;
+  companyCode?: string;
+  collectorSubmittedAt?: string;
   name?: string;
   email?: string;
   status?: string;
@@ -463,6 +467,7 @@ export interface OrderData {
   billingAddress?: string;
   invoiceBatchNo?: string;
   to?: string;
+  company?: string;
   attn?: string;
   contact?: string;
   phone?: string;
@@ -628,6 +633,53 @@ export async function generateSequentialInvoiceNo(
 ): Promise<string> {
   return getFirestore().runTransaction(
     async (tx) => (await allocateInvoiceNumbers(tx, 1, isQuote, targetDate))[0]
+  );
+}
+
+/** Allocate sequential official individual invoice numbers following RWxxxxx (e.g. RW00001). */
+export async function allocateIndividualInvoiceNumbers(
+  tx: FirebaseFirestore.Transaction,
+  count: number,
+  excluded: string[] = []
+): Promise<string[]> {
+  if (!Number.isInteger(count) || count < 1 || count > 100) {
+    throw new Error('Invalid invoice count');
+  }
+  const db = getFirestore();
+  const counterRef = db.collection('meta').doc('individualInvoiceCounter');
+  const counter = await tx.get(counterRef);
+  let next = Number(counter.data()?.count ?? 0);
+  if (!Number.isSafeInteger(next) || next < 0) {
+    throw new Error('Invalid individual invoice counter');
+  }
+  const numbers: string[] = [];
+  while (numbers.length < count) {
+    next++;
+    const number = `RW${String(next).padStart(5, '0')}`;
+    if (
+      !(await tx.get(db.collection('invoice_numbers').doc(number))).exists &&
+      !excluded.includes(number)
+    ) {
+      numbers.push(number);
+    }
+  }
+  for (const number of numbers) {
+    tx.set(db.collection('invoice_numbers').doc(number), {
+      purpose: 'individual_invoice',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  }
+  tx.set(
+    counterRef,
+    { count: next, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+  return numbers;
+}
+
+export async function generateSequentialIndividualInvoiceNo(): Promise<string> {
+  return getFirestore().runTransaction(
+    async (tx) => (await allocateIndividualInvoiceNumbers(tx, 1))[0]
   );
 }
 

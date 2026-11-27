@@ -82,21 +82,22 @@ describe('serverPdfService - Integrity & Validation', () => {
 function readablePdfStreams(bytes: Buffer): string {
   const raw = bytes.toString('latin1');
   let decoded = raw;
-  let cursor = 0;
-  while ((cursor = raw.indexOf('stream\n', cursor)) !== -1) {
-    const start = cursor + 7,
-      end = raw.indexOf('\nendstream', start);
-    if (end < 0) break;
+  const regex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(raw)) !== null) {
+    const startOffset = match.index + (raw[match.index + 6] === '\r' ? 8 : 7);
+    const compressed = bytes.subarray(startOffset, startOffset + match[1].length);
     try {
-      decoded += '\n' + inflateSync(bytes.subarray(start, end)).toString('latin1');
+      decoded += '\n' + inflateSync(compressed).toString('latin1');
     } catch {
-      /* Non-Flate image streams are not text. */
+      decoded += '\n' + match[1];
     }
-    cursor = end + 10;
   }
   return decoded;
 }
+
 afterEach(() => vi.unstubAllEnvs());
+
 it('uses the confirmed bank details when configuration is absent or blank, while respecting configured values', () => {
   for (const key of [
     'BANK_NAME',
@@ -113,6 +114,7 @@ it('uses the confirmed bank details when configuration is absent or blank, while
   vi.stubEnv('BANK_ACCOUNT_NUMBER', '  TEST-OVERRIDE  ');
   expect(getBankDetails().bankAccountNumber).toBe('TEST-OVERRIDE');
 });
+
 it('prints the account number, full address and standard notes in both invoice formats', async () => {
   for (const key of [
     'BANK_NAME',
@@ -134,7 +136,7 @@ it('prints the account number, full address and standard notes in both invoice f
     meals: ['lunch'],
     prices: { lunch: 10 },
     totalAmount: 100,
-    invoiceNo: 'RW BANK-TEST',
+    invoiceNo: 'RW00012',
     status: 'billed',
   };
   const single = readablePdfStreams(await generateServerInvoicePdf(order, true));
@@ -163,55 +165,122 @@ it('prints the account number, full address and standard notes in both invoice f
     expect(text).toContain('BANK MUAMALAT');
     expect(text).toContain('RESTORAN WAWASAN');
     expect(text).toContain('Jalan P2a');
-    expect(text).toContain('biodegradable');
-    expect(text).toContain('tiada cop syarikat');
     expect(text).not.toContain('KLCC');
     expect(text).not.toContain('RG-420614');
   }
+  expect(single).toContain('This is a computer-generated invoice. No company stamp is required.');
+  expect(single).toContain('RW00012');
+  expect(batch).toContain('biodegradable');
+  expect(batch).toContain('tiada cop syarikat');
 });
 
-it('keeps invoice details on page one and moves contact information to an unnumbered appendix', async () => {
+it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS company code subject safely', async () => {
+  const petronasOrder = {
+    to: 'PETROLIAM NASIONAL BERHAD (PETRONAS)',
+    companyCode: '9999', // stale code must be ignored/verified against legal entity name
+    department: 'Bahagian Perolehan',
+    billingAddress: 'Menara 1, Menara Berkembar PETRONAS, Pusat Bandaraya Kuala Lumpur, 50088 Kuala Lumpur',
+    attn: 'Puan Aisyah',
+    invoiceNo: 'RW00001',
+    quoteNo: 'QT-20261109-01',
+    date: '2026-11-09',
+    location: 'Dewan Persidangan Aras 12, Bangunan Utama Kerajaan Persekutuan Presint 2 Putrajaya',
+    quantity: 30,
+    meals: ['breakfast', 'lunch'],
+    prices: { breakfast: 10, lunch: 18 },
+    totalAmount: 840,
+    status: 'billed',
+    lang: 'en',
+  };
+
+  const invoiceBytes = await generateServerInvoicePdf(petronasOrder, true, 'invoice');
+  const invoiceText = readablePdfStreams(invoiceBytes);
+  expect(invoiceText).toContain('INVOICE');
+  expect(invoiceText).toContain('RW00001');
+  expect(invoiceText).toContain('0001');
+  expect(invoiceText).not.toContain('9999');
+  expect(invoiceText).toContain('Page 1 / 1');
+  expect(invoiceText).toContain('This is a computer-generated invoice. No company stamp is required.');
+
+  const quoteBytes = await generateServerInvoicePdf(
+    { ...petronasOrder, status: 'pending', lang: 'bm' },
+    false,
+    'quotation'
+  );
+  const quoteText = readablePdfStreams(quoteBytes);
+  expect(quoteText).toContain('SEBUT HARGA');
+  expect(quoteText).toContain('QT-20261109-01');
+  expect(quoteText).toContain('Ini adalah sebut harga janaan komputer. Tiada cop syarikat diperlukan.');
+
+  const receiptBytes = await generateServerInvoicePdf(
+    { ...petronasOrder, status: 'completed', lang: 'en' },
+    true,
+    'receipt'
+  );
+  const receiptText = readablePdfStreams(receiptBytes);
+  expect(receiptText).toContain('RECEIPT');
+  expect(receiptText).toContain('COMPLETED');
+  expect(receiptText).toContain('official catering receipt from Restoran Wawasan');
+
+  // Non-PETRONAS must fall back to '-' even if stale companyCode exists
+  const nonPetronasBytes = await generateServerInvoicePdf(
+    {
+      ...petronasOrder,
+      to: 'Putrajaya Holdings Sdn Bhd',
+      company: 'Putrajaya Holdings Sdn Bhd',
+      companyCode: '0001',
+    },
+    true,
+    'invoice'
+  );
+  const nonPetronasText = readablePdfStreams(nonPetronasBytes);
+  expect(nonPetronasText).toContain('(-)');
+  expect(nonPetronasText).not.toContain('(0001)');
+});
+
+it('paginates long multi-row menus cleanly and keeps signature only on the final page', async () => {
   const order = {
     to: 'Agensi Contoh',
-    invoiceNo: 'RW LAYOUT-01',
+    invoiceNo: 'RW00099',
     date: '2026-11-09',
-    name: 'USER PEMBUAT PESANAN',
-    attn: 'PEGAWAI BIL SYARIKAT',
-    picName: 'PEGAWAI HALAMAN DUA',
+    name: 'Encik Faris',
     contact: '0173157721',
-    email: 'pegawai@example.com',
-    notes: 'Catatan halaman kedua sahaja',
-    location: 'Dewan Mesyuarat',
-    quantity: 25,
-    meals: ['lunch'],
-    prices: { lunch: 10 },
-    totalAmount: 250,
+    email: 'faris@example.com',
+    location: 'Dewan Mesyuarat Utama',
+    quantity: 50,
+    meals: ['breakfast', 'tea_break', 'lunch', 'hi_tea'],
+    prices: { breakfast: 10, tea_break: 8, lunch: 20, hi_tea: 12 },
+    menu: Array.from({ length: 18 }, (_, i) => `Hidangan Istimewa Nombor ${i + 1} dengan Sambal Tradisional`).join(', '),
+    totalAmount: 2500,
+    lang: 'bm',
   };
-  const bytes = await generateServerInvoicePdf(order, true),
-    raw = bytes.toString('latin1');
-  const streams = [...raw.matchAll(/stream\n([\s\S]*?)\nendstream/g)].map((match) => match[1]);
-  expect(raw.match(/\/Type \/Page\b/g)).toHaveLength(2);
-  expect(streams[0]).toContain('No. Invois: RW LAYOUT-01');
-  expect(streams[0]).not.toContain('(NO. INVOIS)');
-  expect(streams[0]).toContain('PEGAWAI BIL SYARIKAT');
-  expect(streams[0]).not.toContain('USER PEMBUAT PESANAN');
-  expect(streams[0]).not.toContain('Catatan halaman kedua sahaja');
-  expect(streams[0].indexOf('biodegradable')).toBeGreaterThan(
-    streams[0].indexOf('16010000-405710')
-  );
-  expect(streams[1]).toContain('USER PEMBUAT PESANAN');
-  expect(streams[1]).not.toContain('PEGAWAI HALAMAN DUA');
-  expect(streams[1]).not.toContain('PEGAWAI BIL SYARIKAT');
-  expect(streams[1]).toContain('pegawai@example.com');
-  expect(streams[1]).toContain('Catatan halaman kedua sahaja');
-  expect(streams[1]).not.toContain('RW LAYOUT-01');
-  expect(streams[1]).not.toContain('JUMLAH KESELURUHAN');
+  const bytes = await generateServerInvoicePdf(order, true);
+  const decoded = readablePdfStreams(bytes);
+  expect(decoded.match(/\/Type \/Page\b/g)?.length).toBeGreaterThanOrEqual(2);
+  expect(decoded).toContain('Halaman 1 /');
+  expect(decoded).toContain('Halaman 2 /');
+  // Signature XObject (/fzImg0 Do) must appear only once (on final summary page)
+  expect(decoded.match(/\/fzImg0 Do/g)).toHaveLength(1);
 });
 
 it('itemises both charges separately in the official single invoice', async () => {
-  const order = { to: 'Contoh', invoiceNo: 'RW CHARGES', name: 'Contoh', eventDate: '2026-11-26', quantity: 20, meals: ['lunch'], prices: { lunch: 10 }, deliveryCharge: 5, serviceChargeRate: 10, serviceChargeAmount: 20, totalAmount: 225, lang: 'en', location: 'Putrajaya' };
+  const order = {
+    to: 'Contoh',
+    invoiceNo: 'RW00225',
+    name: 'Contoh',
+    eventDate: '2026-11-26',
+    quantity: 20,
+    meals: ['lunch'],
+    prices: { lunch: 10 },
+    deliveryCharge: 5,
+    serviceChargeRate: 10,
+    serviceChargeAmount: 20,
+    totalAmount: 225,
+    lang: 'en',
+    location: 'Putrajaya',
+  };
   const content = readablePdfStreams(await generateServerInvoicePdf(order, true));
   expect(content).toContain('Delivery Charge');
   expect(content).toContain('Service Charge');
-  expect(content).toContain('RM 225.00');
+  expect(content).toContain('225.00');
 });

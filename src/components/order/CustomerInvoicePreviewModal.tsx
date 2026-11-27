@@ -1,591 +1,443 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import type { Order } from '@/types';
-import { getAssetUrl, formatDateDisplay } from '@/lib/utils';
-import { 
-  Download, 
-  X, 
-  CheckCircle, 
-  Clock, 
-  Copy, 
-  Share2, 
-  Printer, 
-  Check, 
-  RotateCcw,
-  Sparkles,
-  Building2,
-  Phone,
-  MapPin,
-  Calendar
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import {
+  Check,
+  CheckCircle,
+  Clock,
+  Copy,
+  Download,
+  Printer,
+  RotateCw,
+  Share2,
+  X,
 } from 'lucide-react';
+import type { Order } from '@/types';
+import { auth } from '@/firebaseConfig';
+import { getApiUrl } from '@/lib/api';
+import { formatDateDisplay, getDisplayInvoiceNo } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { triggerLightImpact, triggerNotification, NotificationType } from '@/lib/haptics';
+import WawasanLoader from '@/components/brand/WawasanLoader';
+import { NotificationType, triggerLightImpact, triggerNotification } from '@/lib/haptics';
 import { launchWhatsApp } from '@/lib/nativeService';
 import { RESTORAN_CONTACT } from '@/constants/contact';
+import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
+
+const AdminPdfCanvasPreview = lazy(() => import('@/components/admin/AdminPdfCanvasPreview'));
 
 export interface CustomerInvoicePreviewModalProps {
-  isOpen: boolean; 
+  isOpen: boolean;
   onClose?: () => void;
   order?: Order;
   onDownload?: () => void;
   language?: 'en' | 'bm';
   isFinal?: boolean;
+  docType?: 'invoice' | 'quotation' | 'receipt';
 }
 
-export function CustomerInvoicePreviewModal({ 
-  isOpen, 
-  onClose, 
-  order, 
-  onDownload, 
+export function CustomerInvoicePreviewModal({
+  isOpen,
+  onClose,
+  order,
+  onDownload,
   language = 'bm',
-  isFinal = false 
+  isFinal = false,
+  docType,
 }: CustomerInvoicePreviewModalProps) {
-  const [copiedBank, setCopiedBank] = useState(false);
   const [copiedInvoiceNo, setCopiedInvoiceNo] = useState(false);
-  const [isFolded, setIsFolded] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [reloadNonce, setReloadNonce] = useState(0);
   const reduceMotion = Boolean(useReducedMotion());
-  const modalContentRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useOverlayAccessibility({
+    isOpen,
+    onClose: () => onClose?.(),
+    containerRef: modalRef,
+  });
+
+  const orderStatusLower = (order?.status || '').toLowerCase();
+  const isOrderFinal =
+    isFinal ||
+    docType === 'invoice' ||
+    docType === 'receipt' ||
+    ['approved', 'billed', 'delivered'].includes(orderStatusLower);
+
+  const effectiveDocType = docType || (isOrderFinal ? 'invoice' : 'quotation');
+  const invoiceNo =
+    (order ? getDisplayInvoiceNo(order) : '') ||
+    order?.invoiceNo ||
+    order?.officialInvoiceNo ||
+    order?.quoteNo ||
+    order?.orderId ||
+    'RW PREVIEW';
+  const safeFileName = `${
+    effectiveDocType === 'receipt'
+      ? 'Receipt'
+      : effectiveDocType === 'quotation'
+        ? 'Quotation'
+        : 'Invoice'
+  }_${String(invoiceNo).replace(/[\\/:*?"<>|]/g, '_')}.pdf`;
 
   useEffect(() => {
-    if (isOpen) {
-      setIsFolded(false);
-      triggerLightImpact();
-    }
+    if (!isOpen) return;
+    triggerLightImpact();
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  const invoiceNo = order?.invoiceNo || order?.officialInvoiceNo || order?.orderId || `RW PREVIEW`;
-  const dateStr = formatDateDisplay(order?.eventDate || order?.dateTime || order?.date || new Date());
-
-  const totalAmount = order?.totalAmount || (order?.quantity ? order.quantity * 15 : 150);
-  const isOrderFinal = isFinal || ['approved', 'billed', 'delivered'].includes(order?.status?.toLowerCase() || '');
-  
-  const mealCount = order?.meals?.length || 1;
-  const qty = order?.quantity || order?.guests || 1;
-  const minPricePerPax = 12;
-  const maxPricePerPax = 22;
-  const minTotal = qty * minPricePerPax * mealCount;
-  const maxTotal = qty * maxPricePerPax * mealCount;
-  
-  const priceRangeStr = `RM ${minPricePerPax.toFixed(2)} - RM ${maxPricePerPax.toFixed(2)}`;
-  const totalRangeStr = `RM ${minTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} - RM ${maxTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-
-  const handleCopyBank = async () => {
-    try {
-      const text = `Bank: Bank Muamalat Malaysia Berhad\nNama: RESTORAN WAWASAN\nNo Akaun: 16010000-405710\nJumlah: ${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}`;
-      await navigator.clipboard.writeText(text);
-      setCopiedBank(true);
-      triggerNotification(NotificationType.Success);
-      setTimeout(() => setCopiedBank(false), 2500);
-    } catch {
-      // Fallback
+  useEffect(() => {
+    if (!isOpen || !order?.id) {
+      setBlobUrl(null);
+      setPdfBlob(null);
+      setStatus('idle');
+      return;
     }
-  };
 
-  const handleCopyInvoiceNo = async () => {
+    let cancelled = false;
+    let createdUrl: string | null = null;
+    const controller = new AbortController();
+
+    const loadPdf = async () => {
+      setStatus('loading');
+      setErrorMessage('');
+      setPdfBlob(null);
+      setBlobUrl(null);
+
+      try {
+        const idToken = auth.currentUser
+          ? await auth.currentUser.getIdToken().catch(() => null)
+          : null;
+        if (cancelled) return;
+
+        const params = new URLSearchParams({
+          final: String(isOrderFinal),
+          lang: language,
+        });
+        if (docType) params.set('docType', docType);
+
+        const res = await fetch(
+          getApiUrl(`/api/invoice/${encodeURIComponent(order.id!)}/pdf?${params.toString()}`),
+          {
+            headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+            signal: controller.signal,
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(blob);
+        setPdfBlob(blob);
+        setBlobUrl(createdUrl);
+        setStatus('ready');
+      } catch (err) {
+        if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
+        console.error('[CustomerInvoicePreviewModal] PDF fetch failed:', err);
+        setErrorMessage(
+          language === 'bm'
+            ? 'Dokumen PDF tidak dapat dimuatkan buat masa ini.'
+            : 'Unable to load the PDF document right now.'
+        );
+        setStatus('error');
+      }
+    };
+
+    void loadPdf();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [isOpen, order?.id, isOrderFinal, language, docType, reloadNonce]);
+
+  const handleCopyInvoiceNo = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(invoiceNo);
       setCopiedInvoiceNo(true);
       triggerLightImpact();
       setTimeout(() => setCopiedInvoiceNo(false), 2000);
     } catch {
-      // Fallback
+      // Clipboard unavailable
     }
-  };
+  }, [invoiceNo]);
 
-  const handleWhatsAppShare = () => {
+  const handleDownloadPdf = useCallback(async () => {
     triggerLightImpact();
+    if (onDownload) {
+      onDownload();
+      onClose?.();
+      return;
+    }
+
+    if (!pdfBlob && !blobUrl) return;
+    try {
+      let blobToSave = pdfBlob;
+      if (!blobToSave && blobUrl) {
+        const resp = await fetch(blobUrl);
+        blobToSave = await resp.blob();
+      }
+      if (!blobToSave) return;
+
+      if (Capacitor.isNativePlatform()) {
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') resolve(reader.result.split(',')[1]);
+            else reject(new Error('Failed to encode PDF'));
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blobToSave);
+        });
+        const savedFile = await Filesystem.writeFile({
+          path: safeFileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+        await Share.share({ title: safeFileName, url: savedFile.uri });
+      } else {
+        const downloadUrl = blobUrl || URL.createObjectURL(blobToSave);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = safeFileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        if (!blobUrl) URL.revokeObjectURL(downloadUrl);
+      }
+      triggerNotification(NotificationType.Success);
+    } catch (err) {
+      console.error('[CustomerInvoicePreviewModal] Download failed:', err);
+    }
+  }, [onDownload, onClose, pdfBlob, blobUrl, safeFileName]);
+
+  const handlePrint = useCallback(() => {
+    triggerLightImpact();
+    if (!blobUrl) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = blobUrl;
+    const cleanup = () => {
+      setTimeout(() => {
+        iframe.remove();
+      }, 60_000);
+    };
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.error('[CustomerInvoicePreviewModal] Print failed:', err);
+      } finally {
+        cleanup();
+      }
+    };
+    document.body.appendChild(iframe);
+  }, [blobUrl]);
+
+  const handleWhatsAppShare = useCallback(() => {
+    triggerLightImpact();
+    const dateStr = formatDateDisplay(
+      order?.eventDate || order?.dateTime || order?.date || new Date()
+    );
     const customerName = order?.name || order?.to || 'Pelanggan';
-    const msg = language === 'bm' 
-      ? `Salam Sejahtera Restoran Wawasan,\n\nSaya ingin merujuk invois katering saya:\n🧾 No Invois: *${invoiceNo}*\n👤 Nama: *${customerName}*\n📅 Tarikh Majlis: *${dateStr}*\n👥 Kuantiti: *${qty} Pax*\n💰 Jumlah: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nMohon semakan dan maklum balas lanjut. Terima kasih!`
-      : `Hello Restoran Wawasan,\n\nI would like to refer to my catering invoice:\n🧾 Invoice No: *${invoiceNo}*\n👤 Name: *${customerName}*\n📅 Event Date: *${dateStr}*\n👥 Quantity: *${qty} Pax*\n💰 Total: *${isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}*\n\nThank you!`;
-    
+    const qty = order?.quantity || order?.guests || 1;
+    const totalAmount = Number(order?.totalAmount || 0);
+    const msg =
+      language === 'bm'
+        ? `Salam Sejahtera Restoran Wawasan,\n\nSaya ingin merujuk dokumen katering saya:\nNo. Rujukan: *${invoiceNo}*\nNama: *${customerName}*\nTarikh Majlis: *${dateStr}*\nKuantiti: *${qty} Pax*${isOrderFinal && totalAmount > 0 ? `\nJumlah: *RM ${totalAmount.toFixed(2)}*` : ''}\n\nMohon semakan dan maklum balas lanjut. Terima kasih!`
+        : `Hello Restoran Wawasan,\n\nI would like to refer to my catering document:\nReference No: *${invoiceNo}*\nName: *${customerName}*\nEvent Date: *${dateStr}*\nQuantity: *${qty} Pax*${isOrderFinal && totalAmount > 0 ? `\nTotal: *RM ${totalAmount.toFixed(2)}*` : ''}\n\nThank you!`;
+
     launchWhatsApp({
       phone: RESTORAN_CONTACT.whatsappRaw,
-      message: msg
+      message: msg,
     });
-  };
+  }, [order, invoiceNo, language, isOrderFinal]);
 
-  const handlePrint = () => {
-    triggerLightImpact();
-    window.print();
-  };
+  if (!isOpen) return null;
+
+  const badgeTitle =
+    effectiveDocType === 'receipt'
+      ? language === 'bm'
+        ? 'Resit Rasmi'
+        : 'Official Receipt'
+      : effectiveDocType === 'quotation'
+        ? language === 'bm'
+          ? 'Sebut Harga Rasmi'
+          : 'Official Quotation'
+        : language === 'bm'
+          ? 'Invois Rasmi'
+          : 'Official Invoice';
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={language === 'bm' ? 'Pratonton Invois Katering Lipatan Kertas' : 'Origami Paper Catering Invoice Preview'}
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-6 overflow-y-auto max-sm:p-0 max-sm:items-end"
-      onClick={onClose}
+      aria-label={badgeTitle}
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-md p-2 sm:p-6"
+      onClick={() => onClose?.()}
     >
-      <div 
-        className="w-full max-w-2xl my-auto max-sm:my-0 max-sm:mt-auto flex flex-col items-center justify-center relative"
-        style={{ perspective: 1400 }}
+      <motion.div
+        ref={modalRef}
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-4xl h-[90vh] max-h-[860px] bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden flex flex-col"
       >
-        {/* Floating Top Control Pill */}
-        <div className="w-full flex items-center justify-between mb-3 px-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 backdrop-blur-md shadow-lg">
+        {/* Header Bar */}
+        <div className="px-4 sm:px-6 py-3.5 border-b border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/95 flex items-center justify-between gap-3 shrink-0">
+          <div className="min-w-0 flex flex-wrap items-center gap-2.5">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                isOrderFinal
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700/50'
+                  : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/50'
+              }`}
+            >
               {isOrderFinal ? (
-                <>
-                  <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
-                  {language === 'bm' ? 'Invois Rasmi Disahkan' : 'Official Verified Invoice'}
-                </>
+                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
               ) : (
-                <>
-                  <Clock className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
-                  {language === 'bm' ? 'Sebut Harga / Invois Awal' : 'Preliminary Quotation'}
-                </>
+                <Clock className="w-3.5 h-3.5 shrink-0" />
               )}
+              <span>{badgeTitle}</span>
             </span>
+
+            <div className="flex items-center gap-1 text-xs sm:text-sm font-mono font-bold text-stone-700 dark:text-stone-200">
+              <span className="truncate">{invoiceNo}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                onClick={handleCopyInvoiceNo}
+                aria-label={language === 'bm' ? 'Salin nombor rujukan' : 'Copy reference number'}
+                className="h-7 w-7 text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100"
+              >
+                {copiedInvoiceNo ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={() => onClose?.()}
+            aria-label={language === 'bm' ? 'Tutup paparan' : 'Close preview'}
+            className="min-h-[44px] min-w-[44px] rounded-xl text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* True PDF Preview Viewport */}
+        <div className="flex-1 min-h-0 bg-stone-100 dark:bg-stone-950 relative">
+          {status === 'loading' || status === 'idle' ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-stone-600 dark:text-stone-300">
+              <WawasanLoader size={56} />
+              <span>
+                {language === 'bm' ? 'Memuatkan dokumen PDF…' : 'Loading official PDF document…'}
+              </span>
+            </div>
+          ) : status === 'error' || !blobUrl ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-4">
+              <p className="text-sm text-stone-600 dark:text-stone-300 max-w-md">
+                {errorMessage ||
+                  (language === 'bm'
+                    ? 'Pratonton PDF tidak dapat dibuka.'
+                    : 'PDF preview could not be opened.')}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setReloadNonce((n) => n + 1)}
+                className="gap-2 rounded-xl"
+              >
+                <RotateCw className="w-4 h-4" />
+                <span>{language === 'bm' ? 'Cuba Lagi' : 'Retry'}</span>
+              </Button>
+            </div>
+          ) : (
+            <Suspense
+              fallback={
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-stone-600 dark:text-stone-300">
+                  <WawasanLoader size={56} />
+                  <span>{language === 'bm' ? 'Memaparkan PDF…' : 'Rendering PDF…'}</span>
+                </div>
+              }
+            >
+              <AdminPdfCanvasPreview pdfUrl={blobUrl} language={language} />
+            </Suspense>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-4 sm:px-6 py-3.5 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+          <div className="flex items-center gap-2">
+            {!Capacitor.isNativePlatform() && (
+              <Button
+                variant="outline"
+                type="button"
+                disabled={!blobUrl}
+                onClick={handlePrint}
+                className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold"
+              >
+                <Printer className="w-4 h-4" />
+                <span>{language === 'bm' ? 'Cetak' : 'Print'}</span>
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleWhatsAppShare}
+              className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30"
+            >
+              <Share2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{language === 'bm' ? 'WhatsApp' : 'WhatsApp Share'}</span>
+            </Button>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Origami Fold / Unfold Interactive Toggle */}
             <Button
-              variant="outline"
               type="button"
-              onClick={() => {
-                triggerLightImpact();
-                setIsFolded(current => !current);
-              }}
-              className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border-stone-600/50 backdrop-blur-md shadow-md active:scale-95"
-              aria-pressed={isFolded}
-              aria-label={isFolded
-                ? (language === 'bm' ? 'Buka kertas lipatan' : 'Unfold paper')
-                : (language === 'bm' ? 'Lipat kertas' : 'Fold paper')}
-              title={isFolded ? (language === 'bm' ? 'Buka kertas lipatan' : 'Unfold paper') : (language === 'bm' ? 'Lipat kertas' : 'Fold paper')}
+              disabled={!onDownload && !pdfBlob}
+              onClick={handleDownloadPdf}
+              className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm"
             >
-              <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-500 ${isFolded ? 'rotate-180 text-amber-400' : 'text-stone-300'}`} />
-              <span className="hidden sm:inline">{isFolded ? (language === 'bm' ? 'Buka Kertas' : 'Unfold Paper') : (language === 'bm' ? 'Lipat Kertas' : 'Fold Paper')}</span>
+              <Download className="w-4 h-4" />
+              <span>{language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}</span>
             </Button>
 
-            {/* Close Button */}
             <Button
-              variant="outline"
-              size="icon"
+              variant="ghost"
               type="button"
-              onClick={onClose}
-              className="min-h-[44px] min-w-[44px] rounded-full bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-white border-stone-600/50 backdrop-blur-md shadow-md"
-              aria-label="Tutup Paparan"
+              onClick={() => onClose?.()}
+              className="min-h-[44px] h-auto px-4 py-2 rounded-xl text-xs font-semibold"
             >
-              <X className="w-4 h-4" />
+              {language === 'bm' ? 'Tutup' : 'Close'}
             </Button>
           </div>
         </div>
-
-        {/* 3D Realistic Origami Paper Container */}
-        <motion.div 
-          ref={modalContentRef}
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 330 }}
-          className="w-full relative select-text"
-          style={{ transformStyle: 'preserve-3d' }}
-        >
-          {/* Main Paper Sheet with authentic tactile parchment tone & grain shadow */}
-          <div className="w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] text-stone-900 dark:text-stone-100 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_0_1px_rgba(212,168,83,0.18)] border border-amber-900/10 dark:border-amber-500/20 overflow-hidden flex flex-col relative">
-
-            {/* Perforated Top Receipt Edge */}
-            <div className="w-full h-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-b border-stone-300/40 dark:border-stone-700/40">
-              <div className="w-full flex justify-between gap-1 overflow-hidden">
-                {Array.from({ length: 40 }).map((_, i) => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400/30 dark:bg-stone-600/40 shrink-0" />
-                ))}
-              </div>
-            </div>
-
-            {/* ======================================================== */}
-            {/* SEGMENT 1: TOP HEADER & COMPANY IDENTITY (ORIGAMI FOLD 1) */}
-            {/* ======================================================== */}
-            <motion.div 
-              initial={reduceMotion ? false : { rotateX: -65, opacity: 0.2 }}
-              animate={{
-                rotateX: reduceMotion ? 0 : isFolded ? -75 : 0,
-                opacity: isFolded ? (reduceMotion ? .8 : .35) : 1,
-                y: reduceMotion ? 0 : isFolded ? -20 : 0
-              }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, ease: [0.16, 1, 0.3, 1] }}
-              style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 border-b border-dashed border-stone-300 dark:border-stone-700/80 relative bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)]"
-            >
-              {/* Subtle Fold Shadow Overlay */}
-              <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
-
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                {/* Brand & Address */}
-                <div className="flex items-center gap-3.5">
-                  <div className="relative">
-                    <img 
-                      src={getAssetUrl('/assets/brand/apk_logo_clean.png')} 
-                      alt="Restoran Wawasan" 
-                      className="w-16 h-16 object-contain rounded-xl p-1 shadow-sm border border-amber-500/10"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (!target.src.includes('wawasan_logo.png')) {
-                          target.src = getAssetUrl('/assets/brand/wawasan_logo.png');
-                        } else {
-                          target.style.display = 'none';
-                        }
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-white font-display">
-                        RESTORAN WAWASAN
-                      </h1>
-                      <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                        EST. PUTRAJAYA
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-600 dark:text-stone-300 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                      Unit 3, Level B3, Menara PjH, Presint 2, 62100 Putrajaya
-                    </p>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1.5 mt-0.5">
-                      <Phone className="w-3 h-3 text-stone-400 shrink-0" />
-                      Tel (Call Only): 017-858 2642 • WA: 017-315 7721 • Email: wawasan.orders@gmail.com
-                    </p>
-                  </div>
-                </div>
-
-                {/* Invoice Reference Capsule */}
-                <div className="w-full sm:w-auto bg-stone-100/90 dark:bg-stone-900/90 p-3 rounded-xl border border-stone-200 dark:border-stone-700/80 shadow-sm flex sm:flex-col justify-between items-end">
-                  <div>
-                    <div className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-                      {language === 'bm' ? 'No. Rujukan Invois' : 'Invoice Reference'}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm sm:text-base font-mono font-bold text-amber-600 dark:text-amber-400">
-                        {invoiceNo}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        type="button"
-                        onClick={handleCopyInvoiceNo}
-                        aria-label="Salin nombor invois"
-                        className="h-7 w-7 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
-                        title="Salin No Invois"
-                      >
-                        {copiedInvoiceNo ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="text-right text-xs text-stone-500 dark:text-stone-400 mt-1 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>{dateStr}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Origami Crease Line 1 with subtle 3D ridge */}
-            <div className="relative h-2 w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
-              <div className="w-24 h-0.5 bg-amber-500/20 rounded-full" />
-            </div>
-
-            {/* ======================================================== */}
-            {/* SEGMENT 2: CLIENT DETAILS & ITEMIZED DISH TABLE (ORIGAMI FOLD 2) */}
-            {/* ======================================================== */}
-            <motion.div 
-              initial={reduceMotion ? false : { rotateX: 45, opacity: 0.3 }}
-              animate={{
-                rotateX: reduceMotion ? 0 : isFolded ? 60 : 0,
-                opacity: isFolded ? (reduceMotion ? .8 : .4) : 1,
-                y: reduceMotion ? 0 : isFolded ? -10 : 0
-              }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
-              style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 space-y-5 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative"
-            >
-              {/* Fold Crease Shadow */}
-              <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/5 to-transparent pointer-events-none" />
-
-              {/* Client & Booking Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-stone-50 dark:bg-stone-900/60 p-4 rounded-xl border border-stone-200 dark:border-stone-800">
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1 flex items-center gap-1">
-                    <Building2 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                    {language === 'bm' ? 'Invois Kepada (Pelanggan)' : 'Invoiced To'}
-                  </h3>
-                  <p className="font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base">
-                    {order?.to || order?.name || 'Pelanggan Dihormati'}
-                  </p>
-                  {order?.department && (
-                    <p className="text-xs text-stone-600 dark:text-stone-300 font-medium">{order.department}</p>
-                  )}
-                  {order?.attn && (
-                    <p className="text-xs text-stone-500 dark:text-stone-400">Attn: {order.attn}</p>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-1">
-                    {language === 'bm' ? 'Maklumat Majlis & Lokasi' : 'Event & Delivery Details'}
-                  </h3>
-                  <p className="text-xs text-stone-700 dark:text-stone-300">
-                    <span className="font-medium text-stone-500">{language === 'bm' ? 'Tarikh / Masa:' : 'Date / Time:'}</span>{' '}
-                    <span className="font-bold text-stone-900 dark:text-stone-100">{order?.dateTime || dateStr}</span>
-                  </p>
-                  <p className="text-xs text-stone-700 dark:text-stone-300 mt-0.5">
-                    <span className="font-medium text-stone-500">{language === 'bm' ? 'Lokasi:' : 'Location:'}</span>{' '}
-                    <span>{order?.location || 'Restoran Wawasan (Dine-in / Pickup)'}</span>
-                  </p>
-                  <p className="text-xs text-stone-700 dark:text-stone-300 mt-0.5">
-                    <span className="font-medium text-stone-500">{language === 'bm' ? 'No. Telefon:' : 'Phone:'}</span>{' '}
-                    <span>{order?.contact || '-'}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Items Breakdown Table */}
-              <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-xs bg-white dark:bg-stone-900/40">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-stone-100 dark:bg-stone-800/80 text-stone-700 dark:text-stone-300 text-xs uppercase tracking-wider font-bold border-b border-stone-200 dark:border-stone-700">
-                      <th className="py-2.5 px-3 sm:px-4">{language === 'bm' ? 'Butiran / Pakej Hidangan' : 'Description / Menu Item'}</th>
-                      <th className="py-2.5 px-3 text-center">{language === 'bm' ? 'Kadar / Pax' : 'Rate / Pax'}</th>
-                      <th className="py-2.5 px-3 text-center">{language === 'bm' ? 'Kuantiti' : 'Qty'}</th>
-                      <th className="py-2.5 px-3 sm:px-4 text-right">{language === 'bm' ? 'Jumlah (RM)' : 'Subtotal'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-200/80 dark:divide-stone-800 text-xs">
-                    {order?.meals && order.meals.length > 0 ? (
-                      order.meals.map((meal, idx) => {
-                        const mealPriceRaw = order?.prices?.[meal] as unknown;
-                        const mealPrice = mealPriceRaw !== undefined && mealPriceRaw !== null && mealPriceRaw !== '' ? Number(mealPriceRaw) : null;
-                        const qty = order?.quantity || 1;
-                        const mealCount = order?.meals?.length || 1;
-                        const pricePerPax = mealPrice !== null ? mealPrice : (totalAmount / (qty * mealCount));
-                        const mealSubtotal = mealPrice !== null ? mealPrice * qty : (totalAmount / mealCount);
-
-                        return (
-                          <tr key={idx} className="hover:bg-stone-50/80 dark:hover:bg-stone-800/30 transition-colors">
-                            <td className="py-3 px-3 sm:px-4 font-semibold text-stone-800 dark:text-stone-200 capitalize">
-                              {String(meal).replace(/_/g, ' ')}
-                              {idx === 0 && order?.menu && (
-                                <div className="text-xs text-stone-500 font-normal mt-0.5">
-                                  {order.menu}
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-3 px-3 text-center font-mono font-medium text-stone-700 dark:text-stone-300">
-                              {isOrderFinal ? `RM ${pricePerPax.toFixed(2)}` : priceRangeStr}
-                            </td>
-                            <td className="py-3 px-3 text-center font-bold text-amber-700 dark:text-amber-400">
-                              {qty} Pax
-                            </td>
-                            <td className="py-3 px-3 sm:px-4 text-right font-mono font-bold text-stone-900 dark:text-white">
-                              {isOrderFinal ? `RM ${mealSubtotal.toFixed(2)}` : totalRangeStr}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td className="py-3 px-3 sm:px-4 font-semibold text-stone-800 dark:text-stone-200">
-                          {order?.menu || (language === 'bm' ? 'Pakej Katering Selera Tradisi Melayu' : 'Traditional Malay Catering Package')}
-                        </td>
-                        <td className="py-3 px-3 text-center font-mono font-medium text-stone-700 dark:text-stone-300">
-                          {isOrderFinal ? `RM ${((order?.quantity || 1) > 0 ? totalAmount / (order?.quantity || 1) : totalAmount).toFixed(2)}` : priceRangeStr}
-                        </td>
-                        <td className="py-3 px-3 text-center font-bold text-amber-700 dark:text-amber-400">
-                          {order?.quantity || 1} Pax
-                        </td>
-                        <td className="py-3 px-3 sm:px-4 text-right font-mono font-bold text-stone-900 dark:text-white">
-                          {isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-
-            {/* Origami Crease Line 2 with subtle 3D ridge */}
-            <div className="relative h-2 w-full bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] border-y border-stone-300/60 dark:border-stone-700/60 flex items-center justify-center">
-              <div className="w-24 h-0.5 bg-amber-500/20 rounded-full" />
-            </div>
-
-            {/* ======================================================== */}
-            {/* SEGMENT 3: TOTALS, RUBBER STAMP & PAYMENT (ORIGAMI FOLD 3) */}
-            {/* ======================================================== */}
-            <motion.div 
-              initial={reduceMotion ? false : { rotateX: -35, opacity: 0.2 }}
-              animate={{
-                rotateX: reduceMotion ? 0 : isFolded ? -55 : 0,
-                opacity: isFolded ? (reduceMotion ? .8 : .4) : 1,
-                y: reduceMotion ? 0 : isFolded ? 10 : 0
-              }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.48, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-              style={{ transformOrigin: 'top center', transformStyle: 'preserve-3d' }}
-              className="p-5 sm:p-7 bg-gradient-to-b from-[var(--ui-surface)] to-[var(--ui-surface)] dark:from-[var(--ui-canvas)] dark:to-[var(--ui-canvas)] space-y-5 relative"
-            >
-              {/* Grand Total & Bank Payment Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
-                {/* Bank Account Details Pill */}
-                <div className="bg-amber-50/70 dark:bg-amber-950/20 p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-900/40 relative group">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-600" />
-                      {language === 'bm' ? 'Akaun Bank Rasmi' : 'Official Bank Details'}
-                    </h4>
-                    <button
-                      onClick={handleCopyBank}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
-                    >
-                      {copiedBank ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-500" />
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{language === 'bm' ? 'Disalin!' : 'Copied!'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>{language === 'bm' ? 'Salin Bank' : 'Copy'}</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-stone-800 dark:text-stone-200">
-                    <span className="font-semibold">Bank:</span> Bank Muamalat Malaysia
-                  </p>
-                  <p className="text-xs text-stone-800 dark:text-stone-200">
-                    <span className="font-semibold">{language === 'bm' ? 'Penerima:' : 'Payee:'}</span> RESTORAN WAWASAN
-                  </p>
-                  <p className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 mt-0.5">
-                    16010000-405710
-                  </p>
-                </div>
-
-                {/* Grand Total Calculation Block */}
-                <div className="flex flex-col justify-end space-y-1.5 text-right bg-stone-100/70 dark:bg-stone-900/60 p-3.5 rounded-xl border border-stone-200 dark:border-stone-800">
-                  <div className="flex justify-between text-xs text-stone-600 dark:text-stone-400">
-                    <span>{language === 'bm' ? 'Jumlah Kasar:' : 'Subtotal:'}</span>
-                    <span className="font-mono">{isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-stone-600 dark:text-stone-400 pb-1.5 border-b border-stone-200 dark:border-stone-700">
-                    <span>{language === 'bm' ? 'Cukai Perkhidmatan (0%):' : 'Tax / SST (0%):'}</span>
-                    <span className="font-mono">RM 0.00</span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-xs sm:text-sm font-bold text-stone-900 dark:text-white">
-                      {language === 'bm' ? 'Jumlah Bersih:' : 'Grand Total:'}
-                    </span>
-                    <span className="text-base sm:text-lg font-mono font-black text-amber-600 dark:text-amber-400">
-                      {isOrderFinal ? `RM ${totalAmount.toFixed(2)}` : totalRangeStr}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Realistic Malaysian Rubber Stamp Seal */}
-              <div className="flex flex-col sm:flex-row items-center justify-between pt-2 border-t border-stone-200/60 dark:border-stone-800 gap-4">
-                
-                {/* Authentic Rubber Stamp */}
-                <div 
-                  className="relative p-2.5 rounded-lg border-2 border-dashed border-red-600/70 dark:border-red-500/70 rotate-[-4deg] bg-red-500/5 select-none shadow-xs"
-                  style={{ maskImage: 'radial-gradient(circle, black 70%, transparent 100%)' }}
-                >
-                  <div className="border border-red-600/60 dark:border-red-500/60 px-3 py-1 rounded text-center">
-                    <div className="text-xs font-black tracking-widest text-red-700 dark:text-red-400 uppercase">
-                      RESTORAN WAWASAN
-                    </div>
-                    <div className="text-xs font-black tracking-widest text-red-600 dark:text-red-400 uppercase my-0.5">
-                      ★ {isOrderFinal ? (language === 'bm' ? 'DISAHKAN' : 'APPROVED') : (language === 'bm' ? 'SEBUT HARGA' : 'QUOTATION')} ★
-                    </div>
-                    <div className="text-[8px] font-semibold text-red-700/80 dark:text-red-400/80">
-                      PUTRAJAYA • BAHAGIAN KATERING
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Microcopy */}
-                <div className="text-center sm:text-right text-xs text-stone-500 dark:text-stone-400">
-                  <p className="font-semibold text-stone-700 dark:text-stone-300">
-                    {language === 'bm' ? 'Terima kasih atas tempahan anda.' : 'Thank you for choosing Restoran Wawasan.'}
-                  </p>
-                  <p className="text-xs text-stone-400">
-                    Sistem Tempahan & Pengurusan Katering Digital
-                  </p>
-                </div>
-              </div>
-
-            </motion.div>
-
-            {/* Perforated Bottom Tear Line with Sawtooth */}
-            <div className="w-full h-3 bg-[var(--ui-surface)] dark:bg-[var(--ui-canvas)] relative overflow-hidden flex items-center justify-between px-1 opacity-75 border-t border-stone-300/40 dark:border-stone-700/40">
-              <div className="w-full flex justify-between gap-1 overflow-hidden">
-                {Array.from({ length: 40 }).map((_, i) => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-stone-400/30 dark:bg-stone-600/40 shrink-0" />
-                ))}
-              </div>
-            </div>
-
-            {/* ======================================================== */}
-            {/* ACTION TEAR-STRIP (BOTTOM QUICK CONTROLS) */}
-            {/* ======================================================== */}
-            <div className="px-5 py-3.5 bg-stone-100/90 dark:bg-stone-900/90 border-t border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2.5">
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={handlePrint}
-                  className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-750 shadow-xs active:scale-95"
-                >
-                  <Printer className="w-3.5 h-3.5 text-stone-500" />
-                  <span>{language === 'bm' ? 'Cetak' : 'Print'}</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={handleWhatsAppShare}
-                  className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-950 dark:text-emerald-100 bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 shadow-xs active:scale-95"
-                >
-                  <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>{language === 'bm' ? 'WhatsApp Invois' : 'WhatsApp Share'}</span>
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {onDownload && (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      triggerLightImpact();
-                      onDownload();
-                      if (onClose) onClose();
-                    }}
-                    className="inline-flex min-h-[44px] h-auto items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-md active:scale-[0.98]"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>{language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}</span>
-                  </Button>
-                )}
-
-                <Button
-                  variant="ghost"
-                  type="button"
-                  onClick={onClose}
-                  className="min-h-[44px] h-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 flex items-center justify-center"
-                >
-                  {language === 'bm' ? 'Tutup' : 'Close'}
-                </Button>
-              </div>
-
-            </div>
-
-          </div>
-        </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }

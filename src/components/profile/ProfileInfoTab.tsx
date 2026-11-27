@@ -6,6 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User as UserIcon, Phone, Building, Briefcase, Edit3, Check, Loader2 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { SAVED_COMPANIES } from '@/constants/companies';
+import { PetronasCompanyFieldNotice } from '@/components/order/PetronasCompanyFieldNotice';
+import {
+  PETRONAS_COMPANIES,
+  applyCanonicalCompanyName,
+  getVerifiedOrderCompanyCode,
+  resolveVerifiedPetronasCode,
+} from '@/lib/petronasAutofill';
 
 interface ProfileInfoTabProps {
   profile: UserProfile | null;
@@ -18,6 +25,9 @@ interface ProfileInfoTabProps {
   setEditTo: (val: string) => void;
   selectedCompany: string;
   setSelectedCompany: (val: string) => void;
+  editCompanyCode?: string;
+  setEditCompanyCode?: (val: string) => void;
+  language?: string;
   editAttn: string;
   setEditAttn: (val: string) => void;
   editDepartment: string;
@@ -41,6 +51,9 @@ export function ProfileInfoTab({
   setEditTo,
   selectedCompany,
   setSelectedCompany,
+  editCompanyCode,
+  setEditCompanyCode,
+  language = 'bm',
   editAttn,
   setEditAttn,
   editDepartment,
@@ -161,8 +174,13 @@ export function ProfileInfoTab({
                 value={selectedCompany}
                 onValueChange={(val) => {
                   setSelectedCompany(val);
-                  if (val !== 'other') setEditTo(val);
-                  else setEditTo('');
+                  if (val !== 'other') {
+                    setEditTo(val);
+                    setEditCompanyCode?.(resolveVerifiedPetronasCode(val).companyCode);
+                  } else {
+                    setEditTo('');
+                    setEditCompanyCode?.('');
+                  }
                 }}
               >
                 <SelectTrigger id="profile-company-select" className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]">
@@ -189,6 +207,24 @@ export function ProfileInfoTab({
                     );
                   })}
                   <div className="h-px bg-stone-200/80 dark:bg-stone-800 my-1" />
+                  <div className="px-2.5 py-1 border-b border-stone-100 dark:border-stone-800/70 mb-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {t('PETRONAS Group Entities', 'Entiti Kumpulan PETRONAS')}
+                    </span>
+                  </div>
+                  {PETRONAS_COMPANIES.map((entity) => (
+                    <SelectItem key={entity.code} value={entity.name} className="py-2 px-2.5 my-0.5 rounded-lg text-left">
+                      <div className="flex items-center gap-2 text-left pr-2 max-w-full overflow-hidden">
+                        <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-300 shrink-0">
+                          {entity.code}
+                        </span>
+                        <span className="font-medium text-xs sm:text-sm text-stone-900 dark:text-stone-100 truncate">
+                          {entity.name}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <div className="h-px bg-stone-200/80 dark:bg-stone-800 my-1" />
                   <SelectItem value="other" className="text-amber-600 dark:text-amber-400 font-semibold py-2 px-2.5 rounded-lg">
                     {t('Other (Custom Entry)', 'Lain-lain (Taip Sendiri)')}
                   </SelectItem>
@@ -200,16 +236,51 @@ export function ProfileInfoTab({
                   id="profile-custom-company"
                   aria-label={t('Custom Company Name', 'Nama Organisasi Custom')}
                   value={editTo}
-                  onChange={(e) => setEditTo(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setEditTo(next);
+                    setEditCompanyCode?.(resolveVerifiedPetronasCode(next).companyCode);
+                  }}
                   placeholder={t('Type company or agency name', 'Taip nama syarikat/agensi')}
                   className="rounded-lg bg-white dark:bg-card border-stone-200 dark:border-stone-800 text-sm font-semibold mt-2 h-9 focus:ring-1 focus:ring-[var(--color-sunshine-cta)]"
                 />
               )}
+
+              <PetronasCompanyFieldNotice
+                companyValue={editTo}
+                companyCode={editCompanyCode}
+                language={language}
+                onSelectCanonical={(canonicalName, code) => {
+                  if (selectedCompany === 'other') {
+                    setEditTo(applyCanonicalCompanyName(editTo, canonicalName));
+                  } else {
+                    setSelectedCompany(canonicalName);
+                    setEditTo(canonicalName);
+                  }
+                  setEditCompanyCode?.(code);
+                }}
+              />
             </div>
           ) : (
-            <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
-              {profile?.to || '—'}
-            </p>
+            <div className="space-y-1.5">
+              <p className="profile-readonly text-sm font-bold text-deep-forest dark:text-white bg-stone-50 dark:bg-stone-900/40 p-3 rounded-lg border border-stone-200/60 dark:border-white/5">
+                {profile?.to || '—'}
+              </p>
+              {(() => {
+                const verifiedCode = profile
+                  ? getVerifiedOrderCompanyCode({
+                      to: profile.to,
+                      companyCode: profile.companyCode,
+                    })
+                  : '';
+                return verifiedCode ? (
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 px-1">
+                    {t('PETRONAS Code:', 'Kod PETRONAS:')}{' '}
+                    <span className="font-mono">{verifiedCode}</span>
+                  </p>
+                ) : null;
+              })()}
+            </div>
           )}
         </div>
 

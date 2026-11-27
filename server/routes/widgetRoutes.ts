@@ -1,6 +1,6 @@
 import { calculateOrderCharges, orderFoodSubtotal, validCharge } from '../../src/lib/orderCharges.js';
 import { Router } from 'express';
-import { getFirestore, generateSequentialInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
+import { getFirestore, generateSequentialIndividualInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
@@ -494,10 +494,11 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Could not compute a valid total.' });
     }
 
-    // Generate sequential invoice number (RW) or transition QT prefix to RW
-    const invoiceNo = (order.invoiceNo && order.invoiceNo.startsWith('QT'))
-      ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
-      : (order.invoiceNo || await generateSequentialInvoiceNo(false, order.eventDate || order.date));
+    // Generate sequential individual invoice number (RWxxxxx) when not already invoiced; preserve historical RW numbers and quoteNo
+    const hasExistingInvoice = Boolean(order.invoiceNo && !String(order.invoiceNo).startsWith('QT'));
+    const invoiceNo = hasExistingInvoice
+      ? String(order.invoiceNo)
+      : await generateSequentialIndividualInvoiceNo();
 
     // Make the eligibility check, timestamp conflict guard, and billing transition one Firestore transaction.
     // A concurrent request will re-read the order and fail once another request updates or bills it.
@@ -547,6 +548,9 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
         serviceChargeAmount: charges.serviceChargeAmount,
         totalAmount: charges.totalAmount,
         invoiceNo,
+        ...(freshOrder.invoiceNo && String(freshOrder.invoiceNo).startsWith('QT')
+          ? { quoteNo: freshOrder.quoteNo || String(freshOrder.invoiceNo) }
+          : {}),
         officialInvoiceNo: invoiceNo,
         billedAt: freshOrder.billedAt || invoiceGeneratedAt,
         invoiceGeneratedAt,

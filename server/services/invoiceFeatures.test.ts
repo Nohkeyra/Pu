@@ -239,4 +239,176 @@ describe('Full email preview and exact attachment', () => {
       .update({ expiresAt: Date.now() - 1 });
     await expect(readInvoiceEmailPreview(preview.id, 'feature-admin')).rejects.toThrow(/expired/);
   });
+
+  it('supports RWxxxxx in standard mode and enforces strict PETRONAS collector validation & multi-PDF ordering', async () => {
+    const collectorOrderId = 'feature_petronas_collector';
+    await db
+      .collection('orders')
+      .doc(collectorOrderId)
+      .set({
+        ...fixture(collectorOrderId),
+        to: 'PETROLIAM NASIONAL BERHAD (PETRONAS)',
+        companyCode: '9999', // must re-verify from entity -> 0003
+        invoiceNo: 'RW00042',
+      });
+
+    // Standard mode accepts sequential RWxxxxx invoice numbers
+    const stdRes = await fetch(`${base}/admin/invoice-email-preview`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({
+        orderId: collectorOrderId,
+        email: 'customer@petronas.com',
+        lang: 'en',
+        submissionMode: 'standard',
+      }),
+    });
+    expect(stdRes.status).toBe(200);
+
+    // Collector mode rejects unchecked collectorEligible
+    await expect(
+      createInvoiceEmailPreview(
+        {
+          orderId: collectorOrderId,
+          email: 'collector@petronas.com',
+          submissionMode: 'petronas_collector',
+          collectorEligible: false,
+        },
+        'feature-admin'
+      )
+    ).rejects.toThrow(/SMART by GEP/);
+
+    // Collector mode rejects non-PDF / ZIP attachments
+    await expect(
+      createInvoiceEmailPreview(
+        {
+          orderId: collectorOrderId,
+          email: 'collector@petronas.com',
+          submissionMode: 'petronas_collector',
+          collectorEligible: true,
+          supportingFiles: [
+            {
+              filename: 'archive.zip',
+              contentBase64: Buffer.from('%PDF-1.4 dummy').toString('base64'),
+            },
+          ],
+        },
+        'feature-admin'
+      )
+    ).rejects.toThrow(/Only \.pdf/i);
+
+    await expect(
+      createInvoiceEmailPreview(
+        {
+          orderId: collectorOrderId,
+          email: 'collector@petronas.com',
+          submissionMode: 'petronas_collector',
+          collectorEligible: true,
+          supportingFiles: [
+            {
+              filename: 'fake.pdf',
+              contentBase64: Buffer.from('PK\x03\x04not-a-pdf').toString('base64'),
+            },
+          ],
+        },
+        'feature-admin'
+      )
+    ).rejects.toThrow(/%PDF-/);
+
+    // Collector mode rejects consolidated invoice batch or RW YYYY-xxxxx invoice numbers
+    const legacyId = 'feature_petronas_legacy_no';
+    await db
+      .collection('orders')
+      .doc(legacyId)
+      .set({
+        ...fixture(legacyId),
+        to: 'PETROLIAM NASIONAL BERHAD (PETRONAS)',
+        invoiceNo: 'RW 2026-00001',
+      });
+    await expect(
+      createInvoiceEmailPreview(
+        {
+          orderId: legacyId,
+          email: 'collector@petronas.com',
+          submissionMode: 'petronas_collector',
+          collectorEligible: true,
+        },
+        'feature-admin'
+      )
+    ).rejects.toThrow(/RWxxxxx/);
+
+    // Collector mode rejects non-PETRONAS organization even with stale companyCode
+    const nonPetronasId = 'feature_non_petronas';
+    await db
+      .collection('orders')
+      .doc(nonPetronasId)
+      .set({
+        ...fixture(nonPetronasId),
+        to: 'Putrajaya Holdings Sdn Bhd',
+        companyCode: '0003',
+        invoiceNo: 'RW00043',
+      });
+    await expect(
+      createInvoiceEmailPreview(
+        {
+          orderId: nonPetronasId,
+          email: 'collector@petronas.com',
+          submissionMode: 'petronas_collector',
+          collectorEligible: true,
+        },
+        'feature-admin'
+      )
+    ).rejects.toThrow(/4-digit PETRONAS company code/i);
+
+    // Valid collector submission creates exact subject & ordered attachments
+    mail.send.mockClear();
+    const support1 = Buffer.from('%PDF-1.4\n%Supporting DO 1\n%%EOF');
+    const support2 = Buffer.from('%PDF-1.4\n%Supporting PO 2\n%%EOF');
+    const previewRes = await fetch(`${base}/admin/invoice-email-preview`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({
+        orderId: collectorOrderId,
+        email: 'collector@petronas.com',
+        lang: 'en',
+        submissionMode: 'petronas_collector',
+        collectorEligible: true,
+        supportingFiles: [
+          { filename: 'DO_Signed.pdf', contentBase64: support1.toString('base64') },
+          { filename: 'PO_Reference.pdf', contentBase64: support2.toString('base64') },
+        ],
+      }),
+    });
+    expect(previewRes.status).toBe(200);
+    const previewJson = await previewRes.json();
+    expect(previewJson.preview.subject).toBe('0001 RW00042');
+    expect(previewJson.preview.companyCode).toBe('0001');
+    expect(previewJson.preview.attachments.map((a: any) => a.filename)).toEqual([
+      'Invoice_RW00042.pdf',
+      'DO_Signed.pdf',
+      'PO_Reference.pdf',
+    ]);
+
+    const sendRes = await fetch(`${base}/send-invoice`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ previewId: previewJson.preview.id }),
+    });
+    expect(sendRes.status).toBe(202);
+    await invoiceQueue.service.processQueue();
+
+    expect(mail.send).toHaveBeenCalledTimes(1);
+    const sentMail = mail.send.mock.calls[0][0] as any;
+    expect(sentMail.subject).toBe('0001 RW00042');
+    expect(sentMail.attachments.map((a: any) => a.filename)).toEqual([
+      'Invoice_RW00042.pdf',
+      'DO_Signed.pdf',
+      'PO_Reference.pdf',
+    ]);
+    expect(Buffer.compare(sentMail.attachments[1].content, support1)).toBe(0);
+    expect(Buffer.compare(sentMail.attachments[2].content, support2)).toBe(0);
+
+    const updatedOrder = (await db.collection('orders').doc(collectorOrderId).get()).data();
+    expect(updatedOrder?.collectorSubmittedAt).toBeTruthy();
+  });
 });

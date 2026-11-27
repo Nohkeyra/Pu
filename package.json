@@ -93,6 +93,8 @@
     "lucide-react": "^0.400.0",
     "motion": "14.6.0",
     "nodemailer": "10.2.1",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "5.4.624",
     "postcss": "^8.4.39",
     "proxy-addr": "2.0.8",
     "punycode": "2.3.1",
@@ -108,8 +110,7 @@
     "tsx": "4.23.15",
     "typescript": "^5.5.3",
     "vite": "8.3.5",
-    "zod": "4.6.7",
-    "pdfjs-dist": "5.4.624"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",

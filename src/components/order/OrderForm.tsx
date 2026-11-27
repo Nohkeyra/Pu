@@ -43,6 +43,7 @@ import {
 } from '@/lib/orderContactValidation';
 import { evaluateVerifiedOrderAccess } from '@/lib/verifiedOrdering';
 import { toMalaysiaDateTime } from '@/lib/dateUtils';
+import { resolvePetronasCompany, resolveVerifiedPetronasCode } from '@/lib/petronasAutofill';
 
 // TYPES
 export interface OrderState {
@@ -65,6 +66,7 @@ export interface OrderState {
   notes: string;
   companyName: string;
   customCompany: string;
+  companyCode?: string;
   department: string;
   initials: string;
   attn: string;
@@ -136,6 +138,7 @@ function parseStoredOrderDraft(value: string): Partial<OrderState> | null {
     'notes',
     'companyName',
     'customCompany',
+    'companyCode',
     'department',
     'initials',
     'attn',
@@ -143,6 +146,11 @@ function parseStoredOrderDraft(value: string): Partial<OrderState> | null {
   ] as const;
   for (const field of stringFields) {
     if (typeof record[field] === 'string') draft[field] = record[field];
+  }
+  const effectiveDraftCompany =
+    draft.companyName === 'other' ? draft.customCompany || '' : draft.companyName || '';
+  if (draft.companyName || draft.customCompany) {
+    draft.companyCode = resolveVerifiedPetronasCode(effectiveDraftCompany).companyCode;
   }
   if (record.delivery === 'pickup' || record.delivery === 'delivery') {
     draft.delivery = record.delivery;
@@ -224,6 +232,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      companyCode: '',
       department: '',
       initials: '',
       attn: '',
@@ -459,20 +468,28 @@ export default function OrderForm({ initialData }: OrderFormProps) {
   // Sync Logged-In User Profile details
   const syncProfileDataToState = (profile: any) => {
     const userTo = profile.to || '';
-    const isKnownCompany = userTo && SAVED_COMPANIES.includes(userTo);
+    const isKnownCompany =
+      Boolean(userTo) && (SAVED_COMPANIES.includes(userTo) || Boolean(resolvePetronasCompany(userTo)));
 
-    setOrderState((prev) => ({
-      ...prev,
-      companyName: prev.companyName || (isKnownCompany ? userTo : userTo ? 'other' : ''),
-      customCompany: prev.customCompany || (!isKnownCompany && userTo ? userTo : ''),
-      department: prev.department || profile.department || profile.division || '',
-      initials: prev.initials || profile.initials || profile.initialIdentifier || '',
-      attn: prev.attn || profile.attn || '',
-      name: prev.name || profile.name || '',
-      contact: prev.contact || profile.contact || '',
-      email: prev.email || profile.email || '',
-      confirmEmail: prev.confirmEmail || profile.email || '',
-    }));
+    setOrderState((prev) => {
+      const nextCompanyName = prev.companyName || (isKnownCompany ? userTo : userTo ? 'other' : '');
+      const nextCustomCompany = prev.customCompany || (!isKnownCompany && userTo ? userTo : '');
+      const resolvedCompanyText =
+        nextCompanyName === 'other' ? nextCustomCompany : nextCompanyName;
+      return {
+        ...prev,
+        companyName: nextCompanyName,
+        customCompany: nextCustomCompany,
+        companyCode: resolveVerifiedPetronasCode(resolvedCompanyText).companyCode,
+        department: prev.department || profile.department || profile.division || '',
+        initials: prev.initials || profile.initials || profile.initialIdentifier || '',
+        attn: prev.attn || profile.attn || '',
+        name: prev.name || profile.name || '',
+        contact: prev.contact || profile.contact || '',
+        email: prev.email || profile.email || '',
+        confirmEmail: prev.confirmEmail || profile.email || '',
+      };
+    });
   };
 
   const handleSyncFromActiveProfile = async () => {
@@ -605,8 +622,19 @@ export default function OrderForm({ initialData }: OrderFormProps) {
         billingAddress: asString(initialData.billingAddress),
         delivery: initialData.delivery === 'pickup' ? 'pickup' : 'delivery',
         notes: asString(initialData.notes),
-        companyName: asString(initialData.to),
-        customCompany: '',
+        companyName:
+          SAVED_COMPANIES.includes(asString(initialData.to)) ||
+          Boolean(resolvePetronasCompany(asString(initialData.to)))
+            ? asString(initialData.to)
+            : asString(initialData.to)
+              ? 'other'
+              : '',
+        customCompany:
+          SAVED_COMPANIES.includes(asString(initialData.to)) ||
+          Boolean(resolvePetronasCompany(asString(initialData.to)))
+            ? ''
+            : asString(initialData.to),
+        companyCode: resolveVerifiedPetronasCode(asString(initialData.to)).companyCode,
         department: asString(initialData.department),
         initials: asString(initialData.initials),
         attn: asString(initialData.attn),
@@ -745,6 +773,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      companyCode: '',
       department: '',
       initials: '',
       attn: '',
@@ -1009,8 +1038,11 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       if (!dateTime) throw new Error(tText('Please check the event date and time.', 'Sila semak tarikh dan masa majlis.'));
       const pricesRecord: Record<string, number> = {};
 
+      const { companyCode: verifiedCompanyCode } = resolveVerifiedPetronasCode(billingCompany);
+
       const orderData = {
         to: billingCompany || 'Majlis Persendirian',
+        companyCode: verifiedCompanyCode,
         attn: orderState.attn || orderState.name,
         department: orderState.department || '',
         division: orderState.department || '',
@@ -1227,6 +1259,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
       notes: '',
       companyName: '',
       customCompany: '',
+      companyCode: '',
       department: '',
       initials: '',
       attn: '',

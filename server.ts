@@ -148,6 +148,8 @@ async function startServer() {
   });
   app.use(['/api/auth', '/api/admin/login'], authLimiter);
 
+  // Allow up to 20MB base64 PDF supporting attachments for PETRONAS collector previews.
+  app.use('/api/admin/invoice-email-preview', express.json({ limit: '30mb' }));
   // SECURITY FIX: Reduced from 50mb to 5mb general limit.
   app.use(express.json({ limit: '5mb' }));
   // OAuth token requests from MCP clients use application/x-www-form-urlencoded.

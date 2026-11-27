@@ -30,6 +30,12 @@ import { getMalaysiaHolidayInfo } from '@/constants/malaysiaHolidays';
 import { getBookingNoticeHours, getEarliestBookingSlot } from '@/lib/dateUtils';
 import { handleRadioGroupKeyDown } from '@/lib/radioGroup';
 import { LocationAutocompletePicker } from '@/components/order/LocationAutocompletePicker';
+import { PetronasCompanyFieldNotice } from '@/components/order/PetronasCompanyFieldNotice';
+import {
+  PETRONAS_COMPANIES,
+  applyCanonicalCompanyName,
+  resolveVerifiedPetronasCode,
+} from '@/lib/petronasAutofill';
 import type { OrderState } from '@/components/order/OrderForm';
 import type { OrderContactField, OrderContactErrors } from '@/lib/orderContactValidation';
 
@@ -178,12 +184,21 @@ export function Step3ContactDetails({
                     value={orderState.companyName}
                     onValueChange={(val) => {
                       clearFieldError('companyName');
+                      const isSavedPreset = SAVED_COMPANIES.includes(val);
+                      const verified =
+                        val === 'other' ? { companyCode: '' } : resolveVerifiedPetronasCode(val);
                       setOrderState((prev) => ({
                         ...prev,
                         companyName: val,
-                        billingAddress: val.includes(',')
-                          ? val.slice(val.indexOf(',') + 1).trim()
-                          : '',
+                        companyCode: verified.companyCode,
+                        billingAddress:
+                          isSavedPreset && val.includes(',')
+                            ? val.slice(val.indexOf(',') + 1).trim()
+                            : val === 'other'
+                              ? prev.billingAddress
+                              : isSavedPreset
+                                ? ''
+                                : prev.billingAddress,
                       }));
                     }}
                     required
@@ -235,6 +250,28 @@ export function Step3ContactDetails({
                         );
                       })}
                       <div className="h-px bg-stone-200/80 dark:bg-stone-800 my-1" />
+                      <div className="px-2.5 py-1.5 border-b border-stone-100 dark:border-stone-800/70 mb-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {tText('PETRONAS Group Entities', 'Entiti Kumpulan PETRONAS')}
+                        </span>
+                      </div>
+                      {PETRONAS_COMPANIES.map((entity) => (
+                        <SelectItem
+                          key={entity.code}
+                          value={entity.name}
+                          className="py-2 px-2.5 my-0.5 rounded-lg text-deep-forest dark:text-[var(--ui-legacy-white)] focus:bg-amber-500/10 dark:focus:bg-amber-500/15 cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-2 text-left pr-2 max-w-full overflow-hidden">
+                            <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-300 shrink-0">
+                              {entity.code}
+                            </span>
+                            <span className="font-medium text-xs sm:text-sm text-stone-900 dark:text-stone-100 truncate">
+                              {entity.name}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      <div className="h-px bg-stone-200/80 dark:bg-stone-800 my-1" />
                       <SelectItem
                         value="other"
                         className="text-amber-600 dark:text-amber-400 font-bold py-2.5 px-2.5 rounded-lg focus:bg-amber-500/10 dark:focus:bg-amber-500/15 cursor-pointer"
@@ -262,7 +299,13 @@ export function Step3ContactDetails({
                         value={orderState.customCompany}
                         onChange={(e) => {
                           clearFieldError('customCompany');
-                          setOrderState((prev) => ({ ...prev, customCompany: e.target.value }));
+                          const nextCustom = e.target.value;
+                          const verified = resolveVerifiedPetronasCode(nextCustom);
+                          setOrderState((prev) => ({
+                            ...prev,
+                            customCompany: nextCustom,
+                            companyCode: verified.companyCode,
+                          }));
                         }}
                         placeholder={tText(
                           'Type Company/Department Name',
@@ -280,6 +323,36 @@ export function Step3ContactDetails({
                       )}
                     </>
                   )}
+                  <PetronasCompanyFieldNotice
+                    companyValue={
+                      orderState.companyName === 'other'
+                        ? orderState.customCompany
+                        : orderState.companyName
+                    }
+                    companyCode={orderState.companyCode}
+                    language={tText('en', 'bm')}
+                    onSelectCanonical={(canonicalName, code) => {
+                      clearFieldError('companyName');
+                      clearFieldError('customCompany');
+                      setOrderState((prev) => {
+                        if (prev.companyName === 'other') {
+                          return {
+                            ...prev,
+                            customCompany: applyCanonicalCompanyName(
+                              prev.customCompany,
+                              canonicalName
+                            ),
+                            companyCode: code,
+                          };
+                        }
+                        return {
+                          ...prev,
+                          companyName: canonicalName,
+                          companyCode: code,
+                        };
+                      });
+                    }}
+                  />
                   {fieldErrors.companyName && (
                     <FormError id="company-error" message={fieldErrors.companyName} />
                   )}

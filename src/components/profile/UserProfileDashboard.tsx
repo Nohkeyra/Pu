@@ -43,6 +43,8 @@ import { ProfilePreferencesTab } from '@/components/profile/ProfilePreferencesTa
 import type { TrackingMapOrigin } from '@/components/delivery/RiderMapReveal';
 import { ProfileOrdersTab } from '@/components/profile/ProfileOrdersTab';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import { SAVED_COMPANIES } from '@/constants/companies';
+import { resolvePetronasCompany, resolveVerifiedPetronasCode } from '@/lib/petronasAutofill';
 
 const CustomerInvoicePreviewModal = lazyWithRetry(
   () =>
@@ -96,6 +98,7 @@ export default function UserProfileDashboard({
   const [editDepartment, setEditDepartment] = useState('');
   const [editInitials, setEditInitials] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [editCompanyCode, setEditCompanyCode] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -139,11 +142,16 @@ export default function UserProfileDashboard({
         setProfile(data);
         setEditName(data.name || user.displayName || '');
         setEditContact(data.contact || user.phoneNumber || '');
-        setEditTo(data.to || '');
+        const userTo = data.to || '';
+        const isKnownCompany =
+          Boolean(userTo) &&
+          (SAVED_COMPANIES.includes(userTo) || Boolean(resolvePetronasCompany(userTo)));
+        setEditTo(userTo);
         setEditAttn(data.attn || '');
         setEditDepartment(data.department || data.division || '');
         setEditInitials(data.initials || data.initialIdentifier || '');
-        setSelectedCompany(data.to || '');
+        setSelectedCompany(isKnownCompany ? userTo : userTo ? 'other' : '');
+        setEditCompanyCode(resolveVerifiedPetronasCode(userTo).companyCode);
         setNotifyOrderStatus(data.notifyOrderStatus ?? true);
         setNotifyBilledUpdates(data.notifyBilledUpdates ?? true);
         setNotifyCancelApproval(data.notifyCancelApproval ?? true);
@@ -185,10 +193,12 @@ export default function UserProfileDashboard({
     if (!currentUser) return;
     setIsSaving(true);
     try {
+      const verifiedCode = resolveVerifiedPetronasCode(editTo).companyCode;
       const updatedProfile: Partial<UserProfile> = {
         name: editName,
         contact: editContact,
         to: editTo,
+        companyCode: verifiedCode,
         attn: editAttn,
         department: editDepartment,
         division: editDepartment,
@@ -199,6 +209,7 @@ export default function UserProfileDashboard({
         notifyCancelApproval,
         updatedAt: new Date().toISOString(),
       };
+      setEditCompanyCode(verifiedCode);
       const docRef = doc(db, 'users', currentUser.uid);
       await updateDoc(docRef, updatedProfile);
       setProfile((prev) => ({ ...(prev || {}), ...updatedProfile }) as UserProfile);
@@ -374,14 +385,20 @@ export default function UserProfileDashboard({
         variant: 'info',
       });
 
-      const fileName = `Invois_Wawasan_${getDisplayInvoiceNo(order)}.pdf`;
+      const isOrderFinal = ['approved', 'billed', 'delivered'].includes(
+        (order.status || '').toLowerCase()
+      );
+      const fileName = `${isOrderFinal ? 'Invoice' : 'Quotation'}_${getDisplayInvoiceNo(order)}.pdf`;
 
       const idToken = auth.currentUser
         ? await auth.currentUser.getIdToken().catch(() => null)
         : null;
       const headers: Record<string, string> = idToken ? { Authorization: `Bearer ${idToken}` } : {};
 
-      const res = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=true`), { headers });
+      const res = await fetch(
+        getApiUrl(`/api/invoice/${order.id}/pdf?final=${isOrderFinal}&lang=${language}`),
+        { headers }
+      );
       if (!res.ok) throw new Error('Failed to fetch invoice');
       const blob = await res.blob();
 
@@ -809,6 +826,9 @@ export default function UserProfileDashboard({
               setEditInitials={setEditInitials}
               selectedCompany={selectedCompany}
               setSelectedCompany={setSelectedCompany}
+              editCompanyCode={editCompanyCode}
+              setEditCompanyCode={setEditCompanyCode}
+              language={language}
               handleSaveProfile={handleSaveProfile}
               isSaving={isSaving}
               t={t}

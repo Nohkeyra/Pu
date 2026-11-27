@@ -22,6 +22,7 @@ export interface UserProfile {
   division?: string;
   initials?: string;
   initialIdentifier?: string;
+  companyCode?: string;
   updatedAt?: string;
   notificationSettings?: NotificationSettings;
   notifyOrderStatus?: boolean;
@@ -126,8 +127,11 @@ export interface Order {
   serviceChargeAmount?: number;
   totalAmount?: number;
   invoiceNo?: string;
+  quoteNo?: string;
   orderId?: string;
   officialInvoiceNo?: string;
+  companyCode?: string;
+  collectorSubmittedAt?: string;
   lang?: 'en' | 'bm';
   status?:
     | 'pending'

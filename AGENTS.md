@@ -93,6 +93,30 @@ offline reliability, preserve the original font, license and visual appearance.
 
 ---
 
+## Individual Document Master & PETRONAS Company Code Rules — permanent owner requirement
+
+### 1. Sole Design Master for Individual Documents
+
+- `public/assets/invoices/Restoran_Wawasan_Template_Invois_Individu_Final.pdf` is the **sole authoritative visual master** for all individual **invoices**, **quotations**, and **receipts** rendered by `server/services/serverPdfService.ts` (`generateServerInvoicePdf`).
+- Preserve the master vector layout, header art, logo, colors, typography, billing box geometry, and original signature (`Tandatangan_Asal_Restoran_Wawasan.png` / template `/fzImg0` drawn once on the final summary page only — never stamp it twice). Never revert to or fall back to historical jsPDF individual invoice layouts.
+- Retain searchable PDF text, graceful wrapping for long addresses/menus/venues without clipping, clean master-style continuation pages (`Page X / Y` / `Halaman X / Y`), itemized delivery/service charges, and totals in words.
+- For quotations and receipts, swap only document titles, numbers, dates, and detail-box labels while preserving master coordinates and signature. For individual invoices, retain verbatim the notice: `This is a computer-generated invoice. No company stamp is required.`
+- All customer previews (`CustomerInvoicePreviewModal.tsx`), admin previews (`useAdminPdf.ts` / `AdminPdfCanvasPreview.tsx`), Web/Capacitor downloads and shares, and email attachments must consume the unified server PDF endpoints (`/api/invoice/:orderId/pdf`) — never duplicate PDF generation on the client.
+
+### 2. Numbering & Consolidated Invoice Protection
+
+- New individual invoices reserve sequential `RWxxxxx` numbers via `generateSequentialIndividualInvoiceNo()` (`meta/individualInvoiceCounter`), preserving original `quoteNo` (`QT...`) and historical `RW ...` / `RW\d{5}` numbers without renumbering issued documents.
+- **Do not alter consolidated invoice logic or templates**: protect `src/services/consolidatedInvoiceService.ts`, `src/services/invoiceBatchPdf.ts`, `src/services/invoiceSignature.ts`, `generateSavedInvoicePdf`, `generateServerConsolidatedInvoicePdf`, consolidated numbering (`RW YYYY-xxxxx` via `meta/invoiceCounter`), `public/assets/heritage/Jawi.jpg`, and `public/assets/brand/apk_logo_clean.png`.
+
+### 3. PETRONAS Company Code Autofill, Validation & Email Collector
+
+- `src/constants/petronasCompanyCodes.ts` (135 entities sourced from `docs/List of Company Code for PETRONAS Entities.pdf`) and `src/lib/petronasAutofill.ts` are the single source of truth for 4-character codes (`0003`..etc.).
+- Auto-assign `companyCode` **strictly** on exact normalized legal entity matches. Always clear stale `companyCode` when organization/company names change, never auto-assign fuzzy/partial matches (e.g., never equate GDC Putrajaya with GDC (M), Putrajaya Holdings with KLCC Holdings, or KLCC Projects Services with KLCC ProjekS Services), and re-derive/verify `companyCode` server-side on `POST /api/orders` and new individual invoice issuance.
+- On PDFs, the `SUBJECT` field renders only the verified 4-digit code or `'-'` for non-PETRONAS entities.
+- **PETRONAS Email Collector** (`submissionMode: 'petronas_collector'` in `SendInvoiceModal.tsx` & `server/services/invoiceEmailPreviews.ts`) is strictly opt-in alongside unchanged standard customer and consolidated email flows. It must enforce: explicit eligibility confirmation (not SMART by GEP / SUS PO), verified 4-digit `companyCode`, single individual `RWxxxxx` invoice (never consolidated batches), exact email subject `${companyCode} ${invoiceNo}` (e.g. `0003 RW00001`), ordered `.pdf` (`%PDF-`) attachments `[mainPdf, ...supportingPdfs]` with ZIP/non-PDF formats rejected, and combined size `<= 20 MB`.
+
+---
+
 ## Working Loop
 
 Use fewer stages for trivial work; the full loop for complex/risky work.

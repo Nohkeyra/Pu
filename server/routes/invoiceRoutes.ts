@@ -196,6 +196,10 @@ router.post('/admin/invoice-email-preview', verifyAdminToken, async (req, res) =
         filename: preview.filename,
         invoiceNumbers: preview.invoiceNumbers,
         expiresAt: preview.expiresAt,
+        submissionMode: preview.submissionMode,
+        companyCode: preview.companyCode,
+        totalBytes: preview.totalBytes,
+        attachments: preview.attachments,
       },
     });
   } catch (error) {
@@ -235,6 +239,7 @@ router.post('/send-invoice', verifyAdminToken, async (req, res) => {
         totalAmount: preview.total,
         companyName: preview.company,
         lang: preview.lang,
+        submissionMode: preview.submissionMode,
         idempotencyKey: `preview:${id}`,
       });
       tx.update(ref, { status: 'queued', jobId });
@@ -278,6 +283,15 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
       });
     }
 
+    const rawDocType = typeof req.query.docType === 'string' ? req.query.docType.trim().toLowerCase() : '';
+    let docTypeOverride: 'invoice' | 'quotation' | 'receipt' | undefined;
+    if (rawDocType) {
+      if (rawDocType !== 'invoice' && rawDocType !== 'quotation' && rawDocType !== 'receipt') {
+        return res.status(400).json({ success: false, error: 'Invalid docType parameter' });
+      }
+      docTypeOverride = rawDocType;
+    }
+
     if (req.query.lang && (req.query.lang === 'en' || req.query.lang === 'bm')) {
       orderData.lang = req.query.lang;
     }
@@ -287,7 +301,7 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
         orderData.status !== 'rejected' &&
         orderData.status !== 'cancelled');
     let pdfBuffer: Buffer;
-    if (orderData.invoiceBatchNo && isFinal) {
+    if (orderData.invoiceBatchNo && isFinal && !docTypeOverride) {
       const saved = (await readInvoiceBatch(orderData.invoiceBatchNo)) as InvoiceBatch;
       // Return the original complete PDF: its column widths and page grouping remain fixed.
       const snaps = await db.getAll(
@@ -296,13 +310,22 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
       if (snaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
         return res.status(403).json({ error: 'Forbidden invoice PDF.' });
       pdfBuffer = await generateSavedInvoicePdf(saved);
-    } else pdfBuffer = await generateServerInvoicePdf(orderData, isFinal);
+    } else {
+      pdfBuffer = await generateServerInvoicePdf(orderData, isFinal, docTypeOverride);
+    }
 
     const invoiceNo =
       orderData.invoiceBatchNo ||
       orderData.invoiceNo ||
       `RW_${orderId.substring(0, 5).toUpperCase()}`;
-    const filename = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
+    const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
+    const filePrefix =
+      effectiveType === 'receipt'
+        ? 'Receipt'
+        : effectiveType === 'quotation'
+          ? 'Quotation'
+          : 'Invoice';
+    const filename = `${filePrefix}_${invoiceNo}.pdf`;
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');

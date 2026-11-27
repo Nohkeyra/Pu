@@ -29,6 +29,7 @@ import {
 } from '../../src/lib/orderTimestamp.js';
 import { SET_BOX_MENU_TITLE } from '../../src/services/orderCalculation.js';
 import { evaluateVerifiedOrderAccess } from '../../src/lib/verifiedOrdering.js';
+import { resolveVerifiedPetronasCode } from '../../src/lib/petronasAutofill.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 import { publicCalendar } from '../services/publicCalendar.js';
@@ -204,6 +205,15 @@ router.post(
           .filter((name: string) => typeof name === 'string' && name.length > 0);
       }
 
+      const resolvedOrgName =
+        typeof rawBody.to === 'string' && rawBody.to.trim()
+          ? rawBody.to.trim().slice(0, 200)
+          : 'Majlis Persendirian';
+      const { companyCode: verifiedCompanyCode } = resolveVerifiedPetronasCode(
+        resolvedOrgName,
+        typeof rawBody.registrationNumber === 'string' ? rawBody.registrationNumber : undefined
+      );
+
       // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
       const sanitizedOrderDoc = {
         invoiceNo: '',
@@ -211,7 +221,8 @@ router.post(
           typeof rawBody.billingAddress === 'string'
             ? rawBody.billingAddress.trim().slice(0, 1000)
             : '',
-        to: typeof rawBody.to === 'string' ? rawBody.to.slice(0, 200) : 'Majlis Persendirian',
+        to: resolvedOrgName,
+        companyCode: verifiedCompanyCode,
         attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
         department,
         division: department,
@@ -384,6 +395,7 @@ router.post(
       return res.json({
         id: orderId,
         invoiceNo: finalInvoiceNo,
+        companyCode: verifiedCompanyCode,
         duplicate: isDuplicate,
         prices,
         totalAmount,
@@ -838,6 +850,7 @@ router.post(
       const transporter = createBrevoTransporter();
       const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
       const isBm = lang === 'bm';
+      const attachmentRef = String(orderForPdf.invoiceNo || id).replace(/[^\w.-]+/g, '_');
 
       await transporter.sendMail({
         from: `"Restoran Wawasan" <${senderEmail}>`,
@@ -846,11 +859,11 @@ router.post(
           ? `Tempahan Anda Diterima - Rujukan #${id}`
           : `Your Booking Was Received - Ref #${id}`,
         text: isBm
-          ? `Salam ${name || ''}, terima kasih atas tempahan anda. Sila lihat draf invois yang dilampirkan.`
-          : `Hi ${name || ''}, thank you for your booking. Please see the attached preliminary invoice.`,
+          ? `Salam ${name || ''}, terima kasih atas tempahan anda. Sila lihat sebut harga yang dilampirkan.`
+          : `Hi ${name || ''}, thank you for your booking. Please see the attached quotation.`,
         attachments: [
           {
-            filename: `Preliminary_Invoice_${id}.pdf`,
+            filename: `Quotation_${attachmentRef}.pdf`,
             content: pdfBuffer,
             contentType: 'application/pdf',
           },

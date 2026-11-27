@@ -328,7 +328,7 @@ describe('Widget Routes Authorization & Pricing Security', () => {
 
       // Expected total: 20 * (7.50 + 12.50) = 20 * 20.00 = 400.00
       expect(json.totalAmount).toBe(400);
-      expect(json.invoiceNo).toMatch(/^RW /);
+      expect(json.invoiceNo).toMatch(/^RW\d{5}$/);
 
       // Verify Firestore state
       const updatedSnap = await db.collection('orders').doc('ord_valid_pricing').get();

@@ -122,6 +122,13 @@ export default function AdminPanel({
     setRecipientEmail,
     recipientPhone,
     setRecipientPhone,
+    submissionMode,
+    setSubmissionMode,
+    collectorEligible,
+    setCollectorEligible,
+    supportingFiles,
+    addSupportingFiles,
+    removeSupportingFile,
     sendingEmail,
     emailPreview,
     emailPdfUrl,
@@ -274,11 +281,9 @@ export default function AdminPanel({
       return;
     }
     const charges = calculateOrderCharges(total, { ...order, deliveryCharge, serviceChargeRate });
-    const updatedInvoiceNo = order.invoiceNo
-      ? order.invoiceNo.startsWith('QT')
-        ? order.invoiceNo.replace(/^QT\s*/i, 'RW ')
-        : order.invoiceNo
-      : undefined;
+    const existingNonQtInvoiceNo =
+      order.invoiceNo && !order.invoiceNo.startsWith('QT') ? order.invoiceNo : undefined;
+    let allocatedInvoiceNo = existingNonQtInvoiceNo;
 
     const success = await handleUpdateOrderStatus(
       orderId,
@@ -288,12 +293,15 @@ export default function AdminPanel({
         serviceChargeRate: charges.serviceChargeRate,
         serviceChargeAmount: charges.serviceChargeAmount,
         totalAmount: charges.totalAmount,
-        ...(updatedInvoiceNo ? { invoiceNo: updatedInvoiceNo } : {}),
+        ...(existingNonQtInvoiceNo ? { invoiceNo: existingNonQtInvoiceNo } : {}),
         status: 'billed',
         approvedAt: order.approvedAt || new Date().toISOString(),
         billedAt: order.billedAt || new Date().toISOString(),
       },
-      language === 'bm' ? 'Harga Ditetapkan & Invois Dihasilkan' : 'Pricing Set & Order Billed'
+      language === 'bm' ? 'Harga Ditetapkan & Invois Dihasilkan' : 'Pricing Set & Order Billed',
+      (saved) => {
+        if (saved.invoiceNo) allocatedInvoiceNo = saved.invoiceNo;
+      }
     );
 
     if (success) {
@@ -305,7 +313,7 @@ export default function AdminPanel({
           serviceChargeRate: charges.serviceChargeRate,
           serviceChargeAmount: charges.serviceChargeAmount,
           totalAmount: charges.totalAmount,
-          invoiceNo: updatedInvoiceNo || getDisplayInvoiceNo(order),
+          invoiceNo: allocatedInvoiceNo || getDisplayInvoiceNo(order),
           status: 'billed',
         },
         true
@@ -720,6 +728,13 @@ export default function AdminPanel({
               setRecipientEmail={setRecipientEmail}
               recipientPhone={recipientPhone}
               setRecipientPhone={setRecipientPhone}
+              submissionMode={submissionMode}
+              setSubmissionMode={setSubmissionMode}
+              collectorEligible={collectorEligible}
+              setCollectorEligible={setCollectorEligible}
+              supportingFiles={supportingFiles}
+              addSupportingFiles={addSupportingFiles}
+              removeSupportingFile={removeSupportingFile}
               emailPreview={emailPreview}
               emailPdfUrl={emailPdfUrl}
               preparingEmail={preparingEmail}

@@ -3,7 +3,10 @@ import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
 import { generateServerInvoicePdf } from './serverPdfService.js';
 import { invoiceEmailTemplate } from './invoiceEmailTemplate.js';
-import { readInvoiceEmailPreview, readInvoicePreviewPdf } from './invoiceEmailPreviews.js';
+import {
+  readInvoiceEmailPreview,
+  readInvoicePreviewAttachments,
+} from './invoiceEmailPreviews.js';
 import { telemetry } from '../telemetry.js';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { randomUUID, createHash } from 'crypto';
@@ -17,6 +20,7 @@ export interface InvoiceDeliveryJob {
   totalAmount: number;
   companyName: string;
   lang: 'en' | 'bm';
+  submissionMode?: 'standard' | 'petronas_collector';
   /**
    * Stable key identifying the logical delivery. Defaults to `${orderId}:${invoiceNo}`
    * (both fixed by the billing transaction). Never derive it from timestamps.
@@ -199,6 +203,7 @@ export class DurableInvoiceOutboxService {
       totalAmount: job.totalAmount,
       companyName: job.companyName,
       lang: job.lang || 'bm',
+      ...(job.submissionMode ? { submissionMode: job.submissionMode } : {}),
       kind: 'invoice',
       idempotencyKey: key,
       status: 'pending',
@@ -542,9 +547,15 @@ export class DurableInvoiceOutboxService {
       const preview = data.emailPreviewId
         ? await readInvoiceEmailPreview(data.emailPreviewId, undefined, true)
         : null;
-      const pdfBuffer = preview
-        ? await readInvoicePreviewPdf(data.emailPreviewId, undefined, true)
-        : await generateServerInvoicePdf(data.orderForPdf, true);
+      const attachments = preview
+        ? await readInvoicePreviewAttachments(data.emailPreviewId, undefined, true)
+        : [
+            {
+              filename: `Invoice_${data.invoiceNo}.pdf`,
+              content: await generateServerInvoicePdf(data.orderForPdf, true),
+              contentType: 'application/pdf',
+            },
+          ];
       const envelope =
         preview ||
         invoiceEmailTemplate({
@@ -561,13 +572,7 @@ export class DurableInvoiceOutboxService {
         subject: envelope.subject,
         text: envelope.text,
         html: envelope.html,
-        attachments: [
-          {
-            filename: preview?.filename || `Invoice_${data.invoiceNo}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          },
-        ],
+        attachments,
       });
     } catch (err: any) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -616,16 +621,31 @@ export class DurableInvoiceOutboxService {
             deliveredBy: this.workerId,
             updatedAt: FieldValue.serverTimestamp(),
           });
+          const deliveredIso = new Date().toISOString();
           tx.set(
             orderRef,
             {
               ...(claimed.data.emailPreviewId ? { status: 'delivered' } : {}),
               invoiceDeliveryStatus: 'delivered',
-              invoiceDeliveredAt: new Date().toISOString(),
+              invoiceDeliveredAt: deliveredIso,
               updatedAt: FieldValue.serverTimestamp(),
             },
             { merge: true }
           );
+          if (
+            claimed.data.submissionMode === 'petronas_collector' &&
+            claimed.data.orderId &&
+            claimed.data.orderId !== claimed.data.emailPreviewId
+          ) {
+            tx.set(
+              db.collection('orders').doc(claimed.data.orderId),
+              {
+                collectorSubmittedAt: deliveredIso,
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
           return true;
         })
       );

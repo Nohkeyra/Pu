@@ -29,11 +29,12 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     try {
       if (!order.id) throw new Error('Missing database ID');
       const invoiceNo = getDisplayInvoiceNo(order);
-      const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
+      const fileName = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
 
-      const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
-        headers: authHeaders(),
-      });
+      const serverRes = await fetch(
+        getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}&lang=${language === 'en' ? 'en' : 'bm'}`),
+        { headers: authHeaders() }
+      );
       if (!serverRes.ok) throw new Error('Failed to generate PDF from server');
 
       const blob = await serverRes.blob();
@@ -69,11 +70,12 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
 
     try {
       const invoiceNo = getDisplayInvoiceNo(order);
-      const fileName = `${isFinal ? 'Invoice' : 'Preliminary'}_${invoiceNo}.pdf`;
+      const fileName = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
 
-      const serverRes = await fetch(getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}`), {
-        headers: authHeaders(),
-      });
+      const serverRes = await fetch(
+        getApiUrl(`/api/invoice/${order.id}/pdf?final=${isFinal}&lang=${language === 'en' ? 'en' : 'bm'}`),
+        { headers: authHeaders() }
+      );
       if (!serverRes.ok) throw new Error('Failed to download PDF from server');
       const pdfBlob = await serverRes.blob();
 

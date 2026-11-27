@@ -1,16 +1,22 @@
-# Restoran Wawasan Pak Usop
+# Wawasan — Final document template + PETRONAS code autofill
 
-Restoran Wawasan Pak Usop is a full-stack restaurant management application designed to simplify catering orders, customer management, and invoicing.
+Integration handoff for `Nohkeyra/Pu` (React/Vite/TypeScript, Express, Firebase, Capacitor Android). This archive contains original reference assets, a tested standalone lookup, and implementation requirements. It is not a drop-in patch to all existing document generators; no repository commit or deployment has been made.
 
-The app allows restaurant staff to:
+## Canonical assets
+- `public/assets/invoices/Restoran_Wawasan_Template_Invois_Individu_Final.pdf`: exact owner-uploaded final PDF. The only visual master for individual invoice, quotation and receipt. Preserve its header art, logo, proportions, color, typography, payment details and signature; do not use a historical template as fallback.
+- `public/assets/invoices/Tandatangan_Asal_Restoran_Wawasan.png`: original signature asset, not AI-redrawn. The master already contains this signature; do not stamp it twice.
+- `docs/List of Company Code for PETRONAS Entities.pdf`: owner-supplied source (135 listed entities; list numbering omits 41 and 45).
+- `src/constants/petronasCompanyCodes.ts`: shared lookup, codes as four-character strings, strict matching with normalized legal names and registration-number conflict checking.
 
-- Manage customer and catering orders
-- Review, approve, and update order prices
-- Track order status from submission to billing
-- Generate and preview PDF invoices
-- Send invoices to customers by email
-- Schedule orders using Google Calendar
-- Manage restaurant operations through a responsive web interface
-- Access the system through an Android application
+## Implementation order — Codex
+1. Inspect current checkout, `AGENTS.md`, `server/services/serverPdfService.ts`, `src/services/consolidatedInvoiceService.ts`, `src/components/order/Step3ContactDetails.tsx`, `src/components/order/OrderForm.tsx`, `src/constants/companies.ts`, document preview/download/share paths and backend document send paths. Discover actual quotation and receipt flows; do not invent paths or create a new feature without authorization. Current inspected server generator has an older design and must not be treated as the final master.
+2. Make the final master the single design source. Prefer vector PDF template overlay (e.g. pdf-lib if needed; install using npm and update lockfile together) or faithfully reproduce vector layout with measured coordinates. Preserve searchable text. For quotation and receipt, replace document-type labels and appropriate date/number/payment fields only; retain master geometry and signature. Change footer document noun if appropriate, but retain the exact invoice notice `This is a computer-generated invoice. No company stamp is required.` for invoices. No redesign. Handle long addresses, long menu entries, multiple rows, page overflow, totals in words, and missing fields without clipping. For overflow use approved master-style continuation pages, not an old fallback. Preserve business rules and correct amounts, payment status, existing document numbers and history. New invoice numbering must follow RWxxxxx; inspect allocator and avoid renumbering historical invoices or changing consolidated numbering. Ensure customer/admin previews, server exports, emails, Android/Web download/share use the same renderer; avoid unnecessary APK bloat. Verify runtime asset bundling (Vercel/server + Capacitor).
+3. Wire code lookup to organization selection and custom name changes; clear stale code on company change. Derive and validate on server using legal company identity. Persist verified `companyCode` for newly issued documents in existing schema; account for Firestore rules and legacy orders. No code for unlisted companies; do not assume GDC Putrajaya = GDC (M), Putrajaya Holdings = KLCC Holdings, or KLCC Projects Services = KLCC ProjekS Services. For near matches use explicit confirmation against canonical entity, no automatic fuzzy assignment. Keep user-approved codes tied to the canonical company; revalidate if edited. The PDF SUBJECT value is code only. No other UI redesign.
+4. If an email is explicitly submitted to PETRONAS invoice collector, require confirmed email-submission eligibility (not SMART by GEP/SUS purchase orders), confirmed code and single individual invoice. Email subject `0003 RW12345`; use original issued number, not a guessed number. If invalid, block collector submission for review rather than invent a code. Keep ordinary customer email routes unchanged. Do not automatically send or redirect emails; invoice PDF first, supporting PDFs after, no ZIP, maximum 20 MB per email. Do not change consolidated flow.
+5. Protect consolidated invoice implementation and template from changes. Do not delete shared assets still referenced by consolidated invoices. Retire old individual/quotation/receipt render paths only after verifying that all callers are migrated. No unrelated app changes or changes to issued historical PDF files.
+6. Add repository-native Vitest coverage for lookup, code clearing/validation, server generation and email eligibility. Run typecheck, lint, tests and build; visual compare generated PDF with supplied master using fixtures (standard and long address, multiple rows, non-PETRONAS, quotation, receipt). Compare consolidated output before/after. Verify Web and Android packaging; owner handles physical device QA. No deployment, release or actual email sending without owner authorization. Report changed files, commands/results, any blockers and any layout deviations.
 
-
+## Local check included
+`tsc src/constants/petronasCompanyCodes.ts --target ES2020 --module commonjs --outDir /tmp/wawasan-code-check --strict --skipLibCheck`
+`node tests/petronas-company-code-check.cjs /tmp/wawasan-code-check/petronasCompanyCodes.js`
+Standalone check passed. App integration and app tests are not yet performed.

@@ -13,6 +13,7 @@ import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
 import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
+import { getVerifiedOrderCompanyCode } from '@/lib/petronasAutofill';
 
 interface OrderDetailModalProps {
   onReadOrder?: (order: Order) => void;
@@ -271,6 +272,13 @@ export function OrderDetailModal({
                     {
                       label: 'CLIENT / ORGANIZATION :',
                       value: selectedOrder.to || selectedOrder.company || '-',
+                    },
+                    {
+                      label:
+                        language === 'bm'
+                          ? 'KOD SYARIKAT PETRONAS :'
+                          : 'PETRONAS COMPANY CODE :',
+                      value: getVerifiedOrderCompanyCode(selectedOrder) || '-',
                     },
                     selectedOrder.department
                       ? {
