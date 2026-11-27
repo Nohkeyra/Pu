@@ -470,7 +470,7 @@ function stripTemplateStreamToBrandHeader(rawStream: string): string {
   const divIdx = rawStream.indexOf(dividerMarker);
   if (regEnd !== -1 && divIdx !== -1) {
     const headerPart = rawStream.slice(0, regEnd + regMarker.length);
-    return `${headerPart}.6 .439216 .117647 RG1.1 wn ${dividerMarker}`;
+    return `${headerPart}\n.6 .439216 .117647 RG\n1.1 w\nn ${dividerMarker}\n`;
   }
   return rawStream;
 }
@@ -767,12 +767,12 @@ function drawFooterBar(
   drawMasterRightText(page, pageLabel, 552.8, 31.39, regularFont, 7.4, C_FOOTER_GRAY);
 }
 
-function buildFooterNoticeStream(
-  pdfDoc: PDFDocument,
+function drawFooterNotice(
+  page: PDFPage,
   docType: ServerPdfDocumentType,
   lang: 'en' | 'bm',
   font: PDFFont
-): PDFRawStream {
+): void {
   const notice =
     docType === 'invoice'
       ? 'This is a computer-generated invoice. No company stamp is required.'
@@ -784,11 +784,13 @@ function buildFooterNoticeStream(
           ? 'Ini adalah resit janaan komputer. Tiada cop syarikat diperlukan.'
           : 'This is a computer-generated receipt. No company stamp is required.';
   const noticeWidth = font.widthOfTextAtSize(notice, 8.5);
-  const centeredX = ((595.2756 - noticeWidth) / 2).toFixed(4);
-  const fontKey = font.name;
-  const escaped = notice.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-  const streamText = `q\nBT\n1 0 0 1 ${centeredX} 53.8898 Tm\n/${fontKey} 8.5 Tf\n.4 .4 .4 rg\n(${escaped}) Tj\nET\nQ\n`;
-  return pdfDoc.context.flateStream(streamText);
+  page.drawText(notice, {
+    x: (page.getWidth() - noticeWidth) / 2,
+    y: 53.8898,
+    font,
+    size: 8.5,
+    color: rgb(0.4, 0.4, 0.4),
+  });
 }
 
 export async function generateServerInvoicePdf(
@@ -1107,9 +1109,7 @@ export async function generateServerInvoicePdf(
       } else if (refs[3]) {
         newContentsRefs.push(refs[3]);
       }
-      newContentsRefs.push(
-        pdfDoc.context.register(buildFooterNoticeStream(pdfDoc, docType, lang, helvetica))
-      );
+
     }
     page.node.set(
       page.node.context.obj('Contents'),
@@ -1574,6 +1574,7 @@ export async function generateServerInvoicePdf(
       });
     }
 
+    if (plan.isFinalSummary) drawFooterNotice(page, docType, lang, helveticaOblique);
     drawFooterBar(pdfDoc, page, pIdx + 1, totalPages, lang, helvetica);
   }
 

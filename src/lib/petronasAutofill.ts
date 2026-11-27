@@ -193,6 +193,7 @@ export function getVerifiedOrderCompanyCode(order: {
   const name = order.to || order.company || '';
   const resolved = resolvePetronasCompany(name);
   if (!resolved) return '';
-  if (order.companyCode && order.companyCode !== resolved.code) return '';
+  // The exact legal entity is authoritative. Never trust an imported or stale code.
+  // An unrecognized/ambiguous name is rejected above even when a code is stored.
   return resolved.code;
 }
