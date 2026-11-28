@@ -36,7 +36,7 @@ interface Step5OrderSuccessProps {
   emailStatus: 'idle' | 'sending' | 'success' | 'failed';
   setShowPdfPreviewModal: React.Dispatch<React.SetStateAction<boolean>>;
   handleResetForm: () => void;
-  handleShareReceipt: () => void;
+  handleShareBookingReference: () => void;
   tText: (en: string, bm: string) => string;
 }
 
@@ -48,14 +48,14 @@ export function Step5OrderSuccess({
   emailStatus,
   setShowPdfPreviewModal,
   handleResetForm,
-  handleShareReceipt,
+  handleShareBookingReference,
   tText,
 }: Step5OrderSuccessProps) {
   const reduceMotion = useReducedMotion();
   const notifiedReference = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    // A locale change or StrictMode effect replay is not a new order receipt.
+    // A locale change or StrictMode effect replay is not a new order confirmation.
     if (!referenceNumber || notifiedReference.current === referenceNumber) return;
     notifiedReference.current = referenceNumber;
     // Preserve the existing order-received notification; the celebration itself
@@ -147,7 +147,7 @@ export function Step5OrderSuccess({
         {tText('View more details', 'Lihat butiran lanjut')} <ArrowDown className="h-4 w-4" aria-hidden="true" />
       </a>
 
-      {/* Bill details receipt box */}
+      {/* Booking details box */}
       <div id="booking-more-details" className="scroll-mt-24 bg-muted border border-stone/10 p-5 rounded-2xl text-left space-y-2.5">
         <div className="flex justify-between items-center text-xs">
           <span className="text-stone">{tText('Reference Number:', 'Nombor Rujukan')}</span>
@@ -200,10 +200,10 @@ export function Step5OrderSuccess({
         </div>
       </div>
 
-      {/* Email Delivery relay receipt check */}
+      {/* Email delivery status */}
       <div className="p-4 bg-card rounded-2xl border border-stone/10 text-left space-y-2.5 shadow-sm" aria-live="polite">
         <span className="microcopy-12-upper text-stone font-bold uppercase tracking-wider block">
-          {tText('INVOICE / RECEIPT STATUS', 'STATUS PENGHANTARAN INVOIS')}
+          {tText('INVOICE DELIVERY STATUS', 'STATUS PENGHANTARAN INVOIS')}
         </span>
 
         <div className="space-y-1.5 text-xs text-stone">
@@ -286,12 +286,12 @@ export function Step5OrderSuccess({
           </Button>
           
           <Button
-            onClick={handleShareReceipt}
+            onClick={handleShareBookingReference}
             variant="outline"
             className="flex-1 border-stone/20 h-12 rounded-2xl font-bold text-sm text-deep-forest cursor-pointer flex items-center justify-center gap-1.5"
           >
             <Share2 className="w-4 h-4 text-crisp-carrot" />
-            <span>{tText('Share Invoice / Receipt', 'Kongsi Resit')}</span>
+            <span>{tText('Share Booking Reference', 'Kongsi Rujukan Tempahan')}</span>
           </Button>
         </div>
 

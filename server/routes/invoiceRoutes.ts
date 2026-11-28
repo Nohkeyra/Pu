@@ -284,9 +284,9 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     }
 
     const rawDocType = typeof req.query.docType === 'string' ? req.query.docType.trim().toLowerCase() : '';
-    let docTypeOverride: 'invoice' | 'quotation' | 'receipt' | undefined;
+    let docTypeOverride: 'invoice' | 'quotation' | undefined;
     if (rawDocType) {
-      if (rawDocType !== 'invoice' && rawDocType !== 'quotation' && rawDocType !== 'receipt') {
+      if (rawDocType !== 'invoice' && rawDocType !== 'quotation') {
         return res.status(400).json({ success: false, error: 'Invalid docType parameter' });
       }
       docTypeOverride = rawDocType;
@@ -319,12 +319,7 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
       orderData.invoiceNo ||
       `RW_${orderId.substring(0, 5).toUpperCase()}`;
     const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
-    const filePrefix =
-      effectiveType === 'receipt'
-        ? 'Receipt'
-        : effectiveType === 'quotation'
-          ? 'Quotation'
-          : 'Invoice';
+    const filePrefix = effectiveType === 'quotation' ? 'Quotation' : 'Invoice';
     const filename = `${filePrefix}_${invoiceNo}.pdf`;
 
     res.setHeader('Cache-Control', 'private, no-store');

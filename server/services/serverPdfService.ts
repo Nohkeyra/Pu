@@ -34,7 +34,7 @@ import { renderInvoiceBatch } from '../../src/services/invoiceBatchPdf.js';
 import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import { getVerifiedOrderCompanyCode } from '../../src/lib/petronasAutofill.js';
 
-export type ServerPdfDocumentType = 'invoice' | 'quotation' | 'receipt';
+export type ServerPdfDocumentType = 'invoice' | 'quotation';
 
 // ─── Bank details (env vars, same names as on Render dashboard) ──────────────
 export function getBankDetails() {
@@ -502,7 +502,6 @@ function resolveDocumentType(
 ): ServerPdfDocumentType {
   if (docTypeOverride) return docTypeOverride;
   const status = String(order.status || '').toLowerCase().trim();
-  if (isFinal && status === 'completed') return 'receipt';
   const inv = String(order.invoiceNo || '').trim();
   if (
     !isFinal ||
@@ -548,13 +547,9 @@ function drawHeaderMetaRight(
       ? lang === 'en'
         ? 'QUOTATION'
         : 'SEBUT HARGA'
-      : docType === 'receipt'
-        ? lang === 'en'
-          ? 'RECEIPT'
-          : 'RESIT'
-        : lang === 'en'
-          ? 'INVOICE'
-          : 'INVOIS';
+      : lang === 'en'
+        ? 'INVOICE'
+        : 'INVOIS';
 
   drawMasterRightText(page, title, 542.8, 787.89, fonts.bold, 16, C_ESPRESSO);
 
@@ -563,13 +558,9 @@ function drawHeaderMetaRight(
       ? lang === 'en'
         ? 'Quotation No.:'
         : 'No. Sebut Harga:'
-      : docType === 'receipt'
-        ? lang === 'en'
-          ? 'Receipt No.:'
-          : 'No. Resit:'
-        : lang === 'en'
-          ? 'Invoice No.:'
-          : 'No. Invois:';
+      : lang === 'en'
+        ? 'Invoice No.:'
+        : 'No. Invois:';
 
   const ruleStartX = Math.min(480, 542.8 - Math.max(66, fonts.bold.widthOfTextAtSize(sanitizePdfText(docNumber), 8.2) + 6));
   drawMasterRightText(page, numLabel, ruleStartX - 4, 769.79, fonts.regular, 7.6, C_ESPRESSO);
@@ -776,13 +767,9 @@ function drawFooterNotice(
   const notice =
     docType === 'invoice'
       ? 'This is a computer-generated invoice. No company stamp is required.'
-      : docType === 'quotation'
-        ? lang === 'bm'
-          ? 'Ini adalah sebut harga janaan komputer. Tiada cop syarikat diperlukan.'
-          : 'This is a computer-generated quotation. No company stamp is required.'
-        : lang === 'bm'
-          ? 'Ini adalah resit janaan komputer. Tiada cop syarikat diperlukan.'
-          : 'This is a computer-generated receipt. No company stamp is required.';
+      : lang === 'bm'
+        ? 'Ini adalah sebut harga janaan komputer. Tiada cop syarikat diperlukan.'
+        : 'This is a computer-generated quotation. No company stamp is required.';
   const noticeWidth = font.widthOfTextAtSize(notice, 8.5);
   page.drawText(notice, {
     x: (page.getWidth() - noticeWidth) / 2,
@@ -813,9 +800,7 @@ export async function generateServerInvoicePdf(
   const docNumber =
     docType === 'quotation'
       ? String(order.quoteNo || order.invoiceNo || (lang === 'en' ? 'QUOTATION' : 'SEBUT HARGA'))
-      : docType === 'receipt'
-        ? String(order.invoiceNo || order.officialInvoiceNo || '-')
-        : String(order.invoiceNo || order.officialInvoiceNo || (isFinal ? 'PENDING' : lang === 'en' ? 'QUOTATION' : 'SEBUT HARGA'));
+      : String(order.invoiceNo || order.officialInvoiceNo || (isFinal ? 'PENDING' : lang === 'en' ? 'QUOTATION' : 'SEBUT HARGA'));
 
   const docDate = isMonetaryFinal && (order.billedAt || order.approvedAt || order.issuedAt)
     ? formatDate(String(order.billedAt || order.approvedAt || order.issuedAt))
@@ -1286,7 +1271,7 @@ export async function generateServerInvoicePdf(
       }
     }
 
-    // Final Summary Block (Totals Bar, Amount in Words, Bank/Receipt Card, Contact, Signature label/line)
+    // Final Summary Block (Totals Bar, Amount in Words, Bank Card, Contact, Signature label/line)
     if (plan.isFinalSummary) {
       const sy = (y: number) => y - plan.summaryShift;
 
@@ -1383,7 +1368,7 @@ export async function generateServerInvoicePdf(
         }
       }
 
-      // Bank Details / Receipt Confirmation Box (y: 263.89..336.89)
+      // Bank Details Box (y: 263.89..336.89)
       drawRoundedRectPath(
         page,
         42.5,
@@ -1395,117 +1380,62 @@ export async function generateServerInvoicePdf(
         C_GOLD_RULE,
         1
       );
-      if (docType === 'receipt') {
-        page.drawText(
-          lang === 'en' ? 'RECEIPT DETAILS' : 'MAKLUMAT RESIT',
-          { x: 54.5, y: sy(321.69), font: helveticaBold, size: 7.7, color: C_GOLD_LABEL }
-        );
-        page.drawText(lang === 'en' ? 'RECEIPT NO.' : 'NO. RESIT', {
-          x: 55.5,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText(lang === 'en' ? 'ISSUED BY' : 'DIKELUARKAN OLEH', {
-          x: 246.5,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText(lang === 'en' ? 'STATUS' : 'STATUS', {
-          x: 415.0,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText(sanitizePdfText(docNumber), {
-          x: 55.5,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(bankAccountName, {
-          x: 246.5,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(lang === 'en' ? 'COMPLETED' : 'SELESAI', {
-          x: 415.0,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(
-          lang === 'en'
-            ? 'Thank you. This document serves as the official catering receipt from Restoran Wawasan.'
-            : 'Terima kasih. Dokumen ini adalah resit rasmi katering daripada Restoran Wawasan.',
-          { x: 55.5, y: sy(273.39), font: helveticaOblique, size: 7.5, color: C_FOOTER_GRAY }
-        );
-      } else {
-        page.drawText(
-          lang === 'en' ? 'PAYMENT DETAILS' : 'MAKLUMAT PEMBAYARAN / PAYMENT DETAILS',
-          { x: 54.5, y: sy(321.69), font: helveticaBold, size: 7.7, color: C_GOLD_LABEL }
-        );
-        page.drawText(lang === 'en' ? 'ACCOUNT NAME' : 'NAMA AKAUN', {
-          x: 55.5,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText('BANK', {
-          x: 246.5,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText(lang === 'en' ? 'ACCOUNT NO.' : 'NO. AKAUN', {
-          x: 384.5,
-          y: sy(304.79),
-          font: helveticaBold,
-          size: 7.7,
-          color: C_GOLD_LABEL,
-        });
-        page.drawText(sanitizePdfText(bankAccountName), {
-          x: 55.5,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(sanitizePdfText(bankName), {
-          x: 246.5,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(sanitizePdfText(bankAccountNumber), {
-          x: 384.5,
-          y: sy(287.64),
-          font: helveticaBold,
-          size: 9.25,
-          color: C_ESPRESSO,
-        });
-        page.drawText(
-          docType === 'quotation'
-            ? lang === 'en'
-              ? 'Quotation issued by Restoran Wawasan. Final invoice will be issued upon confirmation.'
-              : 'Sebut harga dikeluarkan oleh Restoran Wawasan. Invois rasmi akan dikeluarkan selepas pengesahan.'
-            : lang === 'en'
-              ? 'Please use the invoice number as your transaction reference.'
-              : 'Sila gunakan nombor invois sebagai rujukan pembayaran.',
-          { x: 55.5, y: sy(273.39), font: helveticaOblique, size: 7.5, color: C_FOOTER_GRAY }
-        );
-      }
+      page.drawText(
+        lang === 'en' ? 'PAYMENT DETAILS' : 'MAKLUMAT PEMBAYARAN / PAYMENT DETAILS',
+        { x: 54.5, y: sy(321.69), font: helveticaBold, size: 7.7, color: C_GOLD_LABEL }
+      );
+      page.drawText(lang === 'en' ? 'ACCOUNT NAME' : 'NAMA AKAUN', {
+        x: 55.5,
+        y: sy(304.79),
+        font: helveticaBold,
+        size: 7.7,
+        color: C_GOLD_LABEL,
+      });
+      page.drawText('BANK', {
+        x: 246.5,
+        y: sy(304.79),
+        font: helveticaBold,
+        size: 7.7,
+        color: C_GOLD_LABEL,
+      });
+      page.drawText(lang === 'en' ? 'ACCOUNT NO.' : 'NO. AKAUN', {
+        x: 384.5,
+        y: sy(304.79),
+        font: helveticaBold,
+        size: 7.7,
+        color: C_GOLD_LABEL,
+      });
+      page.drawText(sanitizePdfText(bankAccountName), {
+        x: 55.5,
+        y: sy(287.64),
+        font: helveticaBold,
+        size: 9.25,
+        color: C_ESPRESSO,
+      });
+      page.drawText(sanitizePdfText(bankName), {
+        x: 246.5,
+        y: sy(287.64),
+        font: helveticaBold,
+        size: 9.25,
+        color: C_ESPRESSO,
+      });
+      page.drawText(sanitizePdfText(bankAccountNumber), {
+        x: 384.5,
+        y: sy(287.64),
+        font: helveticaBold,
+        size: 9.25,
+        color: C_ESPRESSO,
+      });
+      page.drawText(
+        docType === 'quotation'
+          ? lang === 'en'
+            ? 'Quotation issued by Restoran Wawasan. Final invoice will be issued upon confirmation.'
+            : 'Sebut harga dikeluarkan oleh Restoran Wawasan. Invois rasmi akan dikeluarkan selepas pengesahan.'
+          : lang === 'en'
+            ? 'Please use the invoice number as your transaction reference.'
+            : 'Sila gunakan nombor invois sebagai rujukan pembayaran.',
+        { x: 55.5, y: sy(273.39), font: helveticaOblique, size: 7.5, color: C_FOOTER_GRAY }
+      );
 
       // Bottom Left Contact Section (42.5..302.5)
       page.drawText('PEGAWAI DIHUBUNGI / CONTACT', {
