@@ -399,7 +399,10 @@ describe('approved refined individual invoice candidate (layout 4)', () => {
     const decoded=await inspectPdf(bytes);
     expect(decoded.pageCount).toBeGreaterThan(2);
     expect(decoded.pageTexts[1].join(' ')).toContain('PIC EXAMPLE UNIQUE');
-    expect(decoded.text).toContain('Menu item 159');
+    // PDF text extraction preserves physical line breaks, so "Menu item"
+    // can span two lines or pages. Check every numbered item in order.
+    const items = Array.from(decoded.text.matchAll(/\bitem\s+(\d+)\b/g), match => Number(match[1]));
+    expect(items).toEqual(Array.from({length:160},(_,i)=>i));
     expect(decoded.pageTexts.flat().filter(v=>v==='185.00')).toHaveLength(1);
     expect(decoded.pageTexts.flat().filter(v=>v==='RM 192.25')).toHaveLength(1);
     if(process.env.CI) {
