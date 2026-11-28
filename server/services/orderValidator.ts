@@ -6,6 +6,19 @@ export interface ValidationError {
   message: string;
 }
 
+// The accepted meal keys match the application's billing/PDF sessions, including
+// historical explicit aliases and the legacy single-meal default.
+const SUPPORTED_MEALS = new Set(['breakfast', 'lunch', 'hi_tea', 'tea_break', 'hi_tea_break', 'dinner', 'default']);
+
+export function getSubmittedMeals(body: { meals?: unknown; mealType?: unknown }): string[] | null {
+  const meals = body.meals !== undefined
+    ? body.meals
+    : body.mealType !== undefined ? [body.mealType] : ['default'];
+  if (!Array.isArray(meals) || !meals.length || meals.some(meal => typeof meal !== 'string' || !SUPPORTED_MEALS.has(meal))) return null;
+  if (new Set(meals).size !== meals.length || (meals.includes('default') && meals.length > 1)) return null;
+  return meals;
+}
+
 export function validateOrderPayload(body: any, now = Date.now()): { valid: boolean; errors: ValidationError[] } {
   const errors: ValidationError[] = [];
 
@@ -44,6 +57,8 @@ export function validateOrderPayload(body: any, now = Date.now()): { valid: bool
   if (eventTime !== undefined && !toMalaysiaDateTime(dateVal, eventTime)) {
     errors.push({ field: 'time', message: 'Valid event time (HH:mm) is required' });
   }
+
+  if (!getSubmittedMeals(body)) errors.push({ field: 'meals', message: 'Select valid, distinct meal types' });
 
   // Pax represent people: reject fractions, non-finite values and object coercion.
   const rawQuantity = body.quantity ?? body.guests ?? body.pax;

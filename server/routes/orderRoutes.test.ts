@@ -300,6 +300,29 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
       expect((await reservations.get()).size - before).toBe(1);
     });
 
+    it('replays a committed order after its booking deadline, but rejects a new late order', async () => {
+      const key = 'expired_deadline_replay_' + Date.now();
+      const originalId = key + '_order';
+      const db = getFirestore();
+      await db.collection('orders').doc(originalId).set({ userId: 'actual_user', invoiceNo: 'QT ORIGINAL', companyCode: '0001' });
+      await db.collection('idempotency_keys').doc(key).set({ orderId: originalId, invoiceNo: 'QT ORIGINAL', prices: {}, totalAmount: 0 });
+      const payload = { ...orderPayload, eventDate: '2020-01-02', time: '08:00', idempotencyKey: key };
+      const submit = (body: Record<string, unknown>) => fetch(`${baseUrl}/api/orders`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-verified' },
+        body: JSON.stringify(body),
+      });
+      const before = (await db.collection('orders').get()).size;
+      const replay = await submit(payload);
+      expect(replay.status).toBe(200);
+      expect(await replay.json()).toMatchObject({ id: originalId, invoiceNo: 'QT ORIGINAL', companyCode: '0001', duplicate: true });
+      expect((await submit({ ...payload, idempotencyKey: key + '_new' })).status).toBe(400);
+      expect((await submit({ ...orderPayload, idempotencyKey: 'bad/key' })).status).toBe(400);
+      expect((await submit({ ...orderPayload, meals: ['lunch', 'lunch'] })).status).toBe(400);
+      vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({ uid: 'other_customer', email_verified: true });
+      expect((await submit(payload)).status).toBe(409);
+      expect((await db.collection('orders').get()).size).toBe(before);
+    });
+
     it('rejects guest orders with or without a claimed user', async () => {
       const res = await fetch(`${baseUrl}/api/orders`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
