@@ -31,6 +31,7 @@ import {
   INVOICE_CONTACT,
 } from '../../src/services/invoicePdfBrand.js';
 import { renderInvoiceBatch } from '../../src/services/invoiceBatchPdf.js';
+import { drawRefinedBatch } from '../../src/services/refinedInvoiceBatch.js';
 import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import { getVerifiedOrderCompanyCode } from '../../src/lib/petronasAutofill.js';
 
@@ -288,7 +289,53 @@ const mealLabels: Record<string, string> = {
 function drawHeaderBackground(doc: jsPDF, headerHeight = 36, pageWidth = 210) {
   drawInvoiceCalligraphy(doc, cachedJawiBase64, headerHeight, pageWidth);
 }
+async function renderRefinedConsolidatedInvoice(batch: InvoiceBatch): Promise<Buffer> {
+  if(!batch.pages.length || !batch.orders.length || new Set(batch.pages.map(p=>p.invoiceNo)).size!==batch.pages.length)
+    throw new Error('Saved invoice page numbers are required and must be distinct.');
+  const bytes=loadAssetBuffer(['assets/invoices/Wawasan_Master_Konsolidasi_Final_Border.pdf']);
+  if(!bytes)throw new Error('Approved consolidated invoice master is missing.');
+  const master=await PDFDocument.load(bytes),source=master.getPage(0),{width:W,height:H}=source.getSize();
+  if(Math.abs(W-841.89)>.1||Math.abs(H-595.28)>.1)throw new Error('Unexpected consolidated master size.');
+  const contents=source.node.Contents(),refs=contents instanceof PDFArray?contents.asArray():[];
+  const first=master.context.lookup(refs[0]);
+  if(!(first instanceof PDFRawStream))throw new Error('Unexpected consolidated header stream.');
+  let header=Buffer.from(decodePDFRawStream(first).decode()).toString('latin1');
+  for(const literal of ['(INVOIS)Tj','[(No. Invois:)]TJ','[(Tarikh:)]TJ','[(SUBJECT:)]TJ']){
+    if(header.split(literal).length!==2)throw new Error('Consolidated master metadata changed: '+literal);
+    header=header.replace(literal,literal.endsWith('TJ')?'[()]TJ':'()Tj');
+  }
+  source.node.set(master.context.obj('Contents'),master.context.obj([master.context.register(master.context.flateStream(header)),...refs.slice(1)]));
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+  doc.setCreationDate(new Date(batch.issuedAt));
+  const signatureTops=drawRefinedBatch(doc,batch.orders,{...batch,bank:getBankDetails()});
+  const pdf=await PDFDocument.load(doc.output('arraybuffer'));
+  const [brand,signature]=await pdf.embedPages([source,source],[
+    {left:0,bottom:H-103,right:W,top:H},
+    {left:667,bottom:H-338,right:790,top:H-268},
+  ]);
+  const regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+  const bm=batch.lang==='bm',gold=rgb(.447,.314,.078),ink=rgb(.16,.14,.12);
+  const subject=getVerifiedOrderCompanyCode({to:batch.recipient.company})||'-';
+  pdf.getPages().forEach((p,i)=>{
+    p.drawPage(brand,{x:0,y:H-103});
+    const title=bm?'INVOIS':'INVOICE';
+    p.drawText(title,{x:799-bold.widthOfTextAtSize(title,23),y:H-54,font:bold,size:23,color:gold});
+    const values=[[bm?'No. Invois:':'Invoice No.:',batch.pages[i].invoiceNo],[bm?'Tarikh:':'Date:',batch.issuedAt.slice(0,10).split('-').reverse().join('/')],['SUBJECT:',subject]];
+    values.forEach(([label,value],j)=>{
+      p.drawText(label,{x:671,y:H-67-j*12,font:regular,size:8.5,color:ink});
+      const sanitized=sanitizePdfText(value);
+      let size=9;while(size>6&&bold.widthOfTextAtSize(sanitized,size)>64)size-=.25;
+      if(bold.widthOfTextAtSize(sanitized,size)>64)throw new Error('Consolidated header value is too long.');
+      p.drawText(sanitized,{x:735,y:H-67-j*12,font:bold,size,color:ink});
+    });
+    p.drawPage(signature,{x:667,y:H-signatureTops[i]*72/25.4-70});
+    addPageLink(pdf,p,110,H-81,420,52,INVOICE_CONTACT.maps);
+  });
+  return Buffer.from(await pdf.save());
+}
+
 export async function generateSavedInvoicePdf(batch: InvoiceBatch): Promise<Buffer> {
+  if (batch.layoutVersion === 4) return renderRefinedConsolidatedInvoice(batch);
   ensureImagesLoaded();
   return Buffer.from(
     renderInvoiceBatch(batch.orders, {
@@ -310,7 +357,7 @@ export async function generatePersistedConsolidatedInvoicePdf(
   batch: Record<string, any>,
   legacyDefaults: { includeNotes: boolean; lang: 'bm' | 'en' } = { includeNotes: false, lang: 'bm' }
 ): Promise<Buffer> {
-  if ([2, 3].includes(batch.layoutVersion)) {
+  if ([2, 3, 4].includes(batch.layoutVersion)) {
     return generateSavedInvoicePdf(batch as InvoiceBatch);
   }
   return generateServerConsolidatedInvoicePdf(

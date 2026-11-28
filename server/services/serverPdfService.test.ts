@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'node:fs';
+import { planInvoicePages as planRefinedInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { PDFArray, PDFDocument, PDFHexString, PDFRawStream, PDFString, decodePDFRawStream } from 'pdf-lib';
 import { planInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
@@ -410,4 +411,40 @@ describe('approved refined individual invoice candidate (layout 4)', () => {
       fs.writeFileSync('invoice-visual-artifacts/individual-refined-long-en.pdf',bytes);
     }
   },15000);
+});
+
+describe('approved consolidated candidate (layout 4)',()=>{
+  it('renders numbered pages with approved columns, charge details and additional meals',async()=>{
+    const orders=Array.from({length:24},(_,i)=>({id:'refined-'+i,to:'Example Agency',billingAddress:'Example address',email:'example@example.invalid',
+      date:'2026-12-06',quantity:10,menu:'Menu ref '+i,notes:'Note '+i,meals:['breakfast','lunch','hi_tea','dinner'],
+      prices:{breakfast:5,lunch:10,hi_tea:4,dinner:12},deliveryCharge:5,serviceChargeAmount:2.25,totalAmount:317.25}));
+    const opts={layoutVersion:4 as const,recipient:{company:'Example Agency',address:'Example address',email:'example@example.invalid'},
+      includeNotes:true,lang:'bm' as const,issuedAt:'2026-11-28T04:00:00Z'};
+    const plan=planRefinedInvoicePages(orders,opts);
+    expect(plan.length).toBeGreaterThan(1);
+    expect(plan.flatMap(p=>p.orderIds)).toEqual(orders.map(o=>o.id));
+    expect(plan.reduce((sum,p)=>sum+p.totalCents,0)).toBe(24*31725);
+    const pages=plan.map((p,i)=>({...p,invoiceNo:'RW'+String(54321+i)}));
+    const batch={...opts,invoiceNo:pages[0].invoiceNo,orders,pages};
+    const pdf=await generatePersistedConsolidatedInvoicePdf(batch);
+    const decoded=await inspectPdf(pdf);
+    expect(decoded.pageCount).toBe(pages.length);
+    decoded.pageTexts.forEach((values,i)=>{
+      const text=values.join(' ');
+      for(const value of [pages[i].invoiceNo,'MAKLUMAT','HARGA / PAX (RM)','JUMLAH KESELURUHAN','RINGGIT MALAYSIA :','16010000-405710'])
+        expect(text).toContain(value);
+      expect(text).not.toContain('DAY TOTAL');
+      expect(text).toContain('Makan malam: RM 12.00 / pax');
+      expect(text).toContain('Caj Penghantaran: RM 5.00');
+      expect(text).toContain('Caj Perkhidmatan: RM 2.25');
+    });
+    if(process.env.CI){
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/consolidated-refined-bm.pdf',pdf);
+    }
+  },15000);
+  it('rejects oversized rows before any invoice number is allocated',()=>{
+    expect(()=>planRefinedInvoicePages([{id:'long',quantity:1,totalAmount:1,notes:'Too long '.repeat(2000)}],
+      {layoutVersion:4,recipient:{company:'Example',address:'Address',email:'a@example.invalid'},issuedAt:'2026-11-28',lang:'en',includeNotes:true})).toThrow(/exceed one page/);
+  });
 });

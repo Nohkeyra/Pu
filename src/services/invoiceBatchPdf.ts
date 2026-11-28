@@ -1,4 +1,5 @@
 import { createInvoiceTableLayout, drawInvoiceTable } from './invoiceBatchTable';
+import { planRefinedBatch } from './refinedInvoiceBatch';
 import { drawInvoiceSignature } from './invoiceSignature';
 import { INVOICE_BUSINESS } from '../constants/invoiceBusiness';
 import { jsPDF } from 'jspdf';
@@ -17,7 +18,7 @@ import {
 } from './invoicePdfBrand';
 import { numberToWords } from './numberToWordsBM';
 export interface BatchPdfOptions {
-  layoutVersion?: 2 | 3;
+  layoutVersion?: 2 | 3 | 4;
   includeNotes: boolean;
   lang: 'bm' | 'en';
   recipient: InvoiceRecipient;
@@ -93,8 +94,9 @@ export function planInvoicePages(
   orders: InvoiceRecord[],
   options: BatchPdfOptions
 ): Array<Omit<InvoicePage, 'invoiceNo'>> {
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }),
-    data = layout(doc, orders, options),
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  if (options.layoutVersion === 4) return planRefinedBatch(doc, orders, options);
+  const data = layout(doc, orders, options),
     pages: Array<Omit<InvoicePage, 'invoiceNo'>> = [];
   const bottom = options.layoutVersion === 2 ? rowsBottom : 135;
   let page = { orderIds: [] as string[], totalCents: 0 },
@@ -123,6 +125,7 @@ export function renderInvoiceBatch(orders: InvoiceRecord[], options: BatchPdfOpt
     JSON.stringify(orders.map((o) => o.id).sort())
   )
     throw new Error('Saved invoice selection mismatch.');
+  if (options.layoutVersion === 4) throw new Error('Refined invoices require the server master artwork renderer.');
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
   doc.setCreationDate(new Date(options.issuedAt));
   doc.setProperties({ title: 'Invoice - Restoran Wawasan', author: 'Restoran Wawasan' });
