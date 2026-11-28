@@ -264,8 +264,7 @@ async function renderRefinedConsolidatedInvoice(batch: InvoiceBatch): Promise<Bu
 
 /** The only consolidated renderer; obsolete test batches are never silently reissued. */
 export async function generatePersistedConsolidatedInvoicePdf(
-  batch: Record<string, any>,
-  _legacyDefaults?: { includeNotes: boolean; lang: 'bm' | 'en' }
+  batch: Record<string, any>
 ): Promise<Buffer> {
   if (batch.layoutVersion !== 4)
     throw new Error('Obsolete pre-launch test batch. Clear test records before issuing new invoices.');

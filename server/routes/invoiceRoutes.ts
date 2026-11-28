@@ -373,15 +373,12 @@ router.post('/admin/commit-consolidated-invoice', verifyAdminToken, async (req, 
 
 router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res) => {
   try {
-    const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
+    const { orderIds, invoiceNo } = req.body || {};
     // Also protects older clients that call the PDF endpoint directly.
     const saved = orderIds
       ? await commitConsolidatedInvoice(orderIds, invoiceNo, actorId(req), req.body || {})
       : await readInvoiceBatch(invoiceNo);
-    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
-      includeNotes: Boolean(includeNotes),
-      lang: lang === 'en' ? 'en' : 'bm',
-    });
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved);
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Invoice_${saved.invoiceNo}.pdf"`);
@@ -400,7 +397,7 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res
 
 router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
   try {
-    const { orderIds, includeNotes, lang } = req.body || {};
+    const { orderIds } = req.body || {};
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
     }
@@ -451,10 +448,7 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
     );
     if (allSnaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
       return res.status(403).json({ error: 'Forbidden invoice selection.' });
-    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
-      includeNotes: Boolean(includeNotes),
-      lang: lang === 'en' ? 'en' : 'bm',
-    });
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved);
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
