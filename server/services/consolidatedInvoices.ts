@@ -1,11 +1,11 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
-  allocateInvoiceNumbers,
-  generateSequentialInvoiceNo,
+  allocateOfficialInvoiceNumbers,
   getFirestore,
 } from '../firebaseAdmin.js';
 import {
-  invoiceSnapshot,
+  CURRENT_INVOICE_LAYOUT,
+  prepareInvoiceOrders,
   validateInvoiceGroup,
   type InvoiceBatch,
 } from '../../src/lib/invoiceBatch.js';
@@ -27,13 +27,17 @@ export function consolidatedOrderIds(value: unknown): string[] {
     throw new ConsolidatedInvoiceError('Select 1-100 valid order IDs.');
   return [...new Set(value as string[])].sort();
 }
+const OFFICIAL_INVOICE_NO = /^RW\d{5}$/;
+const SAVED_INVOICE_NO = /^(?:RW\d{5}|RW [A-Z0-9_-]{1,90})$/;
 export async function reserveConsolidatedNumber(actor: string): Promise<string> {
-  const invoiceNo = await generateSequentialInvoiceNo(false);
-  await getFirestore()
-    .collection('consolidated_invoices')
-    .doc(invoiceNo)
-    .set({ invoiceNo, state: 'reserved', actor, createdAt: FieldValue.serverTimestamp() });
-  return invoiceNo;
+  const db = getFirestore();
+  return db.runTransaction(async tx => {
+    const [invoiceNo] = await allocateOfficialInvoiceNumbers(tx, 1, [], 'invoice-batch');
+    tx.set(db.collection('consolidated_invoices').doc(invoiceNo), {
+      invoiceNo, state: 'reserved', actor, createdAt: FieldValue.serverTimestamp(),
+    });
+    return invoiceNo;
+  });
 }
 export interface BatchSettings {
   includeNotes?: boolean;
@@ -41,13 +45,15 @@ export interface BatchSettings {
   billingAddress?: string;
 }
 export async function readInvoiceBatch(invoiceNo: string): Promise<Record<string, any>> {
-  if (!/^RW [A-Z0-9_-]{1,90}$/.test(invoiceNo))
+  if (!SAVED_INVOICE_NO.test(invoiceNo))
     throw new ConsolidatedInvoiceError('Invalid invoice number.');
   const data = (
     await getFirestore().collection('consolidated_invoices').doc(invoiceNo).get()
   ).data();
   if (data?.state !== 'committed')
     throw new ConsolidatedInvoiceError('Saved invoice not found.', 404);
+  if (data.layoutVersion !== CURRENT_INVOICE_LAYOUT)
+    throw new ConsolidatedInvoiceError('Obsolete pre-launch test batch. Clear test records before issuing new invoices.', 409);
   return data;
 }
 /** Snapshot and serials commit together. A retry returns the original pages unchanged. */
@@ -59,7 +65,7 @@ export async function commitConsolidatedInvoice(
 ) {
   const orderIds = consolidatedOrderIds(rawIds),
     invoiceNo = typeof rawNumber === 'string' ? rawNumber.trim().toUpperCase() : '';
-  if (!/^RW [A-Z0-9_-]{1,90}$/.test(invoiceNo))
+  if (!SAVED_INVOICE_NO.test(invoiceNo))
     throw new ConsolidatedInvoiceError('A valid RW invoice number is required.');
   const db = getFirestore(),
     ref = db.collection('consolidated_invoices').doc(invoiceNo),
@@ -68,22 +74,26 @@ export async function commitConsolidatedInvoice(
     const [existing, allocated] = await Promise.all([tx.get(ref), tx.get(registry)]);
     const previous = existing.data();
     if (previous?.state === 'committed') {
+      if (previous.layoutVersion !== CURRENT_INVOICE_LAYOUT)
+        throw new ConsolidatedInvoiceError('Obsolete pre-launch test batch. Clear test records before issuing new invoices.', 409);
       if (JSON.stringify(previous.orderIds) !== JSON.stringify(orderIds))
         throw new ConsolidatedInvoiceError('This invoice belongs to a different selection.', 409);
       return previous as InvoiceBatch & { orderIds: string[] };
     }
-    if (allocated.exists && !previous)
-      throw new ConsolidatedInvoiceError('This invoice number is already allocated.', 409);
-    if (previous && previous.actor !== actor)
+    // Only a current server-issued reservation can issue a new official invoice.
+    if (!OFFICIAL_INVOICE_NO.test(invoiceNo))
+      throw new ConsolidatedInvoiceError('Reserve a new RWxxxxx invoice number before confirming.', 409);
+    if (previous?.state !== 'reserved' || allocated.data()?.purpose !== 'invoice-batch')
+      throw new ConsolidatedInvoiceError('Reserve a valid consolidated invoice number before confirming.', 409);
+    if (previous.actor !== actor)
       throw new ConsolidatedInvoiceError('This number is reserved by another account.', 409);
     const refs = orderIds.map((id) => db.collection('orders').doc(id)),
       snaps = await Promise.all(refs.map((orderRef) => tx.get(orderRef)));
     if (snaps.some((snap) => !snap.exists || snap.data()?.deletedByAdmin))
       throw new ConsolidatedInvoiceError('One or more selected orders are unavailable.', 409);
-    for (const field of ['invoiceNo', 'officialInvoiceNo', 'quoteNo'])
-      for (const number of [invoiceNo, invoiceNo.replace(/^RW /, 'QT ')])
-        if (!(await tx.get(db.collection('orders').where(field, '==', number).limit(1))).empty)
-          throw new ConsolidatedInvoiceError('This number belongs to an individual invoice.', 409);
+    for (const field of ['invoiceNo', 'officialInvoiceNo', 'consolidatedInvoiceNo', 'invoiceBatchNo'])
+      if (!(await tx.get(db.collection('orders').where(field, '==', invoiceNo).limit(1))).empty)
+        throw new ConsolidatedInvoiceError('This invoice number belongs to an existing invoice.', 409);
     const rawOrders = snaps.map((snap) => ({ ...snap.data(), id: snap.id }) as Record<string, any>);
     if (rawOrders.some((order) => order.invoiceBatchNo || order.consolidatedInvoiceNo))
       throw new ConsolidatedInvoiceError(
@@ -105,9 +115,7 @@ export async function commitConsolidatedInvoice(
     let plan: ReturnType<typeof planInvoicePages>;
     try {
       const recipient = validateInvoiceGroup(rawOrders, settings.billingAddress);
-      const orders = rawOrders
-        .map(invoiceSnapshot)
-        .sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.id!.localeCompare(b.id!));
+      const orders = prepareInvoiceOrders(rawOrders);
       batch = {
         invoiceNo,
         orders,
@@ -115,7 +123,7 @@ export async function commitConsolidatedInvoice(
         includeNotes: settings.includeNotes === true,
         lang: settings.lang === 'en' ? 'en' : 'bm',
         issuedAt: new Date().toISOString(),
-        layoutVersion: 3,
+        layoutVersion: CURRENT_INVOICE_LAYOUT,
       };
       plan = planInvoicePages(orders, batch);
     } catch (error) {
@@ -126,7 +134,7 @@ export async function commitConsolidatedInvoice(
     // All remaining reads happen in this allocator, before any transaction writes.
     const extra =
       plan.length > 1
-        ? await allocateInvoiceNumbers(tx, plan.length - 1, false, undefined, [invoiceNo])
+        ? await allocateOfficialInvoiceNumbers(tx, plan.length - 1, [invoiceNo], 'invoice-batch')
         : [];
     const numbers = [invoiceNo, ...extra],
       pages = plan.map((page, i) => ({ ...page, invoiceNo: numbers[i] }));

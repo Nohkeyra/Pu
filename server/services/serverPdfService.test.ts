@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import fs from 'node:fs';
 import { PDFArray, PDFDocument, PDFHexString, PDFRawStream, PDFString, decodePDFRawStream } from 'pdf-lib';
 import { planInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
 import {
   getBankDetails,
-  generateSavedInvoicePdf,
   generatePersistedConsolidatedInvoicePdf,
   generateServerInvoicePdf,
-  generateServerConsolidatedInvoicePdf,
 } from './serverPdfService';
 
 describe('serverPdfService - Integrity & Validation', () => {
@@ -43,40 +42,13 @@ describe('serverPdfService - Integrity & Validation', () => {
     expect(pdfBuffer.subarray(0, 5).toString()).toBe('%PDF-');
   });
 
-  it('generates a valid Buffer for a consolidated invoice with matching client', async () => {
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
-      [sampleOrder1, sampleOrder2],
-      'RW 99999',
-      false,
-      'bm'
-    );
-    expect(pdfBuffer).toBeInstanceOf(Buffer);
-    expect(pdfBuffer.length).toBeGreaterThan(1000);
-    expect(pdfBuffer.subarray(0, 5).toString()).toBe('%PDF-');
-  });
-
-  it('generates a valid Buffer for a multi-client server consolidated invoice', async () => {
-    const differentClientOrder = {
-      ...sampleOrder2,
-      id: 'server-ord-3',
-      to: 'Jabatan Perkhidmatan Awam',
-    };
-
-    const pdfBuffer = await generateServerConsolidatedInvoicePdf(
-      [sampleOrder1, differentClientOrder],
-      'RW 99998',
-      false,
-      'bm'
-    );
-    expect(pdfBuffer).toBeInstanceOf(Buffer);
-    expect(pdfBuffer.length).toBeGreaterThan(1000);
-    expect(pdfBuffer.subarray(0, 5).toString()).toBe('%PDF-');
-  });
-
-  it('rejects empty orders array for consolidated invoice', async () => {
-    await expect(generateServerConsolidatedInvoicePdf([], 'RW 99997', false, 'en')).rejects.toThrow(
-      /No orders selected/
-    );
+  it('generates a valid Buffer from the approved consolidated renderer', async () => {
+    const orders = [{...sampleOrder1,totalAmount:1080},{...sampleOrder2,totalAmount:720}];
+    const options = {recipient:{company:sampleOrder1.to,address:'Example address',email:'example@example.invalid'},includeNotes:false,lang:'bm' as const,issuedAt:'2026-11-28T00:00:00Z',layoutVersion:4 as const};
+    const pages=planInvoicePages(orders,options).map((p,i)=>({...p,invoiceNo:'RW'+String(54000+i)}));
+    const pdf=await generatePersistedConsolidatedInvoicePdf({...options,orders,pages,invoiceNo:pages[0].invoiceNo});
+    expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
+    expect((await inspectPdf(pdf)).pageCount).toBe(pages.length);
   });
 });
 
@@ -168,26 +140,27 @@ it('prints the account number, full address and standard notes in both invoice f
     };
   const pages = planInvoicePages([order], options).map((page) => ({
     ...page,
-    invoiceNo: 'RW BANK-TEST',
+    invoiceNo: 'RW54001',
   }));
   const batch = await readablePdfStreams(
-    await generateSavedInvoicePdf({
-      invoiceNo: 'RW BANK-TEST',
+    await generatePersistedConsolidatedInvoicePdf({
+      invoiceNo: 'RW54001',
       orders: [order],
       pages,
       ...options,
-      layoutVersion: 2,
+      layoutVersion: 4,
     })
   );
   for (const text of [single, batch]) {
     expect(text).toContain('16010000-405710');
     expect(text).toContain('BANK MUAMALAT');
     expect(text).toContain('RESTORAN WAWASAN');
-    expect(text).toContain('Jalan P2a');
     expect(text).not.toContain('KLCC');
     expect(text).not.toContain('RG-420614');
   }
-  expect(single).toContain('This is a computer-generated invoice. No company stamp is required.');
+  // Individual footer is embedded from approved artwork.
+  expect(single).toContain('PERIHAL');
+  expect(batch).toContain('Jalan P2a');
   expect(single).toContain('RW00012');
   expect(batch).toContain('biodegradable');
   expect(batch).toContain('tiada cop syarikat');
@@ -218,8 +191,8 @@ it('renders bilingual Master PDF invoices, quotations, completed orders, and PET
   expect(invoiceText).toContain('RW00001');
   expect(invoiceText).toContain('0001');
   expect(invoiceText).not.toContain('9999');
-  expect(invoiceText).toContain('Page 1 / 1');
-  expect(invoiceText).toContain('This is a computer-generated invoice. No company stamp is required.');
+  expect(invoiceText).toContain('Page 1 /');
+  expect((await inspectPdf(invoiceBytes)).pageCount).toBeGreaterThanOrEqual(2);
 
   const quoteBytes = await generateServerInvoicePdf(
     { ...petronasOrder, status: 'pending', lang: 'bm' },
@@ -239,7 +212,7 @@ it('renders bilingual Master PDF invoices, quotations, completed orders, and PET
       expect(content).toContain(lang === 'en' ? 'INVOICE' : 'INVOIS');
       expect(content).toContain('RW00001');
       expect(content).toContain('840.00');
-      expect(content).toContain('PAYMENT DETAILS');
+      expect(content).toContain(lang === 'en' ? 'BANK ACCOUNT DETAILS' : 'MAKLUMAT AKAUN BANK');
       expect(content).not.toMatch(/RECEIPT|RESIT/i);
     }
   }
@@ -281,9 +254,11 @@ it('paginates long multi-row menus cleanly and keeps signature only on the final
   expect(decoded.pageCount).toBeGreaterThanOrEqual(2);
   expect(decoded.text).toContain('Halaman 1 /');
   expect(decoded.text).toContain('Halaman 2 /');
-  // Signature XObject must be drawn exactly once, only on the final page.
-  expect(decoded.streams.map((stream) => (stream.match(/\/fzImg0\s+Do\b/g) || []).length))
-    .toEqual(decoded.streams.map((_, index) => index === decoded.pageCount - 1 ? 1 : 0));
+  // Two artwork regions per page; one financial page additionally draws the signature.
+  const embeds = decoded.streams.map(stream => (stream.match(/\/[^\s]+\s+Do\b/g)||[]).length);
+  expect(embeds.filter(count=>count===3)).toHaveLength(1);
+  expect(embeds.filter(count=>count===2)).toHaveLength(decoded.pageCount-1);
+  expect(decoded.pageTexts[1].join(' ')).toContain('Encik Faris');
 });
 
 it('itemises both charges separately in the official single invoice', async () => {
@@ -309,56 +284,92 @@ it('itemises both charges separately in the official single invoice', async () =
 });
 
 
-describe('persisted consolidated PDF dispatch', () => {
-  const order = {
-    id: 'dispatch-fixture',
-    to: 'Example Company',
-    name: 'Example',
-    billingAddress: 'Example address',
-    email: 'example@example.invalid',
-    date: '2026-11-28',
-    quantity: 10,
-    meals: ['lunch'],
-    prices: { lunch: 9 },
-    menu: 'Example menu',
-    notes: 'Example note',
-    totalAmount: 90,
-  };
-  const options = {
-    recipient: { company: order.to, address: order.billingAddress, email: order.email },
-    includeNotes: true,
-    lang: 'bm' as const,
-    issuedAt: '2026-11-28T00:00:00Z',
-    layoutVersion: 3 as const,
-  };
+describe('obsolete pre-launch batches', () => {
+  it.each([undefined,2,3])('rejects obsolete layout %s instead of generating an old invoice', async layoutVersion => {
+    await expect(generatePersistedConsolidatedInvoicePdf({layoutVersion})).rejects.toThrow(/Obsolete pre-launch test batch/);
+  });
+});
 
-  // This integration test renders and decodes two complete PDFs with production artwork.
-  // Allow bounded runner headroom under coverage without changing any assertions.
-  it('keeps versioned batches on their saved page plan regardless of caller defaults', async () => {
-    const batch = {
-      ...options,
-      invoiceNo: 'RW 2026-00001',
-      orders: [order],
-      pages: planInvoicePages([order], options).map(page => ({
-        ...page, invoiceNo: 'RW 2026-00001',
-      })),
-    };
-    const direct = await inspectPdf(await generateSavedInvoicePdf(batch));
-    const dispatched = await inspectPdf(await generatePersistedConsolidatedInvoicePdf(batch, {
-      includeNotes: false, lang: 'en',
-    }));
-    expect(dispatched.pageTexts).toEqual(direct.pageTexts);
-    expect(dispatched.pageCount).toBe(direct.pageCount);
-  }, 15_000);
+describe('approved individual invoice', () => {
+  const fixture = {
+    invoiceNo: 'RW54321', status: 'billed',
+    billedAt: '2026-11-28T04:00:00Z', eventDate: '2026-12-06',
+    to: 'Example Company', billingAddress: 'Example billing address',
+    name: 'PIC EXAMPLE UNIQUE', contact: '0123456789', department: 'DEPARTMENT UNIQUE',
+    attn: 'ATTN UNIQUE', email: 'pic-fixture@example.invalid', notes: 'NOTES UNIQUE',
+    location: 'Example meeting room', quantity: 20, meals: ['lunch'],
+    prices: {lunch:9.25}, menu: 'Soto Nasi Impit dan Bergedil',
+    deliveryCharge: 5, serviceChargeAmount: 2.25, totalAmount: 192.25,
+  };
+  it('keeps the financial page clean and puts all PIC details on page two', async () => {
+    const bytes = await generateServerInvoicePdf(fixture,true);
+    const decoded = await inspectPdf(bytes);
+    expect(decoded.pageCount).toBe(2);
+    const first = decoded.pageTexts[0].join(' ');
+    const second = decoded.pageTexts[1].join(' ');
+    for (const value of ['RW54321','PERIHAL','HARGA / PAX (RM)','JUMLAH (RM)','192.25','16010000-405710'])
+      expect(first).toContain(value);
+    for (const value of ['PIC EXAMPLE UNIQUE','DEPARTMENT UNIQUE','ATTN UNIQUE','pic-fixture@example.invalid','NOTES UNIQUE','0123456789']) {
+      expect(first).not.toContain(value);
+      expect(second).toContain(value);
+    }
+    expect(second).not.toContain('JUMLAH KESELURUHAN');
+    if(process.env.CI) {
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/individual-refined-bm.pdf',bytes);
+    }
+  },15000);
+  it('keeps page two for PIC when a long menu needs continuation; never repeats the amount',async()=>{
+    const order={...fixture,lang:'en',menu:Array.from({length:160},(_,i)=>'Menu item '+i+' with traditional accompaniment').join(', ')};
+    const bytes=await generateServerInvoicePdf(order,true);
+    const decoded=await inspectPdf(bytes);
+    expect(decoded.pageCount).toBeGreaterThan(2);
+    expect(decoded.pageTexts[1].join(' ')).toContain('PIC EXAMPLE UNIQUE');
+    // PDF text extraction preserves physical line breaks, so "Menu item"
+    // can span two lines or pages. Check every numbered item in order.
+    const items = Array.from(decoded.text.matchAll(/\bitem\s+(\d+)\b/g), match => Number(match[1]));
+    expect(items).toEqual(Array.from({length:160},(_,i)=>i));
+    expect(decoded.pageTexts.flat().filter(v=>v==='185.00')).toHaveLength(1);
+    expect(decoded.pageTexts.flat().filter(v=>v==='RM 192.25')).toHaveLength(1);
+    if(process.env.CI) {
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/individual-refined-long-en.pdf',bytes);
+    }
+  },15000);
+});
 
-  it('uses persisted settings for an older unversioned document', async () => {
-    const legacy = { orders: [order], invoiceNo: 'RW LEGACY', includeNotes: true, lang: 'bm' };
-    const direct = await inspectPdf(await generateServerConsolidatedInvoicePdf(
-      legacy.orders, legacy.invoiceNo, true, 'bm',
-    ));
-    const dispatched = await inspectPdf(await generatePersistedConsolidatedInvoicePdf(legacy, {
-      includeNotes: false, lang: 'en',
-    }));
-    expect(dispatched.pageTexts).toEqual(direct.pageTexts);
+describe('approved consolidated invoice',()=>{
+  it('renders numbered pages with approved columns, charge details and additional meals',async()=>{
+    const orders=Array.from({length:24},(_,i)=>({id:'refined-'+i,to:'Example Agency',billingAddress:'Example address',email:'example@example.invalid',
+      date:'2026-12-06',quantity:10,menu:'Menu ref '+i,notes:'Note '+i,meals:['breakfast','lunch','hi_tea','dinner'],
+      prices:{breakfast:5,lunch:10,hi_tea:4,dinner:12},deliveryCharge:5,serviceChargeAmount:2.25,totalAmount:317.25}));
+    const opts={layoutVersion:4 as const,recipient:{company:'Example Agency',address:'Example address',email:'example@example.invalid'},
+      includeNotes:true,lang:'bm' as const,issuedAt:'2026-11-28T04:00:00Z'};
+    const plan=planInvoicePages(orders,opts);
+    expect(plan.length).toBeGreaterThan(1);
+    expect(plan.flatMap(p=>p.orderIds)).toEqual(orders.map(o=>o.id));
+    expect(plan.reduce((sum,p)=>sum+p.totalCents,0)).toBe(24*31725);
+    const pages=plan.map((p,i)=>({...p,invoiceNo:'RW'+String(54321+i)}));
+    const batch={...opts,invoiceNo:pages[0].invoiceNo,orders,pages};
+    const pdf=await generatePersistedConsolidatedInvoicePdf(batch);
+    const decoded=await inspectPdf(pdf);
+    expect(decoded.pageCount).toBe(pages.length);
+    decoded.pageTexts.forEach((values,i)=>{
+      const text=values.join(' ');
+      for(const value of [pages[i].invoiceNo,'MAKLUMAT','HARGA / PAX (RM)','JUMLAH KESELURUHAN','RINGGIT MALAYSIA :','16010000-405710'])
+        expect(text).toContain(value);
+      expect(text).not.toContain('DAY TOTAL');
+      expect(text).toContain('Makan malam: RM 12.00 / pax');
+      expect(text).toContain('Caj Penghantaran: RM 5.00');
+      expect(text).toContain('Caj Perkhidmatan: RM 2.25');
+    });
+    if(process.env.CI){
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/consolidated-refined-bm.pdf',pdf);
+    }
+  },15000);
+  it('rejects oversized rows before committing a page plan',()=>{
+    expect(()=>planInvoicePages([{id:'long',quantity:1,totalAmount:1,notes:'Too long '.repeat(2000)}],
+      {layoutVersion:4,recipient:{company:'Example',address:'Address',email:'a@example.invalid'},issuedAt:'2026-11-28',lang:'en',includeNotes:true})).toThrow(/exceed one page/);
   });
 });

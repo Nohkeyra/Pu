@@ -27,7 +27,11 @@ export function useCustomerOrders(userId: string | undefined) {
       orders: previous?.userId === userId ? previous.orders : emptyOrders,
       status: 'loading',
     }));
-    const customerOrders = query(collection(db, 'orders'), where('userId', '==', userId));
+    const ref = collection(db, 'orders');
+    const owner = where('userId', '==', userId);
+    const customerOrders = import.meta.env.VITE_FIRESTORE_ORDER_VISIBILITY_READY === 'true'
+      ? query(ref, owner, where('deletedByUser', '==', false))
+      : query(ref, owner);
     const unsubscribe = onSnapshot(customerOrders, (result) => {
       if (!active) return;
       const orders: Order[] = [];

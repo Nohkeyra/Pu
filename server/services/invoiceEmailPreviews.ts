@@ -176,7 +176,7 @@ export async function createInvoiceEmailPreview(
       );
     }
     const batch = await readInvoiceBatch(batchNo);
-    pdf = await generatePersistedConsolidatedInvoicePdf(batch, { includeNotes: false, lang });
+    pdf = await generatePersistedConsolidatedInvoicePdf(batch);
     company = batch.recipient?.company || batch.orders[0]?.to || '';
     invoiceNumbers = batch.pages?.map((page: { invoiceNo: string }) => page.invoiceNo) || [
       batch.invoiceNo,

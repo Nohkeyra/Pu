@@ -1,5 +1,6 @@
 import { calculateOrderCharges, orderFoodSubtotal, validCharge } from '../../src/lib/orderCharges.js';
 import { Router } from 'express';
+import { CURRENT_INVOICE_LAYOUT } from '../../src/lib/invoiceBatch.js';
 import { getFirestore, generateSequentialIndividualInvoiceNo, verifyFirebaseIdToken, sendNotificationToTopic } from '../firebaseAdmin.js';
 import { verifyAdminJwtWithRevocation } from '../adminAuth.js';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -552,6 +553,7 @@ router.post('/widget/set-pricing', widgetPricingLimiter, async (req, res) => {
           ? { quoteNo: freshOrder.quoteNo || String(freshOrder.invoiceNo) }
           : {}),
         officialInvoiceNo: invoiceNo,
+        ...(!hasExistingInvoice ? { invoiceLayoutVersion: CURRENT_INVOICE_LAYOUT } : {}),
         billedAt: freshOrder.billedAt || invoiceGeneratedAt,
         invoiceGeneratedAt,
         invoiceDeliveryStatus: deliveryStatus,

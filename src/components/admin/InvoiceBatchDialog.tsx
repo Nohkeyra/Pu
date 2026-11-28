@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Order } from '@/types';
-import { invoiceRecipient, validateInvoiceGroup, type InvoicePage } from '@/lib/invoiceBatch';
+import { CURRENT_INVOICE_LAYOUT, invoiceRecipient, prepareInvoiceOrders, validateInvoiceGroup, type InvoicePage } from '@/lib/invoiceBatch';
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,8 @@ export function InvoiceBatchDialog({
       const recipient = validateInvoiceGroup(orders, address),
         { planInvoicePages } = await import('@/services/invoiceBatchPdf');
       setPages(
-        planInvoicePages(orders, {
+        planInvoicePages(prepareInvoiceOrders(orders), {
+          layoutVersion: CURRENT_INVOICE_LAYOUT,
           recipient,
           includeNotes,
           lang: language,

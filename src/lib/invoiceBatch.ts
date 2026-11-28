@@ -1,4 +1,6 @@
 import { SAVED_COMPANIES } from '../constants/companies';
+/** Persisted layout for newly issued official invoices, never inferred from serial or date. */
+export const CURRENT_INVOICE_LAYOUT = 4 as const;
 export interface InvoiceRecord {
   id?: string;
   to?: string;
@@ -11,6 +13,7 @@ export interface InvoiceRecord {
   dateTime?: string;
   quantity?: number;
   guests?: number;
+  pax?: number;
   menu?: string;
   notes?: string;
   meals?: string[];
@@ -38,7 +41,7 @@ export interface InvoiceBatch {
   includeNotes: boolean;
   lang: 'bm' | 'en';
   issuedAt: string;
-  layoutVersion: 2 | 3;
+  layoutVersion: 4;
 }
 export const invoiceText = (v: unknown): string =>
   typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '';
@@ -108,7 +111,7 @@ export function invoiceSnapshot(order: InvoiceRecord): InvoiceRecord {
         ? order.date.toISOString()
         : invoiceText(order.eventDate || order.date || order.dateTime)
     ).slice(0, 10),
-    quantity: Number(order.quantity ?? order.guests) || 0,
+    quantity: Number(order.quantity ?? order.guests ?? order.pax) || 0,
     menu: invoiceText(order.menu) || 'Set Box',
     notes: invoiceText(order.notes),
     meals: Array.isArray(order.meals) ? order.meals.filter((v) => typeof v === 'string') : [],
@@ -122,4 +125,9 @@ export function invoiceSnapshot(order: InvoiceRecord): InvoiceRecord {
     ...(order.serviceChargeAmount !== undefined ? { serviceChargeAmount: order.serviceChargeAmount } : {}),
     totalAmount: invoiceAmountCents(order) / 100,
   };
+}
+
+/** Use identical normalization and stable ordering in review and server issuance. */
+export function prepareInvoiceOrders(orders: InvoiceRecord[]): InvoiceRecord[] {
+  return orders.map(invoiceSnapshot).sort((a,b) => String(a.date).localeCompare(String(b.date)) || a.id!.localeCompare(b.id!));
 }

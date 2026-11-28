@@ -49,6 +49,13 @@ jobs:
           name: coverage
           path: coverage/
           retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: invoice-visual-samples
+          path: invoice-visual-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
   build:
     name: Build

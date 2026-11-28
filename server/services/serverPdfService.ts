@@ -26,11 +26,8 @@ import {
   rgb,
   type PDFFont,
 } from 'pdf-lib';
-import {
-  drawInvoiceCalligraphy,
-  INVOICE_CONTACT,
-} from '../../src/services/invoicePdfBrand.js';
-import { renderInvoiceBatch } from '../../src/services/invoiceBatchPdf.js';
+import { INVOICE_CONTACT } from '../../src/services/invoicePdfBrand.js';
+import { drawRefinedBatch } from '../../src/services/refinedInvoiceBatch.js';
 import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import { getVerifiedOrderCompanyCode } from '../../src/lib/petronasAutofill.js';
 
@@ -45,71 +42,6 @@ export function getBankDetails() {
     bankAccountName: setting('BANK_ACCOUNT_NAME', INVOICE_BUSINESS.bank.bankAccountName),
     bankAccountNumber: setting('BANK_ACCOUNT_NUMBER', INVOICE_BUSINESS.bank.bankAccountNumber),
   };
-}
-
-// ─── Image loading ────────────────────────────────────────────────────────────
-// After `npm run build` (vite build, copyPublicDir: true), public/ contents land
-// in dist/ (not dist/public/). So `public/assets/brand/logo.png` → `dist/assets/brand/logo.png`.
-function loadImageBase64(relativePaths: string[]): string | null {
-  const cwd = process.cwd();
-  const moduleDir = typeof __dirname === 'string' ? __dirname : cwd;
-  // Try dist/ first (production), then public/ (dev/local), then fall through.
-  const bases = [
-    path.join(cwd, 'dist'),
-    path.join(cwd, 'public'),
-    cwd,
-    path.join(moduleDir, '..', 'public'),
-    path.join(moduleDir, '..', 'dist'),
-    path.join(moduleDir, 'public'),
-    path.join(moduleDir, 'dist'),
-    moduleDir,
-  ];
-  for (const relPath of relativePaths) {
-    for (const base of bases) {
-      const full = path.join(base, relPath);
-      try {
-        if (fs.existsSync(full)) {
-          return fs.readFileSync(full).toString('base64');
-        }
-      } catch {
-        /* try next */
-      }
-    }
-  }
-  return null;
-}
-
-// Cache loaded images in module scope (persists for lifetime of the Node process,
-// which is what we want — no need to re-read from disk on every invoice).
-let cachedLogoBase64: string | null = null;
-let cachedJawiBase64: string | null = null;
-let imagesLoaded = false;
-
-function ensureImagesLoaded() {
-  if (!cachedLogoBase64) {
-    cachedLogoBase64 = loadImageBase64([
-      'assets/brand/apk_logo_clean.png',
-      'assets/brand/wawasan_logo.png',
-      'assets/brand/wawasan_logo_fallback.png',
-    ]);
-  }
-  if (!cachedJawiBase64) {
-    cachedJawiBase64 = loadImageBase64([
-      'assets/heritage/Jawi.jpg',
-      'assets/heritage/batik_pattern.jpg',
-      'assets/heritage/batik_pattern_hd.jpg',
-      'assets/heritage/batik_vector_pattern.jpg',
-    ]);
-  }
-  if (!imagesLoaded) {
-    if (!cachedLogoBase64)
-      console.warn('[serverPdfService] Logo image not found — PDF will render without logo.');
-    if (!cachedJawiBase64)
-      console.warn(
-        '[serverPdfService] Jawi image not found — PDF will render with clean header background.'
-      );
-    imagesLoaded = true;
-  }
 }
 
 // ─── Amount-in-words (inlined from src/services/numberToWordsBM.ts) ───────────
@@ -285,40 +217,58 @@ const mealLabels: Record<string, string> = {
 };
 
 // ─── PDF drawing helpers ──────────────────────────────────────────────────────
-function drawHeaderBackground(doc: jsPDF, headerHeight = 36, pageWidth = 210) {
-  drawInvoiceCalligraphy(doc, cachedJawiBase64, headerHeight, pageWidth);
-}
-export async function generateSavedInvoicePdf(batch: InvoiceBatch): Promise<Buffer> {
-  ensureImagesLoaded();
-  return Buffer.from(
-    renderInvoiceBatch(batch.orders, {
-      ...batch,
-      logo: cachedLogoBase64,
-      calligraphy: cachedJawiBase64,
-      bank: getBankDetails(),
-    }).output('arraybuffer')
-  );
+async function renderRefinedConsolidatedInvoice(batch: InvoiceBatch): Promise<Buffer> {
+  if(!batch.pages.length || !batch.orders.length || new Set(batch.pages.map(p=>p.invoiceNo)).size!==batch.pages.length)
+    throw new Error('Saved invoice page numbers are required and must be distinct.');
+  const bytes=loadAssetBuffer(['assets/invoices/Wawasan_Master_Konsolidasi_Final_Border.pdf']);
+  if(!bytes)throw new Error('Approved consolidated invoice master is missing.');
+  const master=await PDFDocument.load(bytes),source=master.getPage(0),{width:W,height:H}=source.getSize();
+  if(Math.abs(W-841.89)>.1||Math.abs(H-595.28)>.1)throw new Error('Unexpected consolidated master size.');
+  const contents=source.node.Contents(),refs=contents instanceof PDFArray?contents.asArray():[];
+  const first=master.context.lookup(refs[0]);
+  if(!(first instanceof PDFRawStream))throw new Error('Unexpected consolidated header stream.');
+  let header=Buffer.from(decodePDFRawStream(first).decode()).toString('latin1');
+  for(const literal of ['(INVOIS)Tj','[(No. Invois:)]TJ','[(Tarikh:)]TJ','[(SUBJECT:)]TJ']){
+    if(header.split(literal).length!==2)throw new Error('Consolidated master metadata changed: '+literal);
+    header=header.replace(literal,literal.endsWith('TJ')?'[()]TJ':'()Tj');
+  }
+  source.node.set(master.context.obj('Contents'),master.context.obj([master.context.register(master.context.flateStream(header)),...refs.slice(1)]));
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+  doc.setCreationDate(new Date(batch.issuedAt));
+  const signatureTops=drawRefinedBatch(doc,batch.orders,{...batch,bank:getBankDetails()});
+  const pdf=await PDFDocument.load(doc.output('arraybuffer'));
+  const [brand,signature]=await pdf.embedPages([source,source],[
+    {left:0,bottom:H-103,right:W,top:H},
+    {left:667,bottom:H-338,right:790,top:H-268},
+  ]);
+  const regular=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+  const bm=batch.lang==='bm',gold=rgb(.447,.314,.078),ink=rgb(.16,.14,.12);
+  const subject=getVerifiedOrderCompanyCode({to:batch.recipient.company})||'-';
+  pdf.getPages().forEach((p,i)=>{
+    p.drawPage(brand,{x:0,y:H-103});
+    const title=bm?'INVOIS':'INVOICE';
+    p.drawText(title,{x:799-bold.widthOfTextAtSize(title,23),y:H-54,font:bold,size:23,color:gold});
+    const values=[[bm?'No. Invois:':'Invoice No.:',batch.pages[i].invoiceNo],[bm?'Tarikh:':'Date:',batch.issuedAt.slice(0,10).split('-').reverse().join('/')],['SUBJECT:',subject]];
+    values.forEach(([label,value],j)=>{
+      p.drawText(label,{x:671,y:H-67-j*12,font:regular,size:8.5,color:ink});
+      const sanitized=sanitizePdfText(value);
+      let size=9;while(size>6&&bold.widthOfTextAtSize(sanitized,size)>64)size-=.25;
+      if(bold.widthOfTextAtSize(sanitized,size)>64)throw new Error('Consolidated header value is too long.');
+      p.drawText(sanitized,{x:735,y:H-67-j*12,font:bold,size,color:ink});
+    });
+    p.drawPage(signature,{x:667,y:H-signatureTops[i]*72/25.4-70});
+    addPageLink(pdf,p,110,H-81,420,52,INVOICE_CONTACT.maps);
+  });
+  return Buffer.from(await pdf.save());
 }
 
-/**
- * Shared dispatch for persisted consolidated documents.
- * Versioned batches always use their immutable page plan and saved settings.
- * Older unversioned records retain their historical renderer; when old
- * metadata is missing, preserve the caller's compatibility defaults.
- */
+/** The only consolidated renderer; obsolete test batches are never silently reissued. */
 export async function generatePersistedConsolidatedInvoicePdf(
-  batch: Record<string, any>,
-  legacyDefaults: { includeNotes: boolean; lang: 'bm' | 'en' } = { includeNotes: false, lang: 'bm' }
+  batch: Record<string, any>
 ): Promise<Buffer> {
-  if ([2, 3].includes(batch.layoutVersion)) {
-    return generateSavedInvoicePdf(batch as InvoiceBatch);
-  }
-  return generateServerConsolidatedInvoicePdf(
-    batch.orders,
-    batch.invoiceNo,
-    typeof batch.includeNotes === 'boolean' ? batch.includeNotes : legacyDefaults.includeNotes,
-    batch.lang === 'en' || batch.lang === 'bm' ? batch.lang : legacyDefaults.lang
-  );
+  if (batch.layoutVersion !== 4)
+    throw new Error('Obsolete pre-launch test batch. Clear test records before issuing new invoices.');
+  return renderRefinedConsolidatedInvoice(batch as InvoiceBatch);
 }
 
 // ─── Master PDF Template Loader & Vector Engine ──────────────────────────────
@@ -801,6 +751,223 @@ function drawFooterNotice(
   });
 }
 
+
+/** Approved individual invoice. Financial pages and PIC
+ * pages share the same document identity; page 2 is always the PIC page.
+ * The original master artwork is embedded as clipped vector regions, not
+ * substituted with a raster recreation or a fixed-row form.
+ */
+async function renderRefinedIndividualInvoice(
+  order: Record<string, any>,
+  lang: 'bm' | 'en',
+  info: {
+    docNumber: string; docDate: string; eventDateText: string; recipient: string;
+    address: string; subject: string; quantity: number; location: string;
+    rows: TableRowItem[]; total: number;
+  }
+): Promise<Buffer> {
+  const bytes = loadAssetBuffer(['assets/invoices/Wawasan_Master_Individu_Refined_Final.pdf']);
+  if (!bytes) throw new Error('Approved refined individual invoice master is missing.');
+  const master = await PDFDocument.load(bytes);
+  const source = master.getPage(0), { width: W, height: H } = source.getSize();
+  if (Math.abs(W - 595.28) > 0.1 || Math.abs(H - 841.89) > 0.1)
+    throw new Error('Unexpected refined individual master size.');
+
+  // Remove only the four static metadata text operands from the header
+  // stream, preserving the original batik, logo, Uncial title and address.
+  const contents = source.node.Contents();
+  const refs = contents instanceof PDFArray ? contents.asArray() : [];
+  const first = master.context.lookup(refs[0]);
+  if (!(first instanceof PDFRawStream)) throw new Error('Unexpected refined master header stream.');
+  let header = Buffer.from(decodePDFRawStream(first).decode()).toString('latin1');
+  for (const literal of ['(INVOIS)Tj', '(No. Invois:)Tj', '(Tarikh:)Tj', '(SUBJECT:)Tj']) {
+    if (header.split(literal).length !== 2) throw new Error('Refined master metadata changed: ' + literal);
+    header = header.replace(literal, '()Tj');
+  }
+  source.node.set(master.context.obj('Contents'), master.context.obj([
+    master.context.register(master.context.flateStream(header)), ...refs.slice(1),
+  ]));
+
+  const pdf = await PDFDocument.create();
+  const regular = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const box = (left: number, top: number, right: number, bottom: number) =>
+    ({ left, bottom: H - bottom, right, top: H - top });
+  const [brand, signature, footer] = await pdf.embedPages(
+    [source, source, source],
+    [box(0, 0, W, 112), box(400, 476, 559, 579), box(0, 768, W, 818)]
+  );
+  const gold = rgb(.65098, .486275, .117647);
+  const border = rgb(.760784, .541176, .098039);
+  const brown = rgb(.443137, .298039, .047059);
+  const cream = rgb(.980392, .976471, .964706);
+  const ink = rgb(.129412, .109804, .086275);
+  const rule = rgb(.866667, .835294, .780392);
+  const en = lang === 'en';
+  const t = (bm: string, english: string) => en ? english : bm;
+  const text = (p: PDFPage, value: string, x: number, baseline: number,
+    font = regular, size = 9, color = ink) =>
+    p.drawText(sanitizePdfText(value), { x, y: H - baseline, font, size, color });
+  const right = (p: PDFPage, value: string, x: number, y: number,
+    font = regular, size = 9, color = ink) =>
+    text(p, value, x - font.widthOfTextAtSize(sanitizePdfText(value), size), y, font, size, color);
+  const centered = (p: PDFPage, value: string, x: number, y: number, size = 9) =>
+    text(p, value, x - bold.widthOfTextAtSize(value, size) / 2, y, bold, size, C_WHITE);
+  const lines = (value: unknown, font: PDFFont, size: number, w: number) =>
+    wrapPdfText(String(value ?? '-'), font, size, w);
+  const line = (p: PDFPage, x: number, top: number, bottom: number) =>
+    p.drawLine({ start: { x, y: H - top }, end: { x, y: H - bottom }, thickness: .55, color: rule });
+  const rect = (p: PDFPage, x: number, y: number, w: number, h: number,
+    fill: ReturnType<typeof rgb>, stroke?: ReturnType<typeof rgb>) =>
+    p.drawRectangle({ x, y: H-y-h, width:w, height:h, color:fill,
+      ...(stroke ? {borderColor:stroke, borderWidth:.55} : {}) });
+  const card = (p: PDFPage, x: number, y: number, w: number, h: number, label: string, values: string[]) => {
+    drawRoundedRectPath(p, x, H-y-h, w, h, 4, cream, border, .7);
+    text(p, label, x+13, y+14, bold, 8.5, gold);
+    values.forEach((value, i) => text(p, value, x+13, y+29+i*12, i===0?bold:regular, 9));
+  };
+  const basePage = () => {
+    const p = pdf.addPage([W,H]);
+    p.drawPage(brand, { x:0, y:H-112 });
+    right(p, t('INVOIS','INVOICE'), 559, 56, bold, 24, gold);
+    const metadata = [[t('No. Invois:', 'Invoice No.:'), info.docNumber],
+      [t('Tarikh:', 'Date:'), info.docDate], ['SUBJECT:', info.subject]];
+    metadata.forEach(([label, value], i) => {
+      text(p,label,416,68+i*12,regular,8.6);
+      let size = 9;
+      while (size > 6 && bold.widthOfTextAtSize(sanitizePdfText(value),size) > 86) size -= .25;
+      if (bold.widthOfTextAtSize(sanitizePdfText(value),size) > 86)
+        throw new Error('Invoice header value is too long.');
+      text(p,value,473,68+i*12,bold,size);
+    });
+    p.drawPage(footer, {x:0,y:H-818});
+    addPageLink(pdf,p,112,H-100,190,58,INVOICE_CONTACT.maps);
+    return p;
+  };
+  const recipient = [...lines(info.recipient,bold,9,497),...lines(info.address,regular,9,497)];
+  const event = lines(info.eventDateText,bold,9,324);
+  const pax = lines(String(info.quantity || '-'),bold,9,133);
+  const location = lines(info.location,bold,9,324);
+  const mealNames = lines(info.rows.filter(row => row.mealText !== '-').map(row=>row.mealText).join(', '),bold,9,133);
+  const recH = Math.max(47, 32 + (recipient.length-1)*12);
+  const eventH = Math.max(38,32 + (Math.max(event.length,pax.length)-1)*12);
+  const locH = Math.max(40,32 + (Math.max(location.length,mealNames.length)-1)*12);
+  const firstTableTop = 119+recH+7+eventH+6+locH+12;
+  const bank = getBankDetails();
+  const bankValues = [bank.bankAccountName,bank.bankName,bank.bankAccountNumber];
+  const bankLines = bankValues.map((value,i)=>lines(value,bold,9,[165,160,143][i]));
+  const bankH = 61+Math.max(...bankLines.map(v=>v.length))*12;
+  const amountLabel = 'RINGGIT MALAYSIA :';
+  const words = (en?enWords(info.total):bmWords(info.total)).toUpperCase()+t(' SAHAJA.',' ONLY.');
+  const wordsX = 37+bold.widthOfTextAtSize(amountLabel,9)+5;
+  // First line begins immediately after the label. Further lines use the same
+  // width, guaranteeing that no currency words are clipped or dropped.
+  const wordLines = lines(words,bold,9,559-wordsX);
+  const noteLines = lines(INVOICE_BUSINESS.pricingNote[lang],italic,8.5,522);
+  const summaryH = 29+17+wordLines.length*12+noteLines.length*11+12+bankH+8+103;
+  const rowBottomLimit = 755-summaryH;
+  if (firstTableTop+24+23 > rowBottomLimit)
+    throw new Error('Billing details exceed available first-page invoice space.');
+  const drawTableHeader = (p:PDFPage,y:number) => {
+    rect(p,36,y,523,24,brown);
+    line(p,344,y,y+24);line(p,452,y,y+24);
+    centered(p,t('PERIHAL','DESCRIPTION'),190,y+15);
+    centered(p,t('HARGA / PAX (RM)','PRICE / PAX (RM)'),398,y+15);
+    centered(p,t('JUMLAH (RM)','AMOUNT (RM)'),505.5,y+15);
+  };
+  const firstPage = basePage();
+  let y = 119;
+  card(firstPage,36,y,523,recH,t('KEPADA','BILL TO'),recipient);
+  y += recH+7;
+  card(firstPage,36,y,350,eventH,t('TARIKH ACARA','EVENT DATE'),event);
+  card(firstPage,400,y,159,eventH,t('BILANGAN PAX','NUMBER OF PAX'),pax);
+  y += eventH+6;
+  card(firstPage,36,y,350,locH,t('LOKASI ACARA','EVENT LOCATION'),location);
+  card(firstPage,400,y,159,locH,t('JENIS HIDANGAN','MEAL TYPE'),mealNames);
+  // Reserve page 2 now, even when the invoice table needs continuation.
+  const picPage = basePage();
+  let p = firstPage, cursor = firstTableTop+24;
+  drawTableHeader(p,firstTableTop);
+  const newFinancialPage = () => {
+    p = basePage();
+    text(p,t('SAMBUNGAN INVOIS','INVOICE CONTINUATION'),36,136,bold,10,gold);
+    drawTableHeader(p,149);cursor=173;
+  };
+  for (const row of info.rows) {
+    const titleLines = lines(row.descriptionTitle,bold,9,292);
+    const desc = row.descriptionLines.flatMap(value=>lines(value,regular,9,292));
+    const all = [...titleLines.map(value=>({value, font:bold})),...desc.map(value=>({value,font:regular}))];
+    let offset = 0;
+    do {
+      const maxLines = Math.floor((rowBottomLimit-cursor-10)/12);
+      if (maxLines < 1) {newFinancialPage(); continue;}
+      const chunk = all.slice(offset,offset+maxLines);
+      const h = Math.max(23,10+chunk.length*12);
+      if (cursor+h > rowBottomLimit) {newFinancialPage();continue;}
+      rect(p,36,cursor,523,h,cream,rule);
+      line(p,344,cursor,cursor+h);line(p,452,cursor,cursor+h);
+      chunk.forEach(({value,font},i)=>text(p,value,44,cursor+14+i*12,font,9));
+      if (offset===0) {
+        right(p,row.rateText,444,cursor+14,bold,9);
+        right(p,row.amountText,551,cursor+14,bold,9);
+      }
+      cursor+=h;offset+=chunk.length;
+    } while(offset<all.length);
+  }
+  // The total follows the final actual row; no padded blank rows.
+  rect(p,36,cursor,523,29,brown);
+  line(p,452,cursor,cursor+29);
+  text(p,t('JUMLAH KESELURUHAN','GRAND TOTAL'),48,cursor+18,bold,9.5,C_WHITE);
+  right(p,'RM '+info.total.toFixed(2),550,cursor+18,bold,10,C_WHITE);
+  cursor+=43;
+  text(p,amountLabel,37,cursor,bold,9);
+  wordLines.forEach((value,i)=>text(p,value,wordsX,cursor+i*12,bold,9));
+  cursor+=wordLines.length*12;
+  noteLines.forEach((value,i)=>text(p,value,37,cursor+i*11,italic,8.5));
+  cursor+=noteLines.length*11+8;
+  drawRoundedRectPath(p,36,H-cursor-bankH,523,bankH,7,cream,border,.7);
+  text(p,t('MAKLUMAT AKAUN BANK','BANK ACCOUNT DETAILS'),50,cursor+16,bold,9.2,gold);
+  const bankX=[51,229,403], bankLabels=[t('Nama Akaun','Account Name'),'Bank',t('No. Akaun','Account No.')];
+  bankLabels.forEach((label,i)=>{
+    text(p,label,bankX[i],cursor+33,regular,8.5);
+    bankLines[i].forEach((value,j)=>text(p,value,bankX[i],cursor+49+j*12,bold,9));
+  });
+  text(p,t('* Sila nyatakan No. Invois sebagai rujukan pembayaran.','* Please quote the invoice number as payment reference.'),51,cursor+bankH-8,italic,8.5);
+  cursor+=bankH+8;
+  p.drawPage(signature,{x:400,y:H-cursor-103});
+
+  // PIC and administration fields never appear on the financial first page.
+  const fields = [
+    [t('Pegawai / PIC','Contact / PIC'),order.name||order.customerName||order.picName||order.pocName||order.contactName],
+    [t('No. Telefon','Telephone'),order.contact||order.phone||order.picPhone||order.pocPhone||order.contactNumber],
+    [t('Jabatan','Department'),order.department||order.division],
+    ['ATTN',order.attn],
+    [t('Emel','Email'),order.email||order.customerEmail||order.picEmail||order.pocEmail],
+    [t('Catatan','Notes'),order.notes],
+  ];
+  let detail = picPage, detailY = 151;
+  const detailHeading = (page:PDFPage) =>
+    text(page,t('MAKLUMAT TAMBAHAN / PIC','ADDITIONAL INFORMATION / PIC'),36,136,bold,12,gold);
+  detailHeading(detail);
+  for (const [label, raw] of fields) {
+    const values = lines(raw||'-',regular,10,497);
+    let offset=0;
+    while(offset<values.length) {
+      const n=Math.floor((744-detailY-34)/13);
+      if(n<1){detail=basePage();detailHeading(detail);detailY=151;continue;}
+      const chunk=values.slice(offset,offset+n), h=34+chunk.length*13;
+      drawRoundedRectPath(detail,36,H-detailY-h,523,h,4,cream,border,.7);
+      text(detail,String(label),49,detailY+15,bold,9,gold);
+      chunk.forEach((v,i)=>text(detail,v,49,detailY+30+i*13,regular,10));
+      offset+=chunk.length;detailY+=h+7;
+    }
+  }
+  const pages=pdf.getPages();
+  pages.forEach((page,i)=>right(page,t('Halaman','Page')+' '+(i+1)+' / '+pages.length,559,831,regular,7.5));
+  return Buffer.from(await pdf.save());
+}
+
 export async function generateServerInvoicePdf(
   order: Record<string, any>,
   isFinal: boolean,
@@ -809,10 +976,11 @@ export async function generateServerInvoicePdf(
   const lang: 'en' | 'bm' = order.lang === 'en' ? 'en' : 'bm';
   const docType = resolveDocumentType(order, isFinal, docTypeOverride);
   const isMonetaryFinal = isFinal && docType !== 'quotation';
+  // All invoices use the single approved individual master. Only quotations retain their separate design.
+  const refined = docType === 'invoice';
   const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
 
-  const masterBytes = getMasterTemplateBytes();
-  const pdfDoc = await PDFDocument.load(masterBytes);
+  const pdfDoc = refined ? await PDFDocument.create() : await PDFDocument.load(getMasterTemplateBytes());
 
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -915,7 +1083,7 @@ export async function generateServerInvoicePdf(
 
     let descLines: string[] = [];
     if (idx === 0 && fullMenuText) {
-      descLines = wrapPdfText(fullMenuText, helvetica, 7.4, 196);
+      descLines = wrapPdfText(fullMenuText, helvetica, refined ? 9 : 7.4, refined ? 292 : 196);
     }
     const rowHeight = Math.max(23, 14 + descLines.length * 10.2);
 
@@ -978,6 +1146,13 @@ export async function generateServerInvoicePdf(
     Number(order.totalAmount) >= 0
   ) {
     grandTotal = Math.round(Number(order.totalAmount) * 100) / 100;
+  }
+
+  if (refined) {
+    return renderRefinedIndividualInvoice(order, lang, {
+      docNumber, docDate, eventDateText, recipient: recipientPrimary, address: rawBilling,
+      subject: subjectCode, quantity, location: locationVal, rows, total: grandTotal,
+    });
   }
 
   // Paginate rows across pages while keeping the final totals/payment/signature block intact.
@@ -1269,7 +1444,7 @@ export async function generateServerInvoicePdf(
           row.rowHeight,
           idx,
           { regular: helvetica, bold: helveticaBold, oblique: helveticaOblique },
-          !isMonetaryFinal
+          true
         );
         rowTopY -= row.rowHeight;
       });
@@ -1284,7 +1459,7 @@ export async function generateServerInvoicePdf(
             26,
             idx,
             { regular: helvetica, bold: helveticaBold, oblique: helveticaOblique },
-            !isMonetaryFinal
+            true
           );
           rowTopY -= 26;
           idx++;
@@ -1324,18 +1499,14 @@ export async function generateServerInvoicePdf(
         thickness: 0.6,
         color: C_TOTAL_RULE,
       });
-      const totalStr = isMonetaryFinal
-        ? grandTotal.toFixed(2)
-        : lang === 'bm'
-          ? 'Sebut harga'
-          : 'Quotation';
+      const totalStr = lang === 'bm' ? 'Sebut harga' : 'Quotation';
       drawMasterRightText(
         page,
         totalStr,
         543.0,
         sy(416.2),
-        isMonetaryFinal ? helveticaBold : helveticaOblique,
-        isMonetaryFinal ? 12.0 : 9.0,
+        helveticaOblique,
+        9.0,
         C_WHITE
       );
 
@@ -1360,35 +1531,6 @@ export async function generateServerInvoicePdf(
         size: 9.4,
         color: C_MUTED_DARK,
       });
-      if (isMonetaryFinal) {
-        const spelled = (lang === 'en' ? enWords(grandTotal) : bmWords(grandTotal)).toUpperCase();
-        let wordSize = 8.4;
-        const maxWordW = 324;
-        while (wordSize > 6.2 && helveticaBold.widthOfTextAtSize(spelled, wordSize) > maxWordW) {
-          wordSize -= 0.3;
-        }
-        if (helveticaBold.widthOfTextAtSize(spelled, wordSize) <= maxWordW) {
-          page.drawText(spelled, {
-            x: 156,
-            y: sy(389.49),
-            font: helveticaBold,
-            size: wordSize,
-            color: C_MUTED_DARK,
-          });
-        } else {
-          const wordLines = wrapPdfText(spelled, helveticaBold, 7.2, maxWordW);
-          wordLines.slice(0, 2).forEach((ln, idx) => {
-            page.drawText(ln, {
-              x: 156,
-              y: sy(393.5) - idx * 8.5,
-              font: helveticaBold,
-              size: 7.2,
-              color: C_MUTED_DARK,
-            });
-          });
-        }
-      }
-
       // Bank Details Box (y: 263.89..336.89)
       drawRoundedRectPath(
         page,
@@ -1533,342 +1675,3 @@ export async function generateServerInvoicePdf(
   return Buffer.from(outBytes);
 }
 
-function drawCreamBox(
-  doc: jsPDF,
-  label: string,
-  value: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  boldValue = false
-) {
-  doc.setFillColor(253, 252, 250);
-  doc.setDrawColor(194, 147, 45);
-  doc.setLineWidth(0.35);
-  doc.rect(x, y, width, height, 'FD');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(114, 80, 20);
-  doc.text(label, x + 3, y + 4.8);
-
-  doc.setFont('helvetica', boldValue ? 'bold' : 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(26, 24, 22);
-  const split = doc.splitTextToSize(value || '-', width - 6);
-  doc.text(split[0] || '-', x + 3, y + 10);
-}
-
-export async function generateServerConsolidatedInvoicePdf(
-  orders: Record<string, any>[],
-  invoiceNo?: string,
-  includeNotes: boolean = false,
-  lang: 'bm' | 'en' = 'bm'
-): Promise<Buffer> {
-  if (!orders || orders.length === 0) {
-    throw new Error(
-      lang === 'bm'
-        ? 'Tiada pesanan dipilih untuk invois konsolidasi.'
-        : 'No orders selected for consolidated invoice.'
-    );
-  }
-
-  ensureImagesLoaded();
-
-  // Consolidated invoices MUST be landscape A4 (297mm x 210mm)
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-  const cCreamBg = [253, 252, 250]; // Clean warm ivory (#FDFCFA)
-  const cGoldBorder = [194, 147, 45]; // Gold border (#C2932D)
-  const cHeaderGold = [166, 124, 30]; // Royal Gold (#A67C1E)
-  const cDeepGold = [114, 80, 20]; // Deep Royal Bronze-Gold (#725014)
-  const cCharcoal = [26, 24, 22]; // Warm charcoal (#1A1816)
-
-  const drawPageHeader = (pageNumber: number) => {
-    drawHeaderBackground(doc, 36, 297);
-
-    if (cachedLogoBase64) {
-      try {
-        doc.addImage(cachedLogoBase64, 'PNG', 15, 8, 20, 20);
-      } catch {
-        /* continue */
-      }
-    }
-
-    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN', 39, 16);
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(
-      'Unit 3, Level B3, Menara PjH, Jalan P2a, Presint 2, 62100 Putrajaya, W.P Putrajaya',
-      39,
-      23
-    );
-
-    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(lang === 'en' ? 'CONSOLIDATED INVOICE' : 'INVOIS KONSOLIDASI', 282, 20, {
-      align: 'right',
-    });
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(
-      `${lang === 'en' ? 'Invoice No' : 'No. Invois'}: ${invoiceNo || 'COMBINED'}`,
-      282,
-      26,
-      { align: 'right' }
-    );
-    doc.text(
-      `${lang === 'en' ? 'Date' : 'Tarikh'}: ${formatDate(new Date().toISOString())}`,
-      282,
-      30,
-      { align: 'right' }
-    );
-    if (pageNumber > 1) {
-      doc.text(`${lang === 'en' ? 'Page' : 'Muka Surat'} ${pageNumber}`, 282, 34, {
-        align: 'right',
-      });
-    }
-  };
-
-  let pageNumber = 1;
-  drawPageHeader(pageNumber);
-
-  const distinctClients = new Set(orders.map((o) => o.to || '-'));
-  const clientName =
-    distinctClients.size > 1 ? Array.from(distinctClients).join(', ') : orders[0]?.to || '-';
-  const recipientText = clientName;
-  drawCreamBox(doc, lang === 'en' ? 'TO' : 'KEPADA', recipientText, 15, 40, 267, 13, true);
-
-  const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
-  const activeMeals = allPossibleMeals.filter((m) =>
-    orders.some((o) => Array.isArray(o.meals) && o.meals.includes(m))
-  );
-
-  const startX = 15;
-  const colDate = 26;
-  const colQty = 16;
-  const colNotes = includeNotes ? 38 : 0;
-  const mealColWidth = 24;
-  const colMealsWidth = Math.max(activeMeals.length * mealColWidth, 48);
-  const colRM = 25;
-  const colMenu = 267 - colDate - colQty - colNotes - colMealsWidth - colRM;
-
-  const xDate = startX;
-  const xQty = xDate + colDate;
-  const xNotes = xQty + colQty;
-  const xMenu = includeNotes ? xNotes + colNotes : xNotes;
-  const xMealsStart = xMenu + colMenu;
-  const xRM = xMealsStart + colMealsWidth;
-
-  const drawMatrixHeader = (y: number) => {
-    // Row 1: ORDER DETAILS, PRICE / PAX (RM), TOTAL
-    doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.rect(15, y, 267, 7, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-
-    doc.text(
-      lang === 'en' ? 'ORDER DETAILS' : 'BUTIRAN PESANAN',
-      xDate + (xMealsStart - xDate) / 2,
-      y + 4.8,
-      { align: 'center' }
-    );
-
-    if (activeMeals.length > 0) {
-      doc.line(xMealsStart, y, xMealsStart, y + 7);
-      doc.text(
-        lang === 'en' ? 'PRICE / PAX (RM)' : 'HARGA / PAX (RM)',
-        xMealsStart + colMealsWidth / 2,
-        y + 4.8,
-        { align: 'center' }
-      );
-    }
-
-    doc.line(xRM, y, xRM, y + 7);
-    doc.text(lang === 'en' ? 'TOTAL' : 'JUMLAH', xRM + colRM / 2, y + 4.8, { align: 'center' });
-
-    // Row 2: Sub-columns
-    const r2Y = y + 7;
-    doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
-    doc.rect(15, r2Y, 267, 7, 'F');
-
-    doc.setFontSize(7.5);
-    const centerText = (txt: string, x: number, w: number) => {
-      doc.text(txt, x + w / 2, r2Y + 4.8, { align: 'center' });
-    };
-
-    centerText(lang === 'en' ? 'Date' : 'Tarikh', xDate, colDate);
-    centerText(lang === 'en' ? 'QTY' : 'Kuantiti', xQty, colQty);
-    if (includeNotes) centerText(lang === 'en' ? 'Notes' : 'Catatan', xNotes, colNotes);
-    centerText('Menu', xMenu, colMenu);
-
-    activeMeals.forEach((meal, i) => {
-      const rawLabel = mealLabels[meal] || meal;
-      const shortLabel =
-        lang === 'en'
-          ? (rawLabel.split('/')[1] || rawLabel).trim()
-          : (rawLabel.split('/')[0] || rawLabel).trim();
-      centerText(shortLabel, xMealsStart + i * mealColWidth, mealColWidth);
-    });
-
-    centerText('RM', xRM, colRM);
-
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.15);
-    [
-      xQty,
-      xNotes,
-      xMenu,
-      xMealsStart,
-      ...activeMeals.map((_, i) => xMealsStart + i * mealColWidth),
-      xRM,
-    ].forEach((x) => {
-      if (x > xDate && x < xRM + colRM) {
-        doc.line(x, r2Y, x, r2Y + 7);
-      }
-    });
-
-    return r2Y + 7;
-  };
-
-  let currentY = 57;
-  currentY = drawMatrixHeader(currentY);
-  let grandTotal = 0;
-
-  orders.forEach((order) => {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-
-    const formattedDateVal = formatDate(order.eventDate || order.date);
-    const splitDate = doc.splitTextToSize(formattedDateVal, colDate - 2);
-    const splitNotes = includeNotes ? doc.splitTextToSize(order.notes || '-', colNotes - 2) : [];
-    const splitMenu = doc.splitTextToSize(order.menu || 'Set Box', colMenu - 2);
-    const qtyStr = (order.quantity || order.guests || 0).toString();
-
-    const maxLines = Math.max(splitDate.length, splitNotes.length, splitMenu.length, 1);
-    const rowHeight = Math.max(7, maxLines * 4 + 3);
-
-    // Landscape page height is 210mm; footer reserve starts at ~185mm
-    if (currentY + rowHeight > 180) {
-      doc.addPage();
-      pageNumber++;
-      drawPageHeader(pageNumber);
-      currentY = 40;
-      currentY = drawMatrixHeader(currentY);
-    }
-
-    doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
-    doc.rect(15, currentY, 267, rowHeight, 'F');
-
-    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
-    doc.setLineWidth(0.35);
-    doc.rect(15, currentY, 267, rowHeight, 'S');
-
-    [
-      xQty,
-      xNotes,
-      xMenu,
-      xMealsStart,
-      ...activeMeals.map((_, i) => xMealsStart + i * mealColWidth),
-      xRM,
-    ].forEach((x) => {
-      if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
-        doc.line(x, currentY, x, currentY + rowHeight);
-      }
-    });
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    const textY = currentY + 5;
-
-    doc.text(splitDate, xDate + colDate / 2, textY, { align: 'center' });
-    doc.text(qtyStr, xQty + colQty / 2, textY, { align: 'center' });
-    if (includeNotes) doc.text(splitNotes, xNotes + colNotes / 2, textY, { align: 'center' });
-    doc.text(splitMenu, xMenu + colMenu / 2, textY, { align: 'center' });
-
-    activeMeals.forEach((meal, i) => {
-      if (
-        Array.isArray(order.meals) &&
-        order.meals.includes(meal) &&
-        order.prices &&
-        order.prices[meal] !== undefined
-      ) {
-        const val = Number(order.prices[meal]) || 0;
-        doc.text(val.toFixed(2), xMealsStart + i * mealColWidth + mealColWidth / 2, textY, {
-          align: 'center',
-        });
-      } else {
-        doc.text('-', xMealsStart + i * mealColWidth + mealColWidth / 2, textY, {
-          align: 'center',
-        });
-      }
-    });
-
-    const totalNum = Number(order.totalAmount) || 0;
-    doc.text(totalNum.toFixed(2), xRM + colRM - 2, textY, { align: 'right' });
-    grandTotal += totalNum;
-    currentY += rowHeight;
-  });
-
-  // Grand total row
-  if (currentY + 25 > 185) {
-    doc.addPage();
-    pageNumber++;
-    drawPageHeader(pageNumber);
-    currentY = 40;
-  }
-
-  doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
-  doc.rect(15, currentY, 267, 7.5, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text(lang === 'en' ? 'GRAND TOTAL' : 'JUMLAH KESELURUHAN', 18, currentY + 5.2);
-  doc.text(`RM ${grandTotal.toFixed(2)}`, xRM + colRM - 2, currentY + 5.2, { align: 'right' });
-  currentY += 12;
-
-  // Amount in words
-  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-  doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(8);
-  const spelledConsolidated =
-    lang === 'en'
-      ? `Ringgit Malaysia: ${enWords(grandTotal)} only.`
-      : `Ringgit Malaysia: ${bmWords(grandTotal)} sahaja.`;
-  doc.text(spelledConsolidated, 15, currentY);
-
-  // Footer on all pages (Landscape A4: width 297, height 210)
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
-    doc.setLineWidth(0.3);
-    const bank = getBankDetails();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(114, 80, 20);
-    doc.text(`${bank.bankName} | ${bank.bankAccountName} | ${bank.bankAccountNumber}`, 148.5, 193, {
-      align: 'center',
-    });
-    doc.line(15, 198, 282, 198);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(135, 125, 115);
-    doc.text(INVOICE_BUSINESS.address, 148.5, 203, { align: 'center' });
-    doc.text(`${lang === 'en' ? 'Page' : 'Muka Surat'} ${i} / ${totalPages}`, 282, 203, {
-      align: 'right',
-    });
-  }
-
-  const arrayBuffer = doc.output('arraybuffer');
-  return Buffer.from(arrayBuffer);
-}

@@ -26,7 +26,7 @@ test('admin order reads distinguish failure from empty, retain records and recov
     // The actual production hook runs with simulated Firestore failure and API data.
     if (url.pathname === '/src/firebaseConfig.ts') return route.fulfill({ contentType: 'application/javascript', body: 'export const db = {};' });
     if (url.pathname.endsWith('/firebase_firestore.js')) return route.fulfill({ contentType: 'application/javascript', body: `
-      export const collection = () => ({}), query = x => x;
+      export const collection = () => ({}), query = x => x, where = (field, op, value) => ({field,op,value});
       export function onSnapshot(_query, _success, error) {
         const timer = setTimeout(() => error(new Error('Simulated listener failure')), 0);
         return () => clearTimeout(timer);

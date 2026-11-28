@@ -4,8 +4,8 @@ import type { Server } from 'node:http';
 import { createHash } from 'node:crypto';
 const mail = vi.hoisted(() => ({ send: vi.fn(async () => ({ messageId: 'local-test-only' })) }));
 vi.mock('../emailService.js', () => ({ createBrevoTransporter: () => ({ sendMail: mail.send }) }));
-import { getFirestore, generateSequentialInvoiceNo } from '../firebaseAdmin';
-import { commitConsolidatedInvoice, reserveConsolidatedNumber } from './consolidatedInvoices';
+import { getFirestore, generateSequentialInvoiceNo, generateSequentialIndividualInvoiceNo } from '../firebaseAdmin';
+import { commitConsolidatedInvoice, reserveConsolidatedNumber, readInvoiceBatch } from './consolidatedInvoices';
 import {
   createInvoiceEmailPreview,
   readInvoicePreviewPdf,
@@ -87,8 +87,11 @@ describe('Invoice snapshots and page allocation', () => {
     } finally {
       spy.mockRestore();
     }
+    expect(saved.layoutVersion).toBe(4);
     expect(saved.pages.length).toBeGreaterThan(1);
     expect(new Set(saved.pages.map((page) => page.invoiceNo)).size).toBe(saved.pages.length);
+    expect(saved.pages.every(page => /^RW\d{5}$/.test(page.invoiceNo))).toBe(true);
+    expect(saved.pages[0].invoiceNo).toBe(number);
     expect(saved.pages.reduce((sum, page) => sum + page.totalCents, 0)).toBe(26 * 25250);
     await db.collection('orders').doc(ids[0]).update({ totalAmount: 99999, menu: 'Changed later' });
     const again = await commitConsolidatedInvoice(ids.reverse(), number, 'feature-admin', {
@@ -128,7 +131,33 @@ describe('Invoice snapshots and page allocation', () => {
     ]);
     expect(result.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
-  it('skips custom registered serials in the shared counter', async () => {
+  it('shares one official serial sequence across individual and consolidated invoices', async () => {
+    const first = await generateSequentialIndividualInvoiceNo();
+    const batch = await reserveConsolidatedNumber('feature-admin');
+    const last = await generateSequentialIndividualInvoiceNo();
+    expect([first, batch, last].every(value => /^RW\d{5}$/.test(value))).toBe(true);
+    expect(Number(batch.slice(2))).toBe(Number(first.slice(2)) + 1);
+    expect(Number(last.slice(2))).toBe(Number(batch.slice(2)) + 1);
+    expect((await db.collection('invoice_numbers').doc(batch).get()).data()?.purpose).toBe('invoice-batch');
+    await expect(commitConsolidatedInvoice(['feature_race'], last, 'feature-admin')).rejects.toThrow(/Reserve/);
+    await expect(commitConsolidatedInvoice(['feature_race'], batch, 'other-admin')).rejects.toThrow(/another account/);
+  });
+  it('skips an unregistered historical invoice number in the shared sequence', async () => {
+    const first = await generateSequentialIndividualInvoiceNo();
+    const collision = `RW${String(Number(first.slice(2)) + 1).padStart(5, '0')}`;
+    await db.collection('orders').doc('feature_historical_collision').set({ invoiceNo: collision });
+    const next = await reserveConsolidatedNumber('feature-admin');
+    expect(Number(next.slice(2))).toBe(Number(first.slice(2)) + 2);
+  });
+  it('rejects obsolete pre-launch batch records without modifying them', async () => {
+    const invoiceNo = 'RW HISTORICAL-TEST';
+    const historical = { invoiceNo, state: 'committed', orderIds: ['historic'], pages: [{ invoiceNo, orderIds: ['historic'], totalCents: 1500 }], layoutVersion: 2 };
+    await db.collection('consolidated_invoices').doc(invoiceNo).set(historical);
+    await expect(readInvoiceBatch(invoiceNo)).rejects.toThrow(/Obsolete pre-launch test batch/);
+    await expect(commitConsolidatedInvoice(['historic'], invoiceNo, 'feature-admin')).rejects.toThrow(/Obsolete pre-launch test batch/);
+    expect((await db.collection('consolidated_invoices').doc(invoiceNo).get()).data()).toEqual(historical);
+  });
+  it('skips custom registered serials in the legacy quotation counter', async () => {
     const first = await generateSequentialInvoiceNo(false, '2088-01-01'),
       next = Number(first.split('-')[1]) + 1,
       number = `RW 2088-${String(next).padStart(5, '0')}`;

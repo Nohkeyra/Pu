@@ -555,6 +555,31 @@ describe('Order Routes Role Boundaries, Pricing Invariants & Data Protection', (
     });
   });
 
+  it('filters hidden orders in Firestore after verified visibility migration', async () => {
+    const db = getFirestore();
+    await db.collection('orders').doc('visibility_active').set({deletedByAdmin:false,status:'pending'});
+    await db.collection('orders').doc('visibility_hidden').set({deletedByAdmin:true,status:'billed'});
+    await db.collection('orders').doc('visibility_legacy').set({status:'pending'});
+    const fetchOrders = async () => {
+      const response = await fetch(`${baseUrl}/api/admin/orders`, {
+        method:'POST',headers:{Authorization:`Bearer ${adminToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({action:'fetch',includeAll:true}),
+      });
+      expect(response.status).toBe(200);
+      return (await response.json()).orders.map((order: {id:string}) => order.id);
+    };
+    delete process.env.FIRESTORE_ORDER_VISIBILITY_READY;
+    const legacy = await fetchOrders();
+    expect(legacy).toContain('visibility_active');
+    expect(legacy).toContain('visibility_legacy');
+    expect(legacy).not.toContain('visibility_hidden');
+    process.env.FIRESTORE_ORDER_VISIBILITY_READY='true';
+    const filtered = await fetchOrders();
+    expect(filtered).toContain('visibility_active');
+    expect(filtered).not.toContain('visibility_hidden');
+    expect(filtered).not.toContain('visibility_legacy');
+  });
+
   it('preserves invoiced records when admin removes a customer-hidden order', async () => {
     const db = getFirestore();
     await db.collection('orders').doc('invoiced_retained').set({

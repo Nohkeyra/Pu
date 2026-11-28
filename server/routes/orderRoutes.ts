@@ -33,6 +33,7 @@ import { resolveVerifiedPetronasCode } from '../../src/lib/petronasAutofill.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
 import { publicCalendar } from '../services/publicCalendar.js';
+import { activeAdminOrders } from '../services/orderVisibility.js';
 import { firestoreQuota, FirestoreQuotaPausedError, isFirestoreQuotaError } from '../services/firestoreQuota.js';
 import { commitAdminOrderMutation, validateAdminOrderUpdate } from '../services/orderMutations.js';
 export { validateAdminOrderUpdate } from '../services/orderMutations.js';
@@ -244,6 +245,8 @@ router.post(
         // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
         const sanitizedOrderDoc = {
           invoiceNo: '',
+          deletedByAdmin: false,
+          deletedByUser: false,
           billingAddress:
             typeof rawBody.billingAddress === 'string'
               ? rawBody.billingAddress.trim().slice(0, 1000)
@@ -389,9 +392,9 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
     const db = getFirestore();
     if (action === 'fetch') {
       const pageSize = Math.max(1, Math.min(100, Number(req.body.pageSize) || 50));
-      // Firestore orderBy('createdAt') excludes missing fields and sorts mixed types by type.
-      // Read first, then normalize-sort and paginate to preserve legacy records.
-      const snapshot = await db.collection('orders').get();
+      // Filter hidden records before reading them after verified visibility migration.
+      // Preserve complete active dataset for admin filtering and normalized sorting.
+      const snapshot = await firestoreQuota.run(() => activeAdminOrders(db).get());
       const allOrders = sortOrdersByCreatedAt(
         snapshot.docs
           .map((doc) => ({ ...doc.data(), id: doc.id }))
@@ -488,6 +491,11 @@ router.post('/admin/orders', verifyAdminToken, async (req, res) => {
 
     return res.status(400).json({ error: 'Invalid action' });
   } catch (err) {
+    if (isFirestoreQuotaError(err)) {
+      const retryAfterSeconds = err instanceof FirestoreQuotaPausedError ? err.retryAfterSeconds : Math.max(1, firestoreQuota.retryAfterSeconds);
+      res.setHeader('Retry-After', String(retryAfterSeconds));
+      return res.status(503).json({ success: false, code: 'FIRESTORE_QUOTA', error: 'Firestore temporarily unavailable.' });
+    }
     console.error('[orderRoutes] /admin/orders:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -853,7 +861,7 @@ router.post(
 router.get('/admin/export/orders', verifyAdminToken, async (_req, res) => {
   try {
     const db = getFirestore();
-    const snapshot = await db.collection('orders').get();
+    const snapshot = await firestoreQuota.run(() => activeAdminOrders(db).get());
     const orders = sortOrdersByCreatedAt(
       snapshot.docs
         .map((doc) => ({ ...doc.data(), id: doc.id }))

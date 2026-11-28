@@ -1,4 +1,5 @@
 import { calculateOrderCharges, orderFoodSubtotal, validCharge, validServiceRate } from '../../src/lib/orderCharges.js';
+import { CURRENT_INVOICE_LAYOUT } from '../../src/lib/invoiceBatch.js';
 import { resolveVerifiedPetronasCode } from '../../src/lib/petronasAutofill.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirestore, generateSequentialIndividualInvoiceNo, type OrderData } from '../firebaseAdmin.js';
@@ -163,6 +164,7 @@ export async function commitAdminOrderMutation(orderRef: FirebaseFirestore.Docum
         }
         updates.invoiceNo = reservedInvoiceNo;
         updates.officialInvoiceNo = reservedInvoiceNo;
+        updates.invoiceLayoutVersion = CURRENT_INVOICE_LAYOUT;
         const { companyCode: verifiedCode } = resolveVerifiedPetronasCode(
           String(oldData.to || oldData.company || '')
         );

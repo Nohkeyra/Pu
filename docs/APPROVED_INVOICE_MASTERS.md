@@ -13,8 +13,11 @@ Do not change the approved artwork, Uncial Antiqua title, gold/brown palette, or
 - Total bar directly follows final row; amount in words directly after **RINGGIT MALAYSIA :** on the same line, uppercase and bold. Handle exceptionally long values without overlap; do not truncate.
 - Repeat recipient, table headers, signature, bank and footer on every consolidated page. Each newly issued consolidated page has a distinct persisted RWxxxxx number (five digits, no space or hyphen), and page-specific total; preserve historical numbers and saved issued records. Allocate numbers atomically with the shared individual invoice counter and reuse on retries.
 - Individual continuation pages retain the original invoice identity; avoid duplicated charges. Keep bank/signature clear of dynamic content.
-- Preview, download and email must use one authoritative rendering path; preserve quotation behavior and historical invoices.
+- Preview, download and email must use one authoritative rendering path; preserve quotation behavior and reject obsolete pre-launch consolidated test batches.
 - Regression gates: both approved designs, short/long menu and notes, long recipient/address/subject, page boundary, multi-page numbering, cents and amount-in-words accuracy, signature, email/download parity, existing invoice records, and typecheck/build/test.
 
-## Migration status
-Visual masters only in this change. Existing production renderers/assets remain until replacement is implemented and verified. Do not treat this commit as renderer migration.
+## Individual PIC placement (owner-approved)
+- Page 1 is the financial document; PIC name, telephone, department, ATTN, email and notes are on page 2. Financial continuation pages follow page 2 when needed, retaining the original invoice number. Oversized PIC notes can continue on additional pages.
+
+## Active implementation
+The owner confirmed all prior orders were test records and the app has not launched. Only the approved individual and consolidated invoice layouts remain active. Individual invoices no longer dispatch by historical version; consolidated snapshots must use the current page plan and layout version 4. Obsolete test batches return a clear error until pre-launch cleanup is run. No Firestore deletion or renumbering is performed. The quotation master remains only for quotations. The intermediate Uncial PDFs, old consolidated table/signature modules and old consolidated renderer are retired. Final regression checks must pass before merging.

@@ -300,7 +300,8 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
         orderData.status !== 'rejected' &&
         orderData.status !== 'cancelled');
     let pdfBuffer: Buffer;
-    if (orderData.invoiceBatchNo && isFinal && !docTypeOverride) {
+    const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
+    if (orderData.invoiceBatchNo && effectiveType === 'invoice') {
       const saved = (await readInvoiceBatch(orderData.invoiceBatchNo)) as InvoiceBatch;
       // Return the original complete PDF: its column widths and page grouping remain fixed.
       const snaps = await db.getAll(
@@ -314,10 +315,8 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     }
 
     const invoiceNo =
-      orderData.invoiceBatchNo ||
-      orderData.invoiceNo ||
+      (effectiveType === 'quotation' ? orderData.quoteNo || orderData.invoiceNo : orderData.invoiceBatchNo || orderData.invoiceNo || orderData.officialInvoiceNo) ||
       `RW_${orderId.substring(0, 5).toUpperCase()}`;
-    const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
     const filePrefix = effectiveType === 'quotation' ? 'Quotation' : 'Invoice';
     const filename = `${filePrefix}_${invoiceNo}.pdf`;
 
@@ -374,15 +373,12 @@ router.post('/admin/commit-consolidated-invoice', verifyAdminToken, async (req, 
 
 router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res) => {
   try {
-    const { orderIds, invoiceNo, includeNotes, lang } = req.body || {};
+    const { orderIds, invoiceNo } = req.body || {};
     // Also protects older clients that call the PDF endpoint directly.
     const saved = orderIds
       ? await commitConsolidatedInvoice(orderIds, invoiceNo, actorId(req), req.body || {})
       : await readInvoiceBatch(invoiceNo);
-    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
-      includeNotes: Boolean(includeNotes),
-      lang: lang === 'en' ? 'en' : 'bm',
-    });
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved);
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Invoice_${saved.invoiceNo}.pdf"`);
@@ -401,7 +397,7 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res
 
 router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
   try {
-    const { orderIds, includeNotes, lang } = req.body || {};
+    const { orderIds } = req.body || {};
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ success: false, error: 'Array of orderIds is required' });
     }
@@ -452,10 +448,7 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
     );
     if (allSnaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
       return res.status(403).json({ error: 'Forbidden invoice selection.' });
-    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
-      includeNotes: Boolean(includeNotes),
-      lang: lang === 'en' ? 'en' : 'bm',
-    });
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved);
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
