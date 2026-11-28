@@ -1,6 +1,6 @@
 /**
  * Read-only static ESM dependency audit. Runs in existing test:migrations CI.
- * Reports strongly connected components rather than failing an unreviewed baseline.
+ * Enforces the verified acyclic runtime-static baseline.
  * Type-only declarations, lazy import(), nonliteral imports and npm packages are
  * deliberately outside this runtime-static graph. A cycle is a review candidate,
  * not proof of an initialization failure.
@@ -128,9 +128,11 @@ test('cycle detection handles independent components, self-imports and acyclic e
   assert.deepEqual(findCycles(graph), [['a', 'b'], ['d'], ['e', 'f', 'g']]);
 });
 
-test('report actual Wawasan static ESM cycles for triage', () => {
+test('Wawasan static ESM graph remains acyclic and resolves local imports', () => {
   const result = auditRepository(path.resolve(__dirname, '..'));
   assert.ok(result.files > 0, 'Expected real repository source modules');
   assert.ok(result.edges > 0, 'Expected resolved local imports');
   console.log('DEPENDENCY_AUDIT ' + JSON.stringify(result, null, 2));
+  assert.deepEqual(result.cycles, [], 'New static runtime cycle detected');
+  assert.deepEqual(result.unresolved, [], 'Unresolved local runtime import detected');
 });

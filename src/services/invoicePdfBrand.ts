@@ -7,68 +7,6 @@ export const INVOICE_CONTACT = {
   address: INVOICE_BUSINESS.address,
   maps: 'https://www.google.com/maps/search/?api=1&query=Restoran%20Wawasan%20Menara%20PjH%20Putrajaya',
 };
-const registered = new WeakSet<jsPDF>();
-type PdfInternal = {
-  newObject: () => number;
-  write: (...args: string[]) => void;
-  events: { subscribe: (event: string, callback: () => void) => void };
-};
-/** Native PDF Screen blend, followed by a gradual white fade. */
-export function drawInvoiceCalligraphy(
-  doc: jsPDF,
-  image: string | null,
-  height = 36,
-  width = 210
-): void {
-  const internal = doc.internal as unknown as PdfInternal;
-  if (image && !registered.has(doc)) {
-    let id = 0;
-    internal.events.subscribe('putResources', () => {
-      id = internal.newObject();
-      internal.write('<< /Type /ExtGState /BM /Screen >>', 'endobj');
-    });
-    internal.events.subscribe('putGStateDict', () => internal.write(`/RWHeaderScreen ${id} 0 R`));
-    registered.add(doc);
-  }
-  doc.saveGraphicsState();
-  doc.setFillColor(252, 249, 242);
-  doc.rect(0, 0, width, height, 'F');
-  if (image) {
-    doc.rect(0, 0, width, height, null).clip().discardPath();
-    const imageHeight = (width * 872) / 1600;
-    doc.addImage(
-      image,
-      'JPEG',
-      0,
-      (height - imageHeight) / 2,
-      width,
-      imageHeight,
-      'invoice-calligraphy',
-      'MEDIUM'
-    );
-    internal.write('/RWHeaderScreen gs');
-    doc.setFillColor(255, 255, 255);
-    doc.setGState(doc.GState({ opacity: 0.66 }));
-    doc.rect(0, 0, width, height, 'F');
-    const start = height * 0.45,
-      steps = 50;
-    for (let step = 0; step < steps; step++) {
-      doc.setGState(doc.GState({ opacity: (step + 1) / steps }));
-      doc.rect(
-        0,
-        start + (step * (height - start)) / steps,
-        width,
-        (height - start) / steps + 0.02,
-        'F'
-      );
-    }
-  }
-  doc.restoreGraphicsState();
-  doc.setDrawColor(194, 147, 45);
-  doc.setLineWidth(0.35);
-  doc.line(15, height, width - 15, height);
-  doc.link(39, 19, width > 220 ? 160 : 82, 13, { url: INVOICE_CONTACT.maps });
-}
 export function drawInvoiceContactLinks(doc: jsPDF, y: number, width = 210): void {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);

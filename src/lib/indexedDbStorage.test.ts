@@ -85,6 +85,17 @@ describe('IndexedDB queue durability', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it('retains exhausted queue items without resending or silently deleting', async () => {
+    const exhausted = {...item,retries:5};
+    const { rows } = installDb([exhausted]);
+    const handler = vi.fn(async () => false as const);
+    expect(await processBackgroundSyncQueue(handler)).toEqual({processed:0,failed:1,skipped:0});
+    expect(rows.get(item.id)?.retries).toBe(6);
+    expect(await processBackgroundSyncQueue(handler)).toEqual({processed:0,failed:0,skipped:1});
+    expect(handler).toHaveBeenCalledOnce();
+    expect(rows.has(item.id)).toBe(true);
+  });
+
   it('preserves unsupported legacy entries and commits successful deletions', async () => {
     const unknown = { ...item, id: 'unknown', type: 'catering_order' };
     const { rows } = installDb([item, unknown]);

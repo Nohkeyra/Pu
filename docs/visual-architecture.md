@@ -48,7 +48,7 @@ The superseded `wawasan-editorial-v2.css`, `wawasan-creative-v6.css` and
 `pages/living-canvas-v31.css` are removed. Their active responsibilities now live
 in the page/component owners, rather than in successive global overrides.
 
-- `wawasan-refinement-v5.css`: portal elevations, shared sizing variables, toasts,
+- `components/ui/shared-interface.css`: portal elevations, shared sizing variables, toasts,
   and APK footer reservation only.
 - `components/customer-pages.css`: shared customer header, forms, settings and
   native density; `pages/customer-calendar-profile.css`: calendar and profile access.

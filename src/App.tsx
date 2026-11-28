@@ -19,7 +19,6 @@ import { getApiUrl } from './lib/api';
 import { BatikMotionProvider } from './components/brand/BatikMotionProvider';
 import { useBackgroundSync } from './hooks/native/useBackgroundSync';
 import { useNativeWelcome } from './hooks/native/useNativeWelcome';
-import { initInteractiveNotifications } from './services/interactiveNotifications';
 import { purgeLegacyPlaintextCredentials, syncRefreshedAdminToken } from './services/authService';
 import { onIdTokenChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig';
@@ -50,9 +49,6 @@ function App() {
     : isWebSplashFinished;
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
-  useEffect(() => {
-    initInteractiveNotifications().catch(() => {});
-  }, []);
 
   const [useFallbackUi, setUseFallbackUi] = useState(() => {
     try {
