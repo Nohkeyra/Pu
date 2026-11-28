@@ -300,6 +300,27 @@ export async function generateSavedInvoicePdf(batch: InvoiceBatch): Promise<Buff
   );
 }
 
+/**
+ * Shared dispatch for persisted consolidated documents.
+ * Versioned batches always use their immutable page plan and saved settings.
+ * Older unversioned records retain their historical renderer; when old
+ * metadata is missing, preserve the caller's compatibility defaults.
+ */
+export async function generatePersistedConsolidatedInvoicePdf(
+  batch: Record<string, any>,
+  legacyDefaults: { includeNotes: boolean; lang: 'bm' | 'en' } = { includeNotes: false, lang: 'bm' }
+): Promise<Buffer> {
+  if ([2, 3].includes(batch.layoutVersion)) {
+    return generateSavedInvoicePdf(batch as InvoiceBatch);
+  }
+  return generateServerConsolidatedInvoicePdf(
+    batch.orders,
+    batch.invoiceNo,
+    typeof batch.includeNotes === 'boolean' ? batch.includeNotes : legacyDefaults.includeNotes,
+    batch.lang === 'en' || batch.lang === 'bm' ? batch.lang : legacyDefaults.lang
+  );
+}
+
 // ─── Master PDF Template Loader & Vector Engine ──────────────────────────────
 let cachedMasterTemplateBytes: Uint8Array | null = null;
 
