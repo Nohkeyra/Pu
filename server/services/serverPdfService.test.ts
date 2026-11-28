@@ -332,6 +332,8 @@ describe('persisted consolidated PDF dispatch', () => {
     layoutVersion: 3 as const,
   };
 
+  // This integration test renders and decodes two complete PDFs with production artwork.
+  // Allow bounded runner headroom under coverage without changing any assertions.
   it('keeps versioned batches on their saved page plan regardless of caller defaults', async () => {
     const batch = {
       ...options,
@@ -347,7 +349,7 @@ describe('persisted consolidated PDF dispatch', () => {
     }));
     expect(dispatched.pageTexts).toEqual(direct.pageTexts);
     expect(dispatched.pageCount).toBe(direct.pageCount);
-  });
+  }, 15_000);
 
   it('uses persisted settings for an older unversioned document', async () => {
     const legacy = { orders: [order], invoiceNo: 'RW LEGACY', includeNotes: true, lang: 'bm' };
