@@ -19,7 +19,7 @@ import {
   createBrevoTransporter,
 } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
-import { generateOrdersWorkbook } from '../exportService.js';
+import { generateOrdersWorkbook } from '../../src/lib/orderExportWorkbook.js';
 import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
 import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
