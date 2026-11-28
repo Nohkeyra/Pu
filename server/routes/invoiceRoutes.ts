@@ -11,8 +11,7 @@ import { whatsappBusinessService } from '../services/whatsappBusinessService.js'
 import { getFirestore, verifyFirebaseIdToken } from '../firebaseAdmin.js';
 import {
   generateServerInvoicePdf,
-  generateServerConsolidatedInvoicePdf,
-  generateSavedInvoicePdf,
+  generatePersistedConsolidatedInvoicePdf,
 } from '../services/serverPdfService.js';
 import { createDistributedRateLimiter } from '../distributedRateLimit.js';
 
@@ -309,7 +308,7 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
       );
       if (snaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
         return res.status(403).json({ error: 'Forbidden invoice PDF.' });
-      pdfBuffer = await generateSavedInvoicePdf(saved);
+      pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved);
     } else {
       pdfBuffer = await generateServerInvoicePdf(orderData, isFinal, docTypeOverride);
     }
@@ -380,15 +379,10 @@ router.post('/admin/consolidated-invoice/pdf', verifyAdminToken, async (req, res
     const saved = orderIds
       ? await commitConsolidatedInvoice(orderIds, invoiceNo, actorId(req), req.body || {})
       : await readInvoiceBatch(invoiceNo);
-    const pdfBuffer =
-      [2, 3].includes(saved.layoutVersion)
-        ? await generateSavedInvoicePdf(saved as InvoiceBatch)
-        : await generateServerConsolidatedInvoicePdf(
-            saved.orders,
-            saved.invoiceNo,
-            Boolean(includeNotes),
-            lang === 'en' ? 'en' : 'bm'
-          );
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
+      includeNotes: Boolean(includeNotes),
+      lang: lang === 'en' ? 'en' : 'bm',
+    });
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="Invoice_${saved.invoiceNo}.pdf"`);
@@ -458,15 +452,10 @@ router.post('/invoice/combined/pdf', async (req: Request, res: Response) => {
     );
     if (allSnaps.some((snap) => !snap.exists || !isOrderOwnedByCaller(snap.data()!, callerAuth)))
       return res.status(403).json({ error: 'Forbidden invoice selection.' });
-    const pdfBuffer =
-      [2, 3].includes(saved.layoutVersion)
-        ? await generateSavedInvoicePdf(saved as InvoiceBatch)
-        : await generateServerConsolidatedInvoicePdf(
-            saved.orders,
-            saved.invoiceNo,
-            Boolean(includeNotes),
-            lang === 'en' ? 'en' : 'bm'
-          );
+    const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(saved, {
+      includeNotes: Boolean(includeNotes),
+      lang: lang === 'en' ? 'en' : 'bm',
+    });
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
