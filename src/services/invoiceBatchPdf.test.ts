@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateConsolidatedInvoicePDF } from './consolidatedInvoiceService';
-import { planInvoicePages } from './invoiceBatchPdf';
+import { planInvoicePages, renderInvoiceBatch } from './invoiceBatchPdf';
 import { validateInvoiceGroup, invoiceAmountCents } from '../lib/invoiceBatch';
 import type { Order } from '@/types';
 const order: Order = {
@@ -35,28 +34,27 @@ describe('Saved invoice pagination', () => {
     expect(pages.length).toBeGreaterThan(1);
     expect(pages.flatMap((p) => p.orderIds)).toEqual(orders.map((o) => o.id));
     expect(pages.reduce((sum, p) => sum + p.totalCents, 0)).toBe(35 * 25250);
-    const doc = generateConsolidatedInvoicePDF({ orders, ...options, pages });
+    const doc = renderInvoiceBatch(orders, { ...options, pages });
     expect(doc.getNumberOfPages()).toBe(pages.length);
     expect(planInvoicePages(orders, options)).toEqual(plan);
   });
   it('requires saved serials rather than inventing a random official number', () => {
-    expect(() => generateConsolidatedInvoicePDF({ orders: [order], includeNotes: false })).toThrow(
-      /Saved invoice/
-    );
+    expect(() => renderInvoiceBatch([order], {
+      recipient: validateInvoiceGroup([order]), includeNotes: false, issuedAt, lang: 'bm',
+    })).toThrow(/Saved invoice/);
   });
   it('rejects duplicate numbers or changed totals', () => {
     const options = {
-      orders: [order],
+      lang: 'bm' as const,
       includeNotes: false,
       recipient: validateInvoiceGroup([order]),
       issuedAt,
       pages: [{ invoiceNo: 'RW 1', orderIds: ['one'], totalCents: 1 }],
     };
-    expect(() => generateConsolidatedInvoicePDF(options)).toThrow(/total mismatch/);
+    expect(() => renderInvoiceBatch([order], options)).toThrow(/total mismatch/);
     expect(() =>
-      generateConsolidatedInvoicePDF({
+      renderInvoiceBatch([order, { ...order, id: 'two' }], {
         ...options,
-        orders: [order, { ...order, id: 'two' }],
         pages: [
           { invoiceNo: 'RW 1', orderIds: ['one'], totalCents: 25250 },
           { invoiceNo: 'RW 1', orderIds: ['two'], totalCents: 25250 },

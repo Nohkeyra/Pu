@@ -33,7 +33,7 @@ Read the associated spec **before** changing the area:
 
 | Area | Read first |
 |---|---|
-| Individual or consolidated invoice | `server/services/serverPdfService.ts`, `src/services/consolidatedInvoiceService.ts` |
+| Individual or consolidated invoice | `server/services/serverPdfService.ts`, `src/services/invoiceBatchPdf.ts` |
 | Design system / UI kit | `tokens/`, `docs/UIUX_AUDIT_FIXES.md` |
 | Auth / Firebase / security | `firestore.rules`, `server/adminAuth.ts`, `server/routes/authRoutes.ts` |
 | Android build / release | `scripts/build-apk.sh`, `.github/workflows/build-apk.yml` |
@@ -108,7 +108,7 @@ offline reliability, preserve the original font, license and visual appearance.
 ### 2. Numbering & Consolidated Invoice Protection
 
 - New individual invoices reserve sequential `RWxxxxx` numbers via `generateSequentialIndividualInvoiceNo()` (`meta/individualInvoiceCounter`), preserving original `quoteNo` (`QT...`) and historical `RW ...` / `RW\d{5}` numbers without renumbering issued documents.
-- **Do not alter consolidated invoice logic or templates**: protect `src/services/consolidatedInvoiceService.ts`, `src/services/invoiceBatchPdf.ts`, `src/services/invoiceSignature.ts`, `generateSavedInvoicePdf`, `generateServerConsolidatedInvoicePdf`, consolidated numbering (`RW YYYY-xxxxx` via `meta/invoiceCounter`), `public/assets/heritage/Jawi.jpg`, and `public/assets/brand/apk_logo_clean.png`.
+- **Do not alter consolidated invoice logic or templates**: protect `src/services/invoiceBatchPdf.ts`, `src/services/invoiceSignature.ts`, `generateSavedInvoicePdf`, `generateServerConsolidatedInvoicePdf`, consolidated numbering (`RW YYYY-xxxxx` via `meta/invoiceCounter`), `public/assets/heritage/Jawi.jpg`, and `public/assets/brand/apk_logo_clean.png`.
 
 ### 3. PETRONAS Company Code Autofill, Validation & Email Collector
 

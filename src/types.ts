@@ -169,19 +169,6 @@ export interface CombinedInvoicePayload {
   lang?: 'en' | 'bm';
 }
 
-export interface ConsolidatedInvoicePayload {
-  layoutVersion?: 2 | 3;
-  pages?: import('./lib/invoiceBatch').InvoicePage[];
-  recipient?: import('./lib/invoiceBatch').InvoiceRecipient;
-  issuedAt?: string;
-  calligraphy?: string;
-  logo?: string;
-  orders: Order[];
-  includeNotes: boolean;
-  invoiceNo?: string;
-  lang?: 'en' | 'bm';
-}
-
 export interface AdminConflictNotification {
   id: string;
   type: 'pricing_conflict' | string;
