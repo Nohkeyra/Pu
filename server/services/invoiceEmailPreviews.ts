@@ -3,12 +3,10 @@ import path from 'path';
 import { getFirestore } from '../firebaseAdmin.js';
 import { invoiceEmailTemplate } from './invoiceEmailTemplate.js';
 import {
-  generateSavedInvoicePdf,
-  generateServerConsolidatedInvoicePdf,
+  generatePersistedConsolidatedInvoicePdf,
   generateServerInvoicePdf,
 } from './serverPdfService.js';
 import { readInvoiceBatch, ConsolidatedInvoiceError } from './consolidatedInvoices.js';
-import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import {
   buildPetronasInvoiceSubject,
   getVerifiedOrderCompanyCode,
@@ -178,10 +176,7 @@ export async function createInvoiceEmailPreview(
       );
     }
     const batch = await readInvoiceBatch(batchNo);
-    pdf =
-      [2, 3].includes(batch.layoutVersion)
-        ? await generateSavedInvoicePdf(batch as InvoiceBatch)
-        : await generateServerConsolidatedInvoicePdf(batch.orders, batch.invoiceNo, false, lang);
+    pdf = await generatePersistedConsolidatedInvoicePdf(batch, { includeNotes: false, lang });
     company = batch.recipient?.company || batch.orders[0]?.to || '';
     invoiceNumbers = batch.pages?.map((page: { invoiceNo: string }) => page.invoiceNo) || [
       batch.invoiceNo,
