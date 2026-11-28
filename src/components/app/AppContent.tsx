@@ -252,7 +252,8 @@ function AppRoutes({ location }: { location: ReturnType<typeof useLocation> }) {
 export default function AppContent() {
   const location = useLocation();
   const isLandingScreen = !Capacitor.isNativePlatform() && ['/', '/home', '/main'].includes(location.pathname);
-  const isStandaloneScreen = location.pathname === '/login' || isLandingScreen;
+  const isAdminScreen = location.pathname === '/admin';
+  const isStandaloneScreen = location.pathname === '/login' || isLandingScreen || isAdminScreen;
   const RouteContainer = isLandingScreen ? 'div' : 'main';
   // Presentation marker only: native customer screens manage their own dock clearance.
   const isCustomerScreen = ['/app', '/order', '/profile', '/calendar', '/settings'].includes(location.pathname);
@@ -269,6 +270,7 @@ export default function AppContent() {
   }, []);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
+    enabled: !isAdminScreen,
     onRefresh: async () => {
       window.dispatchEvent(new CustomEvent('app:global-refresh'));
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -276,10 +278,17 @@ export default function AppContent() {
   });
 
   return (
-    <div className={cn('min-h-screen bg-cream dark:bg-background flex flex-col relative', location.pathname === '/order' ? 'overflow-x-clip' : 'overflow-x-hidden')}>
+    <div className={cn('min-h-screen bg-cream dark:bg-background flex flex-col relative', location.pathname === '/order' || isAdminScreen ? 'overflow-x-clip' : 'overflow-x-hidden')}>
       {/* Accessible Skip Link for Screen Readers and Keyboard Navigation */}
       <a
         href="#main-content"
+        onClick={(event) => {
+          const target = document.getElementById('main-content');
+          if (target) {
+            event.preventDefault();
+            target.focus();
+          }
+        }}
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2.5 focus:bg-[var(--ui-action)] focus:text-[var(--ui-on-action)] focus:font-bold focus:rounded-xl focus:shadow-2xl focus:ring-4 focus:ring-[var(--ui-orange)] focus:outline-none transition-all min-h-[48px] inline-flex items-center"
       >
         Skip to main content / Langkau ke kandungan utama

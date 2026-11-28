@@ -6,28 +6,28 @@ import {
   clearRememberedViews,
 } from '@/hooks/ui/useRememberedView';
 import { OrderReadingCard } from './OrderReadingCard';
-import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { usePullToRefresh } from '@/hooks/ui/usePullToRefresh';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, FileText, RefreshCw, Table, Utensils as UtensilsIcon, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarDays, Ellipsis, FileText, House, RefreshCw, Utensils, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import WawasanLoader from '@/components/brand/WawasanLoader';
-import { Batik3DMotion } from '@/components/brand/Batik3DMotion';
+import { TransparentLogo } from '@/components/brand/TransparentLogo';
 import { getApiUrl } from '@/lib/api';
 import type { Order } from '@/types';
 import { AdminHeader } from './AdminHeader';
 import { AdminOrdersTab } from './AdminOrdersTab';
 import { AdminTablesTab } from './AdminTablesTab';
 import AdminMenuTab from './AdminMenuTab';
-import { AdminStatsKpiStrip } from './AdminStatsKpiStrip';
-import { computeAdminKpiStats } from '@/lib/adminKpiStats';
-import { filterAdminOrders } from '@/lib/adminOrderFilters';
-import { getDisplayInvoiceNo } from '@/lib/utils';
+import { AdminOverview } from './AdminOverview';
+import { AdminOrderSearch, type AdminOrderLayout, type AdminOrderSearchState } from './AdminOrderSearch';
+import { getMalaysiaTodayISO } from '@/lib/adminKpiStats';
+import { filterAdminOrders, getAdminConflictOrderIds, getAdminOfficialInvoiceNo, matchesAdminOrderFilter, type AdminScheduleRange } from '@/lib/adminOrderFilters';
+import { getAssetUrl, getDisplayInvoiceNo } from '@/lib/utils';
 import '../ui/presentation.css';
 import './admin-panel.css';
 
@@ -55,6 +55,15 @@ const DeliveryMap = lazyWithRetry(
   'DeliveryMap'
 );
 
+const adminDestinations = [
+  { id: 'today', icon: House },
+  { id: 'orders', icon: FileText },
+  { id: 'schedule', icon: CalendarDays },
+  { id: 'more', icon: Ellipsis },
+] as const;
+
+type AdminDestination = (typeof adminDestinations)[number]['id'] | 'menu';
+
 export default function AdminPanel({
   adminToken,
   onLogout,
@@ -62,11 +71,45 @@ export default function AdminPanel({
   adminToken?: string;
   onLogout?: () => void | Promise<void>;
 }) {
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = searchParams.get('view');
+  const activeTab = view === 'orders' || view === 'schedule' || view === 'more' || view === 'menu' ? view : 'today';
+  const currentDestination = activeTab === 'menu' ? 'more' : activeTab;
+  const mainRef = useRef<HTMLDivElement>(null);
+  const focusDestination = useRef(false);
+  const goTo = (next: AdminDestination) => {
+    if (next === activeTab) return;
+    focusDestination.current = true;
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      if (next === 'today') params.delete('view');
+      else params.set('view', next);
+      return params;
+    });
+  };
+  useEffect(() => {
+    if (focusDestination.current) {
+      mainRef.current?.focus({ preventScroll: true });
+      focusDestination.current = false;
+    }
+  }, [activeTab]);
+
+  const [today, setToday] = useState(() => getMalaysiaTodayISO());
+  useEffect(() => {
+    const updateToday = () => setToday(getMalaysiaTodayISO());
+    const timer = window.setInterval(updateToday, 30_000);
+    document.addEventListener('visibilitychange', updateToday);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', updateToday);
+    };
+  }, []);
+  const [scheduleRange, setScheduleRange] = useState<AdminScheduleRange>('today');
   const viewScope = adminViewScope(adminToken);
   const [readingOrder, setReadingOrder] = useState<Order | null>(null);
   const logout = async () => {
@@ -98,7 +141,6 @@ export default function AdminPanel({
   });
 
   const {
-    generatingInvoice,
     isPreviewOpen,
     setIsPreviewOpen,
     previewPdfUrl,
@@ -140,6 +182,8 @@ export default function AdminPanel({
     handleSendWhatsApp,
   } = useAdminMessaging({ t, language, toast, authHeaders, getDisplayInvoiceNo });
 
+  const detailOrigin = useRef<HTMLElement | null>(null);
+  const trackingOrigin = useRef<HTMLElement | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const openSendDialog = (order: Order) => {
@@ -176,10 +220,30 @@ export default function AdminPanel({
     viewScope + ':dateToFilter',
     ''
   );
-  const [activeTab, setActiveTab] = useRememberedState<'orders' | 'tables' | 'menu'>(
-    viewScope + ':tab',
-    'orders'
-  );
+  const [search, setSearch] = useRememberedState<string>(viewScope + ':orders:search', '');
+  const [clientFilter, setClientFilter] = useRememberedState<string>(viewScope + ':tables:clientFilter', 'all');
+  const [tablePage, setTablePage] = useRememberedState<number>(viewScope + ':tables:currentPage', 1);
+  const [preferredLayout, setPreferredLayout] = useRememberedState<AdminOrderLayout | 'auto'>(viewScope + ':orders:layout', 'auto');
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setCompact(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  const layout = preferredLayout === 'auto' ? (compact ? 'list' : 'table') : preferredLayout;
+  const setOrderFilters = (filters: Partial<AdminOrderSearchState>) => {
+    setTablePage(1);
+    if (filters.search !== undefined) setSearch(filters.search);
+    if (filters.status !== undefined) setStatusFilter(filters.status);
+    if (filters.client !== undefined) setClientFilter(filters.client);
+    if (filters.from !== undefined) setDateFromFilter(filters.from);
+    if (filters.to !== undefined) setDateToFilter(filters.to);
+  };
+  const openFilteredOrders = (filter: string) => {
+    if (filter !== 'all') setOrderFilters({ status: filter, search: '', client: 'all', from: '', to: '' });
+    goTo('orders');
+  };
 
   useRememberedPageScroll(viewScope + ':' + activeTab + ':scroll', !loading);
 
@@ -188,6 +252,7 @@ export default function AdminPanel({
   const [filterBySameEmail, setFilterBySameEmail] = useState(true);
 
   const { pullDistance, isRefreshing } = usePullToRefresh({
+    enabled: !loading,
     onRefresh: async () => {
       await Promise.all([fetchOrders(true), fetchConflicts()]);
     },
@@ -325,6 +390,7 @@ export default function AdminPanel({
   };
 
   const openOrderDetail = (order: Order) => {
+    detailOrigin.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setSelectedOrder(order);
     setDeliveryFee(String(isSelfPickup(order.delivery) ? 0 : order.deliveryCharge ?? 0));
     setServiceRate(String(order.preparationType === 'buffet' ? order.serviceChargeRate ?? 0 : 0));
@@ -347,32 +413,39 @@ export default function AdminPanel({
     <OrderStatusBadge status={status} language={language} />
   );
 
-  const filteredOrders = filterAdminOrders({
-    orders,
-    searchTerm: '',
-    statusFilter,
-    clientFilter: 'all',
-    dateFromFilter,
-    dateToFilter,
-  });
-
-  const kpiStats = useMemo(() => computeAdminKpiStats(orders), [orders]);
-
-  const cancelRequests = orders.filter((o) => o.status === 'cancel_requested');
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-cream dark:bg-background flex flex-col items-center justify-center p-6 space-y-3">
-        <WawasanLoader size={80} />
-        <p className="text-xs font-semibold tracking-widest text-amber-800 dark:text-amber-400 uppercase animate-pulse">
-          Memuatkan...
-        </p>
-      </div>
-    );
-  }
+  const conflictIds = useMemo(() => getAdminConflictOrderIds(conflicts), [conflicts]);
+  const filteredOrders = useMemo(() => filterAdminOrders({
+    orders, searchTerm: search, statusFilter, clientFilter, dateFromFilter, dateToFilter, today, conflictIds,
+  }), [orders, search, statusFilter, clientFilter, dateFromFilter, dateToFilter, today, conflictIds]);
+  const clients = useMemo(() => [...new Set(orders.map((order) => order.to).filter(Boolean))].sort(), [orders]);
+  const cancelRequests = filteredOrders.filter((order) => matchesAdminOrderFilter(order, 'cancel_requested', today));
+  const showOrderData = (!loading && !ordersError) || orders.length > 0;
+  const effectiveOrder = selectedOrder?.id
+    ? orders.find((order) => order.id === selectedOrder.id) ?? selectedOrder
+    : selectedOrder;
+  const overviewProps = {
+    orders, today, range: scheduleRange, onRangeChange: setScheduleRange, conflictIds,
+    onOpenOrder: openOrderDetail,
+    onOpenOrders: openFilteredOrders,
+    onOpenDelivery: (order: Order) => {
+      trackingOrigin.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setTrackingOrder(order);
+    },
+    onOpenSchedule: () => goTo('schedule'),
+  };
+  const navigation = (
+    <nav className="admin-destinations" aria-label={t('admin_nav')}>
+      {adminDestinations.map(({ id, icon: Icon }) => (
+        <button key={id} type="button" aria-current={currentDestination === id ? 'page' : undefined}
+          onClick={() => goTo(id)}>
+          <Icon size={19} aria-hidden="true" /> <span>{t(`admin_${id}`)}</span>
+        </button>
+      ))}
+    </nav>
+  );
 
   return (
-    <div className="wawasan-admin-shell min-h-screen bg-cream dark:bg-background grid grid-cols-1 lg:grid-cols-[220px_1fr] grid-rows-[auto_auto_1fr] lg:grid-rows-[auto_1fr] [grid-template-areas:'header''nav''content'] lg:[grid-template-areas:'header_header''nav_content'] relative">
+    <div className="wawasan-admin-shell">
       <motion.div
         className="fixed top-0 left-0 right-0 z-[60] flex justify-center pointer-events-none pt-[calc(var(--sat)+1rem)]"
         animate={{
@@ -388,11 +461,20 @@ export default function AdminPanel({
           />
           {isRefreshing && (
             <span className="microcopy-12-upper font-black text-[var(--color-sunshine-cta)]">
-              Refreshing
+              {t('admin_refreshing')}
             </span>
           )}
         </div>
       </motion.div>
+
+      <aside className="wawasan-admin-sidebar">
+        <button type="button" className="admin-brand" onClick={() => goTo('today')}>
+          <TransparentLogo src={getAssetUrl('/assets/brand/wawasan_logo.png')} alt="" className="admin-brand-logo" />
+          <span className="font-artistic">Restoran Wawasan</span>
+        </button>
+        {navigation}
+        <div className="admin-rail-batik" aria-hidden="true" />
+      </aside>
 
       <AdminHeader
         language={language}
@@ -401,113 +483,81 @@ export default function AdminPanel({
         calendarState={calendarState}
         navigate={navigate}
         t={t}
-        adminToken={adminToken}
-        onLogout={() => onLogout?.()}
-        getApiUrl={getApiUrl}
+        title={t(`admin_${activeTab}`)}
+        onToggleLanguage={() => setLanguage(language === 'bm' ? 'en' : 'bm')}
+        onRefresh={() => { void Promise.all([fetchOrders(true), fetchConflicts()]); }}
+        refreshDisabled={loading}
+        onLogout={logout}
       />
 
-      <nav
-        aria-label={language === 'bm' ? 'Navigasi pentadbiran' : 'Admin navigation'}
-        className="wawasan-admin-sidebar [grid-area:nav] p-3 sm:p-4 lg:p-5 bg-stone-50/90 dark:bg-stone-900/40 border-b lg:border-b-0 lg:border-r border-stone/15 dark:border-white/10 relative overflow-hidden flex flex-col justify-start"
-      >
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <Batik3DMotion
-            maxRotation={10}
-            imgClassName="opacity-[0.06] dark:opacity-[0.1]"
-            mode="background"
-          />
-        </div>
-        <div className="relative z-10 flex flex-col h-full">
-          <p className="hidden lg:block text-xs font-black text-[var(--color-sunshine-cta)] uppercase tracking-wider mb-3">
-            {language === 'en' ? 'Administrative' : 'Pentadbiran'}
-          </p>
-          <div className="app-admin-tabs flex flex-row lg:flex-col justify-center lg:justify-start gap-2 p-1 lg:p-0 bg-white dark:bg-card lg:bg-transparent rounded-2xl lg:rounded-none border border-stone-200/80 lg:border-0 dark:border-white/10 shadow-sm lg:shadow-none overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0 scrollbar-none pr-4 lg:pr-0">
-            {[
-              {
-                id: 'orders' as const,
-                label: t('orders'),
-                icon: FileText,
-                onClick: () => setActiveTab('orders'),
-                badge:
-                  cancelRequests.length > 0 ? (
-                    <Badge className="ml-auto bg-amber-500 text-stone-950 px-1.5 py-0.5 text-xs font-bold">
-                      {cancelRequests.length}
-                    </Badge>
-                  ) : null,
-              },
-              {
-                id: 'tables' as const,
-                label: language === 'en' ? 'Tables View' : 'Paparan Jadual',
-                icon: Table,
-                onClick: () => setActiveTab('tables'),
-              },
-              {
-                id: 'menu' as const,
-                label: language === 'en' ? 'Menu Manager' : 'Pengurus Menu',
-                icon: UtensilsIcon,
-                onClick: () => setActiveTab('menu'),
-              },
-            ].map((tab) => {
-              const isActive = activeTab === tab.id;
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={tab.onClick}
-                  className={`px-3.5 py-2.5 font-bold text-xs flex items-center gap-2.5 rounded-xl transition-all duration-200 relative z-10 whitespace-nowrap shrink-0 cursor-pointer select-none ${
-                    isActive
-                      ? 'bg-[var(--color-sunshine-cta)] text-[var(--ui-on-action)] shadow-md scale-[1.01]'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-deep-forest dark:hover:text-white hover:bg-stone-100 dark:hover:bg-white/5'
-                  }`}
-                >
-                  <Icon
-                    className={`w-4 h-4 z-10 shrink-0 ${isActive ? 'text-white' : 'text-stone'}`}
-                  />
-                  <span className="app-admin-tab-label z-10">{tab.label}</span>
-                  {tab.badge}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
-
-      <motion.div className="wawasan-admin-content [grid-area:content] p-4 sm:p-6 lg:p-8 min-w-0 relative">
-        <div className="wawasan-admin-heading batik-header mb-6">
-          <h1 className="text-xl sm:text-2xl font-display font-bold text-deep-forest dark:text-stone-100 mb-1 tracking-tight">
-            {activeTab === 'orders'
-              ? t('orders')
-              : activeTab === 'menu'
-                ? language === 'en'
-                  ? 'Menu Manager'
-                  : 'Pengurus Menu'
-                : language === 'en'
-                  ? 'Submissions'
-                  : 'Senarai Permohonan'}
-          </h1>
-          <p className="text-xs sm:text-sm">
-            {activeTab === 'orders'
-              ? t('orders_subtitle')
-              : activeTab === 'menu'
-                ? language === 'en'
-                  ? 'Manage your menu items, prices and visibility.'
-                  : 'Urus item menu, harga dan paparan pelanggan.'
-                : language === 'en'
-                  ? 'Search, review and manage submitted orders.'
-                  : 'Cari, semak dan urus pesanan yang diterima.'}
-          </p>
-        </div>
-
-        {activeTab !== 'menu' && (
-          <AdminStatsKpiStrip stats={kpiStats} language={language} />
+      <div id="admin-content" ref={mainRef} tabIndex={-1} className="wawasan-admin-content">
+        {activeTab === 'menu' && (
+          <button className="admin-text-button" type="button" onClick={() => goTo('more')}>{t('admin_back_more')}</button>
         )}
-        {conflicts.length > 0 && (
-          <section
-            aria-label={language === 'bm' ? 'Notifikasi konflik harga luar talian' : 'Offline pricing conflict alerts'}
-            className="mb-6 space-y-2"
-          >
+        {(activeTab !== 'today' || !showOrderData) && (
+          <div className="admin-page-heading">
+            <h1>{t(`admin_${activeTab}`)}</h1>
+            {activeTab === 'schedule' && <p>{t('admin_schedule_description')}</p>}
+            {activeTab === 'menu' && <p>{t('admin_menu_description')}</p>}
+          </div>
+        )}
+        {activeTab !== 'menu' && activeTab !== 'more' && loading && !showOrderData && (
+          <div className="admin-loading" role="status"><WawasanLoader size={65} /><p>{t('admin_loading')}</p></div>
+        )}
+        {activeTab !== 'menu' && activeTab !== 'more' && ordersError && (
+          <ErrorState
+            title={t('admin_orders_unavailable')}
+            description={t(orders.length > 0 ? 'admin_orders_retained' : 'admin_orders_retry')}
+            onRetry={() => { void fetchOrders(); }}
+            retryLabel={t('admin_retry')}
+            className="mb-3"
+          />
+        )}
+        {activeTab === 'today' && showOrderData && <AdminOverview {...overviewProps} compact />}
+        {activeTab === 'schedule' && showOrderData && <AdminOverview {...overviewProps} />}
+        {activeTab === 'more' && (
+          <div className="admin-more">
+            <section className="admin-overview-panel admin-more-card">
+              <Utensils aria-hidden="true" size={22} />
+              <div><h2>{t('admin_menu')}</h2><p>{t('admin_menu_description')}</p></div>
+              <button type="button" className="admin-text-button" onClick={() => goTo('menu')}>
+                {t('admin_open_menu')} <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </section>
+            <section className="admin-overview-panel admin-more-card">
+              <FileText aria-hidden="true" size={22} />
+              <div>
+                <h2>{t('admin_filter_invoiced')}</h2>
+                <p>{t('admin_invoiced_description')}</p>
+                {showOrderData && !ordersError && (
+                  <dl className="admin-invoice-counts">
+                    <div><dt>{t('admin_billed_count')}</dt><dd>{orders.filter((order) => matchesAdminOrderFilter(order, 'invoiced', today)).length}</dd></div>
+                    <div><dt>{t('admin_official_invoice_count')}</dt><dd>{new Set(orders.filter((order) => !order.deletedByAdmin).map(getAdminOfficialInvoiceNo).filter(Boolean)).size}</dd></div>
+                  </dl>
+                )}
+              </div>
+              <button type="button" className="admin-text-button" onClick={() => openFilteredOrders('invoiced')}>
+                {t('admin_open_orders')} <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'orders' && showOrderData && (
+          <AdminOrderSearch
+            filters={{ search, status: statusFilter, client: clientFilter, from: dateFromFilter, to: dateToFilter }}
+            onChange={setOrderFilters}
+            clients={clients}
+            resultCount={filteredOrders.length}
+            layout={layout}
+            onLayoutChange={(mode) => {
+              if (selectedOrderIds.size > 0 && mode === 'list') setIsSelectMode(true);
+              setPreferredLayout(mode);
+            }}
+          />
+        )}
+        {activeTab === 'orders' && statusFilter === 'conflict' && conflicts.length > 0 && (
+          <section aria-label={t('admin_filter_conflict')} className="mb-3 space-y-2">
             {conflicts.map((conflict) => {
               const targetOrder = orders.find((o) => o.id === conflict.orderId);
               const priceSummary = conflict.submittedPrices
@@ -565,16 +615,7 @@ export default function AdminPanel({
             })}
           </section>
         )}
-        {ordersError && (
-          <ErrorState
-            title={language === 'bm' ? 'Tempahan belum dapat dimuatkan' : 'Orders could not be loaded'}
-            description={language === 'bm' ? 'Rekod yang sudah dimuatkan dikekalkan. Cuba muat semula.' : 'Previously loaded records are retained. Please retry.'}
-            onRetry={() => { void fetchOrders(); }}
-            retryLabel={language === 'bm' ? 'Cuba lagi' : 'Retry'}
-            className="mb-6"
-          />
-        )}
-        {activeTab === 'orders' && (!ordersError || orders.length > 0) && (
+        {activeTab === 'orders' && layout === 'list' && showOrderData && (
           <AdminOrdersTab
             viewScope={viewScope}
             onReadOrder={setReadingOrder}
@@ -582,20 +623,14 @@ export default function AdminPanel({
             language={language}
             orders={orders}
             filteredOrders={filteredOrders}
-            cancelRequests={cancelRequests}
-            dateFromFilter={dateFromFilter}
-            setDateFromFilter={setDateFromFilter}
-            dateToFilter={dateToFilter}
-            setDateToFilter={setDateToFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
+            hasSearch={Boolean(search.trim())}
+            cancelRequests={statusFilter === 'cancel_requested' ? cancelRequests : []}
             isSelectMode={isSelectMode}
             setIsSelectMode={setIsSelectMode}
             filterBySameEmail={filterBySameEmail}
             setFilterBySameEmail={setFilterBySameEmail}
             selectedOrderIds={selectedOrderIds}
             setSelectedOrderIds={setSelectedOrderIds}
-            generatingInvoice={generatingInvoice}
             getStatusBadge={getStatusBadge}
             handleToggleOrderSelect={(id) => {
               if (!id) return;
@@ -608,8 +643,6 @@ export default function AdminPanel({
             }}
             openOrderDetail={openOrderDetail}
             openSendDialog={openSendDialog}
-            handlePreviewPDF={handlePreviewPDF}
-            handleDownloadPDF={handleDownloadPDF}
             handleDelete={handleDeleteOrder}
             handleBatchDelete={handleBatchDelete}
             handleRejectCancellation={(id) =>
@@ -622,11 +655,16 @@ export default function AdminPanel({
           />
         )}
 
-        {activeTab === 'tables' && (
+        {activeTab === 'orders' && layout === 'table' && showOrderData && (
           <AdminTablesTab
             viewScope={viewScope}
             onReadOrder={setReadingOrder}
             orders={orders}
+            filteredOrders={filteredOrders}
+            selectedIds={selectedOrderIds}
+            currentPage={tablePage}
+            setCurrentPage={setTablePage}
+            setSelectedIds={setSelectedOrderIds}
             language={language as 'en' | 'bm'}
             openOrderDetail={openOrderDetail}
             handlePreviewPDF={handlePreviewPDF}
@@ -661,12 +699,12 @@ export default function AdminPanel({
           onClose={() => setReadingOrder(null)}
         />
         <Suspense fallback={null}>
-          {isDetailOpen && selectedOrder && (
+          {isDetailOpen && effectiveOrder && (
             <OrderDetailModal
               onReadOrder={setReadingOrder}
               isOpen={isDetailOpen}
               onClose={() => setIsDetailOpen(false)}
-              selectedOrder={selectedOrder}
+              selectedOrder={effectiveOrder}
               t={t}
               language={language}
               prices={prices}
@@ -700,14 +738,26 @@ export default function AdminPanel({
                 );
               }}
               openSendDialog={openSendDialog}
-              handleTrack={(order) => setTrackingOrder(order)}
+              handleTrack={(order) => {
+                trackingOrigin.current = detailOrigin.current;
+                setTrackingOrder(order);
+              }}
+              onPreviewInvoice={(order) => {
+                setIsDetailOpen(false);
+                void handlePreviewPDF(order, true);
+              }}
             />
           )}
           {trackingOrder && (
             <DeliveryMap
               order={trackingOrder}
               isAdmin={true}
-              onClose={() => setTrackingOrder(null)}
+              onClose={() => {
+                setTrackingOrder(null);
+                const origin = trackingOrigin.current;
+                trackingOrigin.current = null;
+                if (origin) window.requestAnimationFrame(() => origin.focus({ preventScroll: true }));
+              }}
               onUpdateStatus={async (id, status) => {
                 const updated = await handleUpdateOrderStatus(
                   id,
@@ -759,7 +809,8 @@ export default function AdminPanel({
             />
           )}
         </Suspense>
-      </motion.div>
+      </div>
+      <div className="admin-bottom-nav">{navigation}</div>
     </div>
   );
 }

@@ -488,16 +488,23 @@ for (const [theme, width] of [['light', 390], ['dark', 1280]] as const) {
     await setupCommonRoutes(page, { adminVerified: true });
     await seedAppStorage(page, { language: 'en', theme, isAdmin: true });
     await page.goto('/#/admin');
-    const tabs = page.locator('.app-admin-tabs');
-    await expect(tabs).toBeVisible({ timeout: 20_000 });
+    const navigation = page.getByRole('navigation', { name: 'Admin navigation' });
+    await expect(navigation).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('main')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Log Out', exact: true })).toBeVisible();
-    for (const name of ['Tables View', 'Menu Manager', 'Orders']) {
-      const button = tabs.getByRole('button', { name, exact: true });
+    await expect(page.getByRole('button', { name: 'Log out', exact: true })).toBeVisible();
+    for (const name of ['Schedule', 'More', 'Orders', 'Today']) {
+      const button = navigation.getByRole('button', { name, exact: true });
       await button.click();
-      await expect(button).toHaveAttribute('aria-pressed', 'true');
-      if (name === 'Tables View') {
-        await expect(page.getByRole('combobox', { name: 'Filter by status' })).toBeVisible();
+      await expect(button).toHaveAttribute('aria-current', 'page');
+      await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+      if (name === 'More') {
+        await page.getByRole('button', { name: 'Open menu manager' }).click();
+        await expect(page.getByRole('heading', { name: 'Menu manager', exact: true })).toBeVisible();
+      }
+      if (name === 'Orders') {
+        await page.getByRole('button', { name: 'Table', exact: true }).click();
+        await page.getByRole('button', { name: 'Filters', exact: true }).click();
+        await expect(page.getByRole('combobox', { name: 'Order status' })).toBeVisible();
         await expect(page.getByRole('combobox', { name: 'Rows per page' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Previous page' })).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
@@ -507,32 +514,133 @@ for (const [theme, width] of [['light', 390], ['dark', 1280]] as const) {
   });
 }
 
+for (const [width, height, theme] of [[320, 640, 'dark'], [393, 780, 'light'], [1280, 900, 'dark']] as const) {
+  test(`admin restoration at ${width}px uses the same records for agenda and order filters`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
+    await page.clock.setFixedTime(new Date('2026-11-27T16:00:05Z'));
+    const native = width === 393;
+    await setupCommonRoutes(page, { adminVerified: true, simulateCustomer: native, startSignedOut: native });
+    await seedAppStorage(page, { language: 'en', theme, isAdmin: true });
+    if (native) await seedNativeLaunch(page, { completed: true });
+    const base = { contact: '', email: '', dateTime: '', location: '', meals: ['lunch'], quantity: 2 };
+    const records = [
+      { ...base, id: 'pending', name: 'Pending fixture', to: 'Pending fixture', date: '2026-11-28', status: 'pending' },
+      { ...base, id: 'event', name: 'Programme fixture', to: 'Programme fixture', date: '2026-11-28', time: '12:00', quantity: 26, meals: ['lunch', 'lunch', 'hi_tea'], status: 'approved', delivery: 'pickup' },
+      { ...base, id: 'rider', name: 'Rider fixture', to: 'Rider fixture', date: '2026-11-28', time: '10:00', quantity: 4, status: 'in_transit', invoiceNo: 'RW00012' },
+      { ...base, id: 'tomorrow', name: 'Tomorrow fixture', to: 'Tomorrow fixture', date: '2026-11-29', time: '09:00', quantity: 40, meals: ['breakfast'], status: 'billed', invoiceNo: 'RW00015' },
+    ];
+    await page.route('**/api/admin/orders', route => route.fulfill({ json: { success: true, orders: records } }));
+    await page.route('**/api/admin/conflicts', route => route.fulfill({ json: { success: true, conflicts: [{ id: 'conflict-1', orderId: 'event' }] } }));
+    await page.goto('/#/admin');
+    const nav = page.getByRole('navigation', { name: 'Admin navigation' });
+    const main = page.getByRole('main');
+    await expect(main.getByRole('heading', { name: 'Today', exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Refresh orders', exact: true }).click();
+    await expect(main.getByRole('button', { name: /30 Guests today/ })).toBeVisible();
+    await expect(main.getByRole('button', { name: /2 Events today/ })).toBeVisible();
+    await expect(main.getByRole('button', { name: /Pricing needed 1/ })).toBeVisible();
+    await expect(main.getByRole('button', { name: /Pricing conflicts 1/ })).toBeVisible();
+    await expect(main.getByRole('button', { name: /Programme fixture.*Self-pickup/ })).toBeVisible();
+    await expect(main.getByRole('button', { name: /Rider fixture.*Location unavailable/ })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    if (width < 768) {
+      const delivery = await main.getByRole('button', { name: /Rider fixture.*Location unavailable/ }).boundingBox();
+      const bottomNav = await nav.boundingBox();
+      expect(delivery!.y + delivery!.height).toBeLessThanOrEqual(bottomNav!.y);
+    }
+    await page.screenshot({ path: testInfo.outputPath('admin-today.png'), animations: 'disabled' });
+
+    const event = main.getByRole('button', { name: /Programme fixture.*Self-pickup/ });
+    await event.click();
+    const detail = page.getByRole('dialog');
+    await expect(detail.getByText('Self-pickup', { exact: true })).toBeVisible();
+    await expect(detail.getByText('Location unavailable', { exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(detail).toHaveCount(0);
+    await expect(event).toBeFocused();
+    if (native) {
+      const delivery = main.getByRole('button', { name: /Rider fixture.*Location unavailable/ });
+      await delivery.click();
+      await expect(page.getByRole('dialog', { name: 'Track your order' })).toContainText('#RW00012');
+      await page.getByRole('button', { name: 'Close map' }).click();
+      await expect(delivery).toBeFocused();
+    }
+
+    await nav.getByRole('button', { name: 'Schedule', exact: true }).click();
+    await main.getByRole('button', { name: 'Tomorrow', exact: true }).click();
+    await expect(main.getByText('1 event · 40 event guests', { exact: true })).toBeVisible();
+    await expect(main.getByRole('button', { name: /Tomorrow fixture/ })).toBeVisible();
+    await main.getByRole('button', { name: '7 days', exact: true }).click();
+    await expect(main.getByText('3 events · 70 event guests', { exact: true })).toBeVisible();
+    await nav.getByRole('button', { name: 'Today', exact: true }).click();
+    await main.getByRole('button', { name: /Pricing needed 1/ }).click();
+    await expect(main.getByRole('region', { name: 'Filters' }).getByRole('status')).toHaveText('1 order found');
+    await expect(main.getByText('Programme fixture', { exact: true }).filter({ visible: true }).first()).toBeVisible();
+
+    const search = main.getByRole('searchbox', { name: 'Search orders' });
+    await search.fill('pending fixture');
+    await expect(main.getByRole('region', { name: 'Filters' }).getByRole('status')).toHaveText('0 orders found');
+    await main.getByRole('button', { name: 'Remove filter Pricing needed' }).click();
+    await expect(main.getByRole('region', { name: 'Filters' }).getByRole('status')).toHaveText('1 order found');
+    if (width >= 768) {
+      await main.getByRole('row').filter({ hasText: 'Pending fixture' }).getByRole('checkbox').check();
+    }
+    await main.getByRole('button', { name: width < 768 ? 'Table' : 'List', exact: true }).click();
+    await expect(search).toHaveValue('pending fixture');
+    await expect(main.getByRole('region', { name: 'Filters' }).getByRole('status')).toHaveText('1 order found');
+    if (width >= 768) {
+      await expect(main.getByRole('checkbox', { name: 'Select order Pending fixture' })).toBeChecked();
+      const cardDetail = main.getByRole('button', { name: 'View details Pending fixture' });
+      await cardDetail.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(cardDetail).toBeFocused();
+    }
+
+    await nav.getByRole('button', { name: 'More', exact: true }).click();
+    await expect(main.getByText('Recorded individual invoice numbers')).toBeVisible();
+    await main.getByRole('button', { name: 'Open orders', exact: true }).click();
+    await expect(search).toHaveValue('');
+    await expect(main.getByRole('region', { name: 'Filters' }).getByRole('status')).toHaveText('2 orders found');
+  });
+}
+
 test('simulated admin invoice preview recovers after a failed PDF request', async ({ page }) => {
   test.setTimeout(75_000);
   await page.setViewportSize({ width: 390, height: 900 });
   await setupCommonRoutes(page, { adminVerified: true });
   await seedAppStorage(page, { language: 'en', theme: 'light', isAdmin: true });
   const fixture = {
-    id: 'audit-invoice', name: 'Invoice audit sample', status: 'approved', invoiceNo: 'AUDIT-1',
+    id: 'audit-invoice', name: 'Invoice audit sample', status: 'approved', invoiceNo: 'RW00001',
     date: '2026-11-23', guests: 20, quantity: 20, totalAmount: 200,
   };
   await page.route('**/api/admin/orders', route => route.fulfill({ json: { success: true, orders: [fixture] } }));
   const pdf = new jsPDF();
-  pdf.text('Simulated invoice AUDIT-1', 20, 20);
+  pdf.text('Simulated invoice RW00001', 20, 20);
   let unavailable = true;
   await page.route('**/api/invoice/audit-invoice/pdf?*', route => unavailable
     ? route.fulfill({ status: 503, json: { error: 'Simulated PDF service outage' } })
     : route.fulfill({ contentType: 'application/pdf', body: Buffer.from(pdf.output('arraybuffer')) }));
   await page.goto('/#/admin');
-  await page.getByRole('button', { name: 'Tables View', exact: true }).click({ timeout: 20_000 });
-  await page.getByRole('button', { name: 'Refresh Data', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Admin navigation' }).getByRole('button', { name: 'Orders', exact: true }).click({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Refresh orders', exact: true }).click();
+  await page.getByRole('button', { name: 'Table', exact: true }).click();
   await page.getByText('Details and actions', { exact: true }).click();
   const preview = page.getByRole('button', { name: 'Preview PDF', exact: true });
   await preview.click();
   await expect(page.getByText(/Failed to generate PDF from server/)).toBeVisible();
   unavailable = false;
   await preview.click();
-  await expect(page.getByText('Invoice_AUDIT-1.pdf', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Invoice_RW00001.pdf' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'View order', exact: true }).click();
+  const detail = page.getByRole('dialog');
+  await expect(detail.getByRole('heading', { name: 'Invoice summary' })).toBeVisible();
+  await expect(detail.getByText('RW00001', { exact: true })).toBeVisible();
+  const request = page.waitForRequest(req => new URL(req.url()).pathname === '/api/invoice/audit-invoice/pdf');
+  await detail.getByRole('button', { name: 'Preview document' }).click();
+  expect(new URL((await request).url()).searchParams.get('final')).toBe('true');
+  await expect(page.getByRole('heading', { name: 'Invoice_RW00001.pdf' })).toBeVisible();
 });
 
 test('verified customer completes a simulated catering submission', async ({ page }) => {
@@ -688,7 +796,7 @@ test('returning Android administrator keeps the existing admin landing screen', 
   ]);
   expect(await verification.json()).toMatchObject({ verified: true, admin: true });
   await expect(page).toHaveURL(/#\/admin$/);
-  await expect(page.locator('.app-admin-tabs')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Admin navigation' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);
 });
 
@@ -703,7 +811,7 @@ test('returning Android administrator cannot restore a rejected stored token', a
   ]);
   expect(await verification.json()).toMatchObject({ success: false, error: 'Unauthorized' });
   await expect(page.getByRole('heading', { name: 'Admin Access Restricted' })).toBeVisible();
-  await expect(page.locator('.app-admin-tabs')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Admin navigation' })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('wawasan_admin_token'))).toBeNull();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('CapacitorStorage.wawasan_admin_token'))).toBeNull();
   await expect(page.getByRole('button', { name: 'Get Started' })).toHaveCount(0);

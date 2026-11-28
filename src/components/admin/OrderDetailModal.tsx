@@ -3,17 +3,18 @@ import { canViewRiderTracking } from '@/lib/riderTracking';
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'motion/react';
-import { X, Loader2, CheckCircle, XCircle, Send, Copy, Trash2, Truck, MapPin } from 'lucide-react';
+import { X, Loader2, CheckCircle, XCircle, Send, Copy, Trash2, Truck, MapPin, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/Toast';
 import WawasanLoader from '@/components/brand/WawasanLoader';
-import { formatDateDisplay, formatDateTimeDisplay } from '@/lib/utils';
+import { formatDateTimeDisplay } from '@/lib/utils';
 import { numberToWords } from '@/services/numberToWordsBM';
 import type { Order } from '@/types';
 import { useOverlayAccessibility } from '@/hooks/ui/useOverlayAccessibility';
 import { getVerifiedOrderCompanyCode } from '@/lib/petronasAutofill';
+import { formatAdminEvent, getAdminOfficialInvoiceNo, getAdminOrderPax, getAdminOrderSessions } from '@/lib/adminOrderFilters';
 
 interface OrderDetailModalProps {
   onReadOrder?: (order: Order) => void;
@@ -37,15 +38,13 @@ interface OrderDetailModalProps {
   handleUpdateStatus?: (id: string, status: string) => Promise<void> | void;
   openSendDialog: (order: Order) => void;
   handleTrack?: (order: Order) => void;
+  onPreviewInvoice?: (order: Order) => void;
   handleDeleteOrder?: (id: string) => void;
 }
 
-const MEAL_LABELS: Record<string, { en: string; bm: string }> = {
-  breakfast: { en: 'Breakfast', bm: 'Sarapan' },
-  lunch: { en: 'Lunch', bm: 'Makan Tengahari' },
-  dinner: { en: 'Dinner', bm: 'Makan Malam' },
-  tea_break: { en: 'Tea Break', bm: 'Minum Petang' },
-  hi_tea: { en: 'Hi-Tea', bm: 'Minum Petang (Hi-Tea)' },
+const pricingMealLabels: Record<string, string> = {
+  breakfast: 'admin_breakfast', lunch: 'admin_lunch', dinner: 'admin_dinner',
+  tea_break: 'admin_hi_tea', hi_tea: 'admin_hi_tea',
 };
 
 export function OrderDetailModal({
@@ -70,6 +69,7 @@ export function OrderDetailModal({
   handleUpdateStatus,
   openSendDialog,
   handleTrack,
+  onPreviewInvoice,
   handleDeleteOrder,
 }: OrderDetailModalProps) {
   const { toast } = useToast();
@@ -88,6 +88,7 @@ export function OrderDetailModal({
     return total + (Number.isFinite(price) && price > 0 ? Math.round(price * 100) / 100 : 0) * safeQuantity;
   }, 0);
   const pickup = isSelfPickup(selectedOrder?.delivery);
+  const invoiceNo = selectedOrder && (selectedOrder.consolidatedInvoiceNo || selectedOrder.invoiceBatchNo || getAdminOfficialInvoiceNo(selectedOrder));
   const buffet = selectedOrder?.preparationType === 'buffet';
   const deliveryCharge = pickup ? 0 : Number(deliveryFee);
   const serviceChargeRate = buffet ? Number(serviceRate) : 0;
@@ -109,7 +110,7 @@ export function OrderDetailModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="order-detail-title"
-      className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6"
+      className="admin-order-detail-overlay fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6"
       onClick={onClose}
       id="order-detail-dialog-overlay"
     >
@@ -213,36 +214,16 @@ export function OrderDetailModal({
                 <div className="bg-white dark:bg-[var(--ui-canvas)] p-6 sm:p-8 rounded-2xl border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-6">
                   {[
                     {
-                      label: 'EVENT DATE :',
-                      value: selectedOrder.dateTime
-                        ? formatDateTimeDisplay(selectedOrder.dateTime)
-                        : selectedOrder.eventDate
-                          ? selectedOrder.time
-                            ? `${formatDateDisplay(selectedOrder.eventDate)} @ ${selectedOrder.time}`
-                            : formatDateDisplay(selectedOrder.eventDate)
-                          : selectedOrder.date
-                            ? selectedOrder.time
-                              ? `${formatDateDisplay(selectedOrder.date)} @ ${selectedOrder.time}`
-                              : formatDateDisplay(selectedOrder.date)
-                            : '-',
+                      label: t('admin_event_date'),
+                      value: formatAdminEvent(selectedOrder, language) || '—',
                     },
                     {
-                      label: 'QUANTITY :',
-                      value:
-                        selectedOrder.quantity != null
-                          ? `${selectedOrder.quantity} pax`
-                          : selectedOrder.guests != null
-                            ? `${selectedOrder.guests} pax`
-                            : '-',
+                      label: t('admin_guest_count'),
+                      value: getAdminOrderPax(selectedOrder) ? `${getAdminOrderPax(selectedOrder)} pax` : '—',
                     },
                     {
-                      label: 'MEALS :',
-                      value:
-                        selectedOrder.meals && selectedOrder.meals.length > 0
-                          ? selectedOrder.meals
-                              .map((m) => MEAL_LABELS[m]?.[selectedOrder.lang || 'en'] || m)
-                              .join(', ')
-                          : '-',
+                      label: t('admin_serving'),
+                      value: getAdminOrderSessions(selectedOrder).map((session) => t(`admin_${session}`)).join(' · ') || safeMeals.join(', ') || '—',
                     },
                     {
                       label: 'MENU DETAILS :',
@@ -262,8 +243,12 @@ export function OrderDetailModal({
                             : '-',
                     },
                     {
-                      label: 'EVENT LOCATION :',
-                      value: selectedOrder.location || '-',
+                      label: t('admin_location'),
+                      value: selectedOrder.location?.trim() || t('admin_location_missing'),
+                    },
+                    {
+                      label: t('admin_fulfilment'),
+                      value: t(pickup ? 'admin_pickup' : 'admin_delivery'),
                     },
                     {
                       label: 'SUBMITTED DATE :',
@@ -379,6 +364,7 @@ export function OrderDetailModal({
                       </div>
                     )}
                   {handleTrack &&
+                    !pickup &&
                     selectedOrder.id &&
                     canViewRiderTracking(selectedOrder.status) && (
                       <Button
@@ -394,6 +380,18 @@ export function OrderDetailModal({
                       </Button>
                     )}
                 </div>
+
+                {invoiceNo && (
+                  <section className="admin-overview-panel admin-detail-invoice">
+                    <h3>{t('admin_invoice_summary')}</h3>
+                    <dl><dt>{t('admin_invoice_number')}</dt><dd>{invoiceNo}</dd></dl>
+                    {onPreviewInvoice && selectedOrder.id && (
+                      <Button variant="outline" onClick={() => onPreviewInvoice(selectedOrder)}>
+                        <FileText size={16} aria-hidden="true" /> {t('admin_preview_invoice')}
+                      </Button>
+                    )}
+                  </section>
+                )}
 
                 {/* Pricing and Grand Total */}
                 <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[var(--ui-canvas)] border border-stone-200/80 dark:border-stone-800/80 shadow-sm space-y-5">
@@ -411,7 +409,7 @@ export function OrderDetailModal({
                       safeMeals.map((meal, idx) => (
                         <div key={`${meal}-${idx}`} className="flex flex-col gap-1.5">
                           <Label className="text-xs text-stone-600 dark:text-stone-400 font-bold uppercase tracking-wide">
-                            {MEAL_LABELS[meal]?.[selectedOrder.lang || 'en'] || meal}
+                            {pricingMealLabels[meal] ? t(pricingMealLabels[meal]) : meal}
                           </Label>
                           <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
