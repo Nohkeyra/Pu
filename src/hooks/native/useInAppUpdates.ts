@@ -101,6 +101,9 @@ export function useInAppUpdates() {
         throw new Error('Published release information is temporarily unavailable.');
       }
       const localInfo = await getInstalledAppInfo();
+      // Manual checks may use the API fallback before any real-time snapshot.
+      // The modal must receive the same published config used for the decision.
+      setLatestConfig(config);
       setCurrentVersion(localInfo.version);
       setCurrentBuild(localInfo.buildNumber);
 
