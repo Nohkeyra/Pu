@@ -26,11 +26,7 @@ import {
   rgb,
   type PDFFont,
 } from 'pdf-lib';
-import {
-  drawInvoiceCalligraphy,
-  INVOICE_CONTACT,
-} from '../../src/services/invoicePdfBrand.js';
-import { renderInvoiceBatch } from '../../src/services/invoiceBatchPdf.js';
+import { INVOICE_CONTACT } from '../../src/services/invoicePdfBrand.js';
 import { drawRefinedBatch } from '../../src/services/refinedInvoiceBatch.js';
 import type { InvoiceBatch } from '../../src/lib/invoiceBatch.js';
 import { getVerifiedOrderCompanyCode } from '../../src/lib/petronasAutofill.js';
@@ -46,71 +42,6 @@ export function getBankDetails() {
     bankAccountName: setting('BANK_ACCOUNT_NAME', INVOICE_BUSINESS.bank.bankAccountName),
     bankAccountNumber: setting('BANK_ACCOUNT_NUMBER', INVOICE_BUSINESS.bank.bankAccountNumber),
   };
-}
-
-// ─── Image loading ────────────────────────────────────────────────────────────
-// After `npm run build` (vite build, copyPublicDir: true), public/ contents land
-// in dist/ (not dist/public/). So `public/assets/brand/logo.png` → `dist/assets/brand/logo.png`.
-function loadImageBase64(relativePaths: string[]): string | null {
-  const cwd = process.cwd();
-  const moduleDir = typeof __dirname === 'string' ? __dirname : cwd;
-  // Try dist/ first (production), then public/ (dev/local), then fall through.
-  const bases = [
-    path.join(cwd, 'dist'),
-    path.join(cwd, 'public'),
-    cwd,
-    path.join(moduleDir, '..', 'public'),
-    path.join(moduleDir, '..', 'dist'),
-    path.join(moduleDir, 'public'),
-    path.join(moduleDir, 'dist'),
-    moduleDir,
-  ];
-  for (const relPath of relativePaths) {
-    for (const base of bases) {
-      const full = path.join(base, relPath);
-      try {
-        if (fs.existsSync(full)) {
-          return fs.readFileSync(full).toString('base64');
-        }
-      } catch {
-        /* try next */
-      }
-    }
-  }
-  return null;
-}
-
-// Cache loaded images in module scope (persists for lifetime of the Node process,
-// which is what we want — no need to re-read from disk on every invoice).
-let cachedLogoBase64: string | null = null;
-let cachedJawiBase64: string | null = null;
-let imagesLoaded = false;
-
-function ensureImagesLoaded() {
-  if (!cachedLogoBase64) {
-    cachedLogoBase64 = loadImageBase64([
-      'assets/brand/apk_logo_clean.png',
-      'assets/brand/wawasan_logo.png',
-      'assets/brand/wawasan_logo_fallback.png',
-    ]);
-  }
-  if (!cachedJawiBase64) {
-    cachedJawiBase64 = loadImageBase64([
-      'assets/heritage/Jawi.jpg',
-      'assets/heritage/batik_pattern.jpg',
-      'assets/heritage/batik_pattern_hd.jpg',
-      'assets/heritage/batik_vector_pattern.jpg',
-    ]);
-  }
-  if (!imagesLoaded) {
-    if (!cachedLogoBase64)
-      console.warn('[serverPdfService] Logo image not found — PDF will render without logo.');
-    if (!cachedJawiBase64)
-      console.warn(
-        '[serverPdfService] Jawi image not found — PDF will render with clean header background.'
-      );
-    imagesLoaded = true;
-  }
 }
 
 // ─── Amount-in-words (inlined from src/services/numberToWordsBM.ts) ───────────
@@ -286,9 +217,6 @@ const mealLabels: Record<string, string> = {
 };
 
 // ─── PDF drawing helpers ──────────────────────────────────────────────────────
-function drawHeaderBackground(doc: jsPDF, headerHeight = 36, pageWidth = 210) {
-  drawInvoiceCalligraphy(doc, cachedJawiBase64, headerHeight, pageWidth);
-}
 async function renderRefinedConsolidatedInvoice(batch: InvoiceBatch): Promise<Buffer> {
   if(!batch.pages.length || !batch.orders.length || new Set(batch.pages.map(p=>p.invoiceNo)).size!==batch.pages.length)
     throw new Error('Saved invoice page numbers are required and must be distinct.');
@@ -334,38 +262,14 @@ async function renderRefinedConsolidatedInvoice(batch: InvoiceBatch): Promise<Bu
   return Buffer.from(await pdf.save());
 }
 
-export async function generateSavedInvoicePdf(batch: InvoiceBatch): Promise<Buffer> {
-  if (batch.layoutVersion === 4) return renderRefinedConsolidatedInvoice(batch);
-  ensureImagesLoaded();
-  return Buffer.from(
-    renderInvoiceBatch(batch.orders, {
-      ...batch,
-      logo: cachedLogoBase64,
-      calligraphy: cachedJawiBase64,
-      bank: getBankDetails(),
-    }).output('arraybuffer')
-  );
-}
-
-/**
- * Shared dispatch for persisted consolidated documents.
- * Versioned batches always use their immutable page plan and saved settings.
- * Older unversioned records retain their historical renderer; when old
- * metadata is missing, preserve the caller's compatibility defaults.
- */
+/** The only consolidated renderer; obsolete test batches are never silently reissued. */
 export async function generatePersistedConsolidatedInvoicePdf(
   batch: Record<string, any>,
-  legacyDefaults: { includeNotes: boolean; lang: 'bm' | 'en' } = { includeNotes: false, lang: 'bm' }
+  _legacyDefaults?: { includeNotes: boolean; lang: 'bm' | 'en' }
 ): Promise<Buffer> {
-  if ([2, 3, 4].includes(batch.layoutVersion)) {
-    return generateSavedInvoicePdf(batch as InvoiceBatch);
-  }
-  return generateServerConsolidatedInvoicePdf(
-    batch.orders,
-    batch.invoiceNo,
-    typeof batch.includeNotes === 'boolean' ? batch.includeNotes : legacyDefaults.includeNotes,
-    batch.lang === 'en' || batch.lang === 'bm' ? batch.lang : legacyDefaults.lang
-  );
+  if (batch.layoutVersion !== 4)
+    throw new Error('Obsolete pre-launch test batch. Clear test records before issuing new invoices.');
+  return renderRefinedConsolidatedInvoice(batch as InvoiceBatch);
 }
 
 // ─── Master PDF Template Loader & Vector Engine ──────────────────────────────
@@ -849,7 +753,7 @@ function drawFooterNotice(
 }
 
 
-/** Version 4: candidate refined individual invoice. Financial pages and PIC
+/** Approved individual invoice. Financial pages and PIC
  * pages share the same document identity; page 2 is always the PIC page.
  * The original master artwork is embedded as clipped vector regions, not
  * substituted with a raster recreation or a fixed-row form.
@@ -1073,8 +977,8 @@ export async function generateServerInvoicePdf(
   const lang: 'en' | 'bm' = order.lang === 'en' ? 'en' : 'bm';
   const docType = resolveDocumentType(order, isFinal, docTypeOverride);
   const isMonetaryFinal = isFinal && docType !== 'quotation';
-  // New invoices persist the approved layout; historical invoices and quotations retain their path.
-  const refined = isMonetaryFinal && order.invoiceLayoutVersion === 4;
+  // All invoices use the single approved individual master. Only quotations retain their separate design.
+  const refined = docType === 'invoice';
   const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
 
   const pdfDoc = refined ? await PDFDocument.create() : await PDFDocument.load(getMasterTemplateBytes());
@@ -1541,7 +1445,7 @@ export async function generateServerInvoicePdf(
           row.rowHeight,
           idx,
           { regular: helvetica, bold: helveticaBold, oblique: helveticaOblique },
-          !isMonetaryFinal
+          true
         );
         rowTopY -= row.rowHeight;
       });
@@ -1556,7 +1460,7 @@ export async function generateServerInvoicePdf(
             26,
             idx,
             { regular: helvetica, bold: helveticaBold, oblique: helveticaOblique },
-            !isMonetaryFinal
+            true
           );
           rowTopY -= 26;
           idx++;
@@ -1596,18 +1500,14 @@ export async function generateServerInvoicePdf(
         thickness: 0.6,
         color: C_TOTAL_RULE,
       });
-      const totalStr = isMonetaryFinal
-        ? grandTotal.toFixed(2)
-        : lang === 'bm'
-          ? 'Sebut harga'
-          : 'Quotation';
+      const totalStr = lang === 'bm' ? 'Sebut harga' : 'Quotation';
       drawMasterRightText(
         page,
         totalStr,
         543.0,
         sy(416.2),
-        isMonetaryFinal ? helveticaBold : helveticaOblique,
-        isMonetaryFinal ? 12.0 : 9.0,
+        helveticaOblique,
+        9.0,
         C_WHITE
       );
 
@@ -1632,35 +1532,6 @@ export async function generateServerInvoicePdf(
         size: 9.4,
         color: C_MUTED_DARK,
       });
-      if (isMonetaryFinal) {
-        const spelled = (lang === 'en' ? enWords(grandTotal) : bmWords(grandTotal)).toUpperCase();
-        let wordSize = 8.4;
-        const maxWordW = 324;
-        while (wordSize > 6.2 && helveticaBold.widthOfTextAtSize(spelled, wordSize) > maxWordW) {
-          wordSize -= 0.3;
-        }
-        if (helveticaBold.widthOfTextAtSize(spelled, wordSize) <= maxWordW) {
-          page.drawText(spelled, {
-            x: 156,
-            y: sy(389.49),
-            font: helveticaBold,
-            size: wordSize,
-            color: C_MUTED_DARK,
-          });
-        } else {
-          const wordLines = wrapPdfText(spelled, helveticaBold, 7.2, maxWordW);
-          wordLines.slice(0, 2).forEach((ln, idx) => {
-            page.drawText(ln, {
-              x: 156,
-              y: sy(393.5) - idx * 8.5,
-              font: helveticaBold,
-              size: 7.2,
-              color: C_MUTED_DARK,
-            });
-          });
-        }
-      }
-
       // Bank Details Box (y: 263.89..336.89)
       drawRoundedRectPath(
         page,
@@ -1805,342 +1676,3 @@ export async function generateServerInvoicePdf(
   return Buffer.from(outBytes);
 }
 
-function drawCreamBox(
-  doc: jsPDF,
-  label: string,
-  value: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  boldValue = false
-) {
-  doc.setFillColor(253, 252, 250);
-  doc.setDrawColor(194, 147, 45);
-  doc.setLineWidth(0.35);
-  doc.rect(x, y, width, height, 'FD');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.setTextColor(114, 80, 20);
-  doc.text(label, x + 3, y + 4.8);
-
-  doc.setFont('helvetica', boldValue ? 'bold' : 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(26, 24, 22);
-  const split = doc.splitTextToSize(value || '-', width - 6);
-  doc.text(split[0] || '-', x + 3, y + 10);
-}
-
-export async function generateServerConsolidatedInvoicePdf(
-  orders: Record<string, any>[],
-  invoiceNo?: string,
-  includeNotes: boolean = false,
-  lang: 'bm' | 'en' = 'bm'
-): Promise<Buffer> {
-  if (!orders || orders.length === 0) {
-    throw new Error(
-      lang === 'bm'
-        ? 'Tiada pesanan dipilih untuk invois konsolidasi.'
-        : 'No orders selected for consolidated invoice.'
-    );
-  }
-
-  ensureImagesLoaded();
-
-  // Consolidated invoices MUST be landscape A4 (297mm x 210mm)
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-  const cCreamBg = [253, 252, 250]; // Clean warm ivory (#FDFCFA)
-  const cGoldBorder = [194, 147, 45]; // Gold border (#C2932D)
-  const cHeaderGold = [166, 124, 30]; // Royal Gold (#A67C1E)
-  const cDeepGold = [114, 80, 20]; // Deep Royal Bronze-Gold (#725014)
-  const cCharcoal = [26, 24, 22]; // Warm charcoal (#1A1816)
-
-  const drawPageHeader = (pageNumber: number) => {
-    drawHeaderBackground(doc, 36, 297);
-
-    if (cachedLogoBase64) {
-      try {
-        doc.addImage(cachedLogoBase64, 'PNG', 15, 8, 20, 20);
-      } catch {
-        /* continue */
-      }
-    }
-
-    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.text('RESTORAN WAWASAN', 39, 16);
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(
-      'Unit 3, Level B3, Menara PjH, Jalan P2a, Presint 2, 62100 Putrajaya, W.P Putrajaya',
-      39,
-      23
-    );
-
-    doc.setTextColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(lang === 'en' ? 'CONSOLIDATED INVOICE' : 'INVOIS KONSOLIDASI', 282, 20, {
-      align: 'right',
-    });
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(
-      `${lang === 'en' ? 'Invoice No' : 'No. Invois'}: ${invoiceNo || 'COMBINED'}`,
-      282,
-      26,
-      { align: 'right' }
-    );
-    doc.text(
-      `${lang === 'en' ? 'Date' : 'Tarikh'}: ${formatDate(new Date().toISOString())}`,
-      282,
-      30,
-      { align: 'right' }
-    );
-    if (pageNumber > 1) {
-      doc.text(`${lang === 'en' ? 'Page' : 'Muka Surat'} ${pageNumber}`, 282, 34, {
-        align: 'right',
-      });
-    }
-  };
-
-  let pageNumber = 1;
-  drawPageHeader(pageNumber);
-
-  const distinctClients = new Set(orders.map((o) => o.to || '-'));
-  const clientName =
-    distinctClients.size > 1 ? Array.from(distinctClients).join(', ') : orders[0]?.to || '-';
-  const recipientText = clientName;
-  drawCreamBox(doc, lang === 'en' ? 'TO' : 'KEPADA', recipientText, 15, 40, 267, 13, true);
-
-  const allPossibleMeals = ['breakfast', 'lunch', 'tea_break', 'hi_tea', 'dinner'];
-  const activeMeals = allPossibleMeals.filter((m) =>
-    orders.some((o) => Array.isArray(o.meals) && o.meals.includes(m))
-  );
-
-  const startX = 15;
-  const colDate = 26;
-  const colQty = 16;
-  const colNotes = includeNotes ? 38 : 0;
-  const mealColWidth = 24;
-  const colMealsWidth = Math.max(activeMeals.length * mealColWidth, 48);
-  const colRM = 25;
-  const colMenu = 267 - colDate - colQty - colNotes - colMealsWidth - colRM;
-
-  const xDate = startX;
-  const xQty = xDate + colDate;
-  const xNotes = xQty + colQty;
-  const xMenu = includeNotes ? xNotes + colNotes : xNotes;
-  const xMealsStart = xMenu + colMenu;
-  const xRM = xMealsStart + colMealsWidth;
-
-  const drawMatrixHeader = (y: number) => {
-    // Row 1: ORDER DETAILS, PRICE / PAX (RM), TOTAL
-    doc.setFillColor(cHeaderGold[0], cHeaderGold[1], cHeaderGold[2]);
-    doc.rect(15, y, 267, 7, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-
-    doc.text(
-      lang === 'en' ? 'ORDER DETAILS' : 'BUTIRAN PESANAN',
-      xDate + (xMealsStart - xDate) / 2,
-      y + 4.8,
-      { align: 'center' }
-    );
-
-    if (activeMeals.length > 0) {
-      doc.line(xMealsStart, y, xMealsStart, y + 7);
-      doc.text(
-        lang === 'en' ? 'PRICE / PAX (RM)' : 'HARGA / PAX (RM)',
-        xMealsStart + colMealsWidth / 2,
-        y + 4.8,
-        { align: 'center' }
-      );
-    }
-
-    doc.line(xRM, y, xRM, y + 7);
-    doc.text(lang === 'en' ? 'TOTAL' : 'JUMLAH', xRM + colRM / 2, y + 4.8, { align: 'center' });
-
-    // Row 2: Sub-columns
-    const r2Y = y + 7;
-    doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
-    doc.rect(15, r2Y, 267, 7, 'F');
-
-    doc.setFontSize(7.5);
-    const centerText = (txt: string, x: number, w: number) => {
-      doc.text(txt, x + w / 2, r2Y + 4.8, { align: 'center' });
-    };
-
-    centerText(lang === 'en' ? 'Date' : 'Tarikh', xDate, colDate);
-    centerText(lang === 'en' ? 'QTY' : 'Kuantiti', xQty, colQty);
-    if (includeNotes) centerText(lang === 'en' ? 'Notes' : 'Catatan', xNotes, colNotes);
-    centerText('Menu', xMenu, colMenu);
-
-    activeMeals.forEach((meal, i) => {
-      const rawLabel = mealLabels[meal] || meal;
-      const shortLabel =
-        lang === 'en'
-          ? (rawLabel.split('/')[1] || rawLabel).trim()
-          : (rawLabel.split('/')[0] || rawLabel).trim();
-      centerText(shortLabel, xMealsStart + i * mealColWidth, mealColWidth);
-    });
-
-    centerText('RM', xRM, colRM);
-
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.15);
-    [
-      xQty,
-      xNotes,
-      xMenu,
-      xMealsStart,
-      ...activeMeals.map((_, i) => xMealsStart + i * mealColWidth),
-      xRM,
-    ].forEach((x) => {
-      if (x > xDate && x < xRM + colRM) {
-        doc.line(x, r2Y, x, r2Y + 7);
-      }
-    });
-
-    return r2Y + 7;
-  };
-
-  let currentY = 57;
-  currentY = drawMatrixHeader(currentY);
-  let grandTotal = 0;
-
-  orders.forEach((order) => {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-
-    const formattedDateVal = formatDate(order.eventDate || order.date);
-    const splitDate = doc.splitTextToSize(formattedDateVal, colDate - 2);
-    const splitNotes = includeNotes ? doc.splitTextToSize(order.notes || '-', colNotes - 2) : [];
-    const splitMenu = doc.splitTextToSize(order.menu || 'Set Box', colMenu - 2);
-    const qtyStr = (order.quantity || order.guests || 0).toString();
-
-    const maxLines = Math.max(splitDate.length, splitNotes.length, splitMenu.length, 1);
-    const rowHeight = Math.max(7, maxLines * 4 + 3);
-
-    // Landscape page height is 210mm; footer reserve starts at ~185mm
-    if (currentY + rowHeight > 180) {
-      doc.addPage();
-      pageNumber++;
-      drawPageHeader(pageNumber);
-      currentY = 40;
-      currentY = drawMatrixHeader(currentY);
-    }
-
-    doc.setFillColor(cCreamBg[0], cCreamBg[1], cCreamBg[2]);
-    doc.rect(15, currentY, 267, rowHeight, 'F');
-
-    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
-    doc.setLineWidth(0.35);
-    doc.rect(15, currentY, 267, rowHeight, 'S');
-
-    [
-      xQty,
-      xNotes,
-      xMenu,
-      xMealsStart,
-      ...activeMeals.map((_, i) => xMealsStart + i * mealColWidth),
-      xRM,
-    ].forEach((x) => {
-      if ((x > xDate && x < xRM + colRM && x !== xNotes) || (includeNotes && x === xNotes)) {
-        doc.line(x, currentY, x, currentY + rowHeight);
-      }
-    });
-
-    doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-    const textY = currentY + 5;
-
-    doc.text(splitDate, xDate + colDate / 2, textY, { align: 'center' });
-    doc.text(qtyStr, xQty + colQty / 2, textY, { align: 'center' });
-    if (includeNotes) doc.text(splitNotes, xNotes + colNotes / 2, textY, { align: 'center' });
-    doc.text(splitMenu, xMenu + colMenu / 2, textY, { align: 'center' });
-
-    activeMeals.forEach((meal, i) => {
-      if (
-        Array.isArray(order.meals) &&
-        order.meals.includes(meal) &&
-        order.prices &&
-        order.prices[meal] !== undefined
-      ) {
-        const val = Number(order.prices[meal]) || 0;
-        doc.text(val.toFixed(2), xMealsStart + i * mealColWidth + mealColWidth / 2, textY, {
-          align: 'center',
-        });
-      } else {
-        doc.text('-', xMealsStart + i * mealColWidth + mealColWidth / 2, textY, {
-          align: 'center',
-        });
-      }
-    });
-
-    const totalNum = Number(order.totalAmount) || 0;
-    doc.text(totalNum.toFixed(2), xRM + colRM - 2, textY, { align: 'right' });
-    grandTotal += totalNum;
-    currentY += rowHeight;
-  });
-
-  // Grand total row
-  if (currentY + 25 > 185) {
-    doc.addPage();
-    pageNumber++;
-    drawPageHeader(pageNumber);
-    currentY = 40;
-  }
-
-  doc.setFillColor(cDeepGold[0], cDeepGold[1], cDeepGold[2]);
-  doc.rect(15, currentY, 267, 7.5, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text(lang === 'en' ? 'GRAND TOTAL' : 'JUMLAH KESELURUHAN', 18, currentY + 5.2);
-  doc.text(`RM ${grandTotal.toFixed(2)}`, xRM + colRM - 2, currentY + 5.2, { align: 'right' });
-  currentY += 12;
-
-  // Amount in words
-  doc.setTextColor(cCharcoal[0], cCharcoal[1], cCharcoal[2]);
-  doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(8);
-  const spelledConsolidated =
-    lang === 'en'
-      ? `Ringgit Malaysia: ${enWords(grandTotal)} only.`
-      : `Ringgit Malaysia: ${bmWords(grandTotal)} sahaja.`;
-  doc.text(spelledConsolidated, 15, currentY);
-
-  // Footer on all pages (Landscape A4: width 297, height 210)
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setDrawColor(cGoldBorder[0], cGoldBorder[1], cGoldBorder[2]);
-    doc.setLineWidth(0.3);
-    const bank = getBankDetails();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(114, 80, 20);
-    doc.text(`${bank.bankName} | ${bank.bankAccountName} | ${bank.bankAccountNumber}`, 148.5, 193, {
-      align: 'center',
-    });
-    doc.line(15, 198, 282, 198);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(135, 125, 115);
-    doc.text(INVOICE_BUSINESS.address, 148.5, 203, { align: 'center' });
-    doc.text(`${lang === 'en' ? 'Page' : 'Muka Surat'} ${i} / ${totalPages}`, 282, 203, {
-      align: 'right',
-    });
-  }
-
-  const arrayBuffer = doc.output('arraybuffer');
-  return Buffer.from(arrayBuffer);
-}

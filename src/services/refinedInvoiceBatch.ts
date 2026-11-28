@@ -48,7 +48,7 @@ export function refinedBatchLayout(doc: jsPDF, orders: InvoiceRecord[], options:
     }
     if (Number(order.deliveryCharge)>0) details.push(t('Caj Penghantaran','Delivery Charge')+': RM '+money(Number(order.deliveryCharge)));
     if (Number(order.serviceChargeAmount)>0) details.push(t('Caj Perkhidmatan','Service Charge')+': RM '+money(Number(order.serviceChargeAmount)));
-    const cells = [invoiceDate(order.eventDate||order.date||order.dateTime),String(order.quantity??order.guests??0),
+    const cells = [invoiceDate(order.eventDate||order.date||order.dateTime),String(order.quantity??order.guests??order.pax??0),
       options.includeNotes ? order.notes||'-' : '-', details.join('\n'),...rates,money(invoiceAmountCents(order)/100)];
     const lines = cells.map((value,i)=>doc.splitTextToSize(value,widths[i]-3) as string[]);
     const height = Math.max(12, Math.max(...lines.map(v=>v.length))*lineMM+3.5);
@@ -70,7 +70,11 @@ export function planRefinedBatch(doc:jsPDF,orders:InvoiceRecord[],options:BatchP
 }
 /** Draw only dynamic content; server embeds the exact approved vector header and signature. */
 export function drawRefinedBatch(doc:jsPDF,orders:InvoiceRecord[],options:BatchPdfOptions):number[] {
-  const data=refinedBatchLayout(doc,orders,options), pages=options.pages!;
+  const pages=options.pages;
+  if(!pages?.length || !orders.length)throw new Error('Saved invoice page numbers are required.');
+  if(new Set(pages.map(p=>p.invoiceNo)).size!==pages.length)throw new Error('Each page needs a distinct invoice number.');
+  if(pages.some(p=>!/^RW\d{5}$/.test(p.invoiceNo)))throw new Error('Each page requires an official RWxxxxx number.');
+  const data=refinedBatchLayout(doc,orders,options);
   const bm=options.lang==='bm',t=(a:string,b:string)=>bm?a:b;
   const expected=planRefinedBatch(doc,orders,options);
   if(JSON.stringify(pages.map(({orderIds,totalCents})=>({orderIds,totalCents})))!==JSON.stringify(expected))

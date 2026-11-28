@@ -149,12 +149,13 @@ describe('Invoice snapshots and page allocation', () => {
     const next = await reserveConsolidatedNumber('feature-admin');
     expect(Number(next.slice(2))).toBe(Number(first.slice(2)) + 2);
   });
-  it('reopens committed historical batch numbers without renumbering', async () => {
+  it('rejects obsolete pre-launch batch records without modifying them', async () => {
     const invoiceNo = 'RW HISTORICAL-TEST';
     const historical = { invoiceNo, state: 'committed', orderIds: ['historic'], pages: [{ invoiceNo, orderIds: ['historic'], totalCents: 1500 }], layoutVersion: 2 };
     await db.collection('consolidated_invoices').doc(invoiceNo).set(historical);
-    expect(await readInvoiceBatch(invoiceNo)).toEqual(historical);
-    expect(await commitConsolidatedInvoice(['historic'], invoiceNo, 'feature-admin')).toEqual(historical);
+    await expect(readInvoiceBatch(invoiceNo)).rejects.toThrow(/Obsolete pre-launch test batch/);
+    await expect(commitConsolidatedInvoice(['historic'], invoiceNo, 'feature-admin')).rejects.toThrow(/Obsolete pre-launch test batch/);
+    expect((await db.collection('consolidated_invoices').doc(invoiceNo).get()).data()).toEqual(historical);
   });
   it('skips custom registered serials in the legacy quotation counter', async () => {
     const first = await generateSequentialInvoiceNo(false, '2088-01-01'),

@@ -52,6 +52,8 @@ export async function readInvoiceBatch(invoiceNo: string): Promise<Record<string
   ).data();
   if (data?.state !== 'committed')
     throw new ConsolidatedInvoiceError('Saved invoice not found.', 404);
+  if (data.layoutVersion !== CURRENT_INVOICE_LAYOUT)
+    throw new ConsolidatedInvoiceError('Obsolete pre-launch test batch. Clear test records before issuing new invoices.', 409);
   return data;
 }
 /** Snapshot and serials commit together. A retry returns the original pages unchanged. */
@@ -72,12 +74,13 @@ export async function commitConsolidatedInvoice(
     const [existing, allocated] = await Promise.all([tx.get(ref), tx.get(registry)]);
     const previous = existing.data();
     if (previous?.state === 'committed') {
+      if (previous.layoutVersion !== CURRENT_INVOICE_LAYOUT)
+        throw new ConsolidatedInvoiceError('Obsolete pre-launch test batch. Clear test records before issuing new invoices.', 409);
       if (JSON.stringify(previous.orderIds) !== JSON.stringify(orderIds))
         throw new ConsolidatedInvoiceError('This invoice belongs to a different selection.', 409);
       return previous as InvoiceBatch & { orderIds: string[] };
     }
-    // A committed legacy batch can be reopened above, but never issue a new
-    // invoice using a legacy number, a client-chosen serial or an individual reservation.
+    // Only a current server-issued reservation can issue a new official invoice.
     if (!OFFICIAL_INVOICE_NO.test(invoiceNo))
       throw new ConsolidatedInvoiceError('Reserve a new RWxxxxx invoice number before confirming.', 409);
     if (previous?.state !== 'reserved' || allocated.data()?.purpose !== 'invoice-batch')

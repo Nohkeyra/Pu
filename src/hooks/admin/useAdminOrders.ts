@@ -43,8 +43,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
   }), [adminToken]);
 
   const fetchOrders = useCallback(async (silent?: boolean) => {
-    // Healthy live listener already supplies updates; avoid duplicate REST reads.
-    if (!adminToken || !fallbackActive.current) return;
+    // Preserve explicit refresh/retry; mutation callers already gate automatic refresh on fallbackActive.
+    if (!adminToken) return;
     const requestId = invalidateRequests();
     if (!silent) setLoading(true);
     try {

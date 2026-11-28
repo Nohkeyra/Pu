@@ -95,9 +95,9 @@ offline reliability, preserve the original font, license and visual appearance.
 
 ## Individual Document Master & PETRONAS Company Code Rules — permanent owner requirement
 
-### 1. Approved Invoice Masters and Historical Compatibility
+### 1. Single Approved Master per Document Type
 
-- `docs/APPROVED_INVOICE_MASTERS.md` defines the two official version 4 masters for new individual and consolidated invoices. `Restoran_Wawasan_Template_Invois_Individu_Final.pdf` remains solely for existing individual invoices and quotations without layout version 4.
+- `docs/APPROVED_INVOICE_MASTERS.md` defines the two official version 4 masters for new individual and consolidated invoices. `Restoran_Wawasan_Template_Invois_Individu_Final.pdf` remains solely for quotations. The owner confirmed all prior orders are tests; all individual invoices use the approved master.
 - Preserve the master vector layout, header art, logo, colors, typography, billing box geometry, and original signature (`Tandatangan_Asal_Restoran_Wawasan.png` / template `/fzImg0` drawn once on the final summary page only — never stamp it twice). Never revert to or fall back to historical jsPDF individual invoice layouts.
 - Retain searchable PDF text, graceful wrapping for long addresses/menus/venues without clipping, clean master-style continuation pages (`Page X / Y` / `Halaman X / Y`), itemized delivery/service charges, and totals in words.
 - Preserve existing quotation rendering; new individual invoices use the approved master footer and place PIC, phone, department, ATTN, email and notes on page 2.
@@ -108,7 +108,7 @@ offline reliability, preserve the original font, license and visual appearance.
 ### 2. Numbering & Consolidated Invoice Protection
 
 - All new official invoices (individual and consolidated pages) reserve sequential `RWxxxxx` numbers through `allocateOfficialInvoiceNumbers()` (`meta/individualInvoiceCounter`). Preserve original `quoteNo` (`QT...`) and historical numbers without renumbering issued documents.
-- Preserve historical consolidated invoice rendering and saved page plans. New layouts must follow `docs/APPROVED_INVOICE_MASTERS.md`; do not replace historical rendering or assets until equivalent output is verified. Protect quotation behavior.
+- Use only the approved consolidated master and shared page plan. Reject obsolete pre-launch test batches without reissuing them. Protect quotation behavior; do not delete Firestore data automatically.
 
 ### 3. PETRONAS Company Code Autofill, Validation & Email Collector
 
