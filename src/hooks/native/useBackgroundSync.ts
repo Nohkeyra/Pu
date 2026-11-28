@@ -1,24 +1,20 @@
 import { useEffect } from 'react';
 import { networkStatusStore } from '@/lib/networkStatusStore';
-import { processBackgroundSyncQueue, cacheMenuItemsInIndexedDb } from '@/lib/indexedDbStorage';
+import { processBackgroundSyncQueue } from '@/lib/indexedDbStorage';
 import { getApiUrl } from '@/lib/api';
-import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
+// Shared across StrictMode replays and component remounts.
+let syncInFlight: Promise<unknown> | null = null;
 
 export function useBackgroundSync() {
   useEffect(() => {
     let isActive = true;
-    let syncInFlight = false;
-
-    // Warm the local menu cache without blocking the UI.
-    void cacheMenuItemsInIndexedDb(DEFAULT_MENU_ITEMS).catch(() => {});
 
     // Capacitor and browser can both emit 'online' for one reconnect.
     // The single-flight gate prevents concurrent POSTs for the same queue item.
     const runSync = async () => {
       if (!isActive || syncInFlight || networkStatusStore.getSnapshot() !== true) return;
-      syncInFlight = true;
-      try {
-        await processBackgroundSyncQueue(async (item) => {
+      const flight = processBackgroundSyncQueue(async (item) => {
+          if (!isActive) return 'skip';
           try {
             if (item.type === 'contact_inquiry') {
               const res = await fetch(getApiUrl('/api/inquiries'), {
@@ -33,9 +29,12 @@ export function useBackgroundSync() {
           } catch {
             return false;
           }
-        });
+      });
+      syncInFlight = flight;
+      try {
+        await flight;
       } finally {
-        syncInFlight = false;
+        if (syncInFlight === flight) syncInFlight = null;
       }
     };
 
@@ -47,7 +46,11 @@ export function useBackgroundSync() {
       if (networkStatusStore.getSnapshot() === true) void runSync();
     });
 
-    void runSync();
+    // A replay may mount while the previous effect is closing its database.
+    // Re-evaluate once that flight finishes instead of waiting for another reconnect.
+    const previousFlight = syncInFlight;
+    if (previousFlight) void previousFlight.then(runSync, runSync);
+    else void runSync();
 
     return () => {
       isActive = false;

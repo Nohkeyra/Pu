@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-const css = read('src/styles/wawasan-refinement-v5.css');
+const css = read('src/components/ui/shared-interface.css');
 function tokenNumber(name) {
   const match = css.match(new RegExp(`--${name}:\\s*(\\d+)\\s*;`));
   assert.ok(match, `CSS token --${name} must exist`);
@@ -35,7 +35,7 @@ test('redesign preserves original branding and business boundaries', () => {
   assert.match(read('src/components/layout/CustomerPageHeader.tsx'), /font-artistic customer-brand-name/);
   assert.match(read('src/pages/CustomerDashboard.tsx'), /customer-dashboard-welcome/);
   assert.match(read('src/components/admin/AdminPanel.tsx'), /wawasan-admin-heading/);
-  assert.match(read('src/main.tsx'), /wawasan-refinement-v5.css/);
+  assert.match(read('src/main.tsx'), /components\/ui\/shared-interface\.css/);
   assert.match(read('src/wawasan-page-backgrounds.css'), /batik_vector_pattern\.jpg/);
 });
 
@@ -50,13 +50,13 @@ test('responsive and reduced motion controls remain explicit', () => {
 test('superseded style layers cannot return to the runtime imports', () => {
   const main = read('src/main.tsx');
   const legacyRefs = [];
-  const legacyNames = ['wawasan-editorial-v2.css', 'wawasan-creative-v6.css'];
+  const legacyNames = ['wawasan-editorial-v2.css', 'wawasan-creative-v6.css', 'wawasan-refinement-v5.css'];
 
   function inspect(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) inspect(file);
-      else if (/\.(?:[cm]?[jt]sx?|css|html)$/.test(entry.name) && fs.readFileSync(file, 'utf8').includes(legacyNames[0])) {
+      else if (/\.(?:[cm]?[jt]sx?|css|html)$/.test(entry.name) && legacyNames.some(name => fs.readFileSync(file, 'utf8').includes(name))) {
         legacyRefs.push(path.relative(root, file));
       }
     }
@@ -85,4 +85,23 @@ test('removed lunchbox asset has no remaining runtime source references', () => 
   }
   inspect(path.join(root, 'src'));
   assert.deepEqual(references, [], `Deleted lunchbox asset is still referenced: ${references.join(', ')}`);
+});
+
+test('shared interface geometry has a single stylesheet owner', () => {
+  const owner='src/components/ui/shared-interface.css';
+  const offenders=[];
+  function scan(dir){
+    for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
+      const file=path.join(dir,entry.name);
+      if(entry.isDirectory())scan(file);
+      else if(entry.name.endsWith('.css')){
+        const rel=path.relative(root,file).split(path.sep).join('/');
+        if(rel!==owner && /--rw-z-(?:dialog(?:-backdrop)?|popover|tooltip)\s*:/.test(fs.readFileSync(file,'utf8')))offenders.push(rel);
+      }
+    }
+  }
+  scan(path.join(root,'src'));
+  assert.deepEqual(offenders,[]);
+  const main=read('src/main.tsx');
+  assert.ok(main.indexOf("wawasan-four-colour-theme.css") < main.indexOf("components/ui/shared-interface.css"));
 });

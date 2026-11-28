@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   effects: [] as Array<() => void | (() => void)>,
   listeners: new Map<number, { name: string; callback: (...args: unknown[]) => void }>(),
   nextId: 0,
+  auth: {currentUser:null as null | {uid:string;getIdToken:()=>Promise<string>}},
+  profileWrite: vi.fn(),
   push: {
     checkPermissions: vi.fn(), requestPermissions: vi.fn(), createChannel: vi.fn(),
     addListener: vi.fn(), register: vi.fn(), removeAllListeners: vi.fn(),
@@ -16,8 +18,8 @@ vi.mock('react', () => ({
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => true } }));
 vi.mock('@capacitor/push-notifications', () => ({ PushNotifications: state.push }));
 vi.mock('@capacitor-community/fcm', () => ({ FCM: { getToken: vi.fn().mockResolvedValue({ token: 'local-token' }) } }));
-vi.mock('@/firebaseConfig', () => ({ auth: { currentUser: null }, db: {} }));
-vi.mock('firebase/firestore', () => ({ doc: vi.fn(), setDoc: vi.fn() }));
+vi.mock('@/firebaseConfig', () => ({ auth: state.auth, db: {} }));
+vi.mock('firebase/firestore', () => ({ doc: vi.fn(), setDoc: state.profileWrite }));
 vi.mock('firebase/auth', () => ({ onAuthStateChanged: () => () => {} }));
 vi.mock('@/context/SettingsContext', () => ({ useSettings: () => ({ notificationsEnabled: true }) }));
 vi.mock('@/lib/api', () => ({ getApiUrl: (path: string) => path }));
@@ -29,6 +31,7 @@ beforeEach(() => {
   state.effects.length = 0;
   state.listeners.clear();
   state.nextId = 0;
+  state.auth.currentUser = null;
   state.push.checkPermissions.mockResolvedValue({ receive: 'granted' });
   state.push.createChannel.mockResolvedValue(undefined);
   state.push.register.mockResolvedValue(undefined);
@@ -41,7 +44,23 @@ beforeEach(() => {
   vi.stubGlobal('window', { dispatchEvent: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() });
 });
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('native push setup lifecycle', () => {
+  it('registers customer tokens through one authenticated API, never a direct profile write', async () => {
+    state.auth.currentUser = {uid:'fixture-user',getIdToken:async ()=>'fixture-id-token'};
+    const fetchMock=vi.fn().mockResolvedValue({ok:true});
+    vi.stubGlobal('fetch',fetchMock);
+    vi.stubGlobal('localStorage',{setItem:vi.fn()});
+    useNativeNotifications();
+    const cleanup=state.effects[0]() as ()=>void;
+    await vi.waitFor(()=>expect(state.push.register).toHaveBeenCalledOnce());
+    const registration=[...state.listeners.values()].find(x=>x.name==='registration')!;
+    await registration.callback({value:'native-token'});
+    await vi.waitFor(()=>expect(fetchMock).toHaveBeenCalledExactlyOnceWith('/api/user/fcm-token',expect.objectContaining({method:'POST',headers:expect.objectContaining({Authorization:'Bearer fixture-id-token'}),body:JSON.stringify({fcmToken:'local-token'})})));
+    expect(state.profileWrite).not.toHaveBeenCalled();
+    cleanup();
+  });
   it('stops a late permission result from registering after cleanup', async () => {
     let resolve!: (value: { receive: string }) => void;
     state.push.checkPermissions.mockImplementationOnce(() => new Promise(r => { resolve = r; }));

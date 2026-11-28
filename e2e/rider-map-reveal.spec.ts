@@ -10,7 +10,7 @@ import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
 import RefreshRuntime from '/@react-refresh';
 import '/src/index.css';
 import '/src/styles/wawasan-four-colour-theme.css';
-import '/src/styles/wawasan-refinement-v5.css';
+import '/src/components/ui/shared-interface.css';
 import '/src/components/profile/profile-dashboard.css';
 RefreshRuntime.injectIntoGlobalHook(window);
 window.$RefreshReg$ = () => {};

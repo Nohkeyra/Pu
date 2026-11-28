@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import './index.css';
 import './wawasan-page-backgrounds.css';
 import './styles/wawasan-four-colour-theme.css';
-import './styles/wawasan-refinement-v5.css';
+import './components/ui/shared-interface.css';
 import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { SettingsProvider } from './context/SettingsContext.tsx';

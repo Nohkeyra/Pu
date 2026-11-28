@@ -1,43 +1,13 @@
 /**
  * IndexedDB Storage & Offline Background Sync Engine for Restoran Wawasan
- * Provides persistent structured offline storage for:
- * 1. Menu cache (instant offline browsing)
- * 2. Order drafts (prevent data loss during intermittent connectivity)
- * 3. Background Sync Queue (offline reviews, ratings, user interactions)
+ * Processes retained background queue entries. Catering drafts and pending
+ * orders have separate authoritative storage; old stores are never auto-deleted.
  */
 
 const DB_NAME = 'WawasanAppDB';
 const DB_VERSION = 1;
 
-export interface OfflineMenuItem {
-  id: string;
-  nameEn: string;
-  nameBm: string;
-  category: string;
-  price?: number;
-  image?: string;
-  isPopular?: boolean;
-  isAvailable?: boolean;
-  cachedAt: number;
-}
-
-export interface OrderDraft {
-  id: string;
-  pax: number;
-  date: string;
-  session: string;
-  dishes: any[];
-  veggies: any[];
-  contactInfo: {
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
-  notes?: string;
-  updatedAt: number;
-}
-
+// Retain existing store schema for upgrade safety; only legacy background queue is active.
 export interface SyncQueueItem {
   id: string;
   type: 'review_submission' | 'favorite_dish' | 'contact_inquiry' | (string & {});
@@ -89,90 +59,6 @@ function transactionDone(tx: IDBTransaction): Promise<void> {
 }
 
 /**
- * Cache Menu Items into IndexedDB
- */
-export async function cacheMenuItemsInIndexedDb(items: any[]): Promise<void> {
-  try {
-    const db = await openDatabase();
-    const tx = db.transaction('menu_cache', 'readwrite');
-    const store = tx.objectStore('menu_cache');
-    const now = Date.now();
-
-    for (const item of items) {
-      if (item && item.id) {
-        store.put({ ...item, cachedAt: now });
-      }
-    }
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch (err) {
-    console.debug('IndexedDB menu cache error:', err);
-  }
-}
-
-/**
- * Retrieve cached menu items from IndexedDB
- */
-export async function getCachedMenuItemsFromIndexedDb(): Promise<OfflineMenuItem[]> {
-  try {
-    const db = await openDatabase();
-    const tx = db.transaction('menu_cache', 'readonly');
-    const store = tx.objectStore('menu_cache');
-    const request = store.getAll();
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.debug('IndexedDB menu retrieval error:', err);
-    return [];
-  }
-}
-
-/**
- * Save active customer draft to IndexedDB
- */
-export async function saveOrderDraftToIndexedDb(draft: Omit<OrderDraft, 'updatedAt'>): Promise<void> {
-  try {
-    const db = await openDatabase();
-    const tx = db.transaction('customer_drafts', 'readwrite');
-    const store = tx.objectStore('customer_drafts');
-    store.put({ ...draft, updatedAt: Date.now() });
-
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch (err) {
-    console.debug('IndexedDB draft save error:', err);
-  }
-}
-
-/**
- * Get active customer draft from IndexedDB
- */
-export async function getOrderDraftFromIndexedDb(id = 'active_draft'): Promise<OrderDraft | null> {
-  try {
-    const db = await openDatabase();
-    const tx = db.transaction('customer_drafts', 'readonly');
-    const store = tx.objectStore('customer_drafts');
-    const request = store.get(id);
-
-    return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error);
-    });
-  } catch (err) {
-    console.debug('IndexedDB draft retrieval error:', err);
-    return null;
-  }
-}
-
-/**
  * Enqueue item into Background Sync Queue
  */
 export async function enqueueBackgroundSync(
@@ -204,7 +90,7 @@ export type SyncHandlerResult = boolean | 'unsupported' | 'skip';
 /**
  * Drains and executes pending background sync items.
  * - Return true: item processed successfully, removed from queue.
- * - Return false: transient failure, retries incremented (dropped after 5 retries).
+ * - Return false: transient failure; retry up to six attempts, then preserve the item.
  * - Return 'unsupported' | 'skip': item is not processed or handled by this worker, preserved intact in queue without deleting or incrementing retries.
  */
 export async function processBackgroundSyncQueue(
@@ -227,6 +113,7 @@ export async function processBackgroundSyncQueue(
     let skipped = 0;
 
     for (const item of items) {
+      if (item.retries > 5) { skipped++; continue; }
       try {
         const result = await handler(item);
         if (result === true) {
@@ -236,16 +123,10 @@ export async function processBackgroundSyncQueue(
           processed++;
         } else if (result === false) {
           item.retries += 1;
-          if (item.retries > 5) {
-            // Drop unrecoverable items after 5 retries
-            const deleteTx = db.transaction('sync_queue', 'readwrite');
-            deleteTx.objectStore('sync_queue').delete(item.id);
-            await transactionDone(deleteTx);
-          } else {
-            const updateTx = db.transaction('sync_queue', 'readwrite');
-            updateTx.objectStore('sync_queue').put(item);
-            await transactionDone(updateTx);
-          }
+          // Keep failed payloads instead of silently discarding them after retries.
+          const updateTx = db.transaction('sync_queue', 'readwrite');
+          updateTx.objectStore('sync_queue').put(item);
+          await transactionDone(updateTx);
           failed++;
         } else {
           // Unsupported or skipped item: preserve in queue without deleting or incrementing retries
