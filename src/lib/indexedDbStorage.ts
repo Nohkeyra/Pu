@@ -70,8 +70,21 @@ function openDatabase(): Promise<IDBDatabase> {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = () => reject(request.error);
+  });
+}
+
+/** Resolve only after the entire write transaction commits, including aborts. */
+function transactionDone(tx: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
+    tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
   });
 }
 
@@ -175,21 +188,14 @@ export async function enqueueBackgroundSync(
     retries: 0,
   };
 
+  const db = await openDatabase();
   try {
-    const db = await openDatabase();
     const tx = db.transaction('sync_queue', 'readwrite');
-    const store = tx.objectStore('sync_queue');
-    store.put(item);
-
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-
+    tx.objectStore('sync_queue').put(item);
+    await transactionDone(tx);
     return id;
-  } catch (err) {
-    console.debug('Background sync queue enqueue error:', err);
-    return id;
+  } finally {
+    db.close();
   }
 }
 
@@ -204,9 +210,10 @@ export type SyncHandlerResult = boolean | 'unsupported' | 'skip';
 export async function processBackgroundSyncQueue(
   handler: (item: SyncQueueItem) => Promise<SyncHandlerResult>
 ): Promise<{ processed: number; failed: number; skipped?: number }> {
+  let db: IDBDatabase | undefined;
   try {
-    const db = await openDatabase();
-    const tx = db.transaction('sync_queue', 'readwrite');
+    db = await openDatabase();
+    const tx = db.transaction('sync_queue', 'readonly');
     const store = tx.objectStore('sync_queue');
     const request = store.getAll();
 
@@ -225,6 +232,7 @@ export async function processBackgroundSyncQueue(
         if (result === true) {
           const deleteTx = db.transaction('sync_queue', 'readwrite');
           deleteTx.objectStore('sync_queue').delete(item.id);
+          await transactionDone(deleteTx);
           processed++;
         } else if (result === false) {
           item.retries += 1;
@@ -232,9 +240,11 @@ export async function processBackgroundSyncQueue(
             // Drop unrecoverable items after 5 retries
             const deleteTx = db.transaction('sync_queue', 'readwrite');
             deleteTx.objectStore('sync_queue').delete(item.id);
+            await transactionDone(deleteTx);
           } else {
             const updateTx = db.transaction('sync_queue', 'readwrite');
             updateTx.objectStore('sync_queue').put(item);
+            await transactionDone(updateTx);
           }
           failed++;
         } else {
@@ -250,5 +260,7 @@ export async function processBackgroundSyncQueue(
   } catch (err) {
     console.debug('Background sync processing error:', err);
     return { processed: 0, failed: 0, skipped: 0 };
+  } finally {
+    db?.close();
   }
 }
