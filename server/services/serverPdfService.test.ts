@@ -5,6 +5,7 @@ import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
 import {
   getBankDetails,
   generateSavedInvoicePdf,
+  generatePersistedConsolidatedInvoicePdf,
   generateServerInvoicePdf,
   generateServerConsolidatedInvoicePdf,
 } from './serverPdfService';
@@ -305,4 +306,57 @@ it('itemises both charges separately in the official single invoice', async () =
   expect(content).toContain('Delivery Charge');
   expect(content).toContain('Service Charge');
   expect(content).toContain('225.00');
+});
+
+
+describe('persisted consolidated PDF dispatch', () => {
+  const order = {
+    id: 'dispatch-fixture',
+    to: 'Example Company',
+    name: 'Example',
+    billingAddress: 'Example address',
+    email: 'example@example.invalid',
+    date: '2026-11-28',
+    quantity: 10,
+    meals: ['lunch'],
+    prices: { lunch: 9 },
+    menu: 'Example menu',
+    notes: 'Example note',
+    totalAmount: 90,
+  };
+  const options = {
+    recipient: { company: order.to, address: order.billingAddress, email: order.email },
+    includeNotes: true,
+    lang: 'bm' as const,
+    issuedAt: '2026-11-28T00:00:00Z',
+    layoutVersion: 3 as const,
+  };
+
+  it('keeps versioned batches on their saved page plan regardless of caller defaults', async () => {
+    const batch = {
+      ...options,
+      invoiceNo: 'RW 2026-00001',
+      orders: [order],
+      pages: planInvoicePages([order], options).map(page => ({
+        ...page, invoiceNo: 'RW 2026-00001',
+      })),
+    };
+    const direct = await inspectPdf(await generateSavedInvoicePdf(batch));
+    const dispatched = await inspectPdf(await generatePersistedConsolidatedInvoicePdf(batch, {
+      includeNotes: false, lang: 'en',
+    }));
+    expect(dispatched.pageTexts).toEqual(direct.pageTexts);
+    expect(dispatched.pageCount).toBe(direct.pageCount);
+  });
+
+  it('uses persisted settings for an older unversioned document', async () => {
+    const legacy = { orders: [order], invoiceNo: 'RW LEGACY', includeNotes: true, lang: 'bm' };
+    const direct = await inspectPdf(await generateServerConsolidatedInvoicePdf(
+      legacy.orders, legacy.invoiceNo, true, 'bm',
+    ));
+    const dispatched = await inspectPdf(await generatePersistedConsolidatedInvoicePdf(legacy, {
+      includeNotes: false, lang: 'en',
+    }));
+    expect(dispatched.pageTexts).toEqual(direct.pageTexts);
+  });
 });
