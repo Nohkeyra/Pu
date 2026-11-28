@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { formatDateDisplay, toJSDate } from './dateUtils';
+import { formatDateDisplay } from './dateUtils';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -272,7 +272,7 @@ export async function exportOrdersAsExcelTemplate(
  * standard columns (no template, no per-order sheets). This is the
  * "Standard Table" option alongside the invoice-template export above.
  *
- * Column set intentionally mirrors the 17-column CSV/XLSX export structure
+ * The shared workbook builder owns the standard columns and data mapping
  * documented in the project knowledge base, minus columns that don't apply
  * to admin bulk export (kept to the fields already surfaced elsewhere in
  * the Orders/Tables views).
@@ -292,62 +292,8 @@ export async function exportOrdersAsExcelStandard(
       return;
     }
 
-    const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Orders');
-
-    sheet.columns = [
-      { header: 'Order ID', key: 'id', width: 14 },
-      { header: 'Company Name', key: 'to', width: 22 },
-      { header: 'Contact Person', key: 'name', width: 18 },
-      { header: 'Contact Number', key: 'contact', width: 16 },
-      { header: 'Email', key: 'email', width: 26 },
-      { header: 'Delivery Date', key: 'date', width: 14 },
-      { header: 'Delivery Time', key: 'time', width: 12 },
-      { header: 'Pax (Quantity)', key: 'pax', width: 12 },
-      { header: 'Meal Type', key: 'meals', width: 20 },
-      { header: 'Preparation Type', key: 'prep', width: 16 },
-      { header: 'Menu Items', key: 'menu', width: 30 },
-      { header: 'Status', key: 'status', width: 14 },
-      { header: 'Invoice Number', key: 'invoiceNo', width: 16 },
-      { header: 'Total Amount (RM)', key: 'total', width: 16 },
-      { header: 'Notes', key: 'notes', width: 26 },
-    ];
-
-    sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'left' };
-
-    orders.forEach((o) => {
-      const dateStr = formatDateDisplay(o.dateTime || o.eventDate || o.date);
-      let timeStr = '-';
-      const d = toJSDate(o.dateTime);
-      if (d) {
-        try {
-          timeStr = format(d, 'HH:mm');
-        } catch {
-          timeStr = '-';
-        }
-      }
-
-      sheet.addRow({
-        id: o.id ? o.id.substring(0, 8) : '-',
-        to: o.to || 'Majlis Persendirian',
-        name: o.name || o.attn || '-',
-        contact: o.contact || '-',
-        email: o.email || '-',
-        date: dateStr,
-        time: timeStr,
-        pax: o.quantity || 0,
-        meals: Array.isArray(o.meals) ? o.meals.join(', ') : '-',
-        prep: o.preparationType === 'meal_box' ? 'Meal Box' : (o.preparationType === 'buffet' ? 'Buffet' : '-'),
-        menu: o.menu || '-',
-        status: (o.status || 'pending').toUpperCase(),
-        invoiceNo: o.invoiceNo || 'N/A',
-        total: typeof o.totalAmount === 'number' ? o.totalAmount : (parseFloat(String(o.totalAmount || '0')) || 0),
-        notes: o.notes || '-',
-      });
-    });
-
+    const { generateOrdersWorkbook } = await import('./orderExportWorkbook');
+    const workbook = await generateOrdersWorkbook(orders);
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const fileName = `Wawasan_Orders_Standard_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
