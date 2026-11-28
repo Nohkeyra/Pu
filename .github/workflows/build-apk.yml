@@ -12,6 +12,27 @@ on:
       - main
       - develop
 
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (only applied on main / manual runs that publish)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+      build_mode:
+        description: 'Fast: signed APK only; Full: debug APK, signed APK and Play Store AAB'
+        required: true
+        default: fast
+        type: choice
+        options:
+          - fast
+          - full
+
 permissions:
   contents: read
 
@@ -400,9 +421,7 @@ jobs:
         env:
           WIDGET_API_KEY: ${{ secrets.WIDGET_API_KEY }}
         run: |
-          ./gradlew bundleRelease --build-cache --no-daemon --stacktrace || {
-            echo "⚠️ Bundle build failed (continuing)"
-          }
+          ./gradlew bundleRelease --build-cache --no-daemon --stacktrace
 
       - name: Upload debug APK
         if: github.event_name == 'workflow_dispatch' && inputs.build_mode == 'full'
@@ -410,6 +429,7 @@ jobs:
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: 30
 
       # BUGFIX (2026-08-27): Gradle outputs the signed APK as
@@ -449,6 +469,7 @@ jobs:
         with:
           name: app-release-bundle
           path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
           retention-days: 30
 
   browser:
