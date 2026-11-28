@@ -148,9 +148,15 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(page.getByRole('button', { name: 'Retry menu', exact: true })).toBeVisible();
     const summary = page.locator('.customer-order-summary');
     await expect(summary).not.toHaveAttribute('open', '');
-    const summaryBounds = await page.locator('.customer-order-aside').boundingBox();
-    const formBounds = await page.locator('.customer-form-panel').boundingBox();
-    expect(summaryBounds!.y).toBeGreaterThanOrEqual(formBounds!.y + formBounds!.height);
+    // Read both rectangles in the same browser frame; asynchronous layout/scroll
+    // changes between separate boundingBox calls can compare different frames.
+    // A persistent overlap still fails: no pixel tolerance or test retries.
+    await expect.poll(async () => page.evaluate(() => {
+      const aside = document.querySelector('.customer-order-aside');
+      const form = document.querySelector('.customer-form-panel');
+      if (!aside || !form) return Number.NEGATIVE_INFINITY;
+      return aside.getBoundingClientRect().top - form.getBoundingClientRect().bottom;
+    }), { message: 'Order summary must be below the form', timeout: 5000 }).toBeGreaterThanOrEqual(0);
     const card = page.locator('[data-tour="step2-dish-list"] .customer-menu-card').first();
     const name = await card.getAttribute('aria-label');
     await card.click();
