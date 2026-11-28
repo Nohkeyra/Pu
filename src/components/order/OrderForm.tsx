@@ -1279,14 +1279,14 @@ export default function OrderForm({ initialData }: OrderFormProps) {
     return window.location.origin + '/' + window.location.hash;
   };
 
-  const handleShareReceipt = async () => {
+  const handleShareBookingReference = async () => {
     const textMsg = tText(
       `Restoran Wawasan Catering Booking Reference: ${referenceNumber}. Status: Quotation Pending. Form Link:`,
       `Rujukan Tempahan Katering Restoran Wawasan: ${referenceNumber}. Status: Menunggu Sebut Harga. Pautan:`
     );
 
     const shareData = {
-      title: 'Restoran Wawasan Catering Receipt',
+      title: 'Restoran Wawasan Catering Booking Reference',
       text: `${textMsg} ${getShareableUrl()}`,
       url: getShareableUrl(),
     };
@@ -1707,7 +1707,7 @@ export default function OrderForm({ initialData }: OrderFormProps) {
                     emailStatus={emailStatus}
                     setShowPdfPreviewModal={setShowPdfPreviewModal}
                     handleResetForm={handleResetForm}
-                    handleShareReceipt={handleShareReceipt}
+                    handleShareBookingReference={handleShareBookingReference}
                     tText={tText}
                   />
                 )}

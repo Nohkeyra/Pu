@@ -45,7 +45,7 @@ describe('Wawasan order motion — accessible state and meaning', () => {
           emailStatus: 'idle',
           setShowPdfPreviewModal: () => {},
           handleResetForm: () => {},
-          handleShareReceipt: () => {},
+          handleShareBookingReference: () => {},
           tText: english,
         }),
       ),

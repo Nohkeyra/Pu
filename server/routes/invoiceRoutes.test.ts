@@ -166,6 +166,28 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       expect(res.headers.get('content-type')).toContain('application/pdf');
     });
 
+    it('does not expose receipt generation and keeps completed orders downloadable as invoices', async () => {
+      await getFirestore().collection('orders').doc('completed_invoice_no_receipt').set({
+        userId: 'completed_invoice_owner', email: 'owner@example.invalid',
+        status: 'completed', totalAmount: 100, invoiceNo: 'RW00001',
+        quantity: 10, meals: ['lunch'], prices: { lunch: 10 },
+      });
+      vi.spyOn(firebaseAdminModule, 'verifyFirebaseIdToken').mockResolvedValue({
+        uid: 'completed_invoice_owner', email: 'owner@example.invalid', admin: false,
+      });
+      const url = `${baseUrl}/api/invoice/completed_invoice_no_receipt/pdf`;
+      const headers = { Authorization: 'Bearer valid_customer_token' };
+      for (const authHeaders of [headers, { Authorization: `Bearer ${signAdminJwt({ uid: 'admin_root' })}` }]) {
+        const unsupported = await fetch(url + '?docType=receipt&final=true', { headers: authHeaders });
+        expect(unsupported.status).toBe(400);
+        expect(unsupported.headers.get('content-type')).toContain('application/json');
+        const invoice = await fetch(url, { headers: authHeaders });
+        expect(invoice.status).toBe(200);
+        expect(invoice.headers.get('content-type')).toContain('application/pdf');
+        expect(invoice.headers.get('content-disposition')).toContain('Invoice_RW00001.pdf');
+      }
+    });
+
     it('allows administrator to download any invoice with 200 via admin JWT', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('target_order_99').set({

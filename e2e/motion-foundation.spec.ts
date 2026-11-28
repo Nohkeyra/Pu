@@ -34,7 +34,7 @@ function Fixture() {
       React.createElement(Step5OrderSuccess, {
         orderState: { name: 'Local sample', contact: '', email: '', date: '2026-12-06', guests: 20, mealTypes: ['tengahari'] },
         referenceNumber: reference, getMealTypesLabel: () => 'Lunch', emailStatus: 'idle',
-        setShowPdfPreviewModal: noop, handleResetForm: noop, handleShareReceipt: noop,
+        setShowPdfPreviewModal: noop, handleResetForm: noop, handleShareBookingReference: noop,
         tText: (en, ms) => bm ? ms : en,
       })) : React.createElement(React.Fragment, null,
       React.createElement('button', { onClick: () => setFinished(true) }, 'Complete'),

@@ -34,7 +34,7 @@ export interface CustomerInvoicePreviewModalProps {
   onDownload?: () => void;
   language?: 'en' | 'bm';
   isFinal?: boolean;
-  docType?: 'invoice' | 'quotation' | 'receipt';
+  docType?: 'invoice' | 'quotation';
 }
 
 export function CustomerInvoicePreviewModal({
@@ -65,8 +65,7 @@ export function CustomerInvoicePreviewModal({
   const isOrderFinal =
     isFinal ||
     docType === 'invoice' ||
-    docType === 'receipt' ||
-    ['approved', 'billed', 'delivered'].includes(orderStatusLower);
+    ['approved', 'billed', 'in_transit', 'delivered', 'completed'].includes(orderStatusLower);
 
   const effectiveDocType = docType || (isOrderFinal ? 'invoice' : 'quotation');
   const invoiceNo =
@@ -77,11 +76,7 @@ export function CustomerInvoicePreviewModal({
     order?.orderId ||
     'RW PREVIEW';
   const safeFileName = `${
-    effectiveDocType === 'receipt'
-      ? 'Receipt'
-      : effectiveDocType === 'quotation'
-        ? 'Quotation'
-        : 'Invoice'
+    effectiveDocType === 'quotation' ? 'Quotation' : 'Invoice'
   }_${String(invoiceNo).replace(/[\\/:*?"<>|]/g, '_')}.pdf`;
 
   useEffect(() => {
@@ -271,17 +266,13 @@ export function CustomerInvoicePreviewModal({
   if (!isOpen) return null;
 
   const badgeTitle =
-    effectiveDocType === 'receipt'
+    effectiveDocType === 'quotation'
       ? language === 'bm'
-        ? 'Resit Rasmi'
-        : 'Official Receipt'
-      : effectiveDocType === 'quotation'
-        ? language === 'bm'
-          ? 'Sebut Harga Rasmi'
-          : 'Official Quotation'
-        : language === 'bm'
-          ? 'Invois Rasmi'
-          : 'Official Invoice';
+        ? 'Sebut Harga Rasmi'
+        : 'Official Quotation'
+      : language === 'bm'
+        ? 'Invois Rasmi'
+        : 'Official Invoice';
 
   return (
     <div

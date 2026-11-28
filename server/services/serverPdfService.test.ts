@@ -192,7 +192,7 @@ it('prints the account number, full address and standard notes in both invoice f
   expect(batch).toContain('tiada cop syarikat');
 });
 
-it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS company code subject safely', async () => {
+it('renders bilingual Master PDF invoices, quotations, completed orders, and PETRONAS company code subject safely', async () => {
   const petronasOrder = {
     to: 'PETROLIAM NASIONAL BERHAD (PETRONAS)',
     companyCode: '9999', // stale code must be ignored/verified against legal entity name
@@ -230,15 +230,18 @@ it('renders bilingual Master PDF invoices, quotations, receipts, and PETRONAS co
   expect(quoteText).toContain('QT-20261109-01');
   expect(quoteText).toContain('Ini adalah sebut harga janaan komputer. Tiada cop syarikat diperlukan.');
 
-  const receiptBytes = await generateServerInvoicePdf(
-    { ...petronasOrder, status: 'completed', lang: 'en' },
-    true,
-    'receipt'
-  );
-  const receiptText = await readablePdfStreams(receiptBytes);
-  expect(receiptText).toContain('RECEIPT');
-  expect(receiptText).toContain('COMPLETED');
-  expect(receiptText).toContain('official catering receipt from Restoran Wawasan');
+  // Completing delivery must never change an invoice into a receipt.
+  for (const status of ['in_transit', 'delivered', 'completed']) {
+    for (const lang of ['en', 'bm']) {
+      const bytes = await generateServerInvoicePdf({ ...petronasOrder, status, lang }, true);
+      const content = await readablePdfStreams(bytes);
+      expect(content).toContain(lang === 'en' ? 'INVOICE' : 'INVOIS');
+      expect(content).toContain('RW00001');
+      expect(content).toContain('840.00');
+      expect(content).toContain('PAYMENT DETAILS');
+      expect(content).not.toMatch(/RECEIPT|RESIT/i);
+    }
+  }
 
   // Non-PETRONAS must fall back to '-' even if stale companyCode exists
   const nonPetronasBytes = await generateServerInvoicePdf(
