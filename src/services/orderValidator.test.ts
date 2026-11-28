@@ -115,3 +115,19 @@ describe('Wawasan minimum quantities', () => {
     }
   });
 });
+
+
+describe('Meal selection validation', () => {
+  const now = Date.parse('2026-11-24T10:00:00+08:00');
+  const order = { name: 'Test', contact: '0123456789', eventDate: '2026-11-26', time: '12:00', quantity: 20 };
+  it('rejects malformed, duplicate, unknown and empty meal selections', () => {
+    for (const meals of [null, [], 'lunch', [12], ['lunch', 'lunch'], ['unknown'], ['default', 'lunch']]) {
+      expect(validateOrderPayload({ ...order, meals }, now).errors.some(error => error.field === 'meals')).toBe(true);
+    }
+  });
+  it('accepts existing app meal keys and legacy single-meal requests', () => {
+    expect(validateOrderPayload({ ...order, meals: ['breakfast', 'lunch', 'hi_tea', 'tea_break'] }, now).valid).toBe(true);
+    expect(validateOrderPayload({ ...order, mealType: 'dinner' }, now).valid).toBe(true);
+    expect(validateOrderPayload(order, now).valid).toBe(true);
+  });
+});

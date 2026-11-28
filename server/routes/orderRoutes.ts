@@ -20,7 +20,7 @@ import {
 } from '../emailService.js';
 import { syncGoogleCalendarEvent } from '../calendarService.js';
 import { generateOrdersWorkbook } from '../../src/lib/orderExportWorkbook.js';
-import { isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
+import { getSubmittedMeals, isValidStatusTransition, validateOrderPayload } from '../services/orderValidator.js';
 import { getBookingNoticeError, toISODateString, toMalaysiaDateTime } from '../../src/lib/dateUtils.js';
 import {
   getOrderEventDate,
@@ -104,35 +104,34 @@ const customerOrderActionLimiter = createDistributedRateLimiter({
   message: { success: false, error: 'Too many requests. Please try again later.' },
 });
 
-export function validateOrderSubmission(req: any, res: any, next: any) {
-  const body = req.body || {};
+function orderSubmissionError(body: any) {
 
   for (const key of Object.keys(body)) {
     const val = body[key];
     if (typeof val === 'string' && val.length > 5000) {
-      return res.status(400).json({
+      return {
         success: false,
         error: `Field '${key}' exceeds maximum length of 5000 characters.`,
-      });
+      };
     }
     if (Array.isArray(val) && val.length > 100) {
-      return res.status(400).json({
+      return {
         success: false,
         error: `Array field '${key}' exceeds maximum limit of 100 items.`,
-      });
+      };
     }
   }
 
   const validation = validateOrderPayload(body);
   if (!validation.valid) {
-    return res.status(400).json({
+    return {
       success: false,
       error: validation.errors[0]?.message || 'Invalid order submission payload.',
       errors: validation.errors,
-    });
+    };
   }
 
-  next();
+  return null;
 }
 
 // Guests may build local drafts, but only email-verified Firebase customers can
@@ -166,198 +165,172 @@ router.post(
   '/orders',
   createOrderLimiter,
   requireVerifiedCustomerOrder,
-  validateOrderSubmission,
   async (req, res) => {
     try {
       const rawBody = req.body || {};
       const callerUid: string = res.locals.verifiedCustomerUid;
       const db = getFirestore();
 
-      const derivedDate =
-        deriveEventDate(rawBody) ||
-        new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }).format(new Date());
-      const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
-      const dateTime = toMalaysiaDateTime(derivedDate, rawBody.time ?? rawBody.eventTime ?? '12:00')!;
-      const department = typeof (rawBody.department ?? rawBody.division) === 'string'
-        ? (rawBody.department ?? rawBody.division).trim().slice(0, 200) : '';
-      const initials = typeof (rawBody.initials ?? rawBody.initialIdentifier) === 'string'
-        ? (rawBody.initials ?? rawBody.initialIdentifier).trim().slice(0, 50) : '';
-      const mappedMeals = Array.isArray(rawBody.meals)
-        ? rawBody.meals
-        : rawBody.mealType
-          ? [rawBody.mealType]
-          : ['default'];
-
-      const prices = {}; // forced empty on create — admin sets later
-      const totalAmount = 0; // forced zero on create — admin sets later
-
-      let processedDishes: string[] = [];
-      if (Array.isArray(rawBody.dishes)) {
-        const isBm = rawBody.lang === 'bm';
-        processedDishes = rawBody.dishes
-          .map((d: any) => {
-            if (typeof d === 'string') return d;
-            if (d && typeof d === 'object') {
-              return (isBm ? d.nameBm : d.nameEn) || d.nameBm || d.nameEn || '';
-            }
-            return '';
-          })
-          .filter((name: string) => typeof name === 'string' && name.length > 0);
+      const key = rawBody.idempotencyKey;
+      if (key !== undefined && (typeof key !== 'string' || !IDEMPOTENCY_KEY_RE.test(key))) {
+        return res.status(400).json({ success: false, error: 'Invalid idempotency key' });
       }
+      const idempRef = typeof key === 'string' ? db.collection('idempotency_keys').doc(key) : null;
+      const orderRef = db.collection('orders').doc();
 
-      const resolvedOrgName =
-        typeof rawBody.to === 'string' && rawBody.to.trim()
-          ? rawBody.to.trim().slice(0, 200)
-          : 'Majlis Persendirian';
-      const { companyCode: verifiedCompanyCode } = resolveVerifiedPetronasCode(
-        resolvedOrgName,
-        typeof rawBody.registrationNumber === 'string' ? rawBody.registrationNumber : undefined
-      );
-
-      // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
-      const sanitizedOrderDoc = {
-        invoiceNo: '',
-        billingAddress:
-          typeof rawBody.billingAddress === 'string'
-            ? rawBody.billingAddress.trim().slice(0, 1000)
-            : '',
-        to: resolvedOrgName,
-        companyCode: verifiedCompanyCode,
-        attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
-        department,
-        division: department,
-        initials,
-        initialIdentifier: initials,
-        name:
-          typeof rawBody.name === 'string'
-            ? rawBody.name.slice(0, 200)
-            : typeof rawBody.customerName === 'string'
-              ? rawBody.customerName.slice(0, 200)
-              : '',
-        contact:
-          typeof rawBody.contact === 'string'
-            ? rawBody.contact.slice(0, 50)
-            : typeof rawBody.contactNumber === 'string'
-              ? rawBody.contactNumber.slice(0, 50)
-              : typeof rawBody.phone === 'string'
-                ? rawBody.phone.slice(0, 50)
-                : '',
-        email:
-          typeof rawBody.email === 'string'
-            ? rawBody.email.slice(0, 150)
-            : typeof rawBody.customerEmail === 'string'
-              ? rawBody.customerEmail.slice(0, 150)
-              : '',
-        date: derivedDate,
-        eventDate: derivedDate,
-        calendarDateKey: derivedDate,
-        time: dateTime.slice(11, 16),
-        location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
-        ...(rawBody.locationCoordinates &&
-        typeof rawBody.locationCoordinates === 'object' &&
-        typeof (rawBody.locationCoordinates as any).lat === 'number' &&
-        typeof (rawBody.locationCoordinates as any).lng === 'number' &&
-        Math.abs((rawBody.locationCoordinates as any).lat) <= 90 &&
-        Math.abs((rawBody.locationCoordinates as any).lng) <= 180
-          ? {
-              locationCoordinates: {
-                lat: Number((rawBody.locationCoordinates as any).lat),
-                lng: Number((rawBody.locationCoordinates as any).lng),
-              },
-            }
-          : {}),
-        quantity: qty,
-        guests: qty,
-        pax: qty,
-        meals: mappedMeals,
-        menu: typeof rawBody.menu === 'string' ? rawBody.menu.slice(0, 500) : SET_BOX_MENU_TITLE,
-        preparationType: rawBody.preparationType === 'buffet' ? 'buffet' : 'meal_box',
-        notes: typeof rawBody.notes === 'string' ? rawBody.notes.slice(0, 5000) : '',
-        dateTime,
-        lang: rawBody.lang === 'en' ? 'en' : 'bm',
-        status: 'pending',
-        prices,
-        ...initialOrderCharges(rawBody.preparationType),
-        totalAmount,
-        dishes: processedDishes,
-        veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],
-        customMenu: typeof rawBody.customMenu === 'string' ? rawBody.customMenu.slice(0, 1000) : '',
-        userId: callerUid,
-        delivery: sanitizeDelivery(rawBody.delivery),
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-
-      let orderId: string;
-      let finalInvoiceNo: string = '';
-      let isDuplicate = false;
-      const idempotencyKey =
-        typeof rawBody.idempotencyKey === 'string' &&
-        IDEMPOTENCY_KEY_RE.test(rawBody.idempotencyKey)
-          ? rawBody.idempotencyKey
-          : null;
-
-      if (idempotencyKey) {
-        const idempRef = db.collection('idempotency_keys').doc(idempotencyKey);
-        const orderRef = db.collection('orders').doc();
-        // Read the idempotency record first; allocate a number only for a new order,
-        // inside the same transaction so duplicate requests do not consume numbers.
-        const transactionResult = await db.runTransaction(async (transaction) => {
+      // Look up a previously committed submission before applying today's booking
+      // deadline. Both the replay and new write are decided in one transaction.
+      const result = await db.runTransaction(async transaction => {
+        if (idempRef) {
           const existing = await transaction.get(idempRef);
           if (existing.exists) {
             const data = existing.data();
             if (!data?.orderId) throw new Error('Invalid idempotency record');
             const existingOrder = await transaction.get(db.collection('orders').doc(data.orderId));
-            if (!existingOrder.exists)
-              throw new Error('Idempotency record references a missing order');
-            const owner = existingOrder.data()?.userId || existingOrder.data()?.uid || null;
-            if (owner !== callerUid) return { conflict: true as const };
+            if (!existingOrder.exists) throw new Error('Idempotency record references a missing order');
+            const saved = existingOrder.data()!;
+            if ((saved.userId || saved.uid || null) !== callerUid) return { kind: 'conflict' as const };
             return {
-              conflict: false as const,
-              duplicate: true,
-              orderId: data.orderId as string,
-              invoiceNo: String(data.invoiceNo || ''),
+              kind: 'duplicate' as const,
+              response: {
+                id: existingOrder.id,
+                invoiceNo: String(data.invoiceNo || saved.quoteNo || saved.invoiceNo || ''),
+                companyCode: saved.companyCode || '',
+                duplicate: true,
+                prices: data.prices ?? {},
+                totalAmount: data.totalAmount ?? 0,
+              },
             };
           }
-          const [reservedInvoiceNo] = await allocateInvoiceNumbers(transaction, 1, true, derivedDate);
-          const orderWithInvoice = {
-            ...sanitizedOrderDoc,
-            invoiceNo: reservedInvoiceNo,
-            quoteNo: reservedInvoiceNo,
-          };
-          transaction.set(orderRef, orderWithInvoice);
-          transaction.set(idempRef, {
-            orderId: orderRef.id,
-            invoiceNo: reservedInvoiceNo,
-            createdAt: FieldValue.serverTimestamp(),
-            totalAmount,
-            prices,
-            expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          });
-          return {
-            conflict: false as const,
-            duplicate: false,
-            orderId: orderRef.id,
-            invoiceNo: reservedInvoiceNo,
-          };
-        });
-        if (transactionResult.conflict) {
-          return res.status(409).json({ error: 'This order key belongs to a different customer.' });
         }
-        orderId = transactionResult.orderId;
-        finalInvoiceNo = transactionResult.invoiceNo;
-        isDuplicate = transactionResult.duplicate;
-        sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
-        (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
-      } else {
-        finalInvoiceNo = await generateSequentialInvoiceNo(true, derivedDate);
-        sanitizedOrderDoc.invoiceNo = finalInvoiceNo;
-        (sanitizedOrderDoc as any).quoteNo = finalInvoiceNo;
-
-        const orderRef = await db.collection('orders').add(sanitizedOrderDoc);
-        orderId = orderRef.id;
-      }
-
+        const error = orderSubmissionError(rawBody);
+        if (error) return { kind: 'invalid' as const, error };
+        const derivedDate =
+          deriveEventDate(rawBody)!;
+        const qty = Number(rawBody.quantity ?? rawBody.guests ?? rawBody.pax) || 1;
+        const dateTime = toMalaysiaDateTime(derivedDate, rawBody.time ?? rawBody.eventTime ?? '12:00')!;
+        const department = typeof (rawBody.department ?? rawBody.division) === 'string'
+          ? (rawBody.department ?? rawBody.division).trim().slice(0, 200) : '';
+        const initials = typeof (rawBody.initials ?? rawBody.initialIdentifier) === 'string'
+          ? (rawBody.initials ?? rawBody.initialIdentifier).trim().slice(0, 50) : '';
+        const mappedMeals = getSubmittedMeals(rawBody)!;
+  
+        const prices = {}; // forced empty on create — admin sets later
+        const totalAmount = 0; // forced zero on create — admin sets later
+  
+        let processedDishes: string[] = [];
+        if (Array.isArray(rawBody.dishes)) {
+          const isBm = rawBody.lang === 'bm';
+          processedDishes = rawBody.dishes
+            .map((d: any) => {
+              if (typeof d === 'string') return d;
+              if (d && typeof d === 'object') {
+                return (isBm ? d.nameBm : d.nameEn) || d.nameBm || d.nameEn || '';
+              }
+              return '';
+            })
+            .filter((name: string) => typeof name === 'string' && name.length > 0);
+        }
+  
+        const resolvedOrgName =
+          typeof rawBody.to === 'string' && rawBody.to.trim()
+            ? rawBody.to.trim().slice(0, 200)
+            : 'Majlis Persendirian';
+        const { companyCode: verifiedCompanyCode } = resolveVerifiedPetronasCode(
+          resolvedOrgName,
+          typeof rawBody.registrationNumber === 'string' ? rawBody.registrationNumber : undefined
+        );
+  
+        // Whitelist allowed fields to prevent injection of sensitive attributes (e.g. invoiceNo, approvedAt, deletedByAdmin)
+        const sanitizedOrderDoc = {
+          invoiceNo: '',
+          billingAddress:
+            typeof rawBody.billingAddress === 'string'
+              ? rawBody.billingAddress.trim().slice(0, 1000)
+              : '',
+          to: resolvedOrgName,
+          companyCode: verifiedCompanyCode,
+          attn: typeof rawBody.attn === 'string' ? rawBody.attn.slice(0, 200) : '',
+          department,
+          division: department,
+          initials,
+          initialIdentifier: initials,
+          name:
+            typeof rawBody.name === 'string'
+              ? rawBody.name.slice(0, 200)
+              : typeof rawBody.customerName === 'string'
+                ? rawBody.customerName.slice(0, 200)
+                : '',
+          contact:
+            typeof rawBody.contact === 'string'
+              ? rawBody.contact.slice(0, 50)
+              : typeof rawBody.contactNumber === 'string'
+                ? rawBody.contactNumber.slice(0, 50)
+                : typeof rawBody.phone === 'string'
+                  ? rawBody.phone.slice(0, 50)
+                  : '',
+          email:
+            typeof rawBody.email === 'string'
+              ? rawBody.email.slice(0, 150)
+              : typeof rawBody.customerEmail === 'string'
+                ? rawBody.customerEmail.slice(0, 150)
+                : '',
+          date: derivedDate,
+          eventDate: derivedDate,
+          calendarDateKey: derivedDate,
+          time: dateTime.slice(11, 16),
+          location: typeof rawBody.location === 'string' ? rawBody.location.slice(0, 500) : '',
+          ...(rawBody.locationCoordinates &&
+          typeof rawBody.locationCoordinates === 'object' &&
+          typeof (rawBody.locationCoordinates as any).lat === 'number' &&
+          typeof (rawBody.locationCoordinates as any).lng === 'number' &&
+          Math.abs((rawBody.locationCoordinates as any).lat) <= 90 &&
+          Math.abs((rawBody.locationCoordinates as any).lng) <= 180
+            ? {
+                locationCoordinates: {
+                  lat: Number((rawBody.locationCoordinates as any).lat),
+                  lng: Number((rawBody.locationCoordinates as any).lng),
+                },
+              }
+            : {}),
+          quantity: qty,
+          guests: qty,
+          pax: qty,
+          meals: mappedMeals,
+          menu: typeof rawBody.menu === 'string' ? rawBody.menu.slice(0, 500) : SET_BOX_MENU_TITLE,
+          preparationType: rawBody.preparationType === 'buffet' ? 'buffet' : 'meal_box',
+          notes: typeof rawBody.notes === 'string' ? rawBody.notes.slice(0, 5000) : '',
+          dateTime,
+          lang: rawBody.lang === 'en' ? 'en' : 'bm',
+          status: 'pending',
+          prices,
+          ...initialOrderCharges(rawBody.preparationType),
+          totalAmount,
+          dishes: processedDishes,
+          veggies: Array.isArray(rawBody.veggies) ? rawBody.veggies : [],
+          customMenu: typeof rawBody.customMenu === 'string' ? rawBody.customMenu.slice(0, 1000) : '',
+          userId: callerUid,
+          delivery: sanitizeDelivery(rawBody.delivery),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+  
+        const [reservedInvoiceNo] = await allocateInvoiceNumbers(transaction, 1, true, derivedDate);
+        const saved = { ...sanitizedOrderDoc, invoiceNo: reservedInvoiceNo, quoteNo: reservedInvoiceNo };
+        transaction.set(orderRef, saved);
+        if (idempRef) transaction.set(idempRef, {
+          orderId: orderRef.id, invoiceNo: reservedInvoiceNo,
+          createdAt: FieldValue.serverTimestamp(), totalAmount, prices,
+          expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        });
+        return { kind: 'created' as const, saved };
+      });
+      if (result.kind === 'conflict') return res.status(409).json({ error: 'This order key belongs to a different customer.' });
+      if (result.kind === 'invalid') return res.status(400).json(result.error);
+      if (result.kind === 'duplicate') return res.json(result.response);
+      const sanitizedOrderDoc = result.saved;
+      const orderId = orderRef.id;
+      const finalInvoiceNo = sanitizedOrderDoc.invoiceNo;
       const initialOrderData: OrderData = {
         ...sanitizedOrderDoc,
         id: orderId,
@@ -365,7 +338,6 @@ router.post(
         status: 'pending',
       };
 
-      if (!isDuplicate) {
         invalidateCalendarSessionsCache();
         syncGoogleCalendarEvent(orderId, initialOrderData).catch((err) => {
           console.error('[Calendar] Auto-sync initial pending status failed:', err);
@@ -390,15 +362,14 @@ router.post(
         sendOrderStatusPush(initialOrderData, 'pending').catch((err) => {
           console.error('[FCM] Failed to send order received push to customer:', err);
         });
-      }
 
       return res.json({
         id: orderId,
         invoiceNo: finalInvoiceNo,
-        companyCode: verifiedCompanyCode,
-        duplicate: isDuplicate,
-        prices,
-        totalAmount,
+        companyCode: sanitizedOrderDoc.companyCode,
+        duplicate: false,
+        prices: sanitizedOrderDoc.prices,
+        totalAmount: sanitizedOrderDoc.totalAmount,
       });
     } catch (err) {
       console.error('[orderRoutes] /orders:', err);
