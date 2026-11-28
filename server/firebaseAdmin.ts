@@ -636,11 +636,12 @@ export async function generateSequentialInvoiceNo(
   );
 }
 
-/** Allocate sequential official individual invoice numbers following RWxxxxx (e.g. RW00001). */
-export async function allocateIndividualInvoiceNumbers(
+/** Shared allocator for all new official invoices. The existing counter document is retained. */
+export async function allocateOfficialInvoiceNumbers(
   tx: FirebaseFirestore.Transaction,
   count: number,
-  excluded: string[] = []
+  excluded: string[] = [],
+  purpose: 'individual_invoice' | 'invoice-batch' = 'individual_invoice'
 ): Promise<string[]> {
   if (!Number.isInteger(count) || count < 1 || count > 100) {
     throw new Error('Invalid invoice count');
@@ -654,18 +655,26 @@ export async function allocateIndividualInvoiceNumbers(
   }
   const numbers: string[] = [];
   while (numbers.length < count) {
+    if (next >= 99999) throw new Error('Official invoice serial range exhausted');
     next++;
     const number = `RW${String(next).padStart(5, '0')}`;
-    if (
-      !(await tx.get(db.collection('invoice_numbers').doc(number))).exists &&
-      !excluded.includes(number)
-    ) {
+    if (excluded.includes(number)) continue;
+    // Historical documents may predate the number registry. Check their stored
+    // numbers as well as the registry before allocating a new one.
+    const [registered, batch, ...orders] = await Promise.all([
+      tx.get(db.collection('invoice_numbers').doc(number)),
+      tx.get(db.collection('consolidated_invoices').doc(number)),
+      ...['invoiceNo', 'officialInvoiceNo', 'consolidatedInvoiceNo', 'invoiceBatchNo'].map(
+        field => tx.get(db.collection('orders').where(field, '==', number).limit(1))
+      ),
+    ]);
+    if (!registered.exists && !batch.exists && orders.every(result => result.empty)) {
       numbers.push(number);
     }
   }
   for (const number of numbers) {
     tx.set(db.collection('invoice_numbers').doc(number), {
-      purpose: 'individual_invoice',
+      purpose,
       createdAt: FieldValue.serverTimestamp(),
     });
   }
@@ -679,7 +688,7 @@ export async function allocateIndividualInvoiceNumbers(
 
 export async function generateSequentialIndividualInvoiceNo(): Promise<string> {
   return getFirestore().runTransaction(
-    async (tx) => (await allocateIndividualInvoiceNumbers(tx, 1))[0]
+    async (tx) => (await allocateOfficialInvoiceNumbers(tx, 1))[0]
   );
 }
 

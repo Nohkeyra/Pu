@@ -1,7 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import {
-  allocateInvoiceNumbers,
-  generateSequentialInvoiceNo,
+  allocateOfficialInvoiceNumbers,
   getFirestore,
 } from '../firebaseAdmin.js';
 import {
@@ -27,13 +26,17 @@ export function consolidatedOrderIds(value: unknown): string[] {
     throw new ConsolidatedInvoiceError('Select 1-100 valid order IDs.');
   return [...new Set(value as string[])].sort();
 }
+const OFFICIAL_INVOICE_NO = /^RW\d{5}$/;
+const SAVED_INVOICE_NO = /^(?:RW\d{5}|RW [A-Z0-9_-]{1,90})$/;
 export async function reserveConsolidatedNumber(actor: string): Promise<string> {
-  const invoiceNo = await generateSequentialInvoiceNo(false);
-  await getFirestore()
-    .collection('consolidated_invoices')
-    .doc(invoiceNo)
-    .set({ invoiceNo, state: 'reserved', actor, createdAt: FieldValue.serverTimestamp() });
-  return invoiceNo;
+  const db = getFirestore();
+  return db.runTransaction(async tx => {
+    const [invoiceNo] = await allocateOfficialInvoiceNumbers(tx, 1, [], 'invoice-batch');
+    tx.set(db.collection('consolidated_invoices').doc(invoiceNo), {
+      invoiceNo, state: 'reserved', actor, createdAt: FieldValue.serverTimestamp(),
+    });
+    return invoiceNo;
+  });
 }
 export interface BatchSettings {
   includeNotes?: boolean;
@@ -41,7 +44,7 @@ export interface BatchSettings {
   billingAddress?: string;
 }
 export async function readInvoiceBatch(invoiceNo: string): Promise<Record<string, any>> {
-  if (!/^RW [A-Z0-9_-]{1,90}$/.test(invoiceNo))
+  if (!SAVED_INVOICE_NO.test(invoiceNo))
     throw new ConsolidatedInvoiceError('Invalid invoice number.');
   const data = (
     await getFirestore().collection('consolidated_invoices').doc(invoiceNo).get()
@@ -59,7 +62,7 @@ export async function commitConsolidatedInvoice(
 ) {
   const orderIds = consolidatedOrderIds(rawIds),
     invoiceNo = typeof rawNumber === 'string' ? rawNumber.trim().toUpperCase() : '';
-  if (!/^RW [A-Z0-9_-]{1,90}$/.test(invoiceNo))
+  if (!SAVED_INVOICE_NO.test(invoiceNo))
     throw new ConsolidatedInvoiceError('A valid RW invoice number is required.');
   const db = getFirestore(),
     ref = db.collection('consolidated_invoices').doc(invoiceNo),
@@ -72,18 +75,21 @@ export async function commitConsolidatedInvoice(
         throw new ConsolidatedInvoiceError('This invoice belongs to a different selection.', 409);
       return previous as InvoiceBatch & { orderIds: string[] };
     }
-    if (allocated.exists && !previous)
-      throw new ConsolidatedInvoiceError('This invoice number is already allocated.', 409);
-    if (previous && previous.actor !== actor)
+    // A committed legacy batch can be reopened above, but never issue a new
+    // invoice using a legacy number, a client-chosen serial or an individual reservation.
+    if (!OFFICIAL_INVOICE_NO.test(invoiceNo))
+      throw new ConsolidatedInvoiceError('Reserve a new RWxxxxx invoice number before confirming.', 409);
+    if (previous?.state !== 'reserved' || allocated.data()?.purpose !== 'invoice-batch')
+      throw new ConsolidatedInvoiceError('Reserve a valid consolidated invoice number before confirming.', 409);
+    if (previous.actor !== actor)
       throw new ConsolidatedInvoiceError('This number is reserved by another account.', 409);
     const refs = orderIds.map((id) => db.collection('orders').doc(id)),
       snaps = await Promise.all(refs.map((orderRef) => tx.get(orderRef)));
     if (snaps.some((snap) => !snap.exists || snap.data()?.deletedByAdmin))
       throw new ConsolidatedInvoiceError('One or more selected orders are unavailable.', 409);
-    for (const field of ['invoiceNo', 'officialInvoiceNo', 'quoteNo'])
-      for (const number of [invoiceNo, invoiceNo.replace(/^RW /, 'QT ')])
-        if (!(await tx.get(db.collection('orders').where(field, '==', number).limit(1))).empty)
-          throw new ConsolidatedInvoiceError('This number belongs to an individual invoice.', 409);
+    for (const field of ['invoiceNo', 'officialInvoiceNo', 'consolidatedInvoiceNo', 'invoiceBatchNo'])
+      if (!(await tx.get(db.collection('orders').where(field, '==', invoiceNo).limit(1))).empty)
+        throw new ConsolidatedInvoiceError('This invoice number belongs to an existing invoice.', 409);
     const rawOrders = snaps.map((snap) => ({ ...snap.data(), id: snap.id }) as Record<string, any>);
     if (rawOrders.some((order) => order.invoiceBatchNo || order.consolidatedInvoiceNo))
       throw new ConsolidatedInvoiceError(
@@ -126,7 +132,7 @@ export async function commitConsolidatedInvoice(
     // All remaining reads happen in this allocator, before any transaction writes.
     const extra =
       plan.length > 1
-        ? await allocateInvoiceNumbers(tx, plan.length - 1, false, undefined, [invoiceNo])
+        ? await allocateOfficialInvoiceNumbers(tx, plan.length - 1, [invoiceNo], 'invoice-batch')
         : [];
     const numbers = [invoiceNo, ...extra],
       pages = plan.map((page, i) => ({ ...page, invoiceNo: numbers[i] }));

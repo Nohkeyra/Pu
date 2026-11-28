@@ -309,11 +309,11 @@ it('implements authenticated reservation and idempotent consolidated invoice com
     commitConsolidatedInvoice(['different_order'], nextInvoiceNo, 'audit')
   ).rejects.toThrow('different selection');
   await expect(commitConsolidatedInvoice([id], 'RW INDIVIDUAL-AUDIT', 'audit')).rejects.toThrow(
-    'individual invoice'
+    'Reserve a new RWxxxxx invoice number'
   );
 });
 
-it('prevents a custom consolidated number from colliding with future normal serials', async () => {
+it('rejects new legacy-style custom consolidated numbers without consuming quotation serials', async () => {
   const first = await generateSequentialInvoiceNo(false, '2099-01-01');
   const next = Number(first.split('-')[1]) + 1;
   const number = `RW 2099-${String(next).padStart(5, '0')}`;
@@ -325,10 +325,9 @@ it('prevents a custom consolidated number from colliding with future normal seri
     billingAddress: 'Test address',
     email: 'audit@example.com',
   });
-  await commitConsolidatedInvoice([id], number, 'audit');
-  expect(await generateSequentialInvoiceNo(false, '2099-01-01')).toBe(
-    `RW 2099-${String(next + 1).padStart(5, '0')}`
-  );
+  await expect(commitConsolidatedInvoice([id], number, 'audit')).rejects.toThrow(/Reserve a new RWxxxxx/);
+  expect(await generateSequentialInvoiceNo(false, '2099-01-01')).toBe(number);
+  expect((await db.collection('orders').doc(id).get()).data()?.invoiceBatchNo).toBeUndefined();
 });
 
 it('returns orders beyond the first 100 to the virtualized admin dataset', async () => {

@@ -4,7 +4,7 @@ import type { Server } from 'http';
 import invoiceRoutes, { isOrderOwnedByCaller } from './invoiceRoutes.js';
 import { signAdminJwt, verifyAdminJwt } from '../adminAuth.js';
 import { getFirestore } from '../firebaseAdmin.js';
-import { commitConsolidatedInvoice } from '../services/consolidatedInvoices';
+import { commitConsolidatedInvoice, reserveConsolidatedNumber } from '../services/consolidatedInvoices';
 import * as firebaseAdminModule from '../firebaseAdmin.js';
 
 describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
@@ -289,7 +289,7 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
 
       await commitConsolidatedInvoice(
         ['my_order_1', 'my_order_2'],
-        'RW TEST-CUSTOMER-BATCH',
+        await reserveConsolidatedNumber('admin_root'),
         'admin_root'
       );
       const res = await fetch(`${baseUrl}/api/invoice/combined/pdf`, {
@@ -332,7 +332,7 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
 
       await commitConsolidatedInvoice(
         ['corp_order_a', 'corp_order_b'],
-        'RW TEST-ADMIN-BATCH',
+        await reserveConsolidatedNumber('admin_root'),
         'admin_root'
       );
       const adminToken = signAdminJwt({ uid: 'admin_root', email: 'admin@wawasan.test' });

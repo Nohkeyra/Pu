@@ -107,8 +107,8 @@ offline reliability, preserve the original font, license and visual appearance.
 
 ### 2. Numbering & Consolidated Invoice Protection
 
-- New individual invoices reserve sequential `RWxxxxx` numbers via `generateSequentialIndividualInvoiceNo()` (`meta/individualInvoiceCounter`), preserving original `quoteNo` (`QT...`) and historical `RW ...` / `RW\d{5}` numbers without renumbering issued documents.
-- **Do not alter consolidated invoice logic or templates**: protect `src/services/invoiceBatchPdf.ts`, `src/services/invoiceSignature.ts`, `generateSavedInvoicePdf`, `generateServerConsolidatedInvoicePdf`, consolidated numbering (`RW YYYY-xxxxx` via `meta/invoiceCounter`), `public/assets/heritage/Jawi.jpg`, and `public/assets/brand/apk_logo_clean.png`.
+- All new official invoices (individual and consolidated pages) reserve sequential `RWxxxxx` numbers through `allocateOfficialInvoiceNumbers()` (`meta/individualInvoiceCounter`). Preserve original `quoteNo` (`QT...`) and historical numbers without renumbering issued documents.
+- Preserve historical consolidated invoice rendering and saved page plans. New layouts must follow `docs/APPROVED_INVOICE_MASTERS.md`; do not replace historical rendering or assets until equivalent output is verified. Protect quotation behavior.
 
 ### 3. PETRONAS Company Code Autofill, Validation & Email Collector
 
