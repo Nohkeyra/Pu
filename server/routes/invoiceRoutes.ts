@@ -300,7 +300,8 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
         orderData.status !== 'rejected' &&
         orderData.status !== 'cancelled');
     let pdfBuffer: Buffer;
-    if (orderData.invoiceBatchNo && isFinal && !docTypeOverride) {
+    const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
+    if (orderData.invoiceBatchNo && effectiveType === 'invoice') {
       const saved = (await readInvoiceBatch(orderData.invoiceBatchNo)) as InvoiceBatch;
       // Return the original complete PDF: its column widths and page grouping remain fixed.
       const snaps = await db.getAll(
@@ -314,10 +315,8 @@ router.get('/invoice/:orderId/pdf', async (req: Request, res: Response) => {
     }
 
     const invoiceNo =
-      orderData.invoiceBatchNo ||
-      orderData.invoiceNo ||
+      (effectiveType === 'quotation' ? orderData.quoteNo || orderData.invoiceNo : orderData.invoiceBatchNo || orderData.invoiceNo || orderData.officialInvoiceNo) ||
       `RW_${orderId.substring(0, 5).toUpperCase()}`;
-    const effectiveType = docTypeOverride || (isFinal ? 'invoice' : 'quotation');
     const filePrefix = effectiveType === 'quotation' ? 'Quotation' : 'Invoice';
     const filename = `${filePrefix}_${invoiceNo}.pdf`;
 

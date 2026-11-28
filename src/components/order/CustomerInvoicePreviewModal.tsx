@@ -69,6 +69,7 @@ export function CustomerInvoicePreviewModal({
 
   const effectiveDocType = docType || (isOrderFinal ? 'invoice' : 'quotation');
   const invoiceNo =
+    (effectiveDocType === 'quotation' ? order?.quoteNo : order?.invoiceBatchNo) ||
     (order ? getDisplayInvoiceNo(order) : '') ||
     order?.invoiceNo ||
     order?.officialInvoiceNo ||

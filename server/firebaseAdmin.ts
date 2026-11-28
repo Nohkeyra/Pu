@@ -442,6 +442,7 @@ export interface OrderData {
   invoiceNo?: string;
   quoteNo?: string;
   officialInvoiceNo?: string;
+  invoiceLayoutVersion?: 4;
   companyCode?: string;
   collectorSubmittedAt?: string;
   name?: string;

@@ -2,7 +2,8 @@ import { calculateOrderCharges, orderFoodSubtotal, validCharge } from '../../src
 import { z } from 'zod';
 import { getFirestore } from '../firebaseAdmin.js';
 import { createBrevoTransporter } from '../emailService.js';
-import { generateServerInvoicePdf } from '../services/serverPdfService.js';
+import { generatePersistedConsolidatedInvoicePdf, generateServerInvoicePdf } from '../services/serverPdfService.js';
+import { readInvoiceBatch } from '../services/consolidatedInvoices.js';
 import { commitAdminOrderMutation } from '../services/orderMutations.js';
 import { toJSDate } from '../../src/lib/dateUtils.js';
 import { getOrderEventDate, isOrderDateInRange, sortOrdersByCreatedAt } from '../../src/lib/orderTimestamp.js';
@@ -281,8 +282,18 @@ export async function executeMcpTool(name: string, rawArgs: unknown, authInfo?: 
         const order = await getOrder(args.orderId);
         if (!order) return errorResult(`Order not found: ${args.orderId}`);
         if (!activeOrder(order)) return errorResult(`Order '${args.orderId}' is not active and cannot receive an invoice.`);
-        const invoiceNo = String(order.invoiceNo || '');
-        if (!invoiceNo) return errorResult('Order has no invoice number. Bill the order first.');
+        if (!['billed','in_transit','delivered','completed'].includes(String(order.status))) return errorResult('A final billed invoice is required.');
+        const invoiceNo = String(order.invoiceBatchNo || order.invoiceNo || '');
+        if (!invoiceNo || invoiceNo.startsWith('QT')) return errorResult('Order has no official invoice number. Bill the order first.');
+        if (order.invoiceBatchNo) {
+          const batch = await readInvoiceBatch(order.invoiceBatchNo);
+          const pdfBuffer = await generatePersistedConsolidatedInvoicePdf(batch);
+          const total = batch.pages?.reduce((sum:number,page:{totalCents:number})=>sum+page.totalCents/100,0)
+            ?? batch.orders.reduce((sum:number,item:{totalAmount?:number})=>sum+Number(item.totalAmount||0),0);
+          if (!Number.isFinite(total)) return errorResult('Saved batch total is invalid.');
+          const emailedTo = await sendFinalInvoiceEmail({...order,to:batch.recipient?.company||order.to,email:batch.recipient?.email||order.email,lang:batch.lang},invoiceNo,total,pdfBuffer,args.email);
+          return result({success:true,orderId:args.orderId,invoiceNo,emailedTo});
+        }
         const pdfBuffer = await generateServerInvoicePdf(order, true);
         const emailedTo = await sendFinalInvoiceEmail(order, invoiceNo, Number(order.totalAmount || 0), pdfBuffer, args.email);
         return result({ success: true, orderId: args.orderId, invoiceNo, emailedTo });

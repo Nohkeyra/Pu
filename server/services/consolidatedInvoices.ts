@@ -4,7 +4,8 @@ import {
   getFirestore,
 } from '../firebaseAdmin.js';
 import {
-  invoiceSnapshot,
+  CURRENT_INVOICE_LAYOUT,
+  prepareInvoiceOrders,
   validateInvoiceGroup,
   type InvoiceBatch,
 } from '../../src/lib/invoiceBatch.js';
@@ -111,9 +112,7 @@ export async function commitConsolidatedInvoice(
     let plan: ReturnType<typeof planInvoicePages>;
     try {
       const recipient = validateInvoiceGroup(rawOrders, settings.billingAddress);
-      const orders = rawOrders
-        .map(invoiceSnapshot)
-        .sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.id!.localeCompare(b.id!));
+      const orders = prepareInvoiceOrders(rawOrders);
       batch = {
         invoiceNo,
         orders,
@@ -121,7 +120,7 @@ export async function commitConsolidatedInvoice(
         includeNotes: settings.includeNotes === true,
         lang: settings.lang === 'en' ? 'en' : 'bm',
         issuedAt: new Date().toISOString(),
-        layoutVersion: 3,
+        layoutVersion: CURRENT_INVOICE_LAYOUT,
       };
       plan = planInvoicePages(orders, batch);
     } catch (error) {

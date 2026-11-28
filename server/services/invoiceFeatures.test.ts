@@ -87,6 +87,7 @@ describe('Invoice snapshots and page allocation', () => {
     } finally {
       spy.mockRestore();
     }
+    expect(saved.layoutVersion).toBe(4);
     expect(saved.pages.length).toBeGreaterThan(1);
     expect(new Set(saved.pages.map((page) => page.invoiceNo)).size).toBe(saved.pages.length);
     expect(saved.pages.every(page => /^RW\d{5}$/.test(page.invoiceNo))).toBe(true);

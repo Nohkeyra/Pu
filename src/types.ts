@@ -130,6 +130,7 @@ export interface Order {
   quoteNo?: string;
   orderId?: string;
   officialInvoiceNo?: string;
+  invoiceLayoutVersion?: 4;
   companyCode?: string;
   collectorSubmittedAt?: string;
   lang?: 'en' | 'bm';

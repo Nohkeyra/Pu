@@ -272,6 +272,7 @@ it('queues exactly one invoice for competing MCP billing actions after committin
   const jobs = await db.collection('invoice_outbox').where('orderId', '==', id).get();
   expect(jobs.size).toBe(1);
   expect((await db.collection('orders').doc(id).get()).data()?.status).toBe('billed');
+  expect((await db.collection('orders').doc(id).get()).data()?.invoiceLayoutVersion).toBe(4);
 });
 
 it('implements authenticated reservation and idempotent consolidated invoice commit', async () => {
@@ -299,6 +300,8 @@ it('implements authenticated reservation and idempotent consolidated invoice com
   expect((await request()).status).toBe(200);
   const saved = (await db.collection('consolidated_invoices').doc(nextInvoiceNo).get()).data();
   expect(saved?.orders[0].totalAmount).toBe(150);
+  expect(saved?.layoutVersion).toBe(4);
+  expect((await db.collection('orders').doc(id).get()).data()?.invoiceLayoutVersion).toBeUndefined();
   expect((await db.collection('orders').doc(id).get()).data()?.invoiceNo).toBe(
     'RW INDIVIDUAL-AUDIT'
   );

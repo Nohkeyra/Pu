@@ -95,12 +95,12 @@ offline reliability, preserve the original font, license and visual appearance.
 
 ## Individual Document Master & PETRONAS Company Code Rules — permanent owner requirement
 
-### 1. Sole Design Master for Individual Documents
+### 1. Approved Invoice Masters and Historical Compatibility
 
-- `public/assets/invoices/Restoran_Wawasan_Template_Invois_Individu_Final.pdf` is the **sole authoritative visual master** for all individual **invoices** and **quotations** rendered by `server/services/serverPdfService.ts` (`generateServerInvoicePdf`).
+- `docs/APPROVED_INVOICE_MASTERS.md` defines the two official version 4 masters for new individual and consolidated invoices. `Restoran_Wawasan_Template_Invois_Individu_Final.pdf` remains solely for existing individual invoices and quotations without layout version 4.
 - Preserve the master vector layout, header art, logo, colors, typography, billing box geometry, and original signature (`Tandatangan_Asal_Restoran_Wawasan.png` / template `/fzImg0` drawn once on the final summary page only — never stamp it twice). Never revert to or fall back to historical jsPDF individual invoice layouts.
 - Retain searchable PDF text, graceful wrapping for long addresses/menus/venues without clipping, clean master-style continuation pages (`Page X / Y` / `Halaman X / Y`), itemized delivery/service charges, and totals in words.
-- For quotations, swap only document titles, numbers, dates, and detail-box labels while preserving master coordinates and signature. For individual invoices, retain verbatim the notice: `This is a computer-generated invoice. No company stamp is required.`
+- Preserve existing quotation rendering; new individual invoices use the approved master footer and place PIC, phone, department, ATTN, email and notes on page 2.
 - All customer previews (`CustomerInvoicePreviewModal.tsx`), admin previews (`useAdminPdf.ts` / `AdminPdfCanvasPreview.tsx`), Web/Capacitor downloads and shares, and email attachments must consume the unified server PDF endpoints (`/api/invoice/:orderId/pdf`) — never duplicate PDF generation on the client.
 
 - Receipts are outside application scope: the owner prepares them separately in ChatGPT when requested. Do not implement receipt generation, preview, download, or automatic conversion on completion. Booking-reference sharing and requests for bank transfer proof remain valid.

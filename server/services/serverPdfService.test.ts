@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'node:fs';
-import { planInvoicePages as planRefinedInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { PDFArray, PDFDocument, PDFHexString, PDFRawStream, PDFString, decodePDFRawStream } from 'pdf-lib';
 import { planInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
@@ -420,7 +419,7 @@ describe('approved consolidated candidate (layout 4)',()=>{
       prices:{breakfast:5,lunch:10,hi_tea:4,dinner:12},deliveryCharge:5,serviceChargeAmount:2.25,totalAmount:317.25}));
     const opts={layoutVersion:4 as const,recipient:{company:'Example Agency',address:'Example address',email:'example@example.invalid'},
       includeNotes:true,lang:'bm' as const,issuedAt:'2026-11-28T04:00:00Z'};
-    const plan=planRefinedInvoicePages(orders,opts);
+    const plan=planInvoicePages(orders,opts);
     expect(plan.length).toBeGreaterThan(1);
     expect(plan.flatMap(p=>p.orderIds)).toEqual(orders.map(o=>o.id));
     expect(plan.reduce((sum,p)=>sum+p.totalCents,0)).toBe(24*31725);
@@ -443,8 +442,8 @@ describe('approved consolidated candidate (layout 4)',()=>{
       fs.writeFileSync('invoice-visual-artifacts/consolidated-refined-bm.pdf',pdf);
     }
   },15000);
-  it('rejects oversized rows before any invoice number is allocated',()=>{
-    expect(()=>planRefinedInvoicePages([{id:'long',quantity:1,totalAmount:1,notes:'Too long '.repeat(2000)}],
+  it('rejects oversized rows before committing a page plan',()=>{
+    expect(()=>planInvoicePages([{id:'long',quantity:1,totalAmount:1,notes:'Too long '.repeat(2000)}],
       {layoutVersion:4,recipient:{company:'Example',address:'Address',email:'a@example.invalid'},issuedAt:'2026-11-28',lang:'en',includeNotes:true})).toThrow(/exceed one page/);
   });
 });

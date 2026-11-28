@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { PDFDocument } from 'pdf-lib';
 import express from 'express';
 import type { Server } from 'http';
 import invoiceRoutes, { isOrderOwnedByCaller } from './invoiceRoutes.js';
@@ -188,6 +189,22 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
       }
     });
 
+    it('uses the approved individual version for download while keeping the original quotation number', async()=>{
+      const id='approved_layout4_download';
+      await getFirestore().collection('orders').doc(id).set({
+        to:'Test Company',billingAddress:'Test address',name:'Test PIC',email:'a@example.invalid',
+        invoiceNo:'RW54321',quoteNo:'QT 2026-54321',invoiceLayoutVersion:4,status:'billed',
+        billedAt:'2026-11-28T04:00:00Z',eventDate:'2026-12-06',quantity:10,meals:['lunch'],prices:{lunch:10},totalAmount:100,
+      });
+      const headers={Authorization:`Bearer ${signAdminJwt({uid:'admin_root'})}`};
+      const response=await fetch(`${baseUrl}/api/invoice/${id}/pdf?docType=invoice&final=true`,{headers});
+      expect(response.status).toBe(200);
+      expect((await PDFDocument.load(await response.arrayBuffer())).getPageCount()).toBe(2);
+      const quotation=await fetch(`${baseUrl}/api/invoice/${id}/pdf?docType=quotation`,{headers});
+      expect(quotation.status).toBe(200);
+      expect(quotation.headers.get('content-disposition')).toContain('Quotation_QT 2026-54321.pdf');
+    },15000);
+
     it('allows administrator to download any invoice with 200 via admin JWT', async () => {
       const db = getFirestore();
       await db.collection('orders').doc('target_order_99').set({
@@ -287,7 +304,7 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
         admin: false,
       });
 
-      await commitConsolidatedInvoice(
+      const batch = await commitConsolidatedInvoice(
         ['my_order_1', 'my_order_2'],
         await reserveConsolidatedNumber('admin_root'),
         'admin_root'
@@ -303,7 +320,14 @@ describe('Invoice Routes Authorization & Security (IDOR Protection)', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('application/pdf');
-    });
+      const direct = await fetch(`${baseUrl}/api/invoice/my_order_1/pdf?docType=invoice&final=true`, {
+        headers: { Authorization: 'Bearer valid_my_token' },
+      });
+      expect(direct.status).toBe(200);
+      expect(direct.headers.get('content-disposition')).toContain(`Invoice_${batch.invoiceNo}.pdf`);
+      const combinedPages=(await PDFDocument.load(await res.arrayBuffer())).getPageCount();
+      expect((await PDFDocument.load(await direct.arrayBuffer())).getPageCount()).toBe(combinedPages);
+    },15000);
 
     it('allows admin to generate combined PDF across any orders', async () => {
       const db = getFirestore();

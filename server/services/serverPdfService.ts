@@ -1073,7 +1073,7 @@ export async function generateServerInvoicePdf(
   const lang: 'en' | 'bm' = order.lang === 'en' ? 'en' : 'bm';
   const docType = resolveDocumentType(order, isFinal, docTypeOverride);
   const isMonetaryFinal = isFinal && docType !== 'quotation';
-  // Versioned candidate: existing invoices and quotations keep their exact historical path.
+  // New invoices persist the approved layout; historical invoices and quotations retain their path.
   const refined = isMonetaryFinal && order.invoiceLayoutVersion === 4;
   const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
 

@@ -28,7 +28,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     setGeneratingInvoice(order.id);
     try {
       if (!order.id) throw new Error('Missing database ID');
-      const invoiceNo = getDisplayInvoiceNo(order);
+      const invoiceNo = (isFinal ? order.invoiceBatchNo : order.quoteNo) || getDisplayInvoiceNo(order);
       const fileName = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(
@@ -69,7 +69,7 @@ export function useAdminPdf({ t, language, toast, authHeaders }: UseAdminPdfProp
     setGeneratingInvoice(order.id);
 
     try {
-      const invoiceNo = getDisplayInvoiceNo(order);
+      const invoiceNo = (isFinal ? order.invoiceBatchNo : order.quoteNo) || getDisplayInvoiceNo(order);
       const fileName = `${isFinal ? 'Invoice' : 'Quotation'}_${invoiceNo}.pdf`;
 
       const serverRes = await fetch(

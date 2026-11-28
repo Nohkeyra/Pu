@@ -337,12 +337,14 @@ describe('Widget Routes Authorization & Pricing Security', () => {
       expect(updatedData?.totalAmount).toBe(400);
       expect(updatedData?.prices).toEqual({ breakfast: 7.5, lunch: 12.5 });
       expect(updatedData?.invoiceNo).toBe(json.invoiceNo);
+      expect(updatedData?.invoiceLayoutVersion).toBe(4);
 
       // Verify background invoice delivery was queued
       expect(enqueueSpy).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
           orderId: 'ord_valid_pricing',
+          orderForPdf: expect.objectContaining({invoiceLayoutVersion:4}),
           recipientEmail: 'client@example.com',
           totalAmount: 400,
         })
