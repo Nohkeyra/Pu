@@ -3,11 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 interface UsePullToRefreshProps {
   onRefresh: () => Promise<void>;
   threshold?: number;
+  enabled?: boolean;
   /** Maximum clientY (viewport touch Y position) allowed to initiate pull-to-refresh. Default: 150px (header/top region) */
   maxHeaderTouchY?: number;
 }
 
-export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 150 }: UsePullToRefreshProps) {
+export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 150, enabled = true }: UsePullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -136,6 +137,7 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
@@ -147,7 +149,7 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxHeaderTouchY = 
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
+  }, [enabled, handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
 
   return { pullDistance, isRefreshing };
 }

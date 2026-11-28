@@ -30,6 +30,7 @@ const fixture = `
   function Fixture() {
     const [checked, setChecked] = useState(false);
     const [panel, setPanel] = useState('');
+    const [selectedIds, setSelectedIds] = useState(new Set());
     const onClose = useCallback(() => setPanel(''), []);
     return React.createElement(MotionConfig, { reducedMotion: 'user' },
       React.createElement(ToastProvider, null,
@@ -38,7 +39,8 @@ const fixture = `
           React.createElement('button', { onClick: () => setPanel('pdf') }, 'Open PDF'),
           React.createElement('button', { onClick: () => setPanel('order') }, 'Open order'),
           React.createElement(AdminTablesTab, {
-            orders: [order], language: 'en', openOrderDetail: () => setPanel('order'),
+            orders: [order], filteredOrders: [order], selectedIds, setSelectedIds, currentPage: 1, setCurrentPage: noop,
+            language: 'en', openOrderDetail: () => setPanel('order'),
             handlePreviewPDF: noop, handleDownloadPDF: noop, handleDelete: noop,
             fetchOrders: async () => {}, authHeaders: () => ({}), getApiUrl: x => x, toast: noop,
           })),

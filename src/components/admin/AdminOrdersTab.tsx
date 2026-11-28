@@ -1,21 +1,18 @@
-import { useRememberedState, useRememberedListScroll } from '@/hooks/ui/useRememberedView';
-import { useState, useEffect, useMemo } from 'react';
+import { useRememberedListScroll } from '@/hooks/ui/useRememberedView';
+import { useState, useEffect } from 'react';
 import {
   AlertTriangle,
   Check,
   Send,
   FileSpreadsheet,
-  X,
-  Search,
   Inbox,
   Trash2,
-  SlidersHorizontal,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ToastVariant } from '@/components/ui/Toast';
 import { Switch } from '@/components/ui/switch';
-import { formatDateTimeDisplay, normalizeTimestamp } from '@/lib/utils';
+import { formatDateTimeDisplay } from '@/lib/utils';
+import { formatAdminEvent } from '@/lib/adminOrderFilters';
 import { hasPositiveOrderPricing } from '@/lib/adminKpiStats';
 import type { Order } from '@/types';
 import { AdminOrdersExportSheet } from './AdminOrdersExportSheet';
@@ -31,31 +28,57 @@ import {
 import { AdminOrderRow } from './AdminOrderRow';
 import { triggerLightImpact } from '@/lib/haptics';
 
-import { List } from 'react-window';
+import { List, type RowComponentProps } from 'react-window';
+import type { ComponentProps } from 'react';
 
-// Extracted from AdminPanel.tsx (previously the `activeTab === 'orders'`
-// JSX block, lines ~1326-1664). Purely presentational — no local state
-// or fetch logic of its own. All order data, selection state, and action
-// handlers (approve/delete/PDF/send/etc.) still live in the parent
-// AdminPanel, which also owns the Order Detail Dialog, Send Invoice
-// Dialog, and PDF Preview Dialog rendered alongside this tab (those
-// dialogs are shared with the Diagnostics tab's test-PDF preview, so
-// they were kept in the parent rather than moved here).
+type OrderCardProps = ComponentProps<typeof AdminOrderRow>;
+type OrderListRowProps = Pick<OrderCardProps, 'language' | 'isSelectMode' | 'getStatusBadge' |
+  'handleToggleOrderSelect' | 'setStarredOrderIds' | 'onReadOrder' | 'openOrderDetail' |
+  'openSendDialog' | 'handleDelete' | 'setLongPressedOrder'> & {
+    records: Order[];
+    selectedOrderIds: Set<string>;
+    starredOrderIds: Set<string>;
+  };
+
+function OrderListRow({
+  index, style, ariaAttributes, records, selectedOrderIds, starredOrderIds, ...rowProps
+}: RowComponentProps<OrderListRowProps>) {
+  const order = records[index];
+  const dateLabel = formatAdminEvent(order, rowProps.language) || (order.orderId ? `#${order.orderId}` : '—');
+  const statusTone = {
+    approved: 'bg-[var(--ui-green)]',
+    billed: 'bg-[var(--ui-green)]',
+    in_transit: 'bg-sky-500',
+    cancel_requested: 'bg-rose-500',
+    cancelled: 'bg-[var(--ui-orange)]',
+  };
+
+  return (
+    <AdminOrderRow
+      key={order.id || order.orderId || index}
+      {...rowProps}
+      style={style}
+      ariaAttributes={ariaAttributes}
+      order={order}
+      isSelected={Boolean(order.id && selectedOrderIds.has(order.id))}
+      isStarred={Boolean(order.id && starredOrderIds.has(order.id))}
+      formattedHeaderDate={dateLabel}
+      clientName={order.to || order.name || order.company || '—'}
+      totalAmount={order.totalAmount != null ? `RM ${Number(order.totalAmount).toFixed(2)}` : '—'}
+      stripColor={statusTone[order.status as keyof typeof statusTone] || 'bg-[var(--ui-yellow)]'}
+    />
+  );
+}
 
 export function AdminOrdersTab({
   viewScope = 'admin',
   onReadOrder,
+  orders,
   t,
   language,
-  orders = [],
-  filteredOrders,
+  filteredOrders: searchedOrders,
+  hasSearch,
   cancelRequests,
-  dateFromFilter,
-  setDateFromFilter,
-  dateToFilter,
-  setDateToFilter,
-  statusFilter = 'all',
-  setStatusFilter,
   isSelectMode,
   setIsSelectMode,
   filterBySameEmail = true,
@@ -74,30 +97,22 @@ export function AdminOrdersTab({
 }: {
   viewScope?: string;
   onReadOrder?: (order: Order) => void;
+  orders: Order[];
   t: (key: string) => string;
   language: string;
-  orders?: Order[];
   filteredOrders: Order[];
+  hasSearch: boolean;
   cancelRequests: Order[];
-  dateFromFilter: string;
-  setDateFromFilter: (v: string) => void;
-  dateToFilter: string;
-  setDateToFilter: (v: string) => void;
-  statusFilter?: string;
-  setStatusFilter?: (v: string) => void;
   isSelectMode: boolean;
   setIsSelectMode: (v: boolean) => void;
   filterBySameEmail?: boolean;
   setFilterBySameEmail?: (v: boolean) => void;
   selectedOrderIds: Set<string>;
   setSelectedOrderIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  generatingInvoice: string | null;
   getStatusBadge: (status?: string) => React.ReactNode;
   handleToggleOrderSelect: (id?: string) => void;
   openOrderDetail: (order: Order) => void;
   openSendDialog: (order: Order) => void;
-  handlePreviewPDF: (order: Order, isFinal: boolean) => void;
-  handleDownloadPDF: (order: Order, isFinal: boolean) => void;
   handleDelete: (orderId: string) => void;
   handleBatchDelete?: (orderIds: string[]) => Promise<void>;
   handleRejectCancellation: (orderId: string) => void;
@@ -105,12 +120,7 @@ export function AdminOrdersTab({
   toast: (opts: { title?: string; description?: string; variant?: ToastVariant }) => void;
 }) {
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [starredOrderIds, setStarredOrderIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useRememberedState<string>(
-    viewScope + ':orders:search',
-    ''
-  );
   const rememberedListRef = useRememberedListScroll(viewScope + ':orders:listScroll');
   const [windowWidth, setWindowWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1024
@@ -125,27 +135,7 @@ export function AdminOrdersTab({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const hasActiveDate = Boolean(dateFromFilter || dateToFilter);
-  const hasActiveStatus = Boolean(statusFilter && statusFilter !== 'all');
-  const hasSearch = Boolean(searchQuery.trim());
-  const activeFilterCount =
-    (hasActiveDate ? 1 : 0) +
-    (hasActiveStatus ? 1 : 0) +
-    (isSelectMode ? 1 : 0) +
-    (hasSearch ? 1 : 0);
-
-  // Local search over already-filtered orders (name, email, phone, invoice, client)
-  const searchedOrders = useMemo(() => {
-    if (!searchQuery.trim()) return filteredOrders;
-    const q = searchQuery.trim().toLowerCase();
-    return filteredOrders.filter((o) => {
-      const hay = [o.name, o.email, o.contact || o.phone, o.invoiceNo, o.to, o.id]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [filteredOrders, searchQuery]);
+  const rowHeight = windowWidth < 420 ? 154 : 146;
 
   return (
     <>
@@ -200,294 +190,27 @@ export function AdminOrdersTab({
         </div>
       )}
 
-      {/* Balanced toolbar */}
-      <div className="mb-4 bg-white dark:bg-card border border-[var(--color-light-forest)] dark:border-stone-800 rounded-xl p-3 sm:p-4 shadow-xs space-y-3">
-        {/* Row 1: Search Input & Dropdown Toggle Button */}
-        <div className="flex items-center gap-2">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-0">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none"
-              aria-hidden
-            />
-            <input
-              id="admin-order-search"
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                language === 'bm' ? 'Cari nama, emel, invois…' : 'Search name, email, invoice…'
-              }
-              aria-label={language === 'bm' ? 'Cari pesanan' : 'Search orders'}
-              className="w-full h-11 min-h-[44px] pl-10 pr-3.5 rounded-lg border border-[var(--color-light-forest)] dark:border-stone-800 bg-[var(--color-cream-dark)] dark:bg-background/50 text-sm font-medium text-[var(--ui-ink)] dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[var(--ui-yellow)]/40 transition-all"
-            />
-          </div>
-
-          {/* Filter Dropdown Toggle Button */}
-          <button
-            id="admin-filter-dropdown-toggle"
-            type="button"
-            onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-            aria-expanded={isFilterDropdownOpen}
-            aria-controls="admin-filter-dropdown-panel"
-            aria-label={language === 'bm' ? 'Buka atau tutup penapis' : 'Toggle filters dropdown'}
-            className={`h-11 min-h-[44px] px-3 sm:px-4 flex items-center justify-center gap-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all cursor-pointer shrink-0 select-none ${
-              isFilterDropdownOpen
-                ? 'bg-[var(--ui-ink)] text-[var(--ui-canvas)] border-[var(--ui-ink)] shadow-xs'
-                : activeFilterCount > 0
-                  ? 'bg-[var(--ui-raised)] text-[var(--ui-ink)] border-[var(--ui-border)]'
-                  : 'bg-[var(--color-cream-dark)] hover:bg-[var(--color-cream)] dark:bg-background/60 dark:hover:bg-background border-[var(--color-light-forest)] dark:border-stone-800 text-[var(--ui-green)] dark:text-stone-200'
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4 shrink-0" />
-            <span className="inline">{language === 'bm' ? 'Penapis' : 'Filter'}</span>
-            {activeFilterCount > 0 && (
-              <span
-                className={`w-5 h-5 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                  isFilterDropdownOpen
-                    ? 'bg-[var(--ui-yellow)] text-[var(--ui-on-yellow)]'
-                    : 'bg-[var(--ui-ink)] text-[var(--ui-canvas)]'
-                }`}
-              >
-                {activeFilterCount}
-              </span>
-            )}
-            <ChevronDown
-              className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+      <div className="admin-order-tools">
+        <div className="flex flex-wrap items-center gap-2">
+          <Switch
+            id="select-mode-toggle"
+            checked={isSelectMode}
+            onCheckedChange={(checked) => {
+              setIsSelectMode(checked);
+              if (!checked) setSelectedOrderIds(new Set());
+            }}
+          />
+          <label htmlFor="select-mode-toggle" className="text-sm font-semibold">
+            {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
+          </label>
+          <Button id="admin-export-btn" variant="outline" size="sm" onClick={() => {
+            triggerLightImpact();
+            setIsExportOpen(true);
+          }}>
+            <FileSpreadsheet className="w-4 h-4" />
+            {language === 'bm' ? 'Eksport Excel' : 'Export Excel'}
+          </Button>
         </div>
-
-        {/* Compact Active Filter Chips when Dropdown is collapsed */}
-        {!isFilterDropdownOpen && activeFilterCount > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-xs">
-            <span className="text-stone-500 dark:text-stone-400 text-xs font-medium">
-              {language === 'bm' ? 'Penapis aktif:' : 'Active:'}
-            </span>
-            {hasActiveStatus && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--ui-yellow)]/15 text-[var(--ui-orange)] dark:text-amber-300 font-semibold text-xs">
-                {statusFilter === 'pending'
-                  ? language === 'bm'
-                    ? 'Menunggu'
-                    : 'Pending'
-                  : statusFilter === 'approved'
-                    ? language === 'bm'
-                      ? 'Diluluskan'
-                      : 'Approved'
-                    : statusFilter === 'billed'
-                      ? language === 'bm'
-                        ? 'Dibilkan'
-                        : 'Billed'
-                      : statusFilter === 'cancel_requested'
-                        ? language === 'bm'
-                          ? 'Minta Batal'
-                          : 'Cancel req.'
-                        : statusFilter === 'cancelled'
-                          ? language === 'bm'
-                            ? 'Dibatalkan'
-                            : 'Cancelled'
-                          : statusFilter}
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter?.('all')}
-                  className="hover:opacity-75 cursor-pointer ml-0.5"
-                  title={language === 'bm' ? 'Padam tapisan status' : 'Clear status filter'}
-                  aria-label={language === 'bm' ? 'Padam tapisan status' : 'Clear status filter'}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {hasActiveDate && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--ui-green)]/10 text-[var(--ui-green)] dark:bg-emerald-500/20 dark:text-emerald-300 font-semibold text-xs">
-                {dateFromFilter || '...'} – {dateToFilter || '...'}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDateFromFilter('');
-                    setDateToFilter('');
-                  }}
-                  className="hover:opacity-75 cursor-pointer ml-0.5"
-                  title={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
-                  aria-label={language === 'bm' ? 'Padam tapisan tarikh' : 'Clear date filter'}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {isSelectMode && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 font-semibold text-xs">
-                {language === 'bm' ? 'Mod Pilih Aktif' : 'Select Mode'}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter?.('all');
-                setDateFromFilter('');
-                setDateToFilter('');
-              }}
-              className="text-xs text-[var(--ui-orange)] hover:underline font-semibold ml-1 cursor-pointer"
-            >
-              {language === 'bm' ? 'Set Semula' : 'Reset All'}
-            </button>
-          </div>
-        )}
-
-        {/* Dropdown Panel: Date range, Select Mode, Export, and Status chips */}
-        {isFilterDropdownOpen && (
-          <div
-            id="admin-filter-dropdown-panel"
-            className="pt-3 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70 space-y-3"
-          >
-            {/* Row 1 inside dropdown: Date range, Select Mode, and Primary action buttons */}
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-              {/* Date range picker group */}
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 w-full sm:w-auto">
-                <div className="flex-1 sm:flex-none flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg px-2.5 sm:px-3.5 py-1 sm:py-0 min-h-[44px]">
-                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                    {language === 'bm' ? 'Dari' : 'From'}
-                  </span>
-                  <input
-                    id="admin-date-from"
-                    type="date"
-                    aria-label={language === 'bm' ? 'Tarikh Dari' : 'Date From'}
-                    value={dateFromFilter}
-                    onChange={(e) => setDateFromFilter(e.target.value)}
-                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[var(--ui-green)] dark:text-emerald-400 focus:outline-none"
-                  />
-                  <span className="text-stone-300 dark:text-stone-600 shrink-0 hidden sm:inline">
-                    –
-                  </span>
-                  <span className="text-xs font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                    {language === 'bm' ? 'Hingga' : 'To'}
-                  </span>
-                  <input
-                    id="admin-date-to"
-                    type="date"
-                    aria-label={language === 'bm' ? 'Tarikh Hingga' : 'Date To'}
-                    value={dateToFilter}
-                    onChange={(e) => setDateToFilter(e.target.value)}
-                    className="w-full sm:w-[8.2rem] min-w-[100px] bg-transparent text-xs sm:text-sm font-semibold text-[var(--ui-green)] dark:text-emerald-400 focus:outline-none"
-                  />
-                </div>
-                {(dateFromFilter || dateToFilter) && (
-                  <button
-                    id="admin-clear-date-filter"
-                    onClick={() => {
-                      setDateFromFilter('');
-                      setDateToFilter('');
-                    }}
-                    className="h-11 w-11 flex items-center justify-center text-[var(--ui-orange)] dark:text-rose-400 hover:bg-[var(--ui-orange)]/10 rounded-lg border border-[var(--ui-orange)]/20 dark:border-rose-500/30 shrink-0 transition-colors"
-                    title={language === 'bm' ? 'Reset' : 'Reset'}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Primary actions toolbar */}
-              <div className="flex items-center gap-2.5 shrink-0">
-                <div className="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 bg-[var(--color-cream-dark)] dark:bg-background/50 border border-[var(--color-light-forest)] dark:border-stone-800 rounded-lg h-11 min-h-[44px]">
-                  <Switch
-                    id="select-mode-toggle"
-                    checked={isSelectMode}
-                    onCheckedChange={(checked) => {
-                      setIsSelectMode(checked);
-                      if (!checked) setSelectedOrderIds(new Set());
-                    }}
-                  />
-                  <label
-                    htmlFor="select-mode-toggle"
-                    className="text-xs sm:text-sm font-semibold text-[var(--ui-green)]/80 dark:text-stone-200 cursor-pointer select-none whitespace-nowrap"
-                  >
-                    {language === 'bm' ? 'Mod Pilih' : 'Select Mode'}
-                  </label>
-                </div>
-
-                <Button
-                  id="admin-export-btn"
-                  variant="default"
-                  size="default"
-                  onClick={() => {
-                    triggerLightImpact();
-                    setIsExportOpen(true);
-                  }}
-                  className="flex-1 sm:flex-initial h-11 min-h-[44px] font-bold flex items-center justify-center gap-2 px-5 shadow-sm bg-[var(--ui-action)] hover:brightness-105 text-[var(--ui-on-action)] border-0 rounded-lg cursor-pointer transition-all active:scale-[0.98]"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>{language === 'bm' ? 'Eksport' : 'Export'}</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Row 2 inside dropdown: Status filter chips with live counts */}
-            {setStatusFilter && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap scrollbar-none pt-2 border-t border-[var(--color-light-forest)]/70 dark:border-stone-800/70">
-                {[
-                  {
-                    id: 'all',
-                    label: language === 'bm' ? 'Semua' : 'All',
-                    count: orders.length,
-                  },
-                  {
-                    id: 'pending',
-                    label: language === 'bm' ? 'Menunggu' : 'Pending',
-                    count: orders.filter((o) => o.status === 'pending').length,
-                  },
-                  {
-                    id: 'approved',
-                    label: language === 'bm' ? 'Diluluskan' : 'Approved',
-                    count: orders.filter((o: Order) => o.status === 'approved').length,
-                  },
-                  {
-                    id: 'billed',
-                    label: language === 'bm' ? 'Dibilkan' : 'Billed',
-                    count: orders.filter((o) => o.status === 'billed').length,
-                  },
-                  {
-                    id: 'cancel_requested',
-                    label: language === 'bm' ? 'Minta Batal' : 'Cancel req.',
-                    count: cancelRequests.length,
-                  },
-                  {
-                    id: 'cancelled',
-                    label: language === 'bm' ? 'Dibatalkan' : 'Cancelled',
-                    count: orders.filter((o) => o.status === 'cancelled').length,
-                  },
-                ].map((chip) => {
-                  const active = statusFilter === chip.id;
-                  return (
-                    <button
-                      key={chip.id}
-                      id={`admin-filter-status-${chip.id}`}
-                      type="button"
-                      onClick={() => setStatusFilter(chip.id)}
-                      aria-pressed={active}
-                      className={`h-9 min-h-[36px] px-3.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer select-none ${
-                        active
-                          ? 'bg-sunshine-cta text-white border-sunshine-cta shadow-[0_3px_10px_rgba(224,63,20,0.30)]'
-                          : 'bg-[var(--color-cream-dark)] dark:bg-background/50 text-[var(--ui-green)]/80 dark:text-stone-300 border-[var(--color-light-forest)] dark:border-stone-800 hover:border-[var(--ui-yellow)]/50 hover:bg-[var(--ui-surface)]'
-                      }`}
-                    >
-                      <span>{chip.label}</span>
-                      <span
-                        className={`text-[10.5px] px-1.5 py-0.2 rounded-full font-black ${
-                          active
-                            ? 'bg-white/25 text-white'
-                            : 'bg-stone-200/70 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
-                        }`}
-                      >
-                        {chip.count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Row 3: Selection tools — only when Select Mode is on */}
         {isSelectMode && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--color-light-forest)] dark:border-stone-800">
@@ -571,35 +294,6 @@ export function AdminOrdersTab({
         )}
       </div>
 
-      {setStatusFilter && (
-        <div
-          role="group"
-          aria-label={language === 'bm' ? 'Penapis status pantas' : 'Quick status filters'}
-          className="mb-3 flex gap-2 overflow-x-auto pb-1"
-        >
-          {[
-            { id: 'all', label: language === 'bm' ? 'Semua' : 'All' },
-            { id: 'pending', label: language === 'bm' ? 'Menunggu semakan' : 'Pending review' },
-            { id: 'approved', label: language === 'bm' ? 'Diluluskan' : 'Approved' },
-            { id: 'billed', label: language === 'bm' ? 'Dibilkan' : 'Billed' },
-          ].map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              aria-pressed={statusFilter === chip.id}
-              onClick={() => setStatusFilter(chip.id)}
-              className={`min-h-[44px] shrink-0 rounded-xl border px-4 text-xs font-semibold transition-colors ${
-                statusFilter === chip.id
-                  ? 'border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-300'
-                  : 'border-stone-200 bg-white text-stone-700 hover:border-amber-400 dark:border-white/10 dark:bg-card dark:text-stone-300'
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* Jotform-style Submissions List */}
       <div className="rounded-xl border border-[var(--color-light-forest)] dark:border-stone-800 bg-white dark:bg-card overflow-hidden shadow-xs">
         {searchedOrders.length === 0 ? (
@@ -607,14 +301,14 @@ export function AdminOrdersTab({
             className="m-4"
             icon={<Inbox className="w-10 h-10 opacity-70" aria-hidden />}
             title={
-              searchQuery.trim()
+              hasSearch
                 ? language === 'bm'
                   ? 'Tiada hasil carian'
                   : 'No matching orders'
                 : t('no_orders') || 'No orders'
             }
             description={
-              searchQuery.trim()
+              hasSearch
                 ? language === 'bm'
                   ? 'Cuba tukar kata kunci atau kosongkan carian.'
                   : 'Try a different keyword or clear the search.'
@@ -624,97 +318,26 @@ export function AdminOrdersTab({
             }
           />
         ) : (
-          (() => {
-            const rowHeight = windowWidth < 420 ? 204 : windowWidth < 768 ? 190 : 180;
-            const dynamicListHeight = Math.min(
-              Math.max(searchedOrders.length * rowHeight, 140),
-              900
-            );
-
-            return (
-              <List
-                listRef={rememberedListRef}
-                style={{ height: dynamicListHeight, width: '100%' }}
-                rowCount={searchedOrders.length}
-                rowHeight={rowHeight}
-                rowProps={{}}
-                rowComponent={({ index, style }: any) => {
-                  const order = searchedOrders[index];
-                  const isSelected = Boolean(order.id && selectedOrderIds.has(order.id));
-                  const isStarred = Boolean(order.id && starredOrderIds.has(order.id));
-
-                  let formattedHeaderDate = '-';
-                  const rawDate = order.dateTime || order.eventDate || order.createdAt;
-                  if (rawDate) {
-                    formattedHeaderDate = formatDateTimeDisplay(rawDate);
-                  }
-                  if (formattedHeaderDate === '-') {
-                    formattedHeaderDate = order.orderId
-                      ? `#${order.orderId}`
-                      : language === 'bm'
-                        ? 'Pesanan Katering'
-                        : 'Catering Order';
-                  }
-
-                  const getRelativeTime = (o: Order) => {
-                    const ts = normalizeTimestamp(o.createdAt || o.dateTime);
-                    const diffMs = ts > 0 ? Date.now() - ts * 1000 : 0;
-                    const diffMins = Math.floor(diffMs / 60000);
-                    const diffHrs = Math.floor(diffMins / 60);
-                    const diffDays = Math.floor(diffHrs / 24);
-                    if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
-                    if (diffHrs < 24) return `${diffHrs}h`;
-                    return `${diffDays}d`;
-                  };
-
-                  const relativeTime = getRelativeTime(order);
-                  const clientName = order.to || order.name || (order as any).company || '-';
-                  const totalAmount =
-                    order.totalAmount != null ? `RM ${Number(order.totalAmount).toFixed(2)}` : '—';
-
-                  const stripColor =
-                    order.status === 'approved' || order.status === 'billed'
-                      ? 'bg-[var(--ui-green)]'
-                      : order.status === 'cancel_requested'
-                        ? 'bg-amber-500'
-                        : order.status === 'cancelled'
-                          ? 'bg-[var(--ui-orange)]'
-                          : 'bg-[var(--ui-yellow)]';
-
-                  return (
-                    <AdminOrderRow
-                      style={style}
-                      order={order}
-                      language={language}
-                      isSelected={isSelected}
-                      isStarred={isStarred}
-                      formattedHeaderDate={formattedHeaderDate}
-                      relativeTime={relativeTime}
-                      clientName={clientName}
-                      totalAmount={totalAmount}
-                      stripColor={stripColor}
-                      isSelectMode={isSelectMode}
-                      getStatusBadge={getStatusBadge}
-                      handleToggleOrderSelect={handleToggleOrderSelect}
-                      setStarredOrderIds={setStarredOrderIds}
-                      onReadOrder={onReadOrder}
-                      openOrderDetail={openOrderDetail}
-                      openSendDialog={openSendDialog}
-                      handleDelete={handleDelete}
-                      setLongPressedOrder={setLongPressedOrder}
-                    />
-                  );
-                }}
-              />
-            );
-          })()
+          <List
+            listRef={rememberedListRef}
+            style={{ height: Math.min(searchedOrders.length * rowHeight, 900), width: '100%' }}
+            rowCount={searchedOrders.length}
+            rowHeight={rowHeight}
+            rowProps={{
+              records: searchedOrders, selectedOrderIds, starredOrderIds, language, isSelectMode, getStatusBadge,
+              handleToggleOrderSelect, setStarredOrderIds, onReadOrder, openOrderDetail, openSendDialog,
+              handleDelete, setLongPressedOrder,
+            }}
+            rowComponent={OrderListRow}
+          />
         )}
       </div>
 
       <AdminOrdersExportSheet
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
-        filteredOrders={filteredOrders}
+        filteredOrders={searchedOrders}
+        selectedOrdersSource={orders}
         selectedOrderIds={selectedOrderIds}
         setSelectedOrderIds={setSelectedOrderIds}
         language={language}

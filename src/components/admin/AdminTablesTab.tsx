@@ -4,6 +4,7 @@ import { invoiceRecipient, invoiceMatchText } from '@/lib/invoiceBatch';
 import { OrderStatusBadge } from '@/components/order/OrderStatusBadge';
 import { getOrderStatus, VALID_STATUS_TRANSITIONS } from '@/lib/orderStatus';
 import { hasPositiveOrderPricing } from '@/lib/adminKpiStats';
+import { formatAdminEvent, getAdminEventDate, getAdminEventTime, getAdminOrderPax } from '@/lib/adminOrderFilters';
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -16,13 +17,10 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
   Columns,
-  Filter,
   Check,
   Building2,
   Calendar,
-  Layers,
   ChevronDown,
   MoreHorizontal,
 } from 'lucide-react';
@@ -35,7 +33,6 @@ import {
   compareTimestampValues,
   getDisplayInvoiceNo,
   formatDateDisplay,
-  formatDateTimeDisplay,
 } from '@/lib/utils';
 
 interface AdminTablesTabProps {
@@ -43,6 +40,11 @@ interface AdminTablesTabProps {
   onReadOrder?: (order: Order) => void;
   onSendInvoice?: (order: Order) => void;
   orders: Order[];
+  filteredOrders: Order[];
+  selectedIds: Set<string>;
+  currentPage: number;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   language: 'en' | 'bm';
   openOrderDetail: (order: Order) => void;
   handlePreviewPDF: (order: Order, isFinal: boolean) => Promise<void> | void;
@@ -80,25 +82,25 @@ interface ColumnDef {
 
 const ALL_COLUMNS: ColumnDef[] = [
   { key: 'dateTime', labelEn: 'Event Date', labelBm: 'Tarikh Acara', defaultVisible: true },
-  { key: 'meals', labelEn: 'Meal', labelBm: 'Hidangan', defaultVisible: true },
+  { key: 'meals', labelEn: 'Meal', labelBm: 'Hidangan', defaultVisible: false },
   { key: 'quantity', labelEn: 'Pax', labelBm: 'Pax', defaultVisible: true },
-  { key: 'menu', labelEn: 'Menu', labelBm: 'Menu', defaultVisible: true },
-  { key: 'preparationType', labelEn: 'Prep', labelBm: 'Sajian', defaultVisible: true },
-  { key: 'pricePerPax', labelEn: 'Price per Pax', labelBm: 'Harga per Pax', defaultVisible: true },
-  { key: 'totalAmount', labelEn: 'Total', labelBm: 'Jumlah', defaultVisible: true },
+  { key: 'menu', labelEn: 'Menu', labelBm: 'Menu', defaultVisible: false },
+  { key: 'preparationType', labelEn: 'Prep', labelBm: 'Sajian', defaultVisible: false },
+  { key: 'pricePerPax', labelEn: 'Price per Pax', labelBm: 'Harga per Pax', defaultVisible: false },
+  { key: 'totalAmount', labelEn: 'Total', labelBm: 'Jumlah', defaultVisible: false },
   { key: 'status', labelEn: 'Status', labelBm: 'Status', defaultVisible: true },
   {
     key: 'invoiceNo',
     labelEn: 'Ref / Invoice No',
     labelBm: 'No. Rujukan / Invois',
-    defaultVisible: false,
+    defaultVisible: true,
   },
   { key: 'createdAt', labelEn: 'Submitted Date', labelBm: 'Tarikh Hantar', defaultVisible: false },
   {
     key: 'to',
     labelEn: 'Client / Organization',
     labelBm: 'Klien / Organisasi',
-    defaultVisible: false,
+    defaultVisible: true,
   },
   {
     key: 'name',
@@ -117,6 +119,11 @@ export function AdminTablesTab({
   onReadOrder,
   onSendInvoice,
   orders,
+  filteredOrders,
+  selectedIds,
+  setSelectedIds,
+  currentPage,
+  setCurrentPage,
   language,
   openOrderDetail,
   handlePreviewPDF,
@@ -134,20 +141,6 @@ export function AdminTablesTab({
   handleGenerateConsolidatedInvoice,
 }: AdminTablesTabProps) {
   const reduceMotion = useReducedMotion();
-  // Search & Filters
-  const [searchTerm, setSearchTerm] = useRememberedState<string>(
-    viewScope + ':tables:searchTerm',
-    ''
-  );
-  const [statusFilter, setStatusFilter] = useRememberedState<string>(
-    viewScope + ':tables:statusFilter',
-    'all'
-  );
-  const [clientFilter, setClientFilter] = useRememberedState<string>(
-    viewScope + ':tables:clientFilter',
-    'all'
-  );
-
   // Sorting
   const [sortField, setSortField] = useRememberedState<SortField>(
     viewScope + ':tables:sortField',
@@ -169,17 +162,7 @@ export function AdminTablesTab({
   const [showColumnPicker, setShowColumnPicker] = useState(false);
 
   // Pagination
-  const [currentPage, setCurrentPage] = useRememberedState<number>(
-    viewScope + ':tables:currentPage',
-    1
-  );
   const [pageSize, setPageSize] = useRememberedState<number>(viewScope + ':tables:pageSize', 15);
-
-  // Selection
-  const [dateFrom, setDateFrom] = useRememberedState<string>(viewScope + ':tables:from', '');
-  const [dateTo, setDateTo] = useRememberedState<string>(viewScope + ':tables:to', '');
-
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Inline status update state
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -197,94 +180,8 @@ export function AdminTablesTab({
   const currentInvoiceNo = consolidatedInvoiceNo;
   const isGenerating = isGeneratingConsolidated;
 
-  // Extract distinct client options
-  const clientOptions = useMemo(() => {
-    const clients = new Set<string>();
-    orders.forEach((o) => {
-      if (o.to) clients.add(o.to);
-    });
-    return Array.from(clients).sort();
-  }, [orders]);
-
-  // Statistics
-  const stats = useMemo(() => {
-    let totalRevenue = 0;
-    let pendingCount = 0;
-    let approvedCount = 0;
-    let billedCount = 0;
-
-    orders.forEach((o) => {
-      const s = (o.status || 'pending').toLowerCase();
-      if (s === 'pending' || s === 'cancel_requested') pendingCount++;
-      if (s === 'approved') approvedCount++;
-      if (s === 'billed') billedCount++;
-
-      if (o.totalAmount && (s === 'approved' || s === 'billed')) {
-        totalRevenue += o.totalAmount;
-      }
-    });
-
-    return {
-      total: orders.length,
-      revenue: totalRevenue,
-      pending: pendingCount,
-      approved: approvedCount,
-      billed: billedCount,
-    };
-  }, [orders]);
-
-  // Filtering & Sorting logic
   const filteredAndSortedOrders = useMemo(() => {
-    return orders
-      .filter((order) => {
-        // Status filter
-        if (statusFilter !== 'all') {
-          const s = (order.status || 'pending').toLowerCase();
-          if (statusFilter === 'pending' && s !== 'pending') return false;
-          if (statusFilter === 'approved' && s !== 'approved') return false;
-          if (statusFilter === 'billed' && s !== 'billed') return false;
-          if (statusFilter === 'cancelled' && s !== 'cancelled' && s !== 'dibatalkan') return false;
-          if (statusFilter === 'cancel_requested' && s !== 'cancel_requested') return false;
-        }
-
-        const eventDate =
-          order.dateTime ||
-          (order.eventDate instanceof Date ? order.eventDate.toISOString() : order.eventDate) ||
-          (order.date instanceof Date ? order.date.toISOString() : order.date) ||
-          '';
-        const day = eventDate.slice(0, 10);
-        if ((dateFrom && day < dateFrom) || (dateTo && day > dateTo)) return false;
-        // Client filter
-        if (clientFilter !== 'all') {
-          if (order.to !== clientFilter) return false;
-        }
-
-        // Search term
-        if (searchTerm.trim()) {
-          const term = searchTerm.toLowerCase().trim();
-          const matchTo = (order.to || '').toLowerCase().includes(term);
-          const matchName = (order.name || '').toLowerCase().includes(term);
-          const matchEmail = (order.email || '').toLowerCase().includes(term);
-          const matchPhone = (order.contact || '').toLowerCase().includes(term);
-          const matchInvoice = (order.invoiceNo || order.id || '').toLowerCase().includes(term);
-          const matchLocation = (order.location || '').toLowerCase().includes(term);
-          const matchMenu = (order.menu || '').toLowerCase().includes(term);
-
-          if (
-            !matchTo &&
-            !matchName &&
-            !matchEmail &&
-            !matchPhone &&
-            !matchInvoice &&
-            !matchLocation &&
-            !matchMenu
-          ) {
-            return false;
-          }
-        }
-
-        return true;
-      })
+    return [...filteredOrders]
       .sort((a, b) => {
         let valA: string | number = '';
         let valB: string | number = '';
@@ -294,11 +191,11 @@ export function AdminTablesTab({
         }
 
         if (sortField === 'date') {
-          return compareTimestampValues(
-            a.dateTime || a.eventDate || a.date,
-            b.dateTime || b.eventDate || b.date,
-            sortOrder
-          );
+          const eventKey = (order: Order) => {
+            const date = getAdminEventDate(order);
+            return date && `${date}T${getAdminEventTime(order) || '00:00'}:00+08:00`;
+          };
+          return compareTimestampValues(eventKey(a), eventKey(b), sortOrder);
         }
 
         if (sortField === 'to') {
@@ -308,8 +205,8 @@ export function AdminTablesTab({
           valA = (a.name || '').toLowerCase();
           valB = (b.name || '').toLowerCase();
         } else if (sortField === 'quantity') {
-          valA = a.quantity || 0;
-          valB = b.quantity || 0;
+          valA = getAdminOrderPax(a);
+          valB = getAdminOrderPax(b);
         } else if (sortField === 'totalAmount') {
           valA = a.totalAmount || 0;
           valB = b.totalAmount || 0;
@@ -335,7 +232,7 @@ export function AdminTablesTab({
         if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
         return 0;
       });
-  }, [orders, statusFilter, clientFilter, searchTerm, sortField, sortOrder, dateFrom, dateTo]);
+  }, [filteredOrders, sortField, sortOrder]);
 
   // Paginated Data
   const totalPages = Math.ceil(filteredAndSortedOrders.length / pageSize) || 1;
@@ -379,11 +276,14 @@ export function AdminTablesTab({
     });
   };
 
-  const handleSelectRow = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
+  const handleSelectRow = (id?: string) => {
+    if (!id) return;
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Inline Status Change
@@ -446,7 +346,7 @@ export function AdminTablesTab({
 
   // Download all orders into one excel file (Standard tabular export)
   const handleDownloadAllExcel = async () => {
-    const targetOrders = filteredAndSortedOrders.length > 0 ? filteredAndSortedOrders : orders;
+    const targetOrders = filteredAndSortedOrders;
     if (targetOrders.length === 0) {
       toast({
         title: isBm ? 'Tiada Rekod' : 'No Records',
@@ -514,211 +414,8 @@ export function AdminTablesTab({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Table Summary Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/5 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
-              {isBm ? 'Jumlah Permohonan' : 'Total Submissions'}
-            </span>
-            <div className="w-6 h-6 rounded-md bg-[var(--color-sunshine-cta)]/10 text-[var(--color-sunshine-cta)] flex items-center justify-center font-bold text-xs shrink-0">
-              <Layers className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
-              {stats.total}
-            </span>
-            <span className="text-xs text-deep-forest/40 dark:text-stone/40">
-              {isBm ? 'rekod' : 'records'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-amber-500/20 dark:border-amber-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate">
-              {isBm ? 'Menunggu Disahkan' : 'Pending Review'}
-            </span>
-            <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">
-              {stats.pending}
-            </div>
-          </div>
-          <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-xl font-display font-bold text-amber-600 dark:text-amber-400 leading-none">
-              {stats.pending}
-            </span>
-            <span className="text-xs text-amber-600/60 dark:text-amber-400/60">
-              {isBm ? 'tindakan' : 'pending'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-emerald-500/20 dark:border-emerald-500/10 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider truncate">
-              {isBm ? 'Invois / Diluluskan' : 'Approved & Billed'}
-            </span>
-            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
-              {stats.approved + stats.billed}
-            </div>
-          </div>
-          <div className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="text-xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-none">
-              {stats.approved + stats.billed}
-            </span>
-            <span className="text-xs text-emerald-600/60 dark:text-emerald-400/60">
-              {isBm ? 'selesai' : 'done'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-card border border-[var(--color-sunshine-cta)]/30 dark:border-[var(--color-sunshine-cta)]/20 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-xs font-bold text-deep-forest/60 dark:text-stone/60 uppercase tracking-wider truncate">
-              {isBm ? 'Hasil Terkumpul' : 'Total Revenue'}
-            </span>
-            <span className="text-xs font-bold px-1.5 py-0.2 rounded bg-[var(--color-sunshine-cta)]/20 text-deep-forest dark:text-[var(--color-sunshine-cta)] shrink-0">
-              RM
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-baseline gap-0.5">
-            <span className="text-xs font-bold text-[var(--color-sunshine-cta)]">RM</span>
-            <span className="text-xl font-display font-bold text-deep-forest dark:text-white leading-none">
-              {stats.revenue.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Jotform-Style Toolbar */}
-      <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl p-4 space-y-4 shadow-sm">
-        <div className="flex flex-wrap gap-3 items-end">
-          <label className="text-xs font-semibold space-y-1">
-            {isBm ? 'Tarikh acara dari' : 'Event date from'}
-            <input
-              aria-label={isBm ? 'Tarikh acara dari' : 'Event date from'}
-              type="date"
-              value={dateFrom}
-              onChange={(e) => {
-                setDateFrom(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="block bg-background border border-border rounded-lg p-2 min-h-11"
-            />
-          </label>
-          <label className="text-xs font-semibold space-y-1">
-            {isBm ? 'Hingga' : 'To'}
-            <input
-              aria-label={isBm ? 'Tarikh acara hingga' : 'Event date to'}
-              type="date"
-              value={dateTo}
-              onChange={(e) => {
-                setDateTo(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="block bg-background border border-border rounded-lg p-2 min-h-11"
-            />
-          </label>
-          {(dateFrom || dateTo) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setDateFrom('');
-                setDateTo('');
-                setCurrentPage(1);
-              }}
-            >
-              {isBm ? 'Padam tarikh' : 'Clear dates'}
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-deep-forest/40 dark:text-stone/40" />
-            <input
-              type="text"
-              aria-label={
-                isBm
-                  ? 'Cari rujukan, nama, emel, klien, lokasi'
-                  : 'Search ref, name, email, client, location'
-              }
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder={
-                isBm
-                  ? 'Cari rujukan, nama, emel, klien, lokasi...'
-                  : 'Search ref, name, email, client, location...'
-              }
-              className="w-full pl-9 pr-8 h-9 bg-cream/50 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-sunshine-cta)]/40 text-deep-forest dark:text-white transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                aria-label={isBm ? 'Padam carian' : 'Clear search'}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-deep-forest/40 hover:text-deep-forest dark:text-stone/40 dark:hover:text-white"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Action Tools */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Status Filter */}
-            <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
-              <Filter className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
-              <select
-                aria-label={isBm ? 'Tapis mengikut status' : 'Filter by status'}
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer"
-              >
-                <option value="all">{isBm ? 'Semua Status' : 'All Statuses'}</option>
-                <option value="pending">{isBm ? 'Menunggu (Pending)' : 'Pending'}</option>
-                <option value="approved">{isBm ? 'Diluluskan (Approved)' : 'Approved'}</option>
-                <option value="billed">{isBm ? 'Dibilkan (Billed)' : 'Billed'}</option>
-                <option value="cancel_requested">
-                  {isBm ? 'Permohonan Batal' : 'Cancel Requested'}
-                </option>
-                <option value="cancelled">{isBm ? 'Dibatalkan' : 'Cancelled'}</option>
-              </select>
-            </div>
-
-            {/* Client Filter */}
-            {clientOptions.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-cream/60 dark:bg-background/40 border border-stone/15 dark:border-white/10 rounded-xl px-3 h-9">
-                <Building2 className="w-3.5 h-3.5 text-deep-forest/50 dark:text-stone/50 shrink-0" />
-                <select
-                  aria-label={isBm ? 'Tapis mengikut klien' : 'Filter by client'}
-                  value={clientFilter}
-                  onChange={(e) => {
-                    setClientFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="bg-transparent text-xs font-semibold text-deep-forest dark:text-white focus:outline-none cursor-pointer max-w-[140px] truncate"
-                >
-                  <option value="all">{isBm ? 'Semua Klien' : 'All Clients'}</option>
-                  {clientOptions.map((client) => (
-                    <option key={client} value={client}>
-                      {client}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
+      <div className="admin-order-tools">
+        <div className="flex flex-wrap items-center gap-2">
             {/* Columns Customizer Popover */}
             <div className="relative">
               <button
@@ -812,67 +509,21 @@ export function AdminTablesTab({
               className="h-8 px-2.5 bg-cream/60 dark:bg-background/40 hover:bg-stone/10 border border-stone/15 dark:border-white/10 rounded-xl text-deep-forest dark:text-white transition-all text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
               title={
                 isBm
-                  ? 'Muat turun semua pesanan dalam satu fail Excel'
-                  : 'Download all orders in one Excel file'
+                  ? 'Muat turun hasil tapisan dalam satu fail Excel'
+                  : 'Download filtered orders in one Excel file'
               }
               aria-label={
-                isBm ? 'Eksport semua pesanan ke fail Excel' : 'Export all orders to Excel'
+                isBm ? 'Eksport hasil tapisan ke Excel' : 'Export filtered orders to Excel'
               }
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline text-xs font-semibold">Excel</span>
             </button>
 
-            {/* Refresh Button */}
-            <button
-              onClick={() => fetchOrders()}
-              className="p-2 bg-cream/60 dark:bg-background/40 hover:bg-stone/10 border border-stone/15 dark:border-white/10 rounded-xl text-deep-forest dark:text-white transition-all"
-              title="Refresh Data"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Jotform Grid Container */}
       <div className="bg-white dark:bg-card border border-stone/15 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden">
-        {/* Active Filters Bar if active */}
-        {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all') && (
-          <div className="bg-[var(--color-sunshine-cta)]/10 dark:bg-[var(--color-sunshine-cta)]/5 border-b border-[var(--color-sunshine-cta)]/20 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-deep-forest dark:text-[var(--color-sunshine-cta)]">
-                {isBm ? 'Tapis Active:' : 'Active Filters:'}
-              </span>
-              {searchTerm && (
-                <span className="px-2 py-0.5 bg-white dark:bg-background/80 rounded-md border border-stone/15 font-medium">
-                  "{searchTerm}"
-                </span>
-              )}
-              {statusFilter !== 'all' && (
-                <span className="px-2 py-0.5 bg-white dark:bg-background/80 rounded-md border border-stone/15 font-medium capitalize">
-                  Status: {statusFilter}
-                </span>
-              )}
-              {clientFilter !== 'all' && (
-                <span className="px-2 py-0.5 bg-white dark:bg-background/80 rounded-md border border-stone/15 font-medium">
-                  Client: {clientFilter}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setStatusFilter('all');
-                setClientFilter('all');
-              }}
-              className="text-xs font-bold text-deep-forest hover:underline dark:text-[var(--color-sunshine-cta)]"
-            >
-              {isBm ? 'Set Semula Tapis' : 'Reset All Filters'}
-            </button>
-          </div>
-        )}
-
         {/* Selected Rows Bulk Actions Bar */}
         {selectedIds.size > 0 && (
           <div className="bg-charcoal text-white px-4 py-3 flex items-center justify-between text-xs">
@@ -987,9 +638,7 @@ export function AdminTablesTab({
                           )}
                           {visibleColumns.has('dateTime') && (
                             <p className="mt-2 text-sm text-deep-forest/70 dark:text-stone/80">
-                              {formatDateTimeDisplay(
-                                order.dateTime || order.eventDate || order.date
-                              )}
+                              {formatAdminEvent(order, language) || '—'}
                             </p>
                           )}
                           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
@@ -1406,7 +1055,8 @@ export function AdminTablesTab({
                           type="checkbox"
                           aria-label="Select order"
                           checked={isSelected}
-                          onChange={() => handleSelectRow(order.id!)}
+                          disabled={!order.id}
+                          onChange={() => handleSelectRow(order.id)}
                           className="rounded border-stone/30 text-[var(--color-sunshine-cta)] focus:ring-[var(--color-sunshine-cta)]"
                         />
                       </td>
@@ -1419,9 +1069,7 @@ export function AdminTablesTab({
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-[var(--color-sunshine-cta)] shrink-0" />
                             <span>
-                              {formatDateTimeDisplay(
-                                order.dateTime || order.eventDate || order.date
-                              )}
+                              {formatAdminEvent(order, language) || '—'}
                             </span>
                           </div>
                         </td>
@@ -1573,10 +1221,11 @@ export function AdminTablesTab({
                         <td
                           className={`${densityCellPadding} font-medium text-deep-forest dark:text-white max-w-[180px] truncate`}
                         >
-                          <div className="flex items-center gap-1.5" title={order.to}>
-                            <Building2 className="w-3.5 h-3.5 text-deep-forest/40 dark:text-stone/40 shrink-0" />
-                            <span className="truncate">{order.to || '-'}</span>
-                          </div>
+                          <button type="button" className="flex w-full items-center gap-1.5 text-start hover:underline"
+                            title={order.to || order.name} onClick={() => openOrderDetail(order)}>
+                            <Building2 className="w-3.5 h-3.5 text-deep-forest/40 dark:text-stone/40 shrink-0" aria-hidden="true" />
+                            <span className="truncate">{order.to || order.name || '—'}</span>
+                          </button>
                         </td>
                       )}
 

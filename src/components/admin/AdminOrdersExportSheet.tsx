@@ -12,6 +12,7 @@ interface AdminOrdersExportSheetProps {
   onClose: () => void;
   /** All orders currently visible under the active filters (date-range etc). */
   filteredOrders: Order[];
+  selectedOrdersSource?: Order[];
   /** Order IDs the admin has ticked in Select Mode (may be empty). */
   selectedOrderIds: Set<string>;
   language: string;
@@ -47,6 +48,7 @@ export function AdminOrdersExportSheet({
   isOpen,
   onClose,
   filteredOrders,
+  selectedOrdersSource = filteredOrders,
   selectedOrderIds,
   language,
   toast,
@@ -60,7 +62,7 @@ export function AdminOrdersExportSheet({
 
   const hasSelection = selectedOrderIds.size > 0;
   const targetOrders = hasSelection
-    ? filteredOrders.filter(o => o.id && selectedOrderIds.has(o.id))
+    ? selectedOrdersSource.filter(o => o.id && selectedOrderIds.has(o.id))
     : filteredOrders;
 
   const heading = hasSelection

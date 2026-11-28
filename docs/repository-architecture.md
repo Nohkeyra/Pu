@@ -30,6 +30,14 @@ This project uses **responsibility-first, incremental organization**, not a whol
 
 `src/components/customer-pages.css` deliberately remains at its established location: shared customer-page styling with existing visual-ownership guardrails. Layout-specific `bottom-navigation-polish.css` is colocated with `BottomNavigation.tsx`.
 
+## Admin workspace
+
+`AdminPage` verifies the admin session and mounts `AdminPanel`. The workspace opens on Today and uses the `view` query parameter for Orders, Schedule and More. On compact screens the admin navigation occupies the bottom area and order details open as a sheet.
+
+`useAdminOrders` supplies the records and pricing conflicts. `adminOrderFilters.ts` defines the predicates used by overview counts and by both order layouts. Schedule dates use Malaysian time. Each order contributes its guest count once to the event total and once to each selected serving.
+
+The Orders layouts share search, filters and selection. The table provides column customization, Excel export and consolidated invoice actions. Order details call the existing invoice preview and rider tracking components.
+
 ## Import and code ownership rules
 
 1. Prefer `@/...` imports for cross-feature relationships and relative imports inside the same folder.

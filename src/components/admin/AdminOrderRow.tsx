@@ -19,18 +19,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useLongPress } from '@/hooks/ui/useLongPress';
+import { getAdminOrderPax } from '@/lib/adminOrderFilters';
 
 import type { Order } from '@/types';
 
 interface AdminOrderRowProps {
   onReadOrder?: (order: Order) => void;
   style: React.CSSProperties;
+  ariaAttributes: React.HTMLAttributes<HTMLDivElement>;
   order: Order;
   language: string;
   isSelected: boolean;
   isStarred: boolean;
   formattedHeaderDate: string;
-  relativeTime: string;
   clientName: string;
   totalAmount: string;
   stripColor: string;
@@ -47,12 +48,12 @@ interface AdminOrderRowProps {
 export function AdminOrderRow({
   onReadOrder,
   style,
+  ariaAttributes,
   order,
   language,
   isSelected,
   isStarred,
   formattedHeaderDate,
-  relativeTime,
   clientName,
   totalAmount,
   stripColor,
@@ -77,12 +78,14 @@ export function AdminOrderRow({
     { delay: 400 }
   );
 
+  const pax = getAdminOrderPax(order);
+
   return (
     <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
-      <div style={style} className="px-2 sm:px-3 py-1.5">
+      <div {...ariaAttributes} style={style} className="px-1.5 sm:px-2 py-1">
         <div
           {...longPressProps}
-          className={`relative flex h-full flex-col justify-between gap-2 overflow-hidden rounded-2xl border border-stone-200 bg-white px-4 py-3 pl-5 shadow-sm transition-colors hover:border-amber-400/60 dark:border-white/10 dark:bg-card ${isSelected ? 'ring-2 ring-sunshine-cta' : ''} ${order.status === 'cancel_requested' ? 'ring-2 ring-amber-400/60' : ''}`}
+          className={`relative flex h-full flex-col justify-between gap-2 overflow-hidden rounded-xl border border-stone-200 bg-white px-2.5 py-2 pl-3.5 transition-colors hover:border-amber-400/60 dark:border-white/10 dark:bg-card ${isSelected ? 'ring-2 ring-sunshine-cta' : ''} ${order.status === 'cancel_requested' ? 'ring-2 ring-amber-400/60' : ''}`}
         >
           <div className={`absolute inset-y-0 left-0 w-1 ${stripColor}`} />
           <div className="flex min-w-0 items-start justify-between gap-2">
@@ -148,11 +151,6 @@ export function AdminOrderRow({
               )}
             </div>
           </div>
-          <div className="min-w-0">
-            <span className="sr-only">
-              {relativeTime} {language === 'bm' ? 'yang lalu' : 'ago'}
-            </span>
-          </div>
           <div
             className="flex min-w-0 items-center justify-between gap-2"
             onPointerDown={(e) => e.stopPropagation()}
@@ -161,7 +159,7 @@ export function AdminOrderRow({
             <div className="flex min-w-0 items-center gap-3">
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 dark:text-stone-300">
                 <Users className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {order.quantity ?? '–'} {language === 'bm' ? 'orang' : 'pax'}
+                {pax || '–'} {language === 'bm' ? 'orang' : 'pax'}
               </span>
               <span className="truncate text-xs font-bold text-deep-forest dark:text-emerald-400">
                 {totalAmount}
@@ -171,7 +169,7 @@ export function AdminOrderRow({
               <Button
                 size="sm"
                 onClick={() => openOrderDetail(order)}
-                className="min-h-[48px] rounded-xl bg-[var(--ui-action)] px-2.5 text-xs font-bold text-[var(--ui-on-action)] hover:brightness-105"
+                className="min-h-11 rounded-lg bg-[var(--ui-action)] px-2.5 text-xs font-bold text-[var(--ui-on-action)] hover:brightness-105"
                 aria-label={`${language === 'bm' ? 'Lihat butiran' : 'View details'} ${clientName}`}
               >
                 <Eye className="mr-1 h-4 w-4" aria-hidden="true" />
