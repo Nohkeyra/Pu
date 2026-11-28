@@ -645,13 +645,16 @@ jobs:
 
           # Do not prune if GitHub Latest or the live update registry disagrees.
           gh api "repos/$GITHUB_REPOSITORY/releases/latest" > "$WORK_DIR/latest.json"
-          curl --fail --silent --show-error --connect-timeout 15 --max-time 45 \
-            -H 'Cache-Control: no-cache' \
-            "https://restoran-wawasan-bio.onrender.com/api/app-version" > "$WORK_DIR/live.json"
+          live_matches() {
+            curl --fail --silent --show-error --connect-timeout 15 --max-time 45 \
+              -H 'Cache-Control: no-cache' \
+              "https://restoran-wawasan-bio.onrender.com/api/app-version" |
+              jq -e --arg version "$VERSION_NAME" --arg url "$EXPECTED_URL" --arg build "$VERSION_CODE" \
+                '.success == true and .latestVersion == $version and .apkUrl == $url and (.buildNumber | tostring) == $build' > /dev/null
+          }
 
           if ! jq -e --arg tag "$EXPECTED_TAG" '.tag_name == $tag and .draft == false and .prerelease == false' "$WORK_DIR/latest.json" > /dev/null ||
-             ! jq -e --arg version "$VERSION_NAME" --arg url "$EXPECTED_URL" --arg build "$VERSION_CODE" \
-               '.success == true and .latestVersion == $version and .apkUrl == $url and (.buildNumber | tostring) == $build' "$WORK_DIR/live.json" > /dev/null; then
+             ! live_matches; then
             echo "::warning::Retention skipped: the newly published release is not confirmed as both GitHub Latest and the active APK."
             exit 0
           fi
@@ -684,9 +687,11 @@ jobs:
           echo "Official APK releases: $(jq length "$WORK_DIR/official.json"); candidates: $(wc -l < "$WORK_DIR/delete.tsv")"
           deleted=0
           while IFS=$'\t' read -r release_id release_tag; do
-            # Reconfirm protected Latest before every destructive request.
-            if [ "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .id)" != "$LATEST_ID" ]; then
-              echo "::warning::Retention stopped: GitHub Latest changed during cleanup."
+            # Reconfirm both pointers before each destructive request, including
+            # a possible manual rollback in the live update registry.
+            if [ "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .id)" != "$LATEST_ID" ] ||
+               ! live_matches; then
+              echo "::warning::Retention stopped: GitHub Latest or the active APK changed during cleanup."
               break
             fi
             echo "Removing old APK release $release_tag (id $release_id); Git tag retained."
