@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNativeAppState } from '@/hooks/native/useNativeAppState';
 import { useNetworkStatus } from '@/hooks/native/useNetworkStatus';
 import { useDeepLinks } from '@/hooks/native/useDeepLinks';
-import { Network } from '@capacitor/network';
+import { useToast } from '@/components/ui/Toast';
 import { Capacitor } from '@capacitor/core';
 import { notifyCapgoAppReady } from '@/services/updateService';
 import { getPendingOrdersCount, rehydrateQueueFromNative } from '@/lib/pendingOrdersQueue';
@@ -11,7 +11,9 @@ import { PendingOrdersDialog } from '@/components/order/PendingOrdersDialog';
 /** Native listeners have access to React context (including toasts). */
 function NativeAppListeners() {
   useNativeAppState();
-  useNetworkStatus();
+  const { isOnline, isReady } = useNetworkStatus();
+  const { toast } = useToast();
+  const previousOnline = useRef<boolean | null>(null);
   useDeepLinks();
 
   const [pendingOrdersDialogOpen, setPendingOrdersDialogOpen] = useState(false);
@@ -34,52 +36,31 @@ function NativeAppListeners() {
   }, []);
 
   useEffect(() => {
-    let isActive = true;
-    let wasOnline: boolean | null = null;
-    let listenerHandle: { remove: () => void } | null = null;
-
-    const setupPendingOrdersListener = async () => {
-      try {
-        const initial = await Network.getStatus();
-        if (!isActive) return;
-        wasOnline = initial.connected;
-      } catch {
-        wasOnline = null;
-      }
-
-      try {
-        const handle = await Network.addListener('networkStatusChange', (status) => {
-          if (!isActive) return;
-          const isNowOnline = status.connected;
-          const justCameOnline = wasOnline === false && isNowOnline === true;
-          wasOnline = isNowOnline;
-          if (justCameOnline) void triggerPendingOrdersCheck();
-        });
-        if (isActive) listenerHandle = handle;
-        else void handle.remove();
-      } catch (err) {
-        console.warn('[NativeAppListeners] Unable to observe network changes:', err);
-      }
-    };
-
-    void setupPendingOrdersListener();
-    return () => {
-      isActive = false;
-      if (listenerHandle) void listenerHandle.remove();
-    };
-  }, [triggerPendingOrdersCheck]);
-
-  useEffect(() => {
-    const checkOnMount = async () => {
-      try {
-        const status = await Network.getStatus();
-        if (status.connected) await triggerPendingOrdersCheck();
-      } catch {
-        // Non-critical: the subsequent reconnect listener still handles it.
-      }
-    };
-    void checkOnMount();
-  }, [triggerPendingOrdersCheck]);
+    if (!isReady) return;
+    const previous = previousOnline.current;
+    if (previous === isOnline) return;
+    previousOnline.current = isOnline;
+    if (isOnline) {
+      if (previous === false) toast({
+        title: 'Talian Disambung / Connection Restored',
+        description: 'Anda kembali dalam talian.',
+        variant: 'success', duration: 3000,
+      });
+      void triggerPendingOrdersCheck();
+    } else if (previous === null) {
+      toast({
+        title: 'Tiada Internet / No Internet',
+        description: 'Sila periksa sambungan rangkaian anda / Please check your connection.',
+        variant: 'warning', duration: 8000,
+      });
+    } else {
+      toast({
+        title: 'Talian Terputus / Connection Lost',
+        description: 'Mod luar talian aktif. Sesetengah ciri mungkin tidak tersedia.',
+        variant: 'error', duration: 5000,
+      });
+    }
+  }, [isOnline, isReady, toast, triggerPendingOrdersCheck]);
 
   useEffect(() => {
     // BatikMotionProvider owns the single native accelerometer listener.

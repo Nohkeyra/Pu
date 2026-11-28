@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Network } from '@capacitor/network';
+import { networkStatusStore } from '@/lib/networkStatusStore';
 import { processBackgroundSyncQueue, cacheMenuItemsInIndexedDb } from '@/lib/indexedDbStorage';
 import { getApiUrl } from '@/lib/api';
 import { DEFAULT_MENU_ITEMS } from '@/constants/menu';
@@ -15,7 +15,7 @@ export function useBackgroundSync() {
     // Capacitor and browser can both emit 'online' for one reconnect.
     // The single-flight gate prevents concurrent POSTs for the same queue item.
     const runSync = async () => {
-      if (!isActive || syncInFlight || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+      if (!isActive || syncInFlight || networkStatusStore.getSnapshot() !== true) return;
       syncInFlight = true;
       try {
         await processBackgroundSyncQueue(async (item) => {
@@ -39,31 +39,20 @@ export function useBackgroundSync() {
       }
     };
 
-    const onOnline = () => { void runSync(); };
     const onVisible = () => {
       if (document.visibilityState === 'visible') void runSync();
     };
-    window.addEventListener('online', onOnline);
     document.addEventListener('visibilitychange', onVisible);
-
-    let networkListenerHandle: { remove: () => void } | null = null;
-    void Network.addListener('networkStatusChange', (status) => {
-      if (status.connected) void runSync();
-    }).then((handle) => {
-      if (!isActive) {
-        void handle.remove();
-      } else {
-        networkListenerHandle = handle;
-      }
-    }).catch(() => {});
+    const unsubscribe = networkStatusStore.subscribe(() => {
+      if (networkStatusStore.getSnapshot() === true) void runSync();
+    });
 
     void runSync();
 
     return () => {
       isActive = false;
-      window.removeEventListener('online', onOnline);
+      unsubscribe();
       document.removeEventListener('visibilitychange', onVisible);
-      if (networkListenerHandle) void networkListenerHandle.remove();
     };
   }, []);
 }

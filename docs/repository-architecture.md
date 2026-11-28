@@ -61,3 +61,7 @@ npm run build
 ### Historical checksums
 
 `docs/LANDING_PAGE_RESTYLE_FILES.sha256` and `docs/RIDER_TRACKING_FILES.sha256` represent **historical snapshots**, not valid hashes for this updated source tree. Their original hashes and paths were preserved as historical evidence, not silently rewritten to match the restructuring.
+
+## Shared connectivity ownership
+
+`src/lib/networkStatusStore.ts` owns the single native or browser connectivity subscription. React consumers read it through `useNetworkStatus`; `NativeAppListeners` owns connection toasts and explicit pending-order review, while the background worker subscribes to the same state. Do not add another network-change listener for a consumer. One-off network type checks (e.g. Wi-Fi update policy) are independent and may remain.
