@@ -607,6 +607,7 @@ jobs:
       # 📡 AUTOMATIC LIVE UPDATE BROADCAST
       # =============================================
       - name: Trigger Automatic In-App Live Update Broadcast
+        id: release_sync
         if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && success()
         env:
           SYNC_SECRET: ${{ secrets.RELEASE_SYNC_SECRET }}
@@ -625,4 +626,76 @@ jobs:
               -d "{\"version\":\"${{ env.VERSION_NAME }}\",\"buildNumber\":\"${{ env.VERSION_CODE }}\",\"apkUrl\":\"https://github.com/Nohkeyra/Pu/releases/download/v${{ env.VERSION_NAME }}/app-release-signed.apk\"}"
             node -e 'const fs = require("node:fs"); if (JSON.parse(fs.readFileSync(process.argv[1], "utf8")).success !== true) process.exit(1)' "$RESPONSE_FILE"
             echo "✅ Broadcast request completed successfully!"
+            echo "synced=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Retention is intentionally part of the existing publish job. Never run
+      # on PRs, failed releases or an unconfirmed/skipped live-update broadcast.
+      - name: Retain 10 most recent official APK releases
+        if: success() && steps.release_sync.outputs.synced == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          WORK_DIR=$(mktemp -d)
+          trap 'rm -rf "$WORK_DIR"' EXIT
+          EXPECTED_TAG="v$VERSION_NAME"
+          EXPECTED_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$EXPECTED_TAG/app-release-signed.apk"
+
+          # Do not prune if GitHub Latest or the live update registry disagrees.
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" > "$WORK_DIR/latest.json"
+          live_matches() {
+            curl --fail --silent --show-error --connect-timeout 15 --max-time 45 \
+              -H 'Cache-Control: no-cache' \
+              "https://restoran-wawasan-bio.onrender.com/api/app-version" |
+              jq -e --arg version "$VERSION_NAME" --arg url "$EXPECTED_URL" --arg build "$VERSION_CODE" \
+                '.success == true and .latestVersion == $version and .apkUrl == $url and (.buildNumber | tostring) == $build' > /dev/null
+          }
+
+          if ! jq -e --arg tag "$EXPECTED_TAG" '.tag_name == $tag and .draft == false and .prerelease == false' "$WORK_DIR/latest.json" > /dev/null ||
+             ! live_matches; then
+            echo "::warning::Retention skipped: the newly published release is not confirmed as both GitHub Latest and the active APK."
+            exit 0
+          fi
+
+          # Paginate before selecting anything. Sort by publication time, not
+          # tag text or GitHub's created_at (which may reflect commit age).
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$WORK_DIR/releases.json"
+          jq -e '
+            if type != "array" or any(.[]; type != "array") then error("Invalid paginated release response") else
+              [ .[][] | select(.draft == false and .prerelease == false)
+                | select(.tag_name | test("^v[0-9]+[.][0-9]+[.][0-9]+$"))
+                | select(any(.assets[]?; .name == "app-release-signed.apk"))
+                | if (.id | type) != "number" or (.published_at | type) != "string"
+                  then error("Invalid official APK release metadata") else . end
+              ] | unique_by(.id) | sort_by(.published_at, .id) | reverse
+            end
+          ' "$WORK_DIR/releases.json" > "$WORK_DIR/official.json"
+
+          LATEST_ID=$(jq -er '.id | select(type == "number")' "$WORK_DIR/latest.json")
+          # Never remove the active release, even if an older tag is republished.
+          if ! jq -e --argjson latest "$LATEST_ID" '.[0:10] | any(.[]; .id == $latest)' "$WORK_DIR/official.json" > /dev/null; then
+            echo "::warning::Retention skipped: protected Latest release is outside the newest ten or missing from the list."
+            exit 0
+          fi
+
+          jq -r --argjson latest "$LATEST_ID" '
+            .[10:][] | select(.id != $latest and .immutable != true) | [.id, .tag_name] | @tsv
+          ' "$WORK_DIR/official.json" > "$WORK_DIR/delete.tsv"
+
+          echo "Official APK releases: $(jq length "$WORK_DIR/official.json"); candidates: $(wc -l < "$WORK_DIR/delete.tsv")"
+          deleted=0
+          while IFS=$'\t' read -r release_id release_tag; do
+            # Reconfirm both pointers before each destructive request, including
+            # a possible manual rollback in the live update registry.
+            if [ "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .id)" != "$LATEST_ID" ] ||
+               ! live_matches; then
+              echo "::warning::Retention stopped: GitHub Latest or the active APK changed during cleanup."
+              break
+            fi
+            echo "Removing old APK release $release_tag (id $release_id); Git tag retained."
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$release_id"
+            deleted=$((deleted + 1))
+          done < "$WORK_DIR/delete.tsv"
+          echo "APK releases removed: $deleted"
