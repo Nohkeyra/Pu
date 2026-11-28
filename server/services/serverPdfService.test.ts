@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import fs from 'node:fs';
 import { PDFArray, PDFDocument, PDFHexString, PDFRawStream, PDFString, decodePDFRawStream } from 'pdf-lib';
 import { planInvoicePages } from '../../src/services/invoiceBatchPdf';
 import { INVOICE_BUSINESS } from '../../src/constants/invoiceBusiness';
@@ -361,4 +362,49 @@ describe('persisted consolidated PDF dispatch', () => {
     }));
     expect(dispatched.pageTexts).toEqual(direct.pageTexts);
   });
+});
+
+describe('approved refined individual invoice candidate (layout 4)', () => {
+  const fixture = {
+    invoiceLayoutVersion: 4, invoiceNo: 'RW54321', status: 'billed',
+    billedAt: '2026-11-28T04:00:00Z', eventDate: '2026-12-06',
+    to: 'Example Company', billingAddress: 'Example billing address',
+    name: 'PIC EXAMPLE UNIQUE', contact: '0123456789', department: 'DEPARTMENT UNIQUE',
+    attn: 'ATTN UNIQUE', email: 'pic-fixture@example.invalid', notes: 'NOTES UNIQUE',
+    location: 'Example meeting room', quantity: 20, meals: ['lunch'],
+    prices: {lunch:9.25}, menu: 'Soto Nasi Impit dan Bergedil',
+    deliveryCharge: 5, serviceChargeAmount: 2.25, totalAmount: 192.25,
+  };
+  it('keeps the financial page clean and puts all PIC details on page two', async () => {
+    const bytes = await generateServerInvoicePdf(fixture,true);
+    const decoded = await inspectPdf(bytes);
+    expect(decoded.pageCount).toBe(2);
+    const first = decoded.pageTexts[0].join(' ');
+    const second = decoded.pageTexts[1].join(' ');
+    for (const value of ['RW54321','PERIHAL','HARGA / PAX (RM)','JUMLAH (RM)','192.25','16010000-405710'])
+      expect(first).toContain(value);
+    for (const value of ['PIC EXAMPLE UNIQUE','DEPARTMENT UNIQUE','ATTN UNIQUE','pic-fixture@example.invalid','NOTES UNIQUE','0123456789']) {
+      expect(first).not.toContain(value);
+      expect(second).toContain(value);
+    }
+    expect(second).not.toContain('JUMLAH KESELURUHAN');
+    if(process.env.CI) {
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/individual-refined-bm.pdf',bytes);
+    }
+  },15000);
+  it('keeps page two for PIC when a long menu needs continuation; never repeats the amount',async()=>{
+    const order={...fixture,lang:'en',menu:Array.from({length:160},(_,i)=>'Menu item '+i+' with traditional accompaniment').join(', ')};
+    const bytes=await generateServerInvoicePdf(order,true);
+    const decoded=await inspectPdf(bytes);
+    expect(decoded.pageCount).toBeGreaterThan(2);
+    expect(decoded.pageTexts[1].join(' ')).toContain('PIC EXAMPLE UNIQUE');
+    expect(decoded.text).toContain('Menu item 159');
+    expect(decoded.pageTexts.flat().filter(v=>v==='185.00')).toHaveLength(1);
+    expect(decoded.pageTexts.flat().filter(v=>v==='RM 192.25')).toHaveLength(1);
+    if(process.env.CI) {
+      fs.mkdirSync('invoice-visual-artifacts',{recursive:true});
+      fs.writeFileSync('invoice-visual-artifacts/individual-refined-long-en.pdf',bytes);
+    }
+  },15000);
 });

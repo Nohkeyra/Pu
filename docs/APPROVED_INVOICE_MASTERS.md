@@ -16,5 +16,8 @@ Do not change the approved artwork, Uncial Antiqua title, gold/brown palette, or
 - Preview, download and email must use one authoritative rendering path; preserve quotation behavior and historical invoices.
 - Regression gates: both approved designs, short/long menu and notes, long recipient/address/subject, page boundary, multi-page numbering, cents and amount-in-words accuracy, signature, email/download parity, existing invoice records, and typecheck/build/test.
 
+## Individual PIC placement (owner-approved)
+- Page 1 is the financial document; PIC name, telephone, department, ATTN, email and notes are on page 2. Financial continuation pages follow page 2 when needed, retaining the original invoice number. Oversized PIC notes can continue on additional pages.
+
 ## Migration status
-Visual masters only in this change. Existing production renderers/assets remain until replacement is implemented and verified. Do not treat this commit as renderer migration.
+Candidate individual layout version 4 is implemented behind an explicit order layout version; new issuance does not yet select it. Historical invoices and quotations retain their prior renderer. CI exports synthetic PDF samples for visual comparison. Consolidated master migration and visual regression gates remain pending; do not activate or retire existing assets before verification.

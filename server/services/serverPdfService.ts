@@ -801,6 +801,223 @@ function drawFooterNotice(
   });
 }
 
+
+/** Version 4: candidate refined individual invoice. Financial pages and PIC
+ * pages share the same document identity; page 2 is always the PIC page.
+ * The original master artwork is embedded as clipped vector regions, not
+ * substituted with a raster recreation or a fixed-row form.
+ */
+async function renderRefinedIndividualInvoice(
+  order: Record<string, any>,
+  lang: 'bm' | 'en',
+  info: {
+    docNumber: string; docDate: string; eventDateText: string; recipient: string;
+    address: string; subject: string; quantity: number; location: string;
+    rows: TableRowItem[]; total: number;
+  }
+): Promise<Buffer> {
+  const bytes = loadAssetBuffer(['assets/invoices/Wawasan_Master_Individu_Refined_Final.pdf']);
+  if (!bytes) throw new Error('Approved refined individual invoice master is missing.');
+  const master = await PDFDocument.load(bytes);
+  const source = master.getPage(0), { width: W, height: H } = source.getSize();
+  if (Math.abs(W - 595.28) > 0.1 || Math.abs(H - 841.89) > 0.1)
+    throw new Error('Unexpected refined individual master size.');
+
+  // Remove only the four static metadata text operands from the header
+  // stream, preserving the original batik, logo, Uncial title and address.
+  const contents = source.node.Contents();
+  const refs = contents instanceof PDFArray ? contents.asArray() : [];
+  const first = master.context.lookup(refs[0]);
+  if (!(first instanceof PDFRawStream)) throw new Error('Unexpected refined master header stream.');
+  let header = Buffer.from(decodePDFRawStream(first).decode()).toString('latin1');
+  for (const literal of ['(INVOIS)Tj', '(No. Invois:)Tj', '(Tarikh:)Tj', '(SUBJECT:)Tj']) {
+    if (header.split(literal).length !== 2) throw new Error('Refined master metadata changed: ' + literal);
+    header = header.replace(literal, '()Tj');
+  }
+  source.node.set(master.context.obj('Contents'), master.context.obj([
+    master.context.register(master.context.flateStream(header)), ...refs.slice(1),
+  ]));
+
+  const pdf = await PDFDocument.create();
+  const regular = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const box = (left: number, top: number, right: number, bottom: number) =>
+    ({ left, bottom: H - bottom, right, top: H - top });
+  const [brand, signature, footer] = await pdf.embedPages(
+    [source, source, source],
+    [box(0, 0, W, 112), box(400, 476, 559, 579), box(0, 768, W, 818)]
+  );
+  const gold = rgb(.65098, .486275, .117647);
+  const border = rgb(.760784, .541176, .098039);
+  const brown = rgb(.443137, .298039, .047059);
+  const cream = rgb(.980392, .976471, .964706);
+  const ink = rgb(.129412, .109804, .086275);
+  const rule = rgb(.866667, .835294, .780392);
+  const en = lang === 'en';
+  const t = (bm: string, english: string) => en ? english : bm;
+  const text = (p: PDFPage, value: string, x: number, baseline: number,
+    font = regular, size = 9, color = ink) =>
+    p.drawText(sanitizePdfText(value), { x, y: H - baseline, font, size, color });
+  const right = (p: PDFPage, value: string, x: number, y: number,
+    font = regular, size = 9, color = ink) =>
+    text(p, value, x - font.widthOfTextAtSize(sanitizePdfText(value), size), y, font, size, color);
+  const centered = (p: PDFPage, value: string, x: number, y: number, size = 9) =>
+    text(p, value, x - bold.widthOfTextAtSize(value, size) / 2, y, bold, size, C_WHITE);
+  const lines = (value: unknown, font: PDFFont, size: number, w: number) =>
+    wrapPdfText(String(value ?? '-'), font, size, w);
+  const line = (p: PDFPage, x: number, top: number, bottom: number) =>
+    p.drawLine({ start: { x, y: H - top }, end: { x, y: H - bottom }, thickness: .55, color: rule });
+  const rect = (p: PDFPage, x: number, y: number, w: number, h: number,
+    fill: ReturnType<typeof rgb>, stroke?: ReturnType<typeof rgb>) =>
+    p.drawRectangle({ x, y: H-y-h, width:w, height:h, color:fill,
+      ...(stroke ? {borderColor:stroke, borderWidth:.55} : {}) });
+  const card = (p: PDFPage, x: number, y: number, w: number, h: number, label: string, values: string[]) => {
+    drawRoundedRectPath(p, x, H-y-h, w, h, 4, cream, border, .7);
+    text(p, label, x+13, y+14, bold, 8.5, gold);
+    values.forEach((value, i) => text(p, value, x+13, y+29+i*12, i===0?bold:regular, 9));
+  };
+  const basePage = () => {
+    const p = pdf.addPage([W,H]);
+    p.drawPage(brand, { x:0, y:H-112 });
+    right(p, t('INVOIS','INVOICE'), 559, 56, bold, 24, gold);
+    const metadata = [[t('No. Invois:', 'Invoice No.:'), info.docNumber],
+      [t('Tarikh:', 'Date:'), info.docDate], ['SUBJECT:', info.subject]];
+    metadata.forEach(([label, value], i) => {
+      text(p,label,416,68+i*12,regular,8.6);
+      let size = 9;
+      while (size > 6 && bold.widthOfTextAtSize(sanitizePdfText(value),size) > 86) size -= .25;
+      if (bold.widthOfTextAtSize(sanitizePdfText(value),size) > 86)
+        throw new Error('Invoice header value is too long.');
+      text(p,value,473,68+i*12,bold,size);
+    });
+    p.drawPage(footer, {x:0,y:H-818});
+    addPageLink(pdf,p,112,H-100,190,58,INVOICE_CONTACT.maps);
+    return p;
+  };
+  const recipient = [...lines(info.recipient,bold,9,497),...lines(info.address,regular,9,497)];
+  const event = lines(info.eventDateText,bold,9,324);
+  const pax = lines(String(info.quantity || '-'),bold,9,133);
+  const location = lines(info.location,bold,9,324);
+  const mealNames = lines(info.rows.filter(row => row.mealText !== '-').map(row=>row.mealText).join(', '),bold,9,133);
+  const recH = Math.max(47, 32 + (recipient.length-1)*12);
+  const eventH = Math.max(38,32 + (Math.max(event.length,pax.length)-1)*12);
+  const locH = Math.max(40,32 + (Math.max(location.length,mealNames.length)-1)*12);
+  const firstTableTop = 119+recH+7+eventH+6+locH+12;
+  const bank = getBankDetails();
+  const bankValues = [bank.bankAccountName,bank.bankName,bank.bankAccountNumber];
+  const bankLines = bankValues.map((value,i)=>lines(value,bold,9,[165,160,143][i]));
+  const bankH = 61+Math.max(...bankLines.map(v=>v.length))*12;
+  const amountLabel = 'RINGGIT MALAYSIA :';
+  const words = (en?enWords(info.total):bmWords(info.total)).toUpperCase()+t(' SAHAJA.',' ONLY.');
+  const wordsX = 37+bold.widthOfTextAtSize(amountLabel,9)+5;
+  // First line begins immediately after the label. Further lines use the same
+  // width, guaranteeing that no currency words are clipped or dropped.
+  const wordLines = lines(words,bold,9,559-wordsX);
+  const noteLines = lines(INVOICE_BUSINESS.pricingNote[lang],italic,8.5,522);
+  const summaryH = 29+17+wordLines.length*12+noteLines.length*11+12+bankH+8+103;
+  const rowBottomLimit = 755-summaryH;
+  if (firstTableTop+24+23 > rowBottomLimit)
+    throw new Error('Billing details exceed available first-page invoice space.');
+  const drawTableHeader = (p:PDFPage,y:number) => {
+    rect(p,36,y,523,24,brown);
+    line(p,344,y,y+24);line(p,452,y,y+24);
+    centered(p,t('PERIHAL','DESCRIPTION'),190,y+15);
+    centered(p,t('HARGA / PAX (RM)','PRICE / PAX (RM)'),398,y+15);
+    centered(p,t('JUMLAH (RM)','AMOUNT (RM)'),505.5,y+15);
+  };
+  const firstPage = basePage();
+  let y = 119;
+  card(firstPage,36,y,523,recH,t('KEPADA','BILL TO'),recipient);
+  y += recH+7;
+  card(firstPage,36,y,350,eventH,t('TARIKH ACARA','EVENT DATE'),event);
+  card(firstPage,400,y,159,eventH,t('BILANGAN PAX','NUMBER OF PAX'),pax);
+  y += eventH+6;
+  card(firstPage,36,y,350,locH,t('LOKASI ACARA','EVENT LOCATION'),location);
+  card(firstPage,400,y,159,locH,t('JENIS HIDANGAN','MEAL TYPE'),mealNames);
+  // Reserve page 2 now, even when the invoice table needs continuation.
+  const picPage = basePage();
+  let p = firstPage, cursor = firstTableTop+24;
+  drawTableHeader(p,firstTableTop);
+  const newFinancialPage = () => {
+    p = basePage();
+    text(p,t('SAMBUNGAN INVOIS','INVOICE CONTINUATION'),36,136,bold,10,gold);
+    drawTableHeader(p,149);cursor=173;
+  };
+  for (const row of info.rows) {
+    const titleLines = lines(row.descriptionTitle,bold,9,292);
+    const desc = row.descriptionLines.flatMap(value=>lines(value,regular,9,292));
+    const all = [...titleLines.map(value=>({value, font:bold})),...desc.map(value=>({value,font:regular}))];
+    let offset = 0;
+    do {
+      const maxLines = Math.floor((rowBottomLimit-cursor-10)/12);
+      if (maxLines < 1) {newFinancialPage(); continue;}
+      const chunk = all.slice(offset,offset+maxLines);
+      const h = Math.max(23,10+chunk.length*12);
+      if (cursor+h > rowBottomLimit) {newFinancialPage();continue;}
+      rect(p,36,cursor,523,h,cream,rule);
+      line(p,344,cursor,cursor+h);line(p,452,cursor,cursor+h);
+      chunk.forEach(({value,font},i)=>text(p,value,44,cursor+14+i*12,font,9));
+      if (offset===0) {
+        right(p,row.rateText,444,cursor+14,bold,9);
+        right(p,row.amountText,551,cursor+14,bold,9);
+      }
+      cursor+=h;offset+=chunk.length;
+    } while(offset<all.length);
+  }
+  // The total follows the final actual row; no padded blank rows.
+  rect(p,36,cursor,523,29,brown);
+  line(p,452,cursor,cursor+29);
+  text(p,t('JUMLAH KESELURUHAN','GRAND TOTAL'),48,cursor+18,bold,9.5,C_WHITE);
+  right(p,'RM '+info.total.toFixed(2),550,cursor+18,bold,10,C_WHITE);
+  cursor+=43;
+  text(p,amountLabel,37,cursor,bold,9);
+  wordLines.forEach((value,i)=>text(p,value,wordsX,cursor+i*12,bold,9));
+  cursor+=wordLines.length*12;
+  noteLines.forEach((value,i)=>text(p,value,37,cursor+i*11,italic,8.5));
+  cursor+=noteLines.length*11+8;
+  drawRoundedRectPath(p,36,H-cursor-bankH,523,bankH,7,cream,border,.7);
+  text(p,t('MAKLUMAT AKAUN BANK','BANK ACCOUNT DETAILS'),50,cursor+16,bold,9.2,gold);
+  const bankX=[51,229,403], bankLabels=[t('Nama Akaun','Account Name'),'Bank',t('No. Akaun','Account No.')];
+  bankLabels.forEach((label,i)=>{
+    text(p,label,bankX[i],cursor+33,regular,8.5);
+    bankLines[i].forEach((value,j)=>text(p,value,bankX[i],cursor+49+j*12,bold,9));
+  });
+  text(p,t('* Sila nyatakan No. Invois sebagai rujukan pembayaran.','* Please quote the invoice number as payment reference.'),51,cursor+bankH-8,italic,8.5);
+  cursor+=bankH+8;
+  p.drawPage(signature,{x:400,y:H-cursor-103});
+
+  // PIC and administration fields never appear on the financial first page.
+  const fields = [
+    [t('Pegawai / PIC','Contact / PIC'),order.name||order.customerName||order.picName||order.pocName||order.contactName],
+    [t('No. Telefon','Telephone'),order.contact||order.phone||order.picPhone||order.pocPhone||order.contactNumber],
+    [t('Jabatan','Department'),order.department||order.division],
+    ['ATTN',order.attn],
+    [t('Emel','Email'),order.email||order.customerEmail||order.picEmail||order.pocEmail],
+    [t('Catatan','Notes'),order.notes],
+  ];
+  let detail = picPage, detailY = 151;
+  const detailHeading = (page:PDFPage) =>
+    text(page,t('MAKLUMAT TAMBAHAN / PIC','ADDITIONAL INFORMATION / PIC'),36,136,bold,12,gold);
+  detailHeading(detail);
+  for (const [label, raw] of fields) {
+    const values = lines(raw||'-',regular,10,497);
+    let offset=0;
+    while(offset<values.length) {
+      const n=Math.floor((744-detailY-34)/13);
+      if(n<1){detail=basePage();detailHeading(detail);detailY=151;continue;}
+      const chunk=values.slice(offset,offset+n), h=34+chunk.length*13;
+      drawRoundedRectPath(detail,36,H-detailY-h,523,h,4,cream,border,.7);
+      text(detail,String(label),49,detailY+15,bold,9,gold);
+      chunk.forEach((v,i)=>text(detail,v,49,detailY+30+i*13,regular,10));
+      offset+=chunk.length;detailY+=h+7;
+    }
+  }
+  const pages=pdf.getPages();
+  pages.forEach((page,i)=>right(page,t('Halaman','Page')+' '+(i+1)+' / '+pages.length,559,831,regular,7.5));
+  return Buffer.from(await pdf.save());
+}
+
 export async function generateServerInvoicePdf(
   order: Record<string, any>,
   isFinal: boolean,
@@ -809,10 +1026,11 @@ export async function generateServerInvoicePdf(
   const lang: 'en' | 'bm' = order.lang === 'en' ? 'en' : 'bm';
   const docType = resolveDocumentType(order, isFinal, docTypeOverride);
   const isMonetaryFinal = isFinal && docType !== 'quotation';
+  // Versioned candidate: existing invoices and quotations keep their exact historical path.
+  const refined = isMonetaryFinal && order.invoiceLayoutVersion === 4;
   const { bankName, bankAccountName, bankAccountNumber } = getBankDetails();
 
-  const masterBytes = getMasterTemplateBytes();
-  const pdfDoc = await PDFDocument.load(masterBytes);
+  const pdfDoc = refined ? await PDFDocument.create() : await PDFDocument.load(getMasterTemplateBytes());
 
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -915,7 +1133,7 @@ export async function generateServerInvoicePdf(
 
     let descLines: string[] = [];
     if (idx === 0 && fullMenuText) {
-      descLines = wrapPdfText(fullMenuText, helvetica, 7.4, 196);
+      descLines = wrapPdfText(fullMenuText, helvetica, refined ? 9 : 7.4, refined ? 292 : 196);
     }
     const rowHeight = Math.max(23, 14 + descLines.length * 10.2);
 
@@ -978,6 +1196,13 @@ export async function generateServerInvoicePdf(
     Number(order.totalAmount) >= 0
   ) {
     grandTotal = Math.round(Number(order.totalAmount) * 100) / 100;
+  }
+
+  if (refined) {
+    return renderRefinedIndividualInvoice(order, lang, {
+      docNumber, docDate, eventDateText, recipient: recipientPrimary, address: rawBilling,
+      subject: subjectCode, quantity, location: locationVal, rows, total: grandTotal,
+    });
   }
 
   // Paginate rows across pages while keeping the final totals/payment/signature block intact.
