@@ -702,6 +702,8 @@ export async function createOrder(
 
   const newOrderDoc = {
     ...orderData,
+    deletedByAdmin: false,
+    deletedByUser: false,
     status: (orderData.status || 'pending').toLowerCase(),
     eventTimestamp,
     calendarDateKey: getOrderCalendarDate({ ...orderData, createdAt: new Date() }) ?? '',

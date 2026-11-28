@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:migrations": "node --test scripts/*.test.cjs"
+    "test:migrations": "node --test scripts/*.test.cjs",
+    "firestore:prelaunch": "tsx scripts/firestore-prelaunch.ts"
   },
   "dependencies": {
     "@capacitor-community/fcm": "^8.1.0",

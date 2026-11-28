@@ -3,7 +3,7 @@ import type { AdminConflictNotification, Order } from '@/types';
 import { getApiUrl } from '@/lib/api';
 import { showConfirm } from '@/lib/nativeService';
 import type { ToastVariant } from '@/components/ui/Toast';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { sortOrdersByCreatedAt } from '@/lib/orderTimestamp';
 
@@ -43,7 +43,8 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
   }), [adminToken]);
 
   const fetchOrders = useCallback(async (silent?: boolean) => {
-    if (!adminToken) return;
+    // Healthy live listener already supplies updates; avoid duplicate REST reads.
+    if (!adminToken || !fallbackActive.current) return;
     const requestId = invalidateRequests();
     if (!silent) setLoading(true);
     try {
@@ -146,7 +147,10 @@ export function useAdminOrders({ adminToken, onLogout, toast, t, language }: Use
     // Do not orderBy/limit in Firestore: legacy records may lack createdAt or use mixed types.
     let disposed = false;
     const byId = new Map<string, Order>();
-    const q = query(collection(db, 'orders'));
+    const ref = collection(db, 'orders');
+    const q = import.meta.env.VITE_FIRESTORE_ORDER_VISIBILITY_READY === 'true'
+      ? query(ref, where('deletedByAdmin', '==', false))
+      : query(ref);
     
     const unsubscribeSnapshot = onSnapshot(q, (querySnapshot) => {
         if (disposed) return;

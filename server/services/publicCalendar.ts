@@ -5,6 +5,7 @@ import {
   type TimestampedOrder,
 } from '../../src/lib/orderTimestamp.js';
 import { firestoreQuota } from './firestoreQuota.js';
+import { activeAdminOrders } from './orderVisibility.js';
 interface PublicOrder {
   id: string;
   status: string;
@@ -26,7 +27,7 @@ export interface PublicCalendarData {
 }
 async function readPublicRecords(range?: { from: string; to: string }): Promise<CalendarRecord[]> {
   // Preserve legacy date/dateTime/createdAt records; cache only public scheduling fields.
-  const collection = getFirestore().collection('orders');
+  const collection = activeAdminOrders(getFirestore());
   // Project scheduling fields only; legacy dates remain supported. The
   // in-memory test adapter does not implement select().
   const query = range
